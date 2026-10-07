@@ -70,6 +70,7 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
         tooltip.add(Text.translatable("tooltip.steveparty.tile.size.hint").formatted(Formatting.DARK_GRAY));
         tooltip.add(Text.translatable("tooltip.steveparty.tile.stamp.hint").formatted(Formatting.DARK_GRAY));
         tooltip.add(Text.translatable("tooltip.steveparty.tile.contents.hint").formatted(Formatting.DARK_GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.tile." + tooltipKey() + ".crafting").formatted(Formatting.DARK_GRAY));
     }
 
     /**
@@ -133,21 +134,31 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
         return stack;
     }
 
-    /** A broken tile drops itself in its size; broken with Silk Touch, with its cartridges and its look. */
+    /**
+     * A broken tile drops itself in its size, with its cartridges (their settings, colour...) and its look, so that it
+     * is placed again ready to link. Its cartridges lose their links (they led to the neighbours of the old place)
+     * unless it is broken with Silk Touch, which moves the tile with its links.
+     */
     @Override
     protected List<ItemStack> getDroppedStacks(BlockState state, net.minecraft.loot.context.LootContextParameterSet.Builder builder) {
         List<ItemStack> drops = super.getDroppedStacks(state, builder);
         net.minecraft.block.entity.BlockEntity blockEntity = builder.getOptional(net.minecraft.loot.context.LootContextParameters.BLOCK_ENTITY);
-        boolean keeps = blockEntity instanceof BoardSpaceBlockEntity tile && tile.keepsContents();
+        ItemStack tool = builder.getOptional(net.minecraft.loot.context.LootContextParameters.TOOL);
+        boolean keepLinks = tool != null && TileContents.hasSilkTouch(builder.getWorld(), tool);
         for (ItemStack drop : drops) {
             if (!drop.isOf(asItem())) continue;
-            if (keeps) drop.applyComponentsFrom(blockEntity.createComponentMap());
+            if (blockEntity instanceof BoardSpaceBlockEntity tile) {
+                // Its cartridges go with the item instead of spilling out
+                tile.keepContents();
+                drop.applyComponentsFrom(blockEntity.createComponentMap());
+                if (!keepLinks) TileContents.dropLinks(drop);
+            }
             TileSize.with(drop, state.get(SIZE).size());
         }
         return drops;
     }
 
-    /** Broken by a survival player with Silk Touch: the cartridges stay in the dropped tile. */
+    /** Broken by a player who gets its item (or in creative): the cartridges stay in the tile, not spilled out. */
     @Override
     protected boolean dropsContentsOnBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
         if (!keepsContents(world, state, player) || !(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tile)) return true;
@@ -155,10 +166,12 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
         return false;
     }
 
-    /** Whether {@code player} breaking the tile {@code state} gets it with its contents: Silk Touch, and a drop at all. */
+    /**
+     * Whether {@code player} breaking the tile {@code state} keeps its cartridges in it: it drops for them (in
+     * creative, nothing drops and nothing spills).
+     */
     public static boolean keepsContents(World world, BlockState state, PlayerEntity player) {
-        return !world.isClient && !player.isCreative() && player.canHarvest(state)
-                && TileContents.hasSilkTouch(world, player.getMainHandStack());
+        return !world.isClient && (player.isCreative() || player.canHarvest(state));
     }
 
     // ---------------------------------------------------------------- placement and support

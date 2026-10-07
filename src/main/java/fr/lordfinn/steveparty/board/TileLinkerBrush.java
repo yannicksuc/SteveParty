@@ -39,8 +39,9 @@ import java.util.UUID;
  * {@link WrenchActions#initialize}), and with the brush in the off hand, each placed board space is linked from it.
  * <p>
  * Its settings are picked on its wheel (left click, client side): the level (0-15, the slot the redstone power selects
- * on a 16-slot board space; none: the slot powered at the time), the kind of Cartridge put in the linked tiles, undo
- * and redo. A board space with a single slot ignores the level.
+ * on a 16-slot board space; none: the slot powered at the time), the kind of Cartridge the painted board spaces get
+ * (theirs swapped for it, links kept; none picked: they keep theirs, an empty one gets a plain Cartridge), undo and
+ * redo. A board space with a single slot ignores the level.
  */
 public final class TileLinkerBrush {
     /** Vanilla repeats the use every 4 ticks while the button is held: longer without one, the stroke has ended. */
@@ -113,18 +114,26 @@ public final class TileLinkerBrush {
         return level == POWERED ? Text.translatable("item.steveparty.tile_linker_brush.level.powered") : Text.literal(Integer.toString(level));
     }
 
-    /** The kind of Cartridge put in the tiles it links (null: the plain Cartridge). */
+    /**
+     * The kind of Cartridge picked on the wheel: the board spaces painted get one of it instead of theirs (taken from the
+     * inventory, theirs given back). Null: none picked, the board spaces keep their cartridge (an empty one gets a plain
+     * Cartridge).
+     */
     public static @Nullable Item cartridge(ItemStack brush) {
         Item item = brush.get(ModComponents.LINK_CARTRIDGE);
         return item instanceof CartridgeItem ? item : null;
     }
 
-    /** Picks the kind of Cartridge put in the tiles it links (the plain Cartridge: none stored). Not a cartridge: ignored. */
-    public static boolean setCartridge(ServerPlayerEntity player, ItemStack brush, Item cartridge) {
-        if (!(cartridge instanceof CartridgeItem)) return false;
-        if (cartridge == fr.lordfinn.steveparty.items.ModItems.BOARD_SPACE_BEHAVIOR) brush.remove(ModComponents.LINK_CARTRIDGE);
-        else brush.set(ModComponents.LINK_CARTRIDGE, cartridge);
-        player.sendMessage(Text.translatable("message.steveparty.tile_linker_brush.cartridge", new ItemStack(cartridge).getName()), true);
+    /** Picks the kind of Cartridge the painted board spaces get; null: none, they keep theirs. Not a cartridge: ignored. */
+    public static boolean setCartridge(ServerPlayerEntity player, ItemStack brush, @Nullable Item cartridge) {
+        if (cartridge == null) {
+            brush.remove(ModComponents.LINK_CARTRIDGE);
+            player.sendMessage(Text.translatable("message.steveparty.tile_linker_brush.cartridge.keep"), true);
+        } else {
+            if (!(cartridge instanceof CartridgeItem)) return false;
+            brush.set(ModComponents.LINK_CARTRIDGE, cartridge);
+            player.sendMessage(Text.translatable("message.steveparty.tile_linker_brush.cartridge", new ItemStack(cartridge).getName()), true);
+        }
         player.playSoundToPlayer(ModSounds.SELECT_SOUND_EVENT, SoundCategory.PLAYERS, 0.5f, 1.3f);
         return true;
     }
@@ -207,6 +216,10 @@ public final class TileLinkerBrush {
         stroke.last = pos.toImmutable();
         CartridgeContainerBlockEntity origin = from == null ? null : BoardLinks.container(world, from);
         CartridgeContainerBlockEntity target = BoardLinks.container(world, pos);
+        // A kind of Cartridge picked on the wheel: the painted board space gets one (links kept)
+        if (target instanceof BoardSpaceBlockEntity && cartridge(brush) != null) {
+            WrenchActions.swapCartridge(player, world, pos, target, BoardLinks.slotOf(target, level(brush)), true);
+        }
         if (origin == null || target == null) {
             if (target != null) setAnchor(brush, world, pos);
             say(player, Text.translatable("message.steveparty.tile_linker_brush.start", BoardText.pos(pos)));

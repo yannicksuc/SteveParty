@@ -23,8 +23,8 @@ import java.util.Map;
 
 /**
  * The Tile Linker Brush's wheel, in redstone: the outer ring is the palette of the levels (the powered slot at the top,
- * then 0 to 15 in the colour of redstone dust at that power), the inner ring the kind of Cartridge put in new tiles
- * (the plain one, and each kind found in the inventory) with undo / redo at the top.
+ * then 0 to 15 in the colour of redstone dust at that power), the inner ring the kind of Cartridge the painted tiles
+ * get (none: they keep theirs; the plain one, and each kind found in the inventory) with undo / redo at the top.
  */
 final class BrushWheel implements ToolWheel.Provider {
     /** Different kinds of Cartridges shown at most. */
@@ -36,6 +36,7 @@ final class BrushWheel implements ToolWheel.Provider {
     private static final ItemStack DUST = new ItemStack(Items.REDSTONE);
     private static final ItemStack UNDO = new ItemStack(Items.REPEATER);
     private static final ItemStack REDO = new ItemStack(Items.COMPARATOR);
+    private static final ItemStack KEEP = new ItemStack(fr.lordfinn.steveparty.blocks.ModBlocks.TILE);
 
     @Override
     public boolean handles(ItemStack stack) {
@@ -70,7 +71,10 @@ final class BrushWheel implements ToolWheel.Provider {
                         0xE0503030, item(REDO), false, true, () -> send(ToolWheelPayload.Action.BRUSH_REDO, 0)));
         List<ToolWheel.Sector> cartridges = new ArrayList<>();
         Item picked = TileLinkerBrush.cartridge(brush);
-        if (picked == null) picked = ModItems.BOARD_SPACE_BEHAVIOR;
+        // First: none picked, the painted tiles keep their cartridge
+        cartridges.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.keep"),
+                Text.translatable("wheel.steveparty.brush.keep.description"), 0xE0402020, item(KEEP), picked == null, true,
+                () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, ToolWheelPayload.KEEP_CARTRIDGES)));
         boolean creative = player != null && player.getAbilities().creativeMode;
         boolean offHand = player != null && player.getOffHandStack().getItem() instanceof CartridgeItem;
         for (Map.Entry<Item, Integer> kind : cartridgeKinds(player).entrySet()) {

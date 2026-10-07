@@ -394,10 +394,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     // ---------------------------------------------------------------- the tile item keeps the contents (TileContents)
 
-    /** Broken with Silk Touch: its cartridges go with its item instead of spilling out. Server side, not saved. */
+    /** Broken for its item: its cartridges go with it instead of spilling out. Server side, not saved. */
     private boolean keepContents;
 
-    /** Its cartridges go with the dropped item instead of spilling out (broken with Silk Touch). */
+    /** Its cartridges go with the dropped item instead of spilling out. */
     public void keepContents() {
         keepContents = true;
     }

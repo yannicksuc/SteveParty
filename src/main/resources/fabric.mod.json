@@ -24,6 +24,9 @@
     ],
     "rei_common": [
       "fr.lordfinn.steveparty.compat.rei.SteveReiCommonPlugin"
+    ],
+    "modmenu": [
+      "fr.lordfinn.steveparty.client.compat.modmenu.StevepartyModMenu"
     ]
   },
   "mixins": [
@@ -42,6 +45,7 @@
   },
   "suggests": {
     "roughlyenoughitems": "*",
-    "modonomicon": "*"
+    "modonomicon": "*",
+    "modmenu": "*"
   }
 }

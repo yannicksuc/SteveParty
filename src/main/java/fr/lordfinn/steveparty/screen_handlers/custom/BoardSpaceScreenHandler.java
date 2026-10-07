@@ -87,6 +87,11 @@ public class BoardSpaceScreenHandler extends CartridgeContainerScreenHandler imp
         }
     }
 
+    /** Whether slot {@code index} holds a real item: the tile's slots and the player's, not the ghost slots. */
+    public boolean isItemSlot(int index) {
+        return index >= 0 && index < (ghostStart < 0 ? slots.size() : ghostStart);
+    }
+
     public int getActiveSlot() {
         if (inventory == null) return -1;
         return ((BoardSpaceBlockEntity)inventory).getActiveSlot();

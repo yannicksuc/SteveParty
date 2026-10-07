@@ -23,8 +23,8 @@ import java.util.function.BooleanSupplier;
 /**
  * What a tile item keeps of its tile: its cartridges, every slot with all their components (vanilla
  * {@code minecraft:container}), its own stamped look ({@code steveparty:tile-stamp}) and its size
- * ({@code steveparty:tile-size}). Taken by Silk Touch (the tile moves: its links go with it, as absolute positions) and
- * by the creative pick block with Ctrl or Shift (a copy: placed, it comes without its links, see
+ * ({@code steveparty:tile-size}). A broken tile keeps them, its cartridges without their links ({@link #dropLinks});
+ * broken with Silk Touch, it moves: its links go with it, as absolute positions. Also taken by the creative pick block with Ctrl or Shift (a copy: placed, it comes without its links, see
  * WrenchActions#dropCopiedLinks). Placing the item gives them back (BoardSpaceBlockEntity#readComponents).
  */
 public final class TileContents {
@@ -59,6 +59,25 @@ public final class TileContents {
         ItemStack result = tile.copyWithCount(1);
         result.set(DataComponentTypes.CONTAINER, ContainerComponent.fromStacks(List.of(cartridge.copyWithCount(1))));
         return result;
+    }
+
+    /**
+     * Removes the links of the cartridges held by the tile item {@code tile} (they pointed at the neighbours of the
+     * place it was taken from); the component goes when none is left, so that such tiles stack.
+     */
+    public static void dropLinks(ItemStack tile) {
+        ContainerComponent container = tile.get(DataComponentTypes.CONTAINER);
+        if (container == null) return;
+        DefaultedList<ItemStack> slots = DefaultedList.ofSize(MAX_SLOTS, ItemStack.EMPTY);
+        container.copyTo(slots);
+        boolean changed = false;
+        for (ItemStack cartridge : slots) {
+            if (!cartridge.isEmpty() && cartridge.contains(ModComponents.DESTINATIONS_COMPONENT)) {
+                cartridge.remove(ModComponents.DESTINATIONS_COMPONENT);
+                changed = true;
+            }
+        }
+        if (changed) tile.set(DataComponentTypes.CONTAINER, ContainerComponent.fromStacks(slots));
     }
 
     /** The one of {@code count} cartridges shown now: each in turn, {@link #CYCLE_MS} each. */
