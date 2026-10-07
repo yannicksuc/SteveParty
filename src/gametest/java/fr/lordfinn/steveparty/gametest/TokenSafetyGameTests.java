@@ -38,7 +38,7 @@ import net.minecraft.util.math.GlobalPos;
 /**
  * A token stays a pawn whatever happens around it: a creeper token never explodes (nor leaves the spell in its cloud
  * when a creeper does), lightning leaves tokens as they are, the vanilla actions that would turn it into something
- * else or let a player ride it do nothing, and its memories (a villager's job site) are kept.
+ * else do nothing (a horse token can still be ridden), and its memories (a villager's job site) are kept.
  */
 public class TokenSafetyGameTests implements FabricGameTest {
     private static void floor(TestContext context) {
@@ -134,9 +134,12 @@ public class TokenSafetyGameTests implements FabricGameTest {
 
             HorseEntity horse = token(context.spawnEntity(EntityType.HORSE, new BlockPos(4, 2, 4)));
             player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.GOLDEN_APPLE));
             horse.interact(player, Hand.MAIN_HAND);
-            context.assertFalse(player.startRiding(horse, true), "nobody rides a horse token, even forced");
-            context.assertFalse(player.hasVehicle(), "the player is not on the horse token");
+            context.assertFalse(player.hasVehicle() || horse.isTame(), "a horse token is neither fed nor tamed with food");
+            player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+            horse.interact(player, Hand.MAIN_HAND);
+            context.assertTrue(player.getVehicle() == horse, "a player can ride a tiny horse token, with an empty hand");
         } finally {
             disconnect(context, player);
         }

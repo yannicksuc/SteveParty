@@ -24,7 +24,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * The vanilla right-click actions that would break a pawn do nothing on a token: picking it up in a bucket (it would
  * leave the board as a plain mob), shearing a mooshroom or curing a zombie villager (both turn it into another mob,
  * without its token data), lighting a creeper, and taming, sitting, feeding or saddling pets and horses (they would
- * change its pose or grow it up). Mounting a token is refused in {@link TokenRidingMixin}.
+ * change its pose or grow it up). Mounting a horse token with an empty hand still works: riding a tiny horse pawn
+ * is part of the fun.
  * <p>
  * The harmless ones keep working (shearing a sheep, milking, dyeing, brushing...), and so do the items acting on
  * entities (token, wand, name tag): PASS lets the held item handle the click.
@@ -41,7 +42,7 @@ public abstract class TokenVanillaActionsMixin {
     @Unique
     private static boolean steveparty$breaksPawn(MobEntity mob, ItemStack stack) {
         return mob instanceof TameableEntity
-                || mob instanceof AbstractHorseEntity
+                || (mob instanceof AbstractHorseEntity && !stack.isEmpty())
                 || (mob instanceof Bucketable && stack.isOf(Items.WATER_BUCKET))
                 || (mob instanceof MooshroomEntity && stack.isOf(Items.SHEARS))
                 || (mob instanceof ZombieVillagerEntity && stack.isOf(Items.GOLDEN_APPLE))
