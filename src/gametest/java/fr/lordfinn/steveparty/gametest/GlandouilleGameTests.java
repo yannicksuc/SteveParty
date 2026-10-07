@@ -30,6 +30,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.property.Properties;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.Hand;
+import net.minecraft.world.GameMode;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -233,18 +235,123 @@ public class GlandouilleGameTests implements FabricGameTest {
         List<GlandouilleEntity> first = tower(context, GlandouilleVariant.CLASSIC, 5, new BlockPos(1, 1, 1));
         List<GlandouilleEntity> second = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(5, 1, 5));
         ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 0f);
-        context.assertTrue(GlandouilleTowers.pickUp(player, second.get(1)), "picks up the whole tower");
+        context.assertTrue(GlandouilleTowers.pickUp(player, second.getFirst()), "picks up the whole tower");
         context.assertEquals(GlandouilleTowers.carried(player), second.getFirst(), "its bottom one rides the player");
         context.assertTrue(GlandouilleTowers.stackCarriedOn(player, first.get(2)), "stacked on the other tower");
         context.assertEquals(GlandouilleTowers.height(first.getFirst()), 8, "a tower of 8");
         context.assertTrue(GlandouilleTowers.carried(player) == null, "nothing carried any more");
         // and back: picked up again, put down on the ground
-        context.assertTrue(GlandouilleTowers.pickUp(player, GlandouilleTowers.top(first.getFirst())), "picks up the tower of 8");
+        context.assertTrue(GlandouilleTowers.pickUp(player, first.getFirst()), "picks up the tower of 8");
         Vec3d ground = Vec3d.ofBottomCenter(context.getAbsolutePos(new BlockPos(6, 1, 1)));
         context.assertTrue(GlandouilleTowers.putDown(player, ground, 0f), "puts it down");
         context.assertTrue(first.getFirst().getVehicle() == null && first.getFirst().getPos().distanceTo(ground) < 0.01, "standing there");
         context.assertEquals(GlandouilleTowers.height(first.getFirst()), 8, "still 8 high");
         context.complete();
+    }
+
+    /**
+     * A plain right click with an empty hand on one of a tower picks it up with the ones above it, held in front of the
+     * player's chest; the ones below stay standing where they are.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aRightClickSplitsTheTowerAtTheClickedOne(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 4, new BlockPos(5, 1, 3));
+        GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2), d = members.get(3);
+        a.setAiDisabled(true);
+        ServerPlayerEntity player = player(context, new BlockPos(3, 1, 3), -90f); // facing +x
+        context.waitAndRun(2, () -> {
+            Vec3d aStart = a.getPos();
+            context.assertTrue(c.interact(player, Hand.MAIN_HAND).isAccepted(), "a plain right click");
+            context.assertEquals(GlandouilleTowers.carried(player), c, "the clicked one is carried");
+            context.assertTrue(d.getVehicle() == c, "with the one above it");
+            context.assertTrue(b.getVehicle() == a && GlandouilleTowers.height(a) == 2, "the ones below stay a tower of 2");
+            context.waitAndRun(2, () -> {
+                context.assertTrue(horizontal(a.getPos(), aStart) < 0.05, "they did not move");
+                Vec3d held = GlandouilleTowers.heldPos(player, c);
+                context.assertTrue(c.getPos().distanceTo(held) < 0.05, "held where it should be: " + c.getPos().distanceTo(held));
+                context.assertTrue(c.getX() - player.getX() > 0.4, "in front of the player: " + (c.getX() - player.getX()));
+                context.assertTrue(c.getY() < player.getEyeY() - 0.5, "at the chest, not on the head: " + (c.getY() - player.getY()));
+                // a lone one is picked up the same way
+                GlandouilleEntity lone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 1));
+                ServerPlayerEntity other = player(context, new BlockPos(2, 1, 1), 90f);
+                context.assertTrue(lone.interact(other, Hand.MAIN_HAND).isAccepted(), "a right click on a lone one");
+                context.assertEquals(GlandouilleTowers.carried(other), lone, "carried");
+                context.complete();
+            });
+        });
+    }
+
+    /** With a stack in hand, a right click on another tower (any of it) stacks the carried one on top of it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aRightClickWithAStackPutsItOnAnotherTower(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> carried = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
+        List<GlandouilleEntity> target = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(5, 1, 5));
+        target.getFirst().setAiDisabled(true);
+        ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 0f);
+        context.assertTrue(carried.getFirst().interact(player, Hand.MAIN_HAND).isAccepted(), "picks up the tower of 2");
+        context.waitAndRun(2, () -> {
+            context.assertTrue(target.getFirst().interact(player, Hand.MAIN_HAND).isAccepted(), "right click on the other tower");
+            context.assertTrue(GlandouilleTowers.carried(player) == null, "nothing carried any more");
+            context.assertEquals(GlandouilleTowers.height(target.getFirst()), 5, "a tower of 5");
+            context.assertTrue(GlandouilleTowers.top(target.getFirst()) == carried.get(1), "the carried one on top, in order");
+            context.complete();
+        });
+    }
+
+    /** A carrier hit by anyone drops the stack on the ground in front of him, still stacked. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aHitCarrierDropsTheStack(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
+        ServerPlayerEntity player = player(context, new BlockPos(3, 1, 3), -90f); // facing +x
+        player.changeGameMode(GameMode.SURVIVAL);
+        PigEntity pig = context.spawnMob(EntityType.PIG, new BlockPos(1, 1, 5));
+        members.getFirst().setAiDisabled(true);
+        context.assertTrue(GlandouilleTowers.pickUp(player, members.getFirst()), "carried");
+        context.waitAndRun(2, () -> {
+            player.damage(context.getWorld().getDamageSources().mobAttack(pig), 1f);
+            context.assertTrue(GlandouilleTowers.carried(player) == null, "dropped");
+            GlandouilleEntity bottom = members.getFirst();
+            context.assertTrue(bottom.getVehicle() == null, "on its own feet");
+            context.assertEquals(GlandouilleTowers.height(bottom), 2, "still stacked");
+            context.waitAndRun(10, () -> {
+                context.assertTrue(bottom.isOnGround(), "on the ground");
+                context.assertTrue(bottom.getX() - player.getX() > 0.3 && horizontal(bottom.getPos(), player.getPos()) < 1.2,
+                        "in front of him: " + (bottom.getX() - player.getX()));
+                context.complete();
+            });
+        });
+    }
+
+    /**
+     * A left click with a stack in hand throws its bottom one forward, shot like a flicked one; the rest stays in hand,
+     * one shorter, and the thrower is never hit by it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aLeftClickThrowsTheBottomOne(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(1, 1, 1));
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
+        context.assertTrue(GlandouilleTowers.pickUp(player, members.getFirst()), "carried");
+        context.waitAndRun(2, () -> {
+            GlandouilleEntity thrown = members.getFirst();
+            double startX = player.getX();
+            context.assertTrue(GlandouilleTowers.throwCarried(player), "thrown");
+            context.assertEquals(thrown.getMood(), Mood.FLYING, "it flies");
+            context.assertEquals(GlandouilleTowers.carried(player), members.get(1), "the next one is now at the bottom of the hands");
+            context.assertEquals(GlandouilleTowers.height(members.get(1)), 2, "one shorter");
+            context.waitAndRun(5, () -> {
+                context.assertTrue(thrown.getX() - startX > 2, "flew forward: " + (thrown.getX() - startX));
+                context.assertEquals(GlandouilleTowers.height(members.get(1)), 2, "the rest still in hand");
+                context.assertFalse(player.hasStatusEffect(ModEffects.DAZED), "the thrower is not dazed");
+                GlandouilleTowers.throwCarried(player);
+                GlandouilleTowers.throwCarried(player);
+                context.assertTrue(GlandouilleTowers.carried(player) == null, "the last one thrown: empty hands");
+                context.complete();
+            });
+        });
     }
 
     /** A tower holds while it walks; it falls apart, all dizzy, only when its bottom one charges into a wall. */
