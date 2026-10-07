@@ -3,7 +3,7 @@
   "name": "book.steveparty.guide.board.linking.name",
   "description": "book.steveparty.guide.board.linking.description",
   "icon": {
-    "item": "steveparty:wrench"
+    "item": "steveparty:tile_linker_brush"
   },
   "x": 2,
   "y": -4,
@@ -33,6 +33,10 @@
       "type": "modonomicon:text",
       "text": "book.steveparty.guide.board.linking.page1.text",
       "title": "book.steveparty.guide.board.linking.page1.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:tile_linker_brush"
     }
   ]
 }
