@@ -1,6 +1,9 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -26,16 +29,17 @@ import java.util.List;
 
 /**
  * The paint the Tile Linker Brush leaves on the tiles it strokes, seen by its holder (all client side, a few quads): a
- * blot on each tile reached and a band from tile to tile along the stroke, in the colour of the brush's level (the
- * redstone wire of that power), pale where the stroke goes over a link again (erasing it). The paint stays wet while
- * the stroke goes on, and fades away once the button is released.
+ * blot on each tile reached, in the colour of the brush's level (the redstone wire of that power), and a band from
+ * tile to tile along the stroke in the colour of what it did: green, a link made; red, a link erased; white, nothing.
+ * While the stroke is held, arrows flow along each of its links the way they lead, in the same colours, and the
+ * links already leaving the aimed tile flow in white. The paint fades away once the button is released.
  */
 final class BrushTrail {
     private static final int FADE_TICKS = 40;
     private static final int MAX_MARKS = 512;
     private static final float WET_ALPHA = 0.8f;
     private static final double BAND = 0.3, BLOT = 0.55, LIFT = 0.03;
-    private static final int ERASED = 0xE8E8E8;
+    static final int LINKED = 0x4CFF4C, ERASED = 0xFF4040, NOTHING = 0xF0F0F0;
     /** The look is followed between two ticks as the server does: a quick sweep paints every tile it crosses. */
     private static final float SWEEP_STEP = 1.5f;
     private static final int MAX_SWEEP_STEPS = 16;
@@ -49,7 +53,8 @@ final class BrushTrail {
         }
     }
 
-    private record Mark(Vec3d from, Vec3d to, boolean erased, Stroke stroke) {
+    /** What reaching a tile did: the colour of its band and arrows. */
+    private record Mark(@Nullable BlockPos fromTile, BlockPos toTile, Vec3d from, Vec3d to, int outcome, Stroke stroke) {
     }
 
     private static final List<Mark> MARKS = new ArrayList<>();
@@ -126,11 +131,24 @@ final class BrushTrail {
     /** The stroke reaches a tile: a blot on it, and the band from the previous one (pale over a link it erases). */
     private static void reach(ClientWorld world, ClientPlayerEntity player, BlockPos tile) {
         Vec3d at = BoardSpaces.standPos(world, tile).add(0, LIFT, 0);
-        boolean erased = last != null && BrushOverlay.linked(world, player.getActiveItem(), last, tile);
-        MARKS.add(new Mark(lastAt == null ? at : lastAt, at, erased, current));
+        MARKS.add(new Mark(last, tile.toImmutable(), lastAt == null ? at : lastAt, at, outcome(world, player.getActiveItem(), last, tile), current));
         if (MARKS.size() > MAX_MARKS) MARKS.removeFirst();
         last = tile.toImmutable();
         lastAt = at;
+    }
+
+    /** Whether the held stroke went from {@code from} to {@code to} (its own arrows show it). */
+    private static boolean inStroke(BlockPos from, BlockPos to) {
+        for (Mark mark : MARKS) if (mark.stroke == current && from.equals(mark.fromTile) && to.equals(mark.toTile)) return true;
+        return false;
+    }
+
+    /** What going from {@code from} to {@code to} does (as the server will): erase their link, make one, or nothing. */
+    static int outcome(ClientWorld world, ItemStack brush, @Nullable BlockPos from, BlockPos to) {
+        if (from == null || from.equals(to)) return NOTHING;
+        if (BrushOverlay.linked(world, brush, from, to)) return ERASED;
+        return BoardLinks.container(world, from) != null && BoardLinks.container(world, to) instanceof BoardSpaceBlockEntity
+                ? LINKED : NOTHING;
     }
 
     private static void render(WorldRenderContext context) {
@@ -146,19 +164,47 @@ final class BrushTrail {
             float alpha = WET_ALPHA;
             if (mark.stroke.ended >= 0) alpha *= 1 - MathHelper.clamp((now - mark.stroke.ended) / FADE_TICKS, 0, 1);
             if (alpha < 0.02f) continue;
-            int color = ((int) (alpha * (mark.erased ? 0.6f : 1f) * 255) << 24) | (mark.erased ? ERASED : mark.stroke.rgb);
+            int band = ((int) (alpha * 0.85f * 255) << 24) | mark.outcome;
+            int color = ((int) (alpha * 255) << 24) | mark.stroke.rgb;
             Vec3d a = mark.from.subtract(cam), b = mark.to.subtract(cam);
             double dx = b.x - a.x, dz = b.z - a.z, length = Math.sqrt(dx * dx + dz * dz);
             if (length > 1.0E-3) {
                 double sx = -dz / length * BAND / 2, sz = dx / length * BAND / 2;
                 quad(consumer, matrix, a.x - sx, a.y, a.z - sz, a.x + sx, a.y, a.z + sz,
-                        b.x + sx, b.y, b.z + sz, b.x - sx, b.y, b.z - sz, color);
+                        b.x + sx, b.y, b.z + sz, b.x - sx, b.y, b.z - sz, band);
             }
             // The blot a little above the band: no flicker where they overlap
             double r = BLOT / 2, y = b.y + 0.004;
             quad(consumer, matrix, b.x - r, y, b.z - r, b.x + r, y, b.z - r, b.x + r, y, b.z + r, b.x - r, y, b.z + r, color);
         }
         consumers.draw(RenderLayer.getDebugQuads());
+        if (current != null) arrows(context, client, consumers, now);
+    }
+
+    /** The live preview of the held stroke: arrows flowing along its links, and along those leaving the aimed tile. */
+    private static void arrows(WorldRenderContext context, MinecraftClient client, VertexConsumerProvider.Immediate consumers, float now) {
+        ClientPlayerEntity player = client.player;
+        if (player == null || client.world == null) return;
+        MatrixStack matrices = context.matrixStack();
+        double phase = now / 20.0 * 2.5;
+        Vec3d up = new Vec3d(0, 0.12, 0);
+        for (Mark mark : MARKS) {
+            if (mark.stroke != current || mark.from.equals(mark.to)) continue;
+            WorldDraw.path(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0xF0000000 | mark.outcome,
+                    0.45, 0.45, phase, 0.3, 0);
+        }
+        BlockPos aimed = BrushAim.aimed(player, client.world, context.tickCounter().getTickDelta(true));
+        CartridgeContainerBlockEntity container = aimed == null ? null : BoardLinks.container(client.world, aimed);
+        if (container != null) {
+            ItemStack brush = player.getActiveItem();
+            Vec3d from = BoardSpaces.standPos(client.world, aimed).add(0, LIFT, 0).add(up);
+            for (BlockPos to : BoardLinks.links(container, BoardLinks.slotOf(container, TileLinkerBrush.level(brush)))) {
+                if (inStroke(aimed, to)) continue;
+                WorldDraw.path(matrices, consumers, context.camera(), from, BoardSpaces.standPos(client.world, to).add(0, LIFT, 0).add(up),
+                        0xC0000000 | NOTHING, 0.4, 0.45, phase, 0.3, 0);
+            }
+        }
+        consumers.draw();
     }
 
     /** A quad (camera space), both sides drawn. */
