@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.OutputMode;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Players;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.RedstoneMode;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Source;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleSearch;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
@@ -22,10 +23,19 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.block.Block;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
+import net.minecraft.stat.StatType;
+import net.minecraft.stat.Stats;
+import net.minecraft.util.Identifier;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -66,15 +76,29 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private static final ItemStack[] LEGEND_ITEMS = {ItemStack.EMPTY, new ItemStack(Items.REDSTONE), new ItemStack(Items.COMPARATOR)};
     private static final String[] LEGEND_KEYS = {"legend.power", "legend.reset", "legend.pulse"};
 
-    /** Criterion presets: criterion and the key of its description. */
-    private static final String[][] PRESETS = {
-            {ModScoreboardCriteria.LANDED_ON_POLE_ID, "goal.landed_on_pole"},
-            {"minecraft.custom:minecraft.jump", "goal.jump"},
-            {"deathCount", "goal.deaths"},
-            {"playerKillCount", "goal.player_kills"},
-            {"totalKillCount", "goal.kills"},
-            {"dummy", "goal.dummy"},
+    /**
+     * The common goals (offered when nothing is typed, and cycled by the presets button): value, icon, key of its
+     * label (null: the statistic's own name), key of its meaning (null: a point per increase), keywords' key.
+     */
+    private static final Object[][] PRESETS = {
+            {ModScoreboardCriteria.LANDED_ON_POLE_ID, ModBlocks.GOAL_POLE.asItem(), "goal.landed_on_pole.label", "goal.landed_on_pole", "landed_on_pole"},
+            {"minecraft.custom:minecraft.jump", Items.RABBIT_FOOT, null, null, "jump"},
+            {"deathCount", Items.SKELETON_SKULL, "goal.deaths", null, "deaths"},
+            {"minecraft.custom:minecraft.mob_kills", Items.ZOMBIE_HEAD, null, null, "mob_kills"},
+            {"playerKillCount", Items.PLAYER_HEAD, "goal.player_kills", null, "player_kills"},
+            {"totalKillCount", Items.IRON_SWORD, "goal.kills", null, "kills"},
+            {"minecraft.custom:minecraft.walk_one_cm", Items.LEATHER_BOOTS, null, null, "walk"},
+            {"dummy", Items.COMMAND_BLOCK, "goal.dummy.label", "goal.dummy", "dummy"},
     };
+    /** The other simple criteria of the scoreboard: name and icon (label: {@code goal.criterion.<name>}). */
+    private static final Object[][] CRITERIA = {
+            {"trigger", Items.LEVER}, {"health", Items.GLISTERING_MELON_SLICE}, {"xp", Items.EXPERIENCE_BOTTLE},
+            {"level", Items.EXPERIENCE_BOTTLE}, {"food", Items.COOKED_BEEF}, {"air", Items.GLASS_BOTTLE},
+            {"armor", Items.IRON_CHESTPLATE},
+    };
+
+    /** A goal of the search: its icon and what it means under the field. */
+    private record Goal(Item icon, Text meaning) {}
 
     /** What a field's content means, and whether it can be saved. */
     private record Check(boolean valid, Text meaning) {}
@@ -98,12 +122,20 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     /** The players choice: its meaning, and whether its field (distance, selector) is valid. */
     private Check playersCheck = new Check(true, Text.empty());
     private Check goalCheck = new Check(true, Text.empty());
+    /** The icon of the goal in the field (instead of a check mark), null if none. */
+    private Item goalIcon;
     private boolean openSoundPlayed = false;
-    /** The objectives of the server (name, criterion), for the goal's completion. */
+    /** The objectives of the server (name, criterion, display name), for the goal's completion. */
     private final java.util.List<String[]> objectives = new java.util.ArrayList<>();
-    /** What the goal typed so far may be completed with, and the one picked (Up / Down; Tab or a click takes it). */
-    private java.util.List<String> completions = java.util.List.of();
+    /** Every goal that can be searched: objectives, common goals, criteria, statistics (in that order). */
+    private final java.util.List<GoalPoleSearch.Entry<Goal>> goals = new java.util.ArrayList<>();
+    /** The goal last taken from the list: the field shows its label, its value is saved. */
+    private GoalPoleSearch.Entry<Goal> picked;
+    /** What the goal typed so far may be completed with, and the one picked (Up / Down; Tab, Enter or a click takes it). */
+    private java.util.List<GoalPoleSearch.Entry<Goal>> completions = java.util.List.of();
     private int completion = 0;
+    /** Whether the goal field was focused when the completions were last computed. */
+    private boolean completionsFocused;
     /** Rows of the completion list shown under the goal field. */
     private static final int COMPLETION_ROWS = 5, COMPLETION_ROW = 11;
 
@@ -120,8 +152,103 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         this.outputMode = GoalPoleBaseBlockEntity.readEnum(settings, "OutputMode", OutputMode.values(), OutputMode.PULSE);
         for (net.minecraft.nbt.NbtElement element : settings.getList("Objectives", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) {
             NbtCompound objective = (NbtCompound) element;
-            objectives.add(new String[]{objective.getString("Name"), objective.getString("Criterion")});
+            objectives.add(new String[]{objective.getString("Name"), objective.getString("Criterion"), objective.getString("Display")});
         }
+        buildGoals();
+        picked = GoalPoleSearch.byValue(handler.getGoal(), goals);
+    }
+
+    // ------------------------------------------------------------------ the goals to search
+
+    private void buildGoals() {
+        java.util.List<GoalPoleSearch.Entry<Goal>> others = new java.util.ArrayList<>();
+        java.util.Set<String> added = new java.util.HashSet<>();
+        Text perIncrease = Text.translatable(KEY + "goal.stat.meaning");
+        for (Object[] preset : PRESETS) {
+            String value = (String) preset[0];
+            String label = preset[2] != null ? Text.translatable(KEY + preset[2]).getString()
+                    : customStatLabel(value.substring(value.indexOf(':') + 1));
+            others.add(new GoalPoleSearch.Entry<>(value, label, keywords("goal.keywords." + preset[4]), GoalPoleSearch.GROUP_COMMON,
+                    new Goal((Item) preset[1], preset[3] != null ? Text.translatable(KEY + preset[3]) : perIncrease)));
+            added.add(value);
+        }
+        for (Object[] criterion : CRITERIA) {
+            String value = (String) criterion[0];
+            others.add(new GoalPoleSearch.Entry<>(value, Text.translatable(KEY + "goal.criterion." + value).getString(), "",
+                    GoalPoleSearch.GROUP_CRITERION, new Goal((Item) criterion[1], perIncrease)));
+        }
+        for (StatType<?> type : Registries.STAT_TYPE) addStats(type, others, added, perIncrease);
+        for (String[] objective : objectives) {
+            GoalPoleSearch.Entry<Goal> criterion = GoalPoleSearch.byValue(objective[1], others);
+            String criterionLabel = criterion != null ? criterion.label() : objective[1];
+            String label = objective[2].isEmpty() ? objective[0] : objective[2];
+            goals.add(new GoalPoleSearch.Entry<>(objective[0], label, objective[0] + " " + criterionLabel + " " + objective[1],
+                    GoalPoleSearch.GROUP_OBJECTIVE, new Goal(Items.NAME_TAG, Text.translatable(KEY + "goal.objective", criterionLabel))));
+        }
+        goals.addAll(others);
+    }
+
+    /** The name of a custom statistic ({@code minecraft.jump}), as in the statistics screen. */
+    private static String customStatLabel(String id) {
+        return Text.translatable("stat." + id).getString();
+    }
+
+    /** Extra words to find a goal with, in the client's language (none if the key is missing). */
+    private static String keywords(String key) {
+        return I18n.hasTranslation(KEY + key) ? I18n.translate(KEY + key) : "";
+    }
+
+    /** The statistics of a type, named as {@code Stat.getName} does ({@code minecraft.mined:minecraft.stone}). */
+    private static <T> void addStats(StatType<T> type, java.util.List<GoalPoleSearch.Entry<Goal>> into,
+                                     java.util.Set<String> added, Text perIncrease) {
+        Identifier typeId = Registries.STAT_TYPE.getId(type);
+        if (typeId == null) return;
+        String typeName = typeId.toString().replace(':', '.');
+        boolean known = I18n.hasTranslation(KEY + "stat." + typeId.getPath());
+        String words = known ? keywords("stat." + typeId.getPath() + ".keywords") : "";
+        for (T value : type.getRegistry()) {
+            Identifier valueId = type.getRegistry().getId(value);
+            if (valueId == null) continue;
+            String id = typeName + ":" + valueId.toString().replace(':', '.');
+            if (added.contains(id)) continue;
+            Text name;
+            Item icon;
+            if (type == Stats.CUSTOM) {
+                into.add(new GoalPoleSearch.Entry<>(id, customStatLabel(valueId.toString().replace(':', '.')), "",
+                        GoalPoleSearch.GROUP_CRITERION, new Goal(Items.PAPER, perIncrease)));
+                continue;
+            } else if (value instanceof Block block) {
+                if (block.getDefaultState().isAir()) continue;
+                name = block.getName();
+                icon = block.asItem() == Items.AIR ? Items.PAPER : block.asItem();
+            } else if (value instanceof Item item) {
+                if (item == Items.AIR || (type == Stats.BROKEN && !item.getDefaultStack().isDamageable())) continue;
+                name = item.getName();
+                icon = item;
+            } else if (value instanceof EntityType<?> entity) {
+                name = entity.getName();
+                SpawnEggItem egg = SpawnEggItem.forEntity(entity);
+                icon = egg != null ? egg : Items.PAPER;
+            } else {
+                continue;
+            }
+            String label = known ? Text.translatable(KEY + "stat." + typeId.getPath(), name).getString()
+                    : type.getName().getString() + ": " + name.getString();
+            into.add(new GoalPoleSearch.Entry<>(id, label, words, GoalPoleSearch.GROUP_STAT, new Goal(icon, perIncrease)));
+        }
+    }
+
+    /** The goal the field stands for: the one taken from the list, else the one with that label or value; null if none. */
+    private GoalPoleSearch.Entry<Goal> currentGoal() {
+        String text = goalField.getText();
+        if (picked != null && text.equals(picked.label())) return picked;
+        return GoalPoleSearch.resolve(text, goals);
+    }
+
+    /** The value saved for the goal: the goal's, else what is typed (a criterion of another mod, for instance). */
+    private String goalValue() {
+        GoalPoleSearch.Entry<Goal> goal = currentGoal();
+        return goal != null ? goal.value() : goalField.getText().strip();
     }
 
     @Override
@@ -130,14 +257,14 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         cycleButtons.clear();
         // init() runs again on every resize: keep what the player already typed / chose
         String selectorText = selectorField != null ? selectorField.getText() : handler.getSelector();
-        String goalText = goalField != null ? goalField.getText() : handler.getGoal();
+        String goalText = goalField != null ? goalField.getText() : picked != null ? picked.label() : handler.getGoal();
         String radiusText = radiusField != null ? radiusField.getText() : String.valueOf(handler.getSettings().getInt("Radius"));
 
         // ---- Left: points
         int lx = x + MARGIN;
         addDrawableChild(cycle(lx, y + TOP, COLUMN, "source", Source.values(), () -> source, v -> source = v));
         goalField = createField(lx, y + TOP + ROW, COLUMN - PRESET_SIZE - 4 - 12, KEY + "goal", goalText);
-        goalField.setPlaceholder(Text.literal(ModScoreboardCriteria.LANDED_ON_POLE_ID).formatted(Formatting.DARK_GRAY));
+        goalField.setPlaceholder(Text.translatable(KEY + "goal.placeholder").formatted(Formatting.DARK_GRAY));
         presetsButton = addDrawableChild(new PartyButton(lx + COLUMN - PRESET_SIZE, y + TOP + ROW, PRESET_SIZE, FIELD_HEIGHT,
                 Text.translatable(KEY + "presets"), b -> cyclePreset(Screen.hasShiftDown() ? -1 : 1))
                 .content(GoalPoleBaseScreen::drawPresetIcon));
@@ -318,15 +445,15 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     }
 
     private Check checkGoal(String goal) {
-        if (goal.isEmpty()) return new Check(false, Text.translatable(KEY + "goal.empty"));
-        // An objective of the server: its scores' increases are the points
-        for (String[] objective : objectives) {
-            if (objective[0].equals(goal)) return new Check(true, Text.translatable(KEY + "goal.objective", objective[1]));
+        goalIcon = null;
+        if (goal.isBlank()) return new Check(false, Text.translatable(KEY + "goal.empty"));
+        GoalPoleSearch.Entry<Goal> found = currentGoal();
+        if (found != null) {
+            goalIcon = found.data().icon();
+            return new Check(true, found.data().meaning());
         }
-        for (String[] preset : PRESETS) {
-            if (preset[0].equals(goal)) return new Check(true, Text.translatable(KEY + preset[1]));
-        }
-        return GoalPoleBaseBlockEntity.parseGoal(goal).isPresent()
+        // Typed as is: a criterion the list does not know (another mod's, a team's...)
+        return GoalPoleBaseBlockEntity.parseGoal(goal.strip()).isPresent()
                 ? new Check(true, Text.translatable(KEY + "goal.custom"))
                 : new Check(false, Text.translatable(KEY + "goal.invalid"));
     }
@@ -334,26 +461,19 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     // ------------------------------------------------------------------ completion of the goal
 
     /**
-     * What the goal typed so far may be completed with: the objectives of the server, then the presets' criteria,
-     * those starting with it first, then those containing it (case ignored); nothing once it is one of them.
+     * What the goal typed so far may be completed with ({@link GoalPoleSearch}: objectives first, then the common
+     * goals, criteria and statistics); with nothing typed, the objectives and the common goals; nothing once the
+     * field is one of them.
      */
     private void updateCompletions() {
+        completionsFocused = goalField.isFocused();
         String typed = goalField.getText();
-        String lower = typed.toLowerCase(Locale.ROOT);
-        java.util.List<String> starts = new java.util.ArrayList<>(), contains = new java.util.ArrayList<>();
-        java.util.List<String> all = new java.util.ArrayList<>();
-        for (String[] objective : objectives) all.add(objective[0]);
-        for (String[] preset : PRESETS) if (!all.contains(preset[0])) all.add(preset[0]);
-        if (source == Source.CRITERION && goalField.isFocused() && !all.contains(typed)) {
-            for (String candidate : all) {
-                String name = candidate.toLowerCase(Locale.ROOT);
-                if (name.startsWith(lower)) starts.add(candidate);
-                else if (!lower.isEmpty() && name.contains(lower)) contains.add(candidate);
-            }
-        }
-        starts.addAll(contains);
-        if (!starts.equals(completions)) {
-            completions = java.util.List.copyOf(starts);
+        GoalPoleSearch.Entry<Goal> current = currentGoal();
+        java.util.List<GoalPoleSearch.Entry<Goal>> found = source == Source.CRITERION && completionsFocused
+                && (current == null || !GoalPoleSearch.normalize(typed).equals(current.normalizedLabel()))
+                ? GoalPoleSearch.search(typed, goals) : java.util.List.of();
+        if (!found.equals(completions)) {
+            completions = found;
             completion = 0;
         }
         showSuggestion();
@@ -362,16 +482,33 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     /** The rest of the picked completion, in grey after the cursor, when it starts with what is typed. */
     private void showSuggestion() {
         String typed = goalField.getText();
-        String picked = completions.isEmpty() ? null : completions.get(completion);
-        goalField.setSuggestion(picked != null && picked.startsWith(typed) && goalField.getCursor() == typed.length()
-                ? picked.substring(typed.length()) : null);
+        String label = completions.isEmpty() ? null : completions.get(completion).label();
+        goalField.setSuggestion(label != null && !typed.isEmpty() && goalField.getCursor() == typed.length()
+                && label.toLowerCase(Locale.ROOT).startsWith(typed.toLowerCase(Locale.ROOT))
+                ? label.substring(typed.length()) : null);
     }
 
-    private void complete(String with) {
-        goalField.setText(with);
+    private void complete(GoalPoleSearch.Entry<Goal> with) {
+        picked = with;
+        goalField.setText(with.label());
         goalField.setCursorToEnd(false);
         completions = java.util.List.of();
         refresh();
+    }
+
+    /** The technical id of a goal, discreetly (dark grey), for tooltips. */
+    private static Text idLine(GoalPoleSearch.Entry<Goal> goal) {
+        return Text.literal(goal.value()).formatted(Formatting.DARK_GRAY);
+    }
+
+    /** An item drawn small (scale of 16 px), e.g. a goal's icon in its field or in the list. */
+    private static void drawSmallItem(DrawContext context, Item item, int x, int y, float scale) {
+        var matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(x, y, 0);
+        matrices.scale(scale, scale, 1f);
+        context.drawItem(new ItemStack(item), 0, 0);
+        matrices.pop();
     }
 
     private boolean showsCompletions() {
@@ -391,7 +528,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         return y + TOP + ROW + FIELD_HEIGHT;
     }
 
-    /** The completion list under the goal field, over what is there: an objective's criterion after its name. */
+    /** The completion list under the goal field, over what is there: each goal's icon and readable name. */
     private void drawCompletions(DrawContext context, int mouseX, int mouseY) {
         int first = firstCompletionRow(), rows = Math.min(COMPLETION_ROWS, completions.size());
         int width = COLUMN - PRESET_SIZE - 4, left = completionsX(), top = completionsY();
@@ -401,17 +538,13 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         context.fill(left, top, left + width, top + rows * COMPLETION_ROW + 2, 0xF0202428);
         for (int i = 0; i < rows; i++) {
             int index = first + i, rowY = top + 1 + i * COMPLETION_ROW;
-            String name = completions.get(index);
+            GoalPoleSearch.Entry<Goal> goal = completions.get(index);
             boolean hovered = mouseX >= left && mouseX < left + width && mouseY >= rowY && mouseY < rowY + COMPLETION_ROW;
             if (index == completion || hovered) context.fill(left + 1, rowY, left + width - 1, rowY + COMPLETION_ROW, 0x50FFFFFF);
-            String criterion = null;
-            for (String[] objective : objectives) if (objective[0].equals(name)) criterion = objective[1];
-            String shown = fit(textRenderer, name, width - 6, false);
-            context.drawText(textRenderer, shown, left + 3, rowY + 2, index == completion ? 0xFFFFE36A : 0xFFE0E0E0, false);
-            int nameWidth = textRenderer.getWidth(shown) + 6;
-            if (criterion != null && width - 6 - nameWidth > 12) {
-                context.drawText(textRenderer, fit(textRenderer, criterion, width - 6 - nameWidth, false), left + 3 + nameWidth, rowY + 2, 0xFF8A949A, false);
-            }
+            drawSmallItem(context, goal.data().icon(), left + 2, rowY, 0.625f);
+            String shown = fit(textRenderer, goal.label(), width - 17, false);
+            context.drawText(textRenderer, shown, left + 14, rowY + 2,
+                    index == completion ? 0xFFFFE36A : goal.group() == GoalPoleSearch.GROUP_OBJECTIVE ? 0xFFB8E0FF : 0xFFE0E0E0, false);
         }
         if (completions.size() > COMPLETION_ROWS) {
             String more = (first + rows) + "/" + completions.size();
@@ -440,14 +573,15 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     }
 
     private void cyclePreset(int direction) {
+        GoalPoleSearch.Entry<Goal> goal = currentGoal();
         int current = -1;
         for (int i = 0; i < PRESETS.length; i++) {
-            if (PRESETS[i][0].equals(goalField.getText())) current = i;
+            if (goal != null && PRESETS[i][0].equals(goal.value())) current = i;
         }
         int next = current < 0 ? (direction > 0 ? 0 : PRESETS.length - 1)
                 : Math.floorMod(current + direction, PRESETS.length);
-        goalField.setText(PRESETS[next][0]);
-        goalField.setCursorToStart(false);
+        GoalPoleSearch.Entry<Goal> preset = GoalPoleSearch.byValue((String) PRESETS[next][0], goals);
+        if (preset != null) complete(preset);
     }
 
     private void submit() {
@@ -455,7 +589,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         if (!playersCheck.valid() || !goalCheck.valid()) return;
         NbtCompound settings = new NbtCompound();
         settings.putString("Source", source.name());
-        settings.putString("Criterion", source == Source.CRITERION ? goalField.getText() : handler.getGoal());
+        settings.putString("Criterion", source == Source.CRITERION ? goalValue() : handler.getGoal());
         settings.putString("Selector", selectorField.getText());
         settings.putString("Players", players.name());
         if (players == Players.RADIUS) settings.putInt("Radius", Integer.parseInt(radiusField.getText()));
@@ -478,7 +612,14 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         context.fill(x + RIGHT_X - GAP / 2 + 1, y + TOP - 12, x + RIGHT_X - GAP / 2 + 2, y + BUTTONS_Y - 20, 0xFFFFFFFF);
 
         if (source == Source.CRITERION) {
-            drawField(context, x + MARGIN, y + TOP + ROW, COLUMN - PRESET_SIZE - 4, goalField, goalCheck);
+            int width = COLUMN - PRESET_SIZE - 4;
+            if (goalCheck.valid() && goalIcon != null) {
+                // The goal's icon instead of a check mark
+                PartyGui.inset(context, x + MARGIN, y + TOP + ROW, width, FIELD_HEIGHT, 0xFF3B4247, goalField.isFocused(), false);
+                drawSmallItem(context, goalIcon, x + MARGIN + width - 12, y + TOP + ROW + 3, 0.75f);
+            } else {
+                drawField(context, x + MARGIN, y + TOP + ROW, width, goalField, goalCheck);
+            }
         }
         if (playersHasField()) {
             drawField(context, x + MARGIN, y + playersFieldY(), COLUMN,
@@ -559,16 +700,22 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        // Focusing the goal field (click, Tab) shows its completions, even with nothing typed
+        if (goalField != null && goalField.isFocused() != completionsFocused) updateCompletions();
         super.render(context, mouseX, mouseY, delta);
         if (showsCompletions()) {
             drawCompletions(context, mouseX, mouseY);
-            if (completionAt(mouseX, mouseY) >= 0) {
-                context.drawTooltip(textRenderer, Text.translatable(KEY + "goal.completion.hint").formatted(Formatting.GRAY), mouseX, mouseY);
+            int row = completionAt(mouseX, mouseY);
+            if (row >= 0) {
+                context.drawTooltip(textRenderer, java.util.List.of(
+                        Text.translatable(KEY + "goal.completion.hint").formatted(Formatting.GRAY), idLine(completions.get(row))), mouseX, mouseY);
             }
             return;
         }
         if (source == Source.CRITERION && isOverStatus(mouseX, mouseY, x + MARGIN + COLUMN - PRESET_SIZE - 4 - 11, y + TOP + ROW + 6)) {
-            context.drawTooltip(textRenderer, goalCheck.meaning(), mouseX, mouseY);
+            GoalPoleSearch.Entry<Goal> goal = currentGoal();
+            context.drawTooltip(textRenderer, goal != null ? java.util.List.of(goalCheck.meaning(), idLine(goal))
+                    : java.util.List.of(goalCheck.meaning()), mouseX, mouseY);
         } else if (playersHasField() && isOverStatus(mouseX, mouseY, x + MARGIN + COLUMN - 11, y + playersFieldY() + 6)) {
             context.drawTooltip(textRenderer, playersCheck.meaning(), mouseX, mouseY);
         } else if (legendRowAt(mouseX, mouseY) >= 0) {
@@ -596,13 +743,14 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+        boolean enter = keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER;
+        if (enter && !showsCompletions()) {
             submit();
             return true;
         }
-        // The goal's completion: Tab takes the picked one, Up and Down pick another
+        // The goal's completion: Tab or Enter takes the picked one, Up and Down pick another
         if (showsCompletions()) {
-            if (keyCode == GLFW.GLFW_KEY_TAB) {
+            if (keyCode == GLFW.GLFW_KEY_TAB || enter) {
                 complete(completions.get(completion));
                 return true;
             }
