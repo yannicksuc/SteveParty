@@ -1,0 +1,55 @@
+name: "❓ Question / Incompréhension"
+description: "« Je n'ai pas compris comment... » : une question ou un point confus. / \"I did not understand how...\": a question or something confusing."
+title: "[Question] "
+labels: ["confusion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pas de question bête : si quelque chose n'est pas clair, c'est au mod (ou au wiki) de s'améliorer.
+        Un coup d'œil au [wiki](https://github.com/yannicksuc/SteveParty/wiki) d'abord peut aider.
+
+        No silly question: if something is unclear, the mod (or the wiki) has to get better.
+        A look at the [wiki](https://github.com/yannicksuc/SteveParty/wiki) first may help.
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Domaine / Area"
+      multiple: true
+      options:
+        - "Dés / Dice"
+        - "Plateau, cases et cartouches / Board, tiles and cartridges"
+        - "Pions / Pawns"
+        - "Partie (Contrôleur de fête, cartes) / Party (Party Controller, cards)"
+        - "Mini-jeux / Mini-games"
+        - "Boutiques et Marchand en carton / Shops and Boxed Trader"
+        - "Mulas et étoiles / Mulas and stars"
+        - "Forge à dés / Dice Forge"
+        - "Tuyaux / Pipes"
+        - "Mât d'arrivée et podiums / Goal pole and podiums"
+        - "Panneaux et pochoirs / Signs and stencils"
+        - "Blocs de plastique et de construction / Plastic and building blocks"
+        - "CrazyPhone"
+        - "Quêtes et modpack / Quests and modpack"
+        - "Autre / Other"
+  - type: textarea
+    id: question
+    attributes:
+      label: "Je n'ai pas compris comment... / I did not understand how..."
+      placeholder: "...faire avancer mon pion après le lancer de dé. / ...to make my pawn move after rolling the die."
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: "Ce que j'ai essayé / What I tried"
+      description: "Ce que vous avez fait, et ce qui s'est passé. / What you did, and what happened."
+  - type: textarea
+    id: where
+    attributes:
+      label: "Où avez-vous cherché ? / Where did you look?"
+      description: "Quêtes, infobulles, wiki, guide en jeu... Ce qui manquait ou induisait en erreur. / Quests, tooltips, wiki, in-game guide... What was missing or misleading."
+  - type: input
+    id: mod-version
+    attributes:
+      label: "Version du mod / Mod version (facultatif / optional)"

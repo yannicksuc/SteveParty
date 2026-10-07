@@ -1,0 +1,64 @@
+name: "💥 Crash"
+description: "Le jeu ou le serveur a planté. / The game or the server crashed."
+title: "[Crash] "
+labels: ["crash", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Un crash écrit un fichier dans le dossier `crash-reports/` du jeu (ou du serveur) : il est indispensable.
+        A crash writes a file into the `crash-reports/` folder of the game (or of the server): it is essential.
+  - type: input
+    id: mod-version
+    attributes:
+      label: "Version du mod / Mod version"
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: "Version de Minecraft et du loader / Minecraft and loader version"
+      placeholder: "Minecraft 1.21.1, Fabric Loader 0.16.9"
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: "Modpack ou liste des mods / Modpack or mod list"
+      placeholder: "Steve Party Maker 1.2 / Sodium, Iris, REI..."
+    validations:
+      required: true
+  - type: dropdown
+    id: side
+    attributes:
+      label: "Qu'est-ce qui a planté ? / What crashed?"
+      options:
+        - "Le jeu, en solo / The game, in single player"
+        - "Le jeu, sur un serveur / The game, on a server"
+        - "Le serveur / The server"
+        - "Au lancement / At launch"
+    validations:
+      required: true
+  - type: textarea
+    id: before
+    attributes:
+      label: "Que faisiez-vous juste avant ? / What were you doing just before?"
+      description: "Si vous savez le refaire planter, donnez les étapes. / If you can make it crash again, give the steps."
+    validations:
+      required: true
+  - type: textarea
+    id: crash-report
+    attributes:
+      label: "Crash report"
+      description: |
+        Collez un lien https://mclo.gs (ou un gist) vers le fichier de `crash-reports/`, ou glissez le fichier ici.
+        Paste a https://mclo.gs link (or a gist) to the file from `crash-reports/`, or drag the file here.
+      placeholder: "https://mclo.gs/..."
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: "latest.log (facultatif / optional)"
+      description: "Lien vers `logs/latest.log`, utile si le crash report ne suffit pas. / Link to `logs/latest.log`, useful when the crash report is not enough."

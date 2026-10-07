@@ -1,0 +1,114 @@
+name: "🐞 Bug"
+description: "Quelque chose ne marche pas comme prévu. / Something does not work as expected."
+title: "[Bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de signaler ce bug ! Une issue par problème, s'il vous plaît.
+        Le jeu a planté ? Utilisez plutôt le formulaire **Crash**.
+
+        Thanks for reporting this bug! One issue per problem, please.
+        The game crashed? Use the **Crash** form instead.
+  - type: input
+    id: mod-version
+    attributes:
+      label: "Version du mod / Mod version"
+      description: "Visible dans le menu Mods ou dans le nom du fichier .jar. / Shown in the Mods menu or in the .jar file name."
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: "Version de Minecraft et du loader / Minecraft and loader version"
+      placeholder: "Minecraft 1.21.1, Fabric Loader 0.16.9"
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: "Modpack ou liste des mods / Modpack or mod list"
+      description: "Le nom et la version du modpack, ou la liste des autres mods installés. / The modpack name and version, or the list of the other installed mods."
+      placeholder: "Steve Party Maker 1.2 / Sodium, Iris, REI..."
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: "Solo ou serveur ? / Single player or server?"
+      options:
+        - "Solo / Single player"
+        - "Serveur dédié / Dedicated server"
+        - "Monde ouvert en LAN / LAN world"
+        - "Je ne sais pas / I don't know"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Domaine / Area"
+      description: "Ce qui est touché (plusieurs choix possibles). / What is affected (several choices allowed)."
+      multiple: true
+      options:
+        - "Dés / Dice"
+        - "Plateau, cases et cartouches / Board, tiles and cartridges"
+        - "Pions / Pawns"
+        - "Partie (Contrôleur de fête, cartes) / Party (Party Controller, cards)"
+        - "Mini-jeux / Mini-games"
+        - "Boutiques et Marchand en carton / Shops and Boxed Trader"
+        - "Mulas et étoiles / Mulas and stars"
+        - "Forge à dés / Dice Forge"
+        - "Tuyaux / Pipes"
+        - "Mât d'arrivée et podiums / Goal pole and podiums"
+        - "Panneaux et pochoirs / Signs and stencils"
+        - "Blocs de plastique et de construction / Plastic and building blocks"
+        - "CrazyPhone"
+        - "Quêtes et modpack / Quests and modpack"
+        - "Autre / Other"
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Étapes pour reproduire / Steps to reproduce"
+      description: "Ce qu'il faut faire, pas à pas, pour voir le bug. / What to do, step by step, to see the bug."
+      placeholder: |
+        1. Poser une Forge à dés / Place a Dice Forge
+        2. La casser puis la reposer / Break it, then place it again
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Résultat attendu / Expected result"
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Résultat obtenu / Actual result"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs et captures / Logs and screenshots"
+      description: |
+        Glissez ici des captures ou une vidéo. Pour les logs, collez un lien https://mclo.gs vers `logs/latest.log`.
+        Drag screenshots or a video here. For logs, paste a https://mclo.gs link to `logs/latest.log`.
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: "Fréquence / How often"
+      options:
+        - "À chaque fois / Every time"
+        - "Parfois / Sometimes"
+        - "Une seule fois / Only once"
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: "Vérification / Check"
+      options:
+        - label: "J'ai cherché dans les issues existantes : ce bug n'y est pas. / I searched the existing issues: this bug is not there."
+          required: true
