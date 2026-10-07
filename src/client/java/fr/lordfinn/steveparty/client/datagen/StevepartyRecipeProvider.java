@@ -286,10 +286,10 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .pattern("FHF")
                 .pattern("CFC")
                 .input('C', Items.CRYING_OBSIDIAN)
-                .input('F', ModItems.BLACK_STAR_FRAGMENT)
+                // star fragments of any colour (black ones are rare)
+                .input('F', StevepartyReferenceItemTagProvider.STAR_FRAGMENTS_TAG)
                 .input('H', Items.HEAVY_CORE)
                 .criterion(hasItem(Items.HEAVY_CORE), conditionsFromItem(Items.HEAVY_CORE))
-                .criterion(hasItem(ModItems.BLACK_STAR_FRAGMENT), conditionsFromItem(ModItems.BLACK_STAR_FRAGMENT))
                 .offerTo(exporter);
 
         // The Telescope: a spyglass on a copper mount and a tripod of sticks
