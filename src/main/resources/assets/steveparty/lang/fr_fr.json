@@ -572,6 +572,8 @@
   "gui.steveparty.stencil_maker.library_save": "Enregistrer",
   "gui.steveparty.stencil_maker.library_remove": "Oublier",
   "gui.steveparty.stencil_maker.library_empty": "Les pochoirs que tu trouves arrivent ici.",
+  "gui.steveparty.stencil_maker.favorite_button_add": "Ajouter aux favoris",
+  "gui.steveparty.stencil_maker.favorite_button_remove": "Retirer des favoris",
   "gui.steveparty.stencil_maker.favorite_add": "Clic droit : favori",
   "gui.steveparty.stencil_maker.favorite_remove": "Clic droit : retirer des favoris",
   "block.steveparty.white_plastic_fence": "Barrière en plastique blanche",
