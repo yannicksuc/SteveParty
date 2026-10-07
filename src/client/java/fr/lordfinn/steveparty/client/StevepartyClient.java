@@ -143,6 +143,7 @@ public class StevepartyClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         PayloadReceivers.initialize();
+        fr.lordfinn.steveparty.client.config.ClientOptions.initialize();
         fr.lordfinn.steveparty.client.telescope.TelescopeClient.initialize();
         ModelLoadingPlugin.register(new TradingStallModelPlugin());
         ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
