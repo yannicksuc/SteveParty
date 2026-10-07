@@ -708,8 +708,9 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             ServerPlayerEntity recipient = getOnlineOwner();
             boolean kept = recipient != null && recipient.isInCreativeMode();
             if (recipient == null) recipient = player;
+            // A copy: handing the stack over empties it, and the die still reads its modules as it goes (Firecracker)
             if (recipient != null && !kept)
-                recipient.getInventory().offerOrDrop(diceItem);
+                recipient.getInventory().offerOrDrop(diceItem.copy());
         }
         this.remove(reason);
     }
@@ -797,6 +798,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             entity.addVelocity(flat.x * push, BLAST_LIFT * near, flat.z * push);
             entity.velocityModified = true;
         }
+        world.spawnParticles(net.minecraft.particle.ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0, 0, 0, 0);
         world.playSound(null, center.x, center.y, center.z, SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 1.0F, 1.4F);
     }
 
