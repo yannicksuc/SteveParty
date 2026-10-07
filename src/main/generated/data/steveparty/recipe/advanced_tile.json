@@ -1,26 +1,43 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "type": "steveparty:tile_shaped",
   "category": "redstone",
   "key": {
+    "B": {
+      "item": "minecraft:trapped_chest"
+    },
     "C": {
-      "item": "minecraft:chest"
+      "tag": "steveparty:cartridges"
     },
     "G": {
-      "item": "minecraft:gold_ingot"
-    },
-    "P": {
       "item": "minecraft:light_weighted_pressure_plate"
     },
-    "R": {
-      "item": "minecraft:comparator"
+    "P": {
+      "item": "steveparty:yellow_plastic_slab"
     }
   },
   "pattern": [
-    " R ",
-    "GPG",
-    "GCG"
+    "PGP",
+    "CBC"
   ],
   "result": {
+    "components": {
+      "minecraft:container": [
+        {
+          "item": {
+            "count": 1,
+            "id": "steveparty:board_space_behavior"
+          },
+          "slot": 0
+        },
+        {
+          "item": {
+            "count": 1,
+            "id": "steveparty:board_space_behavior"
+          },
+          "slot": 15
+        }
+      ]
+    },
     "count": 1,
     "id": "steveparty:advanced_tile"
   }

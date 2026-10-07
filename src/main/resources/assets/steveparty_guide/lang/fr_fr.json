@@ -65,7 +65,7 @@
   "book.steveparty.guide.board.spaces.name": "Tuiles et points",
   "book.steveparty.guide.board.spaces.page0.text": "Un plateau est fait de cases. Chaque case contient des **cartouches** qui lui donnent un rôle et ses destinations.\n\n- **Tuile** (bord gris) : 1 cartouche, compte comme un pas.\n- **Tuile avancée** (bord doré) : 16 cartouches, la redstone choisit l'active.\n- **Point de déclenchement** : 16 cartouches, ne compte **pas** comme un pas.",
   "book.steveparty.guide.board.spaces.page0.title": "Tuiles et points",
-  "book.steveparty.guide.board.spaces.page1.text": "Les tuiles viennent par deux, chacune avec une cartouche simple : posées, prêtes à relier. N'importe quel tapis convient. La tuile avancée vient vide.",
+  "book.steveparty.guide.board.spaces.page1.text": "La tuile garde la cartouche de sa recette telle quelle (couleur, liens, réglages). Tuile avancée : ses deux en 0 et 15, celles de la rangée du bas (facultatif) en 14, 13, 12.",
   "book.steveparty.guide.board.spaces.page2.text": "À l'établi (2x2 ou table) :\n\n- **Tuile + une cartouche** : la tuile contient celle-là, l'ancienne est rendue.\n- **Une tuile seule** : vidée, sa cartouche rendue.\n- **Tuile avancée + tuiles ou cartouches** : elles remplissent ses emplacements libres, dans l'ordre 0, 15, 14… 1 ; les tuiles sont consommées. Plus que d'emplacements libres : pas de recette.",
   "book.steveparty.guide.board.spaces.page2.title": "Changer de cartouche",
   "book.steveparty.guide.board.spaces.page3.text": "Un cube de verre flottant, sans collision : les pions le traversent gratuitement, pratique pour les virages et les bifurcations.",

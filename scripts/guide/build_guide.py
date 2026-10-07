@@ -201,10 +201,10 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "- **Tuile avancée** (bord doré) : 16 cartouches, la redstone choisit l'active.\n"
           "- **Point de déclenchement** : 16 cartouches, ne compte **pas** comme un pas."),
         C("steveparty:tile", "steveparty:advanced_tile",
-          "Tiles come two at a time, each holding a plain Cartridge: placed, ready to link. Any carpet colour works. "
-          "The Advanced Tile comes empty.",
-          "Les tuiles viennent par deux, chacune avec une cartouche simple : posées, prêtes à relier. N'importe quel "
-          "tapis convient. La tuile avancée vient vide."),
+          "A Tile keeps its recipe's cartridge as is (colour, links, settings). Advanced Tile: its two in slots 0 "
+          "and 15, optional extra ones (bottom row) in 14, 13, 12.",
+          "La tuile garde la cartouche de sa recette telle quelle (couleur, liens, réglages). Tuile avancée : ses "
+          "deux en 0 et 15, celles de la rangée du bas (facultatif) en 14, 13, 12."),
         T("At the crafting grid (2x2 or table):\n\n"
           "- **Tile + a cartridge**: the Tile holds that one, its old one comes back.\n"
           "- **A Tile alone**: emptied, its cartridge back.\n"

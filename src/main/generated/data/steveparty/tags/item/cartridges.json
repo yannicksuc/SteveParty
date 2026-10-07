@@ -1,0 +1,13 @@
+{
+  "values": [
+    "steveparty:board_space_behavior",
+    "steveparty:tile_behavior_start",
+    "steveparty:board_space_behavior_stop",
+    "steveparty:inventory_cartridge",
+    "steveparty:shop_cartridge",
+    "steveparty:advance_back_cartridge",
+    "steveparty:replay_cartridge",
+    "steveparty:teleport_cartridge",
+    "steveparty:star_cartridge"
+  ]
+}
