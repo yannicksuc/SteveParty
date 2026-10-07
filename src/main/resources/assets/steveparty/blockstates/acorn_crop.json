@@ -1,16 +1,76 @@
 {
   "variants": {
-    "age=0": {
-      "model": "steveparty:block/acorn_crop_stage0"
-    },
-    "age=1": {
-      "model": "steveparty:block/acorn_crop_stage1"
-    },
-    "age=2": {
-      "model": "steveparty:block/acorn_crop_stage2"
-    },
-    "age=3": {
-      "model": "steveparty:block/acorn_crop_stage3"
-    }
+    "age=0": [
+      {
+        "model": "steveparty:block/acorn_crop_stage0",
+        "y": 0
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage0",
+        "y": 90
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage0",
+        "y": 180
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage0",
+        "y": 270
+      }
+    ],
+    "age=1": [
+      {
+        "model": "steveparty:block/acorn_crop_stage1",
+        "y": 0
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage1",
+        "y": 90
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage1",
+        "y": 180
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage1",
+        "y": 270
+      }
+    ],
+    "age=2": [
+      {
+        "model": "steveparty:block/acorn_crop_stage2",
+        "y": 0
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage2",
+        "y": 90
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage2",
+        "y": 180
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage2",
+        "y": 270
+      }
+    ],
+    "age=3": [
+      {
+        "model": "steveparty:block/acorn_crop_stage3",
+        "y": 0
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage3",
+        "y": 90
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage3",
+        "y": 180
+      },
+      {
+        "model": "steveparty:block/acorn_crop_stage3",
+        "y": 270
+      }
+    ]
   }
 }
