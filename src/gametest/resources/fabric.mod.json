@@ -84,6 +84,8 @@
       "fr.lordfinn.steveparty.gametest.RichTextGameTests",
       "fr.lordfinn.steveparty.gametest.MiniGameFormatGameTests",
       "fr.lordfinn.steveparty.gametest.MiniGamePipeGameTests",
+      "fr.lordfinn.steveparty.gametest.MiniGamePipeBuildOrderGameTests",
+      "fr.lordfinn.steveparty.gametest.PipePlaytestGameTests",
       "fr.lordfinn.steveparty.gametest.LinkedPipeGameTests",
       "fr.lordfinn.steveparty.gametest.ZoneBubbleGameTests",
       "fr.lordfinn.steveparty.gametest.MiniGameZoneGameTests",

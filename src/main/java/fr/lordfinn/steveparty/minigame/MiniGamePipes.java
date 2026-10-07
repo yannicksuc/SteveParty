@@ -40,7 +40,8 @@ import java.util.function.Predicate;
  *     <li><b>Arrivals</b>: the players of a mini-game come out of the pipes of their role, one after the other in
  *     each pipe in turn ({@link #distribute}, {@link #emerge}).</li>
  *     <li><b>The mini-game pipe</b>, out of a round: programmed with the page, it is the way into the
- *     mini-game. A player whose trip through the pipes ends in it (a capped end) comes out of the mini-game's pipes of
+ *     mini-game. A player who goes in a mouth of its network is taken to it (its capped end, its mouth or the middle
+ *     of the run, whatever the order the pipes were built in) and comes out of the mini-game's pipes of
  *     the role of the colour of the mouth it went in by: by a green mouth out of a players pipe, by a blue one out of
  *     a team A pipe... A player who goes in the mini-game pipe's own mouth, or by a colour the page has no pipe for,
  *     comes out of the default arrival: the first role with a pipe among {@link #DEFAULT_ARRIVALS} (the entry pipes
@@ -260,10 +261,31 @@ public final class MiniGamePipes {
 
     // ------------------------------------------------------------------ the mini-game pipe
 
-    /** The mouth a linked pipe opens on now (its chunk is loaded to look), null if it has none any more. */
+    /**
+     * The mouth a linked pipe opens on now (its chunk is loaded to look), null if it has none any more: the one it was
+     * linked by while it is still a free mouth; else (the pipes were built on after it was linked) its first free
+     * mouth, the top first and the bottom last (no fall); else the one it was linked by, else its first one.
+     */
     private static @Nullable Direction openingOf(ServerWorld world, MiniGamePipeLink link) {
-        BlockState state = world.getBlockState(link.mouth().pos());
-        return PipeShape.mouth(state, link.opening()) != null ? link.opening() : mouthOf(state, link.mouth().pos(), net.minecraft.util.math.Vec3d.ofCenter(link.mouth().pos()));
+        BlockPos pos = link.mouth().pos();
+        BlockState state = world.getBlockState(pos);
+        if (PipeShape.mouth(state, link.opening()) != null && !PipeTravel.blocked(world, new PipeNetworks.End(pos, link.opening(), false))) {
+            return link.opening();
+        }
+        Direction free = freeMouth(world, pos, state);
+        if (free != null) return free;
+        return PipeShape.mouth(state, link.opening()) != null ? link.opening() : mouthOf(state, pos, net.minecraft.util.math.Vec3d.ofCenter(pos));
+    }
+
+    /** The sides a player is best brought out of a pipe by: up, then the sides, down last. */
+    private static final Direction[] SAFE_SIDES = {Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, Direction.DOWN};
+
+    /** The first mouth of the pipe at {@code pos} with nothing in front of it, in the order of {@link #SAFE_SIDES}; null for none. */
+    private static @Nullable Direction freeMouth(ServerWorld world, BlockPos pos, BlockState state) {
+        for (Direction side : SAFE_SIDES) {
+            if (PipeShape.mouth(state, side) != null && !PipeTravel.blocked(world, new PipeNetworks.End(pos, side, false))) return side;
+        }
+        return null;
     }
 
     /**
@@ -428,8 +450,12 @@ public final class MiniGamePipes {
         if (!(world.getBlockState(pipe.pos()).getBlock() instanceof MiniGamePipeBlock)) return false;
         PipeNetworks.Network network = PipeNetworks.of(world).network(pipe.pos());
         if (network == null) return false;
+        // Free mouths only (nobody is brought out into a wall), in an order of their own: never the order the network
+        // happened to be found in
         List<PipeNetworks.End> mouths = network.ends().stream()
-                .filter(end -> !end.capped() && PipeShape.mouth(world.getBlockState(end.pos()), end.dir()) != null).toList();
+                .filter(end -> !end.capped() && PipeShape.mouth(world.getBlockState(end.pos()), end.dir()) != null && !PipeTravel.blocked(world, end))
+                .sorted(java.util.Comparator.comparing(PipeNetworks.End::pos).thenComparingInt(end -> safeRank(end.dir())))
+                .toList();
         if (mouths.isEmpty()) return false;
         PipeNetworks.End chosen = null;
         for (PipeNetworks.End end : mouths) {
@@ -446,6 +472,11 @@ public final class MiniGamePipes {
         }
         if (chosen == null) chosen = mouths.getFirst();
         return PipeTravel.emerge(world, chosen, player, PipeTravel.BASE_SPEED);
+    }
+
+    private static int safeRank(Direction side) {
+        for (int i = 0; i < SAFE_SIDES.length; i++) if (SAFE_SIDES[i] == side) return i;
+        return SAFE_SIDES.length;
     }
 
     /** @return true if two pipes are of the same colour: the same dye (plastic and stained glass alike), else the same kind. */

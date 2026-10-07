@@ -92,17 +92,23 @@ public final class MiniGamePipeIndex extends PersistentState {
         for (Map.Entry<GlobalPos, Entry> pipe : get(server).pipes.entrySet()) {
             GlobalPos pos = pipe.getKey();
             if (!pipe.getValue().page().equals(page) || !inRange(pipe.getValue().reach(), pos, from)) continue;
+            // Ties go to the lowest dimension then position: never to the order the pipes were placed or loaded in
             if (!pos.dimension().equals(from.dimension())) {
-                if (elsewhere == null) elsewhere = pos;
+                if (elsewhere == null || before(pos, elsewhere)) elsewhere = pos;
                 continue;
             }
             double distance = pos.pos().getSquaredDistance(from.pos());
-            if (distance < bestDistance) {
+            if (distance < bestDistance || (distance == bestDistance && best != null && pos.pos().compareTo(best.pos()) < 0)) {
                 bestDistance = distance;
                 best = pos;
             }
         }
         return best != null ? best : elsewhere;
+    }
+
+    private static boolean before(GlobalPos a, GlobalPos b) {
+        int dimension = a.dimension().getValue().compareTo(b.dimension().getValue());
+        return dimension != 0 ? dimension < 0 : a.pos().compareTo(b.pos()) < 0;
     }
 
     @Override
