@@ -112,6 +112,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     public static final double SHOVE = 1.6;
     /** A player shoved at least this hard (a charge, a flight, a quick slide) is dazed. */
     public static final double DAZE_STRENGTH = 0.2;
+    /** A sliding one keeps this much of its speed per acorn it picks up on its way. */
+    public static final double CARRY_SLOWDOWN = 0.85;
 
     public enum Mood {
         CALM, TELEGRAPH, CHARGING, STUNNED, FLAT, REINFLATE, SULK, SLEEPING, FLYING, SLIDING, PUSH_FAIL, HOPPING;
@@ -169,6 +171,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     private @Nullable GlandouilleEntity hopOnto;
     /** Its old tower mates, left alone (never shoved) until {@link #sparedUntil}. */
     private List<GlandouilleEntity> spared = List.of();
+    /** Thrown by a player: that player and the tower still in his hands, left alone until {@link #sparedUntil}. */
+    private @Nullable Entity thrower;
     private long sparedUntil;
     /** The height of the players around it last tick, to see them come down on its cap. */
     private final Map<UUID, Double> playerY = new HashMap<>(2);
@@ -348,6 +352,19 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         return new Vec3d(0, dimensions.height() - 0.05 * scaleFactor, 0);
     }
 
+    /** Carried by a player: held in front of the chest, not on the head (the ones above stand on it as usual). */
+    @Override
+    public void tickRiding() {
+        super.tickRiding();
+        if (getVehicle() instanceof PlayerEntity player) setPosition(GlandouilleTowers.heldPos(player, this));
+    }
+
+    /** A carried tower can't be aimed at: the carrier's clicks go through it (to the block or the tower behind). */
+    @Override
+    public boolean canHit() {
+        return super.canHit() && !(GlandouilleTowers.bottom(this).getVehicle() instanceof PlayerEntity);
+    }
+
     @Override
     public boolean isPushable() {
         return !isAnchored() && !boardActor && super.isPushable();
@@ -371,8 +388,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         super.tick();
         Entity vehicle = getVehicle();
         if (vehicle != null) {
-            // a tower faces the way its bottom one does; a carried one faces with the player
-            float yaw = vehicle instanceof LivingEntity living ? living.bodyYaw : vehicle.getYaw();
+            // a tower faces the way its bottom one does; a carried one faces where the player looks
+            float yaw = vehicle instanceof LivingEntity living && !(vehicle instanceof PlayerEntity) ? living.bodyYaw : vehicle.getYaw();
             setYaw(yaw);
             this.bodyYaw = yaw;
             this.headYaw = yaw;
@@ -785,7 +802,10 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- flicked out of a tower
 
-    /** Flies along {@code dir} like a missile (out of a tower), shoving what it meets; lands dizzy. */
+    /**
+     * Flies along {@code dir} like a missile (out of a tower), shoving what it meets; lands dizzy. Into another tower (or
+     * a lone one), it lands on top of it instead ({@link GlandouilleTowers#joinOnImpact}).
+     */
     public void launch(Vec3d dir) {
         this.flyDir = new Vec3d(dir.x, 0, dir.z).normalize();
         setNoGravity(true);
@@ -805,6 +825,13 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         else setNoGravity(false);
         for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(0.3),
                 e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e) && !spares(e))) {
+            // another tower (or a lone one): it lands on top of it and stays there
+            if (other instanceof GlandouilleEntity glandouille && GlandouilleTowers.joinOnImpact(this, glandouille)) {
+                setNoGravity(false);
+                setVelocity(Vec3d.ZERO);
+                setMood(Mood.CALM, 0);
+                return;
+            }
             shove(other, flyDir, SHOVE);
             playSound(ModSounds.GLANDOUILLE_RAM, 1f, 1.2f);
         }
@@ -824,12 +851,23 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         List<GlandouilleEntity> mates = new ArrayList<>(GlandouilleTowers.members(this));
         mates.remove(this);
         this.spared = mates;
+        this.thrower = null;
+        this.sparedUntil = getWorld().getTime() + SPARE_TICKS;
+    }
+
+    /** Thrown out of {@code player}'s hands: its flight spares him and the tower he still carries for a moment. */
+    public void thrownBy(PlayerEntity player) {
+        this.spared = List.of();
+        this.thrower = player;
         this.sparedUntil = getWorld().getTime() + SPARE_TICKS;
     }
 
     /** One of its old tower mates, left alone a moment after it was hit out of the tower. */
     private boolean spares(Entity other) {
-        return getWorld().getTime() < sparedUntil && other instanceof GlandouilleEntity mate && spared.contains(mate);
+        if (getWorld().getTime() >= sparedUntil) return false;
+        if (thrower != null && (other == thrower
+                || other instanceof GlandouilleEntity held && GlandouilleTowers.bottom(held).getVehicle() == thrower)) return true;
+        return other instanceof GlandouilleEntity mate && spared.contains(mate);
     }
 
     /**
@@ -874,7 +912,11 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- the frosty one: curling stone
 
-    /** Slides along {@code velocity} with almost no friction, bouncing off walls (a tower on it slides along). */
+    /**
+     * Slides along {@code velocity} with almost no friction, bouncing off walls (a tower on it slides along). The
+     * Glandouilles it meets climb on it and slide along, slowing it a little each ({@link #CARRY_SLOWDOWN}); against a
+     * tower on the old mossy one, it stops and climbs on top ({@link GlandouilleTowers#carryOnImpact}).
+     */
     public void startSlide(Vec3d velocity) {
         if (boardActor) return;
         this.slideVelocity = new Vec3d(velocity.x, 0, velocity.z);
@@ -914,8 +956,25 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         }
         slideVelocity = slideVelocity.multiply(0.985);
         setVelocity(slideVelocity.x, v.y, slideVelocity.z);
-        for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(0.15),
+        Box reach = getBoundingBox().expand(0.15);
+        for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, reach,
                 e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e) && !spares(e))) {
+            if (other instanceof GlandouilleEntity glandouille) {
+                // a Glandouille in the way: carried along on top (or, the mossy one, it stops and climbs on it)
+                if (GlandouilleTowers.sameTower(this, glandouille)) continue;
+                int added = GlandouilleTowers.carryOnImpact(this, glandouille, reach);
+                if (added == 0) {
+                    slideVelocity = Vec3d.ZERO;
+                    setVelocity(Vec3d.ZERO);
+                    setMood(Mood.CALM, 0);
+                    return;
+                }
+                if (added > 0) {
+                    slideVelocity = slideVelocity.multiply(Math.pow(CARRY_SLOWDOWN, added));
+                    setVelocity(slideVelocity.x, v.y, slideVelocity.z);
+                    continue;
+                }
+            }
             shove(other, slideVelocity.normalize(), slideVelocity.horizontalLength() * 2);
         }
         if (this.age % 3 == 0) world.spawnParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 0.05, getZ(), 1, 0.1, 0, 0.1, 0);
@@ -1021,10 +1080,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
                 if (!world.isClient) GlandouilleTowers.stackCarriedOn(player, this);
                 return ActionResult.success(world.isClient);
             }
-            if (player.isSneaking()) {
-                if (!world.isClient) GlandouilleTowers.pickUp(player, this);
-                return ActionResult.success(world.isClient);
-            }
+            // picked up with everyone above it (sneaking or not): the ones below stay standing
+            if (!world.isClient) GlandouilleTowers.pickUp(player, this);
+            return ActionResult.success(world.isClient);
         }
         return super.interactMob(player, hand);
     }
