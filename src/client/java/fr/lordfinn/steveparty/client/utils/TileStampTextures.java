@@ -447,38 +447,43 @@ public final class TileStampTextures {
 
     // ---------------------------------------------------------------- the Glandouille face
 
-    /** An acorn, by hand for each size: '#' its cap and stem (the ramp's darkest shade), 'o' its nut (a middle shade). */
+    /**
+     * An acorn, by hand for each size: '#' its cap and its two-pixel stem (the ramp's darkest shade), 'c' the light on
+     * the cap's top left, 'o' its nut (a middle shade), 'h' the glint on the nut's top left, 'd' its shaded bottom right.
+     */
     private static final String[] ACORN = {
-            "......#.......",
+            "..............",
             "......##......",
-            "..##########..",
-            ".############.",
+            "..#cc#######..",
+            ".#c##########.",
             "##############",
             ".############.",
             "..oooooooooo..",
-            "..oooooooooo..",
-            "..oooooooooo..",
-            "...oooooooo...",
-            "...oooooooo...",
-            "....oooooo....",
-            ".....oooo.....",
-            "......oo......"};
+            "..ohhooooooo..",
+            "..ohoooooood..",
+            "...oooooood...",
+            "...oooooodd...",
+            "....oooodd....",
+            ".....oood.....",
+            "......od......"};
     private static final String[] SMALL_ACORN = {
-            "....#.....",
-            "..######..",
-            ".########.",
+            "....##....",
+            "..#c####..",
+            ".#c######.",
             "##########",
-            ".oooooooo.",
-            ".oooooooo.",
-            "..oooooo..",
-            "..oooooo..",
-            "...oooo...",
-            "....oo...."};
+            ".ohoooooo.",
+            ".oooooood.",
+            "..oooood..",
+            "..oooodd..",
+            "...oood...",
+            "....od...."};
+    private static final Map<Character, Float> ACORN_SHADES =
+            Map.of('#', FEATURE, 'c', 0.55f, 'o', 0.3f, 'h', 0.06f, 'd', 0.45f);
 
     /** The Glandouille space's face: an acorn on the blank tile face, in the ramp of {@code rgb} (brown). */
     public static Identifier glandouilleFace(int rgb, boolean small) {
         return TEXTURES.computeIfAbsent(new Key("glandouille", rgb, small),
-                key -> register(glyphValues(small ? SMALL_ACORN : ACORN, small, Map.of('#', FEATURE, 'o', 0.3f)), rgb, small));
+                key -> register(glyphValues(small ? SMALL_ACORN : ACORN, small, ACORN_SHADES), rgb, small));
     }
 
     // ---------------------------------------------------------------- the Teleport face
