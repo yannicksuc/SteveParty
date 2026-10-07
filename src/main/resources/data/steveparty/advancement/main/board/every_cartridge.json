@@ -93,6 +93,16 @@
           }
         ]
       }
+    },
+    "glandouille": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:glandouille_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -119,6 +129,9 @@
     ],
     [
       "star"
+    ],
+    [
+      "glandouille"
     ]
   ],
   "rewards": {

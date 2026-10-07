@@ -146,7 +146,12 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 1.26F, 2),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 1.0F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 0.749F, 6),
-                new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, 0.5F, 1.4F, 0)));
+                new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, 0.5F, 1.4F, 0))),
+        /** A Glandouille space: two grumpy woody stomps and a low bassoon "hmph" (see GlandouilleTileBehavior). */
+        GLANDOUILLE("glandouille", 0x9A5A2A, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.749F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.749F, 4),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.45F, 1.0F, 8)));
 
         private final String key;
         /** Particle colour when the tile's own colour doesn't fit (plain white tile, or a themed burst). */
@@ -427,6 +432,10 @@ public final class TileFeedback {
             case TELEPORT -> {
                 world.spawnParticles(ParticleTypes.REVERSE_PORTAL, at.x, y, at.z, 16, 0.3, 0.1, 0.3, 0.02);
                 world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE), at.x, y + 0.2, at.z, 8, 0.35, 0.25, 0.35, 0.0);
+            }
+            case GLANDOUILLE -> {
+                world.spawnParticles(ParticleTypes.POOF, at.x, y, at.z, 8, 0.35, 0.1, 0.35, 0.02);
+                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
             }
             case ITEM, DEFAULT -> world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE),
                     at.x, y + 0.1, at.z, 12, 0.35, 0.25, 0.35, 0.0);

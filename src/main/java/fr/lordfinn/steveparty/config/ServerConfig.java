@@ -73,6 +73,11 @@ public final class ServerConfig {
      */
     public int mulaMaxFollowers = 16;
     /**
+     * The highest tower of Glandouilles a player may build (carrying towers onto towers): a safety limit for the
+     * server (each one is an entity). Spontaneous towers stop at 5 whatever this says.
+     */
+    public int glandouilleMaxStack = 64;
+    /**
      * Extra blocks the hop switch can make disappear, besides the block tag {@code steveparty:switchable}: block ids
      * ({@code "minecraft:stone"}) or block tags ({@code "#minecraft:wool"}). Blocks with a block entity are ignored.
      * See {@code SwitchableConfig}.
@@ -174,6 +179,7 @@ public final class ServerConfig {
         if (switchableBlocks == null) switchableBlocks = new ArrayList<>();
         mulaMaxSites = Math.max(1, mulaMaxSites);
         mulaMaxFollowers = Math.max(1, mulaMaxFollowers);
+        glandouilleMaxStack = Math.max(5, glandouilleMaxStack);
         return this;
     }
 }
