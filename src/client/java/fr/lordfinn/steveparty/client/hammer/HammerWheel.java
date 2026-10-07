@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The Stencil Hammer's wheel: what it holds and nothing else. At the top a "+" in two halves (add dyes, add
- * stencils: its slots beside the inventory), its loaded stencils on the right, its loaded dyes on the left. No paint
+ * The Stencil Hammer's wheel: what it holds and nothing else. At the top one button, its refill (its slots in a
+ * wheel of their own, see StencilGunScreen), its loaded stencils on the right, its loaded dyes on the left. No paint
  * (engrave) is the selected dye clicked again, or no dye at all: the HUD then shows a netherite pickaxe (an axe at a
  * cut-out panel). A pick applies at once.
  */
@@ -33,11 +33,8 @@ public final class HammerWheel implements ToolWheel.Provider {
     private static final List<ToolWheel.Ring> RINGS = List.of(new ToolWheel.Ring(30, 92));
     /** The mod's neutral teal; stencils on paper, dyes in their colour. */
     private static final int PAPER = 0xC9B48C, TEAL = 0x7FA3A9;
-    /** Degrees each half of the "+" takes, either side of the top. */
-    private static final float PLUS = 40;
-    private static final Identifier ARROW_LEFT = Steveparty.id("wheel/back"), ARROW_RIGHT = Steveparty.id("wheel/forward");
-    private static final ItemStack DYE = new ItemStack(Items.LIME_DYE);
-    private static final ItemStack STENCIL = new ItemStack(fr.lordfinn.steveparty.items.ModItems.STENCIL);
+    /** Degrees the refill button takes either side of the top. */
+    private static final float PLUS = 24;
 
     @Override
     public boolean handles(ItemStack stack) {
@@ -77,28 +74,23 @@ public final class HammerWheel implements ToolWheel.Provider {
                     selected, true, () -> send(ToolWheelPayload.Action.HAMMER_DYE, value)));
         }
 
-        // Top centre: the "+" in two halves, dyes (left) and stencils (right); a side holding nothing is all "+"
-        ToolWheel.Sector addDyes = new ToolWheel.Sector(Text.translatable("wheel.steveparty.hammer.add_dyes"), null, TEAL,
-                add(ARROW_LEFT, DYE, true), false, true, () -> send(ToolWheelPayload.Action.HAMMER_OPEN, 0));
-        ToolWheel.Sector addStencils = new ToolWheel.Sector(Text.translatable("wheel.steveparty.hammer.add_stencils"), null, TEAL,
-                add(ARROW_RIGHT, STENCIL, false), false, true, () -> send(ToolWheelPayload.Action.HAMMER_OPEN, 0));
+        // Top centre: one button, its refill
+        ToolWheel.Sector refill = new ToolWheel.Sector(Text.translatable("wheel.steveparty.hammer.refill"), null, TEAL,
+                big(new ItemStack(Items.BUNDLE)), false, true, () -> send(ToolWheelPayload.Action.HAMMER_OPEN, 0));
         List<ToolWheel.Arc> arcs = new ArrayList<>();
-        arcs.add(stencils.isEmpty() ? new ToolWheel.Arc(0, 0, 180, List.of(addStencils)) : new ToolWheel.Arc(0, 0, PLUS, List.of(addStencils)));
+        arcs.add(new ToolWheel.Arc(0, -PLUS, PLUS, List.of(refill)));
         if (!stencils.isEmpty()) arcs.add(new ToolWheel.Arc(0, PLUS, 180, stencils));
         if (!dyes.isEmpty()) arcs.add(new ToolWheel.Arc(0, 180, 360 - PLUS, dyes));
-        arcs.add(dyes.isEmpty() ? new ToolWheel.Arc(0, 180, 360, List.of(addDyes)) : new ToolWheel.Arc(0, 360 - PLUS, 360, List.of(addDyes)));
-        return new ToolWheel.Layout(RINGS, arcs, item(hammer.copy()), null, stencils.isEmpty() ? addStencils : null, null);
+        return new ToolWheel.Layout(RINGS, arcs, item(hammer.copy()), null, stencils.isEmpty() && dyes.isEmpty() ? refill : null, null);
     }
 
-    /** A half of the "+": an arrow toward its side, and what that side takes. */
-    private static ToolWheel.Icon add(Identifier arrow, ItemStack what, boolean leftward) {
+    private static ToolWheel.Icon big(ItemStack stack) {
         return (context, x, y) -> {
-            int arrowX = leftward ? x - 15 : x + 1;
-            int itemX = leftward ? x - 1 : x - 15;
-            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-            context.drawGuiTexture(arrow, arrowX, y - 8, 14, 14);
-            com.mojang.blaze3d.systems.RenderSystem.disableBlend();
-            context.drawItem(what, itemX, y - 8);
+            context.getMatrices().push();
+            context.getMatrices().translate(x, y, 0);
+            context.getMatrices().scale(2, 2, 1);
+            context.drawItem(stack, -8, -8);
+            context.getMatrices().pop();
         };
     }
 

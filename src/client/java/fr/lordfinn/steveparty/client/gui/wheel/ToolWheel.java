@@ -153,6 +153,16 @@ public final class ToolWheel {
         return open != null;
     }
 
+    /** Opens the wheel of the tool in hand again, on its first page, staying open (back from a screen). */
+    public static void reopen() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player == null) return;
+        Provider provider = provider(client.player.getMainHandStack());
+        if (provider == null) return;
+        open(client, provider);
+        sticky = true;
+    }
+
     /** Shows another page of the open wheel (a sector that {@link Sector#stays}). */
     public static void showPage(int page) {
         ToolWheel.page = page;
@@ -379,14 +389,14 @@ public final class ToolWheel {
      * The wheel's plates as runs of pixels of one colour, row by row: each pixel is classified once (sector, gap,
      * outline, bevel, fill) by its distance to the sector's edges, so the gaps keep the same width at any radius.
      */
-    static final class WheelRaster {
-        record Run(int x0, int x1, int y, int color) {
+    public static final class WheelRaster {
+        public record Run(int x0, int x1, int y, int color) {
         }
 
         private static List<Run> cached = List.of();
         private static @Nullable String cachedKey;
 
-        static List<Run> runs(Layout layout, @Nullable Arc hoverArc, int hoverIndex, boolean hubHovered, float fit, boolean cta, boolean blink) {
+        public static List<Run> runs(Layout layout, @Nullable Arc hoverArc, int hoverIndex, boolean hubHovered, float fit, boolean cta, boolean blink) {
             String key = key(layout, hoverArc, hoverIndex, hubHovered, fit, cta, blink);
             if (key.equals(cachedKey)) return cached;
             List<Run> runs = new ArrayList<>();

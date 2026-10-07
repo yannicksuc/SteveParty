@@ -896,30 +896,34 @@ public class StencilGameTests implements FabricGameTest {
     }
 
     /**
-     * The hammer's slots open beside the whole inventory: its dyes on the left, its stencils on the right, the armour
-     * and the off hand where vanilla has them, no two slots in one place; a dye shift-clicked goes into the hammer.
+     * The hammer's refill is a wheel of real slots: its dyes down the left, its stencils down the right, none on
+     * another, with the player's inventory and hotbar under it; a dye shift-clicked goes into the hammer.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void stencilHammerSlotsSitBesideTheInventory(TestContext context) {
+    public void stencilHammerRefillIsAWheelOfSlots(TestContext context) {
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         try {
             ItemStack gun = loadedGun();
             player.getInventory().selectedSlot = 0;
             player.setStackInHand(Hand.MAIN_HAND, gun);
             StencilGunScreenHandler handler = new StencilGunScreenHandler(1, player.getInventory(), 0);
-            context.assertEquals(handler.slots.size(), StencilGunItem.SIZE + 36 + 5, "hammer, inventory, armour and off hand");
+            context.assertEquals(handler.slots.size(), StencilGunItem.SIZE + 36, "hammer, inventory and hotbar");
             java.util.Set<Long> places = new java.util.HashSet<>();
             for (var slot : handler.slots) context.assertTrue(places.add(((long) slot.x << 32) | slot.y), "one slot per place: " + slot.x + ", " + slot.y);
-            for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) {
-                context.assertTrue(handler.slots.get(i).x > StencilGunScreenHandler.INVENTORY_X + 176, "stencils on the right");
+            for (int i = 0; i < StencilGunItem.SIZE; i++) {
+                var slot = handler.slots.get(i);
+                boolean stencil = i < StencilGunItem.STENCIL_SLOTS;
+                context.assertTrue(stencil ? slot.x + 8 > StencilGunScreenHandler.CENTER_X : slot.x + 8 < StencilGunScreenHandler.CENTER_X,
+                        (stencil ? "stencils on the right: " : "dyes on the left: ") + i);
+                double distance = Math.hypot(slot.x + 8 - StencilGunScreenHandler.CENTER_X, slot.y + 8 - StencilGunScreenHandler.CENTER_Y);
+                context.assertTrue(Math.abs(distance - StencilGunScreenHandler.SLOT_RADIUS) < 1.5, "on the wheel: " + i);
+                for (int k = 0; k < i; k++) {
+                    var other = handler.slots.get(k);
+                    context.assertTrue(Math.abs(other.x - slot.x) >= 18 || Math.abs(other.y - slot.y) >= 18, "slots " + k + " and " + i + " apart");
+                }
             }
-            for (int i = StencilGunItem.STENCIL_SLOTS; i < StencilGunItem.SIZE; i++) {
-                context.assertTrue(handler.slots.get(i).x < StencilGunScreenHandler.INVENTORY_X, "dyes on the left");
-            }
-            var head = handler.slots.get(StencilGunScreenHandler.ARMOR_START);
-            context.assertTrue(head.canInsert(new ItemStack(Items.DIAMOND_HELMET)) && !head.canInsert(new ItemStack(Items.DIAMOND_BOOTS)),
-                    "the head slot takes a helmet only");
-            context.assertEquals(handler.slots.get(StencilGunScreenHandler.OFF_HAND).getIndex(), net.minecraft.entity.player.PlayerInventory.OFF_HAND_SLOT, "the off hand");
+            context.assertTrue(handler.slots.get(StencilGunScreenHandler.PLAYER_START).y > StencilGunScreenHandler.CENTER_Y + StencilGunScreenHandler.RING_OUTER,
+                    "the inventory under the wheel");
             player.getInventory().setStack(9, new ItemStack(Items.LIME_DYE, 4));
             handler.quickMove(player, StencilGunScreenHandler.PLAYER_START);
             context.assertTrue(StencilGunItem.contents(gun).stream().anyMatch(stack -> stack.isOf(Items.LIME_DYE) && stack.getCount() == 4),
