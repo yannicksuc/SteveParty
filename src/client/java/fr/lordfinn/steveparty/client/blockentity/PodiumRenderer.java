@@ -115,6 +115,7 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
             root.getChild("head").yaw = MathHelper.sin(time * 0.05f) * 0.25f;
             root.getChild("right_arm").roll = 0.08f + MathHelper.sin(time * 0.12f) * 0.04f;
             root.getChild("left_arm").roll = -0.08f - MathHelper.sin(time * 0.12f) * 0.04f;
+            copyOuterLayer(root);
             int light = WorldRenderer.getLightmapCoordinates(world, entity.getPos().up());
             matrices.push();
             matrices.translate(0.5, surface + bob, 0.5);
@@ -147,6 +148,19 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
                 PodiumBlock.bottomOf(world, entity.getPos()).getY(), entity.getPos().getY())) {
             WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5, master.getSignal().text(), 0xFFFFE08A, 0x60000000, 0, 1f / 80f);
         }
+    }
+
+    /**
+     * The parts of the skin's outer layer (hat, jacket, sleeves, trousers) are siblings of the parts they cover in the player layer:
+     * they follow the pose only when copied, as PlayerEntityModel#setAngles does (and mods drawing them, 3D skin layers).
+     */
+    private static void copyOuterLayer(ModelPart root) {
+        root.getChild("hat").copyTransform(root.getChild("head"));
+        root.getChild("jacket").copyTransform(root.getChild("body"));
+        root.getChild("right_sleeve").copyTransform(root.getChild("right_arm"));
+        root.getChild("left_sleeve").copyTransform(root.getChild("left_arm"));
+        root.getChild("right_pants").copyTransform(root.getChild("right_leg"));
+        root.getChild("left_pants").copyTransform(root.getChild("left_leg"));
     }
 
     private static float easeOutBack(float t) {
