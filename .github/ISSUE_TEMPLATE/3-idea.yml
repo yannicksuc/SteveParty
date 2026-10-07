@@ -1,0 +1,48 @@
+name: "💡 Idée / Suggestion"
+description: "Une idée de nouveauté ou d'amélioration. / An idea for something new or better."
+title: "[Idée] "
+labels: ["idée"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Toutes les idées sont les bienvenues : nouvelle case, mini-jeu, objet, réglage, confort...
+        Every idea is welcome: a new space, mini-game, item, setting, quality of life...
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Domaine / Area"
+      multiple: true
+      options:
+        - "Dés / Dice"
+        - "Plateau, cases et cartouches / Board, tiles and cartridges"
+        - "Pions / Pawns"
+        - "Partie (Contrôleur de fête, cartes) / Party (Party Controller, cards)"
+        - "Mini-jeux / Mini-games"
+        - "Boutiques et Marchand en carton / Shops and Boxed Trader"
+        - "Mulas et étoiles / Mulas and stars"
+        - "Forge à dés / Dice Forge"
+        - "Tuyaux / Pipes"
+        - "Mât d'arrivée et podiums / Goal pole and podiums"
+        - "Panneaux et pochoirs / Signs and stencils"
+        - "Blocs de plastique et de construction / Plastic and building blocks"
+        - "CrazyPhone"
+        - "Quêtes et modpack / Quests and modpack"
+        - "Autre / Other"
+  - type: textarea
+    id: idea
+    attributes:
+      label: "L'idée / The idea"
+      description: "Décrivez-la comme vous l'imaginez en jeu. / Describe it as you picture it in game."
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: "Pourquoi ? / Why?"
+      description: "Ce que ça apporterait à une partie, ou le problème que ça règle. / What it would bring to a party, or the problem it solves."
+  - type: textarea
+    id: references
+    attributes:
+      label: "Références / References"
+      description: "Un jeu qui le fait déjà (Mario Party...), un croquis, une capture. / A game that already does it (Mario Party...), a sketch, a screenshot."
