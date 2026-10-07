@@ -29,6 +29,19 @@ public final class ModArmorMaterials {
             0.0f,
             0.0f));
 
+    /**
+     * Explorer's Helmet: no armour, a soft leather sound, repaired with leather. Drawn by its own model (dome, brim and
+     * headlamp, see the client's ExplorerHelmetRenderer), not by an armour layer.
+     */
+    public static final RegistryEntry<ArmorMaterial> EXPLORER_HELMET = register("explorer_helmet", new ArmorMaterial(
+            Map.of(ArmorItem.Type.HELMET, 0),
+            0,
+            SoundEvents.ITEM_ARMOR_EQUIP_LEATHER,
+            () -> Ingredient.ofItems(Items.LEATHER),
+            List.of(new ArmorMaterial.Layer(Steveparty.id("explorer_helmet"))),
+            0.0f,
+            0.0f));
+
     /** Triple Jump Shoes (drawn by GeckoLib): 3 armour, toughness 1, enchantability 25, repaired with leather. */
     public static final RegistryEntry<ArmorMaterial> TRIPLE_JUMP_SHOES = register("triple_jump_shoes", new ArmorMaterial(
             Map.of(ArmorItem.Type.BOOTS, 3),

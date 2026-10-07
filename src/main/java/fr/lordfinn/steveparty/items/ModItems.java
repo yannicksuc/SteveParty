@@ -42,6 +42,8 @@ public class ModItems {
     public static final Item STENCIL_GUN = registerUnstackable(StencilGunItem.class, "stencil_gun");
     public static final Item WRENCH = registerUnstackable(WrenchItem.class, "wrench");
     public static final Item TILE_LINKER_BRUSH = registerUnstackable(fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem.class, "tile_linker_brush");
+    /** Worn on the head, its lamp lit: the board view at all times, with the details of each space (see ExplorerHelmet). */
+    public static final Item EXPLORER_HELMET = registerUnstackable(fr.lordfinn.steveparty.items.custom.ExplorerHelmetItem.class, "explorer_helmet");
     public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
     public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
     /** Its tile's face is anthracite until dyed. */
@@ -228,6 +230,7 @@ public class ModItems {
             itemGroup.add(BOARD_SPACE_REDSTONE_ROUTER);
             itemGroup.add(WRENCH);
             itemGroup.add(TILE_LINKER_BRUSH);
+            itemGroup.add(EXPLORER_HELMET);
             itemGroup.add(BOARD_SPACE_BEHAVIOR);
             itemGroup.add(BOARD_SPACE_BEHAVIOR_STOP);
             itemGroup.add(TILE_BEHAVIOR_START);
