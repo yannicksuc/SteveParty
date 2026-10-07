@@ -93,10 +93,11 @@ public class ModItems {
     public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
     public static final Item MULA_SPAWN_EGG = register(MulaSpawnEggItem.class, "mula_spawn_egg");
     public static final Item BOXED_TRADER_SPAWN_EGG = register(fr.lordfinn.steveparty.items.custom.BoxedTraderSpawnEggItem.class, "boxed_trader_spawn_egg");
-    // The Glandouille: its acorn (planted on farmland, it hatches into a young one), its lost cap (worn on the head),
-    // a spawn egg per variant (the egg sets the variant)
+    // The Glandouille: its acorn (planted on farmland, it hatches into a young one; eaten, half a drumstick), its lost
+    // cap (worn on the head), a spawn egg per variant (the egg sets the variant)
     public static final Item ACORN = Registry.register(Registries.ITEM, Steveparty.id("acorn"),
-            new net.minecraft.item.AliasedBlockItem(ModBlocks.ACORN_CROP, new Item.Settings()));
+            new net.minecraft.item.AliasedBlockItem(ModBlocks.ACORN_CROP, new Item.Settings()
+                    .food(new net.minecraft.component.type.FoodComponent.Builder().nutrition(1).saturationModifier(0.1f).build())));
     public static final Item ACORN_HAT = registerUnstackable(fr.lordfinn.steveparty.items.custom.glandouille.AcornHatItem.class, "acorn_hat");
     public static final Item GLANDOUILLE_SPAWN_EGG = glandouilleEgg("glandouille_spawn_egg",
             fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.CLASSIC, 0xB86C30, 0x5A3A22);
