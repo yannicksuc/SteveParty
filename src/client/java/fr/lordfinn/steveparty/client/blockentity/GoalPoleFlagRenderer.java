@@ -57,9 +57,9 @@ import java.util.WeakHashMap;
  * the brightness of the old flag. The entity layers used before add vanilla's entity lighting (at most ~74 % on a
  * vertical cloth, 50 % facing east/west), which made every flag darker than the old model, wool or banners.
  * <p>
- * When its goal is met, the flag slides down the pole ({@link FlagSlide}) to rest at the bottom, stacked on the flags
- * below ({@link GoalPoleFlags}); a ring stays on its own segment, with a thin rope down to the flag, so that everyone
- * sees where it belongs (shears and dye work there). Only the drawing moves: the flag stays on its segment.
+ * A pole has one flag, on its top segment. When the goal is met, the flag slides down the pole ({@link FlagSlide}) to
+ * rest at the bottom ({@link GoalPoleFlags}); a ring stays at the top, with a thin rope down to the flag. Only the
+ * drawing moves: the flag stays on the top segment. Without a flag, nothing shows above the top (no goal).
  */
 public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEntity> {
     /** The flag's sprites in the block atlas: the original red one, and a greyscale one tinted with a dye's colour. */
@@ -116,8 +116,10 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         if (!state.contains(GoalPoleBlock.FLAG)) return;
         World world = entity.getWorld();
         if (world == null) return;
-        // The top of the pole: the progress above the ball, the lit ball, the details with a wrench
-        if (state.get(GoalPoleBlock.TOP)) GoalPoleTopDisplay.render(entity, tickDelta, matrices, vertexConsumers, dispatcher);
+        // The top of the pole: the progress above the ball, the lit ball, the details with a wrench; no flag, no goal
+        if (GoalPoleBlock.showsGoal(state)) {
+            GoalPoleTopDisplay.render(entity, tickDelta, matrices, vertexConsumers, dispatcher);
+        }
         // A goal per segment: a notch on each segment, gold, green while its goal is met
         if (entity.isPerSegment()) drawBand(vertexConsumers.getBuffer(RenderLayer.getCutout()), matrices.peek(),
                 entity.isGoalMet() ? NOTCH_MET : NOTCH, light, 6.1f, 9.9f, 7.4f, 8.6f);
@@ -136,7 +138,7 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         float gust = FlagWind.gust(pos.getX(), pos.getZ(), seconds);
         computeCloth(columns, seconds, phase, speed, gust);
 
-        // Goal met: the flag slides down to the bottom of the pole (on the flags below), and back up afterwards; or,
+        // Goal met: the flag slides down to the bottom of the pole, and back up afterwards; or,
         // one notch per point, a step down for each point
         boolean met = entity.isGoalMet();
         float wanted = GoalPoleFlags.drop(world, pos, SCRATCH);
@@ -161,7 +163,7 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-facingDegrees(state)));
         matrices.translate(-0.5f, 0f, -0.5f);
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getCutout());
-        // The ring stays on the flag's segment; the rope runs down to the flag while it is away
+        // The ring stays at the top; the rope runs down to the flag while it is away
         drawBand(buffer, matrices.peek(), RING, light, 6.2f, 9.8f, RING_BOTTOM, RING_TOP);
         if (TOP_Y + drop < RING_BOTTOM) drawRope(buffer, matrices.peek(), light, RING_BOTTOM, TOP_Y + drop);
         matrices.translate(0f, drop / 16f, 0f);
@@ -330,13 +332,13 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
     }
 
     /**
-     * A flag can slide down several blocks, and the progress floats above the top: those poles are drawn even when
+     * A flag can slide down several blocks, and the progress floats above the top: flagged poles are drawn even when
      * their own block is out of view (the render distance still applies).
      */
     @Override
     public boolean rendersOutsideBoundingBox(GoalPoleBlockEntity entity) {
         BlockState state = entity.getCachedState();
-        return state.contains(GoalPoleBlock.FLAG) && (state.get(GoalPoleBlock.FLAG) || state.get(GoalPoleBlock.TOP));
+        return state.contains(GoalPoleBlock.FLAG) && state.get(GoalPoleBlock.FLAG);
     }
 
     @Override
