@@ -22,6 +22,11 @@ public class CartridgeCustomSlot extends Slot {
         return isAllowedItem(stack);
     }
 
+    /** Whether {@code stack} may be in this slot, whatever it holds now (a swap, see DestinationSwap). */
+    public boolean accepts(ItemStack stack) {
+        return !stack.isEmpty() && isAllowedItem(stack);
+    }
+
     protected boolean isAllowedItem(ItemStack originalStack) {
         return originalStack.getItem() instanceof CartridgeItem;
     }

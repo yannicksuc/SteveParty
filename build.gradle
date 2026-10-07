@@ -94,6 +94,8 @@ dependencies {
     modLocalRuntime "maven.modrinth:architectury-api:13.0.11+fabric"
     modLocalRuntime "maven.modrinth:cloth-config:15.0.140+fabric"
     modLocalRuntime "me.shedaniel.cloth:basic-math:0.6.1"
+    // Optional Mod Menu entry (client compat.modmenu, entrypoint modmenu): the client options screen, never required
+    modCompileOnly "maven.modrinth:modmenu:11.0.3"
     // Local-only dev mods (not in git)
     modLocalRuntime fileTree(dir: 'dev-mods', include: '*.jar')
     localRuntime "org.anarres:jcpp:1.4.14"

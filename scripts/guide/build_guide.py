@@ -166,15 +166,15 @@ category("getting_started", "steveparty:power_star", ("Getting Started", "Bien d
     ], parents=["welcome"]),
     E("first_party", "steveparty:default_dice", ("Your First Party", "Ta première partie"),
       ("Six steps to a working board", "Six étapes pour un plateau qui marche"), [
-        T("1. Craft **Tiles** and lay out a path.\n"
+        T("1. Craft **Tiles** (each comes with its Cartridge) and lay out a path.\n"
           "2. Link them with the **Tile Linker Brush**.\n"
-          "3. Put a **Start Cartridge** in the first Tile.\n"
+          "3. Craft the first Tile with a **Start Cartridge**.\n"
           "4. Turn a mob into a pawn with the **Tokenizer Wand** and set it on the start.\n"
           "5. Place a **Party Controller** and press *Start party*.\n"
           "6. Roll a die!",
-          "1. Fabrique des **tuiles** et trace un chemin.\n"
+          "1. Fabrique des **tuiles** (chacune avec sa cartouche) et trace un chemin.\n"
           "2. Relie-les avec le **pinceau lieur**.\n"
-          "3. Mets une **cartouche de départ** dans la première tuile.\n"
+          "3. Fabrique la première tuile avec une **cartouche de départ**.\n"
           "4. Change un mob en pion avec la **baguette de pions** et pose-le sur le départ.\n"
           "5. Pose un **contrôleur de fête** et clique sur *Lancer la partie*.\n"
           "6. Lance un dé !"),
@@ -201,7 +201,21 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "- **Tuile avancée** (bord doré) : 16 cartouches, la redstone choisit l'active.\n"
           "- **Point de déclenchement** : 16 cartouches, ne compte **pas** comme un pas."),
         C("steveparty:tile", "steveparty:advanced_tile",
-          "Any carpet colour works for the Tile.", "N'importe quelle couleur de tapis convient pour la tuile."),
+          "Tiles come two at a time, each holding a plain Cartridge: placed, ready to link. Any carpet colour works. "
+          "The Advanced Tile comes empty.",
+          "Les tuiles viennent par deux, chacune avec une cartouche simple : posées, prêtes à relier. N'importe quel "
+          "tapis convient. La tuile avancée vient vide."),
+        T("At the crafting grid (2x2 or table):\n\n"
+          "- **Tile + a cartridge**: the Tile holds that one, its old one comes back.\n"
+          "- **A Tile alone**: emptied, its cartridge back.\n"
+          "- **Advanced Tile + Tiles or cartridges**: they fill its free slots, in the order 0, 15, 14… 1; "
+          "the Tiles are used up. More than free slots: no craft.",
+          "À l'établi (2x2 ou table) :\n\n"
+          "- **Tuile + une cartouche** : la tuile contient celle-là, l'ancienne est rendue.\n"
+          "- **Une tuile seule** : vidée, sa cartouche rendue.\n"
+          "- **Tuile avancée + tuiles ou cartouches** : elles remplissent ses emplacements libres, dans l'ordre "
+          "0, 15, 14… 1 ; les tuiles sont consommées. Plus que d'emplacements libres : pas de recette.",
+          "Changing Cartridges", "Changer de cartouche"),
         C("steveparty:checkpoint", None,
           "A floating glass cube without collision: pawns cross it for free, handy for turns and forks.",
           "Un cube de verre flottant, sans collision : les pions le traversent gratuitement, pratique pour "
@@ -219,6 +233,15 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "Elle diagnostique aussi le plateau sur le **contrôleur de fête**, montre le plateau, règle podiums et "
           "mâts d'arrivée, et casse tout bloc de plastique en un coup."),
         C("steveparty:wrench"),
+        T("In a space's screen, the **pipette** copies the destinations of a cartridge: click it, a cartridge, then "
+          "others to paste them (only the destinations). Right-click or Escape: stop.\n\n"
+          "A cartridge put on another one swaps them; if you choose so (asked once, Mod Menu), their destinations "
+          "swap too and stay with the place.",
+          "Dans l'écran d'une case, la **pipette** copie les destinations d'une cartouche : clique-la, une cartouche, "
+          "puis d'autres pour les coller (seulement les destinations). Clic droit ou Échap : arrêter.\n\n"
+          "Une cartouche posée sur une autre les échange ; si tu le choisis (demandé une fois, Mod Menu), leurs "
+          "destinations s'échangent aussi et restent à l'emplacement.",
+          "Pipette & Swaps", "Pipette et échanges"),
     ], parents=["spaces"]),
     E("placing", "steveparty:tile", ("Placing Tiles", "Poser une tuile"), ("Slopes and directions", "Pentes et directions"), [
         T("A Tile faces one of **8 directions** (45° steps), following your gaze.\n\n"
@@ -244,12 +267,15 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "Tailleur de pierre : 1 tuile donne 2 petites. Établi : 2 petites font 1 standard, 4 standard en carré "
           "font 1 grande, et une grande redonne ses 4."),
         SC("steveparty:small_tile_from_stonecutting"),
-        T("Break a Tile with **Silk Touch**: it drops as a single item that keeps all its cartridges, their "
-          "settings, its look and its size. Without Silk Touch, the cartridges drop on the ground.\n\n"
-          "A Tile holding cartridges cannot change size at the crafting table.",
-          "Casse une tuile avec **Toucher de soie** : elle donne un seul objet qui garde toutes ses cartouches, "
-          "leurs réglages, son look et sa taille. Sans Toucher de soie, les cartouches tombent au sol.\n\n"
-          "Une tuile qui contient des cartouches ne change pas de taille à l'établi.",
+        T("A broken Tile drops as a single item that keeps its cartridges, their settings, its look and its size, "
+          "but not its links (they led to its old neighbours); identical tiles stack. With **Silk Touch** it keeps "
+          "its links too: the tile moves.\n\n"
+          "Merging tiles, the other tiles' cartridge comes back; the stonecutter only cuts empty tiles.",
+          "Une tuile cassée donne un seul objet qui garde ses cartouches, leurs réglages, son look et sa taille, mais "
+          "pas ses liens (ils menaient à ses anciennes voisines) ; des tuiles identiques s'empilent. Au **Toucher de "
+          "soie**, elle garde aussi ses liens : la tuile déménage.\n\n"
+          "En fusionnant des tuiles, la cartouche des autres est rendue ; le tailleur de pierre ne coupe que les "
+          "tuiles vides.",
           "Keeping Cartridges", "Garder ses cartouches"),
     ], parents=["placing"], gate="lay_the_board"),
     E("stamping", "steveparty:stencil", ("Stamping Tiles", "Tamponner une tuile"), ("Give a tile its own look", "Donner un look à une tuile"), [
@@ -274,12 +300,13 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "Le **clic gauche** ouvre sa roue : maintiens et relâche sur un secteur, ou clique puis clique un "
           "secteur. Survole un secteur pour lire ce qu'il fait."),
         T("Outer ring: the **level** (0-15, the slot of an Advanced Tile or a check point that gets the link; "
-          "*powered* by default). Inner ring: the **Cartridge** new spaces get, **undo / redo** (32 steps).\n\n"
+          "*powered* by default). Inner ring: **keep** the cartridges, or a **Cartridge** swapped into each tile "
+          "painted, **undo / redo**.\n\n"
           "The last space painted is the anchor: right-click a **chest** to link it to an inventory space, a "
           "**trader**, stall or cash register to pick a shop. Brush in the off hand: each Tile placed is linked.",
           "Anneau extérieur : le **niveau** (0-15, l'emplacement d'une tuile avancée ou d'un point de passage qui "
-          "reçoit le lien ; *alimenté* par défaut). Anneau intérieur : la **cartouche** des nouvelles cases, "
-          "**annuler / rétablir**.\n\n"
+          "reçoit le lien ; *alimenté* par défaut). Anneau intérieur : **garder** les cartouches, ou une "
+          "**cartouche** échangée dans chaque tuile peinte, **annuler / rétablir**.\n\n"
           "Dernière case peinte = ancre : clic droit sur un **coffre** pour le lier (case d'inventaire), sur un "
           "**marchand**, un étal ou une caisse pour la boutique. Pinceau en main secondaire : chaque tuile posée "
           "est reliée.",

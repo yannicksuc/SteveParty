@@ -17,6 +17,9 @@ import net.minecraft.advancement.criterion.RecipeUnlockedCriterion;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.recipe.RawShapedRecipe;
+import net.minecraft.recipe.ShapedRecipe;
+import net.minecraft.item.ItemStack;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import net.minecraft.recipe.StonecuttingRecipe;
 import net.minecraft.recipe.book.CraftingRecipeCategory;
 import java.util.Map;
@@ -346,27 +349,34 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         // A Power Star: the star the space sells
         offerCartridge(ModItems.STAR_CARTRIDGE, ModItems.POWER_STAR);
 
-        // The Tile: a plastic board (pellets) under a cloth face (carpets), on the pressure plate that feels
-        // the tokens landing on it; two at a time
-        ShapedRecipeJsonBuilder.create(RecipeCategory.REDSTONE, ModBlocks.TILE, 2)
-                .pattern("WWW")
-                .pattern("CPC")
-                .input('W', ItemTags.WOOL_CARPETS)
-                .input('C', ModItems.PLASTIC_PELLETS)
-                .input('P', Items.LIGHT_WEIGHTED_PRESSURE_PLATE)
-                .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
-                .criterion(hasItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), conditionsFromItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE))
-                .offerTo(exporter);
+        // The Tile: a cloth face (carpets) on the pressure plate that feels the tokens landing on it, and a
+        // Cartridge each (its plastic is the board): two at a time, each holding its plain Cartridge, ready to link.
+        // Same price as a Tile filled by hand before, a pellet less (the cartridges' plastic is the board).
+        Identifier tile = Steveparty.id("tile");
+        ItemStack equipped = TileContents.holding(new ItemStack(ModBlocks.TILE), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
+        equipped.setCount(2);
+        exporter.accept(tile, new ShapedRecipe("", CraftingRecipeCategory.REDSTONE, RawShapedRecipe.create(Map.of(
+                        'W', Ingredient.fromTag(ItemTags.WOOL_CARPETS),
+                        'K', Ingredient.ofItems(ModItems.BOARD_SPACE_BEHAVIOR),
+                        'P', Ingredient.ofItems(Items.LIGHT_WEIGHTED_PRESSURE_PLATE)), "WWW", "KPK"), equipped, true),
+                exporter.getAdvancementBuilder()
+                        .criterion("has_the_recipe", RecipeUnlockedCriterion.create(tile))
+                        .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
+                        .criterion(hasItem(ModItems.BOARD_SPACE_BEHAVIOR), conditionsFromItem(ModItems.BOARD_SPACE_BEHAVIOR))
+                        .criterion(hasItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), conditionsFromItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE))
+                        .rewards(AdvancementRewards.Builder.recipe(tile))
+                        .criteriaMerger(AdvancementRequirements.CriterionMerger.OR)
+                        .build(tile.withPrefixedPath("recipes/redstone/")));
 
-        // The Advanced Tile: a Tile in a gold frame, a chest for its 16 cartridges and a comparator reading
-        // the redstone power that picks the active one
+        // The Advanced Tile, empty: a pressure plate in a gold frame, a chest for its 16 cartridges and a
+        // comparator reading the redstone power that picks the active one. Tiles crafted with it fill it.
         ShapedRecipeJsonBuilder.create(RecipeCategory.REDSTONE, ModBlocks.ADVANCED_TILE)
                 .pattern(" R ")
-                .pattern("GTG")
+                .pattern("GPG")
                 .pattern("GCG")
                 .input('R', Items.COMPARATOR)
                 .input('G', Items.GOLD_INGOT)
-                .input('T', ModBlocks.TILE)
+                .input('P', Items.LIGHT_WEIGHTED_PRESSURE_PLATE)
                 .input('C', Items.CHEST)
                 .criterion(hasItem(ModBlocks.TILE), conditionsFromItem(ModBlocks.TILE))
                 .offerTo(exporter);

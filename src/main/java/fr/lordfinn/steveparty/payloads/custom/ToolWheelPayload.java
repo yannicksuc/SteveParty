@@ -28,7 +28,7 @@ public record ToolWheelPayload(int action, int value) implements CustomPayload {
     public enum Action {
         /** Brush: its level, -1 (the powered slot) or 0-15. */
         BRUSH_LEVEL,
-        /** Brush: the kind of Cartridge put in new tiles (raw item id). */
+        /** Brush: the kind of Cartridge the painted tiles get (raw item id), or {@link #KEEP_CARTRIDGES}. */
         BRUSH_CARTRIDGE,
         /** Brush: undo the last link edit. */
         BRUSH_UNDO,
@@ -41,6 +41,9 @@ public record ToolWheelPayload(int action, int value) implements CustomPayload {
         /** Hammer: opens it to load / unload its stencils and dyes. */
         HAMMER_OPEN
     }
+
+    /** {@link Action#BRUSH_CARTRIDGE}: no kind picked, the painted tiles keep their cartridge. */
+    public static final int KEEP_CARTRIDGES = -1;
 
     public ToolWheelPayload(Action action, int value) {
         this(action.ordinal(), value);
@@ -62,8 +65,8 @@ public record ToolWheelPayload(int action, int value) implements CustomPayload {
         Action picked = Action.values()[action];
         return switch (picked) {
             case BRUSH_LEVEL -> TileLinkerBrush.isBrush(tool) && TileLinkerBrush.setLevel(player, tool, value);
-            case BRUSH_CARTRIDGE -> TileLinkerBrush.isBrush(tool) && value >= 0 && value < Registries.ITEM.size()
-                    && TileLinkerBrush.setCartridge(player, tool, Registries.ITEM.get(value));
+            case BRUSH_CARTRIDGE -> TileLinkerBrush.isBrush(tool) && value >= KEEP_CARTRIDGES && value < Registries.ITEM.size()
+                    && TileLinkerBrush.setCartridge(player, tool, value == KEEP_CARTRIDGES ? null : Registries.ITEM.get(value));
             case BRUSH_UNDO, BRUSH_REDO -> TileLinkerBrush.isBrush(tool) && TileLinkerBrush.undo(player, tool, picked == Action.BRUSH_UNDO);
             case HAMMER_STENCIL -> tool.getItem() instanceof StencilGunItem && StencilGunItem.selectStencil(player, tool, value);
             case HAMMER_DYE -> tool.getItem() instanceof StencilGunItem && StencilGunItem.selectDye(player, tool, value);

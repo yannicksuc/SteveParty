@@ -26,6 +26,11 @@
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:wrench"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.wrench.page2.text",
+      "title": "book.steveparty.guide.board.wrench.page2.title"
     }
   ]
 }

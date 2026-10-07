@@ -133,7 +133,19 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
     }
 
     @Override
+    protected boolean hasPipette() {
+        return true;
+    }
+
+    /** The pipette's button: top right of the tile part. */
+    @Override
+    protected int pipetteRight() {
+        return x + BoardSpaceScreenHandler.TILE_W;
+    }
+
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (pipetteOn()) return super.mouseClicked(mouseX, mouseY, button);
         if (panel.mouseClicked(mouseX, mouseY, button)) return true;
         // Advanced Tile: a right click on a cartridge (empty cursor) shows its menu instead of taking it
         if (!isSingle && button == 1 && handler.getCursorStack().isEmpty() && client != null && client.interactionManager != null) {

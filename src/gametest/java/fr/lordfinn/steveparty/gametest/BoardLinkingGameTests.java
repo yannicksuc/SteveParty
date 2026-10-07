@@ -660,7 +660,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
         });
     }
 
-    /** The kind of Cartridge picked on the wheel goes in the tiles the brush links (from the inventory in survival). */
+    /** The kind of Cartridge picked on the wheel goes in the empty tiles the brush links (from the inventory in survival). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theWheelPicksTheCartridgeOfNewTiles(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
@@ -670,7 +670,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             player.getInventory().setStack(11, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR, 5));
             context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
                     net.minecraft.registry.Registries.ITEM.getRawId(net.minecraft.item.Items.STONE)), "stone is no cartridge");
-            context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE, -1), "no item -1");
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE, -2), "no item -2");
             context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
                     net.minecraft.registry.Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR_STOP)), "the stop cartridge");
             context.assertTrue(TileLinkerBrush.cartridge(brush) == ModItems.BOARD_SPACE_BEHAVIOR_STOP, "kept on the brush");
@@ -679,9 +679,11 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertTrue(boardSpace(context, t.get(1)).getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "and another");
             context.assertTrue(player.getInventory().getStack(10).isEmpty(), "both taken from the inventory");
             context.assertEquals(player.getInventory().getStack(11).getCount(), 5, "the plain ones untouched");
-            // Back to the plain Cartridge: nothing stored
+            // The plain Cartridge is a kind like the others; keeping the tiles' cartridges is the default: nothing stored
             context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
                     net.minecraft.registry.Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR)), "the plain cartridge");
+            context.assertTrue(TileLinkerBrush.cartridge(brush) == ModItems.BOARD_SPACE_BEHAVIOR, "stored");
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE, ToolWheelPayload.KEEP_CARTRIDGES), "keep");
             context.assertTrue(!brush.contains(ModComponents.LINK_CARTRIDGE), "the default: no component left");
         });
     }

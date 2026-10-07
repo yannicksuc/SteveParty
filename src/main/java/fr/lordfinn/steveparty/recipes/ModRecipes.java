@@ -29,6 +29,10 @@ public class ModRecipes {
     public static final RecipeSerializer<TileSizeRecipe> TILE_SIZE = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_tile_size"), new SpecialRecipeSerializer<>(TileSizeRecipe::new));
 
+    /** A Tile + a cartridge: the Tile holding it (the old one back); an Advanced Tile + Tiles / cartridges: filled. */
+    public static final RecipeSerializer<TileCartridgeRecipe> TILE_CARTRIDGE = Registry.register(Registries.RECIPE_SERIALIZER,
+            Steveparty.id("crafting_special_tile_cartridge"), new SpecialRecipeSerializer<>(TileCartridgeRecipe::new));
+
     /** A die + module items: the die with those modules added (the module items stay in the grid). One per module. */
     public static final RecipeSerializer<DiceModuleRecipe> DICE_MODULE = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("dice_module"), new DiceModuleRecipe.Serializer());
