@@ -111,7 +111,43 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
                 context.fill(sx + 18, sy, sx + 19, sy + 18, 0xFFFFC52E);
             }
         }
+        // The cable from the cartridge shown to its menu
+        int selected = isSingle ? 0 : handler.getSelectedSlot();
+        if (selected < handler.slots.size()) wire(context, y + handler.slots.get(selected).y + 7);
         panel.render(context, mouseX, mouseY);
+    }
+
+    private static final int WIRE_OUTLINE = 0xFF3A2410, WIRE_CORE = 0xFFFFC52E, WIRE_GLOW = 0xFFFFF6C8;
+    /** The tile's square ends at 135 in tile.png, the menu starts at MENU_X; the cable climbs halfway between. */
+    private static final int WIRE_FROM = 136, WIRE_HEADER = 12;
+
+    /**
+     * A cable, 2 px of gold in a dark sheath, from the right of the tile's square at the height of the cartridge
+     * shown ({@code fromY}) to the menu's title, in right angles; a light runs along it, toward the menu.
+     */
+    private void wire(DrawContext context, int fromY) {
+        int x0 = x + WIRE_FROM, x2 = x + BoardSpaceScreenHandler.MENU_X, x1 = (x0 + x2) / 2, toY = y + WIRE_HEADER;
+        int[][] path = {{x0, fromY, x1, fromY}, {x1, fromY, x1, toY}, {x1, toY, x2, toY}};
+        for (int[] seg : path) segment(context, seg, WIRE_OUTLINE, 2);
+        for (int[] seg : path) segment(context, seg, WIRE_CORE, 1);
+        // The light: a bright spot travelling the cable's length
+        int length = Math.abs(x1 - x0) + Math.abs(toY - fromY) + Math.abs(x2 - x1);
+        if (length <= 0) return;
+        int at = (int) (net.minecraft.util.Util.getMeasuringTimeMs() / 25 % (length + 20)) - 10;
+        for (int[] seg : path) {
+            int len = Math.abs(seg[2] - seg[0]) + Math.abs(seg[3] - seg[1]);
+            if (at >= 0 && at <= len) {
+                int px = seg[0] + Integer.signum(seg[2] - seg[0]) * at, py = seg[1] + Integer.signum(seg[3] - seg[1]) * at;
+                context.fill(px - 1, py - 1, px + 1, py + 1, WIRE_GLOW);
+            }
+            at -= len;
+        }
+    }
+
+    /** A straight line from (seg[0], seg[1]) to (seg[2], seg[3]), {@code half} px on each side of it. */
+    private static void segment(DrawContext context, int[] seg, int color, int half) {
+        int ax = Math.min(seg[0], seg[2]), bx = Math.max(seg[0], seg[2]), ay = Math.min(seg[1], seg[3]), by = Math.max(seg[1], seg[3]);
+        context.fill(ax - half, ay - half, bx + half, by + half, color);
     }
 
     @Override
@@ -137,7 +173,7 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
         return true;
     }
 
-    /** The pipette's button: right of the tile's square, in the corner just above the inventory's right end. */
+    /** The pipette's button: left of the tile's square, just above the inventory's tab. */
     @Override
     protected int pipetteX() {
         return x + PIPETTE_RIGHT - 18;
@@ -148,8 +184,8 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
         return y + INVENTORY_TOP - 2 - 18;
     }
 
-    /** In tile.png: the inventory panel's right end (shadow included) and its top edge (on the right of the tab). */
-    private static final int PIPETTE_RIGHT = 176, INVENTORY_TOP = 95;
+    /** In tile.png: 2 px left of the tile's square (it starts at 41), and the top of the inventory's tab. */
+    private static final int PIPETTE_RIGHT = 39, INVENTORY_TOP = 86;
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
