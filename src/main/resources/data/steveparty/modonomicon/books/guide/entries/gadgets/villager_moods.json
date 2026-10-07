@@ -6,8 +6,8 @@
     "item": "steveparty:villager_block"
   },
   "x": 0,
-  "y": 5,
-  "sort_number": 3,
+  "y": 6,
+  "sort_number": 4,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "pages": [

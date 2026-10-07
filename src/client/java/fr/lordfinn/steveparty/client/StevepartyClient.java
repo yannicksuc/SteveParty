@@ -243,6 +243,11 @@ public class StevepartyClient implements ClientModInitializer {
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
         // The Mula egg is drawn (textures/item/mula_spawn_egg.png): no spawn-egg tint over it
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG);
+        // The Glandouille eggs share one entity type: vanilla tints only one egg per type, each one is tinted here
+        for (net.minecraft.item.Item egg : ModItems.GLANDOUILLE_SPAWN_EGGS) {
+            net.minecraft.item.SpawnEggItem spawnEgg = (net.minecraft.item.SpawnEggItem) egg;
+            ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFF000000 | spawnEgg.getColor(tintIndex), egg);
+        }
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.BOXED_TRADER_SPAWN_EGG);
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
@@ -266,6 +271,7 @@ public class StevepartyClient implements ClientModInitializer {
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
         // Cut out: the start tile's top is made of value layers (see TileColors#tint)
         BlockRenderLayerMap.INSTANCE.putBlocks(RenderLayer.getCutout(), ModBlocks.ADVANCED_TILE, ModBlocks.TILE);
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.ACORN_CROP, RenderLayer.getCutout());
 
         BlockEntityRendererFactories.register(ModBlockEntities.ADVANCED_TILE_ENTITY, TileBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
@@ -320,6 +326,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayRenderer::new);
         EntityRendererRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.client.entity.GlandouilleRenderer::new);
         // The forge core is drawn by the forge: its entity is only a hitbox
         EntityRendererRegistry.register(ModEntities.FORGE_CORE, net.minecraft.client.render.entity.EmptyEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.PIPE_CARRIER, net.minecraft.client.render.entity.EmptyEntityRenderer::new);

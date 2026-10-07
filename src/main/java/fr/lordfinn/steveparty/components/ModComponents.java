@@ -87,6 +87,12 @@ public class ModComponents {
     /** Move Forward / Back cartridge: spaces a token landing on its tile moves on (1..6 forward, -1..-6 back). */
     public static final ComponentType<Integer> ADVANCE_BACK_STEPS =
             registerComponent("advance-back-steps", Codec.intRange(-6, 6));
+    /** Glandouille Cartridge: how many spaces ahead its tower pushes the tokens (0: no destination, nothing happens). */
+    public static final ComponentType<Integer> GLANDOUILLE_DISTANCE =
+            registerComponent("glandouille-distance", Codec.intRange(0, 12));
+    /** Glandouille Cartridge: a lone Glandouille that tries to push and can't, instead of a tower. */
+    public static final ComponentType<Boolean> GLANDOUILLE_LONE =
+            registerComponent("glandouille-lone", Codec.BOOL);
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =

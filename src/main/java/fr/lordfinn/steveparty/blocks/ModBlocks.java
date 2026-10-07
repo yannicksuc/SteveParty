@@ -719,6 +719,16 @@ public class ModBlocks {
         return register(factory, settings, name, shouldRegisterItem, BlockItem::new);
     }
 
+    /** A planted Acorn: grows like a crop on farmland, hatches into a young Glandouille when ripe (no block item). */
+    public static final Block ACORN_CROP = Blocks.register(RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("acorn_crop")),
+            new fr.lordfinn.steveparty.blocks.custom.glandouille.AcornCropBlock(AbstractBlock.Settings.create()
+                    .mapColor(MapColor.BROWN)
+                    .noCollision()
+                    .ticksRandomly()
+                    .breakInstantly()
+                    .sounds(BlockSoundGroup.CROP)
+                    .pistonBehavior(PistonBehavior.DESTROY)));
+
     public static void initialize() {
     }
 }

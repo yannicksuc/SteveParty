@@ -18,6 +18,7 @@ public class BoardSpaceBehaviorFactory {
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_REPLAY, new ReplayBoardSpaceBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_TELEPORT, new TeleportTileBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_STAR, new StarBoardSpaceBehavior());
+            BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_GLANDOUILLE, new GlandouilleTileBehavior());
         }
 
         public static ABoardSpaceBehavior get(BoardSpaceType type) {
