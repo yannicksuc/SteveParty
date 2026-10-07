@@ -172,14 +172,17 @@ public class MiniGameTestGameTests implements FabricGameTest {
 
     // ------------------------------------------------------------------ who plays
 
-    /** A player within 5 blocks of a pipe takes the role of the nearest one; entry and exit pipes recruit nobody. */
+    /**
+     * A player within 10 blocks of a pipe takes the role of the nearest one (the pipe nearest to him is his side,
+     * playtest #72); entry and exit pipes recruit nobody.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_test_recruit")
     public void playersAreRecruitedByTheNearestPipe(TestContext context) {
-        BlockPos green = pipe(context, GREEN, 0, 0), blue = pipe(context, BLUE, 3, 0), white = pipe(context, WHITE, 0, 3), yellow = pipe(context, YELLOW, 7, 7);
+        BlockPos green = pipe(context, GREEN, 0, 0), blue = pipe(context, BLUE, 3, 0), white = pipe(context, WHITE, 0, 3), yellow = pipe(context, YELLOW, 7, 5);
         ServerPlayerEntity g = player(context, "g", 0.5, 1, 1.5), b = player(context, "b", 2.5, 1, 1.5), w = player(context, "w", 1.5, 1, 3.5),
-                exit = player(context, "x", 6.5, 1, 6.5), far = player(context, "f", 4.5, 6, 5.5);
+                exit = player(context, "x", 7.5, 1, 5.5), high = player(context, "h", 3.5, 9, 0.5), far = player(context, "f", 4.5, 14, 5.5);
         try {
-            alone(context, g, b, w, exit, far);
+            alone(context, g, b, w, exit, high, far);
             UUID id = page(context, green, blue, white, yellow);
             MinecraftServer server = context.getWorld().getServer();
             Map<UUID, MiniGamePipeRole> recruits = MiniGameTest.recruit(server, MiniGamePages.get(server, id));
@@ -187,12 +190,17 @@ public class MiniGameTestGameTests implements FabricGameTest {
             expected.put(g.getUuid(), MiniGamePipeRole.PLAYERS);
             expected.put(b.getUuid(), MiniGamePipeRole.TEAM_A);
             expected.put(w.getUuid(), MiniGamePipeRole.SPECTATORS);
-            context.assertEquals(recruits, expected, "each near a pipe takes the role of the nearest; the exit pipe and 5 blocks away: nobody");
+            // On the exit pipe, the blue pipe is the nearest one within 10 blocks; 6.5 blocks above it, blue too
+            expected.put(exit.getUuid(), MiniGamePipeRole.TEAM_A);
+            expected.put(high.getUuid(), MiniGamePipeRole.TEAM_A);
+            context.assertEquals(recruits.keySet(), expected.keySet(), "who is within 10 blocks of an arrival pipe");
+            for (UUID uuid : expected.keySet()) context.assertEquals(recruits.get(uuid), expected.get(uuid), "each takes the role of the nearest pipe");
+            context.assertTrue(MiniGameTest.recruit(server, MiniGamePages.get(server, page(context, yellow))).isEmpty(), "an exit pipe recruits nobody");
             // Someone already in a mini-game is not recruited
             MiniGamePipes.enterParty(g.getUuid(), id, () -> true);
             context.assertTrue(!MiniGameTest.recruit(server, MiniGamePages.get(server, id)).containsKey(g.getUuid()), "nobody in two mini-games at once");
         } finally {
-            remove(context, g, b, w, exit, far);
+            remove(context, g, b, w, exit, high, far);
         }
         context.complete();
     }
@@ -266,7 +274,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
     public void aTestRunsToItsPodiumsAndPaysNothing(TestContext context) {
         BlockPos green = pipe(context, GREEN, 1, 1), white = pipe(context, WHITE, 3, 1);
         ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 0.5, 1, 1.5), watcher = player(context, "s", 3.5, 1, 2.5),
-                observer = player(context, "o", 7.5, 1, 7.5);
+                observer = player(context, "o", 7.5, 14, 7.5);
         MinecraftServer server = context.getWorld().getServer();
         ServerWorld world = context.getWorld();
         UUID id = page(context, green, white);
@@ -483,7 +491,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
     /** Why a page can't be tested, as its button says it. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_test_reasons")
     public void whyAPageCanNotBeTested(TestContext context) {
-        ServerPlayerEntity p1 = player(context, "a", 7.5, 1, 7.5);
+        ServerPlayerEntity p1 = player(context, "a", 7.5, 14, 7.5);
         MinecraftServer server = context.getWorld().getServer();
         UUID id = page(context);
         try {
@@ -492,7 +500,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
             context.assertEquals(MiniGameTest.start(server, id, p1, 0), Status.NO_PIPE, "and no test starts");
             BlockPos green = pipe(context, GREEN, 1, 1);
             MiniGamePages.toggleLink(server, id, global(context, green), Direction.UP, MiniGamePipeRole.PLAYERS);
-            context.assertEquals(MiniGameTest.check(server, id).status(), Status.NOBODY, "nobody within 5 blocks of the pipe");
+            context.assertEquals(MiniGameTest.check(server, id).status(), Status.NOBODY, "nobody within 10 blocks of the pipe");
             Vec3d near = context.getAbsolute(new Vec3d(1.5, 1, 2.5));
             p1.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
             MiniGameTest.Plan ready = MiniGameTest.check(server, id);
