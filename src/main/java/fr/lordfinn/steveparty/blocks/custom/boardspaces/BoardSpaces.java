@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
@@ -41,24 +42,46 @@ public final class BoardSpaces {
     }
 
     /**
-     * A lowered or sloped tile reaches down into the cell of its support, where the vanilla ray (which visits the cells
-     * in order and asks each one only about its own block) doesn't look for it: seen from the side or from low, it
-     * would hit the slab or the stairs, or go through the tile. Walks the cells the ray crossed before its hit and
-     * returns the tile (or large tile part) above one of them if the ray meets its shape first.
+     * A tile is aimed at where it is drawn ({@link TileShape}): its slab overhangs its block (two blocks wide, turned 45
+     * degrees, lowered or tilted onto its support), where the vanilla ray, which asks each cell it crosses only about
+     * its own block, doesn't look for it. Walks the cells the ray crossed up to its hit and tries the tiles around
+     * each one (and above and below: lowered and sloped tiles); the nearest slab met first wins.
      */
     public static HitResult preferTile(BlockView world, Vec3d start, Vec3d end, HitResult hit) {
         Vec3d until = hit.getType() == HitResult.Type.MISS ? end : hit.getPos();
-        double limit = start.squaredDistanceTo(until) + 1.0E-6;
-        BlockHitResult tile = BlockView.raycast(start, until, world, (view, cell) -> {
-            BlockPos above = cell.up();
-            BlockState state = view.getBlockState(above);
-            if (!(state.getBlock() instanceof ATileBlock) && !(state.getBlock() instanceof TilePartBlock)) return null;
-            VoxelShape shape = state.getOutlineShape(view, above);
-            if (shape.isEmpty() || shape.getMin(Direction.Axis.Y) >= 0) return null;
-            BlockHitResult found = shape.raycast(start, end, above);
-            return found != null && start.squaredDistanceTo(found.getPos()) <= limit ? found : null;
+        // The cell outline of a tile stands a little above its slab: the slab just behind that hit is still this hit
+        boolean onTile = hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK
+                && isTileBlock(world.getBlockState(blockHit.getBlockPos()));
+        double limit = start.distanceTo(until) + (onTile ? 0.25 : 1.0E-6);
+        LongOpenHashSet tried = new LongOpenHashSet();
+        TileShape.Hit[] best = {null};
+        double[] bestDistance = {limit * limit};
+        BlockPos.Mutable around = new BlockPos.Mutable();
+        BlockView.raycast(start, until, world, (view, cell) -> {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        around.set(cell, dx, dy, dz);
+                        if (!tried.add(around.asLong())) continue;
+                        BlockState state = view.getBlockState(around);
+                        if (!(state.getBlock() instanceof ATileBlock)) continue;
+                        TileShape.Hit found = TileShape.of(state, around).raycast(start, end);
+                        if (found == null) continue;
+                        double distance = start.squaredDistanceTo(found.pos());
+                        if (distance < bestDistance[0]) {
+                            bestDistance[0] = distance;
+                            best[0] = found;
+                        }
+                    }
+                }
+            }
+            return null;
         }, view -> null);
-        return tile != null ? tile : hit;
+        return best[0] != null ? best[0].toBlockHit(world) : hit;
+    }
+
+    private static boolean isTileBlock(BlockState state) {
+        return state.getBlock() instanceof ATileBlock || state.getBlock() instanceof TilePartBlock;
     }
 
     /** The block standing for the board space at {@code pos}: the large tile a part belongs to, else {@code pos}. */

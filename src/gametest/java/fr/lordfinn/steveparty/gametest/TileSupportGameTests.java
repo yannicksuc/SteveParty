@@ -175,9 +175,9 @@ public class TileSupportGameTests implements FabricGameTest {
         var hit = BoardSpaces.preferTile(world, start, end, vanilla);
         context.assertTrue(hit instanceof net.minecraft.util.hit.BlockHitResult block && block.getBlockPos().equals(abs),
                 "the lowered tile is aimed at from the side: " + hit.getPos() + " vanilla " + vanilla.getType());
-        // Straight down on the bare slab: still the slab
-        Vec3d above = new Vec3d(abs.getX() - 0.5, abs.getY() + 1, abs.getZ() + 0.5);
-        Vec3d below = new Vec3d(abs.getX() - 0.5, abs.getY() - 1.5, abs.getZ() + 0.5);
+        // Straight down on the bare slab, past the tile's overhang (half a block around its block): still the slab
+        Vec3d above = new Vec3d(abs.getX() - 0.75, abs.getY() + 1, abs.getZ() + 0.5);
+        Vec3d below = new Vec3d(abs.getX() - 0.75, abs.getY() - 1.5, abs.getZ() + 0.5);
         var onSlab = world.raycast(new net.minecraft.world.RaycastContext(above, below, net.minecraft.world.RaycastContext.ShapeType.OUTLINE,
                 net.minecraft.world.RaycastContext.FluidHandling.NONE, net.minecraft.block.ShapeContext.absent()));
         context.assertTrue(BoardSpaces.preferTile(world, above, below, onSlab) == onSlab, "the bare slab stays the target");

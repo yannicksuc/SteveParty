@@ -32,12 +32,13 @@ public class TelescopeBlockEntityRenderer implements BlockEntityRenderer<Telesco
             tubeYaw = yaw + MathHelper.wrapDegrees(watcher.getYaw(tickDelta) - yaw) * ease[0];
             tubePitch = MathHelper.lerp(ease[0], tubePitch, watcher.getPitch(tickDelta));
         }
+        // His own eye is in the tube: the player looking through it in first person is shown none of it (the tripod's
+        // legs, right by the camera, would cross the view)
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (TelescopeClient.isWatching(entity.getPos()) && client.options.getPerspective().isFirstPerson()) return;
         matrices.push();
         matrices.translate(0.5f, 0f, 0.5f);
-        // His own eye is in the tube: the player looking through it in first person is not shown it
-        MinecraftClient client = MinecraftClient.getInstance();
-        boolean inside = TelescopeClient.isWatching(entity.getPos()) && client.options.getPerspective().isFirstPerson();
-        model.render(matrices, vertexConsumers, light, overlay, yaw, tubeYaw, tubePitch, !inside);
+        model.render(matrices, vertexConsumers, light, overlay, yaw, tubeYaw, tubePitch, true);
         matrices.pop();
     }
 
