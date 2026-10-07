@@ -15,8 +15,9 @@ import java.util.Map;
 
 /**
  * The Glandouille's model (geo/entity/glandouille.geo.json, from the art sources). On top of the keyframed
- * animations: its brows slide out from under its cap as it gets angry (hidden under it when calm), and its cap (with
- * the stem) is gone while it has lost it. Nothing allocated per frame.
+ * animations: its brows always show, gently frowning when calm (a little up, a few degrees inward), lowered to the
+ * model's full frown as it gets angry, and its cap (with the stem) is gone while it has lost it. Nothing allocated per
+ * frame.
  */
 public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity> {
     private static final Map<GlandouilleVariant, Identifier> TEXTURES = new EnumMap<>(GlandouilleVariant.class);
@@ -56,10 +57,19 @@ public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity>
         if (cap != null) cap.setHidden(!glandouille.hasHat());
     }
 
-    /** {@code hide}: how far up (pixels) the brows go inside the cap, its variant's. */
+    /** How much of the model's frown (its brows' rotation) they keep when calm: a few degrees, grumpy, not angry. */
+    private static final float CALM_FROWN = 0.35f;
+    /** How much of {@code hide} (pixels) the calm brows sit higher than the angry ones. */
+    private static final float CALM_LIFT = 0.2f;
+
+    /** {@code out}: 0 calm, 1 angry; {@code hide}: how far up (pixels) the brows can go under the cap, its variant's. */
     private static void brow(GeoBone brow, float out, float hide) {
         if (brow == null) return;
-        brow.setHidden(out < 0.03f);
-        brow.setPosY((1 - out) * hide); // absolute: no animation moves the brows
+        brow.setHidden(false);
+        // absolute: no animation moves the brows
+        brow.setPosY((1 - out) * CALM_LIFT * hide);
+        if (brow.getInitialSnapshot() != null) {
+            brow.setRotZ(brow.getInitialSnapshot().getRotZ() * MathHelper.lerp(out, CALM_FROWN, 1f));
+        }
     }
 }
