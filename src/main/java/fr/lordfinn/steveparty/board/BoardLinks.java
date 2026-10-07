@@ -20,12 +20,17 @@ import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.WorldChunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Reading and writing the links between board spaces. The save format does not change: the links of a board space
@@ -90,6 +95,37 @@ public final class BoardLinks {
         int count = 0;
         for (BlockPos link : links) if (isBoardSpace(world, link)) count++;
         return count;
+    }
+
+    /**
+     * The dangling links around {@code center}: those of the board spaces and routers of the loaded chunks within
+     * {@code radius} blocks (in the slot of {@code level}, see {@link #slotOf}) leading to a loaded cell without any
+     * board space (a removed tile, or a cell planned with the brush). Each such cell, with the spaces linked to it.
+     * Same answer on both sides: the brush shows them and aims at them as at tiles.
+     */
+    public static Map<BlockPos, List<BlockPos>> dangling(World world, Vec3d center, double radius, int level) {
+        Map<BlockPos, List<BlockPos>> dangling = new LinkedHashMap<>();
+        int minX = MathHelper.floor(center.x - radius), maxX = MathHelper.floor(center.x + radius);
+        int minZ = MathHelper.floor(center.z - radius), maxZ = MathHelper.floor(center.z + radius);
+        double radius2 = radius * radius;
+        for (int chunkX = ChunkSectionPos.getSectionCoord(minX); chunkX <= ChunkSectionPos.getSectionCoord(maxX); chunkX++) {
+            for (int chunkZ = ChunkSectionPos.getSectionCoord(minZ); chunkZ <= ChunkSectionPos.getSectionCoord(maxZ); chunkZ++) {
+                WorldChunk chunk = world.getChunkManager().getWorldChunk(chunkX, chunkZ);
+                if (chunk == null) continue;
+                for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
+                    if (!(blockEntity instanceof BoardSpaceBlockEntity) && !(blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity)) continue;
+                    BlockPos pos = blockEntity.getPos();
+                    if (Vec3d.ofCenter(pos).squaredDistanceTo(center) > radius2) continue;
+                    CartridgeContainerBlockEntity container = (CartridgeContainerBlockEntity) blockEntity;
+                    for (BlockPos target : links(container, slotOf(container, level))) {
+                        if (world.getChunkManager().getWorldChunk(ChunkSectionPos.getSectionCoord(target.getX()),
+                                ChunkSectionPos.getSectionCoord(target.getZ())) == null || container(world, target) != null) continue;
+                        dangling.computeIfAbsent(target, t -> new ArrayList<>()).add(pos.toImmutable());
+                    }
+                }
+            }
+        }
+        return dangling;
     }
 
     /**

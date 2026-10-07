@@ -17,6 +17,8 @@ import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
+
 /**
  * Which board space a ray is on, the way the player sees it rather than by its hitbox: the Tile Linker Brush and the
  * aim preview use it (same answer on both sides).
@@ -27,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
  *     around (a tile's or a check point's thin shape is smaller than what is drawn), from its foot up to a little above
  *     its top. A ray grazing a flat tile, or hitting the ground right next to it, still finds it.</li>
  * </ol>
+ * The brush also aims at its <b>ghosts</b>: the cells its dangling links lead to (no board space there, see
+ * {@link BoardLinks#dangling}), seen as a tile slab in that cell. And it finds the <b>blobs</b> of a stroke: the look
+ * lingering on one spot of a surface where there is no board space (see {@link Blob}).
  */
 public final class BrushAim {
     /** Board spaces can be aimed at this far away. */
@@ -41,14 +46,34 @@ public final class BrushAim {
     private BrushAim() {
     }
 
+    /** A blob: the look stays this close (blocks) to where it first met the surface... */
+    public static final double BLOB_RADIUS = 0.5;
+    /** ...for this many ticks of the stroke. */
+    public static final int BLOB_TICKS = 12;
+
     /** The board space {@code entity} looks at (its eyes, its look), or null. */
     public static @Nullable BlockPos aimed(Entity entity, World world, float tickDelta) {
-        return along(world, entity, entity.getCameraPosVec(tickDelta), entity.getRotationVec(tickDelta));
+        return aimed(entity, world, tickDelta, Set.of());
+    }
+
+    /** The board space or ghost {@code entity} looks at (its eyes, its look), or null. */
+    public static @Nullable BlockPos aimed(Entity entity, World world, float tickDelta, Set<BlockPos> ghosts) {
+        return along(world, entity, entity.getCameraPosVec(tickDelta), entity.getRotationVec(tickDelta), ghosts);
     }
 
     /** The board space {@code entity} would look at with this rotation, or null. */
     public static @Nullable BlockPos aimed(Entity entity, World world, float pitch, float yaw) {
-        return along(world, entity, entity.getEyePos(), direction(pitch, yaw));
+        return aimed(entity, world, pitch, yaw, Set.of());
+    }
+
+    /** The board space or ghost {@code entity} would look at with this rotation, or null. */
+    public static @Nullable BlockPos aimed(Entity entity, World world, float pitch, float yaw, Set<BlockPos> ghosts) {
+        return along(world, entity, entity.getEyePos(), direction(pitch, yaw), ghosts);
+    }
+
+    /** The ghosts of the brush held by {@code entity} at {@code level}: its dangling links within reach, see {@link BoardLinks#dangling}. */
+    public static java.util.Map<BlockPos, java.util.List<BlockPos>> ghosts(Entity entity, World world, int level) {
+        return BoardLinks.dangling(world, entity.getEyePos(), REACH, level);
     }
 
     /** Unit vector of a look (same as an entity's rotation vector). */
@@ -60,6 +85,11 @@ public final class BrushAim {
 
     /** The board space on the ray from {@code eye} toward {@code direction}, or null. */
     public static @Nullable BlockPos along(World world, Entity entity, Vec3d eye, Vec3d direction) {
+        return along(world, entity, eye, direction, Set.of());
+    }
+
+    /** The board space or ghost on the ray from {@code eye} toward {@code direction}, or null. */
+    public static @Nullable BlockPos along(World world, Entity entity, Vec3d eye, Vec3d direction, Set<BlockPos> ghosts) {
         Vec3d end = eye.add(direction.normalize().multiply(REACH));
         HitResult hit = world.raycast(new RaycastContext(eye, end, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, entity));
         hit = BoardSpaces.preferTile(world, eye, end, hit);
@@ -78,9 +108,71 @@ public final class BrushAim {
                     BlockPos pos = BoardSpaces.resolve(world, candidate);
                     if (BoardLinks.container(world, pos) != null) return pos.toImmutable();
                 }
+                if (!ghosts.isEmpty() && ghosts.contains(candidate) && ghostBox(candidate).raycast(eye, until).isPresent()) {
+                    return candidate.toImmutable();
+                }
             }
             return null;
         }, view -> null);
+    }
+
+    /** The box a ghost is seen in: a tile's, in its cell. */
+    static Box ghostBox(BlockPos pos) {
+        return new Box(pos.getX(), pos.getY() - MARGIN, pos.getZ(), pos.getX() + 1, pos.getY() + VISUAL_HEIGHT + MARGIN, pos.getZ() + 1);
+    }
+
+    // ---------------------------------------------------------------- blobs
+
+    /** The surface {@code entity} looks at, up to {@link #REACH} blocks away, or null. */
+    public static @Nullable BlockHitResult surface(Entity entity, World world) {
+        Vec3d eye = entity.getEyePos();
+        HitResult hit = world.raycast(new RaycastContext(eye, eye.add(entity.getRotationVector().multiply(REACH)),
+                RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, entity));
+        return hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK ? blockHit : null;
+    }
+
+    /**
+     * The cell a blob on {@code surface} links to, where a tile could stand: the cell above the painted block if a
+     * tile could be placed there (air or replaceable), else the one above that; a replaceable block painted (tall
+     * grass...) is that cell itself.
+     */
+    public static BlockPos blobCell(World world, BlockPos surface) {
+        if (world.getBlockState(surface).isReplaceable()) return surface.toImmutable();
+        BlockPos above = surface.up();
+        return world.getBlockState(above).isReplaceable() ? above : above.up();
+    }
+
+    /**
+     * Follows the look of a stroke, tick after tick, to find its blobs (« un pâté »): the look staying within
+     * {@link #BLOB_RADIUS} of the spot where it met a surface without board space for {@link #BLOB_TICKS} ticks. A blob
+     * is made once; the look has to leave the spot to make another.
+     */
+    public static final class Blob {
+        private @Nullable Vec3d spot;
+        private int ticks;
+        private boolean made;
+
+        /**
+         * One tick of the stroke.
+         *
+         * @param at where the look meets a surface, null if it aims at a board space, a ghost or nothing
+         * @return true the tick a blob is made
+         */
+        public boolean tick(@Nullable Vec3d at) {
+            if (at == null) {
+                spot = null;
+                return false;
+            }
+            if (spot == null || spot.squaredDistanceTo(at) > BLOB_RADIUS * BLOB_RADIUS) {
+                spot = at;
+                ticks = 1;
+                made = false;
+                return false;
+            }
+            if (made || ++ticks < BLOB_TICKS) return false;
+            made = true;
+            return true;
+        }
     }
 
     /** The box a board space (or router, or large tile part) at {@code pos} is seen in, or null for anything else. */

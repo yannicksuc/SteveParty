@@ -16,13 +16,16 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -31,6 +34,12 @@ import java.util.UUID;
  * is linked from the previous one of the stroke; going over a link again the same way erases it (the other way adds
  * the way back, both kept). The stroke ends when
  * the button is released. Between two ticks, the look is followed step by step: a quick sweep skips no tile.
+ * <p>
+ * The dangling links of the board spaces around (to a cell without board space) are <b>ghosts</b> the brush aims at
+ * like tiles: reached from their board space, the link is erased; a ghost is only a target, the stroke goes on from the
+ * last board space. A <b>blob</b> (« un pâté »: the look lingering on one spot without board space, see
+ * {@link BrushAim.Blob}) links the last board space of the stroke to the cell of that spot (see
+ * {@link BrushAim#blobCell}): a cell planned for a tile, a ghost until one is placed there.
  * <p>
  * The brush remembers its <b>anchor</b>, the last board space it painted (on the item, never shown: the brush selects
  * nothing, it paints as it sweeps): a chest clicked then joins the
@@ -57,6 +66,10 @@ public final class TileLinkerBrush {
         long lastUse;
         float pitch, yaw;
         boolean looked;
+        final BrushAim.Blob blob = new BrushAim.Blob();
+        /** The cells blobbed or whose ghost was erased in this stroke: neither erased nor blobbed again before it ends. */
+        final Set<BlockPos> cells = new HashSet<>();
+        Set<BlockPos> ghosts = Set.of();
     }
 
     private static final Map<UUID, Stroke> STROKES = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
@@ -161,7 +174,10 @@ public final class TileLinkerBrush {
             STROKES.put(player.getUuid(), stroke);
         }
         stroke.lastUse = now;
-        sweep(player, brush, world, stroke);
+        stroke.ghosts = BrushAim.ghosts(player, world, level(brush)).keySet();
+        BlockPos aimed = sweep(player, brush, world, stroke);
+        BlockHitResult surface = aimed == null ? BrushAim.surface(player, world) : null;
+        if (stroke.blob.tick(surface == null ? null : surface.getPos())) blob(player, brush, world, stroke, surface);
     }
 
     /** Ends the stroke of {@code player} (the next use starts a new one). */
@@ -169,8 +185,8 @@ public final class TileLinkerBrush {
         STROKES.remove(player.getUuid());
     }
 
-    /** Paints every board space the look crossed since the last tick, in order. */
-    private static void sweep(ServerPlayerEntity player, ItemStack brush, ServerWorld world, Stroke stroke) {
+    /** Paints every board space (or ghost) the look crossed since the last tick, in order; the one aimed now, or null. */
+    private static @Nullable BlockPos sweep(ServerPlayerEntity player, ItemStack brush, ServerWorld world, Stroke stroke) {
         float pitch = player.getPitch(), yaw = player.getYaw();
         int steps = 1;
         float fromPitch = pitch, fromYaw = yaw;
@@ -183,15 +199,16 @@ public final class TileLinkerBrush {
         stroke.looked = true;
         stroke.pitch = pitch;
         stroke.yaw = yaw;
-        BlockPos last = null;
+        BlockPos last = null, pos = null;
         for (int i = 1; i <= steps; i++) {
             float t = (float) i / steps;
-            BlockPos pos = BrushAim.aimed(player, world, MathHelper.lerp(t, fromPitch, pitch),
-                    fromYaw + MathHelper.wrapDegrees(yaw - fromYaw) * t);
+            pos = BrushAim.aimed(player, world, MathHelper.lerp(t, fromPitch, pitch),
+                    fromYaw + MathHelper.wrapDegrees(yaw - fromYaw) * t, stroke.ghosts);
             if (pos == null || pos.equals(last)) continue;
             last = pos;
             paint(player, brush, world, pos);
         }
+        return pos;
     }
 
     /** The stroke of {@code player} reaches the board space (or router) at {@code pos}. */
@@ -202,6 +219,11 @@ public final class TileLinkerBrush {
             return started;
         });
         if (pos.equals(stroke.last)) return;
+        if (BoardLinks.container(world, pos) == null) {
+            // A ghost: only a target, the stroke goes on from the last board space
+            eraseGhost(player, brush, world, stroke, pos);
+            return;
+        }
         BlockPos from = stroke.last;
         stroke.last = pos.toImmutable();
         CartridgeContainerBlockEntity origin = from == null ? null : BoardLinks.container(world, from);
@@ -240,6 +262,36 @@ public final class TileLinkerBrush {
             say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(from), BoardText.pos(to)));
             world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.45f, 1.2f);
         }
+    }
+
+    /** A ghost reached: the link to it from the last board space of the stroke is erased (not one it just blobbed or erased). */
+    private static void eraseGhost(ServerPlayerEntity player, ItemStack brush, ServerWorld world, Stroke stroke, BlockPos ghost) {
+        BlockPos from = stroke.last;
+        CartridgeContainerBlockEntity origin = from == null ? null : BoardLinks.container(world, from);
+        if (origin == null || stroke.cells.contains(ghost)) return;
+        int slot = BoardLinks.slotOf(origin, level(brush));
+        if (!BoardLinks.links(origin, slot).contains(ghost)) return;
+        stroke.cells.add(ghost);
+        WrenchActions.recorded(player, world, brush, () -> {
+            WrenchActions.removeLink(player, world, origin, slot, ghost);
+            erased(player, world, from, ghost);
+        });
+    }
+
+    /** A blob made on {@code surface}: the last board space of the stroke is linked to its cell. */
+    private static void blob(ServerPlayerEntity player, ItemStack brush, ServerWorld world, Stroke stroke, BlockHitResult surface) {
+        BlockPos from = stroke.last;
+        CartridgeContainerBlockEntity origin = from == null ? null : BoardLinks.container(world, from);
+        if (origin == null) return;
+        BlockPos cell = BrushAim.blobCell(world, surface.getBlockPos());
+        int slot = BoardLinks.slotOf(origin, level(brush));
+        if (cell.equals(from) || stroke.cells.contains(cell) || BoardLinks.links(origin, slot).contains(cell)) return;
+        stroke.cells.add(cell);
+        WrenchActions.recorded(player, world, brush, () -> {
+            if (!WrenchActions.addLink(player, world, from, origin, slot, cell)) return;
+            say(player, Text.translatable("message.steveparty.tile_linker_brush.blob", BoardText.pos(from), BoardText.pos(cell)));
+            world.playSound(null, surface.getBlockPos(), SoundEvents.ENTITY_SLIME_SQUISH, SoundCategory.PLAYERS, 0.7f, 0.8f);
+        });
     }
 
     private static void erased(ServerPlayerEntity player, ServerWorld world, BlockPos from, BlockPos to) {

@@ -232,6 +232,7 @@
   "message.steveparty.tile_linker_brush.start": "Painting from %s",
   "message.steveparty.tile_linker_brush.linked": "%s → %s linked",
   "message.steveparty.tile_linker_brush.erased": "%s → %s erased",
+  "message.steveparty.tile_linker_brush.blob": "%s → %s linked (a cell planned for a tile)",
   "hud.steveparty.tile_linker_brush.panel": "Brush · level: %s",
   "hud.steveparty.tile_linker_brush.hint": "Hold right click over tiles: link · over a link: erase · left click: wheel",
   "item.steveparty.tokenizer_wand": "Tokenizer Wand",
