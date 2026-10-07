@@ -64,8 +64,11 @@ import java.util.function.Predicate;
  * Everything happens when something goes in: no scan of the world, only the players who sneak are looked at.
  */
 public final class PipeTravel {
-    /** Speed inside (blocks per tick), and the fastest one kept from a fast entry. */
-    public static final double BASE_SPEED = 0.6, MAX_SPEED = 3.0;
+    /**
+     * Speed inside (blocks per tick), and the fastest one kept from a fast entry (a fall, elytra): the cap, whatever
+     * the pipes (a loop of pipes thrown into each other gains nothing either, see {@link #enter}).
+     */
+    public static final double BASE_SPEED = 0.6, MAX_SPEED = 1.5;
     /** Speed toward a mouth from which a player goes in without sneaking (blocks per tick, a fall of about 2 blocks). */
     public static final double FAST_ENTRY = 0.55;
     /** Ticks after coming out of a mouth before a click takes one back into it. */
@@ -194,6 +197,29 @@ public final class PipeTravel {
         return bar != null && !bar.landed;
     }
 
+    /**
+     * A pipe was just placed at {@code pos}: the items already lying in it (or in front of one of its mouths) did not
+     * go in, the pipe came onto them; its mouth is closed to them as if they had come out of it (see {@link #barred}),
+     * until they are taken or move away. Thrown or dropped into a pipe, an item goes in as ever.
+     */
+    public static void settle(ServerWorld world, BlockPos pos, BlockState state) {
+        List<PipeShape.End> mouths = PipeShape.ends(state).stream().filter(end -> !end.capped()).toList();
+        if (mouths.isEmpty()) return;
+        for (ItemEntity item : world.getEntitiesByClass(ItemEntity.class, new Box(pos).expand(CLEAR), Entity::isAlive)) {
+            PipeShape.End mouth = mouths.getFirst();
+            for (PipeShape.End end : mouths) {
+                if (item.getBoundingBox().intersects(zone(pos, end.dir()))) {
+                    mouth = end;
+                    break;
+                }
+            }
+            if (!item.getBoundingBox().intersects(zone(pos, mouth.dir()))) continue;
+            Bar bar = new Bar(pos.toImmutable(), mouth.dir(), world.getTime(), item.getY());
+            bar.landed = true;
+            BARRED.put(item, bar);
+        }
+    }
+
     /** The mouth's block and the space {@link #CLEAR} blocks in front of it. */
     public static Box zone(BlockPos mouth, Direction opening) {
         return new Box(mouth).stretch(opening.getOffsetX() * CLEAR, opening.getOffsetY() * CLEAR, opening.getOffsetZ() * CLEAR);
@@ -216,6 +242,9 @@ public final class PipeTravel {
         // Not straight back into the mouth it just came out of
         Bar bar = BARRED.get(entity);
         if (bar != null && bar.mouth.equals(mouth) && bar.opening == opening && world.getTime() - bar.since < COOLDOWN) return false;
+        // Thrown out of a pipe straight into another one (a loop without a way out): no speed gained from the throw,
+        // else each turn of the loop would go faster
+        if (bar != null && !bar.landed) speed = Math.min(speed, BASE_SPEED);
         ENTRIES.computeIfAbsent(world, w -> new LinkedHashMap<>()).putIfAbsent(entity, new Entry(mouth.toImmutable(), opening, speed));
         return true;
     }
@@ -394,7 +423,7 @@ public final class PipeTravel {
             if (!(end.pos().equals(mouth) && end.dir() == opening)) others.add(end);
         }
         if (others.isEmpty()) return;
-        PipeNetworks.End target = programmedEnd(world, entity, others);
+        PipeNetworks.End target = programmedEnd(world, entity, network, origin);
         if (target == null) target = others.get(world.random.nextInt(others.size()));
         List<Vec3d> points = route(network, origin, target);
         if (points.isEmpty()) return;
@@ -410,15 +439,33 @@ public final class PipeTravel {
     }
 
     /**
-     * A capped end that says where it sends (a programmed mini-game pipe): a player always goes to it rather
-     * than to an end picked at random, so that every mouth of the network leads there.
+     * A pipe that says where it sends (a programmed mini-game pipe): a player always goes to it rather than to an end
+     * picked at random, so that every mouth of the network leads there, whatever the order the pipes were built in:
+     * its end into its solid block (capped), its mouth when it was joined to the run before its block, or the pipe
+     * itself in the middle of a run. Among several, the lowest position, whatever pipe the network was found from.
      */
-    private static PipeNetworks.@Nullable End programmedEnd(ServerWorld world, Entity entity, List<PipeNetworks.End> ends) {
+    private static PipeNetworks.@Nullable End programmedEnd(ServerWorld world, Entity entity, PipeNetworks.Network network, PipeNetworks.End origin) {
         if (!(entity instanceof ServerPlayerEntity)) return null;
-        for (PipeNetworks.End end : ends) {
-            if (end.capped() && world.getBlockEntity(end.pos()) instanceof PipeBlockEntity pipe && pipe.destinationProvider() != null) return end;
+        BlockPos best = null;
+        for (BlockPos pos : network.pipes()) {
+            if (pos.equals(origin.pos()) || (best != null && pos.compareTo(best) >= 0) || !isProgrammed(world, pos)) continue;
+            best = pos;
         }
-        return null;
+        if (best == null) return null;
+        PipeNetworks.End open = null;
+        for (PipeNetworks.End end : network.ends()) {
+            if (!end.pos().equals(best)) continue;
+            if (end.capped()) return end;
+            if (open == null || end.dir().ordinal() < open.dir().ordinal()) open = end;
+        }
+        // In the middle of a run: to the pipe itself (it has no end to stop at)
+        return open != null ? open : new PipeNetworks.End(best, Direction.UP, true);
+    }
+
+    /** A pipe whose cartridge says where it sends (a programmed mini-game pipe). */
+    private static boolean isProgrammed(ServerWorld world, BlockPos pos) {
+        return world.getBlockState(pos).getBlock() instanceof MiniGamePipeBlock
+                && world.getBlockEntity(pos) instanceof PipeBlockEntity pipe && pipe.destinationProvider() != null;
     }
 
     /** The points along the pipes from the end {@code from} (its opening) to the end {@code to}. */
@@ -451,6 +498,17 @@ public final class PipeTravel {
             pass(world, carrier, traveller, passage);
             return;
         }
+        // A programmed pipe sends a player where its cartridge says, be it a capped end, a mouth or the middle of a
+        // run (see programmedEnd); asked once. Not to who comes out of its mouth (brought there by a warp) or goes back
+        boolean asked = false;
+        if (traveller instanceof ServerPlayerEntity && !target.equals(carrier.origin()) && !carrier.hasReturned() && isProgrammed(world, target.pos())) {
+            asked = true;
+            Destination programmed = cartridgeDestination(world, target.pos(), traveller, carrier.origin());
+            if (programmed != null) {
+                if (!warp(world, carrier, traveller, target, programmed)) goBack(world, carrier, traveller);
+                return;
+            }
+        }
         // The pipes may have changed on the way: the end as it is now
         PipeShape.End now = endOf(world.getBlockState(target.pos()), target.dir());
         if (now == null) {
@@ -459,7 +517,7 @@ public final class PipeTravel {
         }
         if (now.capped() != target.capped()) target = new PipeNetworks.End(target.pos(), target.dir(), now.capped());
         if (target.capped()) {
-            Destination warp = warpDestination(world, target, traveller, carrier.origin());
+            Destination warp = asked ? nearestWarp(world, target) : warpDestination(world, target, traveller, carrier.origin());
             if (warp == null || !warp(world, carrier, traveller, target, warp)) goBack(world, carrier, traveller);
         } else if (blocked(world, target) && !carrier.hasReturned()) {
             goBack(world, carrier, traveller);
@@ -563,14 +621,22 @@ public final class PipeTravel {
      * {@link PipeNetworks#WARP_RADIUS} blocks, in a loaded chunk of the same dimension. Nothing farther, for anyone.
      */
     private static @Nullable Destination warpDestination(ServerWorld world, PipeNetworks.End capped, Entity traveller, PipeNetworks.@Nullable End enteredBy) {
-        if (world.getBlockEntity(capped.pos()) instanceof PipeBlockEntity pipe) {
-            PipeDestinationProvider provider = pipe.destinationProvider();
-            PipeDestinationProvider.Exit exit = provider == null ? null : provider.destination(world, capped.pos(), traveller, enteredBy);
-            if (exit != null) {
-                ServerWorld there = exit.dimension() == null ? world : world.getServer().getWorld(exit.dimension());
-                if (there != null) return new Destination(there, new PipeNetworks.End(exit.pos(), exit.opening(), false));
-            }
-        }
+        Destination programmed = cartridgeDestination(world, capped.pos(), traveller, enteredBy);
+        return programmed != null ? programmed : nearestWarp(world, capped);
+    }
+
+    /** Where the cartridge of the pipe at {@code pos} sends, null for nowhere (or no cartridge). */
+    private static @Nullable Destination cartridgeDestination(ServerWorld world, BlockPos pos, Entity traveller, PipeNetworks.@Nullable End enteredBy) {
+        if (!(world.getBlockEntity(pos) instanceof PipeBlockEntity pipe)) return null;
+        PipeDestinationProvider provider = pipe.destinationProvider();
+        PipeDestinationProvider.Exit exit = provider == null ? null : provider.destination(world, pos, traveller, enteredBy);
+        if (exit == null) return null;
+        ServerWorld there = exit.dimension() == null ? world : world.getServer().getWorld(exit.dimension());
+        return there == null ? null : new Destination(there, new PipeNetworks.End(exit.pos(), exit.opening(), false));
+    }
+
+    /** The nearest mouth of the colour of the capped end in another network, in range (see {@link #warpDestination}). */
+    private static @Nullable Destination nearestWarp(ServerWorld world, PipeNetworks.End capped) {
         PipeNetworks networks = PipeNetworks.of(world);
         PipeNetworks.Network own = networks.network(capped.pos());
         if (own == null) return null;
@@ -579,7 +645,7 @@ public final class PipeTravel {
     }
 
     /** A block in front of the mouth (nothing can come out). */
-    private static boolean blocked(ServerWorld world, PipeNetworks.End end) {
+    public static boolean blocked(ServerWorld world, PipeNetworks.End end) {
         BlockPos front = end.pos().offset(end.dir());
         return !world.getBlockState(front).getCollisionShape(world, front).isEmpty();
     }

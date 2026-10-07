@@ -65,6 +65,11 @@ public final class PipeNetworks {
             return ends;
         }
 
+        /** Its pipe blocks (in the order they were found: do not rely on it). */
+        public Set<BlockPos> pipes() {
+            return Collections.unmodifiableSet(pipes.keySet());
+        }
+
         /** The pipe blocks from {@code from} to {@code to} (both included), the shortest way, or empty. */
         public List<BlockPos> path(BlockPos from, BlockPos to) {
             if (!pipes.containsKey(from) || !pipes.containsKey(to)) return List.of();

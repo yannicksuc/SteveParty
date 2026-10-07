@@ -169,7 +169,11 @@ public class PipeBlock extends Block implements BlockEntityProvider {
     @Override
     protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
         super.onBlockAdded(state, world, pos, oldState, notify);
-        if (world instanceof ServerWorld serverWorld) PipeNetworks.changed(serverWorld, pos);
+        if (world instanceof ServerWorld serverWorld) {
+            PipeNetworks.changed(serverWorld, pos);
+            // Placed over items lying there (what a broken pipe dropped...): it does not swallow them
+            if (!isPipe(oldState)) PipeTravel.settle(serverWorld, pos, state);
+        }
     }
 
     @Override
