@@ -35,6 +35,8 @@ public class StencilGunScreenHandler extends ScreenHandler {
     public static final int OFF_HAND_SLOT = PlayerInventory.OFF_HAND_SLOT;
     /** Width of a side panel (3 slots and the borders), and the gap between it and the inventory. */
     public static final int SIDE = 68, GAP = 2;
+    /** Top of the hammer's 3 x 3 grids, under their title. */
+    public static final int SLOTS_Y = 18;
     /** Where the player's inventory (the vanilla one, 176 x 166) starts. */
     public static final int INVENTORY_X = SIDE + GAP;
     public static final int WIDTH = INVENTORY_X + 176 + GAP + SIDE;
@@ -70,11 +72,11 @@ public class StencilGunScreenHandler extends ScreenHandler {
         loaded.addListener(inventory -> save());
 
         for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) {
-            addSlot(new FilteredSlot(loaded, i, 8 + i % 3 * 18, 8 + i / 3 * 18, true));
+            addSlot(new FilteredSlot(loaded, i, 8 + i % 3 * 18, SLOTS_Y + i / 3 * 18, true));
         }
         int dyesX = INVENTORY_X + 176 + GAP + 8;
         for (int i = 0; i < StencilGunItem.DYE_SLOTS; i++) {
-            addSlot(new FilteredSlot(loaded, StencilGunItem.STENCIL_SLOTS + i, dyesX + i % 3 * 18, 8 + i / 3 * 18, false));
+            addSlot(new FilteredSlot(loaded, StencilGunItem.STENCIL_SLOTS + i, dyesX + i % 3 * 18, SLOTS_Y + i / 3 * 18, false));
         }
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
