@@ -11,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * While a tool HUD (Tile Linker Brush, Stencil Hammer: see {@link ToolHud}) sits above the hotbar, the action bar
- * message goes up above it instead of being drawn over its plates (the held item's name is under it: see
- * {@link ToolHud#top}).
+ * message goes up above it instead of being drawn over its plates, and the held item's name is not written where it
+ * sits (the tool shows what matters: see {@link ToolHud#top}).
  */
 @Mixin(InGameHud.class)
 public class InGameHudToolHudMixin {
@@ -20,6 +20,11 @@ public class InGameHudToolHudMixin {
     private void steveparty$overlayAboveToolHud(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         context.getMatrices().push();
         context.getMatrices().translate(0, -ToolHud.liftFor(context, 63), 0);
+    }
+
+    @Inject(method = "renderHeldItemTooltip", at = @At("HEAD"), cancellable = true)
+    private void steveparty$noItemNameUnderToolHud(DrawContext context, CallbackInfo ci) {
+        if (ToolHud.occupiedTop() >= 0) ci.cancel();
     }
 
     @Inject(method = "renderOverlayMessage", at = @At("RETURN"))
