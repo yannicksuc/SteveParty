@@ -168,16 +168,32 @@ public class GlandouilleGameTests implements FabricGameTest {
 
     // ---------------------------------------------------------------- sizes
 
-    /** Each variant its model's hitbox; in a tower each one stands on the cap of the one below, at its height. */
+    /**
+     * Each variant its model's hitbox at 60 % (its model drawn as small); in a tower each one stands on the cap of the
+     * one below, at its height.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
     public void eachVariantHasItsModelsSize(TestContext context) {
         floor(context);
+        GlandouilleEntity classic = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(5, 1, 1));
         GlandouilleEntity young = glandouille(context, GlandouilleVariant.YOUNG, new BlockPos(1, 1, 1));
         GlandouilleEntity mossy = glandouille(context, GlandouilleVariant.MOSSY, new BlockPos(5, 1, 5));
         GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 5));
-        context.assertTrue(young.getHeight() < 0.75f && young.getWidth() < 0.6f, "the young one is small: " + young.getHeight());
-        context.assertTrue(mossy.getWidth() > 0.9f, "the mossy one is wide: " + mossy.getWidth());
-        context.assertTrue(frosty.getWidth() > 0.75f && frosty.getWidth() < mossy.getWidth(), "the frosty one a little bigger: " + frosty.getWidth());
+        for (GlandouilleEntity one : List.of(classic, young, mossy, frosty)) {
+            GlandouilleVariant variant = one.getVariant();
+            context.assertTrue(Math.abs(one.getWidth() - variant.widthPx / 16f * 0.6f) < 1.0E-4f, variant + " width: " + one.getWidth());
+            context.assertTrue(Math.abs(one.getHeight() - variant.heightPx / 16f * 0.6f) < 1.0E-4f, variant + " height: " + one.getHeight());
+            context.assertTrue(Math.abs(one.getStandingEyeHeight() - variant.eyePx / 16f * 0.6f) < 1.0E-4f,
+                    variant + " eyes: " + one.getStandingEyeHeight());
+            context.assertEquals(one.getScaleFactor(), 0.6f, variant + " drawn at 60 %");
+        }
+        context.assertTrue(Math.abs(classic.getWidth() - 0.45f) < 1.0E-4f && Math.abs(classic.getHeight() - 0.5625f) < 1.0E-4f,
+                "the classic one: 0.45 x 0.5625");
+        context.assertTrue(Math.abs(ModEntities.GLANDOUILLE.getWidth() - classic.getWidth()) < 1.0E-4f
+                && Math.abs(ModEntities.GLANDOUILLE.getHeight() - classic.getHeight()) < 1.0E-4f, "spawn checks at the same size");
+        context.assertTrue(young.getHeight() < classic.getHeight() && young.getWidth() < classic.getWidth(), "the young one is small: " + young.getHeight());
+        context.assertTrue(mossy.getWidth() > frosty.getWidth(), "the mossy one is wide: " + mossy.getWidth());
+        context.assertTrue(frosty.getWidth() > classic.getWidth(), "the frosty one a little bigger: " + frosty.getWidth());
         context.assertTrue(GlandouilleTowers.climb(young, mossy, false), "the young one on the mossy one");
         context.assertTrue(GlandouilleTowers.climb(frosty, mossy, false), "the frosty one on top");
         context.waitAndRun(2, () -> {
