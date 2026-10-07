@@ -93,7 +93,8 @@ final class BrushOverlay {
             BlockPos pos = ghost.getKey();
             Vec3d min = Vec3d.of(pos).add(0.0625, 0.002, 0.0625), max = min.add(0.875, GHOST_HEIGHT, 0.875);
             WorldDraw.box(matrices, consumers, camera, min, max, DANGLING, 0.12f * pulse);
-            dashedOutline(matrices, consumers, camera, min, max, pulse);
+            // Opaque dashes: see-through, they would look under the stained glass the ghost lies on
+            dashedOutline(matrices, consumers, camera, min, max, 1f);
             Vec3d to = BoardSpaces.standPos(world, pos).add(0, 0.2, 0);
             for (BlockPos from : ghost.getValue()) {
                 WorldDraw.path(matrices, consumers, camera, anchor(world, from), to, 0xC0000000 | DANGLING, 0.4, 0.45, phase, 0.3, 0);
