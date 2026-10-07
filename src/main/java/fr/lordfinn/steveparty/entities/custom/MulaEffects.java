@@ -52,6 +52,54 @@ public final class MulaEffects {
     private final MulaEntity mula;
     /** Last age at which the Mula was drawn (set by the renderer). */
     public int lastRenderAge = -100;
+    /** Squared distance from the camera when it was last drawn (set by the renderer). */
+    public double cameraDistanceSq;
+    /** Renderer's cache: whether its glow was behind a translucent block, and the age it was looked at. */
+    public boolean behindTranslucent;
+    public int behindTranslucentAge = -1;
+
+    // ------------------------------------------------------------------------------------------ crowd budget
+    /**
+     * Within this distance of the camera (blocks) a Mula gets all its everyday particles and voice, as before. Beyond,
+     * its everyday sparkles share {@link #FAR_PARTICLES_PER_TICK} per tick with every other far Mula, and it is silent
+     * (its soft voices fade out within 16 blocks anyway).
+     */
+    public static final double NEAR = 16;
+    /** Everyday particles (sparkles, trails) all the far Mulas together may start in one tick. */
+    public static final int FAR_PARTICLES_PER_TICK = 24;
+    /** Everyday voices all the Mulas together may start in one tick (a crowd chimed like a wind chime in a storm). */
+    public static final int VOICES_PER_TICK = 2;
+    private static long budgetTime = Long.MIN_VALUE;
+    private static int farParticlesLeft, voicesLeft;
+
+    private static void refillBudget(World world) {
+        long now = world.getTime();
+        if (now == budgetTime) return;
+        budgetTime = now;
+        farParticlesLeft = FAR_PARTICLES_PER_TICK;
+        voicesLeft = VOICES_PER_TICK;
+    }
+
+    /** Close to the camera (within {@link #NEAR} blocks when last drawn). */
+    public boolean isNear() {
+        return cameraDistanceSq < NEAR * NEAR;
+    }
+
+    /**
+     * May this Mula start an everyday particle now: always close to the camera, while the tick's shared budget lasts
+     * farther away (a crowd of hundreds of Mulas kept thousands of particles alive).
+     */
+    public boolean mayAddEverydayParticle() {
+        if (isNear()) return true;
+        refillBudget(mula.getWorld());
+        return farParticlesLeft-- > 0;
+    }
+
+    private boolean mayVoice() {
+        if (!isNear()) return false;
+        refillBudget(mula.getWorld());
+        return voicesLeft-- > 0;
+    }
 
     private int orbitTicks, cometTicks;
     /** Age of its next little everyday sound (a twinkle, a chirp...), rolled at random. */
@@ -217,7 +265,7 @@ public final class MulaEffects {
         if (time % 20 == 0) mula.getMotion().beat();
         if (!visible()) return;
         World world = mula.getWorld();
-        if ((time & 1) == 0) {
+        if ((time & 1) == 0 && mayAddEverydayParticle()) {
             world.addParticle((time & 2) == 0 ? mula.getVariant().getTwinkle() : WHITE_TWINKLE,
                     mula.prevX, mula.prevY + mula.getHeight() * 0.8, mula.prevZ, 0, 0, 0);
         }
@@ -239,7 +287,7 @@ public final class MulaEffects {
     void carryTick() {
         if (!visible()) return;
         long time = mula.getWorld().getTime();
-        if ((time & 1) == 0) {
+        if ((time & 1) == 0 && mayAddEverydayParticle()) {
             mula.getWorld().addParticle((time & 2) == 0 ? mula.getVariant().getTwinkle() : WHITE_TWINKLE,
                     mula.prevX, mula.prevY + mula.getHeight() * MulaEntity.CENTER, mula.prevZ, 0, -0.02, 0);
         }
@@ -621,6 +669,8 @@ public final class MulaEffects {
         if (mula.age < nextVoiceAge) return;
         nextVoiceAge = mula.age + (resting ? RESTING_VOICE_MIN + random.nextInt(RESTING_VOICE_RANGE)
                 : VOICE_MIN + random.nextInt(VOICE_RANGE));
+        // too far to be heard, or enough Mulas already chiming this tick: it skips this one
+        if (!mayVoice()) return;
         double a = random.nextDouble() * MathHelper.TAU;
         double r = 0.35 * size;
         mula.getWorld().addParticle(mula.getVariant().getTwinkle(), cx + Math.cos(a) * r, cy + 0.15 * size,
