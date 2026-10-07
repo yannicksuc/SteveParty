@@ -8,6 +8,7 @@
     "steveparty:advance_back_cartridge",
     "steveparty:replay_cartridge",
     "steveparty:teleport_cartridge",
-    "steveparty:star_cartridge"
+    "steveparty:star_cartridge",
+    "steveparty:glandouille_cartridge"
   ]
 }
