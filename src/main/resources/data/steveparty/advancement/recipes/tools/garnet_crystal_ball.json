@@ -11,12 +11,12 @@
         ]
       }
     },
-    "has_nether_star": {
+    "has_power_star": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "minecraft:nether_star"
+            "items": "steveparty:power_star"
           }
         ]
       }
@@ -31,7 +31,7 @@
   "requirements": [
     [
       "has_redstone_block",
-      "has_nether_star",
+      "has_power_star",
       "has_the_recipe"
     ]
   ],
