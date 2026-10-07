@@ -42,7 +42,10 @@ import java.util.function.Consumer;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE;
 
-/** A tile broken with Silk Touch drops one item holding its cartridges, its look and its size; placed, it has them back. */
+/**
+ * A broken tile drops one item holding its cartridges, its look and its size (with Silk Touch their links too); placed,
+ * it has them back.
+ */
 public class TileContentsGameTests implements FabricGameTest {
     private static final BlockPos TILE = new BlockPos(2, 2, 2);
     /** Where the dropped item is placed again: its ground block. */
@@ -143,20 +146,44 @@ public class TileContentsGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /**
+     * Broken without Silk Touch: one tile item still holding its cartridge (settings and look kept) but not its links,
+     * which led to the neighbours of the old place; two such tiles stack.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void withoutSilkTouchTheCartridgesSpillOut(TestContext context) {
+    public void withoutSilkTouchTheCartridgeStaysWithoutItsLinks(TestContext context) {
         floor(context);
-        context.setBlockState(TILE, ModBlocks.TILE);
-        BoardSpaceBlockEntity tile = context.getBlockEntity(TILE);
-        tile.setStamp(stamp());
-        tile.setStack(0, linkedStop(context));
+        BlockPos second = TILE.east(2);
+        for (BlockPos pos : List.of(TILE, second)) {
+            context.setBlockState(pos, ModBlocks.TILE);
+            BoardSpaceBlockEntity tile = context.getBlockEntity(pos);
+            tile.setStamp(stamp());
+            tile.setStack(0, linkedStop(context));
+        }
         withMiner(context, false, player -> {
             mine(context, player, TILE);
+            mine(context, player, second);
             List<ItemStack> drops = takeDrops(context);
-            List<ItemStack> tiles = drops.stream().filter(s -> s.isOf(ModBlocks.TILE.asItem())).toList();
-            int stops = drops.stream().filter(s -> s.isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP)).mapToInt(ItemStack::getCount).sum();
-            context.assertTrue(tiles.size() == 1 && !TileContents.holdsContents(tiles.getFirst()), "a plain tile: " + drops);
-            context.assertEquals(stops, 1, "its cartridge dropped apart");
+            context.assertTrue(drops.stream().allMatch(s -> s.isOf(ModBlocks.TILE.asItem())), "only tiles drop, nothing spills: " + drops);
+            context.assertEquals(drops.stream().mapToInt(ItemStack::getCount).sum(), 2, "two tiles");
+            ItemStack item = drops.getFirst();
+            List<TileContents.Slot> cartridges = TileContents.cartridges(item);
+            context.assertTrue(cartridges.size() == 1 && cartridges.getFirst().cartridge().isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP),
+                    "holding its stop cartridge: " + cartridges);
+            context.assertTrue(BoardLinks.links(cartridges.getFirst().cartridge()).isEmpty(), "without its links");
+            context.assertTrue(stamp().equals(TileContents.ownStamp(item)), "its look kept");
+            context.assertTrue(ItemStack.areItemsAndComponentsEqual(drops.get(0), drops.get(drops.size() - 1)),
+                    "both tiles are the same item: they stack");
+            ItemStack stacked = drops.get(0).copy();
+            ItemStack other = drops.get(drops.size() - 1).copy();
+            context.assertTrue(ItemStack.areItemsAndComponentsEqual(stacked, other) && stacked.getMaxCount() > 1, "stackable");
+
+            // Placed again: the stop tile, ready to link
+            place(context, player, item.copyWithCount(1), ELSEWHERE);
+            context.expectBlockProperty(ELSEWHERE.up(), TILE_TYPE, BoardSpaceType.BOARD_SPACE_STOP);
+            BoardSpaceBlockEntity again = context.getBlockEntity(ELSEWHERE.up());
+            context.assertTrue(again.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP) && BoardLinks.links(again, 0).isEmpty(),
+                    "its cartridge back, no links");
         });
         context.complete();
     }

@@ -70,13 +70,15 @@ public final class BrushClient {
         Text level = Text.translatable("hud.steveparty.tile_linker_brush.panel", TileLinkerBrush.levelText(TileLinkerBrush.level(brush)));
         ItemStack cartridge = BoardLinks.cartridgeSource(client.player);
         int left = BoardLinks.cartridgesLeft(client.player);
+        // A cartridge is only needed for a kind picked on the wheel (swapped in), or for an aimed space left empty
+        boolean needed = TileLinkerBrush.cartridge(brush) != null || aimsAtEmptySpace(client, brush);
         List<ToolHud.Element> tool = new ArrayList<>();
         tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> {
             ToolHud.box(context, x, y, true);
             context.drawItem(brush, x + INSET, y + INSET);
         }));
-        tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> cartridgeBox(context, x, y, cartridge, left)));
-        if (cartridge.isEmpty()) {
+        if (needed) tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> cartridgeBox(context, x, y, cartridge, left)));
+        if (needed && cartridge.isEmpty()) {
             Text none = BoardText.Plate.DEAD_END.of(Text.translatable("hud.steveparty.wrench.no_cartridge"));
             tool.add(ToolHud.element(ToolHud.textPlateWidth(none), (x, y) -> ToolHud.textPlate(context, x, y, none, ToolHud.Plate.RED)));
         }
@@ -89,6 +91,15 @@ public final class BrushClient {
         }
         int y = ToolHud.rows(context, groups, 4);
         ToolHud.hint(context, Text.translatable("hud.steveparty.tile_linker_brush.hint"), context.getScaledWindowWidth() / 2, y);
+    }
+
+    /** Whether the brush aims at a board space whose slot (the brush's level) holds no cartridge. */
+    private static boolean aimsAtEmptySpace(MinecraftClient client, ItemStack brush) {
+        BlockPos aimed = BrushAim.aimed(client.player, client.world, 1f);
+        if (aimed == null) return false;
+        var container = BoardLinks.container(client.world, aimed);
+        return container instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity
+                && container.getStack(BoardLinks.slotOf(container, TileLinkerBrush.level(brush))).isEmpty();
     }
 
     /** The board around, summed up (null: no board space around). */
