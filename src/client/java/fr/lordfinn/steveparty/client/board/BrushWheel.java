@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -15,6 +16,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -22,21 +24,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The Tile Linker Brush's wheel, in redstone: the outer ring is the palette of the levels (the powered slot at the top,
- * then 0 to 15 in the colour of redstone dust at that power), the inner ring the kind of Cartridge the painted tiles
- * get (none: they keep theirs; the plain one, and each kind found in the inventory) with undo / redo at the top.
+ * The Tile Linker Brush's wheel, a few clear choices first: the normal link (the powered slot), the redstone level and
+ * the kind of Cartridge (each on a page of its own, opened on demand), undo and redo (curved arrows). The level page
+ * is the redstone palette (0 to 15 in the colour of the dust at that power), the cartridge page the kinds in the
+ * inventory; their hub goes back. The first times, the normal link is put forward with how to paint.
  */
 final class BrushWheel implements ToolWheel.Provider {
+    private static final int MAIN = 0, LEVELS = 1, CARTRIDGES = 2;
     /** Different kinds of Cartridges shown at most. */
     private static final int MAX_CARTRIDGES = 10;
-    private static final ToolWheel.Theme THEME = new ToolWheel.Theme(0xD01A0606, 0xF0300A0A, 0xFF5A1414,
-            0xFFFFD27A, 0xFFF2D6D6, 0xE0200808);
-    private static final List<ToolWheel.Ring> RINGS = List.of(new ToolWheel.Ring(30, 70), new ToolWheel.Ring(74, 118));
+    /** The plates: the grey of vanilla slots, the cartridge page in the board's teal. */
+    private static final int GREY = 0x8B8B8B, TEAL = 0x7FA3A9;
+    private static final List<ToolWheel.Ring> MAIN_RING = List.of(new ToolWheel.Ring(26, 70));
+    private static final List<ToolWheel.Ring> LEVEL_RING = List.of(new ToolWheel.Ring(26, 92));
+    private static final List<ToolWheel.Ring> CARTRIDGE_RING = List.of(new ToolWheel.Ring(26, 80));
     private static final ItemStack TORCH = new ItemStack(Items.REDSTONE_TORCH);
     private static final ItemStack DUST = new ItemStack(Items.REDSTONE);
-    private static final ItemStack UNDO = new ItemStack(Items.REPEATER);
-    private static final ItemStack REDO = new ItemStack(Items.COMPARATOR);
     private static final ItemStack KEEP = new ItemStack(fr.lordfinn.steveparty.blocks.ModBlocks.TILE);
+    private static final Identifier UNDO = Steveparty.id("wheel/undo"), REDO = Steveparty.id("wheel/redo"), BACK = Steveparty.id("wheel/back");
 
     @Override
     public boolean handles(ItemStack stack) {
@@ -44,56 +49,76 @@ final class BrushWheel implements ToolWheel.Provider {
     }
 
     @Override
-    public ToolWheel.Layout layout(MinecraftClient client, ItemStack brush) {
-        ClientPlayerEntity player = client.player;
-        int level = TileLinkerBrush.level(brush);
+    public ToolWheel.Layout layout(MinecraftClient client, ItemStack brush, int page) {
+        return switch (page) {
+            case LEVELS -> levels(brush);
+            case CARTRIDGES -> cartridges(client.player, brush);
+            default -> main(client.player, brush);
+        };
+    }
 
-        // Outer ring: the powered slot (top), then 0-15 clockwise
-        List<ToolWheel.Sector> levels = new ArrayList<>();
-        levels.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.powered"),
-                Text.translatable("wheel.steveparty.brush.powered.description"),
-                0xE0B02A10, item(TORCH), level == TileLinkerBrush.POWERED, true,
-                () -> send(ToolWheelPayload.Action.BRUSH_LEVEL, TileLinkerBrush.POWERED)));
+    private static ToolWheel.Layout main(ClientPlayerEntity player, ItemStack brush) {
+        int level = TileLinkerBrush.level(brush);
+        Item picked = TileLinkerBrush.cartridge(brush);
+        ToolWheel.Sector normal = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.powered"),
+                Text.translatable("wheel.steveparty.brush.powered.hint"), GREY, item(TORCH), level == TileLinkerBrush.POWERED, true,
+                () -> send(ToolWheelPayload.Action.BRUSH_LEVEL, TileLinkerBrush.POWERED));
+        ToolWheel.Sector levels = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.levels"),
+                level == TileLinkerBrush.POWERED ? Text.translatable("wheel.steveparty.brush.levels.hint")
+                        : Text.translatable("wheel.steveparty.brush.levels.current", level),
+                level == TileLinkerBrush.POWERED ? GREY : RedstoneWireBlock.getWireColor(Math.max(level, 4)),
+                levelIcon(level), level != TileLinkerBrush.POWERED, true, true, () -> ToolWheel.showPage(LEVELS));
+        ItemStack cartridge = picked == null ? KEEP : new ItemStack(picked);
+        ToolWheel.Sector cartridges = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.cartridges"),
+                picked == null ? Text.translatable("wheel.steveparty.brush.keep") : cartridge.getName(),
+                GREY, item(cartridge), false, true, true, () -> ToolWheel.showPage(CARTRIDGES));
+        ToolWheel.Sector redo = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.redo"), null, GREY, sprite(REDO),
+                false, true, () -> send(ToolWheelPayload.Action.BRUSH_REDO, 0));
+        ToolWheel.Sector undo = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.undo"), null, GREY, sprite(UNDO),
+                false, true, () -> send(ToolWheelPayload.Action.BRUSH_UNDO, 0));
+        // Clockwise from the top: the normal link, the level, the cartridge, then redo and undo (undo on the left)
+        List<ToolWheel.Arc> arcs = List.of(new ToolWheel.Arc(0, -36, 324, List.of(normal, levels, cartridges, redo, undo)));
+        return new ToolWheel.Layout(MAIN_RING, arcs, item(brush.copy()), null, normal,
+                Text.translatable("wheel.steveparty.brush.powered.first"));
+    }
+
+    private static ToolWheel.Layout levels(ItemStack brush) {
+        int level = TileLinkerBrush.level(brush);
+        List<ToolWheel.Sector> sectors = new ArrayList<>();
         for (int power = 0; power <= 15; power++) {
             int value = power;
-            levels.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.level", power),
-                    Text.translatable(power == 0 ? "wheel.steveparty.brush.level.description_zero" : "wheel.steveparty.brush.level.description", power),
-                    0xE0000000 | RedstoneWireBlock.getWireColor(power), number(power), level == power, true,
+            sectors.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.level", power),
+                    Text.translatable(power == 0 ? "wheel.steveparty.brush.level.hint_zero" : "wheel.steveparty.brush.level.hint", power),
+                    RedstoneWireBlock.getWireColor(power), number(power), level == power, true,
                     () -> send(ToolWheelPayload.Action.BRUSH_LEVEL, value)));
         }
-        float half = 360f / levels.size() / 2;
+        float half = 360f / 16 / 2;
+        return new ToolWheel.Layout(LEVEL_RING, List.of(new ToolWheel.Arc(0, -half, 360 - half, sectors)), sprite(BACK), back(), null, null);
+    }
 
-        // Inner ring: undo / redo on top, the Cartridges around
-        List<ToolWheel.Sector> history = List.of(
-                new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.undo"), Text.translatable("wheel.steveparty.brush.undo.description"),
-                        0xE0503030, item(UNDO), false, true, () -> send(ToolWheelPayload.Action.BRUSH_UNDO, 0)),
-                new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.redo"), Text.translatable("wheel.steveparty.brush.redo.description"),
-                        0xE0503030, item(REDO), false, true, () -> send(ToolWheelPayload.Action.BRUSH_REDO, 0)));
-        List<ToolWheel.Sector> cartridges = new ArrayList<>();
+    private static ToolWheel.Layout cartridges(ClientPlayerEntity player, ItemStack brush) {
         Item picked = TileLinkerBrush.cartridge(brush);
+        List<ToolWheel.Sector> sectors = new ArrayList<>();
         // First: none picked, the painted tiles keep their cartridge
-        cartridges.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.keep"),
-                Text.translatable("wheel.steveparty.brush.keep.description"), 0xE0402020, item(KEEP), picked == null, true,
-                () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, ToolWheelPayload.KEEP_CARTRIDGES)));
+        sectors.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.keep"), Text.translatable("wheel.steveparty.brush.keep.hint"),
+                TEAL, item(KEEP), picked == null, true, () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, ToolWheelPayload.KEEP_CARTRIDGES)));
         boolean creative = player != null && player.getAbilities().creativeMode;
-        boolean offHand = player != null && player.getOffHandStack().getItem() instanceof CartridgeItem;
         for (Map.Entry<Item, Integer> kind : cartridgeKinds(player).entrySet()) {
             Item item = kind.getKey();
             ItemStack shown = new ItemStack(item);
+            boolean available = creative || kind.getValue() > 0;
             Text count = creative ? Text.translatable("wheel.steveparty.brush.cartridge.creative")
                     : Text.translatable("wheel.steveparty.brush.cartridge.count", kind.getValue());
-            Text description = Text.translatable("wheel.steveparty.brush.cartridge.description", shown.getName(), count);
-            if (offHand) description = description.copy().append(" ").append(Text.translatable("wheel.steveparty.brush.cartridge.off_hand"));
-            boolean available = creative || kind.getValue() > 0;
-            cartridges.add(new ToolWheel.Sector(shown.getName(), description, 0xE0402020,
-                    item(shown), item == picked, available,
+            sectors.add(new ToolWheel.Sector(shown.getName(), count, TEAL, item(shown), item == picked, available,
                     () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, Registries.ITEM.getRawId(item))));
         }
-        List<ToolWheel.Arc> arcs = List.of(
-                new ToolWheel.Arc(1, -half, 360 - half, levels),
-                new ToolWheel.Arc(0, -40, 40, history),
-                new ToolWheel.Arc(0, 40, 320, cartridges));
-        return new ToolWheel.Layout(THEME, RINGS, arcs, Text.translatable("item.steveparty.tile_linker_brush"), item(DUST));
+        float half = 360f / sectors.size() / 2;
+        return new ToolWheel.Layout(CARTRIDGE_RING, List.of(new ToolWheel.Arc(0, -half, 360 - half, sectors)), sprite(BACK), back(), null, null);
+    }
+
+    private static ToolWheel.Sector back() {
+        return new ToolWheel.Sector(Text.translatable("wheel.steveparty.back"), null, GREY, sprite(BACK), false, true, true,
+                () -> ToolWheel.showPage(MAIN));
     }
 
     /**
@@ -114,15 +139,37 @@ final class BrushWheel implements ToolWheel.Provider {
         return kinds;
     }
 
-    private static ToolWheel.Icon item(ItemStack stack) {
+    static ToolWheel.Icon item(ItemStack stack) {
         return (context, x, y) -> context.drawItem(stack, x - 8, y - 8);
+    }
+
+    static ToolWheel.Icon sprite(Identifier sprite) {
+        return (context, x, y) -> {
+            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+            context.drawGuiTexture(sprite, x - 8, y - 8, 16, 16);
+            com.mojang.blaze3d.systems.RenderSystem.disableBlend();
+        };
+    }
+
+    /** Redstone dust, with the level set (none: the dust alone). */
+    private static ToolWheel.Icon levelIcon(int level) {
+        if (level == TileLinkerBrush.POWERED) return item(DUST);
+        String text = Integer.toString(level);
+        return (context, x, y) -> {
+            context.drawItem(DUST, x - 8, y - 8);
+            var renderer = MinecraftClient.getInstance().textRenderer;
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 200);
+            context.drawText(renderer, text, x + 9 - renderer.getWidth(text), y + 1, 0xFFFFFFFF, true);
+            context.getMatrices().pop();
+        };
     }
 
     private static ToolWheel.Icon number(int power) {
         String text = Integer.toString(power);
         return (context, x, y) -> {
             var renderer = MinecraftClient.getInstance().textRenderer;
-            context.drawText(renderer, text, x - renderer.getWidth(text) / 2, y - 4, power >= 12 ? 0xFF3A0000 : 0xFFFFFFFF, power < 12);
+            context.drawText(renderer, text, x - renderer.getWidth(text) / 2 + 1, y - 3, power >= 12 ? 0xFF3A0000 : 0xFFFFFFFF, power < 12);
         };
     }
 
