@@ -61,6 +61,11 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private static final int FAVORITE_FRAME = 0xFFFFC21E;
     /** Sunken boxes' body: the dark slate of the mod's fields; the library's thumbnails on it. */
     private static final int BOX_BODY = 0xFF3B4247;
+    /** Behind the stencil: the Stencil Maker's light top (its block texture), the cut pixels stand out from the metal. */
+    private static final int CANVAS_BODY = 0xFFB4B4B4;
+    /** Over the stencil's metal: its stains (paint, rust) barely visible, they would distract from the drawing. */
+    private static final int METAL_VEIL = 0xD82E2F35;
+    private static final Identifier MAKER_TEXTURE = Steveparty.id("textures/block/stencil_maker.png");
     private static final int THUMB_BODY = 0xFF2B3237, THUMB_HOVER = 0xFF56636C, THUMB_PIXEL = 0xFFE8E8E8;
     /** Locked patterns: a darker cell, a dim padlock. */
     private static final int LOCKED_BODY = 0xFF1F2427, LOCKED_HOVER = 0xFF2E363B, LOCKED_ICON = 0xFF6B767D;
@@ -480,14 +485,17 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         context.drawItem(TITLE_ICON, PartyGui.titlePlateIconX(textRenderer, x + backgroundWidth / 2, 18, title), y - 8);
 
         // The plate: its frame around the canvas, the shape cut out of the 16x16 inside
-        PartyGui.inset(context, canvasBoxX, canvasBoxY, canvasBox, canvasBox, BOX_BODY, false, false);
+        PartyGui.inset(context, canvasBoxX, canvasBoxY, canvasBox, canvasBox, CANVAS_BODY, false, false);
+        context.drawTexture(MAKER_TEXTURE, canvasBoxX + 2, canvasBoxY + 2, canvasBox - 4, canvasBox - 4, 0, 0, 16, 16, 64, 64);
         RenderSystem.enableBlend();
         int plate = StencilResourceManager.Kind.METAL.size() * PIXEL_SIZE, margin = StencilResourceManager.Kind.METAL.margin();
         for (int i = -margin; i < 16 + margin; i++) {
             for (int j = -margin; j < 16 + margin; j++) {
                 if (i >= 0 && i < 16 && j >= 0 && j < 16 && shape[i * 16 + j] == 1) continue;
-                context.drawTexture(STENCIL_TEXTURE, stencilX + i * PIXEL_SIZE, stencilY + j * PIXEL_SIZE,
+                int px = stencilX + i * PIXEL_SIZE, py = stencilY + j * PIXEL_SIZE;
+                context.drawTexture(STENCIL_TEXTURE, px, py,
                         (i + margin) * PIXEL_SIZE, (j + margin) * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE, plate, plate);
+                context.fill(px, py, px + PIXEL_SIZE, py + PIXEL_SIZE, METAL_VEIL);
             }
         }
         RenderSystem.disableBlend();
