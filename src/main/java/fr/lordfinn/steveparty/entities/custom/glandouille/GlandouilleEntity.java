@@ -263,6 +263,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     }
 
     private void setMood(Mood mood, int ticks) {
+        // Only a flight floats: whatever ends it (caught, picked up, landed on a tower), gravity is back
+        if (mood != Mood.FLYING && getMood() == Mood.FLYING && !boardActor) setNoGravity(false);
         this.dataTracker.set(MOOD, mood.ordinal());
         this.moodTicks = ticks;
         if (mood != Mood.CALM) {
@@ -1149,6 +1151,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
+        // Saved floating by an older version (a flight cut short): it falls again
+        if (!boardActor && getMood() != Mood.FLYING) setNoGravity(false);
         if (nbt.contains("Variant")) {
             setVariant(GlandouilleVariant.byId(nbt.getInt("Variant")));
             variantFromData = true;

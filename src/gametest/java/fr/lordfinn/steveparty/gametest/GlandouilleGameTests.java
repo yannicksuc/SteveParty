@@ -375,6 +375,23 @@ public class GlandouilleGameTests implements FabricGameTest {
         });
     }
 
+    /** Picked up in the middle of its flight: it does not keep floating once put down. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aFlightCutShortGivesGravityBack(TestContext context) {
+        floor(context);
+        GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 2, 1)).getFirst();
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
+        one.launch(new Vec3d(1, 0, 0));
+        context.assertTrue(one.hasNoGravity(), "floats while flying");
+        context.waitAndRun(2, () -> {
+            context.assertTrue(GlandouilleTowers.pickUp(player, one), "caught in flight");
+            context.waitAndRun(2, () -> {
+                context.assertFalse(one.hasNoGravity(), "gravity back once caught");
+                context.complete();
+            });
+        });
+    }
+
     /** The last one in hand, alone, is thrown like the others: it flies forward, lands, and walks again. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
     public void theLastOneInHandIsThrownToo(TestContext context) {
