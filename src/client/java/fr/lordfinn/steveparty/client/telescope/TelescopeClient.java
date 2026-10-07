@@ -12,7 +12,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
@@ -67,6 +66,8 @@ public final class TelescopeClient {
     /** Field of view through the telescope (x the normal one), and how far the player may stand from it. */
     private static final float ZOOM = 0.6f;
     private static final double MAX_DISTANCE = 4;
+    /** How far below the horizon the tube can be lowered (degrees): it is made for the sky. */
+    private static final float LOWEST_PITCH = 10f;
     /** Ticks of the sparkle after a find; a guide star is named when looked at within this angle (degrees). */
     private static final int SUCCESS_TICKS = 60;
     private static final double GUIDE_LOOK_DEGREES = 4, POINTER_DEGREES = 14;
@@ -107,7 +108,6 @@ public final class TelescopeClient {
         });
         ClientTickEvents.END_CLIENT_TICK.register(TelescopePoses::tick);
         ClientTickEvents.END_CLIENT_TICK.register(TelescopeClient::tick);
-        HudRenderCallback.EVENT.register(TelescopeClient::renderHud);
         WorldRenderEvents.END.register(TelescopeClient::renderSky);
     }
 
@@ -125,6 +125,16 @@ public final class TelescopeClient {
     public static float fovMultiplier(float tickDelta) {
         float z = MathHelper.lerp(tickDelta, prevZoom, zoom);
         return z <= 0 ? 1f : MathHelper.lerp(z * z * (3 - 2 * z), 1f, ZOOM);
+    }
+
+    /** Looking through, the scope covers the whole HUD: InGameHudTelescopeMixin draws it instead of the HUD. */
+    public static boolean coversHud(float tickDelta) {
+        return MathHelper.lerp(tickDelta, prevZoom, zoom) > 0.01f;
+    }
+
+    /** The lowest the player may look while looking through (pitch, degrees: positive is down). */
+    public static float clampPitch(float pitch) {
+        return watching == null ? pitch : Math.min(pitch, LOWEST_PITCH);
     }
 
     /** The first-person hand is hidden while looking through. */
@@ -146,6 +156,11 @@ public final class TelescopeClient {
         else index = kept;
         if (!same) foundHere = false;
         if (!same) play(SoundEvents.ITEM_SPYGLASS_USE, 1f, 1f);
+        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        if (player != null && player.getPitch() > LOWEST_PITCH) {
+            player.setPitch(LOWEST_PITCH);
+            player.prevPitch = LOWEST_PITCH;
+        }
     }
 
     private static void close(boolean sound) {
@@ -467,7 +482,7 @@ public final class TelescopeClient {
         context.fill(x - 1, y - 1, x + 2, y + 2, 0xFFFFFFFF);
     }
 
-    private static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
+    public static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         float tickDelta = tickCounter.getTickDelta(false);
         float z = MathHelper.lerp(tickDelta, prevZoom, zoom);

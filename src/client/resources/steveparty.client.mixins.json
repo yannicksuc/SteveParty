@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "EntityLookToolWheelMixin",
+    "EntityLookTelescopeMixin",
     "BipedEntityModelPipeSwimMixin",
     "BossBarHudAccessor",
     "CapeFeatureRendererBoxCostumeMixin",
@@ -29,6 +30,7 @@
     "HeldItemRendererStencilHammerMixin",
     "HeldItemRendererTokenSpellMixin",
     "InGameHudToolHudMixin",
+    "InGameHudTelescopeMixin",
     "EntityRendererBoxCostumeShadowMixin",
     "EntityRendererNameTagMixin",
     "LivingEntityRendererBoxCostumeMixin",
