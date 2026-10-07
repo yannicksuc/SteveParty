@@ -72,8 +72,10 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
  * of a followed player's score there is a point ({@code steveparty:landed_on_pole}, landings on any goal pole, was
  * the only source before and stays selectable).
  * <p>
- * <b>Redstone</b> ({@link RedstoneMode}): the back port pauses the base, resets it, or is ignored. Paused, the base
- * counts nothing (increases seen meanwhile are dropped) but keeps its points, its objective and its outputs.
+ * <b>Redstone</b>: a signal into the base (any side) pauses it, 1 to 14 only pausing it, 15 also putting the points back
+ * to 0; without a signal it counts again. Paused, the base counts nothing (increases seen meanwhile are dropped) but
+ * keeps its points (below 15), its objective and its outputs. A comparator on the base gets a pulse per point; on a
+ * pole segment, the progress towards the goal (0 to 15, 15 only once reached).
  * <p>
  * <b>Podiums</b>: a base touching a podium (itself or its pole), or linked to the same mini-game page, is linked to
  * that podium's group (see {@code Podiums}): a per-player goal reached on its pole gives the player the highest free
@@ -110,23 +112,8 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     public static final int PARTY_LINK_RADIUS = PartyControllerEntity.PARTY_AUDIENCE_RADIUS;
     public static final int MAX_RADIUS = 256;
 
-    public enum RedstoneMode {
-        /** The back port does nothing: the base always counts. */
-        IGNORE,
-        /** A signal at the back pauses the base (like a hopper). Default of new bases. */
-        PAUSE_WHEN_POWERED,
-        /** A pulse at the back puts the points back to 0 (and empties the podiums linked to the base); it always counts. */
-        RESET_WHEN_POWERED;
-
-        /** The removed mode where the base counted only while powered at the back; saved bases now pause instead. */
-        private static final String REMOVED_RUN_WHEN_POWERED = "RUN_WHEN_POWERED";
-
-        /** Reads a saved mode: the removed {@code RUN_WHEN_POWERED} becomes {@link #PAUSE_WHEN_POWERED}, unknown names {@code fallback}. */
-        public static RedstoneMode read(NbtCompound nbt, String key, RedstoneMode fallback) {
-            if (REMOVED_RUN_WHEN_POWERED.equals(nbt.getString(key))) return PAUSE_WHEN_POWERED;
-            return readEnum(nbt, key, values(), fallback);
-        }
-    }
+    /** Redstone power into the base that also puts the points back to 0 (below it, the signal only pauses). */
+    public static final int RESET_POWER = 15;
 
     public enum Source {
         /** Landings on this base's own poles. */
@@ -135,19 +122,12 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         CRITERION
     }
 
-    public enum OutputMode {
-        /** A comparator gets a short pulse for each point. */
-        PULSE,
-        /** A comparator gets the progress towards the pole's goal, 0 to 15. */
-        PROGRESS
-    }
 
     /** Command-block permission level: enough for selectors, not more. */
     private static final int SELECTOR_PERMISSION_LEVEL = 2;
     public static final int MAX_STRING_LENGTH = 256;
 
     // --- Settings ---
-    private RedstoneMode redstoneMode = RedstoneMode.PAUSE_WHEN_POWERED;
     /** Landings on its own poles (each base counts its own board); the global criterion stays selectable. */
     private Source source = Source.LANDINGS_HERE;
     private String criterion = LANDED_ON_POLE_ID;
@@ -156,7 +136,6 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     private String selector = "@a";
     /** Created now (not loaded from saved data): placed by a player, it picks its players from what is around. */
     private boolean fresh = true;
-    private OutputMode outputMode = OutputMode.PULSE;
 
     // --- State ---
     /** Points per score holder (player name). */
@@ -165,8 +144,8 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     private final Map<String, Integer> sourceSeen = new HashMap<>();
     private long total = 0;
     private int redstoneOutput = 0;
-    /** Whether the reset input was powered at the last neighbor update (rising-edge detection). */
-    private boolean resetSidePowered = false;
+    /** Redstone power received at the last look (-1: not looked at yet), to see it rise to {@link #RESET_POWER}. */
+    private int inputPower = -1;
 
     // --- Runtime ---
     /** Set while the base writes its own objectives, so that it does not react to its own changes. */
@@ -210,6 +189,8 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     /** End of the tick it was loaded or placed in: objectives set up (legacy data converted), poles told the total. */
     void onLoaded() {
         if (world == null || world.isClient) return;
+        // The signal already there when placed or loaded: no reset for it
+        if (inputPower < 0) inputPower = world.getReceivedRedstonePower(pos);
         ensureObjectives();
         catchUpSource();
         pushTotal();
@@ -494,7 +475,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     private void onPointsChanged(long delta, String holder) {
         markDirty();
         if (delta > 0 && world instanceof ServerWorld serverWorld) {
-            if (outputMode == OutputMode.PULSE) pulseRedstone();
+            pulseRedstone();
             spawnFloatingText(serverWorld, "+" + delta, pos.toCenterPos().add(0.5, 0.5, 0.5).add(Math.random() - 1, Math.random() / 2, Math.random() - 1).toVector3f(),
                     TextColor.fromRgb(0xC90E0E), 50);
         }
@@ -600,7 +581,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     }
 
     /**
-     * All the points go back to 0 (reset port, screen button, redstone mode, a party or a mini-game starting), the
+     * All the points go back to 0 (a signal of 15, the screen button, a party or a mini-game starting), the
      * per-player goals can be reached again, and the podiums linked to the base are emptied.
      */
     public void reset() {
@@ -659,28 +640,30 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
 
     // ------------------------------------------------------------------ redstone
 
-    /** @return whether the base counts points (its back port and redstone mode). */
+    /** @return whether the base counts points: not while it receives a redstone signal. */
     public boolean isActive() {
-        boolean powered = getCachedState().contains(POWERED) && getCachedState().get(POWERED);
-        return switch (redstoneMode) {
-            case IGNORE, RESET_WHEN_POWERED -> true;
-            case PAUSE_WHEN_POWERED -> !powered;
-        };
+        return !(getCachedState().contains(POWERED) && getCachedState().get(POWERED));
     }
 
-    /** The back port's power changed: a base that pauses or resumes says so with a sound; in reset mode, a pulse resets it. */
-    public void onBackPowerChanged() {
-        pushTotal();
+    /** Redstone power received at the last look (0 to 15). */
+    public int getInputPower() {
+        return Math.max(0, inputPower);
+    }
+
+    /**
+     * The redstone power into the base changed (any side). A signal pauses the base; rising to {@link #RESET_POWER}
+     * also puts the points back to 0. A base that pauses or resumes says so with a sound.
+     */
+    public void onInputPower(int power) {
+        if (world == null || world.isClient || power == inputPower) return;
+        int before = inputPower;
+        inputPower = power;
         markDirty();
-        if (redstoneMode == RedstoneMode.RESET_WHEN_POWERED) {
-            if (getCachedState().contains(POWERED) && getCachedState().get(POWERED)) reset();
-            return;
-        }
-        if (redstoneMode != RedstoneMode.IGNORE && world != null && !world.isClient) {
-            boolean active = isActive();
-            world.playSound(null, pos, active ? SoundEvents.BLOCK_BEACON_ACTIVATE : SoundEvents.BLOCK_BEACON_DEACTIVATE,
+        if (before >= 0 && (before > 0) != (power > 0)) {
+            world.playSound(null, pos, power > 0 ? SoundEvents.BLOCK_BEACON_DEACTIVATE : SoundEvents.BLOCK_BEACON_ACTIVATE,
                     SoundCategory.BLOCKS, 0.35f, 1.8f);
         }
+        if (before >= 0 && before < RESET_POWER && power >= RESET_POWER) reset();
     }
 
     private void pulseRedstone() {
@@ -690,28 +673,15 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         world.scheduleBlockTick(pos, getCachedState().getBlock(), 2);
     }
 
-    /** Comparator on the base: a pulse per point, or the progress towards the goal of the pole above (0-15). */
+    /** Comparator on the base: a pulse per point (the progress is read on the pole). */
     public int getComparatorOutput() {
-        if (outputMode == OutputMode.PULSE) return redstoneOutput;
-        return world != null && world.getBlockEntity(pos.up()) instanceof GoalPoleBlockEntity pole ? pole.progressLevel() : 0;
+        return redstoneOutput;
     }
 
     public void setRedstoneOutput(int value) {
         redstoneOutput = value;
     }
 
-    /**
-     * Updates the reset input's power.
-     * @return true only on a rising edge (unpowered to powered), i.e. when the points must be reset
-     */
-    public boolean updateResetSidePower(boolean powered) {
-        boolean risingEdge = powered && !this.resetSidePowered;
-        if (powered != this.resetSidePowered) {
-            this.resetSidePowered = powered;
-            markDirty();
-        }
-        return risingEdge;
-    }
 
     // ------------------------------------------------------------------ players
 
@@ -835,13 +805,11 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
 
     // ------------------------------------------------------------------ settings
 
-    public RedstoneMode getRedstoneMode() { return redstoneMode; }
     public Source getSource() { return source; }
     public String getCriterion() { return criterion; }
     public String getSelector() { return selector; }
     public Players getPlayers() { return players; }
     public int getRadius() { return radius; }
-    public OutputMode getOutputMode() { return outputMode; }
     public long getTotal() { return total; }
     public int getPoints(String holder) { return points.getOrDefault(holder, 0); }
     /** Points per player (read only; synced to clients for the wrench details). */
@@ -849,12 +817,6 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     public boolean isSourceInvalid() { return sourceInvalid; }
     @Nullable public ScoreboardObjective getMirror() { return mirror; }
 
-    public void setRedstoneMode(RedstoneMode mode) {
-        if (mode == redstoneMode) return;
-        redstoneMode = mode;
-        markDirty();
-        pushTotal();
-    }
 
     public void setPlayers(Players players, int radius) {
         int clamped = Math.clamp(radius, 1, MAX_RADIUS);
@@ -890,34 +852,24 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         }
     }
 
-    public void setOutputMode(OutputMode mode) {
-        if (mode == outputMode) return;
-        outputMode = mode;
-        markDirty();
-        pushTotal();
-    }
 
     /** Settings from the screen ({@link #writeSettings}), each value checked. */
     public void applySettings(NbtCompound settings) {
-        setRedstoneMode(RedstoneMode.read(settings, "RedstoneMode", redstoneMode));
         String selector = settings.getString("Selector");
         if (selector.length() <= MAX_STRING_LENGTH) setSelector(selector);
         setPlayers(readEnum(settings, "Players", Players.values(), players), settings.contains("Radius") ? settings.getInt("Radius") : radius);
         String criterion = settings.getString("Criterion");
         if (criterion.length() <= MAX_STRING_LENGTH) setSource(readEnum(settings, "Source", Source.values(), source), criterion);
-        setOutputMode(readEnum(settings, "OutputMode", OutputMode.values(), outputMode));
         if (settings.getBoolean("Reset")) reset();
     }
 
     public NbtCompound writeSettings() {
         NbtCompound settings = new NbtCompound();
-        settings.putString("RedstoneMode", redstoneMode.name());
         settings.putString("Source", source.name());
         settings.putString("Criterion", criterion);
         settings.putString("Selector", selector);
         settings.putString("Players", players.name());
         settings.putInt("Radius", radius);
-        settings.putString("OutputMode", outputMode.name());
         settings.putLong("Total", total);
         settings.putBoolean("PartyNear", linkedParty() != null);
         settings.putBoolean("PageLinked", !linkedPages().isEmpty());
@@ -940,15 +892,12 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
         fresh = false;
-        this.resetSidePowered = nbt.getBoolean("ResetSidePowered");
+        inputPower = nbt.contains("InputPower", NbtElement.INT_TYPE) ? Math.clamp(nbt.getInt("InputPower"), 0, 15) : -1;
         points.clear();
         sourceSeen.clear();
         if (nbt.getInt("Version") < 2) {
-            // The ticking base: counted while powered at the back (that mode is gone: the signal now pauses it), reset
-            // by any other side, criterion objective
+            // The ticking base: criterion objective
             legacy = true;
-            redstoneMode = RedstoneMode.PAUSE_WHEN_POWERED;
-            outputMode = OutputMode.PULSE;
             source = Source.CRITERION;
             criterion = nbt.contains("Goal", NbtElement.STRING_TYPE) ? nbt.getString("Goal") : LANDED_ON_POLE_ID;
             selector = nbt.contains("Selector", NbtElement.STRING_TYPE) ? nbt.getString("Selector") : "@p";
@@ -965,15 +914,12 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
             return;
         }
         legacy = false;
-        redstoneMode = RedstoneMode.read(nbt, "RedstoneMode", RedstoneMode.PAUSE_WHEN_POWERED);
         source = readEnum(nbt, "Source", Source.values(), Source.CRITERION);
         criterion = nbt.getString("Criterion");
         selector = nbt.getString("Selector");
         // Version 2 had only the selector: kept as the advanced choice
         players = nbt.getInt("Version") < 3 ? Players.SELECTOR : readEnum(nbt, "Players", Players.values(), Players.ALL);
         radius = nbt.contains("Radius") ? Math.clamp(nbt.getInt("Radius"), 1, MAX_RADIUS) : 16;
-        outputMode = readEnum(nbt, "OutputMode", OutputMode.values(), OutputMode.PULSE);
-        // "ResetPort" (a marked reset side, removed) is ignored: a pulse on any side but the back resets
         NbtCompound pointsNbt = nbt.getCompound("Points");
         for (String key : pointsNbt.getKeys()) points.put(key, pointsNbt.getInt(key));
         NbtCompound seenNbt = nbt.getCompound("SourceSeen");
@@ -985,14 +931,12 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
         nbt.putInt("Version", VERSION);
-        nbt.putString("RedstoneMode", redstoneMode.name());
         nbt.putString("Source", source.name());
         nbt.putString("Criterion", criterion);
         nbt.putString("Selector", selector);
         nbt.putString("Players", players.name());
         nbt.putInt("Radius", radius);
-        nbt.putString("OutputMode", outputMode.name());
-        nbt.putBoolean("ResetSidePowered", resetSidePowered);
+        if (inputPower >= 0) nbt.putInt("InputPower", inputPower);
         NbtCompound pointsNbt = new NbtCompound();
         points.forEach(pointsNbt::putInt);
         nbt.put("Points", pointsNbt);
@@ -1038,7 +982,6 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
 
     /** The settings as a list of names (for tests and debugging). */
     public List<String> describe() {
-        return List.of(redstoneMode.name(), source.name(), criterion, players.name(), String.valueOf(radius), selector,
-                outputMode.name());
+        return List.of(source.name(), criterion, players.name(), String.valueOf(radius), selector);
     }
 }

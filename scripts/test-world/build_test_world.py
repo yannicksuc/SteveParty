@@ -407,7 +407,7 @@ def shop_station(x0=2035, z0=1970):
 
 def goal_pole_station(x0=2060, z0=1970):
     cmds = ['# Goal pole station'] + plot_title(x0, z0, 'GOAL POLE')
-    poles = [(x0 + 6, z0 + 9, 6, [(2, 'red'), (4, 'yellow'), (6, 'blue')]),
+    poles = [(x0 + 6, z0 + 9, 6, [(6, 'blue')]),
              (x0 + 13, z0 + 9, 4, [(4, 'lime')])]
     for bx, bz, height, flags in poles:
         cmds.append('setblock %d %d %d steveparty:goal_pole_base[facing=south]' % (bx, Y, bz))
@@ -417,14 +417,13 @@ def goal_pole_station(x0=2060, z0=1970):
                 'true' if h == 1 else 'false', 'true' if h == height else 'false', 'true' if h in flag_at else 'false')
             nbt = '{FlagColor:%d}' % (DYE_RGB[flag_at[h]] & 0xFFFFFF) if h in flag_at else ''
             cmds.append('setblock %d %d %d steveparty:goal_pole[%s]%s' % (bx, Y + h, bz, state, nbt))
-    cmds.append(label(x0 + 10, Y + 1.5, z0 + 12, 'Base + segments + drapeaux colorés', 'white', 0.8, False))
+    cmds.append(label(x0 + 10, Y + 1.5, z0 + 12, 'Base + segments + drapeau teint', 'white', 0.8, False))
     # « Les 10 sauts »: a jump counter (the base counts minecraft.custom:minecraft.jump for everyone) under a pole
     # whose goal is each player's own (10), touching a podium staircase: the first to jump 10 times takes the 1st
     # place, the second the 2nd, the third the 3rd. Sneak + right click a podium with the Wrench to start again.
     bx, bz = x0 + 5, z0 + 16
-    cmds.append('setblock %d %d %d steveparty:goal_pole_base[facing=south]{Version:3,RedstoneMode:"PAUSE_WHEN_POWERED",'
-                'Source:"CRITERION",Criterion:"minecraft.custom:minecraft.jump",Selector:"@a",Players:"ALL",Radius:16,'
-                'OutputMode:"PULSE"}' % (bx, Y, bz))
+    cmds.append('setblock %d %d %d steveparty:goal_pole_base[facing=south]{Version:3,'
+                'Source:"CRITERION",Criterion:"minecraft.custom:minecraft.jump",Selector:"@a",Players:"ALL",Radius:16}' % (bx, Y, bz))
     cmds.append('setblock %d %d %d steveparty:goal_pole[facing=south,on_base=true,top=true,flag=true]'
                 '{Version:2,Comparator:1,Value:10,PerSegment:0b,FlagSteps:1b,PerPlayer:1b,FlagColor:%d}'
                 % (bx, Y + 1, bz, DYE_RGB['yellow'] & 0xFFFFFF))
