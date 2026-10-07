@@ -43,6 +43,8 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(PartyDashboardPayload.ID, PartyDashboardPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(ToolWheelPayload.ID, ToolWheelPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(fr.lordfinn.steveparty.payloads.custom.PipettePayload.ID, fr.lordfinn.steveparty.payloads.custom.PipettePayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(fr.lordfinn.steveparty.payloads.custom.DestinationSwapPayload.ID, fr.lordfinn.steveparty.payloads.custom.DestinationSwapPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(ShopCartridgeScrollPayload.ID, ShopCartridgeScrollPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(PageZonePayload.ID, PageZonePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(AdvanceBackScrollPayload.ID, AdvanceBackScrollPayload.CODEC);
@@ -112,6 +114,14 @@ public class ModPayloads {
             runInPacketOrder(player, () -> payload.handle(player));
         });
         ServerPlayNetworking.registerGlobalReceiver(ToolWheelPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(fr.lordfinn.steveparty.payloads.custom.PipettePayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(fr.lordfinn.steveparty.payloads.custom.DestinationSwapPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             runInPacketOrder(player, () -> payload.handle(player));
         });
