@@ -23,7 +23,8 @@ import java.util.List;
 
 /**
  * The Tile Linker Brush on the client: its wheel (left click, see {@link BrushWheel}), its HUD above the hotbar, the
- * aimed tile and the stroke shown in the world (see {@link BrushOverlay}), and the board view.
+ * aimed tile and the stroke shown in the world (see {@link BrushOverlay}), and the board view (with the Explorer's
+ * Helmet's details, see {@link HelmetView}).
  */
 public final class BrushClient {
     private static final int INSET = (ToolHud.BOX - 16) / 2;
@@ -38,6 +39,7 @@ public final class BrushClient {
         ClientTickEvents.END_CLIENT_TICK.register(BrushClient::strokeTrail);
         BrushOverlay.initialize();
         BoardView.initialize();
+        HelmetView.initialize();
     }
 
     static boolean holdsBrush(MinecraftClient client) {

@@ -88,6 +88,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel.initialize();
         fr.lordfinn.steveparty.items.custom.BoxCostumeItem.initialize();
         fr.lordfinn.steveparty.entities.custom.BoxedTraderBoxes.initialize();
+        fr.lordfinn.steveparty.board.ExplorerHelmet.initialize();
 
         MoveTokenCommand.initialize();
         fr.lordfinn.steveparty.commands.MulaCommand.initialize();

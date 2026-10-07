@@ -10,14 +10,13 @@ import fr.lordfinn.steveparty.service.ShopStops;
 import net.minecraft.item.ItemStack;
 import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.board.BoardRevision;
-import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import fr.lordfinn.steveparty.board.ExplorerHelmet;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -39,7 +38,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The board view: while the Wrench or the Tile Linker Brush is held (either hand), the links of the board spaces around are drawn like the
+ * The board view: while the Wrench or the Tile Linker Brush is held (either hand), or the Explorer's Helmet is worn
+ * with its lamp lit (see {@link ExplorerHelmet}; the details it adds are {@link HelmetView}'s), the links of the board spaces around are drawn like the
  * paths of a Mario Party board: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
  * start on a green one), forks get a gold « ? », dead ends a red « ! » and spaces no start leads to an orange « ! »,
@@ -143,13 +143,16 @@ public final class BoardView {
     private static @Nullable BlockPos builtAt;
     private static long builtRevision = -1;
     private static int age;
+    /** What the player sees (updated each tick). */
+    private static ExplorerHelmet.View view = ExplorerHelmet.View.NONE;
 
     private BoardView() {
     }
 
     static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player == null || client.world == null || !holdsWrench(client.player)) {
+            view = client.player == null || client.world == null ? ExplorerHelmet.View.NONE : ExplorerHelmet.view(client.player);
+            if (!view.shown()) {
                 clear();
                 return;
             }
@@ -281,15 +284,14 @@ public final class BoardView {
         }
     }
 
-    /** The current graph (null when neither the Wrench nor the brush is held). */
+    /** The current graph (null when the board view is not shown). */
     static @Nullable BoardGraph graph() {
         return graph;
     }
 
-    static boolean holdsWrench(ClientPlayerEntity player) {
-        return player.getMainHandStack().getItem() instanceof WrenchItem || player.getOffHandStack().getItem() instanceof WrenchItem
-                || player.getMainHandStack().getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem
-                || player.getOffHandStack().getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
+    /** What the player sees of the board this tick. */
+    static ExplorerHelmet.View view() {
+        return view;
     }
 
     /**
