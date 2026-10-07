@@ -516,6 +516,8 @@
   "message.steveparty.mula.feed": "Feed level: %s/%s - %s: +%s",
   "message.steveparty.mula.feed.potion": "Feed level: %s/%s - %s: +%s (%s)",
   "message.steveparty.mula.feed.potion_term": "%s min x (%s x 2)",
+  "message.steveparty.mula.refuse.colour": "This %s Mula won't have it: %s is for a %s Mula",
+  "message.steveparty.mula.refuse.inedible": "Not something a Mula eats: %s",
   "mula.dance.carousel_of_stars": "Carousel of Stars",
   "mula.dance.rose_window": "Rose Window",
   "mula.dance.infinity": "Infinity",

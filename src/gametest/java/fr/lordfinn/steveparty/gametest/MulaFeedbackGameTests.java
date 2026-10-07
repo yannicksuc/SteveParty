@@ -188,6 +188,76 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         context.complete();
     }
 
+    private static String key(net.minecraft.text.Text text) {
+        return text != null && text.getContent() instanceof net.minecraft.text.TranslatableTextContent t ? t.getKey() : null;
+    }
+
+    /** What it refuses, it says why (action bar): another colour's food and whose it is, or something no Mula eats. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void refusalSaysWhy(TestContext context) {
+        MulaEntity.MulaVariant blue = MulaEntity.MulaVariant.BLUE;
+        net.minecraft.text.Text colour = MulaEntity.refusalReason(blue, new ItemStack(Items.APPLE));
+        context.assertEquals(key(colour), "message.steveparty.mula.refuse.colour", "an apple: another colour's food");
+        Object[] args = ((net.minecraft.text.TranslatableTextContent) colour.getContent()).getArgs();
+        context.assertEquals(key((net.minecraft.text.Text) args[0]), "mula.steveparty.colour.blue", "its own colour");
+        context.assertEquals(key((net.minecraft.text.Text) args[2]), "mula.steveparty.colour.red", "the colour that eats it");
+        context.assertEquals(key(MulaEntity.refusalReason(blue, new ItemStack(Items.STICK))),
+                "message.steveparty.mula.refuse.inedible", "a stick is not food");
+        context.assertEquals(key(MulaEntity.refusalReason(blue, new ItemStack(Items.COOKED_CHICKEN))),
+                "message.steveparty.mula.refuse.inedible", "a food no Mula eats");
+        context.assertTrue(MulaEntity.refusalReason(blue, new ItemStack(Items.COD)) == null, "its own food: no refusal");
+        context.assertTrue(MulaEntity.refusalReason(blue, ItemStack.EMPTY) == null, "nothing held out: nothing to say");
+        context.complete();
+    }
+
+    /** Clicking on and on: one "no" (and one explanation) a second per player, the item kept. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void refusalIsNotSpammed(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        mula.setVariant(MulaEntity.MulaVariant.BLUE);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity other = context.createMockCreativeServerPlayerInWorld();
+        player.changeGameMode(GameMode.SURVIVAL);
+        other.changeGameMode(GameMode.SURVIVAL);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.APPLE, 3));
+        other.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.STICK));
+        for (int i = 0; i < 5; i++) mula.interactMob(player, Hand.MAIN_HAND);
+        context.assertEquals(mula.refusals(), 1, "five clicks in a row: one no");
+        context.assertEquals(player.getMainHandStack().getCount(), 3, "the apples are kept");
+        mula.interactMob(other, Hand.MAIN_HAND);
+        context.assertEquals(mula.refusals(), 2, "another player gets his own answer");
+        context.waitAndRun(MulaEntity.REFUSAL_GAP_TICKS + 1, () -> {
+            try {
+                mula.interactMob(player, Hand.MAIN_HAND);
+                context.assertEquals(mula.refusals(), 3, "a second later: a new no");
+            } finally {
+                disconnect(context, player);
+                disconnect(context, other);
+            }
+            context.complete();
+        });
+    }
+
+    /** Its owner holding out another colour's food: refused and told why, not an order to sit. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void ownerHoldingAnotherColoursFoodIsRefused(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        mula.setVariant(MulaEntity.MulaVariant.BLUE);
+        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
+        try {
+            owner.changeGameMode(GameMode.SURVIVAL);
+            mula.setOwner(owner);
+            owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.APPLE, 2));
+            mula.interactMob(owner, Hand.MAIN_HAND);
+            context.assertTrue(!mula.isSitting(), "an apple is not a sit order");
+            context.assertEquals(mula.refusals(), 1, "refused");
+            context.assertEquals(owner.getMainHandStack().getCount(), 2, "kept");
+        } finally {
+            disconnect(context, owner);
+        }
+        context.complete();
+    }
+
     /** A food of its colour gives its nutrition. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void foodGivesItsNutrition(TestContext context) {

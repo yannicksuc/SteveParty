@@ -1256,6 +1256,8 @@
   "message.steveparty.mula.feed": "Satiété : %s/%s - %s : +%s",
   "message.steveparty.mula.feed.potion": "Satiété : %s/%s - %s : +%s (%s)",
   "message.steveparty.mula.feed.potion_term": "%s min x (%s x 2)",
+  "message.steveparty.mula.refuse.colour": "Ce Mula %s n'en veut pas : %s, c'est pour un Mula %s",
+  "message.steveparty.mula.refuse.inedible": "Un Mula ne mange pas ça : %s",
   "mula.dance.carousel_of_stars": "Carrousel d'étoiles",
   "mula.dance.rose_window": "Rosace",
   "mula.dance.infinity": "Infini",
