@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
-import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.ComponentType;
@@ -24,7 +23,7 @@ import net.minecraft.text.Text;
 
 /**
  * The Explorer's Helmet and who sees the board view. Worn with its headlamp lit, it shows the board view at all times
- * (the Wrench or the Tile Linker Brush only while held), with the details of each space. The lamp is the switch: its
+ * (the Tile Linker Brush only while held), with the details of each space. The lamp is the switch: its
  * state lives on the stack ({@link #LAMP}), so everyone sees it lit or not, and the server decides (the client's key
  * sends {@link ToggleLamp}).
  */
@@ -75,13 +74,13 @@ public final class ExplorerHelmet {
         return isHelmet(helmet(entity));
     }
 
-    /** The Wrench or the Tile Linker Brush in either hand. */
+    /** The Tile Linker Brush in either hand. */
     public static boolean holdsBoardTool(PlayerEntity player) {
         return isBoardTool(player.getMainHandStack().getItem()) || isBoardTool(player.getOffHandStack().getItem());
     }
 
     private static boolean isBoardTool(Item item) {
-        return item instanceof WrenchItem || item instanceof TileLinkerBrushItem;
+        return item instanceof TileLinkerBrushItem;
     }
 
     /** What {@code player} sees: the details with a lit helmet on, the board view alone with a board tool in hand. */

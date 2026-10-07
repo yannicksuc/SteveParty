@@ -69,10 +69,12 @@ public class ExplorerHelmetGameTests implements FabricGameTest {
         context.assertTrue(ExplorerHelmet.view(player) == ExplorerHelmet.View.NONE, "lamp off: no board view");
 
         player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.WRENCH));
-        context.assertTrue(ExplorerHelmet.view(player) == ExplorerHelmet.View.TOOL, "lamp off but the Wrench in hand: the board view, no details");
+        context.assertTrue(ExplorerHelmet.view(player) == ExplorerHelmet.View.NONE, "lamp off, the Wrench in hand: the Wrench shows no board view");
+        player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.TILE_LINKER_BRUSH));
+        context.assertTrue(ExplorerHelmet.view(player) == ExplorerHelmet.View.TOOL, "lamp off but the brush in hand: the board view, no details");
 
         context.assertTrue(ExplorerHelmet.switchLamp(helmet), "the key lights the lamp again");
-        context.assertTrue(ExplorerHelmet.view(player) == ExplorerHelmet.View.HELMET, "lit again, with the Wrench: the details");
+        context.assertTrue(ExplorerHelmet.view(player) == ExplorerHelmet.View.HELMET, "lit again, with the brush: the details");
 
         player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TILE_LINKER_BRUSH));

@@ -703,6 +703,39 @@ public class BoardLinkingGameTests implements FabricGameTest {
     }
 
     /**
+     * Right click starts holding the brush in use (no swing of the arm: nothing loops while it is held); each tick of
+     * use paints where it looks; released, the stroke ends and the next click starts a new one.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theBrushIsHeldInUseAndPaintsEachTick(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
+        withPlayer(context, true, player -> {
+            ServerWorld world = context.getWorld();
+            ItemStack brush = brush(player);
+            lookDownAt(player, t.get(0));
+            var result = brush.use(world, player, Hand.MAIN_HAND);
+            context.assertTrue(result.getResult().isAccepted() && !result.getResult().shouldSwingHand(), "used, without a swing");
+            context.assertTrue(player.isUsingItem() && player.getActiveItem() == brush, "held in use");
+            context.assertEquals(links(context, t.get(0)), List.of(), "a click alone links nothing");
+            lookDownAt(player, t.get(1));
+            brush.usageTick(world, player, player.getItemUseTimeLeft());
+            context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "painted while held");
+            player.stopUsingItem();
+            context.assertTrue(!player.isUsingItem(), "released");
+            lookDownAt(player, t.get(0));
+            brush.use(world, player, Hand.MAIN_HAND);
+            context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "a new stroke: the link is not repainted");
+            context.assertEquals(links(context, t.get(1)), List.of(), "nor painted back from where the last stroke ended");
+            player.stopUsingItem();
+        });
+    }
+
+    /** Puts {@code player} right above the tile at {@code absolute}, looking straight down at it. */
+    private static void lookDownAt(ServerPlayerEntity player, BlockPos absolute) {
+        player.refreshPositionAndAngles(absolute.getX() + 0.5, absolute.getY() + 1.5, absolute.getZ() + 0.5, 0, 90);
+    }
+
+    /**
      * The brush finds tiles the way they are seen: a ray grazing just above a flat tile, or hitting the ground right
      * next to it, is on it; a ray hitting a wall before the tile is not.
      */
