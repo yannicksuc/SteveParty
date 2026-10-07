@@ -16,6 +16,8 @@ import static net.minecraft.potion.Potions.LUCK;
 
 public class ModEffects {
     public static final RegistryEntry<StatusEffect> SQUISHED = register("squished", new SquishEffect());
+    /** Rooted to the spot by a Glandouille running, sliding or flying into you (see DazedEffect). */
+    public static final RegistryEntry<StatusEffect> DAZED = register("dazed", new DazedEffect());
 
     public static void initialize() {
         // Recipes must be added to the registry being built by the game, not to a throwaway builder
@@ -28,7 +30,6 @@ public class ModEffects {
         });
     }
 
-    @SuppressWarnings("SameParameterValue")
     private static RegistryEntry<StatusEffect> register(String id, StatusEffect statusEffect) {
         return Registry.registerReference(Registries.STATUS_EFFECT, Steveparty.id(id), statusEffect);
     }

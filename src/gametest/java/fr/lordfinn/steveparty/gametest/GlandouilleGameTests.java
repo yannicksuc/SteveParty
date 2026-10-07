@@ -6,6 +6,8 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.glandouille.AcornCropBlock;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.effect.DazedEffect;
+import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -20,6 +22,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -39,8 +43,9 @@ import java.util.function.Consumer;
 /**
  * The Glandouille: it never hurts (it shoves), stomps flatten then finish it (the mossy one takes one more), towers
  * (spontaneous ones stop at 5, carried ones go higher, they only fall when the bottom one charges into a wall, a
- * flick shoots one out), the mossy one anchored and never charging, the frosty one sliding off a wall, the cap never
- * lost under a tower, the planted acorn hatching, and the Glandouille board space.
+ * flick shoots one out alone, the ones above hopping back down), players dazed by a charge, a slide or a shot, the
+ * mossy one anchored and never charging, the frosty one sliding off a wall, the cap never lost under a tower, the
+ * planted acorn hatching, and the Glandouille board space.
  */
 public class GlandouilleGameTests implements FabricGameTest {
 
@@ -327,6 +332,67 @@ public class GlandouilleGameTests implements FabricGameTest {
                 context.assertTrue(c.getVehicle() == b, "c still on b");
                 context.assertEquals(b.getMood(), Mood.CALM, "b calm again");
                 context.assertFalse(GlandouilleTowers.hasRider(a), "nobody on a");
+                context.complete();
+            });
+        });
+    }
+
+    // ---------------------------------------------------------------- dazed players
+
+    /** A charge into a player: dazed on the spot (no walking, no jumping) for about 2 s, not hurt. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
+    public void aChargeDazesAPlayer(TestContext context) {
+        floor(context);
+        GlandouilleEntity glandouille = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 3));
+        ServerPlayerEntity player = player(context, new BlockPos(4, 1, 3), 90f);
+        context.assertTrue(glandouille.startCharge(new Vec3d(1, 0, 0)), "charges");
+        assertDazed(context, player);
+    }
+
+    /** A frosty one sliding into a player: dazed the same way. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
+    public void aSlidingOneDazesAPlayer(TestContext context) {
+        floor(context);
+        GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
+        ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 90f);
+        frosty.startSlide(new Vec3d(0.6, 0, 0));
+        assertDazed(context, player);
+    }
+
+    /** One shot out of a tower flying into a player: dazed the same way. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
+    public void aShotOneDazesAPlayer(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(1, 1, 3));
+        members.getFirst().setAiDisabled(true);
+        ServerPlayerEntity shooter = player(context, new BlockPos(0, 1, 3), -90f); // facing +x
+        ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 90f);
+        context.waitAndRun(2, () -> {
+            members.get(1).onHit(shooter, shooter);
+            context.assertEquals(members.get(1).getMood(), Mood.FLYING, "shot out of the tower");
+            context.assertFalse(shooter.hasStatusEffect(ModEffects.DAZED), "the shooter is not dazed");
+            assertDazed(context, player);
+        });
+    }
+
+    /**
+     * Waits for {@code player} to be dazed: its movement speed and jump strength at 0 for {@link DazedEffect#TICKS},
+     * not hurt, then free again.
+     */
+    private static void assertDazed(TestContext context, ServerPlayerEntity player) {
+        float health = player.getHealth();
+        context.waitAndRun(30, () -> {
+            StatusEffectInstance dazed = player.getStatusEffect(ModEffects.DAZED);
+            context.assertTrue(dazed != null, "the player is dazed");
+            context.assertTrue(dazed.getDuration() > 10 && dazed.getDuration() <= DazedEffect.TICKS, "for about 2 s: " + dazed.getDuration());
+            context.assertTrue(player.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) < 1.0E-6, "cannot walk");
+            context.assertTrue(player.getAttributeValue(EntityAttributes.GENERIC_JUMP_STRENGTH) < 1.0E-6, "cannot jump");
+            context.assertTrue(player.getVelocity().horizontalLengthSquared() < 1.0E-6, "rooted to the spot, not thrown");
+            context.assertEquals(player.getHealth(), health, "not hurt");
+            context.waitAndRun(DazedEffect.TICKS + 5, () -> {
+                context.assertFalse(player.hasStatusEffect(ModEffects.DAZED), "free again");
+                context.assertTrue(player.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) > 0.05, "walks again");
+                context.assertEquals(player.getHealth(), health, "never hurt");
                 context.complete();
             });
         });
