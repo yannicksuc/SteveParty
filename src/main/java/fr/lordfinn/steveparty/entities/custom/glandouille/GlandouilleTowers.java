@@ -287,10 +287,14 @@ public final class GlandouilleTowers {
 
     /**
      * {@code shot} (flying out of a tower, alone) ran into {@code hit}: it lands on top of that tower and stays there.
-     * False if it can't (too high, a board actor, a tower in the air): it is shoved as before.
+     * False if it can't (too high, a board actor, a tower in the air, or one knocked about: dizzy, flying, sliding,
+     * hopping, like the one thrown just before, which another throw the same way reaches): it is shoved as before.
      */
     public static boolean joinOnImpact(GlandouilleEntity shot, GlandouilleEntity hit) {
         if (!stackable(hit) || sameTower(shot, hit)) return false;
+        GlandouilleEntity.Mood mood = bottom(hit).getMood();
+        if (mood == GlandouilleEntity.Mood.STUNNED || mood == GlandouilleEntity.Mood.FLYING
+                || mood == GlandouilleEntity.Mood.SLIDING || mood == GlandouilleEntity.Mood.HOPPING) return false;
         return climb(shot, hit, false);
     }
 
