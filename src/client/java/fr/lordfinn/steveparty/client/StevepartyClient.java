@@ -167,6 +167,7 @@ public class StevepartyClient implements ClientModInitializer {
         FlagPalettes.registerReloadListener();
         StencilGunHud.initialize();
         fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.initialize();
+        fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient.initialize();
         fr.lordfinn.steveparty.client.board.BrushClient.initialize();
         fr.lordfinn.steveparty.client.board.TileOutline.initialize();
         fr.lordfinn.steveparty.client.hammer.StencilHammerStrikes.initialize();
