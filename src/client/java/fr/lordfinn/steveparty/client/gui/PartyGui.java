@@ -25,6 +25,8 @@ public final class PartyGui {
     public static final Theme FLAG_RED = new Theme(0xFF33030A, 0xFFFF8F8F, 0xFFD9283B, 0xFF8E1022);
     /** Goal pole base: its brick and redstone. */
     public static final Theme BRICK = new Theme(0xFF2A0F05, 0xFFF2A277, 0xFFB5552C, 0xFF6B2A13);
+    /** Stencil maker: its dark steel. */
+    public static final Theme STEEL = new Theme(0xFF101418, 0xFFA9B4BE, 0xFF5E6974, 0xFF333A42);
     /** Buttons. */
     public static final Theme BUTTON = new Theme(0xFF000000, 0xFFFFFFFF, 0xFFE2E2E2, 0xFF8A8A8A);
     public static final Theme BUTTON_SELECTED = new Theme(0xFF3B2600, 0xFFFFF2A8, 0xFFFFC52E, 0xFFB5761A);
