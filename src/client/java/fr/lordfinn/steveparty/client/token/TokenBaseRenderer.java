@@ -21,8 +21,9 @@ import software.bernie.geckolib.event.GeoRenderEvent;
 import java.util.List;
 
 /**
- * Draws the coloured pawn base ("socle") under the tokens: a small octagonal disc, {@link TokenBase#BASE_HEIGHT}
- * high, lying on the ground at the entity's feet, world aligned (it ignores the body yaw and the model scale).
+ * Draws the coloured pawn base ("socle") under the tokens: a small octagonal disc, {@link TokenBase#baseHeight}
+ * high, lying on the ground at the entity's feet, world aligned (it ignores the body yaw). Its height and its radius
+ * follow the size of the pawn ({@link TokenBase#sizeFactor}).
  * <p>
  * The texture ({@link #TEXTURE}, 32x16, grayscale) is tinted with the token colour through the vertex colour:
  * left 16x16 = top face (an octagon: lip, light rim, bevel, fill), right half = sides (rows 0-2, top to bottom) and
@@ -36,6 +37,7 @@ public final class TokenBaseRenderer {
     /** Base colour of a token whose name is not coloured. */
     public static final int DEFAULT_COLOR = 0xC8C8C8;
 
+    /** Radius bounds under a pawn of the default size (scaled with the size of the pawn). */
     private static final float MIN_RADIUS = 0.2F;
     private static final float MAX_RADIUS = 0.75F;
     /** Radius of the base relatively to the width of the token. */
@@ -85,21 +87,23 @@ public final class TokenBaseRenderer {
             if (entity == null || !TokenBase.isToken(entity)) return true;
             MatrixStack matrices = event.getPoseStack();
             // Fired inside the renderer's push / pop, before the model and its layers: translations stay local
+            float baseHeight = TokenBase.baseHeight(entity);
             if (!entity.isInvisible()) {
                 render(matrices, event.getBufferSource(), event.getPackedLight(), colorOf(entity),
-                        radiusFor(entity.getWidth()), TokenBase.BASE_HEIGHT);
+                        radiusFor(entity), baseHeight);
             }
             // GeckoLib's upside-down (Dinnerbone) transform already uses getHeight(), base included
             if (!(entity instanceof LivingEntity living && LivingEntityRenderer.shouldFlipUpsideDown(living))) {
-                matrices.translate(0.0F, TokenBase.BASE_HEIGHT, 0.0F);
+                matrices.translate(0.0F, baseHeight, 0.0F);
             }
             return true;
         });
     }
 
-    /** Radius of the base (centre to flat side) of a token {@code width} blocks wide. */
-    public static float radiusFor(float width) {
-        return MathHelper.clamp(width * RADIUS_PER_WIDTH, MIN_RADIUS, MAX_RADIUS);
+    /** Radius of the base (centre to flat side) under {@code entity}: follows its width, bounds scaled with its size. */
+    public static float radiusFor(Entity entity) {
+        float factor = TokenBase.sizeFactor(entity.getDimensions(entity.getPose()));
+        return MathHelper.clamp(entity.getWidth() * RADIUS_PER_WIDTH, MIN_RADIUS * factor, MAX_RADIUS * factor);
     }
 
     /**
