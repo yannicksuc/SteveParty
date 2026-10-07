@@ -103,5 +103,13 @@ public final class StencilGunHud {
             context.drawText(client.textRenderer, engrave, -client.textRenderer.getWidth(engrave) / 2, 0, ToolHud.TEXT, false);
             context.getMatrices().pop();
         }
+
+        // What the mouse buttons do, above the boxes
+        Text controls = Text.translatable("hud.steveparty.stencil_gun.controls");
+        context.getMatrices().push();
+        context.getMatrices().translate(width / 2F, y - 7, 0);
+        context.getMatrices().scale(0.75F, 0.75F, 1);
+        context.drawTextWithShadow(client.textRenderer, controls, -client.textRenderer.getWidth(controls) / 2, 0, ToolHud.TEXT);
+        context.getMatrices().pop();
     }
 }
