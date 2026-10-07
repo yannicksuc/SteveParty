@@ -82,7 +82,8 @@ import java.util.UUID;
  * it ({@link ForgeCoreEntity}) blows it up, flinging everything away: the way out of its pull when nothing else works.
  * <p>
  * Core: inserted by right-clicking the forge with it or through the center slot; taken back with sneak +
- * right-click (empty hand) once the insertion animation is over, see {@link #removeCore}.
+ * right-click (empty hand) once the insertion animation is over, see {@link #removeCore}; also taken from the center
+ * slot of its screen ({@link #takeCore}).
  * <p>
  * Production: the FORGE button (or a redstone rising edge) starts a loop. Each craft ({@link #CRAFT_TIME} ticks)
  * consumes the blank faces and 1 fragment of every non-black fragment slot, and outputs a die carrying the faces
@@ -623,18 +624,30 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
      * @return true if the core was removed
      */
     public boolean removeCore(@Nullable PlayerEntity player) {
-        if (world == null || world.isClient || !canRemoveCore()) return false;
+        ItemStack core = takeCore();
+        if (core.isEmpty()) return false;
+        giveOrDrop(player, core);
+        return true;
+    }
+
+    /**
+     * Takes the gravity core out of the forge, like {@link #removeCore}, but hands it to the caller (the center slot
+     * of the screen puts it on the cursor or in the inventory) instead of giving it to a player.
+     *
+     * @return the core, or an empty stack if it cannot be taken now (none, insertion animation playing, client side)
+     */
+    public ItemStack takeCore() {
+        if (world == null || world.isClient || !canRemoveCore()) return ItemStack.EMPTY;
         if (running) {
             // No manual stop flag: under redstone power, production resumes once the core is back
             stop(false);
         }
         activationTime = NO_ACTIVATION;
         world.setBlockState(pos, getCachedState().with(DiceForgeBlock.ACTIVATED, false));
-        giveOrDrop(player, new ItemStack(ModBlocks.GRAVITY_CORE));
         world.playSound(null, pos, SoundEvents.BLOCK_HEAVY_CORE_BREAK, SoundCategory.BLOCKS, 1.0f, 1.0f);
         world.playSound(null, pos, SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.BLOCKS, 0.6f, 1.2f);
         markDirty();
-        return true;
+        return new ItemStack(ModBlocks.GRAVITY_CORE);
     }
 
     private void giveOrDrop(@Nullable PlayerEntity player, ItemStack stack) {

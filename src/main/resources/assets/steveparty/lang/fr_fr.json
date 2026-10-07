@@ -441,6 +441,8 @@
   "gui.steveparty.dice_forge.missing": "Manquant : %s",
   "gui.steveparty.dice_forge.preview": "Aperçu du dé forgé",
   "gui.steveparty.dice_forge.insert_core": "Emplacement du noyau de gravité",
+  "gui.steveparty.dice_forge.core_in_place": "Réveille la forge",
+  "gui.steveparty.dice_forge.core_take": "Retire-le pour endormir la forge",
   "gui.steveparty.dice_forge.status.not_activated": "Insérez d'abord un noyau de gravité (clic droit sur la forge ou emplacement central)",
   "gui.steveparty.dice_forge.status.not_enough_faces": "Placez au moins %s faces de dé",
   "gui.steveparty.dice_forge.status.missing_fragment": "Placez des fragments d'étoile dans les 5 emplacements autour du noyau",
