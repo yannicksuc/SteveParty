@@ -397,7 +397,13 @@ public final class ToolWheel {
                 tipY = cy + at[1];
             }
         }
-        if (!lines.isEmpty()) context.drawOrderedTooltip(client.textRenderer, lines, tipX, tipY);
+        if (!lines.isEmpty()) {
+            // Over the icons, even those drawn high (a level's number, the cursor)
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 600);
+            context.drawOrderedTooltip(client.textRenderer, lines, tipX, tipY);
+            context.getMatrices().pop();
+        }
     }
 
     /** Where the middle of {@code sector} is drawn (from the centre), or null. */
