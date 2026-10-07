@@ -1067,7 +1067,7 @@ public class PipeGameTests implements FabricGameTest {
         List<Vec3d> straight = List.of(new Vec3d(0, 0, 0), new Vec3d(40, 0, 0));
         double[] run = PipePose.lengths(straight);
         context.assertTrue(PipePose.stretch(straight, run, 0, PipeTravel.BASE_SPEED) < 0.6, "flattened going in");
-        float slow = PipePose.stretch(straight, run, 20, PipeTravel.BASE_SPEED), fast = PipePose.stretch(straight, run, 20, PipeTravel.MAX_SPEED);
+        float slow = PipePose.stretch(straight, run, 20, PipeTravel.BASE_SPEED), fast = PipePose.stretch(straight, run, 30, PipeTravel.MAX_SPEED);
         context.assertTrue(slow > 1.03 && fast > slow && fast <= 1 + PipePose.RUN + 1e-3, "longer the faster: " + slow + ", " + fast);
         context.assertTrue(PipePose.stretch(straight, run, 40, PipeTravel.BASE_SPEED) > slow + 0.2, "stretched popping out");
         List<Vec3d> bend = List.of(new Vec3d(0, 0, 0), new Vec3d(10, 0, 0), new Vec3d(10, 5, 0));

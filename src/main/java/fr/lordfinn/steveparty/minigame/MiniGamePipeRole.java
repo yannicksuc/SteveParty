@@ -49,6 +49,11 @@ public enum MiniGamePipeRole {
         return color;
     }
 
+    /** The dye colours of the pipes that get this role when linked ({@code green}, {@code lime}...). */
+    public List<String> pipeColors() {
+        return pipeColors;
+    }
+
     public String translationKey() {
         return "minigame_pipe_role.steveparty." + name().toLowerCase(Locale.ROOT);
     }

@@ -12,10 +12,10 @@ import static fr.lordfinn.steveparty.payloads.ModPayloads.GOAL_POLE_PAYLOAD;
 
 /**
  * The goal of a pole segment, whether each segment has its own goal, whether the flags step down point by point, and
- * whether the goal is each player's own: to and from the pole screen.
+ * whose points the goal is about ({@link GoalPoleBlockEntity.Count}): to and from the pole screen.
  */
 public record GoalPolePayload(BlockPos pos, GoalPoleBlockEntity.Comparator comparator, int value, boolean perSegment,
-                              boolean flagSteps, boolean perPlayer) implements CustomPayload {
+                              boolean flagSteps, GoalPoleBlockEntity.Count count) implements CustomPayload {
     public static final CustomPayload.Id<GoalPolePayload> ID = new CustomPayload.Id<>(GOAL_POLE_PAYLOAD);
     public static final PacketCodec<ByteBuf, GoalPoleBlockEntity.Comparator> COMPARATOR_CODEC =
             new PacketCodec<>() {
@@ -32,6 +32,10 @@ public record GoalPolePayload(BlockPos pos, GoalPoleBlockEntity.Comparator compa
                     buf.writeInt(comp.ordinal());
                 }
             };
+    public static final PacketCodec<ByteBuf, GoalPoleBlockEntity.Count> COUNT_CODEC = PacketCodecs.BYTE.xmap(
+            // Never trust the index sent by the client
+            i -> GoalPoleBlockEntity.Count.values()[Math.clamp(i, 0, GoalPoleBlockEntity.Count.values().length - 1)],
+            count -> (byte) count.ordinal());
     public static final PacketCodec<RegistryByteBuf, GoalPolePayload> CODEC =
             PacketCodec.tuple(
                     BlockPos.PACKET_CODEC, GoalPolePayload::pos,
@@ -39,7 +43,7 @@ public record GoalPolePayload(BlockPos pos, GoalPoleBlockEntity.Comparator compa
                     PacketCodecs.INTEGER, GoalPolePayload::value,
                     PacketCodecs.BOOL, GoalPolePayload::perSegment,
                     PacketCodecs.BOOL, GoalPolePayload::flagSteps,
-                    PacketCodecs.BOOL, GoalPolePayload::perPlayer,
+                    COUNT_CODEC, GoalPolePayload::count,
                     GoalPolePayload::new
             );
 

@@ -382,6 +382,7 @@ public class StevepartyClient implements ClientModInitializer {
         FloatingTextRenderer.clear();
         fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer.clear();
         GoalPoleFlipTracker.clear();
+        fr.lordfinn.steveparty.client.flip.GoalPoleCameraRoll.clear();
         SquishAnimations.clear();
         fr.lordfinn.steveparty.client.renderer.DestinationsRenderer.clear();
         // The carriers of the last world, else kept (with their world) until a world renders again

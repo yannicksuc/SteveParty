@@ -81,6 +81,7 @@ public class ModItems {
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR));
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
+    public static final Item MINI_GAME_REMOTE = registerUnstackable(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.class, "mini_game_remote");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
     public static final Item FLAG = register(FlagItem.class, "flag");
     public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
@@ -248,6 +249,7 @@ public class ModItems {
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(STEP_CONTROLLER);
             itemGroup.add(MINI_GAME_CONTROLLER);
+            itemGroup.add(MINI_GAME_REMOTE);
             itemGroup.add(PARTY_CARD_TURNS);
             itemGroup.add(PARTY_CARD_MINIGAME);
             itemGroup.add(PARTY_CARD_EVENT);
