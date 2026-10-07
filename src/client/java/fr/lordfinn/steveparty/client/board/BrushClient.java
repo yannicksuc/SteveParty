@@ -50,7 +50,7 @@ public final class BrushClient {
     /** While painting: a little dust of the paint's colour where the brush is, on the tile it paints. */
     private static void strokeTrail(MinecraftClient client) {
         if (client.world == null || !BrushTrail.painting(client.player)) return;
-        BlockPos aimed = BrushAim.aimed(client.player, client.world, 1f);
+        BlockPos aimed = BrushAim.aimed(client.player, client.world, 1f, BrushOverlay.ghosts());
         if (aimed == null) return;
         Vec3d at = BrushOverlay.anchor(client.world, aimed);
         var random = client.world.getRandom();
