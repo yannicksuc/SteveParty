@@ -20,8 +20,9 @@ import java.util.List;
 
 /**
  * The Tile Linker Brush (« Pinceau lieur de tuiles »): links board spaces by painting them, the button held while
- * sweeping over them; going over a link again erases it. Its level (sneak + mouse wheel) is the redstone power whose
- * cartridge gets the link on a 16-slot board space. See {@link TileLinkerBrush}.
+ * sweeping over them; going over a link again erases it. Its wheel (left click) picks the level (the redstone power
+ * whose cartridge gets the link on a 16-slot board space), the kind of Cartridge put in new tiles, undo and redo. See
+ * {@link TileLinkerBrush}.
  */
 public class TileLinkerBrushItem extends Item {
     private static final int CONTROLS_COLOR = 0xfcb017;
@@ -48,7 +49,7 @@ public class TileLinkerBrushItem extends Item {
         return TypedActionResult.success(stack, world.isClient);
     }
 
-    /** The level changes with the wheel: no re-equip animation of the hand. */
+    /** The level, cartridge and anchor change as it paints: no re-equip animation of the hand. */
     @Override
     public boolean allowComponentsUpdateAnimation(PlayerEntity player, Hand hand, ItemStack oldStack, ItemStack newStack) {
         return false;
@@ -70,8 +71,11 @@ public class TileLinkerBrushItem extends Item {
                 Text.translatable("tooltip.steveparty.tile_linker_brush"), Formatting.GRAY);
         tooltip.add(Text.translatable("tooltip.steveparty.tile_linker_brush.level",
                 TileLinkerBrush.levelText(TileLinkerBrush.level(stack))).formatted(Formatting.WHITE));
+        net.minecraft.item.Item cartridge = TileLinkerBrush.cartridge(stack);
+        tooltip.add(Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge", new ItemStack(cartridge != null ? cartridge
+                : fr.lordfinn.steveparty.items.ModItems.BOARD_SPACE_BEHAVIOR).getName()).formatted(Formatting.WHITE));
         tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));
-        for (String control : List.of("paint", "erase", "level", "undo")) {
+        for (String control : List.of("paint", "erase", "wheel", "chest", "shop", "offhand")) {
             tooltip.add(Text.translatable("tooltip.steveparty.tile_linker_brush.controls." + control).formatted(Formatting.GRAY));
         }
     }

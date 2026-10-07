@@ -60,11 +60,11 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         ItemStack offHandStack = player.getOffHandStack();
         // Vanilla then calls onUse (main hand) on both sides
         if (mainHandStack.isEmpty() && offHandStack.isEmpty()) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        // The Wrench links board spaces with a plain right click (sneaking opens the interface: see WrenchActions)
+        // The Wrench opens board spaces and routers, or swaps their cartridge for the off hand one (see WrenchActions)
         if (mainHandStack.getItem() instanceof WrenchItem && isLinkedWithWrench()) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // The Tile Linker Brush paints links over them
         if (mainHandStack.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem && isLinkedWithWrench()) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
-        // A Wrench in the off hand (to link the tiles being placed) lets the main hand item act
+        // A Wrench in the off hand lets the main hand item act
         boolean offHandOpener = offHandStack.getItem() instanceof CartridgeContainerOpener
                 && (mainHandStack.isEmpty() || !(offHandStack.getItem() instanceof WrenchItem));
         if (!(mainHandStack.getItem() instanceof CartridgeContainerOpener) && !offHandOpener) {
@@ -77,12 +77,12 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         return ItemActionResult.FAIL;
     }
 
-    /** Board spaces and routers: their links are edited by right clicking them with the Wrench. */
+    /** Board spaces and routers: the Wrench opens them (or swaps their cartridge), the Tile Linker Brush paints their links. */
     public boolean isLinkedWithWrench() {
         return this instanceof ABoardSpaceBlock || this instanceof fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlock;
     }
 
-    /** Opens the interface of this container for {@code player} (server side), e.g. sneak + right click with the Wrench. */
+    /** Opens the interface of this container for {@code player} (server side), e.g. a right click with the Wrench. */
     public ActionResult openContainerScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {
         ActionResult success = openScreen(state, world, pos, player);
         return success != null ? success : FAIL;

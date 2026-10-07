@@ -121,7 +121,8 @@ public final class StencilHammerStrikes {
         // The wind-up: a soft whoosh
         var entity = world.getEntityById(payload.entityId());
         Vec3d at = entity != null ? entity.getPos() : hit;
-        world.playSound(at.x, at.y + 1, at.z, SoundEvents.ENTITY_PLAYER_ATTACK_NODAMAGE, SoundCategory.PLAYERS, 0.18F, 0.75F, false);
+        float loudness = loudness(payload);
+        world.playSound(at.x, at.y + 1, at.z, SoundEvents.ENTITY_PLAYER_ATTACK_NODAMAGE, SoundCategory.PLAYERS, 0.18F * loudness, 0.75F, false);
     }
 
     private static void tick(MinecraftClient client) {
@@ -142,6 +143,15 @@ public final class StencilHammerStrikes {
         REVEALS.values().removeIf(reveal -> now - reveal.impact > REVEAL_TICKS + 1 || now < reveal.impact - END);
     }
 
+    /** How much quieter the strike of another player sounds than one's own (still heard, not deafening). */
+    private static final float OTHERS_LOUDNESS = 0.35F;
+
+    /** Full for the striker, {@link #OTHERS_LOUDNESS} for the players around. */
+    private static float loudness(StencilHammerStrikePayload payload) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        return client.player != null && client.player.getId() == payload.entityId() ? 1F : OTHERS_LOUDNESS;
+    }
+
     /** The head lands: thud, wet splat, burst of paint, camera shake for the striker. */
     private static void impact(MinecraftClient client, ClientWorld world, StencilHammerStrikePayload payload) {
         Vec3d hit = new Vec3d(payload.hit());
@@ -149,18 +159,19 @@ public final class StencilHammerStrikes {
         Vec3d normal = Vec3d.of(side.getVector());
         DyeColor color = payload.color() < 0 ? null : DyeColor.byId(payload.color());
         Random random = world.getRandom();
+        float loudness = loudness(payload);
 
         // A wooden drum hit: a low, round thump (bass drum, wood and a barrel's thud, a soft cloth hit), no metal
-        world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), SoundCategory.PLAYERS, 0.3F, 0.7F, false);
-        world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 0.25F, 0.6F, false);
-        world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_BARREL_CLOSE, SoundCategory.PLAYERS, 0.15F, 0.7F, false);
-        world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_WOOL_HIT, SoundCategory.PLAYERS, 0.3F, 0.7F, false);
+        world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), SoundCategory.PLAYERS, 0.3F * loudness, 0.7F, false);
+        world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 0.25F * loudness, 0.6F, false);
+        world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_BARREL_CLOSE, SoundCategory.PLAYERS, 0.15F * loudness, 0.7F, false);
+        world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_WOOL_HIT, SoundCategory.PLAYERS, 0.3F * loudness, 0.7F, false);
         if (color != null) {
             // The paint: a light wet splat
-            world.playSound(hit.x, hit.y, hit.z, SoundEvents.ENTITY_SLIME_SQUISH_SMALL, SoundCategory.PLAYERS, 0.2F, 1.1F, false);
-            world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_HONEY_BLOCK_STEP, SoundCategory.PLAYERS, 0.15F, 1.2F, false);
+            world.playSound(hit.x, hit.y, hit.z, SoundEvents.ENTITY_SLIME_SQUISH_SMALL, SoundCategory.PLAYERS, 0.2F * loudness, 1.1F, false);
+            world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_HONEY_BLOCK_STEP, SoundCategory.PLAYERS, 0.15F * loudness, 1.2F, false);
         } else {
-            world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 0.2F, 1.0F, false);
+            world.playSound(hit.x, hit.y, hit.z, SoundEvents.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 0.2F * loudness, 1.0F, false);
         }
 
         // Two directions along the struck face

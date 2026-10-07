@@ -55,7 +55,7 @@ import java.util.UUID;
  * screen is closed, when the time runs out (game rule {@code stevepartyShopStopSeconds}, {@value #DEFAULT_SECONDS} s
  * by default) or when the owner leaves: a paused token walks its remaining steps, a landing ends the turn.
  * <p>
- * The shop is the merchant chosen with the Wrench (cartridge {@link ModComponents#SHOP_LINK}), else the nearest one
+ * The shop is the merchant chosen with the Tile Linker Brush (cartridge {@link ModComponents#SHOP_LINK}), else the nearest one
  * within {@value #SHOP_RADIUS} blocks: a Boxed Trader with trading stalls, the distance counted to him or to his
  * nearest stall. No shop, a token without owner or whose owner is offline: nothing happens, the token goes on. Only the
  * owner shops; the players around get a notice. Stops live in memory (a server stop ends them).
@@ -142,7 +142,7 @@ public final class ShopStops {
     }
 
     /**
-     * The shop of a Shop Cartridge on the space at {@code space}: the merchant chosen with the Wrench (if he is here),
+     * The shop of a Shop Cartridge on the space at {@code space}: the merchant chosen with the Tile Linker Brush (if he is here),
      * else the nearest Boxed Trader with trading stalls, the distance counted to him or to his nearest stall.
      */
     public static @Nullable BoxedTraderEntity findShop(ServerWorld world, BlockPos space, ItemStack cartridge) {

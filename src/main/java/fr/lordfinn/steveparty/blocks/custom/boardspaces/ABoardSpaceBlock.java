@@ -86,7 +86,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         super.onPlaced(world, pos, state, placer, itemStack);
         if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity) {
             tileEntity.onPlaced();
-            // Placed while tracing with the Wrench: linked from the previous board space
+            // Placed with the Tile Linker Brush in the off hand: linked from its anchor
             fr.lordfinn.steveparty.board.WrenchActions.onBoardSpacePlaced(world, pos, placer, itemStack);
         }
     }

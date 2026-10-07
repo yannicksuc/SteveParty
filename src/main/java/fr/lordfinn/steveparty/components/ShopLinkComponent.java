@@ -8,7 +8,7 @@ import net.minecraft.util.math.BlockPos;
 import java.util.UUID;
 
 /**
- * The shop chosen for a Shop Cartridge with the Wrench (without it, the nearest merchant is the shop).
+ * The shop chosen for a Shop Cartridge with the Tile Linker Brush (without it, the nearest merchant is the shop).
  *
  * @param trader the Boxed Trader selling there
  * @param anchor what was clicked to choose it (the trader's position then, a trading stall, a cash register): where

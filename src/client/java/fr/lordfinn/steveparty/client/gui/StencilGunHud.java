@@ -4,41 +4,27 @@ import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
-import fr.lordfinn.steveparty.payloads.custom.StencilGunScrollPayload;
 import fr.lordfinn.steveparty.stencil.StencilShape;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
 /**
- * Stencil gun controls on the client: sneak + mouse wheel cycles the selected stencil or colour, the mode key
- * (G by default) switches which one the wheel cycles. A small HUD above the hotbar shows both, the one the wheel
- * changes on a gold plate (the tools' HUD look: see {@link ToolHud}).
+ * The Stencil Hammer's HUD: a small pair of boxes above the hotbar, the stencil it stamps and its paint (the tools' HUD
+ * look: see {@link ToolHud}). Both are picked on its wheel (left click: see
+ * {@link fr.lordfinn.steveparty.client.hammer.HammerWheel}).
  */
 public final class StencilGunHud {
-    private static final KeyBinding MODE_KEY = KeyBindingHelper.registerKeyBinding(
-            new KeyBinding("key.steveparty.stencil_gun_mode", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, "category.steveparty"));
     private static final int PIXEL = 1;
     private static final int BOX = ToolHud.BOX;
     /** Where the 16 pixel content starts inside a box. */
     private static final int INSET = (BOX - 16) / 2;
-
-    /** True: the wheel picks the colour, false: the stencil. */
-    private static boolean colorMode = false;
 
     /** What the HUD shows of a gun, worked out again only when its contents or selection change. */
     private record Shown(InventoryComponent contentsComponent, StencilGunSelection selectionComponent, List<ItemStack> contents,
@@ -51,34 +37,12 @@ public final class StencilGunHud {
     }
 
     public static void initialize() {
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (MODE_KEY.wasPressed()) {
-                if (client.player != null && isHoldingGun(client)) {
-                    colorMode = !colorMode;
-                    client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.6F));
-                }
-            }
-        });
         HudRenderCallback.EVENT.register(StencilGunHud::render);
+        fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.register(new fr.lordfinn.steveparty.client.hammer.HammerWheel());
     }
 
     private static boolean isHoldingGun(MinecraftClient client) {
         return client.player != null && client.player.getMainHandStack().getItem() instanceof StencilGunItem;
-    }
-
-    /**
-     * Mouse wheel hook: sneaking with a stencil gun in the main hand, the wheel cycles the gun instead of the hotbar.
-     *
-     * @return true if the scroll was used
-     */
-    public static boolean onScroll(double vertical) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.currentScreen != null || client.player == null || !client.player.isSneaking() || !isHoldingGun(client)) return false;
-        if (vertical == 0) return true;
-        int direction = vertical > 0 ? -1 : 1;
-        ClientPlayNetworking.send(new StencilGunScrollPayload(colorMode, direction));
-        client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.9F));
-        return true;
     }
 
     /** Item components are immutable: the same component instances mean the same contents and selection. */
@@ -96,7 +60,8 @@ public final class StencilGunHud {
 
     private static void render(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.options.hudHidden || client.currentScreen != null || !isHoldingGun(client)) return;
+        if (client.options.hudHidden || client.currentScreen != null || !isHoldingGun(client)
+                || fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.isOpen()) return;
         Shown shown = shown(client.player.getMainHandStack());
         List<ItemStack> contents = shown.contents();
         StencilGunSelection selection = shown.selection();
@@ -108,7 +73,7 @@ public final class StencilGunHud {
         int colorX = width / 2 + 4;
 
         // Stencil
-        ToolHud.box(context, stencilX, y, !colorMode);
+        ToolHud.box(context, stencilX, y, false);
         if (load.shape() != null) {
             int paint = load.color() != null ? 0xFF000000 | load.color().getEntityColor() : 0xFF6B6B6B;
             byte[] shape = load.shape();
@@ -122,7 +87,7 @@ public final class StencilGunHud {
         }
 
         // Colour
-        ToolHud.box(context, colorX, y, colorMode);
+        ToolHud.box(context, colorX, y, false);
         ItemStack dye = selection.dye() == StencilGunSelection.ENGRAVE ? ItemStack.EMPTY : contents.get(StencilGunItem.STENCIL_SLOTS + selection.dye());
         if (dye.getItem() instanceof DyeItem) {
             context.getMatrices().push();
@@ -138,10 +103,5 @@ public final class StencilGunHud {
             context.drawText(client.textRenderer, engrave, -client.textRenderer.getWidth(engrave) / 2, 0, ToolHud.TEXT, false);
             context.getMatrices().pop();
         }
-
-        // Hint (no stencil name: the preview says it)
-        Text hint = Text.translatable(colorMode ? "hud.steveparty.stencil_gun.hint_color" : "hud.steveparty.stencil_gun.hint_stencil",
-                MODE_KEY.getBoundKeyLocalizedText());
-        ToolHud.hint(context, hint, width / 2, y);
     }
 }

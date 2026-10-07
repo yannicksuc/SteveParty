@@ -46,7 +46,7 @@ public final class BoardLinks {
 
     /**
      * The board space or router at {@code pos} (a part of a large tile stands for its tile): the cartridge containers
-     * whose links the Wrench edits. Null for anything else.
+     * whose links the Tile Linker Brush paints. Null for anything else.
      */
     public static @Nullable CartridgeContainerBlockEntity container(World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(BoardSpaces.resolve(world, pos));
@@ -168,7 +168,7 @@ public final class BoardLinks {
 
     /**
      * An Inventory Cartridge without chest just put in a board space takes the nearest chest within
-     * {@link #CHEST_SEARCH_RADIUS} blocks (a click on another chest with the Wrench changes it).
+     * {@link #CHEST_SEARCH_RADIUS} blocks (a click on another chest with the Tile Linker Brush changes it).
      */
     public static void linkNearestChest(PlayerEntity player, CartridgeContainerBlockEntity container, int slot) {
         World world = container.getWorld();
@@ -196,37 +196,47 @@ public final class BoardLinks {
     }
 
     /**
-     * How many cartridges the Wrench can still insert (see {@link #cartridgeSource}): the off-hand stack, else the plain
-     * Cartridges of the inventory; -1 for unlimited (creative).
+     * How many cartridges can still be inserted in the tiles linked (see {@link #cartridgeSource}): the off-hand stack,
+     * else the inventory's Cartridges of the kind picked on the brush (the plain one by default); -1 for unlimited
+     * (creative).
      */
     public static int cartridgesLeft(PlayerEntity player) {
         ItemStack offHand = player.getOffHandStack();
         boolean creative = player.getAbilities().creativeMode;
         if (offHand.getItem() instanceof CartridgeItem) return creative ? -1 : offHand.getCount();
         if (creative) return -1;
+        net.minecraft.item.Item kind = cartridgeKind(player);
         int count = 0;
         PlayerInventory inventory = player.getInventory();
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack stack = inventory.getStack(i);
-            if (stack.isOf(ModItems.BOARD_SPACE_BEHAVIOR)) count += stack.getCount();
+            if (stack.isOf(kind)) count += stack.getCount();
         }
         return count;
     }
 
     /**
-     * The stack the next cartridge would come from (the off hand, a new plain Cartridge in creative, the first plain
-     * Cartridge of the inventory), or an empty stack. Same on both sides: the Wrench HUD shows it.
+     * The stack the next cartridge would come from (the off hand, a new one in creative, the first one of the
+     * inventory), or an empty stack. Its kind: the one in the off hand, else the one picked on the Tile Linker Brush in
+     * hand, else the plain Cartridge. Same on both sides: the brush HUD shows it.
      */
     public static ItemStack cartridgeSource(PlayerEntity player) {
         ItemStack offHand = player.getOffHandStack();
         if (offHand.getItem() instanceof CartridgeItem) return offHand;
-        if (player.getAbilities().creativeMode) return new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+        net.minecraft.item.Item kind = cartridgeKind(player);
+        if (player.getAbilities().creativeMode) return new ItemStack(kind);
         PlayerInventory inventory = player.getInventory();
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack stack = inventory.getStack(i);
-            if (stack.isOf(ModItems.BOARD_SPACE_BEHAVIOR)) return stack;
+            if (stack.isOf(kind)) return stack;
         }
         return ItemStack.EMPTY;
+    }
+
+    /** The kind of Cartridge put in new tiles: the one picked on the brush in hand, else the plain Cartridge. */
+    public static net.minecraft.item.Item cartridgeKind(PlayerEntity player) {
+        net.minecraft.item.Item picked = TileLinkerBrush.cartridge(player.getMainHandStack());
+        return picked != null ? picked : ModItems.BOARD_SPACE_BEHAVIOR;
     }
 
     // ---------------------------------------------------------------- orientation
