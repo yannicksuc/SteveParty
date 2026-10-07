@@ -150,6 +150,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- server state
     private int moodTicks;
+    /** Just hatched: asleep so soundly that a player close by doesn't wake it, for this many more ticks. */
+    private int soundSleepTicks;
     private int chargeTicks;
     private Vec3d chargeDir = Vec3d.ZERO;
     private @Nullable Entity chargeTarget;
@@ -999,6 +1001,12 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         setMood(Mood.SLEEPING, ticks);
     }
 
+    /** Out of its acorn: it comes out asleep, too soundly for the player who grew it to wake it at once. */
+    public void hatchAsleep() {
+        fallAsleep(400 + random.nextInt(400));
+        soundSleepTicks = 120;
+    }
+
     private void tickSleep(ServerWorld world) {
         setVelocity(0, getVelocity().y, 0);
         if (this.age % 40 == 0) {
@@ -1006,8 +1014,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
             world.spawnParticles(new MulaSparkleEffect(0xE8E8FF, 0.8f, MulaSparkleEffect.Z),
                     getX(), getY() + getHeight() + 0.2, getZ(), 1, 0.05, 0.05, 0.05, 0);
         }
+        if (soundSleepTicks > 0) soundSleepTicks--;
         for (PlayerEntity player : world.getPlayers()) {
-            if (fair(player) && squaredDistanceTo(player) < 2.5 * 2.5) {
+            if (soundSleepTicks <= 0 && fair(player) && squaredDistanceTo(player) < 2.5 * 2.5) {
                 wakeUp(player);
                 return;
             }
