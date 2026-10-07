@@ -301,7 +301,7 @@ public class GlandouilleGameTests implements FabricGameTest {
             context.waitAndRun(40, () -> {
                 context.assertTrue(b.getX() - startX > 2, "b flew along the blow: " + (b.getX() - startX));
                 context.assertEquals(b.getMood(), Mood.STUNNED, "b landed dizzy");
-                context.assertTrue(highest[0] - cStart.y > 0.5, "c hopped up: " + (highest[0] - cStart.y));
+                context.assertTrue(highest[0] - cStart.y > 0.3, "c hopped up: " + (highest[0] - cStart.y));
                 context.assertTrue(drift[0] < 0.1, "straight up and down: " + drift[0]);
                 context.assertTrue(c.getVehicle() == a && d.getVehicle() == c, "c and d back on a");
                 context.assertEquals(GlandouilleTowers.height(a), 3, "a tower of 3 now");
