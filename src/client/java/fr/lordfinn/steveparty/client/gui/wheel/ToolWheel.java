@@ -363,11 +363,14 @@ public final class ToolWheel {
         }
         if (layout.hubIcon() != null) layout.hubIcon().draw(context, cx, cy);
 
-        // Where the mouse points: a small pixel cursor
+        // Where the mouse points: a small pixel cursor, above the icons (items and sprites drawn higher up in depth)
         int dotX = cx + (int) Math.round(cursorX * fit), dotY = cy + (int) Math.round(cursorY * fit);
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 300);
         context.fill(dotX - 2, dotY - 1, dotX + 2, dotY + 1, 0xFF1E1E1E);
         context.fill(dotX - 1, dotY - 2, dotX + 1, dotY + 2, 0xFF1E1E1E);
         context.fill(dotX - 1, dotY - 1, dotX + 1, dotY + 1, 0xFFFFFFFF);
+        context.getMatrices().pop();
 
         // A vanilla tooltip: the hovered sector in a few words (or, the first times, the one put forward)
         Sector hovered = hovered();
