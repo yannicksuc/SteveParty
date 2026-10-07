@@ -108,7 +108,9 @@ public final class TelescopeClient {
         });
         ClientTickEvents.END_CLIENT_TICK.register(TelescopePoses::tick);
         ClientTickEvents.END_CLIENT_TICK.register(TelescopeClient::tick);
-        WorldRenderEvents.END.register(TelescopeClient::renderSky);
+        // With the entities: in the world's own matrices (the camera's bobbing included, which is gone by the end of
+        // the world), and before the see-through blocks, which are drawn over them (stained glass tints them)
+        WorldRenderEvents.AFTER_ENTITIES.register(TelescopeClient::renderSky);
     }
 
     // ---------------------------------------------------------------- state
@@ -329,80 +331,82 @@ public final class TelescopeClient {
         if (night == null && guideAlpha <= 0.01f) return;
 
         Vec3d camera = context.camera().getPos();
-        // The camera's rotation, baked into the vertices: after the whole world the model-view no longer has it, and
-        // shader packs (Iris) ignore a model-view changed this late (the stars stayed stuck on the screen)
-        VIEW.set(context.positionMatrix());
-        // On the sky's dome: beyond the terrain drawn, but before the clouds (which would hide them)
+        // The model-view has the camera here (as for the entities)
+        VIEW.set(context.matrixStack().peek().getPositionMatrix());
+        // On the sky's dome: beyond the terrain drawn, but before the clouds
         float dome = MathHelper.clamp(client.gameRenderer.getViewDistance() * 1.8f, 64f, 320f);
         float clouds = world.getDimensionEffects().getCloudsHeight();
         double toClouds = Float.isNaN(clouds) ? Double.MAX_VALUE : clouds - 2 - camera.y;
         float time = world.getTime() + tickDelta;
 
-        RenderLayer glowLayer = RenderLayer.getEntityTranslucentEmissive(GLOW, false);
-        RenderLayer heartLayer = RenderLayer.getEntityTranslucentEmissive(HEART, false);
-        glowBuffer = Tessellator.getInstance().begin(glowLayer.getDrawMode(), glowLayer.getVertexFormat());
-        // two buffers are filled at once: the second has its own allocator
-        if (heartAllocator == null) heartAllocator = new BufferAllocator(8192);
-        heartBuffer = new BufferBuilder(heartAllocator, heartLayer.getDrawMode(), heartLayer.getVertexFormat());
+        // Their colour, then their depth alone: the clouds, drawn later and farther, stay behind them
+        for (boolean depth : new boolean[]{false, true}) {
+            RenderLayer glowLayer = depth ? SkyLayers.depth(GLOW) : RenderLayer.getEntityTranslucentEmissive(GLOW, false);
+            RenderLayer heartLayer = depth ? SkyLayers.depth(HEART) : RenderLayer.getEntityTranslucentEmissive(HEART, false);
+            glowBuffer = Tessellator.getInstance().begin(glowLayer.getDrawMode(), glowLayer.getVertexFormat());
+            // two buffers are filled at once: the second has its own allocator
+            if (heartAllocator == null) heartAllocator = new BufferAllocator(8192);
+            heartBuffer = new BufferBuilder(heartAllocator, heartLayer.getDrawMode(), heartLayer.getVertexFormat());
 
-        if (night != null) {
-            double ticks = replayTicks + (client.isPaused() ? 0 : tickDelta);
-            float show = MathHelper.clamp(zoom * 2f - 1f, 0f, 1f);
-            for (int i = 0; i < TelescopeMath.STARS && show > 0; i++) {
-                double u = TelescopeMath.progress(i, ticks);
-                float fade = TelescopeMath.fade(u) * show;
-                if (fade <= 0.01f) continue;
-                int color = starColor(night, i);
-                int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
-                float twinkle = 0.85f + 0.15f * MathHelper.sin(time * 1.7f + i);
-                // the comet tail: where it was a little earlier, fading and shrinking
-                int tail = 22;
-                for (int k = tail; k >= 1; k--) {
-                    double before = u - k * 0.0025;
-                    if (before < 0) continue;
-                    float s = 1f - k / (float) (tail + 1);
-                    starDirection(night, i, before);
+            if (night != null) {
+                double ticks = replayTicks + (client.isPaused() ? 0 : tickDelta);
+                float show = MathHelper.clamp(zoom * 2f - 1f, 0f, 1f);
+                for (int i = 0; i < TelescopeMath.STARS && show > 0; i++) {
+                    double u = TelescopeMath.progress(i, ticks);
+                    float fade = TelescopeMath.fade(u) * show;
+                    if (fade <= 0.01f) continue;
+                    int color = starColor(night, i);
+                    int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+                    float twinkle = 0.85f + 0.15f * MathHelper.sin(time * 1.7f + i);
+                    // the comet tail: where it was a little earlier, fading and shrinking
+                    int tail = 22;
+                    for (int k = tail; k >= 1; k--) {
+                        double before = u - k * 0.0025;
+                        if (before < 0) continue;
+                        float s = 1f - k / (float) (tail + 1);
+                        starDirection(night, i, before);
+                        float d = distance(dome, toClouds);
+                        quad(glowBuffer, d, 0.03f * (0.3f + 0.7f * s) * twinkle, 1f, r, g, b, (int) (255 * s * fade));
+                        quad(heartBuffer, d, 0.011f * (0.3f + 0.7f * s) * twinkle, 1f, 255, 255, 255, (int) (230 * s * s * fade));
+                    }
+                    starDirection(night, i, u);
                     float d = distance(dome, toClouds);
-                    quad(glowBuffer, d, 0.03f * (0.3f + 0.7f * s) * twinkle, 1f, r, g, b, (int) (255 * s * fade));
-                    quad(heartBuffer, d, 0.011f * (0.3f + 0.7f * s) * twinkle, 1f, 255, 255, 255, (int) (230 * s * s * fade));
+                    quad(glowBuffer, d, 0.06f * twinkle, 1f, r, g, b, (int) (255 * fade));
+                    quad(glowBuffer, d, 0.045f * twinkle, 1f, r, g, b, (int) (255 * fade));
+                    quad(glowBuffer, d, 0.028f * twinkle, 1f, 255, 255, 255, (int) (230 * fade));
+                    quad(heartBuffer, d, 0.02f * twinkle, 1f, 255, 255, 255, (int) (255 * fade));
                 }
-                starDirection(night, i, u);
-                float d = distance(dome, toClouds);
-                quad(glowBuffer, d, 0.06f * twinkle, 1f, r, g, b, (int) (255 * fade));
-                quad(glowBuffer, d, 0.045f * twinkle, 1f, r, g, b, (int) (255 * fade));
-                quad(glowBuffer, d, 0.028f * twinkle, 1f, 255, 255, 255, (int) (230 * fade));
-                quad(heartBuffer, d, 0.02f * twinkle, 1f, 255, 255, 255, (int) (255 * fade));
             }
-        }
-        if (guideAlpha > 0.01f) {
-            int r = (GUIDE_COLOR >> 16) & 0xFF, g = (GUIDE_COLOR >> 8) & 0xFF, b = GUIDE_COLOR & 0xFF;
-            for (TelescopePayloads.Guide guide : guides) {
-                double dx = guide.x() + 0.5 - camera.x, dz = guide.z() + 0.5 - camera.z;
-                float bright = TelescopeMath.guideBrightness(Math.sqrt(dx * dx + dz * dz));
-                guideDirection(dx, dz);
-                float d = distance(dome, toClouds);
-                float pulse = 0.8f + 0.2f * MathHelper.sin(time * 0.35f + guide.id()) + 0.08f * MathHelper.sin(time * 1.9f + guide.id() * 3);
-                float size = 0.03f * bright * pulse;
-                int alpha = (int) (255 * guideAlpha * (0.6f + 0.4f * bright));
-                quad(glowBuffer, d, size * 1.6f, 1f, r, g, b, alpha);
-                // a four-pointed sparkle: two long thin glows crossed
-                quad(glowBuffer, d, size * 3.4f, 0.16f, 255, 244, 200, (int) (alpha * 0.9f));
-                quad(glowBuffer, d, size * 0.55f, 6.2f, 255, 244, 200, (int) (alpha * 0.9f));
-                quad(heartBuffer, d, size * 0.6f, 1f, 255, 255, 255, alpha);
+            if (guideAlpha > 0.01f) {
+                int r = (GUIDE_COLOR >> 16) & 0xFF, g = (GUIDE_COLOR >> 8) & 0xFF, b = GUIDE_COLOR & 0xFF;
+                for (TelescopePayloads.Guide guide : guides) {
+                    double dx = guide.x() + 0.5 - camera.x, dz = guide.z() + 0.5 - camera.z;
+                    float bright = TelescopeMath.guideBrightness(Math.sqrt(dx * dx + dz * dz));
+                    guideDirection(dx, dz);
+                    float d = distance(dome, toClouds);
+                    float pulse = 0.8f + 0.2f * MathHelper.sin(time * 0.35f + guide.id()) + 0.08f * MathHelper.sin(time * 1.9f + guide.id() * 3);
+                    float size = 0.03f * bright * pulse;
+                    int alpha = (int) (255 * guideAlpha * (0.6f + 0.4f * bright));
+                    quad(glowBuffer, d, size * 1.6f, 1f, r, g, b, alpha);
+                    // a four-pointed sparkle: two long thin glows crossed
+                    quad(glowBuffer, d, size * 3.4f, 0.16f, 255, 244, 200, (int) (alpha * 0.9f));
+                    quad(glowBuffer, d, size * 0.55f, 6.2f, 255, 244, 200, (int) (alpha * 0.9f));
+                    quad(heartBuffer, d, size * 0.6f, 1f, 255, 255, 255, alpha);
+                }
             }
-        }
 
-        // no fog on them (as BackgroundRenderer#clearFog)
-        float fogStart = RenderSystem.getShaderFogStart();
-        RenderSystem.setShaderFogStart(Float.MAX_VALUE);
-        try {
-            BuiltBuffer built = glowBuffer.endNullable();
-            if (built != null) glowLayer.draw(built);
-            built = heartBuffer.endNullable();
-            if (built != null) heartLayer.draw(built);
-        } finally {
-            RenderSystem.setShaderFogStart(fogStart);
-            glowBuffer = heartBuffer = null;
+            // no fog on them (as BackgroundRenderer#clearFog)
+            float fogStart = RenderSystem.getShaderFogStart();
+            RenderSystem.setShaderFogStart(Float.MAX_VALUE);
+            try {
+                BuiltBuffer built = glowBuffer.endNullable();
+                if (built != null) glowLayer.draw(built);
+                built = heartBuffer.endNullable();
+                if (built != null) heartLayer.draw(built);
+            } finally {
+                RenderSystem.setShaderFogStart(fogStart);
+                glowBuffer = heartBuffer = null;
+            }
         }
     }
 
