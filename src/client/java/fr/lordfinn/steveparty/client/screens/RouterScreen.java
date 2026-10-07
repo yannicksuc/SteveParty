@@ -50,6 +50,11 @@ public class RouterScreen extends CartridgeContainerScreen<RouterScreenHandler> 
     }
 
     @Override
+    protected boolean hasPipette() {
+        return true;
+    }
+
+    @Override
     public Identifier getTexture() {
         return TEXTURE;
     }
