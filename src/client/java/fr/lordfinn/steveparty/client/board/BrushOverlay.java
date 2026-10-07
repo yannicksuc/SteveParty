@@ -55,12 +55,10 @@ final class BrushOverlay {
         consumers.draw();
     }
 
-    /** A link between the two, either way, in the slot of the brush's level: the stroke would erase it. */
+    /** A link from {@code a} to {@code b} in the slot of the brush's level: the stroke would erase it (not the way back). */
     static boolean linked(ClientWorld world, ItemStack brush, BlockPos a, BlockPos b) {
-        CartridgeContainerBlockEntity from = BoardLinks.container(world, a), to = BoardLinks.container(world, b);
-        int level = TileLinkerBrush.level(brush);
-        return from != null && BoardLinks.links(from, BoardLinks.slotOf(from, level)).contains(b)
-                || to != null && BoardLinks.links(to, BoardLinks.slotOf(to, level)).contains(a);
+        CartridgeContainerBlockEntity from = BoardLinks.container(world, a);
+        return from != null && BoardLinks.links(from, BoardLinks.slotOf(from, TileLinkerBrush.level(brush))).contains(b);
     }
 
     /** Where links start and end on a board space: a little above the middle of its surface. */

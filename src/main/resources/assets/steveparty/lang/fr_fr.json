@@ -43,7 +43,7 @@
   "tooltip.steveparty.tile_linker_brush": "Relie les tuiles d'un plateau en les peignant : maintiens le clic droit et passe sur les tuiles, dans l'ordre où les pions les parcourront.",
   "tooltip.steveparty.tile_linker_brush.level": "Niveau : %s",
   "tooltip.steveparty.tile_linker_brush.controls.paint": "Clic droit maintenu en balayant les tuiles : chacune est reliée à la suivante (jusqu'à 32 blocs, telles que tu les vois)",
-  "tooltip.steveparty.tile_linker_brush.controls.erase": "Repasser sur un lien (dans un sens ou l'autre) : il est effacé",
+  "tooltip.steveparty.tile_linker_brush.controls.erase": "Repasser sur un lien dans le même sens : il est effacé (dans l'autre sens : le retour est ajouté)",
   "message.steveparty.tile_linker_brush.level": "Niveau du pinceau : %s",
   "message.steveparty.tile_linker_brush.start": "Peinture depuis %s",
   "message.steveparty.tile_linker_brush.linked": "%s → %s relié",

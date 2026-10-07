@@ -75,7 +75,7 @@ final class BrushTrail {
     private static final Identifier DAB_TEXTURE = Steveparty.id("textures/misc/brush_dab.png");
     private static final Identifier STREAK_TEXTURE = Steveparty.id("textures/misc/brush_streak.png");
     private static final int MAX_DABS = 4096;
-    private static final double WIDTH = 0.18, DAB_SPACING = 0.04, MAX_JOIN = 1.2;
+    private static final double WIDTH = 0.36, DAB_SPACING = 0.04, MAX_JOIN = 1.2;
     /** Blocks of stroke per repeat of the streak texture. */
     private static final double STREAK_LENGTH = 0.6;
     private static final java.util.Random SPLASH = new java.util.Random();
@@ -285,13 +285,13 @@ final class BrushTrail {
      */
     private static void paint(VertexConsumerProvider.Immediate consumers, MatrixStack.Entry entry, Vec3d cam, float now) {
         if (DABS.isEmpty()) return;
-        RenderLayer streakLayer = RenderLayer.getEntityTranslucent(STREAK_TEXTURE);
+        RenderLayer streakLayer = PaintLayers.paint(STREAK_TEXTURE);
         VertexConsumer streaks = consumers.getBuffer(streakLayer);
         for (int i = 1; i < DABS.size(); i++) {
             if (continues(i)) strip(streaks, entry, cam, DABS.get(i - 1), DABS.get(i), side(i - 1), side(i), now);
         }
         consumers.draw(streakLayer);
-        RenderLayer dabLayer = RenderLayer.getEntityTranslucent(DAB_TEXTURE);
+        RenderLayer dabLayer = PaintLayers.paint(DAB_TEXTURE);
         VertexConsumer dabs = consumers.getBuffer(dabLayer);
         for (int i = 0; i < DABS.size(); i++) {
             Dab dab = DABS.get(i);
@@ -302,9 +302,10 @@ final class BrushTrail {
         consumers.draw(dabLayer);
     }
 
+    /** Wet: full; once released it dries up (its thinner texels go first, see PaintLayers). */
     private static float alpha(Dab dab, float now) {
-        if (dab.stroke.ended < 0) return 0.92f;
-        return 0.92f * (1 - MathHelper.clamp((now - dab.stroke.ended) / FADE_TICKS, 0, 1));
+        if (dab.stroke.ended < 0) return 1f;
+        return 1 - MathHelper.clamp((now - dab.stroke.ended) / FADE_TICKS, 0, 1);
     }
 
     /** The stroke's direction at point {@code i} (from its neighbours in the same run), on its surface. */

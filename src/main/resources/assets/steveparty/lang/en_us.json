@@ -227,7 +227,7 @@
   "tooltip.steveparty.tile_linker_brush": "Links the tiles of a board by painting them: hold right click and sweep over the tiles, in the order the tokens will walk them.",
   "tooltip.steveparty.tile_linker_brush.level": "Level: %s",
   "tooltip.steveparty.tile_linker_brush.controls.paint": "Hold right click and sweep over tiles: each is linked to the next (up to 32 blocks, as you see them)",
-  "tooltip.steveparty.tile_linker_brush.controls.erase": "Go over a link again (either way): it is erased",
+  "tooltip.steveparty.tile_linker_brush.controls.erase": "Go over a link again the same way: it is erased (the other way adds the way back)",
   "message.steveparty.tile_linker_brush.level": "Brush level: %s",
   "message.steveparty.tile_linker_brush.start": "Painting from %s",
   "message.steveparty.tile_linker_brush.linked": "%s → %s linked",
