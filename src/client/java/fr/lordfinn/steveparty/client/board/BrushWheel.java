@@ -34,8 +34,8 @@ final class BrushWheel implements ToolWheel.Provider {
     /** Different kinds of Cartridges shown at most. */
     private static final int MAX_CARTRIDGES = 10;
     /** The plates: the grey of vanilla slots, the cartridge page in the board's teal. */
-    /** One neutral plate, the mod's teal (the gold frame marks the setting in use; red only on the level page). */
-    private static final int TEAL = 0x7FA3A9;
+    /** One neutral plate, the paper of the mod's screens (the gold frame marks the setting in use; red only on the level page). */
+    private static final int PLATE = ToolWheel.PAPER & 0xFFFFFF;
     private static final List<ToolWheel.Ring> MAIN_RING = List.of(new ToolWheel.Ring(28, 80));
     private static final List<ToolWheel.Ring> LEVEL_RING = List.of(new ToolWheel.Ring(26, 92));
     private static final List<ToolWheel.Ring> CARTRIDGE_RING = List.of(new ToolWheel.Ring(26, 80));
@@ -62,18 +62,18 @@ final class BrushWheel implements ToolWheel.Provider {
         int level = TileLinkerBrush.level(brush);
         Item picked = TileLinkerBrush.cartridge(brush);
         ToolWheel.Sector normal = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.powered"),
-                null, TEAL, big(TORCH, 2), level == TileLinkerBrush.POWERED, true,
+                null, PLATE, big(TORCH, 2), level == TileLinkerBrush.POWERED, true,
                 () -> send(ToolWheelPayload.Action.BRUSH_LEVEL, TileLinkerBrush.POWERED));
         ToolWheel.Sector levels = new ToolWheel.Sector(level == TileLinkerBrush.POWERED ? Text.translatable("wheel.steveparty.brush.levels")
-                : Text.translatable("wheel.steveparty.brush.levels.current", level), null, TEAL,
+                : Text.translatable("wheel.steveparty.brush.levels.current", level), null, PLATE,
                 levelIcon(level), level != TileLinkerBrush.POWERED, true, true, () -> ToolWheel.showPage(LEVELS));
         ItemStack cartridge = picked == null ? KEEP : new ItemStack(picked);
         ToolWheel.Sector cartridges = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.cartridges.current",
                 picked == null ? Text.translatable("wheel.steveparty.brush.keep") : cartridge.getName()),
-                null, TEAL, big(cartridge, 2), false, true, true, () -> ToolWheel.showPage(CARTRIDGES));
-        ToolWheel.Sector redo = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.redo"), null, TEAL, sprite(REDO, 2),
+                null, PLATE, big(cartridge, 2), false, true, true, () -> ToolWheel.showPage(CARTRIDGES));
+        ToolWheel.Sector redo = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.redo"), null, PLATE, sprite(REDO, 2),
                 false, true, () -> send(ToolWheelPayload.Action.BRUSH_REDO, 0));
-        ToolWheel.Sector undo = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.undo"), null, TEAL, sprite(UNDO, 2),
+        ToolWheel.Sector undo = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.undo"), null, PLATE, sprite(UNDO, 2),
                 false, true, () -> send(ToolWheelPayload.Action.BRUSH_UNDO, 0));
         // Fixed places, clockwise from the top: the normal link, the cartridge (top right), redo (bottom right), undo
         // (bottom left), the level (top left)
@@ -99,14 +99,14 @@ final class BrushWheel implements ToolWheel.Provider {
         Item picked = TileLinkerBrush.cartridge(brush);
         List<ToolWheel.Sector> sectors = new ArrayList<>();
         // First: none picked, the painted tiles keep their cartridge
-        sectors.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.keep"), null, TEAL, big(KEEP, 1.5f), picked == null, true, () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, ToolWheelPayload.KEEP_CARTRIDGES)));
+        sectors.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.keep"), null, PLATE, big(KEEP, 1.5f), picked == null, true, () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, ToolWheelPayload.KEEP_CARTRIDGES)));
         boolean creative = player != null && player.getAbilities().creativeMode;
         for (Map.Entry<Item, Integer> kind : cartridgeKinds(player).entrySet()) {
             Item item = kind.getKey();
             ItemStack shown = new ItemStack(item);
             boolean available = creative || kind.getValue() > 0;
             Text name = creative ? shown.getName() : Text.translatable("wheel.steveparty.brush.cartridge.count", shown.getName(), kind.getValue());
-            sectors.add(new ToolWheel.Sector(name, null, TEAL, big(shown, 1.5f), item == picked, available,
+            sectors.add(new ToolWheel.Sector(name, null, PLATE, big(shown, 1.5f), item == picked, available,
                     () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, Registries.ITEM.getRawId(item))));
         }
         float half = 360f / sectors.size() / 2;
@@ -114,7 +114,7 @@ final class BrushWheel implements ToolWheel.Provider {
     }
 
     private static ToolWheel.Sector back() {
-        return new ToolWheel.Sector(Text.translatable("wheel.steveparty.back"), null, TEAL, sprite(BACK, 1), false, true, true,
+        return new ToolWheel.Sector(Text.translatable("wheel.steveparty.back"), null, PLATE, sprite(BACK, 1), false, true, true,
                 () -> ToolWheel.showPage(MAIN));
     }
 

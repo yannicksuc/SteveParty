@@ -32,7 +32,7 @@ import java.util.List;
 public final class HammerWheel implements ToolWheel.Provider {
     private static final List<ToolWheel.Ring> RINGS = List.of(new ToolWheel.Ring(30, 92));
     /** The mod's neutral teal; stencils on paper, dyes in their colour. */
-    private static final int PAPER = 0xC9B48C, TEAL = 0x7FA3A9;
+    private static final int PAPER = 0xFFFFFF, PLATE = ToolWheel.PAPER & 0xFFFFFF;
     /** Degrees the refill button takes either side of the top. */
     private static final float PLUS = 24;
 
@@ -75,7 +75,7 @@ public final class HammerWheel implements ToolWheel.Provider {
         }
 
         // Top centre: one button, its refill
-        ToolWheel.Sector refill = new ToolWheel.Sector(Text.translatable("wheel.steveparty.hammer.refill"), null, TEAL,
+        ToolWheel.Sector refill = new ToolWheel.Sector(Text.translatable("wheel.steveparty.hammer.refill"), null, PLATE,
                 big(new ItemStack(Items.BUNDLE)), false, true, () -> send(ToolWheelPayload.Action.HAMMER_OPEN, 0));
         List<ToolWheel.Arc> arcs = new ArrayList<>();
         arcs.add(new ToolWheel.Arc(0, -PLUS, PLUS, List.of(refill)));
