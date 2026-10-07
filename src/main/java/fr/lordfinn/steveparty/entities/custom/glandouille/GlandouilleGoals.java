@@ -83,7 +83,8 @@ final class GlandouilleGoals {
             ticks++;
             if (hat == null) return;
             glandouille.getLookControl().lookAt(hat);
-            if (glandouille.squaredDistanceTo(hat) < 1.6 * 1.6) {
+            // not while it still flies off its head (its pickup delay): it is within reach all along
+            if (!hat.cannotPickup() && glandouille.squaredDistanceTo(hat) < 1.6 * 1.6) {
                 hat.getStack().decrement(1);
                 if (hat.getStack().isEmpty()) hat.discard();
                 glandouille.putHatOn();
