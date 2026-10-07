@@ -11,6 +11,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
@@ -31,6 +32,9 @@ import java.util.List;
  *     <li><b>Flick</b>: hitting one inside a tower (not the bottom one) shoots it out like a missile along the blow,
  *     alone: the ones above it hop straight up and come back down onto the one below ({@link #hopOff}). The bottom one
  *     hit goes alone too, its tower hopping off it and landing on the ground.</li>
+ *     <li><b>Impacts</b>: a flicked one flying into another tower (or a lone one) lands on top of it; a sliding one
+ *     carries what it slides into on top of itself and slides on, a little slower per acorn; a tower standing on the old
+ *     mossy one is too heavy: the slider stops and climbs on it. Over the safety limit, they are shoved as before.</li>
  *     <li><b>Collapse</b>: only when the bottom one charges into a wall: everyone falls, fanned out, dizzy.</li>
  * </ul>
  */
@@ -182,6 +186,61 @@ public final class GlandouilleTowers {
             putDown(player, at, player.getYaw() + 180f);
             return ActionResult.SUCCESS;
         });
+    }
+
+    // ---------------------------------------------------------------- impacts: a shot one, a sliding one
+
+    /**
+     * A tower (or a lone one) an impact may stack with: on its own feet (not carried by a player, nor hopping, nor
+     * shot), not a board actor.
+     */
+    private static boolean stackable(GlandouilleEntity glandouille) {
+        if (glandouille.isBoardActor() || !glandouille.isAlive()) return false;
+        GlandouilleEntity bottom = bottom(glandouille);
+        if (bottom.getVehicle() != null) return false;
+        for (GlandouilleEntity one : members(bottom)) {
+            GlandouilleEntity.Mood mood = one.getMood();
+            if (mood == GlandouilleEntity.Mood.FLYING || mood == GlandouilleEntity.Mood.HOPPING) return false;
+        }
+        return true;
+    }
+
+    /**
+     * {@code shot} (flying out of a tower, alone) ran into {@code hit}: it lands on top of that tower and stays there.
+     * False if it can't (too high, a board actor, a tower in the air): it is shoved as before.
+     */
+    public static boolean joinOnImpact(GlandouilleEntity shot, GlandouilleEntity hit) {
+        if (!stackable(hit) || sameTower(shot, hit)) return false;
+        return climb(shot, hit, false);
+    }
+
+    /**
+     * {@code slider} slid into {@code other}: the lowest one of {@code other}'s tower it touches (with everyone above it)
+     * climbs on top of the slider, which slides on carrying them. A tower standing on the old mossy one is too heavy to
+     * carry (alone too): the slider stops and climbs on top of it instead. Returns the number of acorns added to the
+     * slider's tower (0 if it stopped on a mossy one), -1 if nothing happened (too high, a board actor, a tower in the
+     * air): it is shoved as before.
+     */
+    public static int carryOnImpact(GlandouilleEntity slider, GlandouilleEntity other, Box reach) {
+        if (!stackable(other) || sameTower(slider, other)) return -1;
+        GlandouilleEntity bottom = bottom(other);
+        if (bottom.getVariant() == GlandouilleVariant.MOSSY) return climb(slider, bottom, false) ? 0 : -1;
+        GlandouilleEntity hit = other;
+        for (GlandouilleEntity one : members(bottom)) {
+            if (one.getBoundingBox().intersects(reach)) {
+                hit = one;
+                break;
+            }
+        }
+        if (height(slider) + height(hit) - level(hit) > maxStack()) return -1;
+        Entity below = hit.getVehicle();
+        if (below != null) hit.stopRiding();
+        if (climb(hit, slider, false)) {
+            hit.setVelocity(Vec3d.ZERO);
+            return height(hit) - level(hit);
+        }
+        if (below != null) hit.startRiding(below, true);
+        return -1;
     }
 
     // ---------------------------------------------------------------- flick, collapse
