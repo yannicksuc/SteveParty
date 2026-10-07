@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
+import fr.lordfinn.steveparty.client.gui.HandCursor;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.Status;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
@@ -59,8 +60,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /** Tooltips wrap at this width (GUI px), so that long hints stay readable. */
     private static final int TOOLTIP_WIDTH = 170;
 
-    /** The core: the center of the galaxy (CORE_X/Y: its center, between 4 pixels), shown once inserted. */
-    private static final int CORE_X = DiceForgeScreenHandler.CENTER_X + 8, CORE_Y = DiceForgeScreenHandler.CENTER_Y + 8;
     /**
      * The FORGE button is the arrow of the capsule, between the blank faces and the die (only the screen draws it):
      * its shaft from ARROW_X0, its head's base at ARROW_X1, and the box that takes the clicks.
@@ -165,7 +164,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         context.drawTexture(TEXTURE, x, y, OVERLAY_U, 0, this.backgroundWidth, this.backgroundHeight, ATLAS_SIZE, ATLAS_SIZE);
         RenderSystem.disableBlend();
 
-        drawCore(context, x + CORE_X, y + CORE_Y);
         drawArrowButton(context, x, y, mouseX, mouseY, delta);
     }
 
@@ -242,11 +240,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         float progress = handler.getProgress();
         if (!handler.isBlocked() && progress < 1f) progress += delta / DiceForgeBlockEntity.CRAFT_TIME;
         return MathHelper.clamp(progress, 0f, 1f);
-    }
-
-    /** The center of the galaxy shows the gravity core once inserted; before that, its slot draws the core's ghost. */
-    private void drawCore(DrawContext context, int cx, int cy) {
-        if (handler.isActivated()) context.drawItem(gravityCore, cx - 8, cy - 8);
     }
 
     /**
@@ -434,6 +427,12 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     @Override
+    public void removed() {
+        HandCursor.reset();
+        super.removed();
+    }
+
+    @Override
     public void render(DrawContext context, int realMouseX, int realMouseY, float delta) {
         // Drawn shrunk when the window is too small (see init), the tooltips at full size
         int mouseX = (int) toScreen(realMouseX), mouseY = (int) toScreen(realMouseY);
@@ -444,6 +443,8 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         matrices.pop();
         mouseX = realMouseX;
         mouseY = realMouseY;
+        // The hand over the FORGE arrow, only when it can be clicked
+        HandCursor.update(isButtonEnabled() && isOverButton(toScreen(mouseX), toScreen(mouseY)));
 
         if (isOverButton(toScreen(mouseX), toScreen(mouseY))) {
             drawWrappedTooltip(context, getButtonTooltip(), mouseX, mouseY);
@@ -463,6 +464,14 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         ItemStack stack = slot.getStack();
         if (slot.id == OUTPUT_SLOT) {
             drawWrappedTooltip(context, getOutputTooltip(stack, true), mouseX, mouseY);
+            return;
+        }
+        if (slot.id == CENTER_SLOT) {
+            // The core in the forge: what it does there, and that it can be taken back
+            drawWrappedTooltip(context, List.of(stack.getName().copy().formatted(Formatting.LIGHT_PURPLE),
+                    Text.translatableWithFallback(KEY + "core_in_place", "Wakes the forge up").formatted(Formatting.GRAY),
+                    Text.translatableWithFallback(KEY + "core_take", "Take it out to put the forge to sleep")
+                            .formatted(Formatting.GRAY)), mouseX, mouseY);
             return;
         }
         List<Text> lines = new ArrayList<>(getTooltipFromItem(stack));
