@@ -23,9 +23,14 @@
       "text": "book.steveparty.guide.board.spaces.page1.text"
     },
     {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.spaces.page2.text",
+      "title": "book.steveparty.guide.board.spaces.page2.title"
+    },
+    {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:checkpoint",
-      "text": "book.steveparty.guide.board.spaces.page2.text"
+      "text": "book.steveparty.guide.board.spaces.page3.text"
     }
   ]
 }
