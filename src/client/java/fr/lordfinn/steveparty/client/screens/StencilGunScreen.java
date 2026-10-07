@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
@@ -28,9 +29,13 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     private static final int SELECTED_STENCIL = 0xFFFFD83D;
     private static final int SELECTED_DYE = 0xFF5FD3FF;
     /** The plates: the mod's teal, the titles a shade darker. */
-    private static final int TEAL = 0x7FA3A9, TITLE = 0x55767B;
-    /** The plate's outline, bevels and sunk slots, worked out from the teal as the wheel's sectors are. */
-    private static final int OUTLINE = 0xFF263133, BEVEL_LIGHT = 0xFFB8CDD0, BEVEL_SHADOW = 0xFF597276, SLOT_INSIDE = 0xFF4E6669;
+    /** The mini-game page's colours: its paper, its punched holes, its teal rules and tabs, its ink. */
+    private static final ConsolePaint.Ramp PAPER_RAMP = ConsolePaint.Ramp.of(0x7e9192, 0xffffff, 0xe6f3f4, 0xc7dbdc);
+    private static final ConsolePaint.Ramp HOLE = ConsolePaint.Ramp.of(0x7e9192, 0x9fb4b6, 0xb9cacb, 0x9fb4b6);
+    private static final int PAPER = ToolWheel.PAPER & 0xFFFFFF, TEAL = 0xFF00B3BD, TEAL2 = 0xFF008C95, ORANGE = 0xFDA757;
+    private static final int INK = 0xFF1E3A40, EDGE = 0xFF7E9192, SLOT_BODY = 0xFFF7FBFB, WHITE = 0xFFFFFFFF;
+    /** The punched holes down the left edge, as on the mini-game page. */
+    private static final int[] HOLES = {20, 70, 120, 170, 220, 270, 320};
     private static final ToolWheel.Layout WHEEL = layout();
     /** Free GUI pixels kept around the screen; with less room (large GUI scales) it is all drawn shrunk to fit. */
     private static final int FIT_MARGIN = 4;
@@ -85,11 +90,13 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         Runnable none = () -> {
         };
         List<ToolWheel.Sector> dyes = new ArrayList<>(), stencils = new ArrayList<>();
-        for (int i = 0; i < StencilGunItem.DYE_SLOTS; i++) dyes.add(new ToolWheel.Sector(Text.empty(), null, TEAL, null, false, true, none));
-        for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) stencils.add(new ToolWheel.Sector(Text.empty(), null, TEAL, null, false, true, none));
-        ToolWheel.Sector title = new ToolWheel.Sector(Text.empty(), null, TITLE, null, false, true, none);
+        for (int i = 0; i < StencilGunItem.DYE_SLOTS; i++) dyes.add(new ToolWheel.Sector(Text.empty(), null, PAPER, null, false, true, none));
+        for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) stencils.add(new ToolWheel.Sector(Text.empty(), null, PAPER, null, false, true, none));
+        // The titles in the colours of the page's tabs: orange (dyes), teal (stencils)
+        ToolWheel.Sector dyeTitle = new ToolWheel.Sector(Text.empty(), null, ORANGE, null, false, true, none);
+        ToolWheel.Sector stencilTitle = new ToolWheel.Sector(Text.empty(), null, TEAL & 0xFFFFFF, null, false, true, none);
         return new ToolWheel.Layout(List.of(new ToolWheel.Ring(StencilGunScreenHandler.RING_INNER, StencilGunScreenHandler.RING_OUTER)),
-                List.of(new ToolWheel.Arc(0, -header, 0, List.of(title)), new ToolWheel.Arc(0, 0, header, List.of(title)),
+                List.of(new ToolWheel.Arc(0, -header, 0, List.of(dyeTitle)), new ToolWheel.Arc(0, 0, header, List.of(stencilTitle)),
                         new ToolWheel.Arc(0, header, 180, stencils), new ToolWheel.Arc(0, 180, 360 - header, dyes)),
                 null, null, null, null);
     }
@@ -97,34 +104,26 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         int cx = x + StencilGunScreenHandler.CENTER_X, cy = y + StencilGunScreenHandler.CENTER_Y;
+        int w = StencilGunScreenHandler.WIDTH, h = StencilGunScreenHandler.HEIGHT;
+        // One sheet of the mini-game page's paper: its drop shadow, punched holes, two teal rules at the top and the bottom
+        context.fill(x + 2, y + h, x + w, y + h + 1, 0x69000000);
+        context.fill(x + 2, y + h + 1, x + w, y + h + 2, 0x32000000);
+        ConsolePaint.box(context, x, y, w, h, PAPER_RAMP, 1, 1);
+        for (int hy : HOLES) ConsolePaint.disc(context, x + 2, y + hy, 6, HOLE);
+        for (int ry : new int[]{3, h - 7}) {
+            context.fill(x + 10, y + ry, x + w - 10, y + ry + 1, TEAL);
+            context.fill(x + 10, y + ry + 2, x + w - 10, y + ry + 3, TEAL2);
+        }
         boolean hub = hub(mouseX, mouseY);
         for (ToolWheel.WheelRaster.Run run : ToolWheel.WheelRaster.runs(WHEEL, null, -1, hub, 1f, false, false)) {
             context.fill(cx + run.x0(), cy + run.y(), cx + run.x1(), cy + run.y() + 1, run.color());
         }
-        // The player's inventory under it, a plate of the wheel's teal
-        plate(context, x + StencilGunScreenHandler.INVENTORY_X, y + StencilGunScreenHandler.INVENTORY_Y, 176, 94);
-        // A slot in the mod's style on each sector and in the inventory: sunk into the plate
-        for (Slot slot : handler.slots) slot(context, x + slot.x - 1, y + slot.y - 1);
+        // Light slots with their outline, on the wheel's sectors and in the inventory under it
+        for (Slot slot : handler.slots) ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, SLOT_BODY, EDGE, WHITE);
         // Back, in the middle
         RenderSystem.enableBlend();
         context.drawGuiTexture(BACK, cx - 16, cy - 16, 32, 32);
         RenderSystem.disableBlend();
-    }
-
-    /** A plate like the wheel's sectors: dark outline (corners cut), light bevel top left, shadow bottom right. */
-    private static void plate(DrawContext context, int x, int y, int width, int height) {
-        context.fill(x + 1, y, x + width - 1, y + height, OUTLINE);
-        context.fill(x, y + 1, x + width, y + height - 1, OUTLINE);
-        context.fill(x + 1, y + 1, x + width - 1, y + height - 1, BEVEL_SHADOW);
-        context.fill(x + 1, y + 1, x + width - 2, y + height - 2, BEVEL_LIGHT);
-        context.fill(x + 2, y + 2, x + width - 2, y + height - 2, 0xFF000000 | TEAL);
-    }
-
-    /** A slot sunk into a plate, 18 x 18: shadow top left, light bottom right, a darker teal inside. */
-    private static void slot(DrawContext context, int x, int y) {
-        context.fill(x, y, x + 18, y + 18, BEVEL_LIGHT);
-        context.fill(x, y, x + 17, y + 17, OUTLINE);
-        context.fill(x + 1, y + 1, x + 17, y + 17, SLOT_INSIDE);
     }
 
     @Override
@@ -136,7 +135,7 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         int dx = (int) Math.round(Math.sin(a) * r);
         title(context, Text.translatable("screen.steveparty.stencil_gun.dyes"), StencilGunScreenHandler.CENTER_X - dx, ty);
         title(context, Text.translatable("screen.steveparty.stencil_gun.stencils"), StencilGunScreenHandler.CENTER_X + dx, ty);
-        context.drawText(textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, 0xFFFFFFFF, true);
+        context.drawText(textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, INK, false);
     }
 
     private void title(DrawContext context, Text text, int centerX, int y) {
@@ -146,15 +145,6 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     private boolean hub(double mouseX, double mouseY) {
         double dx = mouseX - (x + StencilGunScreenHandler.CENTER_X), dy = mouseY - (y + StencilGunScreenHandler.CENTER_Y);
         return dx * dx + dy * dy < Math.pow(StencilGunScreenHandler.RING_INNER - 3, 2);
-    }
-
-    @Override
-    protected boolean isClickOutsideBounds(double mouseX, double mouseY, int left, int top, int button) {
-        double dx = mouseX - (x + StencilGunScreenHandler.CENTER_X), dy = mouseY - (y + StencilGunScreenHandler.CENTER_Y);
-        boolean onWheel = dx * dx + dy * dy < Math.pow(StencilGunScreenHandler.RING_OUTER + 2, 2);
-        boolean onInventory = mouseX >= x + StencilGunScreenHandler.INVENTORY_X && mouseX < x + StencilGunScreenHandler.INVENTORY_X + 176
-                && mouseY >= y + StencilGunScreenHandler.INVENTORY_Y && mouseY < y + StencilGunScreenHandler.HEIGHT;
-        return !onWheel && !onInventory;
     }
 
     @Override

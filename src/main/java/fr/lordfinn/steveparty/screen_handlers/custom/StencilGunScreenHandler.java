@@ -30,14 +30,14 @@ import java.util.List;
 public class StencilGunScreenHandler extends ScreenHandler {
     /** {@link #gunSlot} value of a gun held in the off hand. */
     public static final int OFF_HAND_SLOT = PlayerInventory.OFF_HAND_SLOT;
-    /** The screen: the wheel of the hammer's slots, the player's inventory under it. */
-    public static final int WIDTH = 244, CENTER_X = 122, CENTER_Y = 122;
+    /** The screen, one sheet of the mod's paper: the wheel of the hammer's slots, the player's inventory under it. */
+    public static final int WIDTH = 264, CENTER_X = 132, CENTER_Y = 132;
     /** The wheel's ring (its slots on the middle circle), and the degrees of each title half at its top. */
     public static final int RING_INNER = 74, RING_OUTER = 118, SLOT_RADIUS = 96;
     public static final float HEADER = 36;
-    /** Top of the player's inventory panel (vanilla's bottom part of a chest), its slots 14 lower. */
-    public static final int INVENTORY_Y = 244, INVENTORY_X = (WIDTH - 176) / 2;
-    public static final int HEIGHT = INVENTORY_Y + 96;
+    /** Top of the player's inventory (its title), its slots 14 lower, its hotbar 72 lower. */
+    public static final int INVENTORY_Y = 254, INVENTORY_X = (WIDTH - 176) / 2;
+    public static final int HEIGHT = INVENTORY_Y + 102;
     /** First slot of the player's inventory. */
     public static final int PLAYER_START = StencilGunItem.SIZE;
 
