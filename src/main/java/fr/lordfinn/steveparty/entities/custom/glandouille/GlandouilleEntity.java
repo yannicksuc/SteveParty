@@ -52,6 +52,7 @@ import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +67,8 @@ import java.util.UUID;
  *     <li><b>Stomped</b> on its cap: flattened ("pouic"), the stomper bounces off; it pops back up sulking. The next
  *     stomp finishes it (see {@link GlandouilleVariant#flattenAt} / {@link GlandouilleVariant#dieAt}).</li>
  *     <li><b>Hit</b>: pushed, angry, it remembers who did it for {@link #GRUDGE_TICKS} (the frosty one slides
- *     instead, see {@link #startSlide}; one inside a tower is flicked out of it, see {@link GlandouilleTowers}).</li>
+ *     instead, see {@link #startSlide}; one inside a tower is flicked out of it, see {@link GlandouilleTowers}). Only the
+ *     one hit goes: the ones above it hop off and come back down ({@link #hop}).</li>
  *     <li><b>Towers</b>: see {@link GlandouilleTowers}. Only the bottom one thinks: the ones above are passengers.</li>
  *     <li><b>Hat</b>: a hard crash may, very rarely, send its cap flying ({@link #HAT_LOSS_CHANCE}), never while it
  *     carries a tower. Hatless, it is shy: it flees players and looks for its cap.</li>
@@ -93,6 +95,11 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     public static final int CHARGE_COOLDOWN_TICKS = 80;
     public static final int FLAT_TICKS = 50, REINFLATE_TICKS = 24, SULK_TICKS = 80;
     public static final int FLIGHT_TICKS = 30;
+    /** Let go of by the one under it (hit away): it hops straight up this hard, and gives up landing on a tower after {@link #HOP_TICKS}. */
+    public static final double HOP_VELOCITY = 0.45;
+    public static final int HOP_TICKS = 50;
+    /** Hit out of a tower, it leaves its old tower mates alone for that long (they hop off, it goes away alone). */
+    public static final int SPARE_TICKS = 30;
     public static final int BONE_MEAL_COOLDOWN_TICKS = 1200;
     public static final float BONE_MEAL_ACORN_CHANCE = 0.4f;
     /** A crash or a hit of its charge sends its cap flying, very rarely (never while it carries a tower). */
@@ -103,7 +110,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     public static final double SHOVE = 1.6;
 
     public enum Mood {
-        CALM, TELEGRAPH, CHARGING, STUNNED, FLAT, REINFLATE, SULK, SLEEPING, FLYING, SLIDING, PUSH_FAIL;
+        CALM, TELEGRAPH, CHARGING, STUNNED, FLAT, REINFLATE, SULK, SLEEPING, FLYING, SLIDING, PUSH_FAIL, HOPPING;
 
         static Mood byId(int id) {
             Mood[] values = values();
@@ -154,6 +161,11 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     private Vec3d flyDir = Vec3d.ZERO;
     private Vec3d slideVelocity = Vec3d.ZERO;
     private int slideRelaunches;
+    /** Hopping off a tower: the tower it lands back on (null: the ground). */
+    private @Nullable GlandouilleEntity hopOnto;
+    /** Its old tower mates, left alone (never shoved) until {@link #sparedUntil}. */
+    private List<GlandouilleEntity> spared = List.of();
+    private long sparedUntil;
     /** The height of the players around it last tick, to see them come down on its cap. */
     private final Map<UUID, Double> playerY = new HashMap<>(2);
 
@@ -449,6 +461,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
             case PUSH_FAIL -> {
                 if (--moodTicks <= 0) setMood(Mood.CALM, 0);
             }
+            case HOPPING -> tickHop();
         }
     }
 
@@ -550,7 +563,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         }
         boolean hit = false;
         for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(0.2),
-                e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e)
+                e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e) && !spares(e)
                         && !(e instanceof MulaEntity mula && mula.isDancing()))) {
             shove(other, chargeDir, SHOVE);
             hit = true;
@@ -734,12 +747,18 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
             GlandouilleTowers.flick(this, dir);
             return;
         }
-        if (getVariant() == GlandouilleVariant.FROSTY) {
-            startSlide(dir.multiply(0.85));
-            return;
-        }
         if (isAnchored()) {
             setMood(Mood.SULK, SULK_TICKS / 2);
+            return;
+        }
+        // only the one hit goes: the tower on it hops off and comes down on the ground
+        if (GlandouilleTowers.hasRider(this)) {
+            leaveTower();
+            GlandouilleTowers.hopOff(this, null);
+        }
+        if (getMood() == Mood.HOPPING) setMood(Mood.CALM, 0);
+        if (getVariant() == GlandouilleVariant.FROSTY) {
+            startSlide(dir.multiply(0.85));
             return;
         }
         takeKnockback(0.6, -dir.x, -dir.z);
@@ -774,7 +793,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         if (flown < 10) setVelocity(flyDir.x * 1.1, getVelocity().y * 0.5, flyDir.z * 1.1);
         else setNoGravity(false);
         for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(0.3),
-                e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e))) {
+                e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e) && !spares(e))) {
             shove(other, flyDir, SHOVE);
             playSound(ModSounds.GLANDOUILLE_RAM, 1f, 1.2f);
         }
@@ -784,6 +803,61 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
             if (this.horizontalCollision) playSound(ModSounds.GLANDOUILLE_BONK, 1f, 1.2f);
             setVelocity(getVelocity().multiply(0.2, 1, 0.2));
             stun();
+        }
+    }
+
+    // ---------------------------------------------------------------- hopping off a tower
+
+    /** It leaves its tower (hit away): its tower mates are spared its flight, slide or charge for a moment. */
+    public void leaveTower() {
+        List<GlandouilleEntity> mates = new ArrayList<>(GlandouilleTowers.members(this));
+        mates.remove(this);
+        this.spared = mates;
+        this.sparedUntil = getWorld().getTime() + SPARE_TICKS;
+    }
+
+    /** One of its old tower mates, left alone a moment after it was hit out of the tower. */
+    private boolean spares(Entity other) {
+        return getWorld().getTime() < sparedUntil && other instanceof GlandouilleEntity mate && spared.contains(mate);
+    }
+
+    /**
+     * The one under it was hit away: it hops straight up (with whoever rides it) and comes back down onto the tower
+     * of {@code onto}, or onto the ground if that one is gone or null.
+     */
+    public void hop(@Nullable GlandouilleEntity onto) {
+        if (boardActor) return;
+        this.hopOnto = onto;
+        setMood(Mood.HOPPING, HOP_TICKS);
+        setVelocity(0, HOP_VELOCITY, 0);
+        this.velocityModified = true;
+    }
+
+    public @Nullable GlandouilleEntity hopOnto() {
+        return hopOnto;
+    }
+
+    private void tickHop() {
+        // straight up and down: nothing pushes it aside
+        setVelocity(0, getVelocity().y, 0);
+        GlandouilleEntity onto = hopOnto;
+        if (onto != null && (onto.isRemoved() || !onto.isAlive())) onto = hopOnto = null;
+        if (onto != null && getVelocity().y < 0) {
+            GlandouilleEntity top = GlandouilleTowers.top(onto);
+            Box cap = top.getBoundingBox();
+            double reach = (top.getWidth() + getWidth()) * 0.5;
+            boolean over = Math.abs(getX() - top.getX()) < reach && Math.abs(getZ() - top.getZ()) < reach;
+            // came down through the top of its cap this tick
+            if (over && this.prevY >= cap.maxY - 0.1 && getY() <= cap.maxY + 0.1) {
+                hopOnto = null;
+                setMood(Mood.CALM, 0);
+                GlandouilleTowers.climb(this, top, false);
+                return;
+            }
+        }
+        if (--moodTicks <= 0 || (moodTicks < HOP_TICKS - 3 && isOnGround())) {
+            hopOnto = null;
+            setMood(Mood.CALM, 0);
         }
     }
 
@@ -830,7 +904,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         slideVelocity = slideVelocity.multiply(0.985);
         setVelocity(slideVelocity.x, v.y, slideVelocity.z);
         for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(0.15),
-                e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e))) {
+                e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e) && !spares(e))) {
             shove(other, slideVelocity.normalize(), slideVelocity.horizontalLength() * 2);
         }
         if (this.age % 3 == 0) world.spawnParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 0.05, getZ(), 1, 0.1, 0, 0.1, 0);
@@ -1053,7 +1127,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
             case REINFLATE -> REINFLATE;
             case SULK -> SULK;
             case SLEEPING -> SLEEP;
-            case SLIDING -> CARRIED;
+            case SLIDING, HOPPING -> CARRIED;
             case PUSH_FAIL -> PUSH_FAIL;
             case CALM -> null;
         };
