@@ -38,6 +38,8 @@ public final class GravityPull {
     private static final double ARRIVE_GAIN = 0.15, MAX_SPEED = 1.5;
     /** Speed along the orbit (blocks per tick), counterclockwise seen from above. */
     private static final double ORBIT_SPEED = 0.3;
+    /** A sneaking player pulled by a lone gravity core moves this share of the speed only (slower drift and climb). */
+    public static final double SNEAK_SLOW = 0.35;
     /** A player pulled by a lone gravity core is reminded how to break free this often (ticks). */
     private static final int HINT_TICKS = 40;
 
@@ -57,19 +59,19 @@ public final class GravityPull {
     }
 
     /**
-     * @param sneakFrees true: a sneaking player is not pulled (it drops out of the orbit), and a player pulled is told
-     *                   so on its action bar, with how to break free
+     * @param sneakSlows true: a sneaking player stays pulled but moves slower ({@link #SNEAK_SLOW}: it drifts and rises
+     *                   less fast), and a player pulled is told so on its action bar, with how to break free
      * @see #pullAround(World, Vec3d, double, double, boolean, double)
      */
     public static void pullAround(World world, Vec3d core, double range, double strength, boolean falloff, double orbit,
-                                  boolean sneakFrees) {
+                                  boolean sneakSlows) {
         if (range <= 0 || strength <= 0) return;
         Box area = new Box(core, core).expand(range);
-        for (Entity entity : world.getOtherEntities(null, area, e -> isPulledHere(e, world.isClient)
-                && !(sneakFrees && e instanceof PlayerEntity && e.isSneaking()))) {
-            boolean pulled = pull(entity, core, range, strength, falloff, orbit);
+        for (Entity entity : world.getOtherEntities(null, area, e -> isPulledHere(e, world.isClient))) {
+            double pace = sneakSlows && entity instanceof PlayerEntity && entity.isSneaking() ? SNEAK_SLOW : 1;
+            boolean pulled = pull(entity, core, range, strength, falloff, orbit, pace);
             // Only the local player is pulled on the client: the hint stays on its action bar while it is pulled
-            if (pulled && sneakFrees && entity instanceof PlayerEntity player && entity.age % HINT_TICKS == 0) {
+            if (pulled && sneakSlows && entity instanceof PlayerEntity player && entity.age % HINT_TICKS == 0) {
                 player.sendMessage(Text.translatable("message.steveparty.gravity_core.pulled").formatted(Formatting.LIGHT_PURPLE), true);
             }
         }
@@ -87,8 +89,12 @@ public final class GravityPull {
         return !client;
     }
 
-    /** @return true if the entity was pulled (within reach and not too heavy) */
-    private static boolean pull(Entity entity, Vec3d core, double range, double strength, boolean falloff, double orbit) {
+    /**
+     * @param pace share of the speed it is steered at (1: full; less: a slower drift and climb)
+     * @return true if the entity was pulled (within reach and not too heavy)
+     */
+    private static boolean pull(Entity entity, Vec3d core, double range, double strength, boolean falloff, double orbit,
+                                double pace) {
         Vec3d toCore = core.subtract(entity.getBoundingBox().getCenter());
         double distance = toCore.length();
         if (distance > range) return false;
@@ -105,7 +111,7 @@ public final class GravityPull {
         double gap = toOrbit.length();
         Vec3d wanted = gap < 1.0E-4 ? Vec3d.ZERO : toOrbit.multiply(Math.min(MAX_SPEED, gap * ARRIVE_GAIN) / gap);
         double onOrbit = MathHelper.clamp(1 - gap / orbit, 0, 1);
-        wanted = wanted.add(new Vec3d(-outward.z, 0, outward.x).multiply(ORBIT_SPEED * onOrbit));
+        wanted = wanted.add(new Vec3d(-outward.z, 0, outward.x).multiply(ORBIT_SPEED * onOrbit)).multiply(pace);
         Vec3d accel = wanted.subtract(velocity);
         double change = accel.length();
         if (change > k) accel = accel.multiply(k / change);

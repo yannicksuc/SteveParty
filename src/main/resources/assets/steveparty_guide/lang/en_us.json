@@ -422,7 +422,7 @@
   "book.steveparty.guide.stars_mula.fragments.page1.text": "9 fragments make a glowing, glass-like block that breaks back into 9.",
   "book.steveparty.guide.stars_mula.gravity_core.description": "A tiny planet",
   "book.steveparty.guide.stars_mula.gravity_core.name": "Gravity Core",
-  "book.steveparty.guide.stars_mula.gravity_core.page0.text": "Placed, it glows and **pulls** everything within 8 blocks into an orbit, without fall damage; full iron armour (or heavier) resists. Mulas and pawns are never pulled. **Sneak** to drop out of its orbit; it breaks by hand and drops itself.\n\nIts real job: waking up the **Dice Forge**.",
+  "book.steveparty.guide.stars_mula.gravity_core.page0.text": "Placed, it glows and **pulls** everything within 8 blocks into an orbit, without fall damage; full iron armour (or heavier) resists. Mulas and pawns are never pulled. **Sneak** to move slower in its orbit (it does not let go); it breaks by hand and drops itself.\n\nIts real job: waking up the **Dice Forge**.",
   "book.steveparty.guide.stars_mula.gravity_core.page0.title": "Gravity Core",
   "book.steveparty.guide.stars_mula.gravity_core.page1.text": "Crying obsidian, 4 black star fragments and a heavy core.",
   "book.steveparty.guide.stars_mula.mula.description": "A little flying star",
