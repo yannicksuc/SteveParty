@@ -48,6 +48,7 @@
   "message.steveparty.tile_linker_brush.start": "Peinture depuis %s",
   "message.steveparty.tile_linker_brush.linked": "%s → %s relié",
   "message.steveparty.tile_linker_brush.erased": "%s → %s effacé",
+  "message.steveparty.tile_linker_brush.blob": "%s → %s relié (une case prévue pour une tuile)",
   "hud.steveparty.tile_linker_brush.panel": "Pinceau · niveau : %s",
   "hud.steveparty.tile_linker_brush.hint": "Clic droit maintenu sur les tuiles : relier · sur un lien : effacer · clic gauche : roue",
   "item.steveparty.tokenizer_wand": "Baguette de pions",

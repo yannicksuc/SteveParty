@@ -758,6 +758,82 @@ public class BoardLinkingGameTests implements FabricGameTest {
         });
     }
 
+    /** {@code ticks} ticks of the brush held in use, the look unchanged (as usageTick does each tick). */
+    private static void hold(ServerPlayerEntity player, ItemStack brush, TestContext context, int ticks) {
+        for (int i = 0; i < ticks; i++) TileLinkerBrush.use(player, brush, context.getWorld());
+    }
+
+    /**
+     * A blob: the stroke lingering on a spot without board space links the last tile to the cell above the painted
+     * block, or to the one above that when it is taken; not before the look has stayed there long enough. Undo takes
+     * the links back.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aBlobLinksTheLastTileToTheCellAboveIt(TestContext context) {
+        BlockPos t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1)).getFirst();
+        context.setBlockState(new BlockPos(4, 0, 4), Blocks.STONE);
+        context.setBlockState(new BlockPos(5, 1, 6), Blocks.STONE);
+        context.setBlockState(new BlockPos(5, 2, 6), Blocks.STONE);
+        BlockPos floorCell = context.getAbsolutePos(new BlockPos(4, 1, 4)), wallCell = context.getAbsolutePos(new BlockPos(5, 3, 6));
+        withPlayer(context, true, player -> {
+            ItemStack brush = brush(player);
+            TileLinkerBrush.paint(player, brush, context.getWorld(), t);
+            lookDownAt(player, floorCell);
+            hold(player, brush, context, fr.lordfinn.steveparty.board.BrushAim.BLOB_TICKS - 1);
+            context.assertEquals(links(context, t), List.of(), "not lingered long enough yet");
+            hold(player, brush, context, 1);
+            context.assertEquals(links(context, t), List.of(floorCell), "the empty cell above the floor is linked");
+            hold(player, brush, context, fr.lordfinn.steveparty.board.BrushAim.BLOB_TICKS * 2);
+            context.assertEquals(links(context, t), List.of(floorCell), "lingering on: neither a second blob nor its ghost erased");
+            // The side of a block with another one on it: the cell above that one
+            BlockPos wall = context.getAbsolutePos(new BlockPos(7, 0, 6));
+            player.refreshPositionAndAngles(wall.getX() + 0.5, wall.getY(), wall.getZ() + 0.5, 90, 0);
+            hold(player, brush, context, fr.lordfinn.steveparty.board.BrushAim.BLOB_TICKS);
+            context.assertEquals(links(context, t), List.of(floorCell, wallCell), "the cell above the taken one");
+            TileLinkerBrush.endStroke(player);
+            context.assertTrue(fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, brush), "undone");
+            context.assertEquals(links(context, t), List.of(floorCell), "the last blob undone");
+            context.assertTrue(fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, brush), "undone again");
+            context.assertEquals(links(context, t), List.of(), "both undone");
+            context.assertTrue(fr.lordfinn.steveparty.board.LinkHistory.undo(player, false, brush), "redone");
+            context.assertEquals(links(context, t), List.of(floorCell), "the first blob redone");
+        });
+    }
+
+    /**
+     * A link to a cell without board space is a ghost the brush aims at like a tile: a stroke from its tile onto it
+     * erases the link; undo brings it back.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aStrokeOntoAGhostErasesItsLink(TestContext context) {
+        BlockPos t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1)).getFirst();
+        context.setBlockState(new BlockPos(4, 0, 4), Blocks.STONE);
+        BlockPos ghost = context.getAbsolutePos(new BlockPos(4, 1, 4));
+        link(context, t, ghost);
+        withPlayer(context, true, player -> {
+            ServerWorld world = context.getWorld();
+            ItemStack brush = brush(player);
+            lookDownAt(player, ghost);
+            context.assertEquals(fr.lordfinn.steveparty.board.BrushAim.ghosts(player, world, TileLinkerBrush.level(brush)).get(ghost),
+                    List.of(t), "the dangling link is a ghost");
+            context.assertTrue(fr.lordfinn.steveparty.board.BrushAim.aimed(player, world, 1f) == null, "not a board space");
+            context.assertEquals(fr.lordfinn.steveparty.board.BrushAim.aimed(player, world, 1f, java.util.Set.of(ghost)), ghost,
+                    "but the brush aims at its ghost");
+            TileLinkerBrush.paint(player, brush, world, t);
+            hold(player, brush, context, 1);
+            context.assertEquals(links(context, t), List.of(), "the stroke onto the ghost erases the link");
+            hold(player, brush, context, fr.lordfinn.steveparty.board.BrushAim.BLOB_TICKS);
+            context.assertEquals(links(context, t), List.of(), "lingering there: no blob links it back in the same stroke");
+            TileLinkerBrush.endStroke(player);
+            context.assertTrue(fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, brush), "the erase undone");
+            context.assertEquals(links(context, t), List.of(ghost), "the link is back");
+            // A link to a board space is no ghost
+            BoardSpaceBlockEntity space = boardSpace(context, t);
+            BoardLinks.setLinks(world, space, 0, List.of(t));
+            context.assertTrue(!fr.lordfinn.steveparty.board.BrushAim.ghosts(player, world, TileLinkerBrush.level(brush)).containsKey(ghost), "no ghost");
+        });
+    }
+
     /** The Stencil Hammer's wheel: loaded stencils and dyes only, Engrave, its inventory. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theHammerWheelPicksStencilAndColour(TestContext context) {
