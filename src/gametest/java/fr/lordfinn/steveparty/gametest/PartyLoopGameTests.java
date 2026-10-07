@@ -64,7 +64,9 @@ public class PartyLoopGameTests implements FabricGameTest {
     }
 
     /** A bell pulses at its moment, and its comparator gives the value of the moment (rank of the token). */
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    // Each bell test in a batch of its own: a bell listens to the closest running controller within 64 blocks, so a
+    // waiting bell of another test whose controller is already gone would pause this test's party
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_bell_pulse")
     public void bellPulsesAtItsMoment(TestContext context) {
         BlockPos pos = new BlockPos(2, 1, 2);
         PartyControllerEntity controller = placeController(context, pos);
@@ -88,7 +90,7 @@ public class PartyLoopGameTests implements FabricGameTest {
     }
 
     /** A waiting bell pauses the party at its moment until it receives a redstone signal. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "party_bell_waiting")
     public void waitingBellPausesUntilSignal(TestContext context) {
         BlockPos pos = new BlockPos(2, 1, 2);
         PartyControllerEntity controller = placeController(context, pos);
@@ -118,7 +120,7 @@ public class PartyLoopGameTests implements FabricGameTest {
     }
 
     /** A waiting bell that is broken does not block the party. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "party_bell_broken")
     public void brokenWaitingBellReleasesTheParty(TestContext context) {
         BlockPos pos = new BlockPos(2, 1, 2);
         PartyControllerEntity controller = placeController(context, pos);
