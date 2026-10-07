@@ -118,6 +118,13 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
         return TypedActionResult.success(player.getStackInHand(hand), world.isClient());
     }
 
+    /** Clicked on another cartridge or a tile item: their destinations swap too (see DestinationSwap). */
+    @Override
+    public boolean onStackClicked(ItemStack stack, net.minecraft.screen.slot.Slot slot, net.minecraft.util.ClickType clickType, PlayerEntity player) {
+        return fr.lordfinn.steveparty.board.DestinationSwap.onCartridgeClicked(stack, slot, clickType, player)
+                || super.onStackClicked(stack, slot, clickType, player);
+    }
+
     private static final int LINE_WIDTH = 46;
     /** The colour of the « Configurable » tag of the tooltip. */
     private static final int CONFIGURABLE_COLOR = 0xFCB017;
