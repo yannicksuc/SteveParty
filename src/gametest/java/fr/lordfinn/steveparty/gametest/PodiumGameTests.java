@@ -661,10 +661,10 @@ public class PodiumGameTests implements FabricGameTest {
             jump(j1, 9);
             context.assertEquals(base.getTotal(), 18L, "18 jumps counted");
             context.assertTrue(occupant(context, first) == null && pole.getReached().isEmpty(), "18 jumps in all, but nobody has 10 of his own");
-            context.assertEquals(pole.getRedstoneOutput(), 0, "no signal");
+            context.assertEquals(pole.getRedstoneOutput(), 13, "a comparator on the pole reads the best progress: 9 of 10");
             jump(j2, 1);
             context.assertEquals(occupant(context, first), j2.getUuid(), "the first to reach 10 jumps is 1st");
-            context.assertEquals(pole.getRedstoneOutput(), 15, "the pole fires: a comparator pulse");
+            context.assertEquals(pole.getRedstoneOutput(), 15, "reached: 15 on the pole's comparator");
             jump(j2, 5);
             context.assertTrue(occupant(context, second) == null, "a player already placed is not placed again");
             jump(j1, 1);
@@ -688,22 +688,16 @@ public class PodiumGameTests implements FabricGameTest {
             remove(context, j1, j2, j3);
             throw e;
         }
-        context.waitAndRun(GoalPoleBlockEntity.PLAYER_GOAL_PULSE_TICKS + 2, () -> {
-            try {
-                context.assertEquals(((GoalPoleBlockEntity) context.getBlockEntity(BASE.up())).getRedstoneOutput(), 0, "the pulse is over");
-            } finally {
-                context.setBlockState(BASE, Blocks.AIR);
-                remove(context, j1, j2, j3);
-            }
-            context.complete();
-        });
+        context.setBlockState(BASE, Blocks.AIR);
+        remove(context, j1, j2, j3);
+        context.complete();
     }
 
     // ------------------------------------------------------------------ resets
 
     /**
      * The reset of a group empties its columns and puts its goal pole bases back to 0: with the Wrench (sneak + right
-     * click), with the command, with the « reset » redstone mode of the base. The coins are not touched.
+     * click), with the command, with a signal of 15 into the base. The coins are not touched.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void resetsEmptyThePodiumsAndTheirCounters(TestContext context) {
@@ -743,15 +737,14 @@ public class PodiumGameTests implements FabricGameTest {
             context.assertEquals(columns, 2, "the command resets the nearest group");
             assertReset.run();
 
-            // The base's redstone mode: a pulse at its back resets it, and the podiums with it
+            // A signal of 15 into the base resets it, and the podiums with it; it counts again once the signal is gone
             fill.run();
-            base.setRedstoneMode(GoalPoleBaseBlockEntity.RedstoneMode.RESET_WHEN_POWERED);
-            context.assertTrue(base.isActive(), "it always counts");
             context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
             assertReset.run();
-            context.assertTrue(base.isActive() && base.credit("ghost", 1, null), "it still counts while powered");
+            context.assertTrue(!base.isActive() && !base.credit("ghost", 1, null), "paused while powered");
             context.setBlockState(BASE.south(), Blocks.AIR);
-            context.assertEquals(base.getTotal(), 1L, "the falling edge resets nothing");
+            context.assertTrue(base.isActive() && base.credit("ghost", 1, null), "counts again without the signal");
+            context.assertEquals(base.getTotal(), 1L, "the signal going away resets nothing");
 
             context.assertEquals(player.getInventory().count(Items.EMERALD), 7, "resetting never touches the coins");
             context.setBlockState(BASE, Blocks.AIR);

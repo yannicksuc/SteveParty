@@ -1,13 +1,12 @@
 package fr.lordfinn.steveparty.client.screens;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.OutputMode;
+
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Players;
-import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.RedstoneMode;
+
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Source;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleSearch;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
@@ -52,9 +51,8 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  * <li>Left, <b>points</b>: where they come from (landings on this base's poles, or a scoreboard criterion with
  * presets), and which players count, in plain words (the party's players, everyone, the players nearby) or with
  * an advanced selector (checked while typing, with what it means underneath).</li>
- * <li>Right, <b>redstone</b>: what the back port does (pause / run / nothing), what a comparator reads (a pulse per
- * point, or the progress), a button to reset now, and a reminder of the redstone (a pulse on any other side
- * resets).</li>
+ * <li>Right, <b>redstone</b>: a button to reset now, and a reminder of the redstone (a signal of 1-14 pauses, 15
+ * also resets; a comparator reads a pulse per point on the base, the progress on the pole).</li>
  * </ul>
  * The current total and whether the base counts are shown at the bottom. Enter validates, Escape cancels.
  */
@@ -68,13 +66,12 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private static final int PRESET_SIZE = 18;
     private static final int BUTTONS_Y = HEIGHT - 30;
     /** The redstone reminder, under the reset button. */
-    private static final int LEGEND_TOP = TOP + 3 * ROW + 1;
+    private static final int LEGEND_TOP = TOP + ROW + 1;
     private static final ItemStack BASE_ICON = new ItemStack(ModBlocks.GOAL_POLE_BASE);
-    /** The back plug as it looks on the back of the base (lit), for the first legend row. */
-    private static final net.minecraft.util.Identifier PLUG_ICON = fr.lordfinn.steveparty.Steveparty.id("textures/block/goal_pole_base_plug_on.png");
-    /** The other legend rows: redstone for the reset (a pulse on any other side), a comparator for the output. */
-    private static final ItemStack[] LEGEND_ITEMS = {ItemStack.EMPTY, new ItemStack(Items.REDSTONE), new ItemStack(Items.COMPARATOR)};
-    private static final String[] LEGEND_KEYS = {"legend.power", "legend.reset", "legend.pulse"};
+    /** The legend rows: a weak signal (pause), a full one (pause and reset), the comparators on the base and on the pole. */
+    private static final ItemStack[] LEGEND_ITEMS = {new ItemStack(Items.REDSTONE), new ItemStack(Items.REDSTONE_BLOCK),
+            new ItemStack(Items.COMPARATOR), new ItemStack(ModBlocks.GOAL_POLE)};
+    private static final String[] LEGEND_KEYS = {"legend.pause", "legend.reset", "legend.pulse", "legend.progress"};
 
     /**
      * The common goals (offered when nothing is typed, and cycled by the presets button): value, icon, key of its
@@ -109,8 +106,6 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private final boolean partyNear;
     /** Whether the base is linked to a mini-game page: « the party » is then the one playing that page's mini-game. */
     private final boolean pageLinked;
-    private RedstoneMode redstoneMode;
-    private OutputMode outputMode;
     private boolean resetRequested;
 
     private TextFieldWidget selectorField;
@@ -148,8 +143,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         this.players = GoalPoleBaseBlockEntity.readEnum(settings, "Players", Players.values(), Players.ALL);
         this.partyNear = settings.getBoolean("PartyNear");
         this.pageLinked = settings.getBoolean("PageLinked");
-        this.redstoneMode = RedstoneMode.read(settings, "RedstoneMode", RedstoneMode.PAUSE_WHEN_POWERED);
-        this.outputMode = GoalPoleBaseBlockEntity.readEnum(settings, "OutputMode", OutputMode.values(), OutputMode.PULSE);
+
         for (net.minecraft.nbt.NbtElement element : settings.getList("Objectives", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) {
             NbtCompound objective = (NbtCompound) element;
             objectives.add(new String[]{objective.getString("Name"), objective.getString("Criterion"), objective.getString("Display")});
@@ -279,9 +273,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
 
         // ---- Right: redstone
         int rx = x + RIGHT_X;
-        addDrawableChild(cycle(rx, y + TOP, COLUMN, "redstone_mode", RedstoneMode.values(), () -> redstoneMode, v -> redstoneMode = v));
-        addDrawableChild(cycle(rx, y + TOP + ROW, COLUMN, "output_mode", OutputMode.values(), () -> outputMode, v -> outputMode = v));
-        PartyButton resetButton = addDrawableChild(new PartyButton(rx, y + TOP + 2 * ROW, COLUMN, FIELD_HEIGHT,
+        PartyButton resetButton = addDrawableChild(new PartyButton(rx, y + TOP, COLUMN, FIELD_HEIGHT,
                 Text.translatable(KEY + "reset_now"), b -> {
                     resetRequested = !resetRequested;
                     b.setSelected(resetRequested);
@@ -593,8 +585,6 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         settings.putString("Selector", selectorField.getText());
         settings.putString("Players", players.name());
         if (players == Players.RADIUS) settings.putInt("Radius", Integer.parseInt(radiusField.getText()));
-        settings.putString("RedstoneMode", redstoneMode.name());
-        settings.putString("OutputMode", outputMode.name());
         settings.putBoolean("Reset", resetRequested);
         ClientPlayNetworking.send(new GoalPoleBasePayload(handler.getPos(), settings));
         close();
@@ -633,21 +623,15 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             if (legendRowAt(mouseX, mouseY) == i) {
                 context.fill(x + RIGHT_X, rowY - 1, x + RIGHT_X + COLUMN, rowY + 13, 0x40FFFFFF);
             }
-            // Each icon framed like a slot: the plug at twice its pixel size, the items scaled down
+            // Each icon framed like a slot, the items scaled down
             int iconX = x + RIGHT_X + 1, iconY = rowY + 1;
             context.fill(iconX - 1, iconY - 1, iconX + 13, iconY + 11, 0xFF3A3A3A);
-            if (LEGEND_ITEMS[i].isEmpty()) {
-                RenderSystem.enableBlend();
-                context.drawTexture(PLUG_ICON, iconX + 2, iconY + 2, 8, 6, 4, 6, 4, 3, 16, 16);
-                RenderSystem.disableBlend();
-            } else {
-                var matrices = context.getMatrices();
-                matrices.push();
-                matrices.translate(iconX, iconY - 1, 0);
-                matrices.scale(0.75f, 0.75f, 1f);
-                context.drawItem(LEGEND_ITEMS[i], 0, 0);
-                matrices.pop();
-            }
+            var matrices = context.getMatrices();
+            matrices.push();
+            matrices.translate(iconX, iconY - 1, 0);
+            matrices.scale(0.75f, 0.75f, 1f);
+            context.drawItem(LEGEND_ITEMS[i], 0, 0);
+            matrices.pop();
             String line = fit(textRenderer, Text.translatable(KEY + LEGEND_KEYS[i]).getString(), COLUMN - 16, false);
             context.drawText(textRenderer, line, x + RIGHT_X + 16, rowY + 3, PartyGui.TEXT_DARK, false);
         }

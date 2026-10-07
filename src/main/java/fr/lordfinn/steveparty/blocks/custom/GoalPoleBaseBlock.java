@@ -50,8 +50,8 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
     public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
         BlockState state = this.getDefaultState()
                 .with(FACING, ctx.getHorizontalPlayerFacing().getOpposite());
-        // Placed against an already powered back: counting from the start (neighbor updates only see later changes)
-        return state.with(POWERED, isReceivingPowerFromSouth(ctx.getWorld(), ctx.getBlockPos(), state));
+        // Placed against a signal: paused from the start (neighbor updates only see later changes)
+        return state.with(POWERED, ctx.getWorld().getReceivedRedstonePower(ctx.getBlockPos()) > 0);
     }
 
     /** Placed by a player: the base follows the party's players when a party controller is near, else everyone. */
@@ -129,37 +129,10 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
             return;
         }
 
-        // Back port: pauses or runs the base, depending on its redstone mode
-        boolean isPowered = isReceivingPowerFromSouth(world, pos, state);
-        if (state.get(POWERED) != isPowered) {
-            world.setBlockState(pos, state.with(POWERED, isPowered), 3);
-            goalPoleBaseBlockEntity.onBackPowerChanged();
-            return;
-        }
-
-        // Reset: a pulse on any side but the back puts the points back to 0.
-        // Only on the rising edge, not on every neighbor update while it stays powered.
-        Direction back = state.get(FACING).getOpposite();
-        boolean resetPowered = false;
-        for (Direction dir : Direction.values()) {
-            if (dir == back) continue;
-            // Same convention as World#getReceivedRedstonePower: (neighbor pos, direction towards the neighbor)
-            if (world.getEmittedRedstonePower(pos.offset(dir), dir) > 0) {
-                resetPowered = true;
-                break;
-            }
-        }
-        if (goalPoleBaseBlockEntity.updateResetSidePower(resetPowered)) {
-            goalPoleBaseBlockEntity.reset();
-        }
-    }
-
-    private boolean isReceivingPowerFromSouth(World world, BlockPos pos, BlockState state) {
-        Direction facing = state.get(FACING);
-        Direction southRelative = facing.rotateYClockwise().rotateYClockwise();
-        BlockPos checkPos = pos.offset(southRelative);
-        // Same convention as World#getReceivedRedstonePower (repeaters/comparators are directional)
-        return world.getEmittedRedstonePower(checkPos, southRelative) > 0;
+        // A signal from any side: 1 to 14 pauses the base, 15 pauses it and puts the points back to 0
+        int power = world.getReceivedRedstonePower(pos);
+        if (state.get(POWERED) != power > 0) world.setBlockState(pos, state.with(POWERED, power > 0), 3);
+        goalPoleBaseBlockEntity.onInputPower(power);
     }
 
     public static VoxelShape makeShape() {

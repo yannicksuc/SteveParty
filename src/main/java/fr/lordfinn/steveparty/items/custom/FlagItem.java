@@ -102,8 +102,10 @@ public class FlagItem extends Item {
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
         int color = getColor(stack);
-        if (color == NO_COLOR) return;
-        tooltip.add(Text.translatable("tooltip.steveparty.flag.color", colorName(color).copy().withColor(color))
-                .formatted(Formatting.GRAY));
+        if (color != NO_COLOR) {
+            tooltip.add(Text.translatable("tooltip.steveparty.flag.color", colorName(color).copy().withColor(color))
+                    .formatted(Formatting.GRAY));
+        }
+        tooltip.add(Text.translatable("tooltip.steveparty.flag.use").formatted(Formatting.GRAY));
     }
 }

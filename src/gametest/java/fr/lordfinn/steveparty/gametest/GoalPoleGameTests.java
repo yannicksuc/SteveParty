@@ -23,6 +23,8 @@ import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.util.DyeColor;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
+import net.minecraft.block.ComparatorBlock;
+import net.minecraft.block.ComposterBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.ItemEntity;
@@ -417,45 +419,54 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** A new base counts as soon as it is placed; a signal at its back pauses it (points and objective kept). */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void newBaseCountsAndPausesWhenPowered(TestContext context) {
+    /**
+     * A signal of 1 to 14 into the base pauses it, its points kept; 15 pauses it and puts the points back to 0; no
+     * signal any more: it counts again. Here a comparator reading a composter (level 4) gives 4, a redstone block 15.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aSignalPausesTheBaseAndAFullOneResetsIt(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
-        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.PAUSE_WHEN_POWERED, "new base: the signal pauses");
         context.assertTrue(base.isActive(), "counts when placed");
         context.assertTrue(base.credit("Alex", 2, null), "point counted");
-        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
-        context.assertTrue(!base.isActive(), "paused by the signal at the back");
-        context.assertTrue(!base.credit("Alex", 5, null), "nothing counted while paused");
-        context.assertTrue(base.getTotal() == 2, "points kept, got " + base.getTotal());
-        context.assertTrue(objective(context) != null && mirrorScore(context, "Alex") == 2, "objective kept while paused");
-        context.setBlockState(BASE.south(), Blocks.AIR);
-        context.assertTrue(base.credit("Alex", 1, null) && base.getTotal() == 3, "counts again");
-        removeBase(context);
-        context.assertTrue(objective(context) == null, "objective removed with the base");
-        context.complete();
+        // The comparator first: the composter put behind it then wakes it up
+        context.setBlockState(BASE.south().down(), Blocks.STONE);
+        context.setBlockState(BASE.south(), Blocks.COMPARATOR.getDefaultState().with(ComparatorBlock.FACING, Direction.SOUTH));
+        context.setBlockState(BASE.south(2), Blocks.COMPOSTER.getDefaultState().with(ComposterBlock.LEVEL, 4));
+        context.waitAndRun(4, () -> {
+            context.assertTrue(base.getInputPower() == 4 && !base.isActive(), "signal 4: paused, got " + base.getInputPower());
+            context.assertTrue(!base.credit("Alex", 5, null), "nothing counted while paused");
+            context.assertTrue(base.getTotal() == 2 && mirrorScore(context, "Alex") == 2, "1-14: points kept, got " + base.getTotal());
+            // A full signal, here on another side: paused, and back to 0
+            context.setBlockState(BASE.east(), Blocks.REDSTONE_BLOCK);
+            context.assertTrue(base.getInputPower() == 15 && !base.isActive(), "signal 15: paused");
+            context.assertTrue(base.getTotal() == 0 && mirrorScore(context, "Alex") == 0, "signal 15: points back to 0");
+            context.assertTrue(!base.credit("Alex", 1, null), "nothing counted at 15");
+            context.setBlockState(BASE.east(), Blocks.AIR);
+            context.assertTrue(base.getInputPower() == 4 && !base.isActive() && base.getTotal() == 0, "back to 4: still paused");
+            context.setBlockState(BASE.south(), Blocks.AIR);
+            context.assertTrue(base.getInputPower() == 0 && base.isActive(), "no signal: counts again");
+            context.assertTrue(base.credit("Alex", 1, null) && base.getTotal() == 1, "counted again");
+            context.assertTrue(objective(context) != null, "objective kept");
+            removeBase(context);
+            context.assertTrue(objective(context) == null, "objective removed with the base");
+            context.complete();
+        });
     }
 
-    /** Ignore counts always; a base saved with the removed run-when-powered mode now pauses when powered. */
+    /** A full signal resets the points whatever the side; the screen's old redstone settings are not saved any more. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void redstoneModesDecideWhenTheBaseCounts(TestContext context) {
+    public void aFullSignalOnAnySideResets(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
-        base.setRedstoneMode(GoalPoleBaseBlockEntity.RedstoneMode.IGNORE);
-        context.assertTrue(base.isActive(), "ignore: counts without a signal");
-        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
-        context.assertTrue(base.isActive(), "ignore: counts with a signal");
+        for (Direction side : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+            base.credit("Alex", 3, null);
+            context.assertTrue(base.getTotal() == 3, "points before the signal");
+            context.setBlockState(BASE.offset(side), Blocks.REDSTONE_BLOCK);
+            context.assertTrue(base.getTotal() == 0 && !base.isActive(), "a full signal from the " + side + ": reset and paused");
+            context.setBlockState(BASE.offset(side), Blocks.AIR);
+            context.assertTrue(base.isActive() && base.getTotal() == 0, "resumes at 0");
+        }
         var saved = base.createNbt(context.getWorld().getRegistryManager());
-        saved.putString("RedstoneMode", "RUN_WHEN_POWERED");
-        base.read(saved, context.getWorld().getRegistryManager());
-        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.PAUSE_WHEN_POWERED, "run-when-powered is migrated to pause");
-        context.assertTrue(!base.isActive(), "migrated: paused by the signal");
-        net.minecraft.nbt.NbtCompound settings = new net.minecraft.nbt.NbtCompound();
-        settings.putString("RedstoneMode", "IGNORE");
-        base.applySettings(settings);
-        settings.putString("RedstoneMode", "RUN_WHEN_POWERED");
-        base.applySettings(settings);
-        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.PAUSE_WHEN_POWERED, "screen settings: run-when-powered becomes pause");
-        context.setBlockState(BASE.south(), Blocks.AIR);
+        context.assertTrue(!saved.contains("RedstoneMode") && !saved.contains("OutputMode"), "no redstone mode saved");
         removeBase(context);
         context.complete();
     }
@@ -491,54 +502,38 @@ public class GoalPoleGameTests implements FabricGameTest {
         low.update(GoalPoleBlockEntity.Comparator.EQUAL, 3);
         high.update(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2);
         base.credit("Alex", 2, null);
-        context.assertTrue(low.getRedstoneOutput() == 0 && high.getRedstoneOutput() == 15, "2 points: only >= 2 is on");
+        context.assertTrue(low.getRedstoneOutput() == 10 && high.getRedstoneOutput() == 15,
+                "2 points: 2 of 3 (10), >= 2 reached (15), got " + low.getRedstoneOutput() + ", " + high.getRedstoneOutput());
         base.credit("Alex", 1, null);
-        context.assertTrue(low.getRedstoneOutput() == 15 && low.isGoalMet(), "3 points: = 3 is on");
+        context.assertTrue(low.getRedstoneOutput() == 15 && low.isGoalMet(), "3 points: = 3 is reached");
         context.assertTrue(low.getTotal() == 3 && high.getTotal() == 3, "poles know the total");
         base.credit("Alex", 1, null);
-        context.assertTrue(low.getRedstoneOutput() == 0 && high.getRedstoneOutput() == 15, "4 points: = 3 is off again");
+        context.assertTrue(low.getRedstoneOutput() == 14 && !low.isGoalMet() && high.getRedstoneOutput() == 15,
+                "4 points: = 3 is no longer reached, so never 15, got " + low.getRedstoneOutput());
         removeBase(context);
         context.assertTrue(poleEntity(context, BASE.up()).getRedstoneOutput() == 0, "no base: no signal");
         context.complete();
     }
 
-    /** Reset: a pulse on any side but the back puts the points back to 0; a signal at the back never does. */
+    /** A full signal that stays resets once: a neighbour changing meanwhile resets nothing more (the mirror included). */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void pulseOnASideResetsThePoints(TestContext context) {
+    public void aSteadyFullSignalResetsOnce(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
-        base.credit("Alex", 2, null);
         base.credit("Sam", 3, null);
-        // Back (south, the base faces north): pauses the base, the points stay, even on later neighbor updates
-        BlockPos back = BASE.offset(Direction.SOUTH);
-        context.setBlockState(back, Blocks.REDSTONE_BLOCK);
-        context.assertTrue(context.getBlockState(BASE).get(GoalPoleBaseBlock.POWERED), "the back signal reaches the base");
-        context.setBlockState(BASE.offset(Direction.WEST), Blocks.STONE);
-        context.assertTrue(base.getTotal() == 5, "a signal at the back does not reset, got " + base.getTotal());
-        context.setBlockState(BASE.offset(Direction.WEST), Blocks.AIR);
-        context.setBlockState(back, Blocks.AIR);
-        context.assertTrue(base.getTotal() == 5, "nor does its end");
-        // Every other side resets: left, right, front
-        for (Direction side : new Direction[]{Direction.EAST, Direction.WEST, Direction.NORTH}) {
-            base.credit("Alex", 1, null);
-            context.assertTrue(base.getTotal() > 0, "points before the pulse");
-            BlockPos pos = BASE.offset(side);
-            context.setBlockState(pos, Blocks.REDSTONE_BLOCK);
-            context.assertTrue(base.getTotal() == 0 && mirrorScore(context, "Sam") == 0, "a pulse on the " + side + " side resets everything");
-            context.setBlockState(pos, Blocks.AIR);
-        }
-        // Only the rising edge: a signal that stays does not reset the points scored after it
-        BlockPos east = BASE.offset(Direction.EAST);
-        context.setBlockState(east, Blocks.REDSTONE_BLOCK);
-        base.credit("Alex", 2, null);
-        context.setBlockState(BASE.offset(Direction.WEST), Blocks.STONE);
-        context.assertTrue(base.getTotal() == 2, "a steady signal resets once, got " + base.getTotal());
-        context.setBlockState(BASE.offset(Direction.WEST), Blocks.AIR);
-        context.setBlockState(east, Blocks.AIR);
+        context.setBlockState(BASE.east(), Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.getTotal() == 0 && mirrorScore(context, "Sam") == 0, "reset");
+        // Points set by a command while paused stay, even when a neighbour changes
+        var scoreboard = context.getWorld().getScoreboard();
+        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Sam"), objective(context)).setScore(4);
+        context.setBlockState(BASE.west(), Blocks.STONE);
+        context.assertTrue(base.getTotal() == 4, "a steady signal resets once, got " + base.getTotal());
+        context.setBlockState(BASE.west(), Blocks.AIR);
+        context.setBlockState(BASE.east(), Blocks.AIR);
         removeBase(context);
         context.complete();
     }
 
-    /** A base saved with the removed "ResetPort" setting loads fine and resets on any side but the back. */
+    /** A base saved with the removed "ResetPort" setting loads fine, and a full signal on any side resets it. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void oldResetPortSettingIsIgnored(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
@@ -638,8 +633,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         GoalPoleBaseBlockEntity base = baseEntity(context);
         base.read(legacy, context.getWorld().getRegistryManager());
         GoalPoleNetwork.processPending();
-        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.PAUSE_WHEN_POWERED, "the signal now pauses");
-        context.assertTrue(!base.isActive(), "powered at the back: paused");
+        context.assertTrue(!base.isActive(), "powered: paused");
         context.assertTrue(base.getSource() == GoalPoleBaseBlockEntity.Source.CRITERION && base.getCriterion().equals("deathCount"), "same criterion");
         context.assertTrue(base.getSelector().equals("@a") && base.getPlayers() == GoalPoleBaseBlockEntity.Players.SELECTOR,
                 "same selector, as the advanced choice");
@@ -669,7 +663,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** A base placed with its back against a powered block starts powered (it used to wait for a neighbor change). */
+    /** A base placed against a powered block starts powered, so paused (it used to wait for a neighbor change). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void baseStartsPoweredWhenPlacedAgainstPower(TestContext context) {
         PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
@@ -724,11 +718,11 @@ public class GoalPoleGameTests implements FabricGameTest {
             context.assertTrue(base.getPoints(name) == 7, "+2 from the new low, got " + base.getPoints(name));
             context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
             scoreboard.getOrCreateScore(player, src).setScore(10);
-            context.assertTrue(base.getPoints(name) == 7, "paused: not counted");
+            context.assertTrue(base.getPoints(name) == 0, "a full signal: back to 0 and paused, not counted");
             context.setBlockState(BASE.south(), Blocks.AIR);
             base.setSelector("SomeoneElse");
             scoreboard.getOrCreateScore(player, src).setScore(11);
-            context.assertTrue(base.getPoints(name) == 7, "a player the base does not follow does not count");
+            context.assertTrue(base.getPoints(name) == 0, "a player the base does not follow does not count");
 
             context.setBlockState(BASE.up(), pole(true, true));
             GoalPoleNetwork.processPending();
@@ -785,7 +779,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             // Paused: nothing counted
             context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
             GoalPoleNetwork.onLanding(poleA, player);
-            context.assertTrue(a.getPoints(name) == 2, "paused: not counted");
+            context.assertTrue(a.getPoints(name) == 0, "a full signal: back to 0 and paused, not counted");
         } finally {
             context.getWorld().getServer().getPlayerManager().remove(player);
             context.setBlockState(otherBase, Blocks.AIR);
@@ -794,23 +788,34 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** The base's comparator: a pulse per point by default, or the progress towards the pole's goal (0 to 15). */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void baseComparatorGivesPulsesOrProgress(TestContext context) {
+    /**
+     * A comparator on the base gets a pulse per point; one against any segment of the pole reads the progress towards
+     * the goal, 0 to 15, 15 only once it is reached.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void basePulsesPerPointAndThePoleGivesTheProgress(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
-        context.setBlockState(BASE.up(), pole(true, true));
+        context.setBlockState(BASE.up(), pole(true, false));
+        context.setBlockState(BASE.up(2), pole(false, true).with(GoalPoleBlock.FLAG, true));
         GoalPoleNetwork.processPending();
-        poleEntity(context, BASE.up()).update(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 4);
+        poleEntity(context, BASE.up()).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 4, false);
+        ServerWorld world = context.getWorld();
+        BlockPos low = context.getAbsolutePos(BASE.up()), high = context.getAbsolutePos(BASE.up(2)), abs = context.getAbsolutePos(BASE);
+        java.util.function.IntPredicate both = level -> world.getBlockState(low).getComparatorOutput(world, low) == level
+                && world.getBlockState(high).getComparatorOutput(world, high) == level;
+        context.assertTrue(both.test(0), "nothing yet: 0 on every segment");
         base.credit("Alex", 1, null);
-        context.assertTrue(base.getComparatorOutput() == 15, "pulse mode: 15 right after a point");
-        base.setOutputMode(GoalPoleBaseBlockEntity.OutputMode.PROGRESS);
-        context.assertTrue(base.getComparatorOutput() == 3, "1 of 4: 15 * 1 / 4 = 3, got " + base.getComparatorOutput());
-        base.credit("Alex", 1, null);
-        context.assertTrue(base.getComparatorOutput() == 7, "2 of 4: 7, got " + base.getComparatorOutput());
+        context.assertTrue(world.getBlockState(abs).getComparatorOutput(world, abs) == 15, "a pulse right after a point");
+        context.assertTrue(both.test(3), "1 of 4: 15 * 1 / 4 = 3 on every segment");
         base.credit("Alex", 2, null);
-        context.assertTrue(base.getComparatorOutput() == 15, "goal met: 15");
-        removeBase(context);
-        context.complete();
+        context.assertTrue(both.test(11), "3 of 4: 11, not 15 yet");
+        context.waitAndRun(4, () -> {
+            context.assertTrue(world.getBlockState(abs).getComparatorOutput(world, abs) == 0, "the pulse is over");
+            base.credit("Alex", 1, null);
+            context.assertTrue(both.test(15) && poleEntity(context, BASE.up(2)).isGoalMet(), "goal reached: 15");
+            removeBase(context);
+            context.complete();
+        });
     }
 
     /** A new pole's goal is "at least 1": not reached before the first point. */
@@ -914,31 +919,143 @@ public class GoalPoleGameTests implements FabricGameTest {
     }
 
     /**
-     * Flags of met goals rest at the bottom of the pole, stacked (11 pixels high, 1 apart), each on the flag below it
-     * wherever that one is; a flag never rests above its own place.
+     * Poles saved with several flags: one flag is kept, the highest, moved to the top with its colour and facing; the
+     * others drop as items (with their colour).
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void metFlagsRestStackedAtTheBottom(TestContext context) {
-        GoalPoleBaseBlockEntity base = placeBase(context, base());
-        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, true));
+    public void severalFlagsBecomeOneAtTheTop(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        // As loaded from the save: no neighbour update between the segments
+        for (int y = 1; y <= 3; y++) {
+            context.getWorld().setBlockState(context.getAbsolutePos(BASE.up(y)), pole(false, y == 3).with(GoalPoleBlock.FLAG, y < 3)
+                    .with(GoalPoleBlock.FACING, y == 2 ? Direction.EAST : Direction.NORTH), Block.NOTIFY_LISTENERS);
+            NbtCompound saved = new NbtCompound();
+            saved.putInt("Version", GoalPoleBlockEntity.VERSION);
+            if (y < 3) saved.putInt("FlagColor", FlagItem.dyeColor(y == 1 ? DyeColor.RED : DyeColor.BLUE));
+            poleEntity(context, BASE.up(y)).read(saved, registries);
+        }
         GoalPoleNetwork.processPending();
-        poleEntity(context, BASE.up()).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 1, true);
-        poleEntity(context, BASE.up(2)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2, true);
-        poleEntity(context, BASE.up(3)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 3, true);
-        base.credit("Alex", 3, null);
-        BlockPos.Mutable scratch = new BlockPos.Mutable();
+        BlockState top = context.getBlockState(BASE.up(3));
+        context.assertTrue(top.get(GoalPoleBlock.FLAG) && top.get(GoalPoleBlock.FACING) == Direction.EAST, "the highest flag is now at the top, same facing");
+        context.assertTrue(poleEntity(context, BASE.up(3)).getFlagColor() == FlagItem.dyeColor(DyeColor.BLUE), "with its colour");
+        context.assertTrue(!context.getBlockState(BASE.up()).get(GoalPoleBlock.FLAG) && !context.getBlockState(BASE.up(2)).get(GoalPoleBlock.FLAG),
+                "no flag lower down");
+        context.waitAndRun(1, () -> {
+            List<ItemEntity> flags = context.getWorld().getEntitiesByClass(ItemEntity.class,
+                    new Box(context.getAbsolutePos(BASE.up(2))).expand(3), e -> e.getStack().isOf(ModItems.FLAG));
+            context.assertTrue(flags.size() == 1 && FlagItem.getColor(flags.getFirst().getStack()) == FlagItem.dyeColor(DyeColor.RED),
+                    "the other flag dropped, red, got " + flags.size());
+            context.complete();
+        });
+    }
+
+    /**
+     * A segment put on a flagged top takes the flag up (colour and facing); joining two flagged poles keeps the
+     * higher flag, the lower one drops.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theFlagStaysAtTheTop(TestContext context) {
+        context.setBlockState(BASE.up(), pole(false, true).with(GoalPoleBlock.FLAG, true).with(GoalPoleBlock.FACING, Direction.WEST));
+        poleEntity(context, BASE.up()).setFlagColor(FlagItem.dyeColor(DyeColor.LIME));
+        context.setBlockState(BASE.up(2), pole(false, true));
+        BlockState top = context.getBlockState(BASE.up(2));
+        context.assertTrue(top.get(GoalPoleBlock.FLAG) && top.get(GoalPoleBlock.FACING) == Direction.WEST, "the flag went up");
+        context.assertTrue(poleEntity(context, BASE.up(2)).getFlagColor() == FlagItem.dyeColor(DyeColor.LIME), "with its colour");
+        context.assertTrue(!context.getBlockState(BASE.up()).get(GoalPoleBlock.FLAG)
+                && poleEntity(context, BASE.up()).getFlagColor() == FlagItem.NO_COLOR, "nothing left below");
+        // Another flagged pole above a gap, then the gap filled: one pole, the higher flag kept
+        context.setBlockState(BASE.up(4), pole(false, true).with(GoalPoleBlock.FLAG, true));
+        context.setBlockState(BASE.up(3), pole(false, false));
+        context.assertTrue(context.getBlockState(BASE.up(4)).get(GoalPoleBlock.FLAG), "the top keeps its flag");
+        for (int y = 1; y <= 3; y++) context.assertTrue(!context.getBlockState(BASE.up(y)).get(GoalPoleBlock.FLAG), "one flag only, segment " + y);
+        context.waitAndRun(1, () -> {
+            List<ItemEntity> flags = context.getWorld().getEntitiesByClass(ItemEntity.class,
+                    new Box(context.getAbsolutePos(BASE.up(2))).expand(3), e -> e.getStack().isOf(ModItems.FLAG));
+            context.assertTrue(flags.size() == 1 && FlagItem.getColor(flags.getFirst().getStack()) == FlagItem.dyeColor(DyeColor.LIME),
+                    "the lower flag dropped, got " + flags.size());
+            context.complete();
+        });
+    }
+
+    /**
+     * Any segment works on the pole's flag: dye colours it, shears take it off (it drops), a flag in hand hangs it back
+     * at the top.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void anySegmentDyesShearsAndHangsTheFlag(TestContext context) {
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(false, y == 3).with(GoalPoleBlock.FLAG, y == 3));
         ServerWorld world = context.getWorld();
-        float low = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up()), scratch);
-        float middle = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up(2)), scratch);
-        float high = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up(3)), scratch);
-        context.assertTrue(low == 0f && middle == -4f && high == -8f, "stacked: 0, -4, -8 pixels, got " + low + ", " + middle + ", " + high);
-        // Only the top flag down: it rests on the middle flag, which stays at its place
-        base.reset();
-        poleEntity(context, BASE.up(3)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 0, true);
-        context.assertTrue(poleEntity(context, BASE.up(3)).isGoalMet() && !poleEntity(context, BASE.up(2)).isGoalMet(), "only the top met");
-        high = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up(3)), scratch);
-        context.assertTrue(high == -4f, "on the middle flag at its place: -4, got " + high);
-        removeBase(context);
+        BlockPos low = context.getAbsolutePos(BASE.up());
+        BlockHitResult side = new BlockHitResult(Vec3d.ofCenter(low).add(0, 0, -0.1), Direction.NORTH, low, false);
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.ORANGE_DYE));
+        context.assertTrue(world.getBlockState(low).onUse(world, player, side).isAccepted(), "dye on the low segment");
+        context.assertTrue(poleEntity(context, BASE.up(3)).getFlagColor() == FlagItem.dyeColor(DyeColor.ORANGE), "the flag at the top is orange");
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SHEARS));
+        context.assertTrue(world.getBlockState(low).onUse(world, player, side).isAccepted(), "shears on the low segment");
+        context.assertTrue(!GoalPoleBlock.hasFlag(world, low), "the pole has no flag any more");
+        context.assertTrue(!world.getBlockState(low).onUse(world, player, side).isAccepted(), "no flag: the shears do nothing");
+        context.waitAndRun(1, () -> {
+            List<ItemEntity> flags = world.getEntitiesByClass(ItemEntity.class, new Box(context.getAbsolutePos(BASE.up(2))).expand(3),
+                    e -> e.getStack().isOf(ModItems.FLAG));
+            context.assertTrue(flags.size() == 1, "one flag dropped, got " + flags.size());
+            ItemStack flag = flags.getFirst().getStack().copy();
+            context.assertTrue(FlagItem.getColor(flag) == FlagItem.dyeColor(DyeColor.ORANGE), "orange");
+            flags.getFirst().discard();
+            player.setStackInHand(Hand.MAIN_HAND, flag);
+            context.assertTrue(world.getBlockState(low).onUse(world, player, side).isAccepted(), "the flag on the low segment");
+            context.assertTrue(context.getBlockState(BASE.up(3)).get(GoalPoleBlock.FLAG) && !context.getBlockState(BASE.up()).get(GoalPoleBlock.FLAG),
+                    "hung back at the top");
+            context.assertTrue(poleEntity(context, BASE.up(3)).getFlagColor() == FlagItem.dyeColor(DyeColor.ORANGE) && player.getMainHandStack().isEmpty(),
+                    "with its colour, the item used");
+            context.complete();
+        });
+    }
+
+    /**
+     * An empty hand on a side turns the flag towards it; on the side it already faces, on the top, sneaking, or on a
+     * pole without a flag: the goal. A Wrench always opens the goal; a player who may not build changes nothing.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void anEmptyHandTurnsTheFlagOrOpensTheGoal(TestContext context) {
+        context.setBlockState(BASE.up(), pole(false, false));
+        context.setBlockState(BASE.up(2), pole(false, true).with(GoalPoleBlock.FLAG, true).with(GoalPoleBlock.FACING, Direction.NORTH));
+        ServerWorld world = context.getWorld();
+        BlockPos low = context.getAbsolutePos(BASE.up()), top = context.getAbsolutePos(BASE.up(2));
+        BlockHitResult east = new BlockHitResult(Vec3d.ofCenter(low).add(0.1, 0, 0), Direction.EAST, low, false);
+        BlockHitResult up = new BlockHitResult(Vec3d.ofCenter(top).add(0, 0.5, 0), Direction.UP, top, false);
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        context.assertTrue(world.getBlockState(low).onUse(world, player, east).isAccepted(), "accepted");
+        Direction turned = context.getBlockState(BASE.up(2)).get(GoalPoleBlock.FACING);
+        context.assertTrue(turned == GoalPoleBlock.flagFacing(east, player) && turned != Direction.NORTH, "turned towards the east side, got " + turned);
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, ItemStack.EMPTY, east) == GoalPoleBlock.Use.GOAL, "the side it faces: the goal");
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, ItemStack.EMPTY, up) == GoalPoleBlock.Use.GOAL, "the top: the goal");
+        BlockHitResult west = new BlockHitResult(Vec3d.ofCenter(low).add(-0.1, 0, 0), Direction.WEST, low, false);
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, ItemStack.EMPTY, west) == GoalPoleBlock.Use.TURN, "another side: turns");
+        player.setSneaking(true);
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, ItemStack.EMPTY, west) == GoalPoleBlock.Use.GOAL, "sneaking: the goal");
+        player.setSneaking(false);
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, new ItemStack(ModItems.WRENCH), west) == GoalPoleBlock.Use.GOAL, "a Wrench: the goal");
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, new ItemStack(Items.STONE), west) == GoalPoleBlock.Use.NONE, "a block: building");
+        player.getAbilities().allowModifyWorld = false;
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, ItemStack.EMPTY, west) == GoalPoleBlock.Use.NONE, "may not build: nothing");
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, new ItemStack(Items.SHEARS), west) == GoalPoleBlock.Use.NONE, "may not build: no shears");
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, new ItemStack(ModItems.WRENCH), west) == GoalPoleBlock.Use.GOAL, "may not build: the Wrench still shows the goal");
+        player.getAbilities().allowModifyWorld = true;
+        context.setBlockState(BASE.up(2), pole(false, true));
+        context.assertTrue(GoalPoleBlock.useOf(world, top, player, ItemStack.EMPTY, west) == GoalPoleBlock.Use.GOAL, "no flag: the goal");
+        context.complete();
+    }
+
+    /** No flag, no goal: nothing shows above the top of a pole without a flag; with it, the goal shows there only. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void noFlagNoGoalShown(TestContext context) {
+        context.setBlockState(BASE.up(), pole(false, false));
+        context.setBlockState(BASE.up(2), pole(false, true));
+        context.assertTrue(!GoalPoleBlock.showsGoal(context.getBlockState(BASE.up(2))), "no flag: nothing shown");
+        context.setBlockState(BASE.up(2), pole(false, true).with(GoalPoleBlock.FLAG, true));
+        context.assertTrue(GoalPoleBlock.showsGoal(context.getBlockState(BASE.up(2))), "a flag: the goal shows at the top");
+        context.assertTrue(!GoalPoleBlock.showsGoal(context.getBlockState(BASE.up())), "never lower down");
         context.complete();
     }
 
@@ -959,7 +1076,7 @@ public class GoalPoleGameTests implements FabricGameTest {
     public void reachingTheGoalIsSyncedAndRingsOnce(TestContext context) {
         var registries = context.getWorld().getRegistryManager();
         GoalPoleBaseBlockEntity base = placeBase(context, base());
-        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, true));
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, y == 3));
         GoalPoleNetwork.processPending();
         poleEntity(context, BASE.up()).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2, false);
         poleEntity(context, BASE.up()).applyCount(GoalPoleBlockEntity.Count.TOTAL);
