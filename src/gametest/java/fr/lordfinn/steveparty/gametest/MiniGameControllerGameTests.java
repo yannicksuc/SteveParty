@@ -349,6 +349,37 @@ public class MiniGameControllerGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /**
+     * The Mini-game Remote (playtest #72): linked to a controller, it presses its « Play » / « Stop » from afar; not
+     * linked, or linked to a controller without page, it does nothing.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_remote", tickLimit = 100)
+    public void theRemotePlaysAndStopsFromAfar(TestContext context) {
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 2.5, 1, 1.5), host = player(context, "h", 4.5, 30, 4.5);
+        UUID id = page(context, green);
+        try {
+            alone(context, p1, p2, host);
+            home(context, HOME, id);
+            ItemStack remote = new ItemStack(ModItems.MINI_GAME_REMOTE);
+            context.assertTrue(!fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
+                    "not linked: nothing");
+            remote.set(ModComponents.MINI_GAME_REMOTE_LINK, global(context, HOME));
+            context.assertTrue(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) != null,
+                    "linked: Play, from 30 blocks away");
+            context.assertTrue(!fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host), "a second at most between two presses");
+            host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
+            context.assertTrue(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null, "Stop");
+            ((MiniGameControllerBlockEntity) context.getBlockEntity(HOME)).setPage(ItemStack.EMPTY);
+            host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
+            context.assertTrue(!fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
+                    "no page in the controller: nothing to play");
+        } finally {
+            cleanUp(context, id, p1, p2, host);
+        }
+        context.complete();
+    }
+
     // ------------------------------------------------------------------ in a party
 
     /**

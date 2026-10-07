@@ -26,7 +26,8 @@ import java.util.Set;
  */
 public final class GoalPoleNetwork {
     private static final Set<GoalPoleBaseBlockEntity> BASES = new LinkedHashSet<>();
-    private static final Map<String, GoalPoleBaseBlockEntity> BY_OBJECTIVE = new HashMap<>();
+    /** The bases each objective wakes: its own two, or several following the same objective of the server's. */
+    private static final Map<String, Set<GoalPoleBaseBlockEntity>> BY_OBJECTIVE = new HashMap<>();
     private static final ArrayDeque<BlockEntity> PENDING = new ArrayDeque<>();
     /** Bases and poles whose data changed this tick: sent to the players watching them once, at the end of the tick. */
     private static final Set<BlockEntity> TO_SYNC = new LinkedHashSet<>();
@@ -50,7 +51,7 @@ public final class GoalPoleNetwork {
 
     static void unregister(GoalPoleBaseBlockEntity base) {
         BASES.remove(base);
-        BY_OBJECTIVE.values().removeIf(owner -> owner == base);
+        BY_OBJECTIVE.values().removeIf(owners -> owners.remove(base) && owners.isEmpty());
     }
 
     /** A pole was loaded or placed: it looks for its base (and copies its column's settings) at the end of the tick. */
@@ -59,11 +60,12 @@ public final class GoalPoleNetwork {
     }
 
     static void index(String objectiveName, GoalPoleBaseBlockEntity base) {
-        BY_OBJECTIVE.put(objectiveName, base);
+        BY_OBJECTIVE.computeIfAbsent(objectiveName, name -> new LinkedHashSet<>()).add(base);
     }
 
     static void unindex(String objectiveName, GoalPoleBaseBlockEntity base) {
-        BY_OBJECTIVE.remove(objectiveName, base);
+        Set<GoalPoleBaseBlockEntity> owners = BY_OBJECTIVE.get(objectiveName);
+        if (owners != null && owners.remove(base) && owners.isEmpty()) BY_OBJECTIVE.remove(objectiveName);
     }
 
     /** Loaded bases (a copy: safe to use while bases are added or removed). */
@@ -108,8 +110,11 @@ public final class GoalPoleNetwork {
     /** A score changed on the server scoreboard (set, added, or removed: 0). */
     public static void onScoreUpdated(ScoreboardObjective objective, String holder, int value) {
         if (BY_OBJECTIVE.isEmpty()) return;
-        GoalPoleBaseBlockEntity base = BY_OBJECTIVE.get(objective.getName());
-        if (base != null && !base.isRemoved()) base.onScoreUpdated(objective, holder, value);
+        Set<GoalPoleBaseBlockEntity> owners = BY_OBJECTIVE.get(objective.getName());
+        if (owners == null) return;
+        for (GoalPoleBaseBlockEntity base : new ArrayList<>(owners)) {
+            if (!base.isRemoved()) base.onScoreUpdated(objective, holder, value);
+        }
     }
 
     /** All the scores of a holder were removed ({@code /scoreboard players reset <name>}). */
@@ -122,8 +127,11 @@ public final class GoalPoleNetwork {
 
     public static void onObjectiveRemoved(ScoreboardObjective objective) {
         if (BY_OBJECTIVE.isEmpty()) return;
-        GoalPoleBaseBlockEntity base = BY_OBJECTIVE.get(objective.getName());
-        if (base != null && !base.isRemoved()) base.onObjectiveRemoved(objective);
+        Set<GoalPoleBaseBlockEntity> owners = BY_OBJECTIVE.get(objective.getName());
+        if (owners == null) return;
+        for (GoalPoleBaseBlockEntity base : new ArrayList<>(owners)) {
+            if (!base.isRemoved()) base.onObjectiveRemoved(objective);
+        }
     }
 
     /** A party started: the bases linked to it (following its players) go back to 0. */

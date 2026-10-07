@@ -99,6 +99,13 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private Check playersCheck = new Check(true, Text.empty());
     private Check goalCheck = new Check(true, Text.empty());
     private boolean openSoundPlayed = false;
+    /** The objectives of the server (name, criterion), for the goal's completion. */
+    private final java.util.List<String[]> objectives = new java.util.ArrayList<>();
+    /** What the goal typed so far may be completed with, and the one picked (Up / Down; Tab or a click takes it). */
+    private java.util.List<String> completions = java.util.List.of();
+    private int completion = 0;
+    /** Rows of the completion list shown under the goal field. */
+    private static final int COMPLETION_ROWS = 5, COMPLETION_ROW = 11;
 
     public GoalPoleBaseScreen(GoalPoleBaseScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -111,6 +118,10 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         this.pageLinked = settings.getBoolean("PageLinked");
         this.redstoneMode = RedstoneMode.read(settings, "RedstoneMode", RedstoneMode.PAUSE_WHEN_POWERED);
         this.outputMode = GoalPoleBaseBlockEntity.readEnum(settings, "OutputMode", OutputMode.values(), OutputMode.PULSE);
+        for (net.minecraft.nbt.NbtElement element : settings.getList("Objectives", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) {
+            NbtCompound objective = (NbtCompound) element;
+            objectives.add(new String[]{objective.getString("Name"), objective.getString("Criterion")});
+        }
     }
 
     @Override
@@ -260,6 +271,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             case ALL -> new Check(true, Text.translatable(KEY + "players.all.meaning"));
         };
         goalCheck = criterion ? checkGoal(goalField.getText()) : new Check(true, Text.translatable(KEY + "source.landings_here.meaning"));
+        updateCompletions();
         for (CycleButton cycle : cycleButtons) cycle.button().setTooltip(Tooltip.of(tooltipText(cycle.name(), cycle.value().get())));
         if (doneButton != null) {
             boolean valid = playersCheck.valid() && goalCheck.valid();
@@ -305,14 +317,126 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
                 : new Check(false, Text.translatable(KEY + "players.radius.invalid", GoalPoleBaseBlockEntity.MAX_RADIUS));
     }
 
-    static Check checkGoal(String goal) {
+    private Check checkGoal(String goal) {
         if (goal.isEmpty()) return new Check(false, Text.translatable(KEY + "goal.empty"));
+        // An objective of the server: its scores' increases are the points
+        for (String[] objective : objectives) {
+            if (objective[0].equals(goal)) return new Check(true, Text.translatable(KEY + "goal.objective", objective[1]));
+        }
         for (String[] preset : PRESETS) {
             if (preset[0].equals(goal)) return new Check(true, Text.translatable(KEY + preset[1]));
         }
         return GoalPoleBaseBlockEntity.parseGoal(goal).isPresent()
                 ? new Check(true, Text.translatable(KEY + "goal.custom"))
                 : new Check(false, Text.translatable(KEY + "goal.invalid"));
+    }
+
+    // ------------------------------------------------------------------ completion of the goal
+
+    /**
+     * What the goal typed so far may be completed with: the objectives of the server, then the presets' criteria,
+     * those starting with it first, then those containing it (case ignored); nothing once it is one of them.
+     */
+    private void updateCompletions() {
+        String typed = goalField.getText();
+        String lower = typed.toLowerCase(Locale.ROOT);
+        java.util.List<String> starts = new java.util.ArrayList<>(), contains = new java.util.ArrayList<>();
+        java.util.List<String> all = new java.util.ArrayList<>();
+        for (String[] objective : objectives) all.add(objective[0]);
+        for (String[] preset : PRESETS) if (!all.contains(preset[0])) all.add(preset[0]);
+        if (source == Source.CRITERION && goalField.isFocused() && !all.contains(typed)) {
+            for (String candidate : all) {
+                String name = candidate.toLowerCase(Locale.ROOT);
+                if (name.startsWith(lower)) starts.add(candidate);
+                else if (!lower.isEmpty() && name.contains(lower)) contains.add(candidate);
+            }
+        }
+        starts.addAll(contains);
+        if (!starts.equals(completions)) {
+            completions = java.util.List.copyOf(starts);
+            completion = 0;
+        }
+        showSuggestion();
+    }
+
+    /** The rest of the picked completion, in grey after the cursor, when it starts with what is typed. */
+    private void showSuggestion() {
+        String typed = goalField.getText();
+        String picked = completions.isEmpty() ? null : completions.get(completion);
+        goalField.setSuggestion(picked != null && picked.startsWith(typed) && goalField.getCursor() == typed.length()
+                ? picked.substring(typed.length()) : null);
+    }
+
+    private void complete(String with) {
+        goalField.setText(with);
+        goalField.setCursorToEnd(false);
+        completions = java.util.List.of();
+        refresh();
+    }
+
+    private boolean showsCompletions() {
+        return source == Source.CRITERION && goalField != null && goalField.isFocused() && !completions.isEmpty();
+    }
+
+    /** The first completion row shown (the picked one always is). */
+    private int firstCompletionRow() {
+        return Math.max(0, Math.min(completion - COMPLETION_ROWS + 1, completions.size() - COMPLETION_ROWS));
+    }
+
+    private int completionsX() {
+        return x + MARGIN;
+    }
+
+    private int completionsY() {
+        return y + TOP + ROW + FIELD_HEIGHT;
+    }
+
+    /** The completion list under the goal field, over what is there: an objective's criterion after its name. */
+    private void drawCompletions(DrawContext context, int mouseX, int mouseY) {
+        int first = firstCompletionRow(), rows = Math.min(COMPLETION_ROWS, completions.size());
+        int width = COLUMN - PRESET_SIZE - 4, left = completionsX(), top = completionsY();
+        var matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(0, 0, 300);
+        context.fill(left, top, left + width, top + rows * COMPLETION_ROW + 2, 0xF0202428);
+        for (int i = 0; i < rows; i++) {
+            int index = first + i, rowY = top + 1 + i * COMPLETION_ROW;
+            String name = completions.get(index);
+            boolean hovered = mouseX >= left && mouseX < left + width && mouseY >= rowY && mouseY < rowY + COMPLETION_ROW;
+            if (index == completion || hovered) context.fill(left + 1, rowY, left + width - 1, rowY + COMPLETION_ROW, 0x50FFFFFF);
+            String criterion = null;
+            for (String[] objective : objectives) if (objective[0].equals(name)) criterion = objective[1];
+            String shown = fit(textRenderer, name, width - 6, false);
+            context.drawText(textRenderer, shown, left + 3, rowY + 2, index == completion ? 0xFFFFE36A : 0xFFE0E0E0, false);
+            int nameWidth = textRenderer.getWidth(shown) + 6;
+            if (criterion != null && width - 6 - nameWidth > 12) {
+                context.drawText(textRenderer, fit(textRenderer, criterion, width - 6 - nameWidth, false), left + 3 + nameWidth, rowY + 2, 0xFF8A949A, false);
+            }
+        }
+        if (completions.size() > COMPLETION_ROWS) {
+            String more = (first + rows) + "/" + completions.size();
+            context.drawText(textRenderer, more, left + width - 3 - textRenderer.getWidth(more), top + rows * COMPLETION_ROW - 8, 0xFF8A949A, false);
+        }
+        matrices.pop();
+    }
+
+    /** @return the completion under the mouse, or -1. */
+    private int completionAt(double mouseX, double mouseY) {
+        if (!showsCompletions()) return -1;
+        int rows = Math.min(COMPLETION_ROWS, completions.size()), width = COLUMN - PRESET_SIZE - 4;
+        if (mouseX < completionsX() || mouseX >= completionsX() + width || mouseY < completionsY() + 1) return -1;
+        int row = (int) Math.floor((mouseY - completionsY() - 1) / COMPLETION_ROW);
+        return row >= 0 && row < rows ? firstCompletionRow() + row : -1;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int row = completionAt(mouseX, mouseY);
+        if (row >= 0) {
+            complete(completions.get(row));
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     private void cyclePreset(int direction) {
@@ -436,6 +560,13 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
+        if (showsCompletions()) {
+            drawCompletions(context, mouseX, mouseY);
+            if (completionAt(mouseX, mouseY) >= 0) {
+                context.drawTooltip(textRenderer, Text.translatable(KEY + "goal.completion.hint").formatted(Formatting.GRAY), mouseX, mouseY);
+            }
+            return;
+        }
         if (source == Source.CRITERION && isOverStatus(mouseX, mouseY, x + MARGIN + COLUMN - PRESET_SIZE - 4 - 11, y + TOP + ROW + 6)) {
             context.drawTooltip(textRenderer, goalCheck.meaning(), mouseX, mouseY);
         } else if (playersHasField() && isOverStatus(mouseX, mouseY, x + MARGIN + COLUMN - 11, y + playersFieldY() + 6)) {
@@ -468,6 +599,18 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
             submit();
             return true;
+        }
+        // The goal's completion: Tab takes the picked one, Up and Down pick another
+        if (showsCompletions()) {
+            if (keyCode == GLFW.GLFW_KEY_TAB) {
+                complete(completions.get(completion));
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_UP || keyCode == GLFW.GLFW_KEY_DOWN) {
+                completion = Math.floorMod(completion + (keyCode == GLFW.GLFW_KEY_DOWN ? 1 : -1), completions.size());
+                showSuggestion();
+                return true;
+            }
         }
         // Escape closes and Tab moves the focus; while a field is focused, any other key stays in it
         // (e.g. the inventory key must not close the screen)

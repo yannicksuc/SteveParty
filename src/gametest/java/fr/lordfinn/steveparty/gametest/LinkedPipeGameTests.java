@@ -81,11 +81,11 @@ public class LinkedPipeGameTests implements FabricGameTest {
     }
 
     /**
-     * A lobby around a copper mini-game pipe at (1,2,3) programmed with the page: a cyan junction above it, a green mouth
-     * on the east (2,3,3), a blue one on the west (0,3,3).
+     * A lobby around a copper mini-game pipe at (2,2,3) programmed with the page: a cyan junction above it, a green mouth
+     * on the east (3,3,3), a blue one on the west (1,3,3), with room in front of each (nobody comes out of a mouth facing a block).
      */
     private static BlockPos lobby(TestContext context, ItemStack page) {
-        BlockPos programmed = new BlockPos(1, 2, 3), junction = programmed.up();
+        BlockPos programmed = new BlockPos(2, 2, 3), junction = programmed.up();
         context.setBlockState(programmed.down(), Blocks.STONE);
         context.setBlockState(programmed, ModBlocks.COPPER_MINIGAME_PIPE.getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN).with(PipeShape.connection(Direction.UP), true));
         context.setBlockState(junction, pipe(PipeKind.OPAQUE, 9).getDefaultState().with(PipeShape.connection(Direction.DOWN), true)

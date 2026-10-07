@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -14,6 +15,7 @@ import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.scoreboard.ScoreHolder;
@@ -171,6 +173,8 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     private boolean writing = false;
     @Nullable private ScoreboardObjective mirror;
     @Nullable private ScoreboardObjective sourceObjective;
+    /** The name of the objective of the server it follows (see {@link #followedObjective}), null for none. */
+    @Nullable private String followedName;
     private boolean sourceInvalid = false;
     /** Loaded from a ticking base: its objective and remembered scores are converted by {@link #onLoaded()}. */
     private boolean legacy = false;
@@ -314,27 +318,61 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
             mirror = objective;
             GoalPoleNetwork.index(name, this);
 
-            // Source objective
+            // Source objective: an objective of the server named so (followed as it is), else its own with the criterion
             String sourceName = getSourceObjectiveName();
             ScoreboardObjective src = scoreboard.getNullableObjective(sourceName);
-            Optional<ScoreboardCriterion> wanted = source == Source.CRITERION ? parseGoal(criterion) : Optional.empty();
-            sourceInvalid = source == Source.CRITERION && wanted.isEmpty();
+            ScoreboardObjective followed = source == Source.CRITERION ? followedObjective(scoreboard) : null;
+            Optional<ScoreboardCriterion> wanted = source == Source.CRITERION && followed == null ? parseGoal(criterion) : Optional.empty();
+            sourceInvalid = source == Source.CRITERION && followed == null && wanted.isEmpty();
             if (src != null && (wanted.isEmpty() || !src.getCriterion().getName().equals(wanted.get().getName()))) {
                 scoreboard.removeObjective(src);
                 src = null;
-                sourceSeen.clear();
+                if (followed == null) sourceSeen.clear();
             }
             if (src == null && wanted.isPresent()) {
                 src = scoreboard.addObjective(sourceName, wanted.get(), Text.translatable("scoreboard.steveparty.goal_pole_source", criterion),
                         ScoreboardCriterion.RenderType.INTEGER, true, null);
             }
-            sourceObjective = src;
+            if (followedName != null && (followed == null || !followedName.equals(followed.getName()))) GoalPoleNetwork.unindex(followedName, this);
+            followedName = followed == null ? null : followed.getName();
+            sourceObjective = followed != null ? followed : src;
             if (src != null) GoalPoleNetwork.index(sourceName, this);
             else GoalPoleNetwork.unindex(sourceName, this);
+            if (followed != null) GoalPoleNetwork.index(followed.getName(), this);
         } finally {
             writing = false;
         }
         recomputeTotal();
+    }
+
+    /**
+     * The objective of the server the base follows: the one named as its goal (made with {@code /scoreboard
+     * objectives add}), its scores' increases being the points; null when there is none of that name (the goal is
+     * then a criterion), or it is one of the base's own.
+     */
+    @Nullable
+    private ScoreboardObjective followedObjective(Scoreboard scoreboard) {
+        if (criterion == null || criterion.isEmpty() || criterion.startsWith("steveparty_")) return null;
+        return scoreboard.getNullableObjective(criterion);
+    }
+
+    /** The most objectives of the server offered to the screen (its completion). */
+    public static final int MAX_LISTED_OBJECTIVES = 200;
+
+    /** The objectives of the server a base can follow (not the bases' own), by name: name and criterion. */
+    public static NbtList listObjectives(MinecraftServer server) {
+        NbtList list = new NbtList();
+        server.getScoreboard().getObjectives().stream()
+                .filter(objective -> !objective.getName().startsWith("steveparty_"))
+                .sorted(java.util.Comparator.comparing(ScoreboardObjective::getName))
+                .limit(MAX_LISTED_OBJECTIVES)
+                .forEach(objective -> {
+                    NbtCompound entry = new NbtCompound();
+                    entry.putString("Name", objective.getName());
+                    entry.putString("Criterion", objective.getCriterion().getName());
+                    list.add(entry);
+                });
+        return list;
     }
 
     /** Scores of the source objective that went up while the base was unloaded or not set up yet. */
@@ -464,25 +502,99 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     }
 
     /**
-     * The per-player goals of the poles above ({@link GoalPoleBlockEntity#isPerPlayer}): a holder whose own points
-     * just reached one fires it once, and takes the highest free place of the podiums linked to this base.
+     * The goals per side of the poles above ({@link GoalPoleBlockEntity#isPerPlayer}): the side of a holder (his team in
+     * a team mini-game, else himself) whose score just reached one fires it once, and the holder takes the highest free
+     * place of the podiums linked to this base (for his team, in a team mini-game).
      */
     private void checkPlayerGoals(String holder) {
         if (world == null || world.isClient) return;
-        int own = points.getOrDefault(holder, 0);
         boolean reached = false;
+        TeamDisposition teams = null;
+        boolean looked = false;
         BlockPos.Mutable cursor = pos.mutableCopy().move(Direction.UP);
         while (!world.isOutOfHeightLimit(cursor) && world.getBlockEntity(cursor) instanceof GoalPoleBlockEntity pole) {
-            if (pole.isPerPlayer() && pole.acceptPlayerPoints(holder, own)) reached = true;
+            if (pole.isPerPlayer()) {
+                if (!looked) {
+                    teams = countedTeams();
+                    looked = true;
+                }
+                String side = sideOf(teams, holder);
+                long score = sideScores(pole.getCount(), teams).getOrDefault(side, 0L);
+                if (pole.acceptPlayerPoints(side, (int) Math.clamp(score, Integer.MIN_VALUE, Integer.MAX_VALUE))) reached = true;
+            }
             cursor.move(Direction.UP);
         }
         if (reached) fr.lordfinn.steveparty.podium.Podiums.onGoalReached(this, holder);
     }
 
-    /** The most points a single holder has (what a per-player goal shows). */
+    /** The most points a single holder has. */
     public int getBestPoints() {
         int best = 0;
         for (int value : points.values()) best = Math.max(best, value);
+        return best;
+    }
+
+    // ------------------------------------------------------------------ sides: a player, or a team
+
+    /** What the side of a team is called in the goals reached ({@code #team:0} for team A...). */
+    public static final String TEAM_SIDE = "#team:";
+
+    /** The teams counted now, for the poles (worked out once per tick at most). */
+    @Nullable private TeamDisposition teamsSeen;
+    private long teamsSeenTick = Long.MIN_VALUE;
+
+    /**
+     * The teams of the mini-game being played on a page this base is linked to; null when there is none, or everyone
+     * plays for himself.
+     */
+    @Nullable
+    public TeamDisposition countedTeams() {
+        if (world == null) return null;
+        long now = world.getTime();
+        if (now != teamsSeenTick) {
+            teamsSeenTick = now;
+            fr.lordfinn.steveparty.minigame.MiniGameSession session = countedSession();
+            TeamDisposition teams = session == null ? null : session.teams();
+            teamsSeen = teams == null || teams.isFreeForAll() ? null : teams;
+        }
+        return teamsSeen;
+    }
+
+    /** The side of a holder: his team ({@link #TEAM_SIDE} and its number) when he has one in {@code teams}, else himself. */
+    public String sideOf(@Nullable TeamDisposition teams, String holder) {
+        int team = teamOf(teams, holder);
+        return team < 0 ? holder : TEAM_SIDE + team;
+    }
+
+    private int teamOf(@Nullable TeamDisposition teams, String holder) {
+        if (teams == null || world == null || world.getServer() == null) return -1;
+        MinecraftServer server = world.getServer();
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(holder);
+        UUID uuid = player != null ? player.getUuid()
+                : server.getUserCache() == null ? null : server.getUserCache().findByName(holder).map(com.mojang.authlib.GameProfile::getId).orElse(null);
+        return uuid == null ? -1 : teams.teamOf(uuid);
+    }
+
+    /**
+     * The score of each side: a player for himself, his own points; a team, its players' points added up
+     * ({@link GoalPoleBlockEntity.Count#SIDES}) or its best player's ({@link GoalPoleBlockEntity.Count#TEAM_BEST}).
+     */
+    public Map<String, Long> sideScores(GoalPoleBlockEntity.Count count, @Nullable TeamDisposition teams) {
+        Map<String, Long> scores = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : points.entrySet()) {
+            String side = sideOf(teams, entry.getKey());
+            long value = entry.getValue();
+            if (count == GoalPoleBlockEntity.Count.TEAM_BEST) scores.merge(side, value, Math::max);
+            else scores.merge(side, value, Long::sum);
+        }
+        return scores;
+    }
+
+    /** What a pole counting {@code count} shows and compares with its goal: everybody's total, or the best side's score. */
+    public long shownScore(GoalPoleBlockEntity.Count count) {
+        if (count == GoalPoleBlockEntity.Count.TOTAL) return total;
+        long best = 0;
+        for (long value : sideScores(count, countedTeams()).values()) best = Math.max(best, value);
         return best;
     }
 
@@ -809,6 +921,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         settings.putBoolean("PartyNear", linkedParty() != null);
         settings.putBoolean("PageLinked", !linkedPages().isEmpty());
         settings.putBoolean("Active", isActive());
+        if (world != null && world.getServer() != null) settings.put("Objectives", listObjectives(world.getServer()));
         return settings;
     }
 

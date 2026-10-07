@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " T ",
+    "NGN",
+    "NBN"
+  ],
+  "key": {
+    "T": {
+      "item": "minecraft:redstone_torch"
+    },
+    "N": {
+      "item": "minecraft:gold_nugget"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "B": {
+      "item": "minecraft:stone_button"
+    }
+  },
+  "result": {
+    "id": "steveparty:mini_game_remote",
+    "count": 1
+  }
+}

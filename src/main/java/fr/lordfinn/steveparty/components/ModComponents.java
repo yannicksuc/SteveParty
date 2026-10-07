@@ -127,6 +127,9 @@ public class ModComponents {
     public static final ComponentType<ShopLinkComponent> SHOP_LINK =
             registerComponent("shop-link", ShopLinkComponent.CODEC);
 
+    /** The Mini-game Controller a Mini-game Remote is linked to (see MiniGameRemoteItem). */
+    public static final ComponentType<net.minecraft.util.math.GlobalPos> MINI_GAME_REMOTE_LINK =
+            registerComponent("mini-game-remote-link", net.minecraft.util.math.GlobalPos.CODEC);
     /** A Mini-game Page in zone mode: its clicks draw the zone of its page (see PageZoneTool). */
     public static final ComponentType<PageZoneMode> PAGE_ZONE_MODE =
             registerComponent("page-zone-mode", PageZoneMode.CODEC);
