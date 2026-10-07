@@ -337,6 +337,94 @@ public class GlandouilleGameTests implements FabricGameTest {
         });
     }
 
+    // ---------------------------------------------------------------- impacts
+
+    /** One shot out of a tower into another tower lands on top of it: that tower is one higher, and not pushed. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aShotOneLandsOnTheTowerItHits(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> shooterTower = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 3));
+        List<GlandouilleEntity> target = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(4, 1, 3));
+        shooterTower.getFirst().setAiDisabled(true);
+        target.getFirst().setAiDisabled(true);
+        GlandouilleEntity shot = shooterTower.get(1);
+        ServerPlayerEntity player = player(context, new BlockPos(0, 1, 3), -90f); // facing +x
+        context.waitAndRun(2, () -> {
+            Vec3d targetStart = target.getFirst().getPos();
+            shot.onHit(player, player);
+            context.assertEquals(shot.getMood(), Mood.FLYING, "shot out of its tower");
+            context.waitAndRun(20, () -> {
+                context.assertEquals(GlandouilleTowers.height(target.getFirst()), 3, "the tower it hit is one higher");
+                context.assertTrue(GlandouilleTowers.top(target.getFirst()) == shot, "the shot one on top");
+                context.assertEquals(shot.getMood(), Mood.CALM, "calm up there");
+                context.assertTrue(horizontal(target.getFirst().getPos(), targetStart) < 0.1,
+                        "the tower was not pushed: " + horizontal(target.getFirst().getPos(), targetStart));
+                context.complete();
+            });
+        });
+    }
+
+    /** A sliding one into a lone one: it carries it on top and slides on, a little slower. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aSlidingOneCarriesALoneOne(TestContext context) {
+        floor(context);
+        GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
+        GlandouilleEntity lone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(3, 1, 3));
+        lone.setAiDisabled(true);
+        frosty.startSlide(new Vec3d(0.4, 0, 0));
+        assertCarriedAlong(context, frosty, List.of(lone), 0.4);
+    }
+
+    /** A sliding one into a tower: the whole tower climbs on it, in order, and it slides on, slower still. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aSlidingOneCarriesATower(TestContext context) {
+        floor(context);
+        GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(3, 1, 3));
+        members.getFirst().setAiDisabled(true);
+        frosty.startSlide(new Vec3d(0.4, 0, 0));
+        assertCarriedAlong(context, frosty, members, 0.4);
+    }
+
+    /** {@code carried} (bottom first) ended up stacked on the sliding {@code frosty}, which keeps sliding, slower. */
+    private static void assertCarriedAlong(TestContext context, GlandouilleEntity frosty, List<GlandouilleEntity> carried, double speed) {
+        context.waitAndRun(10, () -> {
+            context.assertEquals(GlandouilleTowers.height(frosty), 1 + carried.size(), "stacked on the sliding one");
+            context.assertTrue(GlandouilleTowers.bottom(carried.getFirst()) == frosty, "the sliding one at the bottom");
+            for (int i = 0; i < carried.size(); i++) {
+                context.assertEquals(GlandouilleTowers.level(carried.get(i)), i + 1, "in order: " + i);
+            }
+            context.assertEquals(frosty.getMood(), Mood.SLIDING, "still sliding");
+            double now = frosty.slideVelocity().horizontalLength();
+            double max = speed * Math.pow(GlandouilleEntity.CARRY_SLOWDOWN, carried.size()) + 1.0E-3;
+            context.assertTrue(now > 0.05 && now < max, "slower per acorn: " + now + " / " + max);
+            double x = frosty.getX();
+            context.waitAndRun(3, () -> {
+                context.assertTrue(frosty.getX() - x > 0.1, "it keeps moving: " + (frosty.getX() - x));
+                context.assertEquals(GlandouilleTowers.height(frosty), 1 + carried.size(), "the tower rides on");
+                context.complete();
+            });
+        });
+    }
+
+    /** The old mossy one is too heavy to carry: a sliding one hitting its tower stops and climbs on top of it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aSlidingOneStopsOnAMossyTower(TestContext context) {
+        floor(context);
+        GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.MOSSY, 2, new BlockPos(4, 1, 3));
+        GlandouilleEntity mossy = members.getFirst();
+        Vec3d start = mossy.getPos();
+        frosty.startSlide(new Vec3d(0.4, 0, 0));
+        context.waitAndRun(20, () -> {
+            context.assertEquals(GlandouilleTowers.height(mossy), 3, "the slider on the mossy tower");
+            context.assertTrue(GlandouilleTowers.top(mossy) == frosty, "on top");
+            context.assertTrue(frosty.getMood() != Mood.SLIDING, "no longer sliding");
+            context.assertTrue(mossy.getPos().distanceTo(start) < 0.05, "the mossy one did not move: " + mossy.getPos().distanceTo(start));
+            context.complete();
+        });
+    }
+
     // ---------------------------------------------------------------- dazed players
 
     /** A charge into a player: dazed on the spot (no walking, no jumping) for about 2 s, not hurt. */
