@@ -19,9 +19,9 @@ import java.util.List;
 
 /**
  * A radial wheel shared by the tools held in hand (the Tile Linker Brush, the Stencil Hammer: each gives its
- * {@link Layout} through a {@link Provider}), drawn in pixel art in the paper of the mod's screens (the mini-game page,
- * the goal pole base: pale blue paper, grey-blue outline, white and blue-grey bevels): each sector a plate of its colour,
- * the paper's when it has none of its own, the same 2-pixel gap between any two, no smoothing.
+ * {@link Layout} through a {@link Provider}), drawn in pixel art like a vanilla container (a chest's light grey panel:
+ * black outline, white bevel top left, dark grey bottom right): each sector a plate of its colour, the panel's grey when
+ * it has none of its own, the same 2-pixel gap between any two, no smoothing.
  * <ul>
  *     <li>A left click with the tool opens it, centred on the screen. The mouse then moves a cursor on the wheel, not
  *     the camera; the player keeps walking and sneaking (no screen opens, no key is released).</li>
@@ -43,12 +43,14 @@ public final class ToolWheel {
     /** How much a hovered sector grows outward (pixels). */
     private static final int HOVER_GROW = 3;
 
-    /** The paper of the mod's screens (MiniGamePageEditorScreen's PAPER_RAMP): outline, highlight, body, shadow. */
-    public static final int PAPER_EDGE = 0xFF7E9192, PAPER_LIGHT = 0xFFFFFFFF, PAPER = 0xFFE6F3F4, PAPER_SHADOW = 0xFFC7DBDC;
-    private static final int HUB_OUTLINE = PAPER_EDGE, HUB_LIGHT = PAPER_LIGHT, HUB_SHADOW = PAPER_SHADOW, HUB_FILL = PAPER;
+    /** A vanilla container's panel (a chest's): outline, highlight, body, shadow. */
+    public static final int PANEL_EDGE = 0xFF000000, PANEL_LIGHT = 0xFFFFFFFF, PANEL = 0xFFC6C6C6, PANEL_SHADOW = 0xFF555555;
+    /** Hovered: the panel a little lighter. */
+    private static final int PANEL_HOVER = 0xFFDBDBDB;
+    private static final int HUB_OUTLINE = PANEL_EDGE, HUB_LIGHT = PANEL_LIGHT, HUB_SHADOW = PANEL_SHADOW, HUB_FILL = PANEL;
     private static final int GOLD_OUTLINE = 0xFF5B2E00, GOLD_LIGHT = 0xFFFFF87E, GOLD = 0xFFFFD83D;
-    /** Between the sectors and around them: the paper's shadow, its outline all round. */
-    private static final int BACKDROP = PAPER_SHADOW;
+    /** Between the sectors and around them: the panel's grey, its outline all round. */
+    private static final int BACKDROP = PANEL;
 
     /** Something drawn at the middle of a sector (an item, a number, a stencil...). */
     @FunctionalInterface
@@ -444,7 +446,7 @@ public final class ToolWheel {
                 double e = hub - d;
                 if (e < 1) return HUB_OUTLINE;
                 if (e < 2) return x + y < 0 ? HUB_LIGHT : HUB_SHADOW;
-                return hubHovered ? PAPER_LIGHT : HUB_FILL;
+                return hubHovered ? PANEL_HOVER : HUB_FILL;
             }
             double angle = Math.toDegrees(Math.atan2(x, -y));
             for (int r = 0; r < layout.rings().size(); r++) {
@@ -493,20 +495,21 @@ public final class ToolWheel {
                 return BACKDROP;
             }
             int rim = Math.round((outerRadius(layout) + 2) * fit);
-            return d < rim - 1 ? BACKDROP : d < rim ? PAPER_EDGE : 0;
+            return d < rim - 1 ? BACKDROP : d < rim ? PANEL_EDGE : 0;
         }
 
         /** A pixel of a sector's plate, {@code edge} pixels in from its nearest edge. */
         private static int plate(Sector sector, boolean hovered, boolean featured, boolean dimmed, boolean blink, double edge, boolean lit) {
             int base = 0xFF000000 | sector.color();
             if (!sector.enabled()) base = grey(base);
-            else if (dimmed) base = mix(base, PAPER_SHADOW, 0.6f);
-            // A paper sector (pale) takes the paper's outline and bevels, a coloured one its own colour's
-            boolean paper = luminance(base) > 200;
-            int outline = paper ? PAPER_EDGE : shade(base, 0.45f);
-            int light = paper ? PAPER_LIGHT : mix(base, 0xFFFFFFFF, 0.45f);
-            int shadow = paper ? (base == PAPER ? PAPER_SHADOW : shade(base, 0.86f)) : shade(base, 0.75f);
-            int fill = hovered ? (paper ? PAPER_LIGHT : mix(base, 0xFFFFFFFF, 0.25f)) : base;
+            else if (dimmed) base = mix(base, PANEL, 0.6f);
+            // Every plate in a vanilla frame: black outline, white bevel top left; the shadow the panel's dark grey, or
+            // a coloured plate's own colour darkened
+            boolean panel = base == PANEL;
+            int outline = PANEL_EDGE;
+            int light = panel ? PANEL_LIGHT : mix(base, 0xFFFFFFFF, 0.5f);
+            int shadow = panel ? PANEL_SHADOW : shade(base, 0.6f);
+            int fill = hovered ? (panel ? PANEL_HOVER : mix(base, 0xFFFFFFFF, 0.25f)) : base;
             if (featured) {
                 if (edge < 2) return blink ? GOLD : GOLD_OUTLINE;
                 if (edge < 3) return lit ? light : shadow;
@@ -539,9 +542,9 @@ public final class ToolWheel {
             return 0xFF000000 | r << 16 | g << 8 | b;
         }
 
-        /** A sector that picks nothing: washed out into the paper's shadow. */
+        /** A sector that picks nothing: washed out into the panel's grey. */
         private static int grey(int argb) {
-            return mix(argb, PAPER_SHADOW, 0.7f);
+            return mix(argb, 0xFF8B8B8B, 0.7f);
         }
     }
 }
