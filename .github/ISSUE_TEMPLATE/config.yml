@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "📖 Wiki"
+    url: https://github.com/yannicksuc/SteveParty/wiki
+    about: "Comment marche chaque bloc, chaque objet et une partie complète. / How every block, item and a whole party work."
+  - name: "🎲 Mener une partie / Running a party"
+    url: https://github.com/yannicksuc/SteveParty/wiki/Deroulement-d-une-partie
+    about: "Le déroulement d'une partie, étape par étape. / A party, step by step."
+  - name: "🧱 Plateau et cases / Board and tiles"
+    url: https://github.com/yannicksuc/SteveParty/wiki/Plateau-et-cases
+    about: "Construire un plateau, les cartouches, la Clé. / Building a board, cartridges, the Wrench."
