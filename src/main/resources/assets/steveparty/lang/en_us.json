@@ -1054,6 +1054,7 @@
   "tooltip.steveparty.telescope.wheel": "Mouse wheel: go back night by night",
   "tooltip.steveparty.telescope.track": "Keep the reticle on a shooting star until the gauge is full",
   "tooltip.steveparty.telescope.guide": "A guide star then shines in your sky, over the Mulas: low when far, high when near",
+  "tooltip.steveparty.telescope.take": "Sneak and right-click it with an empty hand to pick it up, or simply break it",
   "message.steveparty.telescope.need_night_sky": "A clear night sky is needed",
   "message.steveparty.telescope.busy": "Someone is already looking through this telescope",
   "message.steveparty.telescope.guide_gone": "A guide star went out: its Mulas have left",

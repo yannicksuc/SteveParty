@@ -437,7 +437,7 @@
   "book.steveparty.guide.stars_mula.taming.page0.title": "Taming",
   "book.steveparty.guide.stars_mula.telescope.description": "Find where the Mulas landed",
   "book.steveparty.guide.stars_mula.telescope.name": "Telescope",
-  "book.steveparty.guide.stars_mula.telescope.page0.text": "Replays past Ephemeride nights. At night, under a clear sky, right-click it: scroll to pick a night, then keep a shooting star in the crosshair until the gauge fills. A **guide star** then lights up above the spot where the Mulas landed.",
+  "book.steveparty.guide.stars_mula.telescope.page0.text": "Replays past Ephemeride nights. At night, under a clear sky, right-click it: scroll to pick a night, then keep a shooting star in the crosshair until the gauge fills. A **guide star** then lights up above the spot where the Mulas landed.\n\nTo take it back, sneak and right-click it with an empty hand, or simply break it.",
   "book.steveparty.guide.stars_mula.telescope.page0.title": "Telescope",
   "book.steveparty.guide.tooltip": "Build a board, run a party, tame a Mula."
 }
