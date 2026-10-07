@@ -66,6 +66,8 @@ public final class ToolWheel {
     public static final Theme WOOD = Theme.of(0x2a180c, 0x6e482c, 0x9c6b3f, 0xc4925a, 0x7a5232);
     /** The Tile Linker Brush's red (its bristles' paint). */
     public static final Theme RED = Theme.of(0x3a0508, 0x8a1a20, 0xc8333b, 0xe86a6f, 0x9e2229);
+    /** A slate grey frame for wheels whose sectors each have their own colour (the brush's). */
+    public static final Theme SLATE = Theme.of(0x1c1d22, 0x4a4d57, 0x7d808c, 0xb5b8c2, 0x5d606b);
 
     /** Something drawn at the middle of a sector (an item, a number, a stencil...). */
     @FunctionalInterface
