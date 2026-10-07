@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleFlags;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleSearch;
 import net.minecraft.text.Text;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
@@ -1148,5 +1149,50 @@ public class GoalPoleGameTests implements FabricGameTest {
         }
         removeBase(context);
         context.complete();
+    }
+
+    /** The goal search ignores case, accents, the minecraft namespace and the separators. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void goalSearchNormalizes(TestContext context) {
+        context.assertTrue(GoalPoleSearch.normalize("minecraft.custom:minecraft.jump").equals("custom jump"),
+                "namespace and separators: " + GoalPoleSearch.normalize("minecraft.custom:minecraft.jump"));
+        context.assertTrue(GoalPoleSearch.normalize("  Blocs CASSÉS_Pierre ").equals("blocs casses pierre"),
+                "case and accents: " + GoalPoleSearch.normalize("  Blocs CASSÉS_Pierre "));
+        context.complete();
+    }
+
+    /** Objectives first, then the common goals, then the other statistics; the best label match first in a group. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void goalSearchRanksObjectivesThenStats(TestContext context) {
+        List<GoalPoleSearch.Entry<Void>> goals = List.of(
+                new GoalPoleSearch.Entry<>("sauts_equipe", "Sauts de l'équipe", "", GoalPoleSearch.GROUP_OBJECTIVE, null),
+                new GoalPoleSearch.Entry<>("minecraft.custom:minecraft.jump", "Sauts", "saut sauter", GoalPoleSearch.GROUP_COMMON, null),
+                new GoalPoleSearch.Entry<>("deathCount", "Morts", "mort morts", GoalPoleSearch.GROUP_COMMON, null),
+                new GoalPoleSearch.Entry<>("minecraft.mined:minecraft.stone", "Pierre (minage)", "miné cassés blocs", GoalPoleSearch.GROUP_STAT, null),
+                new GoalPoleSearch.Entry<>("minecraft.mined:minecraft.stone_bricks", "Pierres taillées (minage)", "miné cassés blocs", GoalPoleSearch.GROUP_STAT, null));
+        List<GoalPoleSearch.Entry<Void>> found = GoalPoleSearch.search("SAUT", goals);
+        context.assertTrue(found.size() == 2 && found.get(0).value().equals("sauts_equipe")
+                && found.get(1).value().equals("minecraft.custom:minecraft.jump"), "objective, then stat: " + values(found));
+        // In the id only (English), and through the namespace
+        found = GoalPoleSearch.search("jump", goals);
+        context.assertTrue(found.size() == 1 && found.get(0).label().equals("Sauts"), "by id: " + values(found));
+        found = GoalPoleSearch.search("minecraft.custom:minecraft.jump", goals);
+        context.assertTrue(found.size() == 1 && found.get(0).label().equals("Sauts"), "raw id: " + values(found));
+        // Several words, accents and plurals: every word somewhere, the shorter label first
+        found = GoalPoleSearch.search("blocs cassés pierre", goals);
+        context.assertTrue(found.size() == 2 && found.get(0).label().equals("Pierre (minage)"), "words: " + values(found));
+        context.assertTrue(GoalPoleSearch.search("pierre zombie", goals).isEmpty(), "a missing word finds nothing");
+        // Nothing typed: objectives and common goals, in order
+        found = GoalPoleSearch.search("", goals);
+        context.assertTrue(found.size() == 3 && found.get(0).group() == GoalPoleSearch.GROUP_OBJECTIVE, "empty: " + values(found));
+        // A label typed by hand (any case, no accents) stands for its goal; so does a raw value
+        context.assertTrue(GoalPoleSearch.resolve("morts", goals).value().equals("deathCount"), "label resolves");
+        context.assertTrue(GoalPoleSearch.resolve("minecraft.mined:minecraft.stone", goals).label().equals("Pierre (minage)"), "value resolves");
+        context.assertTrue(GoalPoleSearch.resolve("pier", goals) == null, "a part of a label does not resolve");
+        context.complete();
+    }
+
+    private static List<String> values(List<? extends GoalPoleSearch.Entry<?>> entries) {
+        return entries.stream().map(GoalPoleSearch.Entry::value).toList();
     }
 }
