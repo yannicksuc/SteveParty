@@ -23,6 +23,11 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -55,6 +60,9 @@ import java.util.function.ToDoubleFunction;
  * whether the block stands in place of water: only then does it leave water behind when it moves, so no water is
  * created or lost (a block put above the surface and pulled down leaves air). A chain attached to it keeps it where
  * it is, and so does a sign hanging on it, which would fall off (see {@link #isHeld}).
+ * <p>
+ * Floating at the surface, it bobs like a buoy: whatever walks or stands on it pushes it a little into the water
+ * ({@link #SINK}, a few pixels, its top and model lowered), and it comes back up once nothing is on it.
  */
 public class PlasticBlock extends Block {
     public static final MapCodec<PlasticBlock> CODEC = createCodec(PlasticBlock::new);
@@ -98,6 +106,15 @@ public class PlasticBlock extends Block {
     private static final int MAX_COLUMN_WALK = 64;
     /** True when the block took the place of a water source: it gives it back when it moves away. */
     public static final BooleanProperty WET = BooleanProperty.of("wet");
+    /** How far (pixels) a block floating at the surface is pushed into the water by what stands on it. */
+    public static final IntProperty SINK = IntProperty.of("sink", 0, 3);
+    private static final VoxelShape[] SUNK_SHAPES = new VoxelShape[4];
+
+    static {
+        for (int sink = 0; sink < SUNK_SHAPES.length; sink++) {
+            SUNK_SHAPES[sink] = Block.createCuboidShape(0, 0, 0, 16, 16 - sink, 16);
+        }
+    }
 
     /** Which way the water around the block carries it. */
     public enum Current { NONE, UP, DOWN }
@@ -121,12 +138,62 @@ public class PlasticBlock extends Block {
 
     public PlasticBlock(Settings settings) {
         super(settings);
-        setDefaultState(getDefaultState().with(WET, false));
+        setDefaultState(getDefaultState().with(WET, false).with(SINK, 0));
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(WET);
+        builder.add(WET, SINK);
+    }
+
+    /** Pushed into the water: what stands on it stands lower (its outline stays the whole block, to aim at). */
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return SUNK_SHAPES[state.get(SINK)];
+    }
+
+    /** Pushed into the water, it no longer fills its block: the faces next to it are drawn. */
+    @Override
+    protected VoxelShape getCullingShape(BlockState state, BlockView world, BlockPos pos) {
+        return state.get(SINK) == 0 ? VoxelShapes.fullCube() : VoxelShapes.empty();
+    }
+
+    @Override
+    public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
+        if (!world.isClient && state.get(SINK) < 3 && bobs(world, pos, state)) {
+            world.setBlockState(pos, state.with(SINK, state.get(SINK) + 1), Block.NOTIFY_LISTENERS | Block.FORCE_STATE);
+        }
+        super.onSteppedOn(world, pos, state, entity);
+    }
+
+    /** @return true for a block floating at the surface of still water: in place of water, water under it, none over it */
+    public static boolean bobs(WorldView world, BlockPos pos, BlockState state) {
+        return state.get(WET) && world.getFluidState(pos.down()).isIn(FluidTags.WATER)
+                && !world.getFluidState(pos.up()).isIn(FluidTags.WATER) && getCurrent(world, pos) == Current.NONE;
+    }
+
+    /** @return true if something stands on the block (its feet on its top, sunk or not) */
+    private static boolean isStoodOn(ServerWorld world, BlockPos pos) {
+        Box above = new Box(pos.getX(), pos.getY() + 0.5, pos.getZ(), pos.getX() + 1, pos.getY() + 1.1, pos.getZ() + 1);
+        return !world.getOtherEntities(null, above, e -> !e.isSpectator() && !e.hasVehicle()
+                && e.getBoundingBox().minY >= pos.getY() + 0.5
+                && !(e instanceof PlayerEntity player && player.getAbilities().flying)).isEmpty();
+    }
+
+    /**
+     * A bobbing block: pushed further while something stands on it, back up a pixel at a time once free.
+     *
+     * @return true if it is still pushed into the water (its float waits: it is at the surface anyway)
+     */
+    private boolean bob(BlockState state, ServerWorld world, BlockPos pos) {
+        int sink = state.get(SINK);
+        if (sink == 0) return false;
+        boolean ridden = bobs(world, pos, state) && isStoodOn(world, pos);
+        int next = ridden ? Math.min(3, sink + 1) : sink - 1;
+        if (next != sink) world.setBlockState(pos, state.with(SINK, next), Block.NOTIFY_LISTENERS | Block.FORCE_STATE);
+        if (next == 0) return false;
+        world.scheduleBlockTick(pos, this, RISE_DELAY);
+        return true;
     }
 
     @Override
@@ -162,6 +229,7 @@ public class PlasticBlock extends Block {
 
     @Override
     protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        if (bob(state, world, pos)) return;
         drift(world, pos, this, PlasticBlock::step);
     }
 
@@ -252,6 +320,7 @@ public class PlasticBlock extends Block {
         BlockState current = world.getBlockState(pos);
         BlockState left = holdsWater(current) ? Blocks.WATER.getDefaultState() : Blocks.AIR.getDefaultState();
         if (moved.contains(WET)) moved = moved.with(WET, true); // it only ever moves into water
+        if (moved.contains(SINK)) moved = moved.with(SINK, 0);
         VoxelShape shape = current.getOutlineShape(world, pos), newShape = moved.getOutlineShape(world, target);
         double top = pos.getY() + shape.getMax(Direction.Axis.Y);
         double newTop = target.getY() + newShape.getMax(Direction.Axis.Y);
