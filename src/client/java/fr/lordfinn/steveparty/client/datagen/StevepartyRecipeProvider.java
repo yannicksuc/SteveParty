@@ -286,10 +286,10 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .pattern("FHF")
                 .pattern("CFC")
                 .input('C', Items.CRYING_OBSIDIAN)
-                .input('F', ModItems.BLACK_STAR_FRAGMENT)
+                // star fragments of any colour (black ones are rare)
+                .input('F', StevepartyReferenceItemTagProvider.STAR_FRAGMENTS_TAG)
                 .input('H', Items.HEAVY_CORE)
                 .criterion(hasItem(Items.HEAVY_CORE), conditionsFromItem(Items.HEAVY_CORE))
-                .criterion(hasItem(ModItems.BLACK_STAR_FRAGMENT), conditionsFromItem(ModItems.BLACK_STAR_FRAGMENT))
                 .offerTo(exporter);
 
         // The Telescope: a spyglass on a copper mount and a tripod of sticks
@@ -392,7 +392,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
     }
 
     // Plastic like the real thing: sugar cane (green polyethylene) is turned into pellets in a furnace,
-    // then pellets are moulded with a dye and an amethyst shard.
+    // then pellets are moulded with a dye.
     private void generatePlasticBlocks() {
         offerSmelting(List.of(Items.SUGAR_CANE), RecipeCategory.MISC, ModItems.PLASTIC_PELLETS, 0.1f, 200, "plastic_pellets");
         Ingredient anyPlasticBlock = Ingredient.ofItems(ModBlocks.PLASTIC_BLOCKS);
@@ -402,7 +402,6 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
             ShapelessRecipeJsonBuilder.create(RecipeCategory.BUILDING_BLOCKS, plasticBlock, 4)
                     .input(ModItems.PLASTIC_PELLETS, 4)
                     .input(dye)
-                    .input(Items.AMETHYST_SHARD)
                     .group("plastic_block")
                     .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
                     .offerTo(exporter);

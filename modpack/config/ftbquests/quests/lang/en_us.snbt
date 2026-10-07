@@ -237,7 +237,7 @@
 	]
 	quest.1569C7FE3FB27DB1.title: "Take your place"
 	quest.1661B4C0B973F8ED.quest_desc: [
-		"Crying obsidian, 4 black star fragments and a heavy core. Placed, it pulls everything within 8 blocks into orbit (no fall damage inside; full netherite armour resists). It also powers the Dice Forge."
+		"Crying obsidian, 4 star fragments of any colour and a heavy core. Placed, it pulls everything within 8 blocks into orbit (no fall damage inside; full netherite armour resists). It also powers the Dice Forge."
 	]
 	quest.1661B4C0B973F8ED.title: "Gravity Core"
 	quest.169B6F8AE6D4D572.quest_desc: [
@@ -773,7 +773,7 @@
 	]
 	quest.6A47B29FC1D81DDA.title: "Premium Die Face 10"
 	quest.6AD835CCA129C2DD.quest_desc: [
-		"4 plastic pellets + 1 dye + 1 amethyst shard, shapeless: 4 blocks of the dye's colour. 8 blocks around a dye recolour them. Neighbours of the same colour merge into one piece (up to 4x2x4)."
+		"4 plastic pellets + 1 dye, shapeless: 4 blocks of the dye's colour. 8 blocks around a dye recolour them. Neighbours of the same colour merge into one piece (up to 4x2x4)."
 	]
 	quest.6AD835CCA129C2DD.title: "Red Plastic Block"
 	quest.6B5FF43F4D5E73E2.quest_desc: [

@@ -1,0 +1,6 @@
+{
+  "parent": "steveparty:block/plastic_block_sunk_1",
+  "textures": {
+    "all": "steveparty:block/plastic_block/cyan_plastic_block"
+  }
+}

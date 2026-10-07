@@ -4,6 +4,9 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.MerchantScreenHandler;
@@ -21,12 +24,15 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
     private static final int PLAYER_INVENTORY_START = 3;
     private static final int PLAYER_INVENTORY_END = 39;
     private int selectedTradeIndex = -1; // To track the player's explicitly selected trade
+    private final PlayerEntity player;
 
     public CustomizableMerchantScreenHandler(int syncId, PlayerInventory playerInventory) {
         super(syncId, playerInventory);
+        this.player = playerInventory.player;
     }
     public CustomizableMerchantScreenHandler(int syncId, PlayerInventory playerInventory, Merchant merchant) {
         super(syncId, playerInventory, merchant);
+        this.player = playerInventory.player;
     }
 
     public void setSelectedTradeIndex(int index) {
@@ -45,6 +51,8 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
             syncState();
             return;
         }
+        // Nothing to take: the customer is told why (out of stock, or the price is not in the payment slots)
+        if (slotIndex == RESULT_SLOT && getSlot(RESULT_SLOT).getStack().isEmpty()) explainUnpaid(selectedOffer());
         super.onSlotClick(slotIndex, button, actionType, player);
     }
 
@@ -119,6 +127,40 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
      */
     @Override
     public void switchTo(int recipeIndex) {
+        switchToOffer(recipeIndex);
+        TradeOfferList offers = this.getRecipes();
+        if (recipeIndex >= 0 && recipeIndex < offers.size()) explainUnpaid(offers.get(recipeIndex));
+    }
+
+    /** The offer the customer picked, null if none. */
+    private TradeOffer selectedOffer() {
+        TradeOfferList offers = this.getRecipes();
+        return selectedTradeIndex >= 0 && selectedTradeIndex < offers.size() ? offers.get(selectedTradeIndex) : null;
+    }
+
+    /**
+     * Server: tells the customer, in the action bar, why an offer he picked can't be taken: it is out of stock, or he
+     * lacks its price (the payment slots could not be filled from his inventory).
+     */
+    private void explainUnpaid(TradeOffer offer) {
+        if (offer == null || !(player instanceof ServerPlayerEntity)) return;
+        if (offer.isDisabled()) {
+            player.sendMessage(Text.translatable("message.steveparty.shop.out_of_stock"), true);
+            return;
+        }
+        if (offer.matchesBuyItems(this.slots.get(INPUT_SLOT_1).getStack(), this.slots.get(INPUT_SLOT_2).getStack())) return;
+        MutableText price = priceText(offer.getDisplayedFirstBuyItem());
+        if (!offer.getDisplayedSecondBuyItem().isEmpty()) {
+            price = Text.translatable("message.steveparty.shop.price_and", price, priceText(offer.getDisplayedSecondBuyItem()));
+        }
+        player.sendMessage(Text.translatable("message.steveparty.shop.price_missing", price), true);
+    }
+
+    private static MutableText priceText(ItemStack stack) {
+        return Text.translatable("message.steveparty.shop.price_item", stack.getCount(), stack.getName());
+    }
+
+    private void switchToOffer(int recipeIndex) {
         TradeOfferList offers = this.getRecipes();
         if (recipeIndex < 0 || recipeIndex >= offers.size()
                 || !(offers.get(recipeIndex) instanceof TradingStallBlockEntity.ExactTradeOffer offer)) {

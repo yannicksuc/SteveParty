@@ -597,10 +597,17 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
                 return ActionResult.SUCCESS;
             }
             this.fillRecipes();
-            if (storages.isEmpty() || tradeOffers.isEmpty())
+            Text missing = whyNoTrade();
+            if (missing != null) {
+                // Said once (not for the off hand too), and not over a name tag being used on him
+                if (hand == Hand.MAIN_HAND && !held.isOf(Items.NAME_TAG)) player.sendMessage(missing, true);
                 return ActionResult.PASS;
+            }
             this.setCustomer(player);
             this.sendOffers(player, this.getDisplayName(), 0);
+            if (tradeOffers.stream().allMatch(TradeOffer::isDisabled)) {
+                player.sendMessage(Text.translatable("message.steveparty.shop.all_out_of_stock"), true);
+            }
             if (isAttentionTarget(player)) playHappyGesture();
             return ActionResult.SUCCESS;
         }
@@ -1031,6 +1038,21 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
     protected void fillRecipes() {
         updateInventories();
         updateTradeOffers();
+    }
+
+    /**
+     * Why a click on him opens no shop (after {@link #fillRecipes}), for the action bar: no shop at all, no stall or
+     * no stock linked, or a stall without a complete offer.
+     *
+     * @return null if his shop can open
+     */
+    @Nullable
+    private Text whyNoTrade() {
+        if (tradingStalls.isEmpty() && storages.isEmpty()) return Text.translatable("message.steveparty.shop.no_shop");
+        if (tradingStalls.isEmpty()) return Text.translatable("message.steveparty.shop.incomplete_stall");
+        if (storages.isEmpty()) return Text.translatable("message.steveparty.shop.incomplete_stock");
+        if (tradeOffers.isEmpty()) return Text.translatable("message.steveparty.shop.no_offer");
+        return null;
     }
 
     @Override

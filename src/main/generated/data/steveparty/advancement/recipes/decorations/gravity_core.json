@@ -1,16 +1,6 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_black_star_fragment": {
-      "conditions": {
-        "items": [
-          {
-            "items": "steveparty:black_star_fragment"
-          }
-        ]
-      },
-      "trigger": "minecraft:inventory_changed"
-    },
     "has_heavy_core": {
       "conditions": {
         "items": [
@@ -31,8 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_heavy_core",
-      "has_black_star_fragment"
+      "has_heavy_core"
     ]
   ],
   "rewards": {

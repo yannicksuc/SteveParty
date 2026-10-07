@@ -11,6 +11,12 @@ import fr.lordfinn.steveparty.telescope.TelescopeMath;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.DoubleBlockHalf;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.world.EmptyBlockView;
+import net.minecraft.world.GameMode;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -350,5 +356,60 @@ public class TelescopeGameTests implements FabricGameTest {
         context.assertTrue(context.getBlockState(pos).rotate(BlockRotation.CLOCKWISE_90).get(TelescopeBlock.ROTATION) == 7, "turned a quarter");
         context.assertTrue(context.getBlockState(pos).rotate(BlockRotation.CLOCKWISE_180).get(TelescopeBlock.ROTATION) == 11, "turned a half");
         context.complete();
+    }
+
+    /** Places a telescope as a player would: its lower half, then (onPlaced) its upper half. */
+    private static void placeTelescope(TestContext context, BlockPos pos) {
+        BlockState state = ModBlocks.TELESCOPE.getDefaultState();
+        context.setBlockState(pos, state);
+        state.getBlock().onPlaced(context.getWorld(), context.getAbsolutePos(pos), state, null, new ItemStack(ModBlocks.TELESCOPE));
+    }
+
+    private static int droppedTelescopes(TestContext context, BlockPos pos) {
+        return context.getWorld().getEntitiesByClass(ItemEntity.class, new Box(context.getAbsolutePos(pos)).expand(3),
+                e -> e.getStack().isOf(ModBlocks.TELESCOPE.asItem())).stream().mapToInt(e -> e.getStack().getCount()).sum();
+    }
+
+    /**
+     * Playtest #96: only its feet could be aimed at. It is two blocks high, both halves outlining the whole telescope
+     * (tube included); breaking its upper half breaks it all and drops one telescope.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itCanBeAimedAtAndBrokenOverItsWholeHeight(TestContext context) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        placeTelescope(context, pos);
+        BlockState upper = context.getBlockState(pos.up());
+        context.assertTrue(upper.isOf(ModBlocks.TELESCOPE) && upper.get(TelescopeBlock.HALF) == DoubleBlockHalf.UPPER, "an upper half");
+        context.assertTrue(upper.getOutlineShape(EmptyBlockView.INSTANCE, BlockPos.ORIGIN).getMax(net.minecraft.util.math.Direction.Axis.Y) > 1.3,
+                "the upper half outlines the tube, up to its lens");
+        context.assertTrue(context.getBlockState(pos).getOutlineShape(EmptyBlockView.INSTANCE, BlockPos.ORIGIN)
+                .getMax(net.minecraft.util.math.Direction.Axis.Y) > 2.3, "the lower half outlines the whole telescope too");
+        context.getWorld().breakBlock(context.getAbsolutePos(pos.up()), true);
+        context.waitAndRun(2, () -> {
+            context.assertTrue(context.getBlockState(pos).isAir() && context.getBlockState(pos.up()).isAir(), "both halves gone");
+            context.assertEquals(droppedTelescopes(context, pos), 1, "one telescope dropped");
+            context.complete();
+        });
+    }
+
+    /** Sneaking with an empty hand picks it up: straight into the inventory, nothing dropped, no tool needed. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void sneakingPicksItUp(TestContext context) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        placeTelescope(context, pos);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            player.changeGameMode(GameMode.SURVIVAL);
+            player.getInventory().clear();
+            context.assertTrue(TelescopeBlock.pickUp(context.getWorld(), context.getAbsolutePos(pos), player), "picked up");
+            context.assertTrue(context.getBlockState(pos).isAir() && context.getBlockState(pos.up()).isAir(), "both halves gone");
+            context.assertEquals(player.getInventory().count(ModBlocks.TELESCOPE.asItem()), 1, "in the inventory");
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+        context.waitAndRun(2, () -> {
+            context.assertEquals(droppedTelescopes(context, pos), 0, "nothing dropped");
+            context.complete();
+        });
     }
 }

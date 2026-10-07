@@ -1,7 +1,16 @@
 {
   "variants": {
-    "": {
+    "sink=0": {
       "model": "steveparty:block/white_plastic_block"
+    },
+    "sink=1": {
+      "model": "steveparty:block/white_plastic_block_sunk_1"
+    },
+    "sink=2": {
+      "model": "steveparty:block/white_plastic_block_sunk_2"
+    },
+    "sink=3": {
+      "model": "steveparty:block/white_plastic_block_sunk_3"
     }
   }
 }

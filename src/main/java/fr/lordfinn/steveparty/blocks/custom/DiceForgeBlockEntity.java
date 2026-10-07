@@ -148,6 +148,11 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /** The core blowing up: explosion power (an end crystal is 6), then everything within the radius is flung away. */
     public static final float CORE_EXPLOSION_POWER = 2f;
     public static final double CORE_BLAST_RADIUS = 8, CORE_BLAST_SPEED = 4;
+    /**
+     * Height (blocks above the plate) from which the core can be hit: lower, it floats right over the forge, where a
+     * player punching or breaking the forge would hit it instead and blow it up by accident.
+     */
+    public static final float CORE_HIT_ALTITUDE = 2f;
 
     // ---- synced properties (PropertyDelegate)
     public static final int PROP_PROGRESS = 0;
@@ -785,10 +790,10 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         GravityPull.pullAround(world, getCoreCenter(), PULL_RANGE * height, PULL_STRENGTH * height, true, PULL_ORBIT);
     }
 
-    /** Keeps the hitbox entity on the risen core (and removes it when there is no core). */
+    /** Keeps the hitbox entity on the risen core (and removes it when there is no core, or it is too low to be hit). */
     private void syncCoreEntity(ServerWorld world) {
         Entity current = coreEntityId == null ? null : world.getEntity(coreEntityId);
-        if (!isActivated() || isInsertingCore(0f)) {
+        if (!isActivated() || isInsertingCore(0f) || coreAltitude < CORE_HIT_ALTITUDE) {
             if (current != null) current.discard();
             coreEntityId = null;
             return;

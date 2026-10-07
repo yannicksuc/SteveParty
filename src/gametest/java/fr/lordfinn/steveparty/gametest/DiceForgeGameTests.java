@@ -8,10 +8,15 @@ import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
 import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.Items;
+import net.minecraft.util.Hand;
+import net.minecraft.util.math.Box;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -450,5 +455,88 @@ public class DiceForgeGameTests implements FabricGameTest {
         }
         context.assertTrue(getTargetAltitude(forge) == MAX_CORE_ALTITUDE, "5 black fragments: 16 blocks");
         GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
+    }
+
+    /** A loaded forge: faces, blank faces, one fragment of each colour (a low core), a forged die in the output. */
+    private static DiceForgeBlockEntity loadedForge(TestContext context) {
+        DiceForgeBlockEntity forge = placeActivatedForge(context);
+        forge.setStack(0, new ItemStack(face(1), 3));
+        forge.setStack(5, new ItemStack(face(6), 2));
+        forge.setStack(FIRST_FRAGMENT_SLOT, new ItemStack(ModItems.RED_STAR_FRAGMENT));
+        forge.setStack(FIRST_FRAGMENT_SLOT + 1, new ItemStack(ModItems.BLUE_STAR_FRAGMENT));
+        forge.setStack(FIRST_FRAGMENT_SLOT + 2, new ItemStack(ModItems.GREEN_STAR_FRAGMENT));
+        forge.setStack(FIRST_FRAGMENT_SLOT + 3, new ItemStack(ModItems.YELLOW_STAR_FRAGMENT));
+        forge.setStack(FIRST_FRAGMENT_SLOT + 4, new ItemStack(ModItems.PURPLE_STAR_FRAGMENT));
+        forge.setStack(BLANK_SLOT, blanks(7));
+        forge.setStack(OUTPUT_SLOT, DiceFacesComponent.createDie(List.of(new ItemStack(face(2)))));
+        return forge;
+    }
+
+    private static List<ForgeCoreEntity> coreHitboxes(TestContext context) {
+        BlockPos abs = context.getAbsolutePos(FORGE_POS);
+        return context.getWorld().getEntitiesByClass(ForgeCoreEntity.class, new Box(abs).expand(1, MAX_CORE_ALTITUDE + 3, 1), e -> true);
+    }
+
+    private static int dropped(TestContext context, Item item) {
+        BlockPos abs = context.getAbsolutePos(FORGE_POS);
+        return context.getWorld().getEntitiesByClass(ItemEntity.class, new Box(abs).expand(3), e -> e.getStack().isOf(item))
+                .stream().mapToInt(e -> e.getStack().getCount()).sum();
+    }
+
+    /**
+     * Playtest #54: punching a loaded forge blew it up. Its core, low over the plate (few fragments), was in the way
+     * of the punches: it has no hitbox there, so hitting the forge only breaks it, and everything in it drops.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = TICK_LIMIT)
+    public void punchingALoadedForgeBreaksItWithoutBlowingItUp(TestContext context) {
+        DiceForgeBlockEntity forge = loadedForge(context);
+        context.waitAndRun(CORE_INSERT_TICKS + 40, () -> {
+            context.assertTrue(forge.getCoreCenter().y - context.getAbsolutePos(FORGE_POS).getY() < CORE_REST_HEIGHT + CORE_HIT_ALTITUDE,
+                    "a low core: " + forge.getCoreCenter());
+            context.assertTrue(coreHitboxes(context).isEmpty(), "a low core can't be hit (it floats where the forge is punched)");
+            ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+            try {
+                player.changeGameMode(GameMode.SURVIVAL);
+                player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+                context.assertTrue(player.interactionManager.tryBreakBlock(context.getAbsolutePos(FORGE_POS)), "the forge breaks");
+            } finally {
+                context.getWorld().getServer().getPlayerManager().remove(player);
+            }
+            context.waitAndRun(2, () -> {
+                context.assertEquals(dropped(context, ModBlocks.DICE_FORGE.asItem()), 1, "the forge itself");
+                context.assertEquals(dropped(context, ModBlocks.GRAVITY_CORE.asItem()), 1, "its gravity core");
+                context.assertEquals(dropped(context, face(1)), 3, "its faces");
+                context.assertEquals(dropped(context, face(6)), 2, "its faces");
+                context.assertEquals(dropped(context, ModItems.PURPLE_STAR_FRAGMENT), 1, "its fragments");
+                context.assertEquals(dropped(context, blanks(1).getItem()), 7, "its blank faces");
+                context.assertEquals(dropped(context, ModItems.DEFAULT_DICE), 1, "its forged die");
+                context.complete();
+            });
+        });
+    }
+
+    /** The core risen high (in the sky) can still be hit: it blows up, the forge keeps everything but its core. */
+    // alone in its batch: the risen core pulls, and its blast flings, what other tests have around
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = TICK_LIMIT, batchId = "dice_forge_core_hit")
+    public void hittingTheRisenCoreKeepsTheForgeAndItsContents(TestContext context) {
+        DiceForgeBlockEntity forge = loadedForge(context);
+        for (int i = 0; i < FRAGMENT_SLOTS; i++) forge.setStack(FIRST_FRAGMENT_SLOT + i, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
+        context.waitAndRun(CORE_INSERT_TICKS + 40, () -> {
+            List<ForgeCoreEntity> hitboxes = coreHitboxes(context);
+            context.assertEquals(hitboxes.size(), 1, "the risen core has its hitbox");
+            ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+            try {
+                player.attack(hitboxes.getFirst());
+            } finally {
+                context.getWorld().getServer().getPlayerManager().remove(player);
+            }
+            context.assertTrue(context.getBlockState(FORGE_POS).isOf(ModBlocks.DICE_FORGE), "the forge stays");
+            context.assertTrue(!forge.isActivated(), "its core is gone");
+            context.assertEquals(forge.getStack(0).getCount(), 3, "faces kept");
+            context.assertEquals(forge.getStack(BLANK_SLOT).getCount(), 7, "blank faces kept");
+            context.assertTrue(forge.getStack(FIRST_FRAGMENT_SLOT).isOf(ModItems.BLACK_STAR_FRAGMENT), "fragments kept");
+            context.assertTrue(forge.getStack(OUTPUT_SLOT).isOf(ModItems.DEFAULT_DICE), "forged die kept");
+            context.complete();
+        });
     }
 }
