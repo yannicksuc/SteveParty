@@ -237,7 +237,7 @@
 	]
 	quest.1569C7FE3FB27DB1.title: "Prendre sa place"
 	quest.1661B4C0B973F8ED.quest_desc: [
-		"Obsidienne pleureuse, 4 fragments d'étoile noirs et un noyau lourd. Posé, il attire tout à 8 blocs en orbite (pas de dégâts de chute dans le champ ; une armure complète en netherite résiste). Il alimente aussi la Forge à dés."
+		"Obsidienne pleureuse, 4 fragments d'étoile de n'importe quelle couleur et un noyau lourd. Posé, il attire tout à 8 blocs en orbite (pas de dégâts de chute dans le champ ; une armure complète en netherite résiste). Il alimente aussi la Forge à dés."
 	]
 	quest.1661B4C0B973F8ED.title: "Noyau de gravité"
 	quest.169B6F8AE6D4D572.quest_desc: [
@@ -773,7 +773,7 @@
 	]
 	quest.6A47B29FC1D81DDA.title: "Face de dé premium 10"
 	quest.6AD835CCA129C2DD.quest_desc: [
-		"4 granulés de plastique + 1 colorant + 1 éclat d'améthyste, sans forme : 4 blocs de la couleur du colorant. 8 blocs autour d'un colorant les reteignent. Les voisins de même couleur fusionnent en une seule pièce (jusqu'à 4x2x4)."
+		"4 granulés de plastique + 1 colorant, sans forme : 4 blocs de la couleur du colorant. 8 blocs autour d'un colorant les reteignent. Les voisins de même couleur fusionnent en une seule pièce (jusqu'à 4x2x4)."
 	]
 	quest.6AD835CCA129C2DD.title: "Bloc de plastique rouge"
 	quest.6B5FF43F4D5E73E2.quest_desc: [

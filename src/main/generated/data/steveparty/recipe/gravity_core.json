@@ -6,7 +6,7 @@
       "item": "minecraft:crying_obsidian"
     },
     "F": {
-      "item": "steveparty:black_star_fragment"
+      "tag": "steveparty:star_fragments"
     },
     "H": {
       "item": "minecraft:heavy_core"

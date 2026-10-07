@@ -295,7 +295,7 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
                     "Hold a Shopkeeper Key to open your shop."), true);
         } else if (ownedShop) {
             player.sendMessage(Text.translatableWithFallback("message.steveparty.shop.not_owner_access_denied",
-                    "This shop belongs to another player."), true);
+                    "This shop belongs to another player: to buy, right-click its trader."), true);
         } else {
             player.sendMessage(Text.translatableWithFallback("message.steveparty.shop.access_denied",
                     "Only a Shopkeeper Key linked to this shop's trader can open it."), true);
