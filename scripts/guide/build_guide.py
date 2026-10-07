@@ -1315,6 +1315,52 @@ category("gadgets", "steveparty:looting_box", ("Gadgets", "Gadgets"), [
           "Clic droit sur un mob : réduit au silence ! Encore une fois : il retrouve sa voix."),
         C("steveparty:plunger"),
     ]),
+    E("glandouille", "steveparty:glandouille_spawn_egg", ("Glandouille", "Glandouille"), ("A grumpy acorn", "Un gland grognon"), [
+        T("A grumpy little acorn living **under the trees**: where oaks grow, in old growth taigas (old mossy "
+          "ones) and snowy taigas (frosty ones). It **never hurts**: step into its zone or annoy it, it **stomps "
+          "twice** and **charges** straight ahead, shoving you hard. Into a wall: dizzy.\n\n"
+          "It **remembers** who stomped or hit it for a few minutes.",
+          "Un petit gland grognon qui vit **sous les arbres** : là où poussent les chênes, dans les vieilles taïgas "
+          "(les vieux moussus) et les taïgas enneigées (les glacés). Il **ne blesse jamais** : entre dans sa zone "
+          "ou embête-le, il **tape deux fois du pied** et **fonce** tout droit en te bousculant. Dans un mur : "
+          "étourdi.\n\nIl **se souvient** quelques minutes de qui l'a écrasé ou frappé."),
+        T("**Jump on its cap**: pouic! Flattened, and you bounce. It pops back up sulking; the **second stomp** "
+          "finishes it (the old mossy one takes three). It drops **Acorns**.\n\n"
+          "Plant an Acorn on **farmland**: it grows and hatches into a **young Glandouille**. Bone meal on a "
+          "Glandouille: an acorn now and then.",
+          "**Saute sur son chapeau** : pouic ! Aplati, et tu rebondis. Il se regonfle en boudant ; le **deuxième "
+          "écrasement** l'achève (trois pour le vieux moussu). Il lâche des **glands**.\n\n"
+          "Plante un gland sur de la **terre labourée** : il pousse et éclot en **jeune Glandouille**. De la poudre "
+          "d'os sur un Glandouille : un gland de temps en temps.",
+          "Pouic!", "Pouic !"),
+        T("Calm Glandouilles **climb on each other** (5 at most). The tower walks, sways and charges with its "
+          "bottom one, and only **falls** when it charges into a wall.\n\n"
+          "**Hit** one inside a tower: flicked out like a missile! **Sneak + right-click** empty-handed carries a "
+          "whole tower; right-click another tower to stack it on top (no limit), a block to put it down.",
+          "Les Glandouilles calmes **grimpent les uns sur les autres** (5 au plus). La tour marche, vacille et "
+          "charge avec celui du bas, et ne **tombe** que s'il charge dans un mur.\n\n"
+          "**Frappe** celui d'une tour : pichenette, il part comme un missile ! **Accroupi + clic droit** main vide "
+          "porte toute une tour ; clic droit sur une autre tour pour l'empiler dessus (sans limite), sur un bloc "
+          "pour la poser.",
+          "Towers", "Tours"),
+        T("**Young** (green): quick, its towers sway wildly. **Old mossy**: never charges, a tower on it never "
+          "moves. **Frosty**: hit, it slides like a curling stone off the walls.\n\n"
+          "Rarely a crash sends its **cap** flying (never under a tower): wear the **Acorn Hat** or give it back. "
+          "Hatless, it is shy. It naps by leaves at night; wake it and it charges.",
+          "**Jeune** (vert) : rapide, ses tours vacillent fort. **Vieux moussu** : ne charge jamais, une tour sur "
+          "lui ne bouge pas. **Glacé** : frappé, il glisse comme un palet de curling et rebondit sur les murs.\n\n"
+          "Rarement, un choc fait sauter son **chapeau** (jamais sous une tour) : porte le **Chapeau de gland** ou "
+          "rends-le-lui. Sans, il est timide. Il fait la sieste près des feuilles ; réveille-le et il charge.",
+          "Variants", "Variantes"),
+        T("**Glandouille Cartridge**: a pawn stopping here is pushed **some spaces on** by a tower of "
+          "Glandouilles, with every pawn it meets on the way. Its menu: the destination (0 = none, nothing "
+          "happens) and who pushes: a tower, or a **lone one** that tries, fails and sulks.",
+          "**Cartouche Glandouille** : un pion qui s'arrête ici est poussé de **quelques cases** par une tour de "
+          "Glandouilles, avec tous les pions qu'elle croise. Son menu : la destination (0 = aucune, rien ne se "
+          "passe) et qui pousse : une tour, ou un **seul** qui essaie, échoue et boude.",
+          "On the board", "Sur le plateau"),
+        C("steveparty:glandouille_cartridge", None, "Cartridge + acorn.", "Cartouche + gland."),
+    ]),
     E("villager_moods", "steveparty:villager_block", ("Villager Block Moods", "Humeurs du bloc de villageois"), ("About 70 reactions", "Environ 70 réactions"), [
         T("A Villager Block reacts to about 70 things with 16 faces: it waves when you arrive, blushes when "
           "stared at, drools when you eat, panics at zombies, dances to a jukebox (wild on Pigstep), begs when "

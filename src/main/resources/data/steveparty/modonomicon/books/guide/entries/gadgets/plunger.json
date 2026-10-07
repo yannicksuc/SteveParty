@@ -6,7 +6,7 @@
     "item": "steveparty:plunger"
   },
   "x": 0,
-  "y": 2,
+  "y": 0,
   "sort_number": 2,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
