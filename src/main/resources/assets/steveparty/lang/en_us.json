@@ -541,6 +541,7 @@
   "message.steveparty.invalid_world": "Can't add a destination to a different world",
   "effect.steveparty.squish": "Squishing",
   "effect.steveparty.squished": "Squishing",
+  "effect.steveparty.dazed": "Dazed",
   "entity.steveparty.dice": "Default Die",
   "entity.steveparty.boxed_trader": "Boxed Trader",
   "entity.steveparty.mula": "Mula",

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.glandouille;
 
+import fr.lordfinn.steveparty.effect.DazedEffect;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
@@ -63,7 +64,8 @@ import java.util.UUID;
  * <ul>
  *     <li><b>Charge</b>: a player stepping into its zone ({@link #ZONE} blocks), one it holds a grudge against
  *     ({@link #GRUDGE_ZONE}), or a dancing Mula: it stomps twice, its stem rises, brows down ({@link #TELEGRAPH_TICKS}),
- *     then it runs straight ahead without turning. What it meets is shoved hard, without damage; a wall stuns it.</li>
+ *     then it runs straight ahead without turning. What it meets is shoved hard, without damage (a player is dazed on
+ *     the spot instead, see {@link #shove}); a wall stuns it.</li>
  *     <li><b>Stomped</b> on its cap: flattened ("pouic"), the stomper bounces off; it pops back up sulking. The next
  *     stomp finishes it (see {@link GlandouilleVariant#flattenAt} / {@link GlandouilleVariant#dieAt}).</li>
  *     <li><b>Hit</b>: pushed, angry, it remembers who did it for {@link #GRUDGE_TICKS} (the frosty one slides
@@ -108,6 +110,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     public static final float HATLESS_SPAWN_CHANCE = 0.03f;
     /** How hard its charge (and a flicked one) shoves. */
     public static final double SHOVE = 1.6;
+    /** A player shoved at least this hard (a charge, a flight, a quick slide) is dazed. */
+    public static final double DAZE_STRENGTH = 0.2;
 
     public enum Mood {
         CALM, TELEGRAPH, CHARGING, STUNNED, FLAT, REINFLATE, SULK, SLEEPING, FLYING, SLIDING, PUSH_FAIL, HOPPING;
@@ -586,9 +590,16 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         }
     }
 
-    /** Shoves {@code other} along {@code dir}: knockback only, never damage. */
+    /**
+     * Shoves {@code other} along {@code dir}: knockback only, never damage. A player is not thrown but dazed on the
+     * spot instead (see {@link DazedEffect}), unless it is only a gentle touch.
+     */
     public static void shove(LivingEntity other, Vec3d dir, double strength) {
         if (other instanceof GlandouilleEntity glandouille && glandouille.isBoardActor()) return;
+        if (other instanceof PlayerEntity) {
+            if (strength >= DAZE_STRENGTH) DazedEffect.daze(other);
+            return;
+        }
         // takeKnockback pushes away from (x, z): the opposite of where it goes
         other.takeKnockback(strength, -dir.x, -dir.z);
         other.addVelocity(0, 0.2, 0);
