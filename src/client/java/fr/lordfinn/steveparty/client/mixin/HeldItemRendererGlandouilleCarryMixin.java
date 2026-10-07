@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(HeldItemRenderer.class)
 public class HeldItemRendererGlandouilleCarryMixin {
     /** How far each arm comes in toward the middle (screen units), and turns in (degrees). */
-    private static final float INWARD = 0.28f, TURN_IN = 8f;
+    private static final float INWARD = 0.14f, TURN_IN = 5f;
 
     @Shadow
     private void renderArmHoldingItem(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light,
