@@ -35,6 +35,7 @@ public class GlandouilleRenderer extends GeoEntityRenderer<GlandouilleEntity> {
     @Override
     public void render(GlandouilleEntity glandouille, float entityYaw, float partialTick, MatrixStack poseStack,
                        VertexConsumerProvider bufferSource, int packedLight) {
+        this.shadowRadius = 0.35f * glandouille.getScaleFactor();
         GlandouilleEntity bottom = glandouille.getVehicle() instanceof GlandouilleEntity ? GlandouilleTowers.bottom(glandouille) : null;
         if (bottom == null) {
             super.render(glandouille, entityYaw, partialTick, poseStack, bufferSource, packedLight);

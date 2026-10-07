@@ -4,7 +4,8 @@ package fr.lordfinn.steveparty.entities.custom.glandouille;
  * The four Glandouilles: the same bones, a texture each (textures/entity/glandouille*.png, made from the classic one by
  * the art sources), and a few numbers.
  *
- * @param scale      drawn size and hitbox, relative to the model
+ * @param scale      drawn size, hitbox and eye height, relative to the model (a tower's floors follow it: each
+ *                   one stands on the cap of the one below, at that one's height)
  * @param speed      walking speed (movement speed attribute)
  * @param chargeSpeed blocks per tick of its charge (0: it never charges)
  * @param stunTicks  how long a crash into a wall leaves it dizzy
@@ -15,12 +16,12 @@ package fr.lordfinn.steveparty.entities.custom.glandouille;
 public enum GlandouilleVariant {
     /** The brown one, grumpy, charges. */
     CLASSIC("classic", 1.0f, 0.23, 0.42, 60, 1, 2, 1.0f),
-    /** Green, a little smaller and quicker: a tower on it runs and sways a lot; gets over a crash sooner. */
-    YOUNG("young", 0.8f, 0.32, 0.55, 30, 1, 2, 2.4f),
-    /** Old and mossy, bigger: never charges, a tower on it stays put; takes two stomps to flatten, three to finish. */
-    MOSSY("mossy", 1.25f, 0.16, 0, 60, 2, 3, 0.5f),
-    /** Snow on its cap: slides like a curling stone when hit, bounces off walls; gets over a crash sooner. */
-    FROSTY("frosty", 1.0f, 0.23, 0.42, 35, 1, 2, 1.0f);
+    /** Green, much smaller (0.7) and quicker: a tower on it runs and sways a lot; gets over a crash sooner. */
+    YOUNG("young", 0.7f, 0.32, 0.55, 30, 1, 2, 2.4f),
+    /** Old and mossy, much bigger (1.4): never charges, a tower on it stays put; takes two stomps to flatten, three to finish. */
+    MOSSY("mossy", 1.4f, 0.16, 0, 60, 2, 3, 0.5f),
+    /** Snow on its cap, a little bigger (1.1): slides like a curling stone when hit, bounces off walls; gets over a crash sooner. */
+    FROSTY("frosty", 1.1f, 0.23, 0.42, 35, 1, 2, 1.0f);
 
     private final String name;
     public final float scale;
