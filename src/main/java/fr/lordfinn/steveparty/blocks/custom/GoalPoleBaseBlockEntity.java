@@ -359,7 +359,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     /** The most objectives of the server offered to the screen (its completion). */
     public static final int MAX_LISTED_OBJECTIVES = 200;
 
-    /** The objectives of the server a base can follow (not the bases' own), by name: name and criterion. */
+    /** The objectives of the server a base can follow (not the bases' own), by name: name, criterion and display name. */
     public static NbtList listObjectives(MinecraftServer server) {
         NbtList list = new NbtList();
         server.getScoreboard().getObjectives().stream()
@@ -370,6 +370,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
                     NbtCompound entry = new NbtCompound();
                     entry.putString("Name", objective.getName());
                     entry.putString("Criterion", objective.getCriterion().getName());
+                    entry.putString("Display", objective.getDisplayName().getString());
                     list.add(entry);
                 });
         return list;
