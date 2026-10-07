@@ -26,15 +26,15 @@ public enum GlandouilleVariant {
      */
     YOUNG("young", 9, 11, 5.5f, 1.6f, 1.0f, 0.32, 0.55, 30, 1, 2, 2.4f),
     /**
-     * Old and mossy, wide and squat (a 12x11x12 nut under a broad drooping cap, thick brows, a broken stem): never
+     * Old and mossy, wide and squat (a 12x11x12 nut under a broad drooping cap, thick brows, a broken stem; moss in its texture): never
      * charges, a tower on it stays put; takes two stomps to flatten, three to finish.
      */
-    MOSSY("mossy", 15, 15, 5.5f, 3.2f, 1.0f, 0.16, 0, 60, 2, 3, 0.5f),
+    MOSSY("mossy", 15, 14, 5.5f, 3.2f, 1.0f, 0.16, 0, 60, 2, 3, 0.5f),
     /**
-     * A little bigger and rounder (an 11x11x11 nut), snow on its cap: slides like a curling stone when hit, bounces
+     * A little bigger and rounder (an 11x11x11 nut), snow on its cap (in its texture): slides like a curling stone when hit, bounces
      * off walls; gets over a crash sooner.
      */
-    FROSTY("frosty", 13, 16, 7.5f, 3.2f, 1.0f, 0.23, 0.42, 35, 1, 2, 1.0f);
+    FROSTY("frosty", 13, 15, 7.5f, 3.2f, 1.0f, 0.23, 0.42, 35, 1, 2, 1.0f);
 
     private final String name;
     public final int widthPx;
