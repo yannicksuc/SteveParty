@@ -37,6 +37,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The board view: while the Tile Linker Brush is held (either hand), or the Explorer's Helmet is worn
@@ -82,7 +83,8 @@ public final class BoardView {
             SHOP_MISSING_LABEL = Text.translatable("hud.steveparty.board.shop_missing");
 
     /** A link as drawn: its ends (lifted for inactive ones), colour, and bounds for the frustum test. */
-    private record DrawnEdge(double ax, double ay, double az, double bx, double by, double bz, int color, boolean active, Box bounds) {
+    private record DrawnEdge(double ax, double ay, double az, double bx, double by, double bz, int color, boolean active, Box bounds,
+                             BlockPos to) {
     }
 
     /** An arc between two teleport tiles of a network as drawn: sampled once, in the network's colour. */
@@ -234,7 +236,7 @@ public final class BoardView {
                 // Other cartridges of an Advanced Tile: a little higher, dimmed, not moving
                 double lift = followed ? 0 : 0.06 * (1 + edge.slot() % 4);
                 Box bounds = new Box(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z).expand(0.5);
-                drawnEdges.add(new DrawnEdge(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z, color, followed, bounds));
+                drawnEdges.add(new DrawnEdge(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z, color, followed, bounds, edge.to()));
             }
             if (node.teleportNetwork() != null) {
                 // Each tile of a network to the next one (the last back to the first when they are 3 or more)
@@ -372,8 +374,11 @@ public final class BoardView {
         Vec3d eye = camera.getPos();
         double time = (client.world.getTime() + context.tickCounter().getTickDelta(true)) / 20.0;
         double phase = time * SPEED;
+        Set<BlockPos> ghosts = BrushOverlay.ghosts();
         for (DrawnEdge edge : edges) {
             if (frustum != null && !frustum.isVisible(edge.bounds())) continue;
+            // A link to a ghost: BrushOverlay draws it (orange, to the ghost)
+            if (ghosts.contains(edge.to())) continue;
             WorldDraw.path(matrices, consumers, camera, edge.ax(), edge.ay(), edge.az(), edge.bx(), edge.by(), edge.bz(),
                     edge.color(), DOT, SPACING, edge.active() ? phase : 0, 0.45, 0.12);
         }
