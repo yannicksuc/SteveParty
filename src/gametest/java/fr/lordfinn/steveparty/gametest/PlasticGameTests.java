@@ -716,4 +716,43 @@ public class PlasticGameTests implements FabricGameTest {
             context.complete();
         });
     }
+
+    /**
+     * Playtest #98: floating at the surface, it bobs like a buoy. What stands on it pushes it a few pixels into the
+     * water (and stands lower), then it comes back up once nothing is on it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aFloatingBlockBobsUnderWhatStandsOnIt(TestContext context) {
+        waterColumn(context);
+        BlockPos surface = new BlockPos(X, TOP, Z);
+        context.setBlockState(surface, plastic());
+        context.waitAndRun(5, () -> {
+            // An armor stand: it falls and stands (a mob without AI hangs in the air, touching nothing)
+            var stand = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, surface.up());
+            context.waitAndRun(4 * PlasticBlock.RISE_DELAY + 10, () -> {
+                context.assertEquals(context.getBlockState(surface).get(PlasticBlock.SINK), 3, "pushed into the water");
+                double top = context.getAbsolutePos(surface).getY() + 1;
+                context.assertTrue(Math.abs(stand.getY() - (top - 3 / 16.0)) < 0.02, "what stands on it stands lower: " + stand.getY());
+                stand.discard();
+                context.waitAndRun(4 * PlasticBlock.RISE_DELAY + 5, () -> {
+                    context.assertEquals(context.getBlockState(surface).get(PlasticBlock.SINK), 0, "back up once free");
+                    context.expectBlock(plastic(), surface);
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    /** Under water or on dry land it doesn't bob: only at the surface. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aBlockOnDryLandDoesNotBob(TestContext context) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        context.setBlockState(pos.down(), Blocks.STONE);
+        context.setBlockState(pos, plastic());
+        context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, pos.up());
+        context.waitAndRun(20, () -> {
+            context.assertEquals(context.getBlockState(pos).get(PlasticBlock.SINK), 0, "a floor stays a floor");
+            context.complete();
+        });
+    }
 }
