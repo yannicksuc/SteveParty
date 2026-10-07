@@ -220,12 +220,8 @@ public class ModItems {
                 itemGroup.add(BandanaItem.create(color));
             }
             itemGroup.add(new ItemStack(BOX_COSTUME));
-            // Every tile in its 3 sizes
-            for (net.minecraft.item.ItemConvertible tile : List.of(TILE, ADVANCED_TILE)) {
-                for (fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize size : fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.values()) {
-                    itemGroup.add(fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.with(new ItemStack(tile), size));
-                }
-            }
+            // The tiles: plain, one per cartridge, then their other sizes (same order as in REI)
+            itemGroup.addAll(fr.lordfinn.steveparty.compat.CartridgeApplications.tileEntries());
             itemGroup.add(CHECK_POINT);
             itemGroup.add(BOARD_SPACE_REDSTONE_ROUTER);
             itemGroup.add(WRENCH);
