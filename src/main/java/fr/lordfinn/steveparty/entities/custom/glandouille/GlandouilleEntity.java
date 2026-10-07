@@ -156,7 +156,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     private final Map<UUID, Double> playerY = new HashMap<>(2);
 
     // ---------------------------------------------------------------- client state
-    /** How far its brows are out of its cap (0 hidden, 1 angry), last tick and now. */
+    /** How far its brows are lowered into a frown (0 calm: a gentle one, 1 angry), last tick and now. */
     public float prevBrows, brows;
     /** How much the tower it carries sways (0..1), last tick and now. */
     public float prevSway, sway;

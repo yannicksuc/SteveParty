@@ -8,7 +8,7 @@ package fr.lordfinn.steveparty.entities.custom.glandouille;
  * @param widthPx    hitbox width: its cap's
  * @param heightPx   hitbox height: up to the top of its cap (what a Glandouille climbing on it stands on)
  * @param eyePx      eye height
- * @param browHidePx how far up its brows slide to hide inside its cap
+ * @param browHidePx how far up its brows could slide under its cap (its calm brows sit a fifth of it higher)
  * @param scale      drawn size relative to its model (1: the size comes from the model)
  * @param speed      walking speed (movement speed attribute)
  * @param chargeSpeed blocks per tick of its charge (0: it never charges)
