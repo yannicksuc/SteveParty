@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -41,7 +42,9 @@ final class BrushWheel implements ToolWheel.Provider {
     private static final List<ToolWheel.Ring> MAIN_RING = List.of(new ToolWheel.Ring(28, 80));
     private static final List<ToolWheel.Ring> LEVEL_RING = List.of(new ToolWheel.Ring(26, 92));
     private static final List<ToolWheel.Ring> CARTRIDGE_RING = List.of(new ToolWheel.Ring(26, 80));
-    private static final ItemStack TORCH = new ItemStack(Items.REDSTONE_TORCH);
+    /** The default link: a lasso (the lead). */
+    private static final ItemStack LASSO = new ItemStack(Items.LEAD);
+    private static final ItemStack WRENCH = new ItemStack(ModItems.WRENCH);
     private static final ItemStack DUST = new ItemStack(Items.REDSTONE);
     private static final ItemStack KEEP = new ItemStack(fr.lordfinn.steveparty.blocks.ModBlocks.TILE);
     private static final Identifier UNDO = Steveparty.id("wheel/undo"), REDO = Steveparty.id("wheel/redo"), BACK = Steveparty.id("wheel/back");
@@ -64,15 +67,14 @@ final class BrushWheel implements ToolWheel.Provider {
         int level = TileLinkerBrush.level(brush);
         Item picked = TileLinkerBrush.cartridge(brush);
         ToolWheel.Sector normal = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.powered"),
-                null, NORMAL_PLATE, big(TORCH, 2), level == TileLinkerBrush.POWERED, true,
+                Text.translatable("wheel.steveparty.brush.powered.hint"), NORMAL_PLATE, big(LASSO, 2), level == TileLinkerBrush.POWERED, true,
                 () -> send(ToolWheelPayload.Action.BRUSH_LEVEL, TileLinkerBrush.POWERED));
         ToolWheel.Sector levels = new ToolWheel.Sector(level == TileLinkerBrush.POWERED ? Text.translatable("wheel.steveparty.brush.levels")
-                : Text.translatable("wheel.steveparty.brush.levels.current", level), null, LEVEL_PLATE,
+                : Text.translatable("wheel.steveparty.brush.levels.current", level), levelsHint(), LEVEL_PLATE,
                 levelIcon(level), level != TileLinkerBrush.POWERED, true, true, () -> ToolWheel.showPage(LEVELS));
         ItemStack cartridge = picked == null ? KEEP : new ItemStack(picked);
-        ToolWheel.Sector cartridges = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.cartridges.current",
-                picked == null ? Text.translatable("wheel.steveparty.brush.keep") : cartridge.getName()),
-                null, CARTRIDGE_PLATE, big(cartridge, 2), false, true, true, () -> ToolWheel.showPage(CARTRIDGES));
+        ToolWheel.Sector cartridges = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.mode"),
+                modeHint(picked), CARTRIDGE_PLATE, withWrench(cartridge), false, true, true, () -> ToolWheel.showPage(CARTRIDGES));
         ToolWheel.Sector redo = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.redo"), null, HISTORY_PLATE, sprite(REDO, 2),
                 false, true, () -> send(ToolWheelPayload.Action.BRUSH_REDO, 0));
         ToolWheel.Sector undo = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.undo"), null, HISTORY_PLATE, sprite(UNDO, 2),
@@ -101,14 +103,14 @@ final class BrushWheel implements ToolWheel.Provider {
         Item picked = TileLinkerBrush.cartridge(brush);
         List<ToolWheel.Sector> sectors = new ArrayList<>();
         // First: none picked, the painted tiles keep their cartridge
-        sectors.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.keep"), null, CARTRIDGE_PLATE, big(KEEP, 1.5f), picked == null, true, () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, ToolWheelPayload.KEEP_CARTRIDGES)));
+        sectors.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.keep"), modeHint(null), CARTRIDGE_PLATE, big(KEEP, 1.5f), picked == null, true, () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, ToolWheelPayload.KEEP_CARTRIDGES)));
         boolean creative = player != null && player.getAbilities().creativeMode;
         for (Map.Entry<Item, Integer> kind : cartridgeKinds(player).entrySet()) {
             Item item = kind.getKey();
             ItemStack shown = new ItemStack(item);
             boolean available = creative || kind.getValue() > 0;
             Text name = creative ? shown.getName() : Text.translatable("wheel.steveparty.brush.cartridge.count", shown.getName(), kind.getValue());
-            sectors.add(new ToolWheel.Sector(name, null, CARTRIDGE_PLATE, big(shown, 1.5f), item == picked, available,
+            sectors.add(new ToolWheel.Sector(name, modeHint(item), CARTRIDGE_PLATE, big(shown, 1.5f), item == picked, available,
                     () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, Registries.ITEM.getRawId(item))));
         }
         float half = 360f / sectors.size() / 2;
@@ -157,6 +159,38 @@ final class BrushWheel implements ToolWheel.Provider {
             com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             context.getMatrices().pop();
             context.drawItem(stack, -8, -8);
+            context.getMatrices().pop();
+        };
+    }
+
+    /** The gold of the Advanced Tiles. */
+    private static final int ADVANCED_GOLD = 0xFFC52E;
+
+    /** What a level links: a slot of the Advanced Tiles (their name in their gold). */
+    private static Text levelsHint() {
+        return Text.translatable("wheel.steveparty.brush.levels.hint",
+                Text.translatable("wheel.steveparty.brush.advanced_tiles").styled(style -> style.withColor(ADVANCED_GOLD)));
+    }
+
+    /** What the link mode does: the tiles keep their cartridges, or get the one picked (its name in its colour). */
+    private static Text modeHint(Item picked) {
+        if (picked == null) return Text.translatable("wheel.steveparty.brush.mode.keep");
+        ItemStack stack = new ItemStack(picked);
+        int color = stack.getOrDefault(ModComponents.COLOR, 0xFFFFFF);
+        return Text.translatable("wheel.steveparty.brush.mode.replace", stack.getName().copy().styled(style -> style.withColor(color)));
+    }
+
+    /**
+     * The link mode's icon: what the painted tiles get (a tile: they keep theirs; else the cartridge picked) with the
+     * Wrench over it, shifted left by half: the setting of how links are made.
+     */
+    private static ToolWheel.Icon withWrench(ItemStack shown) {
+        ToolWheel.Icon base = big(shown, 1.75f), wrench = big(WRENCH, 1.5f);
+        return (context, x, y) -> {
+            base.draw(context, x + 4, y + 1);
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 60);
+            wrench.draw(context, x - 5, y - 1);
             context.getMatrices().pop();
         };
     }

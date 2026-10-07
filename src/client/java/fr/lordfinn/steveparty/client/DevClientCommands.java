@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
@@ -27,6 +29,16 @@ public final class DevClientCommands {
                         .then(ClientCommandManager.literal("use").executes(context -> {
                             KeyBinding.onKeyPressed(InputUtil.Type.MOUSE.createFromCode(GLFW.GLFW_MOUSE_BUTTON_RIGHT));
                             return 1;
-                        }))));
+                        }))
+                        // The wheel of the tool in hand, open, its cursor at (x, y) from its centre (GUI pixels)
+                        .then(ClientCommandManager.literal("wheel")
+                                .then(ClientCommandManager.argument("x", IntegerArgumentType.integer())
+                                        .then(ClientCommandManager.argument("y", IntegerArgumentType.integer()).executes(context -> {
+                                            double scale = context.getSource().getClient().getWindow().getScaleFactor();
+                                            ToolWheel.reopen();
+                                            ToolWheel.moveCursor(IntegerArgumentType.getInteger(context, "x") * scale,
+                                                    IntegerArgumentType.getInteger(context, "y") * scale);
+                                            return 1;
+                                        }))))));
     }
 }
