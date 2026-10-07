@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -14,6 +15,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
 import java.util.List;
@@ -31,22 +33,51 @@ public class TileLinkerBrushItem extends Item {
         super(settings);
     }
 
-    /** Right click on a block (a board space opens nothing with it: see CartridgeContainer). */
+    /**
+     * Right click on a block: nothing done here, so the use goes on to {@link #use} and the stroke is held (a board
+     * space opens nothing with it: see CartridgeContainer).
+     */
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
-        if (context.getHand() != Hand.MAIN_HAND || context.getPlayer() == null) return ActionResult.PASS;
-        if (context.getWorld().isClient) return ActionResult.SUCCESS;
-        TileLinkerBrush.use((ServerPlayerEntity) context.getPlayer(), context.getStack(), (ServerWorld) context.getWorld());
-        return ActionResult.SUCCESS;
+        return ActionResult.PASS;
     }
 
-    /** Right click in the air: a board space aimed at from afar. */
+    /**
+     * Right click, on a tile or in the air: the brush is held in use while the button is (no swing of the arm, played
+     * once per click, nor any repeated one), and paints each tick (see {@link #usageTick}).
+     */
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         ItemStack stack = player.getStackInHand(hand);
         if (hand != Hand.MAIN_HAND) return TypedActionResult.pass(stack);
+        player.setCurrentHand(hand);
         if (!world.isClient) TileLinkerBrush.use((ServerPlayerEntity) player, stack, (ServerWorld) world);
-        return TypedActionResult.success(stack, world.isClient);
+        return TypedActionResult.consume(stack);
+    }
+
+    /** Held as long as the button is. */
+    @Override
+    public int getMaxUseTime(ItemStack stack, LivingEntity user) {
+        return 72000;
+    }
+
+    /** No pose of its own: the arm holds the brush still while it paints. */
+    @Override
+    public UseAction getUseAction(ItemStack stack) {
+        return UseAction.NONE;
+    }
+
+    /** While held: the stroke goes on, following the look. */
+    @Override
+    public void usageTick(World world, LivingEntity user, ItemStack stack, int remainingUseTicks) {
+        if (world instanceof ServerWorld serverWorld && user instanceof ServerPlayerEntity player)
+            TileLinkerBrush.use(player, stack, serverWorld);
+    }
+
+    /** The button released: the stroke ends. */
+    @Override
+    public void onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
+        if (!world.isClient && user instanceof ServerPlayerEntity player) TileLinkerBrush.endStroke(player);
     }
 
     /** The level, cartridge and anchor change as it paints: no re-equip animation of the hand. */
