@@ -734,6 +734,9 @@ public class MiniGamePageEditorScreen extends Screen {
             } else {
                 context.drawText(textRenderer, fit(status, FULL - 124 - 6), lx, y + BOTTOM_Y + 4, colour, false);
             }
+        } else if (tab == Tab.PIPES) {
+            // The legend: a pipe's colour is its column; the titles say more
+            context.drawText(textRenderer, fit(Text.translatable(KEY + "pipes.legend"), FULL - 124 - 6), lx, y + BOTTOM_Y + 4, INK2, false);
         }
     }
 
@@ -1476,10 +1479,47 @@ public class MiniGamePageEditorScreen extends Screen {
                 boolean over = held == null && link.equals(cardAt(mouseX, mouseY));
                 drawCard(context, link, cx, top, over);
             }
+            // No pipe of this role yet: which pipe to click, page in hand
+            if (pipes.isEmpty()) drawEmptyColumn(context, role, cx, cy + HEADER + 3);
             // More cards than shown: marks
             if (scroll[column] > 0) context.drawText(textRenderer, "▲", cx + COLUMN_WIDTH - 8, cy + HEADER + 6, INK3, false);
             if (scroll[column] + CARDS_SHOWN < pipes.size()) context.drawText(textRenderer, "▼", cx + COLUMN_WIDTH - 8, cy + COLUMN_HEIGHT - 9, INK3, false);
         }
+    }
+
+    /** The colours of the pipes of a role, in words (« green or lime »), lower case; glass and mini-game pipes said too. */
+    private static Text pipeColours(MiniGamePipeRole role) {
+        List<String> names = new ArrayList<>();
+        for (String dye : role.pipeColors()) names.add(Text.translatable("color.minecraft." + dye).getString().toLowerCase(java.util.Locale.ROOT));
+        if (role == MiniGamePipeRole.SPECTATORS) names.add(Text.translatable(KEY + "pipes.colour.glass").getString());
+        String joined = names.size() <= 1 ? String.join("", names)
+                : String.join(", ", names.subList(0, names.size() - 1)) + " " + Text.translatable(KEY + "pipes.colour.or").getString() + " " + names.getLast();
+        return Text.literal(joined);
+    }
+
+    /** An empty column: a dashed card « + a green pipe » (the tooltip of its header says more). */
+    private void drawEmptyColumn(DrawContext context, MiniGamePipeRole role, int left, int top) {
+        int right = left + COLUMN_WIDTH, bottom = top + CARD_H;
+        for (int px = left; px < right; px += 3) {
+            context.fill(px, top, Math.min(px + 2, right), top + 1, INK3);
+            context.fill(px, bottom - 1, Math.min(px + 2, right), bottom, INK3);
+        }
+        for (int py = top; py < bottom; py += 3) {
+            context.fill(left, py, left + 1, Math.min(py + 2, bottom), INK3);
+            context.fill(right - 1, py, right, Math.min(py + 2, bottom), INK3);
+        }
+        context.fill(left + 3, top + 3, left + 6, bottom - 3, 0xFF000000 | role.color());
+        String first = role.pipeColors().isEmpty() ? "" : Text.translatable("color.minecraft." + role.pipeColors().getFirst()).getString().toLowerCase(java.util.Locale.ROOT);
+        context.drawText(textRenderer, fit(Text.translatable(KEY + "pipes.empty", first), COLUMN_WIDTH - 12), left + 9, top + 4, INK2, false);
+    }
+
+    /** The column whose header (its title, not its order button) is under the mouse, -1 for none. */
+    private int headerAt(double mouseX, double mouseY) {
+        for (int column = 0; column < COLUMNS.length; column++) {
+            int cx = columnX(column), cy = columnY(column);
+            if (mouseX >= cx && mouseX < cx + COLUMN_WIDTH && mouseY >= cy && mouseY < cy + HEADER) return orderButtonAt(mouseX, mouseY) == column ? -1 : column;
+        }
+        return -1;
     }
 
     /** The column whose order button is under the mouse, -1 for none. */
@@ -1573,6 +1613,19 @@ public class MiniGamePageEditorScreen extends Screen {
             lines.add(Text.translatable(KEY + (random ? "pipes.order.random" : "pipes.order.in_turn")).formatted(Formatting.GOLD));
             lines.add(Text.translatable(KEY + (random ? "pipes.order.random.hint" : "pipes.order.in_turn.hint")).formatted(Formatting.GRAY));
             if (canEdit) lines.add(Text.translatable(KEY + "pipes.order.change").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
+            drawWrappedTooltip(context, lines, mouseX, mouseY);
+            return;
+        }
+        int header = headerAt(mouseX, mouseY);
+        int column = header >= 0 ? header : columnAt(mouseX, mouseY);
+        if (column >= 0 && (header >= 0 || current().pipes(COLUMNS[column]).isEmpty())) {
+            MiniGamePipeRole role = COLUMNS[column];
+            List<Text> lines = new ArrayList<>();
+            lines.add(Text.empty().append(role.text()).styled(style -> style.withColor(role == MiniGamePipeRole.ENTRY ? 0xB8B8B8 : role.color())));
+            lines.add(Text.translatable(role.translationKey() + ".hint").formatted(Formatting.GRAY));
+            lines.add(Text.translatable(KEY + "pipes.column.colours", pipeColours(role)).formatted(Formatting.GRAY));
+            if (role == MiniGamePipeRole.ENTRY) lines.add(Text.translatable(KEY + "pipes.column.entry").formatted(Formatting.GRAY));
+            lines.add(Text.translatable(KEY + "pipes.column.how", pipeColours(role)).formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
             drawWrappedTooltip(context, lines, mouseX, mouseY);
             return;
         }
