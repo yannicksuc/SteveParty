@@ -23,8 +23,8 @@ import java.util.List;
 
 /**
  * The hammer's slots beside the player's inventory (opened with the inventory key or from its wheel, hammer in hand):
- * the player's inventory as usual (armour, off hand, inventory, hotbar) with its 9 stencil slots on the left and its 9
- * dye slots on the right, each in a 3 x 3 grid. The gun is found again in its inventory slot at every change (never held as a stale copy) and
+ * the player's inventory as usual (armour, off hand, inventory, hotbar) with its 9 dye slots on the left and its 9
+ * stencil slots on the right, each in a 3 x 3 grid. The gun is found again in its inventory slot at every change (never held as a stale copy) and
  * cannot be moved while the screen is open; the screen closes if it goes away.
  * <p>
  * Server side, only the very stack the screen was opened on counts as the gun: another gun swapped into that slot
@@ -71,12 +71,13 @@ public class StencilGunScreenHandler extends ScreenHandler {
         }
         loaded.addListener(inventory -> save());
 
+        // Dyes on the left, stencils on the right (as on the wheel)
+        int stencilsX = INVENTORY_X + 176 + GAP + 8;
         for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) {
-            addSlot(new FilteredSlot(loaded, i, 8 + i % 3 * 18, SLOTS_Y + i / 3 * 18, true));
+            addSlot(new FilteredSlot(loaded, i, stencilsX + i % 3 * 18, SLOTS_Y + i / 3 * 18, true));
         }
-        int dyesX = INVENTORY_X + 176 + GAP + 8;
         for (int i = 0; i < StencilGunItem.DYE_SLOTS; i++) {
-            addSlot(new FilteredSlot(loaded, StencilGunItem.STENCIL_SLOTS + i, dyesX + i % 3 * 18, SLOTS_Y + i / 3 * 18, false));
+            addSlot(new FilteredSlot(loaded, StencilGunItem.STENCIL_SLOTS + i, 8 + i % 3 * 18, SLOTS_Y + i / 3 * 18, false));
         }
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {

@@ -896,7 +896,7 @@ public class StencilGameTests implements FabricGameTest {
     }
 
     /**
-     * The hammer's slots open beside the whole inventory: its stencils on the left, its dyes on the right, the armour
+     * The hammer's slots open beside the whole inventory: its dyes on the left, its stencils on the right, the armour
      * and the off hand where vanilla has them, no two slots in one place; a dye shift-clicked goes into the hammer.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
@@ -911,10 +911,10 @@ public class StencilGameTests implements FabricGameTest {
             java.util.Set<Long> places = new java.util.HashSet<>();
             for (var slot : handler.slots) context.assertTrue(places.add(((long) slot.x << 32) | slot.y), "one slot per place: " + slot.x + ", " + slot.y);
             for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) {
-                context.assertTrue(handler.slots.get(i).x < StencilGunScreenHandler.INVENTORY_X, "stencils on the left");
+                context.assertTrue(handler.slots.get(i).x > StencilGunScreenHandler.INVENTORY_X + 176, "stencils on the right");
             }
             for (int i = StencilGunItem.STENCIL_SLOTS; i < StencilGunItem.SIZE; i++) {
-                context.assertTrue(handler.slots.get(i).x > StencilGunScreenHandler.INVENTORY_X + 176, "dyes on the right");
+                context.assertTrue(handler.slots.get(i).x < StencilGunScreenHandler.INVENTORY_X, "dyes on the left");
             }
             var head = handler.slots.get(StencilGunScreenHandler.ARMOR_START);
             context.assertTrue(head.canInsert(new ItemStack(Items.DIAMOND_HELMET)) && !head.canInsert(new ItemStack(Items.DIAMOND_BOOTS)),
