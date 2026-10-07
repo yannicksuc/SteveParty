@@ -13,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,21 +24,59 @@ import java.util.List;
  * stencil), and Back in the middle (to the hammer's wheel). The player's inventory and hotbar are under it.
  */
 public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
-    private static final Identifier INVENTORY = Identifier.ofVanilla("textures/gui/container/generic_54.png");
     private static final Identifier BACK = Steveparty.id("wheel/back");
     private static final int SELECTED_STENCIL = 0xFFFFD83D;
     private static final int SELECTED_DYE = 0xFF5FD3FF;
     /** The plates: the mod's teal, the titles a shade darker. */
     private static final int TEAL = 0x7FA3A9, TITLE = 0x55767B;
-    private static final int SLOT_DARK = 0xFF373737, SLOT = 0xFF8B8B8B, LIGHT = 0xFFFFFFFF;
+    /** The plate's outline, bevels and sunk slots, worked out from the teal as the wheel's sectors are. */
+    private static final int OUTLINE = 0xFF263133, BEVEL_LIGHT = 0xFFB8CDD0, BEVEL_SHADOW = 0xFF597276, SLOT_INSIDE = 0xFF4E6669;
     private static final ToolWheel.Layout WHEEL = layout();
+    /** Free GUI pixels kept around the screen; with less room (large GUI scales) it is all drawn shrunk to fit. */
+    private static final int FIT_MARGIN = 4;
+    /** Scale the screen is drawn at: 1, or less when the window is too small for it at this GUI scale. */
+    private float fit = 1f;
 
     public StencilGunScreen(StencilGunScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         this.backgroundWidth = StencilGunScreenHandler.WIDTH;
         this.backgroundHeight = StencilGunScreenHandler.HEIGHT;
         this.playerInventoryTitleX = StencilGunScreenHandler.INVENTORY_X + 8;
-        this.playerInventoryTitleY = StencilGunScreenHandler.INVENTORY_Y + 3;
+        this.playerInventoryTitleY = StencilGunScreenHandler.INVENTORY_Y + 4;
+    }
+
+    /**
+     * At a large GUI scale the refill (340 px tall) does not fit in the window: it is then laid out on a larger
+     * virtual screen and drawn shrunk ({@link #fit}), mouse coordinates converted (as the Dice Forge does), so its 18
+     * slots and the whole inventory stay visible and usable. The screen's size stays the real one afterwards.
+     */
+    @Override
+    protected void init() {
+        int realWidth = this.width, realHeight = this.height;
+        if (client != null) {
+            realWidth = client.getWindow().getScaledWidth();
+            realHeight = client.getWindow().getScaledHeight();
+        }
+        fit = Math.min(1f, Math.min(realWidth / (float) (backgroundWidth + 2 * FIT_MARGIN),
+                realHeight / (float) (backgroundHeight + 2 * FIT_MARGIN)));
+        this.width = MathHelper.ceil(realWidth / fit);
+        this.height = MathHelper.ceil(realHeight / fit);
+        super.init();
+        this.width = realWidth;
+        this.height = realHeight;
+    }
+
+    /** The darkened world behind the screen covers the whole window, not just its shrunk part. */
+    @Override
+    public void renderInGameBackground(DrawContext context) {
+        context.getMatrices().push();
+        context.getMatrices().scale(1f / fit, 1f / fit, 1f);
+        super.renderInGameBackground(context);
+        context.getMatrices().pop();
+    }
+
+    private double toScreen(double coordinate) {
+        return coordinate / fit;
     }
 
     /** The wheel's plates: the two titles at the top, a sector per slot (their slots sit on them). */
@@ -62,20 +101,30 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         for (ToolWheel.WheelRaster.Run run : ToolWheel.WheelRaster.runs(WHEEL, null, -1, hub, 1f, false, false)) {
             context.fill(cx + run.x0(), cy + run.y(), cx + run.x1(), cy + run.y() + 1, run.color());
         }
-        // A vanilla slot on each sector
-        for (int i = 0; i < StencilGunItem.SIZE; i++) {
-            Slot slot = handler.slots.get(i);
-            int sx = x + slot.x - 1, sy = y + slot.y - 1;
-            context.fill(sx, sy, sx + 18, sy + 18, SLOT_DARK);
-            context.fill(sx + 1, sy + 1, sx + 18, sy + 18, LIGHT);
-            context.fill(sx + 1, sy + 1, sx + 17, sy + 17, SLOT);
-        }
+        // The player's inventory under it, a plate of the wheel's teal
+        plate(context, x + StencilGunScreenHandler.INVENTORY_X, y + StencilGunScreenHandler.INVENTORY_Y, 176, 94);
+        // A slot in the mod's style on each sector and in the inventory: sunk into the plate
+        for (Slot slot : handler.slots) slot(context, x + slot.x - 1, y + slot.y - 1);
         // Back, in the middle
         RenderSystem.enableBlend();
         context.drawGuiTexture(BACK, cx - 16, cy - 16, 32, 32);
-        // The player's inventory: the bottom of a vanilla chest
-        context.drawTexture(INVENTORY, x + StencilGunScreenHandler.INVENTORY_X, y + StencilGunScreenHandler.INVENTORY_Y, 0, 126, 176, 96);
         RenderSystem.disableBlend();
+    }
+
+    /** A plate like the wheel's sectors: dark outline (corners cut), light bevel top left, shadow bottom right. */
+    private static void plate(DrawContext context, int x, int y, int width, int height) {
+        context.fill(x + 1, y, x + width - 1, y + height, OUTLINE);
+        context.fill(x, y + 1, x + width, y + height - 1, OUTLINE);
+        context.fill(x + 1, y + 1, x + width - 1, y + height - 1, BEVEL_SHADOW);
+        context.fill(x + 1, y + 1, x + width - 2, y + height - 2, BEVEL_LIGHT);
+        context.fill(x + 2, y + 2, x + width - 2, y + height - 2, 0xFF000000 | TEAL);
+    }
+
+    /** A slot sunk into a plate, 18 x 18: shadow top left, light bottom right, a darker teal inside. */
+    private static void slot(DrawContext context, int x, int y) {
+        context.fill(x, y, x + 18, y + 18, BEVEL_LIGHT);
+        context.fill(x, y, x + 17, y + 17, OUTLINE);
+        context.fill(x + 1, y + 1, x + 17, y + 17, SLOT_INSIDE);
     }
 
     @Override
@@ -87,7 +136,7 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         int dx = (int) Math.round(Math.sin(a) * r);
         title(context, Text.translatable("screen.steveparty.stencil_gun.dyes"), StencilGunScreenHandler.CENTER_X - dx, ty);
         title(context, Text.translatable("screen.steveparty.stencil_gun.stencils"), StencilGunScreenHandler.CENTER_X + dx, ty);
-        context.drawText(textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, 0xFF404040, false);
+        context.drawText(textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, 0xFFFFFFFF, true);
     }
 
     private void title(DrawContext context, Text text, int centerX, int y) {
@@ -110,6 +159,8 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        mouseX = toScreen(mouseX);
+        mouseY = toScreen(mouseY);
         // Back to the hammer's wheel
         if (button == 0 && hub(mouseX, mouseY) && handler.getCursorStack().isEmpty() && client != null && client.player != null) {
             client.player.closeHandledScreen();
@@ -120,12 +171,32 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     }
 
     @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        return super.mouseReleased(toScreen(mouseX), toScreen(mouseY), button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        return super.mouseDragged(toScreen(mouseX), toScreen(mouseY), button, toScreen(deltaX), toScreen(deltaY));
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        return super.mouseScrolled(toScreen(mouseX), toScreen(mouseY), horizontalAmount, verticalAmount);
+    }
+
+    @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
+        // Drawn shrunk when the window is too small (see init), the tooltips at full size
+        int screenX = (int) toScreen(mouseX), screenY = (int) toScreen(mouseY);
+        context.getMatrices().push();
+        context.getMatrices().scale(fit, fit, 1f);
+        super.render(context, screenX, screenY, delta);
         drawSelection(context);
+        context.getMatrices().pop();
         this.drawMouseoverTooltip(context, mouseX, mouseY);
         if (handler.getCursorStack().isEmpty()) {
-            if (hub(mouseX, mouseY)) {
+            if (hub(screenX, screenY)) {
                 context.drawTooltip(textRenderer, Text.translatable("wheel.steveparty.back"), mouseX, mouseY);
             } else if (focusedSlot instanceof StencilGunScreenHandler.FilteredSlot slot && !slot.hasStack()) {
                 context.drawTooltip(textRenderer, Text.translatable(slot.takesStencils()
