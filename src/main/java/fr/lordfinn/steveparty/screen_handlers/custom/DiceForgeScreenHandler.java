@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
+import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
@@ -21,8 +22,8 @@ import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.DICE_FORGE_SCREEN_HANDLER;
 
 /**
- * Dice forge GUI. Handler slot indices match the forge inventory: 0..11 faces, 12 center (gravity core input,
- * hidden once the forge is activated: the screen draws the core there as the FORGE button), 13..17 star fragments
+ * Dice forge GUI. Handler slot indices match the forge inventory: 0..11 faces, 12 center (the gravity core: put in to
+ * activate the forge, taken back like any item to put it to sleep, see {@link CoreSlot}), 13..17 star fragments
  * (clockwise from the top), 18 blank faces and 19 output (in the capsule under the galaxy), 20..24 dice modules (the
  * gems on the five points of the star, clockwise from the top), then the player inventory.
  * <p>
@@ -70,18 +71,8 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             this.addSlot(new ForgeSlot(inventory, i, FACE_POSITIONS[i][0], FACE_POSITIONS[i][1]));
         }
 
-        // --- Center slot: gravity core input until the forge is activated (then the FORGE button) ---
-        this.addSlot(new ForgeSlot(inventory, CENTER_SLOT, CENTER_X, CENTER_Y) {
-            @Override
-            public int getMaxItemCount(ItemStack stack) {
-                return isGravityCore(stack) ? 1 : super.getMaxItemCount(stack);
-            }
-
-            @Override
-            public boolean isEnabled() {
-                return !isActivated();
-            }
-        });
+        // --- Center slot: the gravity core ---
+        this.addSlot(new CoreSlot(inventory));
 
         // --- 5 star fragment slots around the core ---
         for (int i = 0; i < FRAGMENT_SLOTS; i++) {
@@ -116,6 +107,53 @@ public class DiceForgeScreenHandler extends ScreenHandler {
     /** Client constructor. */
     public DiceForgeScreenHandler(int syncId, PlayerInventory playerInventory) {
         this(syncId, playerInventory, new SimpleInventory(SIZE), new ArrayPropertyDelegate(PROPERTY_COUNT));
+    }
+
+    /**
+     * The center slot. The core put in it goes into the forge itself (the forge inventory keeps it empty, see
+     * {@link DiceForgeBlockEntity#setStack}): while the forge is activated the slot shows that core, and taking it
+     * (click, shift-click, number keys, drop) takes it out of the forge ({@link DiceForgeBlockEntity#takeCore}), which
+     * goes back to sleep. The core is a single item: it is never both in the forge and on the cursor.
+     */
+    private class CoreSlot extends ForgeSlot {
+        CoreSlot(Inventory inventory) {
+            super(inventory, CENTER_SLOT, CENTER_X, CENTER_Y);
+        }
+
+        @Override
+        public int getMaxItemCount(ItemStack stack) {
+            return isGravityCore(stack) ? 1 : super.getMaxItemCount(stack);
+        }
+
+        @Override
+        public ItemStack getStack() {
+            // A new stack each time: what reads it may change its count, the core itself stays in the forge
+            return isActivated() ? new ItemStack(ModBlocks.GRAVITY_CORE) : super.getStack();
+        }
+
+        @Override
+        public boolean canTakeItems(PlayerEntity player) {
+            if (!isActivated()) return super.canTakeItems(player);
+            // Server: not during the insertion animation (the client predicts, the server corrects)
+            return !(inventory instanceof DiceForgeBlockEntity forge) || forge.canRemoveCore();
+        }
+
+        @Override
+        public ItemStack takeStack(int amount) {
+            if (!isActivated()) return super.takeStack(amount);
+            if (amount <= 0) return ItemStack.EMPTY;
+            return inventory instanceof DiceForgeBlockEntity forge ? forge.takeCore() : getStack();
+        }
+
+        @Override
+        public void setStack(ItemStack stack) {
+            // Emptied while activated (the core went straight to a hotbar slot, or shift-clicked to the inventory)
+            if (isActivated() && stack.isEmpty()) {
+                if (inventory instanceof DiceForgeBlockEntity forge) forge.takeCore();
+                return;
+            }
+            super.setStack(stack);
+        }
     }
 
     private class ForgeSlot extends Slot {
@@ -169,6 +207,8 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             ItemStack stackInSlot = slot.getStack();
             itemStack = stackInSlot.copy();
 
+            // The core is taken only when it can leave the forge (not while it is being inserted)
+            if (index == CENTER_SLOT && !slot.canTakeItems(player)) return ItemStack.EMPTY;
             if (index < PLAYER_INVENTORY_START) {
                 // Forge → player
                 if (!this.insertItem(stackInSlot, PLAYER_INVENTORY_START, this.slots.size(), true)) {

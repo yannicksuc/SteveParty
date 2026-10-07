@@ -23,6 +23,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -537,6 +538,71 @@ public class DiceForgeGameTests implements FabricGameTest {
             context.assertTrue(forge.getStack(FIRST_FRAGMENT_SLOT).isOf(ModItems.BLACK_STAR_FRAGMENT), "fragments kept");
             context.assertTrue(forge.getStack(OUTPUT_SLOT).isOf(ModItems.DEFAULT_DICE), "forged die kept");
             context.complete();
+        });
+    }
+
+    /** Gravity cores anywhere: in the player's inventory, on its cursor, in the forge. */
+    private static int coresAround(DiceForgeBlockEntity forge, ServerPlayerEntity player, DiceForgeScreenHandler handler) {
+        int cursor = handler.getCursorStack().isOf(ModBlocks.GRAVITY_CORE.asItem()) ? handler.getCursorStack().getCount() : 0;
+        return player.getInventory().count(ModBlocks.GRAVITY_CORE.asItem()) + cursor + (forge.isActivated() ? 1 : 0);
+    }
+
+    /**
+     * The core is taken back from the center slot of the screen like any item (click, shift-click, number key): the
+     * forge goes to sleep; put back, it wakes up. Never during the insertion animation, and never lost nor duplicated.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 3 * CORE_INSERT_TICKS + 100)
+    public void theCoreIsTakenBackFromItsSlot(TestContext context) {
+        DiceForgeBlockEntity forge = placeActivatedForge(context);
+        ServerPlayerEntity player = DiceTestKit.player(context);
+        player.changeGameMode(GameMode.SURVIVAL);
+        player.getInventory().clear();
+        DiceForgeScreenHandler handler = new DiceForgeScreenHandler(1, player.getInventory(), forge, forge.getProperties());
+        context.assertTrue(handler.getSlot(CENTER_SLOT).getStack().isOf(ModBlocks.GRAVITY_CORE.asItem()), "the slot shows the core");
+
+        // Not while it is being inserted
+        handler.onSlotClick(CENTER_SLOT, 0, SlotActionType.PICKUP, player);
+        context.assertTrue(forge.isActivated() && handler.getCursorStack().isEmpty(), "kept during the insertion");
+        context.assertEquals(coresAround(forge, player, handler), 1, "one core");
+
+        context.waitAndRun(CORE_INSERT_TICKS + 5, () -> {
+            // Click: on the cursor, the forge asleep
+            handler.onSlotClick(CENTER_SLOT, 0, SlotActionType.PICKUP, player);
+            context.assertTrue(handler.getCursorStack().isOf(ModBlocks.GRAVITY_CORE.asItem()), "core on the cursor");
+            context.assertTrue(!forge.isActivated(), "forge asleep");
+            context.assertEquals(forge.getStatus(), Status.NOT_ACTIVATED, "status");
+            context.assertTrue(handler.getSlot(CENTER_SLOT).getStack().isEmpty(), "slot empty");
+            context.assertEquals(coresAround(forge, player, handler), 1, "one core");
+            // Put back: awake again
+            handler.onSlotClick(CENTER_SLOT, 0, SlotActionType.PICKUP, player);
+            context.assertTrue(forge.isActivated() && handler.getCursorStack().isEmpty(), "put back: awake");
+            context.assertTrue(forge.getStack(CENTER_SLOT).isEmpty(), "the core is in the forge, not its inventory");
+            context.assertEquals(coresAround(forge, player, handler), 1, "one core");
+
+            context.waitAndRun(CORE_INSERT_TICKS + 5, () -> {
+                // Shift-click: to the inventory
+                handler.onSlotClick(CENTER_SLOT, 0, SlotActionType.QUICK_MOVE, player);
+                context.assertTrue(!forge.isActivated(), "shift-clicked out: asleep");
+                context.assertEquals(player.getInventory().count(ModBlocks.GRAVITY_CORE.asItem()), 1, "in the inventory");
+                context.assertEquals(coresAround(forge, player, handler), 1, "one core");
+                // Shift-click back from the inventory
+                int from = -1;
+                for (int i = SIZE; i < handler.slots.size(); i++) {
+                    if (handler.getSlot(i).getStack().isOf(ModBlocks.GRAVITY_CORE.asItem())) from = i;
+                }
+                handler.onSlotClick(from, 0, SlotActionType.QUICK_MOVE, player);
+                context.assertTrue(forge.isActivated(), "shift-clicked back: awake");
+                context.assertEquals(coresAround(forge, player, handler), 1, "one core");
+
+                context.waitAndRun(CORE_INSERT_TICKS + 5, () -> {
+                    // Number key: straight to an empty hotbar slot
+                    handler.onSlotClick(CENTER_SLOT, 3, SlotActionType.SWAP, player);
+                    context.assertTrue(!forge.isActivated(), "swapped out: asleep");
+                    context.assertTrue(player.getInventory().getStack(3).isOf(ModBlocks.GRAVITY_CORE.asItem()), "in hotbar slot 4");
+                    context.assertEquals(coresAround(forge, player, handler), 1, "one core");
+                    context.complete();
+                });
+            });
         });
     }
 }
