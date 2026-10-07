@@ -55,7 +55,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private static final ItemStack TITLE_ICON = new ItemStack(ModBlocks.STENCIL_MAKER);
     private static final int ICON_SIZE = 12, ICON_COUNT = 12;
     private static final int ICON_CLEAR = 0, ICON_FILL = 1, ICON_INVERT = 2, ICON_MIRROR_H = 3, ICON_MIRROR_V = 4, ICON_ROTATE = 5,
-            ICON_UNDO = 6, ICON_REDO = 7, ICON_SAVE = 8, ICON_DELETE = 9, ICON_TAKE_OUT = 10;
+            ICON_UNDO = 6, ICON_REDO = 7, ICON_SAVE = 8, ICON_DELETE = 9, ICON_TAKE_OUT = 10, ICON_FAVORITE = 11;
     private static final int FAVORITE_FRAME = 0xFFFFC21E;
     /** Sunken boxes' body: the dark slate of the mod's fields; the library's thumbnails on it. */
     private static final int BOX_BODY = 0xFF3B4247;
@@ -91,7 +91,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private byte[] strokeStart;
     private long lastSoundTime;
     private long savedMessageUntil;
-    private PartyButton libraryButton, undoButton, redoButton, saveButton;
+    private PartyButton libraryButton, favoriteButton, undoButton, redoButton, saveButton;
     private int libraryIcon = ICON_SAVE;
     /** {@link #libraryItems()} is asked for several times a frame: rebuilt only when the library or the game mode changes. */
     private StencilLibrary cachedLibrary;
@@ -157,9 +157,16 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         redoButton = addDrawableChild(iconButton(toolX + half + 4, toolY, half, ICON_REDO, b -> redo()));
         redoButton.setTooltip(Tooltip.of(shortcut("redo", "Ctrl+Y")));
         toolY += BUTTON_HEIGHT + 8;
-        libraryButton = addDrawableChild(labelledButton(toolX, toolY, Text.empty(), -1, b -> toggleInLibrary()));
+        // The pattern in the library, and beside it a favourite of it (put in the library too if needed)
+        libraryButton = addDrawableChild(new PartyButton(toolX, toolY, half, BUTTON_HEIGHT, Text.empty(), b -> toggleInLibrary())
+                .content((context, textRenderer, centerX, centerY, color) ->
+                        drawIcon(context, libraryIcon, centerX - ICON_SIZE / 2, centerY - ICON_SIZE / 2, color)));
+        favoriteButton = addDrawableChild(new PartyButton(toolX + half + 4, toolY, half, BUTTON_HEIGHT,
+                Text.empty(), b -> toggleFavorite()).content((context, textRenderer, centerX, centerY, color) ->
+                drawIcon(context, ICON_FAVORITE, centerX - ICON_SIZE / 2, centerY - ICON_SIZE / 2,
+                        isFavorite() && favoriteButton.active ? FAVORITE_FRAME : color)));
         toolY += BUTTON_HEIGHT + 4;
-        addDrawableChild(labelledButton(toolX, toolY, Text.translatable("gui.steveparty.stencil_maker.take_out"), ICON_TAKE_OUT,
+        addDrawableChild(labelledButton(toolX, toolY, TOOLS_WIDTH, Text.translatable("gui.steveparty.stencil_maker.take_out"), ICON_TAKE_OUT,
                 b -> takeOut()));
         toolY += BUTTON_HEIGHT + 8;
         saveButton = addDrawableChild(new PartyButton(toolX, toolY, TOOLS_WIDTH, BUTTON_HEIGHT,
@@ -187,15 +194,15 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
                         drawIcon(context, icon, centerX - ICON_SIZE / 2, centerY - ICON_SIZE / 2, color));
     }
 
-    /** A full width button: its icon (-1: the library button's current one), then its text, cut with « … » if too long. */
-    private PartyButton labelledButton(int x, int y, Text message, int icon, Consumer<PartyButton> onPress) {
-        PartyButton button = new PartyButton(x, y, TOOLS_WIDTH, BUTTON_HEIGHT, message, onPress);
+    /** A wide button: its icon, then its text, cut with « … » if too long. */
+    private PartyButton labelledButton(int x, int y, int width, Text message, int icon, Consumer<PartyButton> onPress) {
+        PartyButton button = new PartyButton(x, y, width, BUTTON_HEIGHT, message, onPress);
         return button.content((context, textRenderer, centerX, centerY, color) -> {
             String text = button.getMessage().getString();
-            int room = TOOLS_WIDTH - 8 - ICON_SIZE - 4;
+            int room = width - 8 - ICON_SIZE - 4;
             if (textRenderer.getWidth(text) > room) text = textRenderer.trimToWidth(text, room - textRenderer.getWidth("…")).stripTrailing() + "…";
             int left = centerX - (ICON_SIZE + 4 + textRenderer.getWidth(text)) / 2;
-            drawIcon(context, icon < 0 ? libraryIcon : icon, left, centerY - ICON_SIZE / 2, color);
+            drawIcon(context, icon, left, centerY - ICON_SIZE / 2, color);
             context.drawText(textRenderer, text, left + ICON_SIZE + 4, centerY - 4, color, false);
         });
     }
@@ -243,6 +250,15 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         return client != null && client.player != null && StencilLibrary.of(client.player).contains(shape);
     }
 
+    private boolean isFavorite() {
+        return client != null && client.player != null && StencilLibrary.of(client.player).isFavorite(shape);
+    }
+
+    private void toggleFavorite() {
+        send(StencilMakerActionPayload.Action.FAVORITE, shape);
+        playEditSound();
+    }
+
     private void toggleInLibrary() {
         send(inLibrary() ? StencilMakerActionPayload.Action.DELETE : StencilMakerActionPayload.Action.SAVE, shape);
         playEditSound();
@@ -252,8 +268,12 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         if (libraryButton == null) return;
         boolean in = inLibrary();
         libraryIcon = in ? ICON_DELETE : ICON_SAVE;
-        libraryButton.setMessage(Text.translatable(in ? "gui.steveparty.stencil_maker.library_remove" : "gui.steveparty.stencil_maker.library_save"));
+        libraryButton.setTooltip(Tooltip.of(Text.translatable(in ? "gui.steveparty.stencil_maker.library_remove" : "gui.steveparty.stencil_maker.library_save")));
         libraryButton.active = in || !StencilShape.isBlank(shape);
+        boolean favorite = isFavorite();
+        favoriteButton.active = favorite || !StencilShape.isBlank(shape);
+        favoriteButton.setTooltip(Tooltip.of(Text.translatable(favorite
+                ? "gui.steveparty.stencil_maker.favorite_button_remove" : "gui.steveparty.stencil_maker.favorite_button_add")));
         undoButton.active = !undo.isEmpty();
         redoButton.active = !redo.isEmpty();
         boolean justSaved = Util.getMeasuringTimeMs() < savedMessageUntil;

@@ -1204,6 +1204,8 @@
   "gui.steveparty.stencil_maker.library_save": "Save pattern",
   "gui.steveparty.stencil_maker.library_remove": "Forget pattern",
   "gui.steveparty.stencil_maker.library_empty": "Stencils you find are added here.",
+  "gui.steveparty.stencil_maker.favorite_button_add": "Add to favourites",
+  "gui.steveparty.stencil_maker.favorite_button_remove": "Remove from favourites",
   "gui.steveparty.stencil_maker.favorite_add": "Right click: favourite",
   "gui.steveparty.stencil_maker.favorite_remove": "Right click: remove from favourites",
   "block.steveparty.white_plastic_fence": "White Plastic Fence",
