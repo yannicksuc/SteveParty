@@ -98,7 +98,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     public static final int FLAT_TICKS = 50, REINFLATE_TICKS = 24, SULK_TICKS = 80;
     public static final int FLIGHT_TICKS = 30;
     /** Let go of by the one under it (hit away): it hops straight up this hard, and gives up landing on a tower after {@link #HOP_TICKS}. */
-    public static final double HOP_VELOCITY = 0.45;
+    public static final double HOP_VELOCITY = 0.3;
     public static final int HOP_TICKS = 50;
     /** Hit out of a tower, it leaves its old tower mates alone for that long (they hop off, it goes away alone). */
     public static final int SPARE_TICKS = 30;
