@@ -22,6 +22,7 @@ import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
+import software.bernie.geckolib.util.Color;
 
 /**
  * Draws a Frousseux: its candle wax, a little see-through (FrousseuxModel), then over the same model the pool on its
@@ -53,8 +54,24 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                        VertexConsumerProvider bufferSource, int packedLight) {
         int light = frousseux.isBlownOut() || frousseux.deathTime > 0 ? packedLight
                 : LightmapTextureManager.pack(15, LightmapTextureManager.getSkyLightCoordinates(packedLight));
+        if (frousseux.bodyAlpha(partialTick) <= 0.01f && frousseux.flameAlpha(partialTick) <= 0.01f) return; // out of its owner's way
         super.render(frousseux, entityYaw, partialTick, poseStack, bufferSource, light);
         renderShownItem(frousseux, partialTick, poseStack, bufferSource, light);
+    }
+
+    /** Its body's opacity: faded out of its owner's way (FrousseuxEntity#bodyAlpha), else whole. */
+    @Override
+    public Color getRenderColor(FrousseuxEntity frousseux, float partialTick, int packedLight) {
+        return Color.ofARGB(alpha(frousseux.bodyAlpha(partialTick)), 255, 255, 255);
+    }
+
+    static int alpha(float alpha) {
+        return MathHelper.clamp(Math.round(alpha * 255), 0, 255);
+    }
+
+    /** {@code argb} with the given opacity (0 to 1) over its own. */
+    static int withAlpha(int argb, float alpha) {
+        return (alpha((((argb >>> 24) & 0xFF) / 255f) * alpha) << 24) | (argb & 0xFFFFFF);
     }
 
     /** What it stole: under its body, turning slowly, or flying from the player to it (or back). */
@@ -85,7 +102,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             // flame (drawn after it) by depth
             RenderLayer layer = RenderLayer.getEntityTranslucent(WAX);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
-                    partialTick, packedLight, packedOverlay, 0xFF000000 | frousseux.getColor().accent);
+                    partialTick, packedLight, packedOverlay, withAlpha(0xFF000000 | frousseux.getColor().accent, frousseux.bodyAlpha(partialTick)));
         }
     }
 
@@ -124,7 +141,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             }
             RenderLayer layer = RenderLayer.getEntityTranslucent(getTextureResource(frousseux));
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
-                    partialTick, packedLight, packedOverlay, 0xFFFFFFFF);
+                    partialTick, packedLight, packedOverlay, withAlpha(0xFFFFFFFF, frousseux.bodyAlpha(partialTick)));
             for (int i = 0; i < OTHERS.length; i++) {
                 int index = i;
                 bakedModel.getBone(OTHERS[i]).ifPresent(bone -> bone.setHidden(othersHidden[index]));
@@ -175,11 +192,11 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta): GeckoLib animates it
             RenderLayer layer = RenderLayer.getBeaconBeam(FLAME, true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
-                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, 0xFF000000 | r << 16 | g << 8 | b);
+                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, withAlpha(0xFF000000 | r << 16 | g << 8 | b, frousseux.flameAlpha(partialTick)));
             int heart = (int) (255 * brightness);
             RenderLayer heartLayer = RenderLayer.getBeaconBeam(getTextureResource(frousseux), true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, heartLayer, bufferSource.getBuffer(heartLayer),
-                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, 0xFF000000 | heart << 16 | heart << 8 | heart);
+                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, withAlpha(0xFF000000 | heart << 16 | heart << 8 | heart, frousseux.flameAlpha(partialTick)));
 
             flame.setHidden(true);
             wick.setHidden(wickHidden);
