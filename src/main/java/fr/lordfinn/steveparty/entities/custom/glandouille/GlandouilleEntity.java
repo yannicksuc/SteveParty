@@ -539,6 +539,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     }
 
     private void launchCharge() {
+        playSound(ModSounds.GLANDOUILLE_CHARGE, 1f, 1f);
         Vec3d dir;
         if (chargeTarget != null && chargeTarget.isAlive()) {
             dir = new Vec3d(chargeTarget.getX() - getX(), 0, chargeTarget.getZ() - getZ());
@@ -649,6 +650,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
 
     public void stun(int ticks) {
         if (boardActor) return;
+        if (getMood() != Mood.STUNNED) playSound(ModSounds.GLANDOUILLE_DIZZY, 0.8f, 1f);
         setMood(Mood.STUNNED, ticks);
     }
 
@@ -1011,7 +1013,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
 
     private void tickSleep(ServerWorld world) {
         setVelocity(0, getVelocity().y, 0);
-        if (this.age % 40 == 0) {
+        // Every 3 s, each on its own beat: a nap of several is not one drone
+        if ((this.age + getId() * 17) % SNORE_TICKS == 0) {
             playSound(ModSounds.GLANDOUILLE_SNORE, 0.6f, 1f);
             world.spawnParticles(new MulaSparkleEffect(0xE8E8FF, 0.8f, MulaSparkleEffect.Z),
                     getX(), getY() + getHeight() + 0.2, getZ(), 1, 0.05, 0.05, 0.05, 0);
@@ -1179,8 +1182,31 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     }
 
     @Override
-    protected SoundEvent getDeathSound() {
-        return ModSounds.GLANDOUILLE_DEATH;
+    protected @Nullable SoundEvent getDeathSound() {
+        // Squashed to death: its "pouic" said it already
+        return squashKill ? null : ModSounds.GLANDOUILLE_DEATH;
+    }
+
+    /** Snores this often (ticks). */
+    private static final int SNORE_TICKS = 60;
+    /** Each sound a little higher or lower, never twice the same. */
+    private static final float PITCH_JITTER = 0.08f;
+
+    /**
+     * Its voice by variant (the young one higher, the big mossy one lower), a little different each time: every sound
+     * of the Glandouille goes through here (vanilla's ambient, hurt and death too).
+     */
+    @Override
+    public void playSound(SoundEvent sound, float volume, float pitch) {
+        super.playSound(sound, volume, pitch * voicePitch() * (1 + (random.nextFloat() * 2 - 1) * PITCH_JITTER));
+    }
+
+    private float voicePitch() {
+        return switch (getVariant()) {
+            case YOUNG -> 1.25f;
+            case MOSSY -> 0.8f;
+            default -> 1f;
+        };
     }
 
     @Override

@@ -680,7 +680,8 @@
     "subtitle": "subtitles.steveparty.glandouille.snore",
     "sounds": [
       "steveparty:glandouille/snore1",
-      "steveparty:glandouille/snore2"
+      "steveparty:glandouille/snore2",
+      "steveparty:glandouille/snore3"
     ]
   },
   "glandouille.hat_pop": {
@@ -740,5 +741,21 @@
       "steveparty:glandouille/hatch1",
       "steveparty:glandouille/hatch2"
     ]
+  },
+  "glandouille.charge": {
+    "sounds": [
+      "steveparty:glandouille/charge1",
+      "steveparty:glandouille/charge2",
+      "steveparty:glandouille/charge3"
+    ],
+    "subtitle": "subtitles.steveparty.glandouille.charge"
+  },
+  "glandouille.dizzy": {
+    "sounds": [
+      "steveparty:glandouille/dizzy1",
+      "steveparty:glandouille/dizzy2",
+      "steveparty:glandouille/dizzy3"
+    ],
+    "subtitle": "subtitles.steveparty.glandouille.dizzy"
   }
 }

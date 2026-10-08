@@ -2609,6 +2609,8 @@
   "item.steveparty.mossy_glandouille_spawn_egg": "Old Mossy Slackorn Spawn Egg",
   "item.steveparty.frosty_glandouille_spawn_egg": "Frosty Slackorn Spawn Egg",
   "message.steveparty.glandouille.too_high": "That tower would be too high (%s Slackorns at most)",
+  "subtitles.steveparty.glandouille.charge": "Slackorn charges",
+  "subtitles.steveparty.glandouille.dizzy": "Slackorn is dizzy",
   "subtitles.steveparty.glandouille.ambient": "Slackorn grumbles",
   "subtitles.steveparty.glandouille.hurt": "Slackorn is shoved",
   "subtitles.steveparty.glandouille.death": "Slackorn is done for",
