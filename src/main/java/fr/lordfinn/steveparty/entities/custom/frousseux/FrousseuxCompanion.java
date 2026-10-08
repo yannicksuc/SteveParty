@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
 import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
+import fr.lordfinn.steveparty.entities.PetTeleports;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
@@ -42,8 +43,6 @@ public final class FrousseuxCompanion {
     public static final double WEB_RANGE = 8.0;
     /** Farther than this from its owner, it pops back to them. */
     static final double TELEPORT_DISTANCE = 14.0;
-    /** Farther than this, it doesn't pop back: left behind. */
-    static final double LEFT_BEHIND = 48.0;
     /** Never in this cone around its owner's look (half its angle, degrees): 30 asked, a margin for its lag. */
     static final double CONE_HALF_ANGLE = 38.0;
     private static final double CONE_COS = Math.cos(Math.toRadians(CONE_HALF_ANGLE));
@@ -158,6 +157,22 @@ public final class FrousseuxCompanion {
                         && frousseux.squaredDistanceTo(player) <= WEB_RANGE * WEB_RANGE).isEmpty();
     }
 
+    /** Where it lands by its owner after a teleport (its feet): its place by them now (lit or dark mode). */
+    static Vec3d arrivalSpot(FrousseuxEntity frousseux, PlayerEntity owner) {
+        World world = owner.getWorld();
+        Vec3d centre = null;
+        if (frousseux.isLitMode()) centre = litSpot(world, owner);
+        else for (double[] slot : SLOTS) {
+            Vec3d at = slot(owner, slot);
+            if (fits(world, owner, at)) {
+                centre = at;
+                break;
+            }
+        }
+        if (centre == null) centre = owner.getEyePos().add(0, 0.5, 0);
+        return centre.subtract(0, FrousseuxEntity.HEIGHT / 2, 0);
+    }
+
     /** A sitting one turned into a candle holder ({@link FrousseuxCandleHolderBlock}), where it floats. */
     static void toCandleHolder(FrousseuxEntity frousseux, ServerWorld world, PlayerEntity player) {
         FrousseuxCandleHolderBlock.fallAsleep(frousseux, world, player);
@@ -222,12 +237,11 @@ public final class FrousseuxCompanion {
             }
             Vec3d feet = centre.subtract(0, FrousseuxEntity.HEIGHT / 2, 0);
             double distance = frousseux.getPos().distanceTo(feet);
-            double away = frousseux.squaredDistanceTo(owner);
-            // too far behind: it pops back by them; far away (a teleport, a long flight), it is left behind, as a
-            // wolf is (popping into another place as its chunk unloads loses it for the clients)
-            if (away > TELEPORT_DISTANCE * TELEPORT_DISTANCE && away < LEFT_BEHIND * LEFT_BEHIND) {
+            // too far behind: it pops back by them (their teleports: PetTeleports, as soon as they happen)
+            if (frousseux.squaredDistanceTo(owner) > TELEPORT_DISTANCE * TELEPORT_DISTANCE
+                    && owner.getWorld() instanceof ServerWorld ownerWorld) {
                 frousseux.flight().stop();
-                frousseux.requestTeleport(feet.x, feet.y, feet.z);
+                PetTeleports.bring(frousseux, ownerWorld, feet, frousseux.getYaw());
                 return;
             }
             frousseux.getMoveControl().moveTo(feet.x, feet.y, feet.z, MathHelper.clamp(distance * 0.2, 0.05, 0.7));
