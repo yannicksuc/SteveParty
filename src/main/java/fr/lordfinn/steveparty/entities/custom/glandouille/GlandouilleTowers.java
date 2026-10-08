@@ -133,6 +133,8 @@ public final class GlandouilleTowers {
         if (total > (spontaneous ? SPONTANEOUS_MAX : maxStack())) return false;
         GlandouilleEntity top = top(target);
         if (!climber.startRiding(top, true)) return false;
+        // climbed on: whoever was napping under it wakes up
+        for (GlandouilleEntity one : members(bottom)) one.handled();
         climber.playSound(ModSounds.GLANDOUILLE_CLIMB, 1f, 1f + 0.05f * total);
         return true;
     }
@@ -161,6 +163,7 @@ public final class GlandouilleTowers {
         }
         clicked.getNavigation().stop();
         clicked.setVelocity(Vec3d.ZERO);
+        for (GlandouilleEntity one : members(clicked)) one.handled();
         player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.GLANDOUILLE_CLIMB,
                 SoundCategory.PLAYERS, 1f, 0.8f);
         return true;
@@ -230,6 +233,7 @@ public final class GlandouilleTowers {
         carried.bodyYaw = yaw;
         carried.headYaw = yaw;
         carried.setVelocity(Vec3d.ZERO);
+        for (GlandouilleEntity one : members(carried)) one.handled();
         player.getWorld().playSound(null, at.x, at.y, at.z, ModSounds.GLANDOUILLE_CLIMB, SoundCategory.PLAYERS, 1f, 0.7f);
         return true;
     }

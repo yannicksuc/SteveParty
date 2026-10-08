@@ -96,6 +96,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     public static final int CHARGE_MAX_TICKS = 40;
     public static final int CHARGE_COOLDOWN_TICKS = 80;
     public static final int FLAT_TICKS = 50, REINFLATE_TICKS = 24, SULK_TICKS = 80;
+    /** How long a handled one stays awake (ticks): put down or landed, it does not drop off at once. */
+    public static final int NAP_COOLDOWN_TICKS = 600;
     public static final int FLIGHT_TICKS = 30;
     /** Let go of by the one under it (hit away): it hops straight up this hard, and gives up landing on a tower after {@link #HOP_TICKS}. */
     public static final double HOP_VELOCITY = 0.3;
@@ -152,6 +154,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     private int moodTicks;
     /** Just hatched: asleep so soundly that a player close by doesn't wake it, for this many more ticks. */
     private int soundSleepTicks;
+    /** Just handled (picked up, put down, thrown, climbed on, woken up): no nap for this many more ticks. */
+    private int napCooldown;
     private int chargeTicks;
     private Vec3d chargeDir = Vec3d.ZERO;
     private @Nullable Entity chargeTarget;
@@ -429,6 +433,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         if (chargeCooldown > 0) chargeCooldown--;
         if (stompCooldown > 0) stompCooldown--;
         if (boneMealCooldown > 0) boneMealCooldown--;
+        if (napCooldown > 0) napCooldown--;
+        // Only a flight floats: whatever left it floating otherwise, it falls
+        if (hasNoGravity() && getMood() != Mood.FLYING) setNoGravity(false);
         if (hatPopTicks > 0 && --hatPopTicks == 0) dropHat(world);
 
         Entity vehicle = getVehicle();
@@ -813,6 +820,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
      * a lone one), it lands on top of it instead ({@link GlandouilleTowers#joinOnImpact}).
      */
     public void launch(Vec3d dir) {
+        handled();
         this.flyDir = new Vec3d(dir.x, 0, dir.z).normalize();
         setNoGravity(true);
         setVelocity(flyDir.x * 1.1, 0.08, flyDir.z * 1.1);
@@ -1000,9 +1008,28 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         return getMood() == Mood.SLEEPING;
     }
 
+    /** Only a calm one, standing alone on its own, not just handled, drops off. */
+    public boolean canNap() {
+        return isFree() && napCooldown <= 0 && !GlandouilleTowers.hasRider(this);
+    }
+
     public void fallAsleep(int ticks) {
-        if (boardActor || hasVehicle()) return;
+        if (!canNap()) return;
         setMood(Mood.SLEEPING, ticks);
+    }
+
+    /**
+     * Picked up, put down, thrown or climbed on: awake (a grumble if it was asleep: nobody to charge from the hands)
+     * and staying so for a while.
+     */
+    public void handled() {
+        if (boardActor) return;
+        napCooldown = NAP_COOLDOWN_TICKS;
+        soundSleepTicks = 0;
+        if (isSleeping()) {
+            setMood(Mood.CALM, 0);
+            playSound(ModSounds.GLANDOUILLE_GROWL, 0.8f, 1.2f);
+        }
     }
 
     /** Out of its acorn: it comes out asleep, too soundly for the player who grew it to wake it at once. */
@@ -1033,6 +1060,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     /** Woken up by {@code by}: it charges at once, no warning (the old mossy one only sulks). */
     public void wakeUp(@Nullable Entity by) {
         setMood(Mood.CALM, 0);
+        napCooldown = NAP_COOLDOWN_TICKS;
         if (by != null && getVariant().charges() && hasHat()) {
             this.chargeTarget = by;
             playSound(ModSounds.GLANDOUILLE_GROWL, 1f, 1.2f);
@@ -1072,6 +1100,12 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     }
 
     // ---------------------------------------------------------------- interactions
+
+    /** Picked (creative middle click): the egg of its own kind, not the last egg registered for the type. */
+    @Override
+    public ItemStack getPickBlockStack() {
+        return new ItemStack(ModItems.GLANDOUILLE_SPAWN_EGGS[getVariant().ordinal()]);
+    }
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
