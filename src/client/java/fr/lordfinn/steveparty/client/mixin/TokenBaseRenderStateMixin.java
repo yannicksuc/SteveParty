@@ -16,6 +16,18 @@ public class TokenBaseRenderStateMixin implements TokenBaseRenderState {
     private float steveparty$baseHeight;
     @Unique
     private float steveparty$baseRadius;
+    @Unique
+    private fr.lordfinn.steveparty.client.token.MobPoses.Frame steveparty$poseFrame;
+
+    @Override
+    public fr.lordfinn.steveparty.client.token.MobPoses.Frame steveparty$getPoseFrame() {
+        return this.steveparty$poseFrame;
+    }
+
+    @Override
+    public void steveparty$setPoseFrame(fr.lordfinn.steveparty.client.token.MobPoses.Frame frame) {
+        this.steveparty$poseFrame = frame;
+    }
 
     @Override
     public boolean steveparty$isToken() {

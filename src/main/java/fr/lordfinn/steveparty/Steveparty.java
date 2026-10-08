@@ -93,10 +93,12 @@ public class Steveparty implements ModInitializer {
 
         MoveTokenCommand.initialize();
         fr.lordfinn.steveparty.commands.MulaCommand.initialize();
+        fr.lordfinn.steveparty.commands.PlayerPawnCommand.initialize();
         fr.lordfinn.steveparty.commands.VillagerBlockCommand.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaRebirths.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaLift.initialize();
         fr.lordfinn.steveparty.items.custom.TokenizerFlare.initialize();
+        fr.lordfinn.steveparty.entities.custom.pawn.PawnPossessions.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaEphemeride.initialize();
         fr.lordfinn.steveparty.telescope.TelescopeService.initialize();
         fr.lordfinn.steveparty.commands.PartyCommands.initialize();

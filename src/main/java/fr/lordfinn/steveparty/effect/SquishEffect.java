@@ -159,6 +159,14 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
         return maxHeight / initialHeight;
     }
 
+    /**
+     * Plays the transformation on the clients for an entity whose scale was set otherwise (a player under the spell:
+     * {@code PawnPossessions}): from {@code startScale} to {@code targetScale}, {@code sizeInBlocks} driving the spin.
+     */
+    public static void playAnimation(LivingEntity entity, float startScale, float targetScale, int duration, float sizeInBlocks) {
+        sendAnimation(entity, startScale, targetScale, duration, amplifierForSize(sizeInBlocks));
+    }
+
     private static void sendAnimation(LivingEntity entity, float startScale, float targetScale, int duration, int amplifier) {
         SquishAnimationPayload heard = new SquishAnimationPayload(entity.getId(), startScale, targetScale, duration, amplifier, false);
         SquishAnimationPayload quiet = new SquishAnimationPayload(entity.getId(), startScale, targetScale, duration, amplifier, true);

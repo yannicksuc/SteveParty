@@ -3,7 +3,9 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
+import fr.lordfinn.steveparty.client.pawn.PlayerStatue;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
+import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnPose;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
@@ -46,8 +48,9 @@ import java.util.Map;
 /**
  * What a podium column shows, drawn on its top block (the column's bottom block keeps it):
  * <ul>
- *     <li><b>Who is registered on it</b>: a small figure of the player, with his skin, standing on the top and facing
- *     the podium's front. It pops in when he registers and bobs a little; over it, his place and his name (in the
+ *     <li><b>Who is registered on it</b>: a small statue of the player (the player pawns' one, see
+ *     {@code PlayerStatue}), with his skin, standing on the top in a pose picked by the server and facing the
+ *     podium's front. It pops in when he registers and bobs a little; over it, his place and his name (in the
  *     colour of his team, with its name, in a team mini-game). During a mini-game the columns of the same height are
  *     one place: each shows the figure it was given (the player on the column he took, a member of the team on each
  *     column), or no figure at all, only the label of who holds the place (see {@code PodiumOccupant}).</li>
@@ -111,17 +114,15 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
             SkinTextures skin = SkinUtils.getSkinTextures(figure.player());
             ModelPart root = skin.model() == SkinTextures.Model.SLIM ? slim : wide;
             root.traverse().forEach(ModelPart::resetTransform);
-            // A light idle: the head looks around a little, the arms sway
-            root.getChild("head").yaw = MathHelper.sin(time * 0.05f) * 0.25f;
-            root.getChild("right_arm").roll = 0.08f + MathHelper.sin(time * 0.12f) * 0.04f;
-            root.getChild("left_arm").roll = -0.08f - MathHelper.sin(time * 0.12f) * 0.04f;
-            copyOuterLayer(root);
+            PlayerPawnPose pose = master.getFigurePose();
+            PlayerStatue.pose(root, pose);
             int light = WorldRenderer.getLightmapCoordinates(world, entity.getPos().up());
             matrices.push();
             matrices.translate(0.5, surface + bob, 0.5);
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180 - state.get(PodiumBlock.FACING).asRotation()));
-            float scale = FIGURE_SCALE * pop;
+            float scale = FIGURE_SCALE * PlayerStatue.AS_HIGH_AS_A_PLAYER * pop;
             matrices.scale(-scale, -scale, scale);
+            PlayerStatue.transform(matrices, pose);
             matrices.translate(0, -1.501, 0);
             root.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(skin.texture())), light, OverlayTexture.DEFAULT_UV);
             matrices.pop();
@@ -148,19 +149,6 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
                 PodiumBlock.bottomOf(world, entity.getPos()).getY(), entity.getPos().getY())) {
             WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5, master.getSignal().text(), 0xFFFFE08A, 0x60000000, 0, 1f / 80f);
         }
-    }
-
-    /**
-     * The parts of the skin's outer layer (hat, jacket, sleeves, trousers) are siblings of the parts they cover in the player layer:
-     * they follow the pose only when copied, as PlayerEntityModel#setAngles does (and mods drawing them, 3D skin layers).
-     */
-    private static void copyOuterLayer(ModelPart root) {
-        root.getChild("hat").copyTransform(root.getChild("head"));
-        root.getChild("jacket").copyTransform(root.getChild("body"));
-        root.getChild("right_sleeve").copyTransform(root.getChild("right_arm"));
-        root.getChild("left_sleeve").copyTransform(root.getChild("left_arm"));
-        root.getChild("right_pants").copyTransform(root.getChild("right_leg"));
-        root.getChild("left_pants").copyTransform(root.getChild("left_leg"));
     }
 
     private static float easeOutBack(float t) {

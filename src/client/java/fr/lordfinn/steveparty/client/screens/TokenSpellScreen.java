@@ -18,7 +18,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Arm;
@@ -93,7 +93,7 @@ public class TokenSpellScreen extends Screen {
 
     private enum Phase { CHARGING, DRAWING, VALIDATING }
 
-    private final MobEntity mob;
+    private final LivingEntity mob;
     private final int color;
     private float size;
     private int ticks;
@@ -157,7 +157,7 @@ public class TokenSpellScreen extends Screen {
         }
     }
 
-    public TokenSpellScreen(MobEntity mob, float initialSize, boolean resize, int currentColor) {
+    public TokenSpellScreen(LivingEntity mob, float initialSize, boolean resize, int currentColor) {
         super(Text.translatableWithFallback(resize ? "screen.steveparty.token_spell.resize_title" : "screen.steveparty.token_spell.title",
                 resize ? "Resizing spell" : "Token spell"));
         this.mob = mob;

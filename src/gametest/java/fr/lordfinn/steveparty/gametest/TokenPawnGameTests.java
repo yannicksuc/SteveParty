@@ -152,7 +152,11 @@ public class TokenPawnGameTests implements FabricGameTest {
         VillagerEntity villager = context.spawnEntity(EntityType.VILLAGER, new BlockPos(4, 2, 2));
         token(villager).steveparty$setTokenized(true);
         player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
-        context.assertTrue(villager.interact(player, Hand.MAIN_HAND) == ActionResult.PASS, "a villager token does not trade");
+        // An empty hand poses the pawn (TokenPoseGameTests) instead of trading
+        villager.interact(player, Hand.MAIN_HAND);
+        context.assertFalse(villager.hasCustomer(), "a villager token does not trade");
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.EMERALD));
+        context.assertTrue(villager.interact(player, Hand.MAIN_HAND) == ActionResult.PASS, "nor with an item in hand");
         context.assertFalse(villager.hasCustomer(), "no trade screen");
         context.complete();
     }
