@@ -36,8 +36,6 @@ public enum FrousseuxColor {
     /** The ivory of its wax body, and how much of the candle's colour shows over it in the pool on its top. */
     private static final int IVORY = 0xF8E8C8;
     private static final float ACCENT_STRENGTH = 0.25f;
-    /** How much of the candle's colour its fringe (a lock of wax over one eye) shows over ivory. */
-    private static final float FRINGE_STRENGTH = 0.7f;
     private static final FrousseuxColor[] VALUES = values();
     private static final int TOTAL_WEIGHT;
 
@@ -54,8 +52,6 @@ public enum FrousseuxColor {
     public final int wax;
     /** The tint of the pool on its top: a hint of {@link #wax} over ivory, never the full dye. */
     public final int accent;
-    /** The tint of its fringe: mostly {@link #wax}, so it reads as the candle's colour. */
-    public final int fringe;
     public final int weight;
 
     FrousseuxColor(String name, Item candle, int flame, int wax, int weight) {
@@ -64,7 +60,6 @@ public enum FrousseuxColor {
         this.flame = flame;
         this.wax = wax;
         this.accent = mix(IVORY, wax, ACCENT_STRENGTH);
-        this.fringe = mix(IVORY, wax, FRINGE_STRENGTH);
         this.weight = weight;
     }
 
