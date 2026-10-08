@@ -31,13 +31,13 @@ import software.bernie.geckolib.cache.texture.AnimatableTexture;
  * only): its saucer if it has one (the Candle Saucer's model, square to the world), its candle's block model (the
  * candle and its fists; FrousseuxCandleHolderBlock) turned its way, its pool tinted its candle's colour, and its flame,
  * the only thing of it that moves. The Frousseux's own flame: two crossed planes of the animated flame texture, tinted its
- * candle's flame colour, with its white heart; its size and brightness from the stage it kept ({@code flame} block
+ * candle's flame colour (made more saturated), with its heart, a small soft glow of a paler shade; its size and brightness from the stage it kept ({@code flame} block
  * state), swaying a little about its foot; unshaded and full bright, see-through. Its item ({@link #ITEM}) draws the
  * block model and this flame alike, from the colour, flame and saucer its item keeps.
  */
 public class FrousseuxCandleHolderRenderer implements BlockEntityRenderer<FrousseuxCandleHolderBlockEntity> {
     private static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
-    private static final Identifier HEART = Steveparty.id("textures/entity/frousseux.png");
+    private static final Identifier HEART = Steveparty.id("textures/entity/frousseux_flame_heart.png");
     private static final int FULL_BRIGHT = 0xF000F0;
     /** The flame's and the heart's places in their textures (the Frousseux's 64x64 layout). */
     private static final float FLAME_U0 = 40 / 64f, FLAME_V0 = 8 / 64f, FLAME_U1 = 46 / 64f, FLAME_V1 = 16 / 64f;
@@ -93,7 +93,7 @@ public class FrousseuxCandleHolderRenderer implements BlockEntityRenderer<Frouss
         float flicker = 0.05f * MathHelper.sin(time * 0.9f) + 0.03f * MathHelper.sin(time * 2.3f + 1.7f);
         matrices.scale(flame.size * (1 - flicker * 0.5f), flame.size * (1 + flicker), flame.size * (1 - flicker * 0.5f));
 
-        int tint = color.flame;
+        int tint = color.flameEdge;
         float b = flame.brightness;
         int argb = 0xFF000000 | (int) (((tint >> 16) & 0xFF) * b) << 16 | (int) (((tint >> 8) & 0xFF) * b) << 8
                 | (int) ((tint & 0xFF) * b);
@@ -102,11 +102,12 @@ public class FrousseuxCandleHolderRenderer implements BlockEntityRenderer<Frouss
         for (float angle : new float[]{45, -45}) {
             plane(matrices, flameBuffer, angle, 3 / 16f, -0.5f / 16, 7.5f / 16, FLAME_U0, FLAME_V0, FLAME_U1, FLAME_V1, argb);
         }
-        int heart = (int) (255 * b);
-        int white = 0xFF000000 | heart << 16 | heart << 8 | heart;
+        int pale = color.flameHeart;
+        int white = 0xFF000000 | (int) (((pale >> 16) & 0xFF) * b) << 16 | (int) (((pale >> 8) & 0xFF) * b) << 8
+                | (int) ((pale & 0xFF) * b);
         VertexConsumer heartBuffer = vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(HEART, true));
         for (float angle : new float[]{0, 90}) {
-            plane(matrices, heartBuffer, angle, 1 / 16f, 0, 3 / 16f, HEART_U0, HEART_V0, HEART_U1, HEART_V1, white);
+            plane(matrices, heartBuffer, angle, 0.7f / 16, 0.1f / 16, 2.5f / 16, HEART_U0, HEART_V0, HEART_U1, HEART_V1, white);
         }
         matrices.pop();
     }
