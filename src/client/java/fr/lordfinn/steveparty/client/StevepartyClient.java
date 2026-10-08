@@ -242,6 +242,12 @@ public class StevepartyClient implements ClientModInitializer {
             return 0xFF000000 | FlagPalettes.ramp(color)[tintIndex];
         }, ModItems.FLAG);
 
+        // The Stencil Hammer's paint gauge: the colour of the dye it sprays, glass (empty) without one
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
+            if (tintIndex != 0) return 0xFFFFFFFF;
+            net.minecraft.util.DyeColor dye = fr.lordfinn.steveparty.items.custom.StencilGunItem.selectedLoad(stack).color();
+            return dye == null ? 0xFFC8F2FF : 0xFF000000 | dye.getEntityColor();
+        }, ModItems.STENCIL_GUN);
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
         // The Mula egg is drawn (textures/item/mula_spawn_egg.png): no spawn-egg tint over it
