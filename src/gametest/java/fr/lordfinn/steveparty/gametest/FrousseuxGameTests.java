@@ -221,4 +221,24 @@ public class FrousseuxGameTests implements FabricGameTest {
         context.assertTrue(frousseux.getFlame() == FrousseuxEntity.Flame.FULL, "full again");
         context.complete();
     }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itGoesWithItsOwnerOnlyWhileFollowing(TestContext context) {
+        floor(context);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
+        ServerPlayerEntity other = player(context, new BlockPos(5, 1, 5));
+        context.assertFalse(frousseux.goesWithOwner(owner), "a wild one stays");
+        frousseux.tame(owner);
+        context.assertTrue(frousseux.followedOwner().equals(owner.getUuid()), "theirs");
+        context.assertTrue(frousseux.goesWithOwner(owner), "following: it goes along");
+        context.assertFalse(frousseux.goesWithOwner(other), "not with someone else");
+        frousseux.setSitting(true);
+        context.assertFalse(frousseux.goesWithOwner(owner), "sitting: it stays");
+        frousseux.setSitting(false);
+        Vec3d spot = frousseux.arrivalSpot(owner);
+        net.minecraft.entity.Entity moved = fr.lordfinn.steveparty.entities.PetTeleports.bring(frousseux, context.getWorld(), spot, 0);
+        context.assertTrue(moved == frousseux && frousseux.getPos().distanceTo(spot) < 1.0E-3, "brought to its spot, the same one");
+        context.complete();
+    }
 }

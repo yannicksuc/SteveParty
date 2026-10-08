@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
+import fr.lordfinn.steveparty.entities.PetTeleports;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
@@ -29,6 +31,7 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -80,7 +83,7 @@ import java.util.UUID;
  * The board's Frousseux ({@link #isBoardActor()}) do none of the above: invulnerable, moved by the board, never
  * saved, no light.
  */
-public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
+public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, FollowsOwnerAnywhere {
     /** Its body: 8x8 pixels, 10 high. */
     public static final float WIDTH = 0.5f, HEIGHT = 0.625f;
     public static final double MAX_HEALTH = 8.0;
@@ -475,7 +478,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
         if (!isTamed() && age % 5 == 0 && stolen.isEmpty() && stealCooldown <= 0) tryStealing(world);
         if (age % 4 == 0) tickShy(world);
         if (age % 20 == 7) tickLightMode(world);
-        if (age % 20 == 0) updateFlameStage(); // its greatest health may change (effects, attributes)
+        if (age % 20 == 0) updateFlameStage();
+        if (age % 20 == 3 && isTamed()) PetTeleports.remember(this); // its greatest health may change (effects, attributes)
         if (age % 2 == 0) light.update(world, BlockPos.ofFloored(getBoundingBox().getCenter()), getFlame().light);
         if (age % 10 == 0 && !flight.isMovingTo()) {
             Vec3d out = FrousseuxFlight.escape(this);
@@ -859,10 +863,35 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     public void remove(RemovalReason reason) {
-        // killed or discarded (despawned, /kill): its light goes with it. Unloaded with its chunk, the light stays
-        // saved with the world and comes back with it (FrousseuxLight)
-        if (reason.shouldDestroy() && !getWorld().isClient) light.clear(getWorld());
+        // killed or discarded (despawned, /kill), or gone with its owner (recreated elsewhere): its light goes with
+        // it. Unloaded with its chunk, the light stays saved with the world and comes back with it (FrousseuxLight)
+        if ((reason.shouldDestroy() || reason == RemovalReason.CHANGED_DIMENSION) && !getWorld().isClient) light.clear(getWorld());
         super.remove(reason);
+    }
+
+    /** Recreated elsewhere (another dimension, or a long way with its owner): the light it left is not its own. */
+    @Override
+    public void copyFrom(Entity original) {
+        super.copyFrom(original);
+        light.forget();
+    }
+
+    // ---------------------------------------------------------------- with its owner anywhere (PetTeleports)
+
+    @Override
+    public @Nullable UUID followedOwner() {
+        return getOwner();
+    }
+
+    /** Going along: tamed by them, following (not sitting, not on a lead or riding), not a board actor. */
+    @Override
+    public boolean goesWithOwner(ServerPlayerEntity owner) {
+        return isAlive() && isOwner(owner) && !isSitting() && !boardActor && !isLeashed() && !hasVehicle();
+    }
+
+    @Override
+    public Vec3d arrivalSpot(ServerPlayerEntity owner) {
+        return FrousseuxCompanion.arrivalSpot(this, owner);
     }
 
     @Override
