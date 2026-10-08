@@ -416,6 +416,77 @@ public class GlandouilleGameTests implements FabricGameTest {
         });
     }
 
+    /** Picked up asleep and thrown: it is woken up in the hands, flies, and lands like any other (never frozen asleep). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void aSleepingOneIsWokenAndThrown(TestContext context) {
+        floor(context);
+        GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
+        one.fallAsleep(2000);
+        context.assertTrue(one.isSleeping(), "asleep");
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
+        context.assertTrue(GlandouilleTowers.pickUp(player, one), "carried");
+        context.assertFalse(one.isSleeping(), "woken up by the hands");
+        context.waitAndRun(2, () -> {
+            one.fallAsleep(2000);
+            context.assertFalse(one.isSleeping(), "can't fall asleep in the hands");
+            double startX = player.getX();
+            context.assertTrue(GlandouilleTowers.throwCarried(player), "thrown");
+            context.assertEquals(one.getMood(), Mood.FLYING, "it flies: " + one.getMood());
+            context.waitAndRun(5, () -> {
+                context.assertTrue(one.getX() - startX > 2, "flew forward: " + (one.getX() - startX) + " " + one.getMood());
+                context.complete();
+            });
+        });
+    }
+
+    /** A flying one never drops off in mid-air: it lands, and falls again. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void aThrownOneCanNotFallAsleepInFlight(TestContext context) {
+        floor(context);
+        GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 3, 1)).getFirst();
+        one.launch(new Vec3d(1, 0, 0));
+        one.fallAsleep(2000);
+        context.assertEquals(one.getMood(), Mood.FLYING, "still flying: " + one.getMood());
+        context.waitAndRun(60, () -> {
+            context.assertFalse(one.hasNoGravity(), "falls again");
+            context.assertTrue(one.isOnGround(), "landed: y " + one.getY());
+            context.complete();
+        });
+    }
+
+    /** Thrown into a napping one, it lands on top of it and wakes it up: a tower never stays stuck under a sleeper. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aOneLandingOnASleeperWakesItUp(TestContext context) {
+        floor(context);
+        GlandouilleEntity sleeper = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(4, 1, 1)).getFirst();
+        sleeper.fallAsleep(2000);
+        context.assertTrue(sleeper.isSleeping(), "asleep");
+        GlandouilleEntity shot = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
+        shot.launch(new Vec3d(1, 0, 0));
+        context.waitAndRun(10, () -> {
+            context.assertEquals(shot.getVehicle(), sleeper, "landed on it");
+            context.assertFalse(sleeper.isSleeping(), "woken up: " + sleeper.getMood());
+            context.complete();
+        });
+    }
+
+    /** Put down, it stays awake a while: a handled one does not drop off at once, at night on a bare platform. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aPutDownOneStaysAwake(TestContext context) {
+        floor(context);
+        GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
+        context.assertTrue(GlandouilleTowers.pickUp(player, one), "carried");
+        context.waitAndRun(2, () -> {
+            context.assertTrue(GlandouilleTowers.drop(player), "put down");
+            context.waitAndRun(2, () -> {
+                one.fallAsleep(2000);
+                context.assertFalse(one.isSleeping(), "stays awake a while");
+                context.complete();
+            });
+        });
+    }
+
     /**
      * A left click with a stack in hand throws its bottom one forward, shot like a flicked one; the rest stays in hand,
      * one shorter, and the thrower is never hit by it.

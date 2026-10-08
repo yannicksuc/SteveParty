@@ -118,7 +118,7 @@ final class GlandouilleGoals {
 
         @Override
         public boolean canStart() {
-            if (!glandouille.isFree() || !glandouille.hasHat() || GlandouilleTowers.hasRider(glandouille)) return false;
+            if (!glandouille.canNap() || !glandouille.hasHat()) return false;
             World world = glandouille.getWorld();
             boolean drowsy = world.isNight() || world.isRaining();
             if (glandouille.getRandom().nextInt(drowsy ? 200 : 4000) != 0) return false;
