@@ -74,6 +74,8 @@ public class PayloadReceivers {
         // A dice prompt (Choice / Lucky / Reroll / swap picker), or its end
         ClientPlayNetworking.registerGlobalReceiver(fr.lordfinn.steveparty.payloads.custom.DicePromptPayload.ID, (payload, context) ->
                 context.client().execute(() -> fr.lordfinn.steveparty.client.screens.DicePickScreen.onPayload(context.client(), payload)));
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(
+                fr.lordfinn.steveparty.client.screens.DicePickScreen::showWaiting);
     }
 
     private static Runnable summonEnchanted(ClientPlayNetworking.Context context, EnchantedCircularParticlePayload payload) {

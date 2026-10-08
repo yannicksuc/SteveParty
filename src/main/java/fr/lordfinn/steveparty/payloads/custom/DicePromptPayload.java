@@ -19,9 +19,12 @@ import java.util.List;
  * @param list         rows of icon and label rather than a grid of icons
  * @param timeoutTicks time left to answer (the client shows it running out)
  * @param defaultIndex the option taken when the time is over
+ * @param picked       one prompt of a series (the dice of a Choice Double / Triple Dice): the answers already given
+ *                     (one per earlier step, its option)
+ * @param steps        the number of steps of that series (this one is step {@code picked.size()}), 1 if alone
  */
 public record DicePromptPayload(int id, Text title, boolean list, List<DicePrompts.Option> options, int timeoutTicks,
-                                int defaultIndex) implements CustomPayload {
+                                int defaultIndex, List<DicePrompts.Option> picked, int steps) implements CustomPayload {
     public static final CustomPayload.Id<DicePromptPayload> ID = new CustomPayload.Id<>(Steveparty.id("dice-prompt"));
     private static final int MAX_OPTIONS = 64;
 
@@ -38,7 +41,14 @@ public record DicePromptPayload(int id, Text title, boolean list, List<DicePromp
                 options.add(new DicePrompts.Option(icon, TextCodecs.REGISTRY_PACKET_CODEC.decode(buf)));
             }
             int timeoutTicks = buf.readVarInt();
-            return new DicePromptPayload(id, title, list, options, timeoutTicks, buf.readVarInt());
+            int defaultIndex = buf.readVarInt();
+            int pickedCount = Math.min(buf.readVarInt(), MAX_OPTIONS);
+            List<DicePrompts.Option> picked = new ArrayList<>(pickedCount);
+            for (int i = 0; i < pickedCount; i++) {
+                ItemStack icon = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
+                picked.add(new DicePrompts.Option(icon, TextCodecs.REGISTRY_PACKET_CODEC.decode(buf)));
+            }
+            return new DicePromptPayload(id, title, list, options, timeoutTicks, defaultIndex, picked, buf.readVarInt());
         }
 
         @Override
@@ -54,12 +64,19 @@ public record DicePromptPayload(int id, Text title, boolean list, List<DicePromp
             }
             buf.writeVarInt(payload.timeoutTicks);
             buf.writeVarInt(payload.defaultIndex);
+            List<DicePrompts.Option> picked = payload.picked.size() > MAX_OPTIONS ? payload.picked.subList(0, MAX_OPTIONS) : payload.picked;
+            buf.writeVarInt(picked.size());
+            for (DicePrompts.Option option : picked) {
+                ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, option.icon());
+                TextCodecs.REGISTRY_PACKET_CODEC.encode(buf, option.label());
+            }
+            buf.writeVarInt(payload.steps);
         }
     };
 
     /** The prompt is over: the client closes its picker. */
     public static DicePromptPayload close(int id) {
-        return new DicePromptPayload(id, Text.empty(), false, List.of(), 0, 0);
+        return new DicePromptPayload(id, Text.empty(), false, List.of(), 0, 0, List.of(), 1);
     }
 
     public boolean isClose() {

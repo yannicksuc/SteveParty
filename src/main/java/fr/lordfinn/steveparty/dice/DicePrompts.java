@@ -41,6 +41,9 @@ public final class DicePrompts {
         private final int timeoutTicks;
         private final int defaultIndex;
         private final IntConsumer onAnswer;
+        /** One prompt of a series (see {@link #askStep}): the answers already given, and the number of steps. */
+        private List<Option> picked = List.of();
+        private int steps = 1;
         private final UUID taskId = UUID.randomUUID();
         private boolean done;
 
@@ -79,6 +82,15 @@ public final class DicePrompts {
         public boolean isDone() {
             return done;
         }
+
+        /** The answers given at the earlier steps of its series (empty if alone). */
+        public List<Option> picked() {
+            return picked;
+        }
+
+        public int steps() {
+            return steps;
+        }
     }
 
     private static final Map<UUID, Prompt> PENDING = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
@@ -96,10 +108,23 @@ public final class DicePrompts {
      */
     public static @Nullable Prompt ask(@Nullable ServerPlayerEntity player, Text title, Layout layout, List<Option> options,
                                        int timeoutTicks, int defaultIndex, IntConsumer onAnswer) {
+        return askStep(player, title, layout, options, timeoutTicks, defaultIndex, List.of(), 1, onAnswer);
+    }
+
+    /**
+     * Like {@link #ask}, for one step of a series of prompts answered one after the other (the face of each die of a
+     * Choice Double / Triple Dice): the picker shows one section per step, {@code picked} the answers already given
+     * to the earlier steps, this one being step {@code picked.size() + 1} of {@code steps}.
+     */
+    public static @Nullable Prompt askStep(@Nullable ServerPlayerEntity player, Text title, Layout layout, List<Option> options,
+                                           int timeoutTicks, int defaultIndex, List<Option> picked, int steps,
+                                           IntConsumer onAnswer) {
         if (options.isEmpty()) return null;
         int fallback = Math.clamp(defaultIndex, 0, options.size() - 1);
         Prompt prompt = new Prompt(nextId++, player == null ? null : player.getUuid(), title, layout, options,
                 timeoutTicks, fallback, onAnswer);
+        prompt.picked = List.copyOf(picked);
+        prompt.steps = Math.max(1, steps);
         if (player != null) {
             Prompt previous = PENDING.get(player.getUuid());
             if (previous != null) resolve(previous, previous.defaultIndex);
@@ -161,6 +186,6 @@ public final class DicePrompts {
     private static void send(ServerPlayerEntity player, Prompt prompt) {
         if (!ServerPlayNetworking.canSend(player, DicePromptPayload.ID)) return;
         ServerPlayNetworking.send(player, new DicePromptPayload(prompt.id, prompt.title, prompt.layout == Layout.LIST,
-                prompt.options, prompt.timeoutTicks, prompt.defaultIndex));
+                prompt.options, prompt.timeoutTicks, prompt.defaultIndex, prompt.picked, prompt.steps));
     }
 }
