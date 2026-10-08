@@ -348,6 +348,13 @@ public class StevepartyClient implements ClientModInitializer {
             return player != null && frousseux.isOwner(player)
                     && !fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxCompanion.reachesFor(player);
         };
+        // ... and fades out of their way when close to their camera (the owner's view only)
+        fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.CLIENT_FADE = frousseux -> {
+            net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+            if (client.player == null || client.gameRenderer == null) return 0;
+            return fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxCompanion.fadeFor(frousseux, client.player,
+                    client.gameRenderer.getCamera().getPos());
+        };
         // The forge core is drawn by the forge: its entity is only a hitbox
         EntityRendererRegistry.register(ModEntities.FORGE_CORE, net.minecraft.client.render.entity.EmptyEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.PIPE_CARRIER, net.minecraft.client.render.entity.EmptyEntityRenderer::new);

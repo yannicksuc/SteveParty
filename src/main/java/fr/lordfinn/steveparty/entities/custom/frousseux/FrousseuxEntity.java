@@ -480,6 +480,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
 
     private void tickClient() {
         tickFlameLean();
+        tickFade();
         if (!isAlive() || isBlownOut()) return;
         // the stolen (or given back) item's sparkles on its way
         Vec3d flying = itemFlightOffset(0);
@@ -491,6 +492,35 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (getFlame() == Flame.EMBER && random.nextInt(8) == 0) {
             getWorld().addParticle(ParticleTypes.SMOKE, getX(), getY() + HEIGHT + 0.25, getZ(), 0, 0.02, 0);
         }
+    }
+
+    // ---------------------------------------------------------------- out of its owner's way (client)
+
+    /** How near its owner's camera (FADE_NEAR: faded; FADE_ON: gone), from the client ({@link #CLIENT_FADE}). */
+    public static final int FADE_NONE = 0, FADE_NEAR = 1, FADE_ON = 2;
+    /** Set by the client: how much it fades for the local player (FrousseuxCompanion#fadeFor). */
+    public static java.util.function.ToIntFunction<FrousseuxEntity> CLIENT_FADE = frousseux -> FADE_NONE;
+    /** Its body's and its flame's opacity for the local player: eased, a quarter of the way a tick. */
+    private float bodyAlpha = 1, flameAlpha = 1, prevBodyAlpha = 1, prevFlameAlpha = 1;
+
+    private void tickFade() {
+        prevBodyAlpha = bodyAlpha;
+        prevFlameAlpha = flameAlpha;
+        int fade = CLIENT_FADE.applyAsInt(this);
+        float body = fade == FADE_ON ? 0 : fade == FADE_NEAR ? 0.06f : 1; // (its shell is drawn twice: twice that)
+        float flame = fade == FADE_ON ? 0 : fade == FADE_NEAR ? 0.5f : 1;
+        bodyAlpha += (body - bodyAlpha) * 0.35f;
+        flameAlpha += (flame - flameAlpha) * 0.35f;
+        if (Math.abs(body - bodyAlpha) < 0.01f) bodyAlpha = body;
+        if (Math.abs(flame - flameAlpha) < 0.01f) flameAlpha = flame;
+    }
+
+    public float bodyAlpha(float partialTick) {
+        return MathHelper.lerp(partialTick, prevBodyAlpha, bodyAlpha);
+    }
+
+    public float flameAlpha(float partialTick) {
+        return MathHelper.lerp(partialTick, prevFlameAlpha, flameAlpha);
     }
 
     // ---------------------------------------------------------------- its flame in the wind (client)

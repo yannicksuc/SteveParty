@@ -149,6 +149,25 @@ public final class FrousseuxCompanion {
         return eye.add(look.multiply(0.7));
     }
 
+    /** Within this of its owner's camera it fades out (its flame half), within this it is gone (blocks). */
+    public static final double FADE_DISTANCE = 3.0, GONE_DISTANCE = 1.5;
+
+    /**
+     * How much a following Frousseux fades for {@code viewer}, its owner (never for anyone else): never when they
+     * reach for it (sneaking with an empty hand, flint and steel) or it sits; gone when right by their camera
+     * (crossing in front of it, or on them); faded (its body nearly invisible, its flame half) a little farther, but
+     * for one in front of them in a lit place, where it is meant to be looked at.
+     */
+    public static int fadeFor(FrousseuxEntity frousseux, PlayerEntity viewer, Vec3d camera) {
+        if (!frousseux.isTamed() || !frousseux.isOwner(viewer) || frousseux.isSitting() || reachesFor(viewer)) {
+            return FrousseuxEntity.FADE_NONE;
+        }
+        double distance = camera.distanceTo(frousseux.getBoundingBox().getCenter());
+        if (distance < GONE_DISTANCE) return FrousseuxEntity.FADE_ON;
+        if (distance < FADE_DISTANCE && !frousseux.isLitMode()) return FrousseuxEntity.FADE_NEAR;
+        return FrousseuxEntity.FADE_NONE;
+    }
+
     /** Whether cobwebs let {@code entity} through: a player within {@link #WEB_RANGE} blocks of their Frousseux. */
     public static boolean shieldsFromWebs(Entity entity) {
         if (!(entity instanceof PlayerEntity player) || player.isSpectator()) return false;
