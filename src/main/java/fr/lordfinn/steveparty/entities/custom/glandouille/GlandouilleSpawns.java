@@ -22,8 +22,9 @@ import net.minecraft.world.biome.Biome;
 
 /**
  * Where Glandouilles live, in groups of 2 to 4, under the trees (biome tags in data/steveparty/tags/worldgen/biome):
- * the classic and young ones (sometimes an old one) where oaks grow ({@link #OAK_BIOMES}), the old mossy ones in the
- * old growth taigas ({@link #OLD_GROWTH_BIOMES}), the frosty ones in the snowy taigas ({@link #SNOWY_BIOMES}).
+ * the classic ones (sometimes an old one) where oaks grow ({@link #OAK_BIOMES}), the old mossy ones in the old growth
+ * taigas ({@link #OLD_GROWTH_BIOMES}), the frosty ones in the snowy taigas ({@link #SNOWY_BIOMES}). The young one never
+ * spawns by itself: it only pops out of a planted acorn barely sprouted, or comes from its spawn egg or a command.
  * A ripe planted acorn hatches into a classic one, a frosty one where it snows ({@link #SPROUT_FROSTY_BIOMES}), an old
  * mossy one in the taigas and lush caves ({@link #SPROUT_MOSSY_BIOMES}).
  */
@@ -69,10 +70,7 @@ public final class GlandouilleSpawns {
         RegistryEntry<Biome> biome = world.getBiome(pos);
         if (biome.isIn(SNOWY_BIOMES)) return GlandouilleVariant.FROSTY;
         if (biome.isIn(OLD_GROWTH_BIOMES)) return GlandouilleVariant.MOSSY;
-        float roll = random.nextFloat();
-        if (roll < 0.07f) return GlandouilleVariant.MOSSY;
-        if (roll < 0.35f) return GlandouilleVariant.YOUNG;
-        return GlandouilleVariant.CLASSIC;
+        return random.nextFloat() < 0.07f ? GlandouilleVariant.MOSSY : GlandouilleVariant.CLASSIC;
     }
 
     /** The kind a ripe planted acorn at {@code pos} hatches into, from its biome (snow first: a snowy taiga is frosty). */
