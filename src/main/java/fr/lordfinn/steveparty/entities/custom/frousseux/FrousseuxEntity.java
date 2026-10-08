@@ -349,10 +349,11 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
 
     public void makeBoardActor() {
         this.boardActor = true;
-        setInvulnerable(true);
         setAiDisabled(true);
-        setPersistent();
-        if (!getWorld().isClient) light.clear(getWorld());
+        if (!getWorld().isClient) {
+            fr.lordfinn.steveparty.service.BoardActors.mark(this); // invulnerable, never kept
+            light.clear(getWorld());
+        }
     }
 
     /** A board actor: shows {@code carried} under itself (empty: nothing), once any item flight is over. */
@@ -738,6 +739,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     public boolean damage(DamageSource source, float amount) {
         if (getWorld().isClient || isRemoved()) return false;
         if (boardActor) {
+            // a board actor: only commands and the void (BoardActors); blows only count for its space
+            if (source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) return super.damage(source, amount);
             if (boardHit != null && isMelee(source)) boardHit.test(source.getAttacker());
             return false;
         }
@@ -815,6 +818,11 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
             world.spawnParticles(ParticleTypes.SMOKE, getX(), getY() + HEIGHT + 0.2, getZ(), 4, 0.06, 0.1, 0.06, 0.01);
         }
         return true;
+    }
+
+    @Override
+    protected boolean shouldDropLoot() {
+        return !boardActor && super.shouldDropLoot(); // a board actor killed by a command leaves nothing
     }
 
     @Override
