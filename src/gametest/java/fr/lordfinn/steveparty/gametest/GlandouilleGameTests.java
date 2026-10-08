@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.Mood;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -416,6 +417,139 @@ public class GlandouilleGameTests implements FabricGameTest {
         });
     }
 
+    /** Picked up asleep and thrown: it is woken up in the hands, flies, and lands like any other (never frozen asleep). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void aSleepingOneIsWokenAndThrown(TestContext context) {
+        floor(context);
+        GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
+        one.fallAsleep(2000);
+        context.assertTrue(one.isSleeping(), "asleep");
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
+        context.assertTrue(GlandouilleTowers.pickUp(player, one), "carried");
+        context.assertFalse(one.isSleeping(), "woken up by the hands");
+        context.waitAndRun(2, () -> {
+            one.fallAsleep(2000);
+            context.assertFalse(one.isSleeping(), "can't fall asleep in the hands");
+            double startX = player.getX();
+            context.assertTrue(GlandouilleTowers.throwCarried(player), "thrown");
+            context.assertEquals(one.getMood(), Mood.FLYING, "it flies: " + one.getMood());
+            context.waitAndRun(5, () -> {
+                context.assertTrue(one.getX() - startX > 2, "flew forward: " + (one.getX() - startX) + " " + one.getMood());
+                context.complete();
+            });
+        });
+    }
+
+    /** A flying one never drops off in mid-air: it lands, and falls again. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void aThrownOneCanNotFallAsleepInFlight(TestContext context) {
+        floor(context);
+        GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 3, 1)).getFirst();
+        one.launch(new Vec3d(1, 0, 0));
+        one.fallAsleep(2000);
+        context.assertEquals(one.getMood(), Mood.FLYING, "still flying: " + one.getMood());
+        context.waitAndRun(60, () -> {
+            context.assertFalse(one.hasNoGravity(), "falls again");
+            context.assertTrue(one.isOnGround(), "landed: y " + one.getY());
+            context.complete();
+        });
+    }
+
+    /** Thrown into a napping one, it lands on top of it and wakes it up: a tower never stays stuck under a sleeper. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aOneLandingOnASleeperWakesItUp(TestContext context) {
+        floor(context);
+        GlandouilleEntity sleeper = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(4, 1, 1)).getFirst();
+        sleeper.fallAsleep(2000);
+        context.assertTrue(sleeper.isSleeping(), "asleep");
+        GlandouilleEntity shot = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
+        shot.launch(new Vec3d(1, 0, 0));
+        context.waitAndRun(10, () -> {
+            context.assertEquals(shot.getVehicle(), sleeper, "landed on it");
+            context.assertFalse(sleeper.isSleeping(), "woken up: " + sleeper.getMood());
+            context.complete();
+        });
+    }
+
+    /** Put down, it stays awake a while: a handled one does not drop off at once, at night on a bare platform. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aPutDownOneStaysAwake(TestContext context) {
+        floor(context);
+        GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
+        context.assertTrue(GlandouilleTowers.pickUp(player, one), "carried");
+        context.waitAndRun(2, () -> {
+            context.assertTrue(GlandouilleTowers.drop(player), "put down");
+            context.waitAndRun(2, () -> {
+                one.fallAsleep(2000);
+                context.assertFalse(one.isSleeping(), "stays awake a while");
+                context.complete();
+            });
+        });
+    }
+
+    /**
+     * Saved while riding (in a tower or in hand), it is not saved without AI: let go after a reload, it falls and
+     * thinks. One saved that way by an older version is repaired; a NoAI given by a command stays.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void aRiderIsNotSavedWithoutAi(TestContext context) {
+        floor(context);
+        GlandouilleEntity top = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1)).get(1);
+        context.assertTrue(top.isAiDisabled(), "riding: it doesn't think");
+        net.minecraft.nbt.NbtCompound saved = new net.minecraft.nbt.NbtCompound();
+        top.writeNbt(saved);
+        context.assertFalse(saved.getBoolean("NoAI"), "not saved without AI");
+        // as an older version saved it
+        saved.putBoolean("NoAI", true);
+        saved.remove("OwnNoAI");
+        GlandouilleEntity old = ModEntities.GLANDOUILLE.create(context.getWorld());
+        old.readNbt(saved);
+        context.assertFalse(old.isAiDisabled(), "an old save is repaired");
+        // a command's NoAI
+        net.minecraft.nbt.NbtCompound summoned = new net.minecraft.nbt.NbtCompound();
+        summoned.putBoolean("NoAI", true);
+        GlandouilleEntity still = ModEntities.GLANDOUILLE.create(context.getWorld());
+        still.readNbt(summoned);
+        context.assertTrue(still.isAiDisabled(), "a command's NoAI stays");
+        context.complete();
+    }
+
+    /** A carried stack is held in the main hand: on its side (mirrored for a left-handed one), low, a little forward. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void aStackIsHeldInTheMainHand(TestContext context) {
+        floor(context);
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x: his right is +z
+        GlandouilleEntity one = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 1));
+        Vec3d right = GlandouilleTowers.heldPos(player, one).subtract(player.getPos());
+        context.assertTrue(right.x > 0.3 && right.z > 0.3, "forward, on the right: " + right);
+        context.assertTrue(right.y < player.getStandingEyeHeight() - 0.6, "low, under the crosshair: " + right.y);
+        player.setMainArm(net.minecraft.util.Arm.LEFT);
+        Vec3d left = GlandouilleTowers.heldPos(player, one).subtract(player.getPos());
+        context.assertTrue(left.z < -0.3, "mirrored for a left-handed one: " + left);
+        context.complete();
+    }
+
+    /** Thrown looking down at the floor a few blocks ahead, it lands there (not far away): it goes where he aims. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aThrowGoesWhereTheCrosshairAims(TestContext context) {
+        floor(context);
+        GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
+        player.setPitch(35f); // the floor, about 2.5 blocks ahead
+        context.assertTrue(GlandouilleTowers.pickUp(player, one), "carried");
+        context.waitAndRun(2, () -> {
+            double startX = player.getX();
+            context.assertTrue(GlandouilleTowers.throwCarried(player), "thrown");
+            context.waitAndRun(10, () -> {
+                double flown = one.getX() - startX;
+                context.assertTrue(flown > 1 && flown < 4.5, "landed where aimed: " + flown + " " + one.getMood());
+                context.assertTrue(one.getMood() != Mood.FLYING, "landed: " + one.getMood());
+                context.complete();
+            });
+        });
+    }
+
     /**
      * A left click with a stack in hand throws its bottom one forward, shot like a flicked one; the rest stays in hand,
      * one shorter, and the thrower is never hit by it.
@@ -749,8 +883,9 @@ public class GlandouilleGameTests implements FabricGameTest {
 
     /** An acorn planted on farmland grows, and ripe, hatches into a young Glandouille. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
-    public void aPlantedAcornHatchesIntoAYoungOne(TestContext context) {
+    public void aPlantedAcornHatchesIntoAClassicOne(TestContext context) {
         floor(context);
+        biome(context, "minecraft:plains");
         BlockPos farmland = new BlockPos(3, 1, 3), crop = farmland.up();
         context.setBlockState(farmland, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
         BlockState planted = ModBlocks.ACORN_CROP.getDefaultState();
@@ -766,8 +901,93 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.assertTrue(context.getWorld().getBlockState(abs).isAir(), "the acorn hatched");
         List<GlandouilleEntity> born = context.getWorld().getEntitiesByClass(GlandouilleEntity.class, new Box(abs).expand(1), e -> true);
         context.assertEquals(born.size(), 1, "one Glandouille");
-        context.assertEquals(born.getFirst().getVariant(), GlandouilleVariant.YOUNG, "a young one");
+        context.assertEquals(born.getFirst().getVariant(), GlandouilleVariant.CLASSIC, "a classic one");
         context.complete();
+    }
+
+    /** A ripe acorn hatches into its biome's kind: frosty where it snows, the old mossy one in taigas and lush caves. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aPlantedAcornHatchesIntoItsBiomesKind(TestContext context) {
+        Map<String, GlandouilleVariant> expected = new java.util.LinkedHashMap<>();
+        expected.put("minecraft:plains", GlandouilleVariant.CLASSIC);
+        expected.put("minecraft:forest", GlandouilleVariant.CLASSIC);
+        expected.put("minecraft:snowy_plains", GlandouilleVariant.FROSTY);
+        expected.put("minecraft:snowy_taiga", GlandouilleVariant.FROSTY);
+        expected.put("minecraft:grove", GlandouilleVariant.FROSTY);
+        expected.put("minecraft:taiga", GlandouilleVariant.MOSSY);
+        expected.put("minecraft:old_growth_spruce_taiga", GlandouilleVariant.MOSSY);
+        expected.put("minecraft:lush_caves", GlandouilleVariant.MOSSY);
+        BlockPos abs = context.getAbsolutePos(new BlockPos(3, 1, 3));
+        expected.forEach((biome, variant) -> {
+            biome(context, biome);
+            context.getWorld().setBlockState(abs, ModBlocks.ACORN_CROP.getDefaultState().with(AcornCropBlock.AGE, AcornCropBlock.MAX_AGE));
+            GlandouilleEntity born = AcornCropBlock.hatch(context.getWorld(), abs);
+            context.assertTrue(born != null, "hatched in " + biome);
+            context.assertEquals(born.getVariant(), variant, "in " + biome);
+            born.discard();
+        });
+        context.complete();
+    }
+
+    /** Barely sprouted, an acorn may pop out of the ground at once, as a young one (5 %: forced here). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aBarelySproutedAcornMayPopOutYoung(TestContext context) {
+        floor(context);
+        biome(context, "minecraft:snowy_plains");
+        BlockPos farmland = new BlockPos(3, 1, 3), crop = farmland.up();
+        context.setBlockState(farmland, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
+        BlockPos abs = context.getAbsolutePos(crop);
+        var world = context.getWorld();
+        float chance = AcornCropBlock.earlyPopChance;
+        try {
+            AcornCropBlock.earlyPopChance = 0f;
+            context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
+            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+            context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), 1, "never: it just grows");
+            AcornCropBlock.earlyPopChance = 1f;
+            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+            context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), 2, "only at its first stage");
+            context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
+            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+        } finally {
+            AcornCropBlock.earlyPopChance = chance;
+        }
+        context.assertTrue(world.getBlockState(abs).isAir(), "popped out");
+        List<GlandouilleEntity> born = world.getEntitiesByClass(GlandouilleEntity.class, new Box(abs).expand(1), e -> true);
+        context.assertEquals(born.size(), 1, "one Glandouille");
+        context.assertEquals(born.getFirst().getVariant(), GlandouilleVariant.YOUNG, "a young one, whatever the biome");
+        context.complete();
+    }
+
+    /** The young one never spawns by itself: only from an acorn barely sprouted, its egg or a command. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void theYoungOneNeverSpawnsNaturally(TestContext context) {
+        biome(context, "minecraft:forest");
+        BlockPos abs = context.getAbsolutePos(new BlockPos(3, 1, 3));
+        for (int i = 0; i < 2000; i++) {
+            context.assertTrue(GlandouilleSpawns.variantFor(context.getWorld(), abs, context.getWorld().random) != GlandouilleVariant.YOUNG,
+                    "never a young one");
+        }
+        context.complete();
+    }
+
+    /** Picked in creative (middle click): the egg of its own kind. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void aPickedOneGivesTheEggOfItsKind(TestContext context) {
+        floor(context);
+        for (GlandouilleVariant variant : GlandouilleVariant.values()) {
+            GlandouilleEntity one = glandouille(context, variant, new BlockPos(1 + variant.ordinal(), 1, 1));
+            context.assertEquals(one.getPickBlockStack().getItem(), ModItems.GLANDOUILLE_SPAWN_EGGS[variant.ordinal()], "egg of " + variant);
+        }
+        context.complete();
+    }
+
+    /** Sets the biome of the whole test area (and a little around it). */
+    private static void biome(TestContext context, String biome) {
+        BlockPos from = context.getAbsolutePos(new BlockPos(-2, -2, -2)), to = context.getAbsolutePos(new BlockPos(10, 6, 10));
+        var server = context.getWorld().getServer();
+        server.getCommandManager().executeWithPrefix(server.getCommandSource().withWorld(context.getWorld()).withSilent(),
+                "fillbiome " + from.getX() + " " + from.getY() + " " + from.getZ() + " " + to.getX() + " " + to.getY() + " " + to.getZ() + " " + biome);
     }
 
     /** Bone meal: one stage per dose; ripe, a dose in three hatches it (here, doses until it does). */
@@ -779,9 +999,15 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
         BlockPos abs = context.getAbsolutePos(crop);
         var world = context.getWorld();
-        for (int age = 1; age <= AcornCropBlock.MAX_AGE; age++) {
-            context.assertTrue(net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs), "bone meal takes");
-            context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), age, "one stage per dose");
+        float chance = AcornCropBlock.earlyPopChance;
+        AcornCropBlock.earlyPopChance = 0f; // no early young one here
+        try {
+            for (int age = 1; age <= AcornCropBlock.MAX_AGE; age++) {
+                context.assertTrue(net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs), "bone meal takes");
+                context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), age, "one stage per dose");
+            }
+        } finally {
+            AcornCropBlock.earlyPopChance = chance;
         }
         for (int i = 0; i < 64 && world.getBlockState(abs).isOf(ModBlocks.ACORN_CROP); i++) {
             net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);

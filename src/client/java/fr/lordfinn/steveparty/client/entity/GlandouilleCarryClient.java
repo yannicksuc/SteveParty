@@ -8,7 +8,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.Hand;
 
 /**
- * A player carrying Glandouilles (held in front of him, see {@link GlandouilleTowers#heldPos}): both arms forward, and
+ * A player carrying Glandouilles (held in his main hand, see {@link GlandouilleTowers#heldPos}): that arm raised, and
  * his left click throws the bottom one instead of attacking or breaking.
  */
 public final class GlandouilleCarryClient {

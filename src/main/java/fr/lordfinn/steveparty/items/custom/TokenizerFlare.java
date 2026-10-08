@@ -5,7 +5,10 @@ import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import fr.lordfinn.steveparty.particles.SpellPalette;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import fr.lordfinn.steveparty.entities.custom.pawn.PawnPossessions;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -53,7 +56,7 @@ public final class TokenizerFlare {
     }
 
     /** What a stretch of the flare's flight hits first. */
-    public record Hit(MobEntity mob, Vec3d at, boolean stops) {
+    public record Hit(LivingEntity mob, Vec3d at, boolean stops) {
         static final Hit NOTHING = new Hit(null, null, false);
     }
 
@@ -77,10 +80,12 @@ public final class TokenizerFlare {
         BlockHitResult block = world.raycast(new RaycastContext(from, to, RaycastContext.ShapeType.COLLIDER,
                 RaycastContext.FluidHandling.NONE, player));
         Vec3d end = block.getType() == HitResult.Type.MISS ? to : block.getPos();
-        MobEntity nearest = null;
+        LivingEntity nearest = null;
         Vec3d nearestAt = null;
         double nearestDistance = Double.MAX_VALUE;
-        for (MobEntity mob : world.getEntitiesByClass(MobEntity.class, new Box(from, end).expand(1), MobEntity::isAlive)) {
+        // Mobs, and the other players (the spell makes them player pawns)
+        for (LivingEntity mob : world.getEntitiesByClass(LivingEntity.class, new Box(from, end).expand(1), entity -> entity.isAlive()
+                && (entity instanceof MobEntity || entity instanceof PlayerEntity other && other != player && !other.isSpectator()))) {
             Optional<Vec3d> at = mob.getBoundingBox().expand(0.2).raycast(from, end);
             if (at.isPresent() && from.squaredDistanceTo(at.get()) < nearestDistance) {
                 nearestDistance = from.squaredDistanceTo(at.get());
@@ -88,9 +93,12 @@ public final class TokenizerFlare {
                 nearestAt = at.get();
             }
         }
-        if (nearest != null) {
-            if (!TokenBase.isToken(nearest) && TokenizerWandItem.isBoss(nearest)) TokenizerWandItem.sendBossRefused(player, nearest);
-            return new Hit(TokenizerWandItem.isSpellTarget(player, wand, nearest) ? nearest : null, nearestAt, true);
+        if (nearest instanceof PlayerEntity other) {
+            return new Hit(PawnPossessions.canTokenize(other) ? other : null, nearestAt, true);
+        }
+        if (nearest instanceof MobEntity mob) {
+            if (!TokenBase.isToken(mob) && TokenizerWandItem.isBoss(mob)) TokenizerWandItem.sendBossRefused(player, mob);
+            return new Hit(TokenizerWandItem.isSpellTarget(player, wand, mob) ? mob : null, nearestAt, true);
         }
         return block.getType() == HitResult.Type.MISS ? Hit.NOTHING : new Hit(null, end, true);
     }

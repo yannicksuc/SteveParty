@@ -93,10 +93,12 @@ public class Steveparty implements ModInitializer {
 
         MoveTokenCommand.initialize();
         fr.lordfinn.steveparty.commands.MulaCommand.initialize();
+        fr.lordfinn.steveparty.commands.PlayerPawnCommand.initialize();
         fr.lordfinn.steveparty.commands.VillagerBlockCommand.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaRebirths.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaLift.initialize();
         fr.lordfinn.steveparty.items.custom.TokenizerFlare.initialize();
+        fr.lordfinn.steveparty.entities.custom.pawn.PawnPossessions.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaEphemeride.initialize();
         fr.lordfinn.steveparty.telescope.TelescopeService.initialize();
         fr.lordfinn.steveparty.commands.PartyCommands.initialize();
@@ -113,6 +115,10 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers.initialize();
         fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxSpawns.initialize();
         fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartSpawns.initialize();
+        fr.lordfinn.steveparty.entities.PetTeleports.initialize();
+        // the Frousseux candle holder burns as planks do: fire catches it and burns it away, the Frousseux gone with it
+        net.fabricmc.fabric.api.registry.FlammableBlockRegistry.getDefaultInstance().add(
+                fr.lordfinn.steveparty.blocks.ModBlocks.FROUSSEUX_CANDLE_HOLDER, 5, 20);
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             for (ServerPlayerEntity player : world.getPlayers()) {

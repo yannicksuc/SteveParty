@@ -96,7 +96,16 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     public static final int CHARGE_MAX_TICKS = 40;
     public static final int CHARGE_COOLDOWN_TICKS = 80;
     public static final int FLAT_TICKS = 50, REINFLATE_TICKS = 24, SULK_TICKS = 80;
+    /** How long a handled one stays awake (ticks): put down or landed, it does not drop off at once. */
+    public static final int NAP_COOLDOWN_TICKS = 600;
     public static final int FLIGHT_TICKS = 30;
+    /** A flick goes straight (no gravity) for this many ticks, then falls. */
+    public static final int STRAIGHT_FLIGHT_TICKS = 10;
+    /** Flight speed (blocks per tick). */
+    public static final double FLIGHT_SPEED = 1.1;
+    /** A throw goes straight this far (blocks), then gravity comes back over {@link #GRAVITY_RAMP_TICKS}. */
+    public static final double THROW_STRAIGHT_BLOCKS = 50;
+    public static final int GRAVITY_RAMP_TICKS = 15;
     /** Let go of by the one under it (hit away): it hops straight up this hard, and gives up landing on a tower after {@link #HOP_TICKS}. */
     public static final double HOP_VELOCITY = 0.3;
     public static final int HOP_TICKS = 50;
@@ -152,6 +161,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     private int moodTicks;
     /** Just hatched: asleep so soundly that a player close by doesn't wake it, for this many more ticks. */
     private int soundSleepTicks;
+    /** Just handled (picked up, put down, thrown, climbed on, woken up): no nap for this many more ticks. */
+    private int napCooldown;
     private int chargeTicks;
     private Vec3d chargeDir = Vec3d.ZERO;
     private @Nullable Entity chargeTarget;
@@ -167,6 +178,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     private boolean squashKill;
     private boolean variantFromData;
     private Vec3d flyDir = Vec3d.ZERO;
+    private int straightTicks = STRAIGHT_FLIGHT_TICKS, flightTicks = FLIGHT_TICKS;
+    /** A throw (aimed, gravity coming back smoothly), not a flick. */
+    private boolean thrown;
     private Vec3d slideVelocity = Vec3d.ZERO;
     private int slideRelaunches;
     /** Hopping off a tower: the tower it lands back on (null: the ground). */
@@ -429,6 +443,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         if (chargeCooldown > 0) chargeCooldown--;
         if (stompCooldown > 0) stompCooldown--;
         if (boneMealCooldown > 0) boneMealCooldown--;
+        if (napCooldown > 0) napCooldown--;
+        // Only a flight floats: whatever left it floating otherwise, it falls
+        if (hasNoGravity() && getMood() != Mood.FLYING) setNoGravity(false);
         if (hatPopTicks > 0 && --hatPopTicks == 0) dropHat(world);
 
         Entity vehicle = getVehicle();
@@ -813,11 +830,27 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
      * a lone one), it lands on top of it instead ({@link GlandouilleTowers#joinOnImpact}).
      */
     public void launch(Vec3d dir) {
-        this.flyDir = new Vec3d(dir.x, 0, dir.z).normalize();
+        startFlight(new Vec3d(dir.x, 0, dir.z), false);
+    }
+
+    /**
+     * Thrown out of a player's hand along {@code dir} (to his crosshair, up or down): straight, at a constant speed, for
+     * {@link #THROW_STRAIGHT_BLOCKS}, then gravity comes back little by little and it falls.
+     */
+    public void launchThrown(Vec3d dir) {
+        startFlight(dir, true);
+    }
+
+    private void startFlight(Vec3d dir, boolean thrown) {
+        handled();
+        this.flyDir = dir.normalize();
+        this.thrown = thrown;
+        this.straightTicks = thrown ? (int) Math.ceil(THROW_STRAIGHT_BLOCKS / FLIGHT_SPEED) : STRAIGHT_FLIGHT_TICKS;
+        this.flightTicks = thrown ? straightTicks + GRAVITY_RAMP_TICKS + FLIGHT_TICKS : FLIGHT_TICKS;
         setNoGravity(true);
-        setVelocity(flyDir.x * 1.1, 0.08, flyDir.z * 1.1);
+        setVelocity(flyDir.x * FLIGHT_SPEED, thrown ? flyDir.y * FLIGHT_SPEED : 0.08, flyDir.z * FLIGHT_SPEED);
         this.velocityModified = true;
-        setMood(Mood.FLYING, FLIGHT_TICKS);
+        setMood(Mood.FLYING, flightTicks);
         playSound(ModSounds.GLANDOUILLE_FLICK, 1f, 1f);
     }
 
@@ -826,9 +859,24 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     }
 
     private void tickFlight(ServerWorld world) {
-        int flown = FLIGHT_TICKS - moodTicks;
-        if (flown < 10) setVelocity(flyDir.x * 1.1, getVelocity().y * 0.5, flyDir.z * 1.1);
-        else setNoGravity(false);
+        int flown = flightTicks - moodTicks;
+        if (flown < straightTicks) {
+            setVelocity(flyDir.x * FLIGHT_SPEED, thrown ? flyDir.y * FLIGHT_SPEED : getVelocity().y * 0.5, flyDir.z * FLIGHT_SPEED);
+            this.velocityModified = true;
+        } else if (thrown && flown < straightTicks + GRAVITY_RAMP_TICKS) {
+            // gravity comes back little by little: it bends down, then falls
+            float ramp = (flown - straightTicks + 1) / (float) GRAVITY_RAMP_TICKS;
+            setVelocity(getVelocity().add(0, -0.08 * ramp, 0));
+        } else {
+            setNoGravity(false);
+        }
+        // about to fly into a part of the world that doesn't tick (unloaded): it drops here instead of hanging there
+        if (!world.shouldTickEntity(BlockPos.ofFloored(getPos().add(getVelocity().multiply(2))))) {
+            setNoGravity(false);
+            setVelocity(getVelocity().multiply(0.2, 0, 0.2));
+            stun();
+            return;
+        }
         for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(0.3),
                 e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e) && !spares(e))) {
             // another tower (or a lone one): it lands on top of it and stays there
@@ -838,11 +886,11 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
                 setMood(Mood.CALM, 0);
                 return;
             }
-            shove(other, flyDir, SHOVE);
+            shove(other, new Vec3d(flyDir.x, 0, flyDir.z).normalize(), SHOVE);
             playSound(ModSounds.GLANDOUILLE_RAM, 1f, 1.2f);
         }
         if (flown % 2 == 0) world.spawnParticles(ParticleTypes.CLOUD, getX(), getY() + 0.3, getZ(), 1, 0, 0, 0, 0);
-        if (--moodTicks <= 0 || (flown > 2 && (this.horizontalCollision || isOnGround()))) {
+        if (--moodTicks <= 0 || (flown > 2 && (this.horizontalCollision || this.verticalCollision || isOnGround()))) {
             setNoGravity(false);
             if (this.horizontalCollision) playSound(ModSounds.GLANDOUILLE_BONK, 1f, 1.2f);
             setVelocity(getVelocity().multiply(0.2, 1, 0.2));
@@ -1000,9 +1048,28 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         return getMood() == Mood.SLEEPING;
     }
 
+    /** Only a calm one, standing alone on its own, not just handled, drops off. */
+    public boolean canNap() {
+        return isFree() && napCooldown <= 0 && !GlandouilleTowers.hasRider(this);
+    }
+
     public void fallAsleep(int ticks) {
-        if (boardActor || hasVehicle()) return;
+        if (!canNap()) return;
         setMood(Mood.SLEEPING, ticks);
+    }
+
+    /**
+     * Picked up, put down, thrown or climbed on: awake (a grumble if it was asleep: nobody to charge from the hands)
+     * and staying so for a while.
+     */
+    public void handled() {
+        if (boardActor) return;
+        napCooldown = NAP_COOLDOWN_TICKS;
+        soundSleepTicks = 0;
+        if (isSleeping()) {
+            setMood(Mood.CALM, 0);
+            playSound(ModSounds.GLANDOUILLE_GROWL, 0.8f, 1.2f);
+        }
     }
 
     /** Out of its acorn: it comes out asleep, too soundly for the player who grew it to wake it at once. */
@@ -1033,6 +1100,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     /** Woken up by {@code by}: it charges at once, no warning (the old mossy one only sulks). */
     public void wakeUp(@Nullable Entity by) {
         setMood(Mood.CALM, 0);
+        napCooldown = NAP_COOLDOWN_TICKS;
         if (by != null && getVariant().charges() && hasHat()) {
             this.chargeTarget = by;
             playSound(ModSounds.GLANDOUILLE_GROWL, 1f, 1.2f);
@@ -1072,6 +1140,12 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     }
 
     // ---------------------------------------------------------------- interactions
+
+    /** Picked (creative middle click): the egg of its own kind, not the last egg registered for the type. */
+    @Override
+    public ItemStack getPickBlockStack() {
+        return new ItemStack(ModItems.GLANDOUILLE_SPAWN_EGGS[getVariant().ordinal()]);
+    }
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
@@ -1140,6 +1214,10 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
+        // Its own NoAI, not the "riding, so not thinking" of isAiDisabled: saved in a tower or in hand, it would wake up
+        // with no AI at all, frozen in the air once let go
+        if (!super.isAiDisabled()) nbt.remove("NoAI");
+        nbt.putBoolean("OwnNoAI", true);
         nbt.putInt("Variant", getVariant().ordinal());
         nbt.putBoolean("Hat", hasHat() || hatPopTicks > 0);
         nbt.putInt("Stomps", stomps);
@@ -1154,6 +1232,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
+        // Saved by an older version (it has its own data, not the OwnNoAI mark) in a tower or in hand, its NoAI was the
+        // riding one: it thinks (and falls) again. A NoAI given by a command (no saved data of its own) stays.
+        if (nbt.contains("Stomps") && !nbt.contains("OwnNoAI") && !boardActor) setAiDisabled(false);
         // Saved floating by an older version (a flight cut short): it falls again
         if (!boardActor && getMood() != Mood.FLYING) setNoGravity(false);
         if (nbt.contains("Variant")) {

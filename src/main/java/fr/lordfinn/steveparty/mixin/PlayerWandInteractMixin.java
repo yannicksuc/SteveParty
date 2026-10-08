@@ -34,7 +34,14 @@ public class PlayerWandInteractMixin {
         PlayerEntity player = (PlayerEntity) (Object) this;
         ItemStack stack = player.getStackInHand(hand);
         if (entity instanceof EnderDragonPart part && stack.getItem() instanceof TokenizerWandItem) entity = part.owner;
-        if (player.isSpectator() || !(entity instanceof MobEntity mob)) return;
+        if (player.isSpectator()) return;
+        // Another player: the wand's spell turns them into a pawn
+        if (entity instanceof PlayerEntity target && stack.getItem() instanceof TokenizerWandItem wand) {
+            ActionResult result = wand.useOnEntity(stack, player, target, hand);
+            cir.setReturnValue(result == ActionResult.PASS ? ActionResult.FAIL : result);
+            return;
+        }
+        if (!(entity instanceof MobEntity mob)) return;
         if (stack.getItem() instanceof TokenItem token) {
             // The client can't run the capture, but must not start the mob's own interaction either
             if (player.getWorld().isClient && stack.get(ModComponents.ENTITY_DATA_COMPONENT) == null && TokenBase.isToken(mob)) {

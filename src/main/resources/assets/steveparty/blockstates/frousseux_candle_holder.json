@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "saucer=false": {
+      "model": "steveparty:block/frousseux_candle_holder"
+    },
+    "saucer=true": {
+      "model": "steveparty:block/frousseux_candle_holder_on_saucer"
+    }
+  }
+}

@@ -152,6 +152,12 @@ public class ModBlockEntities {
             Identifier.of(MOD_ID, "villager_block"),
             FabricBlockEntityTypeBuilder.create(VillagerBlockEntity::new, ModBlocks.VILLAGER_BLOCK).build(null)
     );
+    public static final BlockEntityType<fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlockEntity> FROUSSEUX_CANDLE_HOLDER = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "frousseux_candle_holder"),
+            FabricBlockEntityTypeBuilder.create(fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlockEntity::new,
+                    ModBlocks.FROUSSEUX_CANDLE_HOLDER).build(null)
+    );
     public static final BlockEntityType<GravityCoreBlockEntity> GRAVITY_CORE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "gravity_core"),

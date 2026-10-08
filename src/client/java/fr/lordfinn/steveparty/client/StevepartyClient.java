@@ -250,14 +250,11 @@ public class StevepartyClient implements ClientModInitializer {
         }, ModItems.STENCIL_GUN);
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
-        // The Mula egg is drawn (textures/item/mula_spawn_egg.png): no spawn-egg tint over it
-        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG);
-        // The Glandouille eggs share one entity type: vanilla tints only one egg per type, each one is tinted here
-        for (net.minecraft.item.Item egg : ModItems.GLANDOUILLE_SPAWN_EGGS) {
-            net.minecraft.item.SpawnEggItem spawnEgg = (net.minecraft.item.SpawnEggItem) egg;
-            ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFF000000 | spawnEgg.getColor(tintIndex), egg);
-        }
-        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.BOXED_TRADER_SPAWN_EGG);
+        // Every Steve Party egg is drawn per mob (textures/item/*_spawn_egg.png, 1.21.5 style): item/generated gives
+        // layer0 tint index 0, so the vanilla spawn-egg tint is replaced by a white one
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG,
+                ModItems.BOXED_TRADER_SPAWN_EGG, ModItems.FROUSSEUX_SPAWN_EGG, ModItems.BOOMCART_SPAWN_EGG);
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.GLANDOUILLE_SPAWN_EGGS);
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
 
@@ -299,6 +296,11 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.LOOTING_BOX_ENTITY, LootingBoxBlockEntityRenderer::new);
         // The villager block is drawn alive (reactions, looking around) by its renderer, not as a baked block
         BlockEntityRendererFactories.register(ModBlockEntities.VILLAGER_BLOCK_ENTITY, fr.lordfinn.steveparty.client.blockentity.VillagerBlockEntityRenderer::new);
+        // A Frousseux asleep as a candle holder: drawn whole by its block entity renderer (16 ways, its flame); its
+        // item, the same
+        BlockEntityRendererFactories.register(ModBlockEntities.FROUSSEUX_CANDLE_HOLDER, fr.lordfinn.steveparty.client.blockentity.FrousseuxCandleHolderRenderer::new);
+        net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(ModBlocks.FROUSSEUX_CANDLE_HOLDER,
+                fr.lordfinn.steveparty.client.blockentity.FrousseuxCandleHolderRenderer.ITEM);
         // It cries while it is being broken: the breaking progress of any player, as the world renderer knows it
         fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity.miningStageProbe = pos -> {
             var renderer = net.minecraft.client.MinecraftClient.getInstance().worldRenderer;
@@ -338,6 +340,22 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.client.entity.GlandouilleRenderer::new);
         EntityRendererRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.client.entity.FrousseuxRenderer::new);
         EntityRendererRegistry.register(ModEntities.BOOMCART, fr.lordfinn.steveparty.client.entity.BoomcartRenderer::new);
+        EntityRendererRegistry.register(ModEntities.PLAYER_PAWN, fr.lordfinn.steveparty.client.pawn.PlayerPawnRenderer::new);
+        fr.lordfinn.steveparty.client.pawn.PawnPossessionClient.initialize();
+        fr.lordfinn.steveparty.client.token.PawnPoseFeedback.initialize();
+        // its owner's crosshair goes through a following Frousseux, unless they reach for it
+        fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.CLIENT_PASS_THROUGH = frousseux -> {
+            net.minecraft.entity.player.PlayerEntity player = net.minecraft.client.MinecraftClient.getInstance().player;
+            return player != null && frousseux.isOwner(player)
+                    && !fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxCompanion.reachesFor(player);
+        };
+        // ... and fades out of their way when close to their camera (the owner's view only)
+        fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.CLIENT_FADE = frousseux -> {
+            net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+            if (client.player == null || client.gameRenderer == null) return 0;
+            return fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxCompanion.fadeFor(frousseux, client.player,
+                    client.gameRenderer.getCamera().getPos());
+        };
         // The forge core is drawn by the forge: its entity is only a hitbox
         EntityRendererRegistry.register(ModEntities.FORGE_CORE, net.minecraft.client.render.entity.EmptyEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.PIPE_CARRIER, net.minecraft.client.render.entity.EmptyEntityRenderer::new);

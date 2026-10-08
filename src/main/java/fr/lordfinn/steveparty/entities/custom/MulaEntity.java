@@ -53,7 +53,7 @@ import software.bernie.geckolib.animation.AnimationState;
 
 import java.util.*;
 
-public class MulaEntity extends TameableEntity implements GeoEntity {
+public class MulaEntity extends TameableEntity implements GeoEntity, fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere {
 
 	private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
 
@@ -395,6 +395,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			}
 			return;
 		}
+		if (this.age % 20 == 3 && isTamed()) fr.lordfinn.steveparty.entities.PetTeleports.remember(this);
 		if (spawnSite != 0 && spawnSiteEpoch != MulaSpawnSites.epoch()) {
 			spawnSiteEpoch = MulaSpawnSites.epoch();
 			if (leaveWithRetiredSite()) return;
@@ -497,6 +498,39 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		boolean riding = super.startRiding(entity, force);
 		if (riding) leaveSpawnSite();
 		return riding;
+	}
+
+	// ------------------------------------------------------------------------------------------ with its owner anywhere
+
+	@Override
+	public @Nullable java.util.UUID followedOwner() {
+		return getOwnerUuid();
+	}
+
+	/**
+	 * Going along with its owner through their teleports (PetTeleports): following them (one of their escort, not
+	 * sitting, on a lead or riding), and not busy: no board token, no home at a Dice Forge, no dance, not carrying its
+	 * lead holder up, not bursting into a star.
+	 */
+	@Override
+	public boolean goesWithOwner(net.minecraft.server.network.ServerPlayerEntity owner) {
+		return isAlive() && isTamed() && owner.getUuid().equals(getOwnerUuid()) && !cannotFollowOwner() && !isToken()
+				&& homeForge == null && !isDancing() && !isSpectating() && !isCarrying() && !isBursting()
+				&& MulaEscorts.isFollower(owner.getUuid(), this);
+	}
+
+	/**
+	 * Catching up with its owner (vanilla's pop next to them): far away, it is recreated by them (PetTeleports) rather
+	 * than moved in place, which could leave it unseen by the clients.
+	 */
+	@Override
+	public void tryTeleportToOwner() {
+		if (getOwner() instanceof net.minecraft.server.network.ServerPlayerEntity owner && owner.getWorld() == getWorld()
+				&& squaredDistanceTo(owner) > fr.lordfinn.steveparty.entities.PetTeleports.NEAR * fr.lordfinn.steveparty.entities.PetTeleports.NEAR) {
+			if (goesWithOwner(owner)) fr.lordfinn.steveparty.entities.PetTeleports.bring(this, owner.getServerWorld(), arrivalSpot(owner), getYaw());
+			return;
+		}
+		super.tryTeleportToOwner();
 	}
 
 	/** @return true while it is a board token: a static pawn, with none of its life (see {@link #tickAsToken}). */

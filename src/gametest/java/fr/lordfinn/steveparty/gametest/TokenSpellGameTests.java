@@ -84,6 +84,8 @@ public class TokenSpellGameTests implements FabricGameTest {
     private static <T extends MobEntity> T spawn(TestContext context, EntityType<T> type) {
         T mob = context.spawnMob(type, MOB_POS);
         mob.setAiDisabled(true);
+        // Sizes are checked against the adults' (a spawn can be a baby)
+        mob.setBaby(false);
         return mob;
     }
 
@@ -124,12 +126,15 @@ public class TokenSpellGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void tokenSizeAndColourAreSanitized(TestContext context) {
-        context.assertTrue(TokenizerWandItem.clampTokenSize(50F) == TokenizerWandItem.MAX_TOKEN_SIZE, "too big clamped");
-        context.assertTrue(TokenizerWandItem.clampTokenSize(0.01F) == TokenizerWandItem.MIN_TOKEN_SIZE, "too small clamped");
-        context.assertTrue(TokenizerWandItem.clampTokenSize(-3F) == TokenizerWandItem.MIN_TOKEN_SIZE, "negative clamped");
-        context.assertTrue(TokenizerWandItem.clampTokenSize(Float.NaN) == TokenizerWandItem.DEFAULT_TOKEN_SIZE, "NaN -> default");
-        context.assertTrue(TokenizerWandItem.clampTokenSize(Float.POSITIVE_INFINITY) == TokenizerWandItem.DEFAULT_TOKEN_SIZE, "infinity -> default");
-        context.assertTrue(TokenizerWandItem.clampTokenSize(1.3F) == 1.3F, "in bounds kept");
+        PigEntity pig = spawn(context, EntityType.PIG); // 0.9 blocks: up to 4.5
+        float max = TokenizerWandItem.maxTokenSize(pig);
+        context.assertTrue(near(max, 4.5), "five times its size: " + max);
+        context.assertTrue(TokenizerWandItem.clampTokenSize(pig, 50F) == max, "too big clamped");
+        context.assertTrue(TokenizerWandItem.clampTokenSize(pig, 0.01F) == TokenizerWandItem.MIN_TOKEN_SIZE, "too small clamped");
+        context.assertTrue(TokenizerWandItem.clampTokenSize(pig, -3F) == TokenizerWandItem.MIN_TOKEN_SIZE, "negative clamped");
+        context.assertTrue(TokenizerWandItem.clampTokenSize(pig, Float.NaN) == TokenizerWandItem.DEFAULT_TOKEN_SIZE, "NaN -> default");
+        context.assertTrue(TokenizerWandItem.clampTokenSize(pig, Float.POSITIVE_INFINITY) == TokenizerWandItem.DEFAULT_TOKEN_SIZE, "infinity -> default");
+        context.assertTrue(TokenizerWandItem.clampTokenSize(pig, 1.3F) == 1.3F, "in bounds kept");
         context.assertEquals(TokenizerWandItem.sanitizeColor(BLUE), BLUE, "valid colour");
         context.assertEquals(TokenizerWandItem.sanitizeColor(0x1000000), TokenizerWandItem.NO_COLOR, "alpha / overflow refused");
         context.assertEquals(TokenizerWandItem.sanitizeColor(-5), TokenizerWandItem.NO_COLOR, "negative refused");
@@ -179,6 +184,32 @@ public class TokenSpellGameTests implements FabricGameTest {
         });
     }
 
+    /** The biggest token is five times the mob's own size: a chicken pawn smaller than a zombie one. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void theBiggestTokenIsFiveTimesTheMob(TestContext context) {
+        net.minecraft.entity.passive.ChickenEntity chicken = spawn(context, EntityType.CHICKEN);
+        net.minecraft.entity.mob.ZombieEntity zombie = spawn(context, EntityType.ZOMBIE);
+        chicken.setBaby(false);
+        zombie.setBaby(false);
+        context.assertTrue(near(TokenizerWandItem.maxTokenSize(chicken), 3.5), "chicken: " + TokenizerWandItem.maxTokenSize(chicken));
+        context.assertTrue(near(TokenizerWandItem.maxTokenSize(zombie), 9.75), "zombie: " + TokenizerWandItem.maxTokenSize(zombie));
+        ServerPlayerEntity player = wandHolder(context);
+        context.assertTrue(near(TokenizerWandItem.maxTokenSize(player), 9.0), "player: " + TokenizerWandItem.maxTokenSize(player));
+        try {
+            context.assertTrue(TokenizerWandItem.castSpell(player, zombie.getId(), 40F, -1).success(), "big zombie");
+            context.assertTrue(near(token(zombie).steveparty$getTokenSize(), 9.75), "clamped to its max");
+            // A resized token keeps its own size as the reference, not the size it was given
+            context.assertTrue(near(TokenizerWandItem.naturalSize(zombie), 1.95), "natural size kept");
+        } finally {
+            disconnect(context, player);
+        }
+        context.runAtTick(3, () -> {
+            context.assertTrue(near(body(zombie).height(), 9.75), "a 9.75 blocks zombie pawn: " + body(zombie));
+            context.assertTrue(near(TokenizerWandItem.maxTokenSize(zombie), 9.75), "still its max once big");
+            context.complete();
+        });
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void spellSizeIsClampedByTheServer(TestContext context) {
         PigEntity big = spawn(context, EntityType.PIG);
@@ -191,7 +222,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             context.assertTrue(TokenizerWandItem.castSpell(player, small.getId(), 0.001F, -1).success(), "small cast");
             resetCooldown(player);
             context.assertTrue(TokenizerWandItem.castSpell(player, notANumber.getId(), Float.NaN, 0x7FFFFFFF).success(), "NaN cast");
-            context.assertTrue(token(big).steveparty$getTokenSize() == TokenizerWandItem.MAX_TOKEN_SIZE, "clamped to the max");
+            context.assertTrue(near(token(big).steveparty$getTokenSize(), 4.5), "clamped to the pig's max: " + token(big).steveparty$getTokenSize());
             context.assertTrue(token(small).steveparty$getTokenSize() == TokenizerWandItem.MIN_TOKEN_SIZE, "clamped to the min");
             context.assertTrue(token(notANumber).steveparty$getTokenSize() == TokenizerWandItem.DEFAULT_TOKEN_SIZE, "NaN -> default");
             // Invalid colour ignored: previous behaviour (plain player name), no colour stored
@@ -201,7 +232,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             disconnect(context, player);
         }
         context.runAtTick(3, () -> {
-            context.assertTrue(near(biggest(big), 2.0), "2 blocks: " + body(big));
+            context.assertTrue(near(biggest(big), 4.5), "4.5 blocks: " + body(big));
             context.assertTrue(near(biggest(small), 0.25), "0.25 block: " + body(small));
             context.complete();
         });
