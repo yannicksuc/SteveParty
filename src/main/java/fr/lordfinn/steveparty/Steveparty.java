@@ -51,6 +51,8 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.initialize();
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport.initialize();
         fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.GlandouilleTileBehavior.initialize();
+        fr.lordfinn.steveparty.service.BoardActors.initialize();
+        fr.lordfinn.steveparty.service.FrousseuxThefts.initialize();
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration.initialize();
         fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents.initialize();
         ModComponents.initialize();

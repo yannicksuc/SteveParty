@@ -96,6 +96,15 @@ public class ModComponents {
     /** Glandouille Cartridge: a lone Glandouille that tries to push and can't, instead of a tower. */
     public static final ComponentType<Boolean> GLANDOUILLE_LONE =
             registerComponent("glandouille-lone", Codec.BOOL);
+    /** Frousseux Cartridge: its Frousseux steals stars rather than coins. */
+    public static final ComponentType<Boolean> FROUSSEUX_STARS =
+            registerComponent("frousseux-stars", Codec.BOOL);
+    /** Frousseux Cartridge: how many coins its Frousseux steals (1 to 99). */
+    public static final ComponentType<Integer> FROUSSEUX_COINS =
+            registerComponent("frousseux-coins", Codec.intRange(1, 99));
+    /** Frousseux Cartridge: how many stars its Frousseux steals (1 to 5). */
+    public static final ComponentType<Integer> FROUSSEUX_STAR_COUNT =
+            registerComponent("frousseux-star-count", Codec.intRange(1, 5));
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =

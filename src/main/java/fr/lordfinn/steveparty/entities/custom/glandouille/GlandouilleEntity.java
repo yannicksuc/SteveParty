@@ -329,12 +329,16 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         return boardActor;
     }
 
+    @Override
+    protected boolean shouldDropLoot() {
+        return !boardActor && super.shouldDropLoot(); // a board actor killed by a command leaves nothing
+    }
+
     public void makeBoardActor() {
         this.boardActor = true;
-        setInvulnerable(true);
         setAiDisabled(true);
         setNoGravity(true);
-        setPersistent();
+        if (!getWorld().isClient) fr.lordfinn.steveparty.service.BoardActors.mark(this); // invulnerable, never kept
     }
 
     /** Board actors: what they act out (the charge of a tower walking the path, the lone one's failed push). */
@@ -761,7 +765,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     public boolean damage(DamageSource source, float amount) {
-        if (getWorld().isClient || boardActor) return false;
+        if (getWorld().isClient) return false;
+        // a board actor: only commands and the void (BoardActors)
+        if (boardActor) return source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY) && super.damage(source, amount);
         if (squashKill) return super.damage(source, amount);
         if (source.isOf(DamageTypes.FALL)) return false; // a light acorn
         Entity attacker = source.getAttacker();

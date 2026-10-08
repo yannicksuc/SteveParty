@@ -103,6 +103,16 @@
           }
         ]
       }
+    },
+    "frousseux": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:frousseux_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -132,6 +142,9 @@
     ],
     [
       "glandouille"
+    ],
+    [
+      "frousseux"
     ]
   ],
   "rewards": {

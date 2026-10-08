@@ -212,6 +212,7 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.ENDER_PEARL)).isOf(ModItems.TELEPORT_CARTRIDGE), "teleport cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.PARTY_STAR)).isOf(ModItems.STAR_CARTRIDGE), "star cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.ACORN)).isOf(ModItems.GLANDOUILLE_CARTRIDGE), "glandouille cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.CANDLE)).isOf(ModItems.FROUSSEUX_CARTRIDGE), "frousseux cartridge");
 
         // The Tile and the Advanced Tile (their cartridges loaded: TileCartridgeGameTests)
         ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[net.minecraft.util.DyeColor.WHITE.getId()]);
