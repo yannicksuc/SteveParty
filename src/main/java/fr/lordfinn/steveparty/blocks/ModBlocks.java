@@ -465,6 +465,7 @@ public class ModBlocks {
                     .strength(0.3f)
                     .nonOpaque()
                     .sounds(BlockSoundGroup.CANDLE)
+                    .burnable() // wax: lava sets it alight, fire burns it away (the Frousseux with it)
                     .luminance(fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock::lightOf)
                     .pistonBehavior(PistonBehavior.DESTROY),
             "frousseux_candle_holder", true);

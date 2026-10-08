@@ -40,7 +40,7 @@ public class FrousseuxModel extends DefaultedEntityGeoModel<FrousseuxEntity> {
         float time = frousseux.age + animationState.getPartialTick() + frousseux.getId() * 13;
         GeoBone flame = getAnimationProcessor().getBone("flame");
         if (flame != null) {
-            boolean out = frousseux.isBlownOut() || frousseux.deathTime > 0;
+            boolean out = frousseux.deathTime > 0;
             flame.setHidden(true); // drawn by FrousseuxRenderer's FlameLayer alone
             if (!out) {
                 float size = frousseux.getFlame().size;
