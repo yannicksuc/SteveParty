@@ -19,7 +19,10 @@ import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 public class FrousseuxModel extends DefaultedEntityGeoModel<FrousseuxEntity> {
     /** It blinks once every this many ticks, for {@link #BLINK_TICKS}. */
     private static final int BLINK_EVERY = 90, BLINK_TICKS = 3;
-    /** Its outer layers: hidden from the main, one-sided pass, drawn two-sided by FrousseuxRenderer's OverlayLayer. */
+    /**
+     * Its outer layers: hidden from the main, one-sided pass, drawn two-sided by FrousseuxRenderer's ShellLayer, with
+     * the body's own cube (hollow underneath, the inside of its walls shows from below).
+     */
     static final String[] OVERLAY_BONES = {"body_overlay", "left_sleeve", "right_sleeve"};
 
     public FrousseuxModel() {
@@ -51,6 +54,11 @@ public class FrousseuxModel extends DefaultedEntityGeoModel<FrousseuxEntity> {
         for (String name : OVERLAY_BONES) {
             GeoBone overlay = getAnimationProcessor().getBone(name);
             if (overlay != null) overlay.setHidden(true);
+        }
+        GeoBone body = getAnimationProcessor().getBone("body");
+        if (body != null) {
+            body.setHidden(true);
+            body.setChildrenHidden(false);
         }
         GeoBone lids = getAnimationProcessor().getBone("lids");
         if (lids != null) {

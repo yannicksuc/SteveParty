@@ -20,8 +20,9 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 /**
  * Draws a Frousseux: its candle wax, a little see-through (FrousseuxModel), then over the same model the pool on its
  * top, tinted a hint of its candle's wax colour ({@code FrousseuxColor.accent}), and its flame, tinted its flame
- * colour and glowing, dimmer as its health goes down ({@link FrousseuxEntity.Flame}); last its outer layers (the body's
- * overlay, the sleeves), two-sided, so the drips on their far faces show through their gaps. The body is lit by its
+ * colour and glowing, dimmer as its health goes down ({@link FrousseuxEntity.Flame}). Its hands are drawn one-sided;
+ * its wax shell (the body's cube, hollow underneath, its overlay and the sleeves) two-sided, so the inside of its
+ * walls shows from below and the drips on the far faces show through the gaps. The body is lit by its
  * own flame. The three textures share one UV layout and never overlap.
  */
 public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
@@ -32,9 +33,9 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     public FrousseuxRenderer(EntityRendererFactory.Context context) {
         super(context, new FrousseuxModel());
         this.shadowRadius = 0.2f;
+        addRenderLayer(new ShellLayer(this));
         addRenderLayer(new WaxLayer(this));
         addRenderLayer(new FlameLayer(this));
-        addRenderLayer(new OverlayLayer(this));
     }
 
     /** A candle: lit by its own flame (full block light), whatever the light around. */
@@ -62,16 +63,17 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     }
 
     /**
-     * The outer layers alone, without culling: their inner faces show, mirrored, through their transparent pixels. The
-     * body and the hands keep their bones (the overlays hang on them) but not their own cubes for this pass; the lids
-     * and the wick are left out. Every bone is put back as it was.
+     * The wax shell alone, without culling: the body's cube (left out of the main pass by FrousseuxModel) and the outer
+     * layers; their inner faces show, mirrored. The hands keep their bones (the sleeves hang on them) but not their own
+     * cubes for this pass; the lids and the wick are left out. Then every bone is put back as the next passes (the
+     * pool, the flame) want it: the body's cube shown, the overlays hidden.
      */
-    private static final class OverlayLayer extends GeoRenderLayer<FrousseuxEntity> {
-        private static final String[] HOLDERS = {"body", "left_hand", "right_hand"};
+    private static final class ShellLayer extends GeoRenderLayer<FrousseuxEntity> {
+        private static final String[] HOLDERS = {"left_hand", "right_hand"};
         private static final String[] OTHERS = {"lids", "wick"};
         private final boolean[] othersHidden = new boolean[OTHERS.length];
 
-        OverlayLayer(GeoRenderer<FrousseuxEntity> renderer) {
+        ShellLayer(GeoRenderer<FrousseuxEntity> renderer) {
             super(renderer);
         }
 
@@ -80,6 +82,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                            VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay) {
             for (String name : FrousseuxModel.OVERLAY_BONES) bakedModel.getBone(name).ifPresent(bone -> bone.setHidden(false));
+            bakedModel.getBone("body").ifPresent(bone -> bone.setHidden(false));
             for (String name : HOLDERS) {
                 bakedModel.getBone(name).ifPresent(bone -> {
                     bone.setHidden(true);
@@ -92,7 +95,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                 othersHidden[i] = bone.isHidden();
                 bone.setHidden(true);
             }
-            RenderLayer layer = RenderLayer.getEntityCutoutNoCull(getTextureResource(frousseux));
+            RenderLayer layer = RenderLayer.getEntityTranslucent(getTextureResource(frousseux));
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, packedLight, packedOverlay, 0xFFFFFFFF);
             for (int i = 0; i < OTHERS.length; i++) {
