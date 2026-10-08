@@ -93,6 +93,12 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     @Shadow
     protected abstract void initDataTracker(DataTracker.Builder builder);
 
+    /** A pawn never despawns, named or not: it belongs to a board. */
+    @Inject(method = "checkDespawn", at = @At("HEAD"), cancellable = true)
+    private void steveparty$pawnsNeverDespawn(CallbackInfo ci) {
+        if (this.steveparty$isTokenized()) ci.cancel();
+    }
+
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void addTokenizedField(DataTracker.Builder builder, CallbackInfo ci) {
         builder.add(TOKENIZED, false);
