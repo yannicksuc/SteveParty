@@ -95,7 +95,18 @@
                   ]
                 }
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "body_overlay",
+          "parent": "body",
+          "pivot": [
+            0,
+            4,
+            0
+          ],
+          "cubes": [
             {
               "origin": [
                 -4,
@@ -245,7 +256,18 @@
                   ]
                 }
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "left_sleeve",
+          "parent": "left_hand",
+          "pivot": [
+            -7,
+            3.5,
+            0
+          ],
+          "cubes": [
             {
               "origin": [
                 -9.5,
@@ -405,7 +427,18 @@
                   ]
                 }
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "right_sleeve",
+          "parent": "right_hand",
+          "pivot": [
+            7,
+            3.5,
+            0
+          ],
+          "cubes": [
             {
               "origin": [
                 5.5,
