@@ -194,7 +194,7 @@
   "book.steveparty.guide.gadgets.glandouille.page2.title": "Towers",
   "book.steveparty.guide.gadgets.glandouille.page3.text": "**Young** (green): quick, its towers sway wildly. **Old mossy**: never charges, a tower on it never moves. **Frosty**: hit, it slides like a curling stone off the walls, carrying along the Slackorns it meets.\n\nRarely a crash sends its **cap** flying (never under a tower): wear the **Acorn Hat** or give it back. Hatless, it is shy. It naps by leaves at night; wake it and it charges.",
   "book.steveparty.guide.gadgets.glandouille.page3.title": "Variants",
-  "book.steveparty.guide.gadgets.glandouille.page4.text": "**Slackorn Cartridge**: a pawn stopping here is pushed **some spaces on** by a tower of Slackorns, with every pawn it meets on the way. Its menu: the destination (0 = none, nothing happens) and who pushes: a tower, or a **lone one** that tries, fails and sulks.",
+  "book.steveparty.guide.gadgets.glandouille.page4.text": "**Slackorn Cartridge**: a pawn stopping here is pushed **some spaces on** (up to 50) by a tower of Slackorns, with every pawn it meets on the way. Each pawn met makes **one fall off** the top: out of Slackorns, the tower **stops there**. Its menu: the destination (0 = none, nothing happens), the tower's height and who pushes: a tower, or a **lone one** that tries, fails and sulks.",
   "book.steveparty.guide.gadgets.glandouille.page4.title": "On the board",
   "book.steveparty.guide.gadgets.glandouille.page5.text": "Cartridge + acorn.",
   "book.steveparty.guide.gadgets.looting_box.description": "Headbutt it for loot",
