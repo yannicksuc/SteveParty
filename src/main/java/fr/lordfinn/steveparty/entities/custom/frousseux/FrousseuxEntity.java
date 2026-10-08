@@ -359,8 +359,13 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
 
     @Override
     public boolean canImmediatelyDespawn(double distanceSquared) {
-        return !isTamed() && !boardActor && stolen.isEmpty();
+        // a wild one stays in its cave while a player is within STAY blocks (others creatures go now and then
+        // from 32): a cave trip meets it
+        return !isTamed() && !boardActor && stolen.isEmpty() && distanceSquared > STAY * STAY;
     }
+
+    /** A wild one never despawns with a player this close (blocks). */
+    private static final double STAY = 64;
 
     /**
      * In the dark, its owner's crosshair goes through a following Frousseux (it is never in the way of their mining,
