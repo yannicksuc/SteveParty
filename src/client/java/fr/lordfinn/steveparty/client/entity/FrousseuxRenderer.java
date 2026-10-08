@@ -12,6 +12,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.cache.texture.AnimatableTexture;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
@@ -121,6 +122,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             int tint = frousseux.getColor().flame;
             int r = (int) (((tint >> 16) & 0xFF) * brightness), g = (int) (((tint >> 8) & 0xFF) * brightness),
                     b = (int) ((tint & 0xFF) * brightness);
+            AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta): GeckoLib animates it
             RenderLayer layer = RenderLayer.getEntityTranslucentEmissive(FLAME);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, 0xFF000000 | r << 16 | g << 8 | b);

@@ -44,11 +44,19 @@ public class FrousseuxModel extends DefaultedEntityGeoModel<FrousseuxEntity> {
             flame.setHidden(out);
             if (!out) {
                 float size = frousseux.getFlame().size;
-                float flicker = 0.06f * MathHelper.sin(time * 0.9f) + 0.04f * MathHelper.sin(time * 2.3f + 1.7f);
+                float partial = animationState.getPartialTick();
+                // the breath of its flame: a little taller and thinner, then back, never in step
+                float flicker = 0.05f * MathHelper.sin(time * 0.9f) + 0.03f * MathHelper.sin(time * 2.3f + 1.7f);
                 flame.setScaleX(size * (1 - flicker * 0.5f));
                 flame.setScaleZ(size * (1 - flicker * 0.5f));
                 flame.setScaleY(size * (1 + flicker));
-                flame.setRotZ(0.05f * MathHelper.sin(time * 0.7f));
+                // swaying about its foot: layered waves, and leaning against its flight and its turns
+                float swayZ = 0.07f * MathHelper.sin(time * 0.31f) + 0.04f * MathHelper.sin(time * 0.77f + 1.1f)
+                        + 0.02f * MathHelper.sin(time * 1.9f + 2.3f);
+                float swayX = 0.05f * MathHelper.sin(time * 0.27f + 2.0f) + 0.03f * MathHelper.sin(time * 0.83f + 0.4f)
+                        + 0.015f * MathHelper.sin(time * 2.1f);
+                flame.setRotX(swayX + frousseux.flameLeanX(partial));
+                flame.setRotZ(swayZ + frousseux.flameLeanZ(partial));
             }
         }
         for (String name : OVERLAY_BONES) {
