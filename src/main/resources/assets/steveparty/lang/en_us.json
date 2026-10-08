@@ -2637,6 +2637,8 @@
   "subtitles.steveparty.frousseux.laugh": "Wickling giggles",
   "subtitles.steveparty.frousseux.relight": "Wickling's flame relights",
   "subtitles.steveparty.frousseux.blown_out": "Wickling's flame is blown out",
+  "entity.steveparty.boomcart": "Boomcart",
+  "item.steveparty.boomcart_spawn_egg": "Boomcart Spawn Egg",
   "item.steveparty.glandouille_cartridge": "Slackorn Cartridge",
   "tooltip.steveparty.cartridge.glandouille_cartridge": "Slackorn: a token stopping here is pushed a few spaces on by a tower of Slackorns, with every token the tower meets on the way. Without a destination (0 spaces), nothing happens",
   "tooltip.steveparty.glandouille_cartridge.distance": "🌰 Pushes %s spaces on",
