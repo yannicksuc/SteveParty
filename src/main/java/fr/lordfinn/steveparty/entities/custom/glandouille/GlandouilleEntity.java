@@ -1015,7 +1015,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         setVelocity(0, getVelocity().y, 0);
         // Every 3 s, each on its own beat: a nap of several is not one drone
         if ((this.age + getId() * 17) % SNORE_TICKS == 0) {
-            playSound(ModSounds.GLANDOUILLE_SNORE, 0.6f, 1f);
+            playSound(ModSounds.GLANDOUILLE_SNORE, 0.8f, 1f);
             world.spawnParticles(new MulaSparkleEffect(0xE8E8FF, 0.8f, MulaSparkleEffect.Z),
                     getX(), getY() + getHeight() + 0.2, getZ(), 1, 0.05, 0.05, 0.05, 0);
         }
@@ -1211,7 +1211,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     protected void playStepSound(BlockPos pos, net.minecraft.block.BlockState state) {
-        playSound(ModSounds.GLANDOUILLE_STEP, 0.4f, 1f);
+        playSound(ModSounds.GLANDOUILLE_STEP, 0.15f, 1f); // as vanilla mobs step
     }
 
     // ---------------------------------------------------------------- animations
