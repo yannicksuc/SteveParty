@@ -26,8 +26,7 @@ public class FrousseuxModel extends DefaultedEntityGeoModel<FrousseuxEntity> {
 
     @Override
     public RenderLayer getRenderType(FrousseuxEntity animatable, Identifier texture) {
-        // no culling: it is hollow underneath, the inside of its walls shows from below
-        return RenderLayer.getEntityTranslucent(texture);
+        return RenderLayer.getEntityTranslucentCull(texture);
     }
 
     @Override
