@@ -61,8 +61,9 @@ import java.util.UUID;
  *     another player, its fuse a little longer (+3 s, +2 s, +1 s, then nothing). Never twice in a row by the same
  *     player. Killed while lit, it blows at once.</li>
  *     <li><b>The blast, by its load</b>: TNT, a real explosion breaking blocks, a mob's (the mobGriefing rule
- *     decides); a firework, coloured sparks (its rocket's own, if it has some) and a harmless shove, no block
- *     broken.</li>
+ *     decides); a firework, a show of its rocket's own bursts (all its stars, grouped above it; a coloured ball and
+ *     a star for a plain rocket) and a harmless shove: no block broken, nobody hurt. The rocket, components and all,
+ *     is saved with it.</li>
  *     <li><b>Rails</b>: on a rail it follows the track like a minecart ({@link BoomcartRails}), powered rails boosting
  *     it, detector rails seeing it; it gives itself a push now and then. Off the rails it rolls about a little
  *     ({@link BoomcartGoals}).</li>
@@ -96,6 +97,8 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     /** Its TNT's blast (a creeper's), and its firework's harmless shove: how far, how hard. */
     public static final float TNT_POWER = 3.0f;
     public static final double BURST_RADIUS = 4.0, BURST_PUSH = 1.1;
+    /** Its firework show: how high above it, how wide its ring of bursts. */
+    private static final double BURST_HEIGHT = 2.0, BURST_RING = 1.2;
     /** Lit on rails, it pushes itself this hard up to this speed, toward its target. */
     private static final double PANIC_PUSH = 0.05, PANIC_CRUISE = 0.3;
     /** A player this close holding a load makes it open its mouth; it picks targets this far at most. */
@@ -109,6 +112,8 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     private @Nullable UUID target;
     private int roarCooldown;
     private boolean exploded;
+    /** Its firework load's show, as it blew. */
+    private @Nullable List<FireworkExplosionComponent> show;
     /** Its own push on the rails, unlit: how hard, up to what speed, how often it starts one (1 in so many ticks). */
     private static final double RAIL_PUSH = 0.02, RAIL_CRUISE = 0.12;
     private static final int RAIL_PUSH_CHANCE = 80, RAIL_PUSH_TICKS = 30;
@@ -349,6 +354,7 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
         Vec3d at = getPos().add(0, HEIGHT * 0.6, 0);
         playSound(ModSounds.BOOMCART_EXPLODE, 1.0f, 1.0f);
         if (carriesFirework()) {
+            show = burstOf(getLoad());
             world.sendEntityStatus(this, BURST_STATUS);
             world.spawnParticles(ParticleTypes.EXPLOSION, at.x, at.y, at.z, 1, 0, 0, 0, 0);
             for (Entity other : world.getOtherEntities(this, getBoundingBox().expand(BURST_RADIUS))) {
@@ -367,24 +373,50 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
         discard();
     }
 
+    /**
+     * The show, on each client: every burst of {@link #burstOf its load} at once, grouped above it (see
+     * {@link #burstOffset}), each with the vanilla rocket's sparks and sounds (shape, colours, fade, trail, twinkle).
+     */
     @Override
     public void handleStatus(byte status) {
         if (status == BURST_STATUS) {
-            getWorld().addFireworkParticle(getX(), getY() + HEIGHT * 0.8, getZ(), 0, 0, 0, burst());
+            List<FireworkExplosionComponent> bursts = burstOf(getLoad());
+            for (int i = 0; i < bursts.size(); i++) {
+                Vec3d at = getPos().add(burstOffset(i, bursts.size()));
+                getWorld().addFireworkParticle(at.x, at.y, at.z, 0, 0, 0, List.of(bursts.get(i)));
+            }
             return;
         }
         super.handleStatus(status);
     }
 
-    /** Its firework's sparks: its rocket's own explosions, or a big coloured ball for a plain rocket. */
-    private List<FireworkExplosionComponent> burst() {
-        FireworksComponent fireworks = getLoad().get(DataComponentTypes.FIREWORKS);
+    /** A plain rocket's show: a big coloured ball, sparkling, and a star. */
+    public static final List<FireworkExplosionComponent> DEFAULT_BURST = List.of(
+            new FireworkExplosionComponent(FireworkExplosionComponent.Type.LARGE_BALL,
+                    IntList.of(0xE83A2E, 0xF7B32B, 0x3FA7F5, 0x7CD13C), IntList.of(0xFFFFFF), true, true),
+            new FireworkExplosionComponent(FireworkExplosionComponent.Type.STAR,
+                    IntList.of(0xF04CC8, 0xFFE14D), IntList.of(), false, true));
+
+    /** A firework load's show: its rocket's own explosions (all its stars), or {@link #DEFAULT_BURST} for a plain one. */
+    public static List<FireworkExplosionComponent> burstOf(ItemStack load) {
+        FireworksComponent fireworks = load.get(DataComponentTypes.FIREWORKS);
         if (fireworks != null && !fireworks.explosions().isEmpty()) return fireworks.explosions();
-        return List.of(
-                new FireworkExplosionComponent(FireworkExplosionComponent.Type.LARGE_BALL,
-                        IntList.of(0xE83A2E, 0xF7B32B, 0x3FA7F5, 0x7CD13C), IntList.of(0xFFFFFF), true, true),
-                new FireworkExplosionComponent(FireworkExplosionComponent.Type.STAR,
-                        IntList.of(0xF04CC8, 0xFFE14D), IntList.of(), false, true));
+        return DEFAULT_BURST;
+    }
+
+    /**
+     * Where burst {@code index} of {@code count} goes, from its feet: the first 2 blocks above it, the others on a
+     * ring around that (1.2 blocks out), a little higher in turn, so the stars open side by side as one show.
+     */
+    static Vec3d burstOffset(int index, int count) {
+        if (index == 0) return new Vec3d(0, BURST_HEIGHT, 0);
+        double angle = 2 * Math.PI * (index - 1) / (count - 1);
+        return new Vec3d(Math.cos(angle) * BURST_RING, BURST_HEIGHT + 0.25 * (index % 3), Math.sin(angle) * BURST_RING);
+    }
+
+    /** The show it put on when it blew (the server's copy, for tests), null before or with TNT. */
+    public @Nullable List<FireworkExplosionComponent> shownBurst() {
+        return show;
     }
 
     @Override
