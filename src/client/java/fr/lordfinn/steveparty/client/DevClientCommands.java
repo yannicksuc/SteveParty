@@ -9,6 +9,8 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
+import java.lang.reflect.Field;
+
 /**
  * Dev runs only (never registered in a released game): client commands that press the player's buttons, so that the
  * dev game can be driven from the outside like a player would, e.g. {@code /sptest click} for a left click.
@@ -17,8 +19,27 @@ public final class DevClientCommands {
     private DevClientCommands() {
     }
 
+    /** A mouse position pinned by {@code /sptest cursor} (GUI pixels), or null. */
+    private static double[] pinnedCursor;
+
+    /** Puts the mouse at the pinned position (the window may be in the background: no real cursor moves). */
+    private static void pinCursor(net.minecraft.client.MinecraftClient client) {
+        if (pinnedCursor == null) return;
+        try {
+            double scale = client.getWindow().getScaleFactor();
+            for (String name : new String[]{"x", "y"}) {
+                Field field = net.minecraft.client.Mouse.class.getDeclaredField(name);
+                field.setAccessible(true);
+                field.setDouble(client.mouse, pinnedCursor[name.equals("x") ? 0 : 1] * scale);
+            }
+        } catch (ReflectiveOperationException ignored) {
+            pinnedCursor = null;
+        }
+    }
+
     public static void initialize() {
         if (!FabricLoader.getInstance().isDevelopmentEnvironment()) return;
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(DevClientCommands::pinCursor);
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) -> dispatcher.register(
                 ClientCommandManager.literal("sptest")
                         .then(ClientCommandManager.literal("click").executes(context -> {
@@ -37,6 +58,36 @@ public final class DevClientCommands {
                                             net.minecraft.client.option.Perspective.values()[IntegerArgumentType.getInteger(context, "view")]);
                                     return 1;
                                 })))
+                        // The Stencil Hammer in hand: its refill screen
+                        .then(ClientCommandManager.literal("hammer").executes(context -> {
+                            net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                                    new fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload(
+                                            fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload.Action.HAMMER_OPEN, 0));
+                            return 1;
+                        }))
+                        // The mouse pinned at (x, y) in GUI pixels of the window, as if it hovered there ("off": released)
+                        .then(ClientCommandManager.literal("cursor")
+                                .then(ClientCommandManager.literal("off").executes(context -> {
+                                    pinnedCursor = null;
+                                    return 1;
+                                }))
+                                .then(ClientCommandManager.argument("x", IntegerArgumentType.integer())
+                                        .then(ClientCommandManager.argument("y", IntegerArgumentType.integer()).executes(context -> {
+                                            pinnedCursor = new double[]{IntegerArgumentType.getInteger(context, "x"),
+                                                    IntegerArgumentType.getInteger(context, "y")};
+                                            pinCursor(context.getSource().getClient());
+                                            return 1;
+                                        }))))
+                        // A left click of the open screen where the mouse is pinned (a slot picked or put down)
+                        .then(ClientCommandManager.literal("screenclick").executes(context -> {
+                            var client = context.getSource().getClient();
+                            client.execute(() -> {
+                                if (client.currentScreen == null || pinnedCursor == null) return;
+                                client.currentScreen.mouseClicked(pinnedCursor[0], pinnedCursor[1], 0);
+                                client.currentScreen.mouseReleased(pinnedCursor[0], pinnedCursor[1], 0);
+                            });
+                            return 1;
+                        }))
                         // The GUI scale (0: auto)
                         .then(ClientCommandManager.literal("guiscale")
                                 .then(ClientCommandManager.argument("scale", IntegerArgumentType.integer(0, 6)).executes(context -> {

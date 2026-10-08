@@ -8,8 +8,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
-import com.mojang.datafixers.util.Pair;
-import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
 import net.minecraft.screen.slot.Slot;
@@ -184,10 +182,13 @@ public class StencilGunScreenHandler extends ScreenHandler {
             return stencils;
         }
 
-        @Override
-        public Pair<Identifier, Identifier> getBackgroundSprite() {
-            return Pair.of(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE,
-                    fr.lordfinn.steveparty.Steveparty.id(stencils ? "item/empty_slot_stencil" : "item/empty_slot_dye"));
+        /**
+         * The see-through silhouette shown in it while empty (a sprite of the block atlas). Not vanilla's background
+         * sprite: that one is drawn with whatever blending the previous slot left (opaque after a hovered or filled
+         * slot), the screen draws this one itself, blended.
+         */
+        public Identifier silhouette() {
+            return fr.lordfinn.steveparty.Steveparty.id(stencils ? "item/empty_slot_stencil" : "item/empty_slot_dye");
         }
     }
 
