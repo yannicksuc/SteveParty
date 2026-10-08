@@ -3,10 +3,12 @@ package fr.lordfinn.steveparty.client.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalFloatRef;
+import fr.lordfinn.steveparty.client.token.MobPoses;
 import fr.lordfinn.steveparty.client.token.TokenBaseRenderState;
 import fr.lordfinn.steveparty.client.token.TokenBaseRenderer;
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
@@ -43,6 +45,10 @@ public abstract class TokenBaseLivingEntityRendererMixin {
         } else {
             tokenState.steveparty$setTokenBase(false, 0, 0.0F, 0.0F);
         }
+        // A posed mob pawn: its pose's states for this frame (put back at the end of it)
+        MobPoses.Pose pose = tokenState.steveparty$isToken() && !(entity instanceof PlayerPawnEntity)
+                ? MobPoses.of(entity, ((LivingEntityRenderer<?, ?>) (Object) this).getModel()) : null;
+        tokenState.steveparty$setPoseFrame(pose == null ? null : MobPoses.begin(entity, pose));
         if (!tokenState.steveparty$isToken() || entity.isInvisible()) return;
         matrices.push();
         TokenBaseRenderer.render(matrices, vertexConsumers, light, tokenState.steveparty$getBaseColor(),
@@ -50,14 +56,28 @@ public abstract class TokenBaseLivingEntityRendererMixin {
         matrices.pop();
     }
 
-    /** A still pawn: head in line with the body (head yaw and pitch, render's locals, before they are used). */
+    @Inject(method = RENDER, at = @At("RETURN"))
+    private void steveparty$endPose(LivingEntity entity, float yaw, float tickDelta, MatrixStack matrices,
+                                    VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
+        TokenBaseRenderState tokenState = (TokenBaseRenderState) entity;
+        MobPoses.Frame frame = tokenState.steveparty$getPoseFrame();
+        if (frame == null) return;
+        MobPoses.end(entity, frame);
+        tokenState.steveparty$setPoseFrame(null);
+    }
+
+    /**
+     * A still pawn: head in line with the body (head yaw and pitch, render's locals, before they are used); a posed
+     * one: where its pose looks.
+     */
     @Inject(method = RENDER, at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isInPose(Lnet/minecraft/entity/EntityPose;)Z", ordinal = 0))
     private void steveparty$stillPawnHead(LivingEntity entity, float yaw, float tickDelta, MatrixStack matrices,
                                           VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci,
                                           @Local(index = 9) LocalFloatRef headYaw, @Local(index = 10) LocalFloatRef pitch) {
         if (!((TokenBaseRenderState) entity).steveparty$isToken()) return;
-        headYaw.set(0.0F);
-        pitch.set(0.0F);
+        MobPoses.Frame frame = ((TokenBaseRenderState) entity).steveparty$getPoseFrame();
+        headYaw.set(frame == null ? 0.0F : frame.pose().headYaw());
+        pitch.set(frame == null ? 0.0F : frame.pose().headPitch());
     }
 
     /** ...every idle animation driven by time (tails, wings, tentacles, floating...) frozen on the frame it became a token... */
@@ -65,6 +85,8 @@ public abstract class TokenBaseLivingEntityRendererMixin {
             target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;getAnimationProgress(Lnet/minecraft/entity/LivingEntity;F)F"))
     private float steveparty$stillPawnAge(float animationProgress, @Local(argsOnly = true) LivingEntity entity) {
         if (!((TokenBaseRenderState) entity).steveparty$isToken()) return animationProgress;
+        MobPoses.Frame frame = ((TokenBaseRenderState) entity).steveparty$getPoseFrame();
+        if (frame != null) return frame.pose().age();
         int pawnAge = ((TokenizedEntityInterface) entity).steveparty$getPawnAge();
         return pawnAge >= 0 ? pawnAge : animationProgress;
     }
@@ -73,7 +95,25 @@ public abstract class TokenBaseLivingEntityRendererMixin {
     @ModifyExpressionValue(method = RENDER, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/entity/LimbAnimator;getSpeed(F)F"))
     private float steveparty$stillPawnLegs(float limbDistance, @Local(argsOnly = true) LivingEntity entity) {
-        return ((TokenBaseRenderState) entity).steveparty$isToken() ? 0.0F : limbDistance;
+        if (!((TokenBaseRenderState) entity).steveparty$isToken()) return limbDistance;
+        MobPoses.Frame frame = ((TokenBaseRenderState) entity).steveparty$getPoseFrame();
+        return frame == null ? 0.0F : frame.pose().limbDistance();
+    }
+
+    /** A posed pawn: where its legs are in their stride... */
+    @ModifyExpressionValue(method = RENDER, at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/entity/LimbAnimator;getPos(F)F"))
+    private float steveparty$posedLimbs(float limbAngle, @Local(argsOnly = true) LivingEntity entity) {
+        MobPoses.Frame frame = ((TokenBaseRenderState) entity).steveparty$getPoseFrame();
+        return frame == null ? limbAngle : frame.pose().limbAngle();
+    }
+
+    /** ...and its arm swing. */
+    @ModifyExpressionValue(method = RENDER, at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;getHandSwingProgress(Lnet/minecraft/entity/LivingEntity;F)F"))
+    private float steveparty$posedSwing(float swing, @Local(argsOnly = true) LivingEntity entity) {
+        MobPoses.Frame frame = ((TokenBaseRenderState) entity).steveparty$getPoseFrame();
+        return frame == null ? swing : frame.pose().swing();
     }
 
     @Inject(method = RENDER, at = @At(value = "INVOKE",
