@@ -67,11 +67,12 @@ public class TokenizerWandItem extends Item {
 
     /**
      * Bounds of the token size: its biggest dimension (height, or width when wider than tall), in blocks.
-     * 0.25 keeps a token clickable and its name readable; 2 blocks keeps it smaller than a board space column and
-     * below the height of a player. The default (1 block) is the size tokens always had.
+     * 0.25 keeps a token clickable and its name readable. The biggest is {@value #MAX_SIZE_FACTOR} times the mob's own
+     * size ({@link #maxTokenSize}): a chicken pawn stays smaller than a zombie one. The default (1 block) is the size
+     * tokens always had.
      */
     public static final float MIN_TOKEN_SIZE = 0.25F;
-    public static final float MAX_TOKEN_SIZE = 2.0F;
+    public static final float MAX_SIZE_FACTOR = 5.0F;
     public static final float DEFAULT_TOKEN_SIZE = 1.0F;
     /** Slider / rounding step of the token size, in blocks. */
     public static final float TOKEN_SIZE_STEP = 0.05F;
@@ -247,13 +248,34 @@ public class TokenizerWandItem extends Item {
             EntityDimensions body = mob.getDimensions(EntityPose.STANDING);
             size = Math.max(body.width(), body.height());
         }
-        return clampTokenSize(Math.round(size / TOKEN_SIZE_STEP) * TOKEN_SIZE_STEP);
+        return clampTokenSize(mob, Math.round(size / TOKEN_SIZE_STEP) * TOKEN_SIZE_STEP);
     }
 
-    /** @return {@code size} clamped to [{@value #MIN_TOKEN_SIZE}, {@value #MAX_TOKEN_SIZE}] (default if not a number). */
-    public static float clampTokenSize(float size) {
-        if (!Float.isFinite(size)) return DEFAULT_TOKEN_SIZE;
-        return MathHelper.clamp(size, MIN_TOKEN_SIZE, MAX_TOKEN_SIZE);
+    /**
+     * The entity's own size: its biggest dimension at its natural scale (whatever it was resized to), body only (not
+     * the base of a token). A player: 1.8 blocks.
+     */
+    public static float naturalSize(LivingEntity entity) {
+        EntityDimensions body = entity.getDimensions(EntityPose.STANDING);
+        float scale = entity.getScale();
+        float size = Math.max(body.width(), body.height()) / (scale > 0 ? scale : 1);
+        return Float.isFinite(size) && size > 0 ? size : DEFAULT_TOKEN_SIZE;
+    }
+
+    /** The biggest token {@code entity} can become: {@value #MAX_SIZE_FACTOR} times its own size, on the size steps. */
+    public static float maxTokenSize(LivingEntity entity) {
+        float max = (float) Math.floor(naturalSize(entity) * MAX_SIZE_FACTOR / TOKEN_SIZE_STEP + 1.0E-3) * TOKEN_SIZE_STEP;
+        return Math.max(MIN_TOKEN_SIZE, max);
+    }
+
+    /**
+     * @return {@code size} clamped to [{@value #MIN_TOKEN_SIZE}, {@link #maxTokenSize} of {@code entity}] (the default
+     * if not a number)
+     */
+    public static float clampTokenSize(LivingEntity entity, float size) {
+        float max = maxTokenSize(entity);
+        if (!Float.isFinite(size)) return Math.min(DEFAULT_TOKEN_SIZE, max);
+        return MathHelper.clamp(size, MIN_TOKEN_SIZE, max);
     }
 
     /** @return {@code color} if it is a valid 0xRRGGBB colour, else {@link #NO_COLOR}. */
@@ -289,7 +311,7 @@ public class TokenizerWandItem extends Item {
             return SpellResult.NOT_ALLOWED;
         }
 
-        float size = clampTokenSize(requestedSize);
+        float size = clampTokenSize(mob, requestedSize);
         int color = sanitizeColor(requestedColor);
         boolean othersHear = !resize || !resizedLately(mob);
         if (resize) {
@@ -316,7 +338,7 @@ public class TokenizerWandItem extends Item {
             sendPlayerRefused(player);
             return SpellResult.NOT_ALLOWED;
         }
-        PawnPossessions.startSpell(target, player.getUuid(), clampTokenSize(requestedSize), sanitizeColor(requestedColor));
+        PawnPossessions.startSpell(target, player.getUuid(), clampTokenSize(target, requestedSize), sanitizeColor(requestedColor));
         player.getItemCooldownManager().set(wand.getItem(), SPELL_COOLDOWN);
         playSpellEffects(target);
         playCastBurst(player, target);
