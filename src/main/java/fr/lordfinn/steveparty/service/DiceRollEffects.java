@@ -20,7 +20,6 @@ import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.SpawnEggItem;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -309,8 +308,9 @@ public final class DiceRollEffects {
                     : new ProfileComponent(Optional.empty(), Optional.of(owner), new PropertyMap()));
             return head;
         }
-        SpawnEggItem egg = SpawnEggItem.forEntity(token.getType());
-        return new ItemStack(egg != null ? egg : ModItems.TOKEN);
+        // its own egg (a Glandouille's of its kind, not the last one registered for the type)
+        ItemStack egg = token.getPickBlockStack();
+        return egg != null && !egg.isEmpty() ? egg : new ItemStack(ModItems.TOKEN);
     }
 
     private static Text labelOf(ServerWorld world, MobEntity token) {

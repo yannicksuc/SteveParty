@@ -909,6 +909,17 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** Picked in creative (middle click): the egg of its own kind. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void aPickedOneGivesTheEggOfItsKind(TestContext context) {
+        floor(context);
+        for (GlandouilleVariant variant : GlandouilleVariant.values()) {
+            GlandouilleEntity one = glandouille(context, variant, new BlockPos(1 + variant.ordinal(), 1, 1));
+            context.assertEquals(one.getPickBlockStack().getItem(), ModItems.GLANDOUILLE_SPAWN_EGGS[variant.ordinal()], "egg of " + variant);
+        }
+        context.complete();
+    }
+
     /** Sets the biome of the whole test area (and a little around it). */
     private static void biome(TestContext context, String biome) {
         BlockPos from = context.getAbsolutePos(new BlockPos(-2, -2, -2)), to = context.getAbsolutePos(new BlockPos(10, 6, 10));

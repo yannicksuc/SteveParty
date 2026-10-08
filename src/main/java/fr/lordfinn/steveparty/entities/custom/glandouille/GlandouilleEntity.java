@@ -1101,6 +1101,12 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- interactions
 
+    /** Picked (creative middle click): the egg of its own kind, not the last egg registered for the type. */
+    @Override
+    public ItemStack getPickBlockStack() {
+        return new ItemStack(ModItems.GLANDOUILLE_SPAWN_EGGS[getVariant().ordinal()]);
+    }
+
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
         if (boardActor) return ActionResult.PASS;
