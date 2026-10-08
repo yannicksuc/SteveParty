@@ -489,6 +489,33 @@ public class GlandouilleGameTests implements FabricGameTest {
     }
 
     /**
+     * Saved while riding (in a tower or in hand), it is not saved without AI: let go after a reload, it falls and
+     * thinks. One saved that way by an older version is repaired; a NoAI given by a command stays.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void aRiderIsNotSavedWithoutAi(TestContext context) {
+        floor(context);
+        GlandouilleEntity top = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1)).get(1);
+        context.assertTrue(top.isAiDisabled(), "riding: it doesn't think");
+        net.minecraft.nbt.NbtCompound saved = new net.minecraft.nbt.NbtCompound();
+        top.writeNbt(saved);
+        context.assertFalse(saved.getBoolean("NoAI"), "not saved without AI");
+        // as an older version saved it
+        saved.putBoolean("NoAI", true);
+        saved.remove("OwnNoAI");
+        GlandouilleEntity old = ModEntities.GLANDOUILLE.create(context.getWorld());
+        old.readNbt(saved);
+        context.assertFalse(old.isAiDisabled(), "an old save is repaired");
+        // a command's NoAI
+        net.minecraft.nbt.NbtCompound summoned = new net.minecraft.nbt.NbtCompound();
+        summoned.putBoolean("NoAI", true);
+        GlandouilleEntity still = ModEntities.GLANDOUILLE.create(context.getWorld());
+        still.readNbt(summoned);
+        context.assertTrue(still.isAiDisabled(), "a command's NoAI stays");
+        context.complete();
+    }
+
+    /**
      * A left click with a stack in hand throws its bottom one forward, shot like a flicked one; the rest stays in hand,
      * one shorter, and the thrower is never hit by it.
      */
