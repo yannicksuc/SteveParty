@@ -299,6 +299,10 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.LOOTING_BOX_ENTITY, LootingBoxBlockEntityRenderer::new);
         // The villager block is drawn alive (reactions, looking around) by its renderer, not as a baked block
         BlockEntityRendererFactories.register(ModBlockEntities.VILLAGER_BLOCK_ENTITY, fr.lordfinn.steveparty.client.blockentity.VillagerBlockEntityRenderer::new);
+        // A Frousseux asleep as a candle holder: drawn as itself, block and item alike
+        BlockEntityRendererFactories.register(ModBlockEntities.FROUSSEUX_CANDLE_HOLDER, fr.lordfinn.steveparty.client.blockentity.FrousseuxCandleHolderRenderer::new);
+        net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(ModBlocks.FROUSSEUX_CANDLE_HOLDER,
+                fr.lordfinn.steveparty.client.blockentity.FrousseuxCandleHolderRenderer.ITEM);
         // It cries while it is being broken: the breaking progress of any player, as the world renderer knows it
         fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity.miningStageProbe = pos -> {
             var renderer = net.minecraft.client.MinecraftClient.getInstance().worldRenderer;
