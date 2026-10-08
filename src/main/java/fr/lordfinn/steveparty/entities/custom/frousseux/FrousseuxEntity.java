@@ -30,6 +30,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
@@ -51,7 +52,7 @@ import java.util.UUID;
 /**
  * The Frousseux (Wickling): a little candle ghost of the caves, one per candle colour ({@link FrousseuxColor}).
  * <ul>
- *     <li><b>Light</b>: it lights the cave around it for real ({@link FrousseuxLight}), from 15 down to 10 as its
+ *     <li><b>Light</b>: it lights the cave around it for real ({@link FrousseuxLight}), from 15 down to 6 as its
  *     flame weakens.</li>
  *     <li><b>Flame = health</b>: four stages ({@link Flame}), shown by the flame's size and brightness.</li>
  *     <li><b>Floats</b> near the ground and wanders a little, through <b>thin walls</b> (see {@link FrousseuxFlight});
@@ -84,7 +85,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
 
     /** Its flame by health: size and brightness drawn (FrousseuxModel, FrousseuxRenderer), and its light level. */
     public enum Flame {
-        FULL(15, 1.0f, 1.0f), HIGH(14, 0.82f, 0.92f), LOW(12, 0.62f, 0.78f), EMBER(10, 0.38f, 0.6f);
+        FULL(15, 1.0f, 1.0f), HIGH(12, 0.82f, 0.92f), LOW(9, 0.62f, 0.78f), EMBER(6, 0.38f, 0.6f);
 
         public final int light;
         public final float size;
@@ -294,11 +295,42 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
     }
 
     private void tickClient() {
+        tickFlameLean();
         if (!isAlive() || isBlownOut()) return;
         // a weak flame smokes a little
         if (getFlame() == Flame.EMBER && random.nextInt(8) == 0) {
             getWorld().addParticle(ParticleTypes.SMOKE, getX(), getY() + HEIGHT + 0.25, getZ(), 0, 0.02, 0);
         }
+    }
+
+    // ---------------------------------------------------------------- its flame in the wind (client)
+
+    /** How far its flame leans (radians): back against its flight, aside in its turns; eased (FrousseuxModel). */
+    private float flameLeanX, flameLeanZ, prevFlameLeanX, prevFlameLeanZ;
+    private float lastBodyYaw = Float.NaN;
+
+    private void tickFlameLean() {
+        prevFlameLeanX = flameLeanX;
+        prevFlameLeanZ = flameLeanZ;
+        double dx = getX() - prevX, dz = getZ() - prevZ;
+        float yaw = bodyYaw * MathHelper.RADIANS_PER_DEGREE;
+        // its speed forwards and to its left, in blocks per tick
+        double forward = -dx * MathHelper.sin(yaw) + dz * MathHelper.cos(yaw);
+        double left = dx * MathHelper.cos(yaw) + dz * MathHelper.sin(yaw);
+        float turn = Float.isNaN(lastBodyYaw) ? 0 : MathHelper.wrapDegrees(bodyYaw - lastBodyYaw);
+        lastBodyYaw = bodyYaw;
+        float wantX = MathHelper.clamp((float) (forward * 4.0), -0.6f, 0.6f);
+        float wantZ = MathHelper.clamp((float) (left * 4.0) + turn * 0.02f, -0.6f, 0.6f);
+        flameLeanX += (wantX - flameLeanX) * 0.2f;
+        flameLeanZ += (wantZ - flameLeanZ) * 0.2f;
+    }
+
+    public float flameLeanX(float partialTick) {
+        return MathHelper.lerp(partialTick, prevFlameLeanX, flameLeanX);
+    }
+
+    public float flameLeanZ(float partialTick) {
+        return MathHelper.lerp(partialTick, prevFlameLeanZ, flameLeanZ);
     }
 
     // ---------------------------------------------------------------- shy
