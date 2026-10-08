@@ -2678,5 +2678,7 @@
   "pose.steveparty.player_pawn.zombie": "Zombie",
   "pose.steveparty.player_pawn.dab": "Dab",
   "pose.steveparty.player_pawn.sulk": "Bouderie du dernier",
-  "pose.steveparty.player_pawn.ballerina": "Ballerine"
+  "pose.steveparty.player_pawn.ballerina": "Ballerine",
+  "command.steveparty.playerpawn.done": "%s joueur(s) changé(s) en pion",
+  "command.steveparty.playerpawn.none": "Aucun joueur ne peut devenir un pion maintenant (déjà pion, ou sous le sort)"
 }

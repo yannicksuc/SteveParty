@@ -183,8 +183,8 @@ public final class PawnPossessions {
      * The token spell hits {@code target} (validated by the wand): they shrink to a pawn of {@code size} blocks
      * and are held in place until the pawn comes out of the spell.
      */
-    public static void startSpell(ServerPlayerEntity target, ServerPlayerEntity caster, float size, int color) {
-        Spell spell = new Spell(target, caster.getUuid(), size, color);
+    public static void startSpell(ServerPlayerEntity target, UUID caster, float size, int color) {
+        Spell spell = new Spell(target, caster, size, color);
         SPELLS.put(target.getUuid(), spell);
         float startScale = target.getScale();
         float targetScale = size / PlayerPawnEntity.HEIGHT;
