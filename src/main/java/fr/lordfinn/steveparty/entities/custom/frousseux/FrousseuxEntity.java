@@ -171,6 +171,9 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     private final FrousseuxFlight.Control flight;
     private boolean colorFromData;
     private boolean boardActor;
+    /** A board actor: what it carries under itself (coins, stars), and who may hit it (the board's say). */
+    private ItemStack boardCarried = ItemStack.EMPTY;
+    private @Nullable java.util.function.Predicate<Entity> boardHit;
     private int shyTicks;
     private int dodgeCooldown;
     /** What it stole (one item), or empty. */
@@ -352,6 +355,34 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (!getWorld().isClient) light.clear(getWorld());
     }
 
+    /** A board actor: shows {@code carried} under itself (empty: nothing), once any item flight is over. */
+    public void setBoardCarried(ItemStack carried) {
+        this.boardCarried = carried.copy();
+        if (itemFlightTicks <= 0) this.dataTracker.set(SHOWN_ITEM, boardCarried.copy());
+    }
+
+    /**
+     * A board actor: {@code shown} flies with sparkles from {@code who} to it ({@code toMe}), or from it to them (the
+     * same animation as a theft in a cave); what it carries shows under it again after.
+     */
+    public void boardItemFlight(Entity who, ItemStack shown, boolean toMe) {
+        this.dataTracker.set(SHOWN_ITEM, shown.copy());
+        startItemFlight(who, toMe);
+    }
+
+    /**
+     * A board actor: a blow at it (melee, nothing else) is handed to {@code onHit} (the attacker), and never hurts it.
+     * Null: blows do nothing.
+     */
+    public void onBoardHit(@Nullable java.util.function.Predicate<Entity> onHit) {
+        this.boardHit = onHit;
+    }
+
+    /** A board actor's laugh, for the board's shows. */
+    public void boardLaugh() {
+        laugh();
+    }
+
     @Override
     public boolean shouldSave() {
         return !boardActor && super.shouldSave();
@@ -447,7 +478,10 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     }
 
     private void tickServer(ServerWorld world) {
-        if (boardActor) return;
+        if (boardActor) {
+            tickItemFlight(); // its loot flying (FrousseuxThefts); nothing else of its own
+            return;
+        }
         if (!isAlive()) {
             light.clear(world);
             return;
@@ -654,7 +688,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         playSound(SoundEvents.ENTITY_ITEM_PICKUP, 0.6f, 1.4f);
     }
 
-    private void startItemFlight(PlayerEntity player, boolean stolen) {
+    private void startItemFlight(Entity player, boolean stolen) {
         this.dataTracker.set(ITEM_FLIGHT, stolen ? player.getId() + 1 : -(player.getId() + 1));
         itemFlightTicks = ITEM_FLIGHT_TICKS;
     }
@@ -662,7 +696,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     private void tickItemFlight() {
         if (itemFlightTicks <= 0 || --itemFlightTicks > 0) return;
         this.dataTracker.set(ITEM_FLIGHT, 0);
-        this.dataTracker.set(SHOWN_ITEM, stolen.copy()); // given back: nothing left under it
+        // given back: nothing left under it (a board actor: what it still carries)
+        this.dataTracker.set(SHOWN_ITEM, (boardActor ? boardCarried : stolen).copy());
     }
 
     private static final Vec3d UNDER_BODY = new Vec3d(0, -0.2, 0);
@@ -701,7 +736,11 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
 
     @Override
     public boolean damage(DamageSource source, float amount) {
-        if (getWorld().isClient || boardActor || isRemoved()) return false;
+        if (getWorld().isClient || isRemoved()) return false;
+        if (boardActor) {
+            if (boardHit != null && isMelee(source)) boardHit.test(source.getAttacker());
+            return false;
+        }
         if (isMelee(source)) {
             dodge((ServerWorld) getWorld(), source.getAttacker());
             return false;
