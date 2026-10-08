@@ -1,56 +1,21 @@
 package fr.lordfinn.steveparty.client.pawn;
 
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
-import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnPose;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
-import net.minecraft.util.math.MathHelper;
 
-/**
- * The statue of a player pawn: the player model with the proportions of a little figurine (body, arms and legs as a
- * player's, only the head bigger), standing in its {@linkplain PlayerPawnPose pose}. The overlay layers (hat,
- * sleeves, jacket, pants) follow their part.
- */
+/** The statue of a player pawn: the player model posed as a {@link PlayerStatue}, in the pawn's pose. */
 public class PlayerPawnModel extends PlayerEntityModel<PlayerPawnEntity> {
-    public static final float HEAD_SCALE = 1.5F;
+    private final ModelPart root;
 
     public PlayerPawnModel(ModelPart root, boolean thinArms) {
         super(root, thinArms);
+        this.root = root;
     }
 
     @Override
     public void setAngles(PlayerPawnEntity pawn, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
         super.setAngles(pawn, limbAngle, limbDistance, animationProgress, headYaw, headPitch);
-        PlayerPawnPose pose = pawn.getStatuePose();
-        this.body.setAngles(0, 0, 0);
-        this.head.setAngles(rad(pose.headPitch), rad(pose.headYaw), rad(pose.headRoll));
-        this.rightArm.setAngles(rad(pose.rightArmPitch), rad(pose.rightArmYaw), rad(pose.rightArmRoll));
-        this.leftArm.setAngles(rad(pose.leftArmPitch), rad(pose.leftArmYaw), rad(pose.leftArmRoll));
-        this.rightLeg.setAngles(rad(pose.rightLegPitch), 0, rad(pose.rightLegRoll));
-        this.leftLeg.setAngles(rad(pose.leftLegPitch), 0, rad(pose.leftLegRoll));
-
-        scale(this.head, HEAD_SCALE, HEAD_SCALE, HEAD_SCALE);
-        follow(this.hat, this.head);
-        follow(this.jacket, this.body);
-        follow(this.rightSleeve, this.rightArm);
-        follow(this.leftSleeve, this.leftArm);
-        follow(this.rightPants, this.rightLeg);
-        follow(this.leftPants, this.leftLeg);
-    }
-
-    private static float rad(float degrees) {
-        return degrees * MathHelper.RADIANS_PER_DEGREE;
-    }
-
-    private static void scale(ModelPart part, float x, float y, float z) {
-        part.xScale = x;
-        part.yScale = y;
-        part.zScale = z;
-    }
-
-    /** {@code layer} takes the place, angles and size of {@code part}. */
-    private static void follow(ModelPart layer, ModelPart part) {
-        layer.copyTransform(part);
-        scale(layer, part.xScale, part.yScale, part.zScale);
+        PlayerStatue.pose(this.root, pawn.getStatuePose());
     }
 }
