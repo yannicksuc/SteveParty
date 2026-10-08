@@ -38,6 +38,8 @@ public final class GeoPoses {
     private static final float ANGLE_EPSILON = 0.2F;
     private static final float POSITION_EPSILON = 1.0F;
     private static final float SCALE_EPSILON = 0.1F;
+    /** A bone scaled below this (on an axis) has vanished: that moment is not kept as a pose. */
+    private static final float VANISHED = 0.2F;
 
     /** One bone's frozen values; NaN where the moment does not set it (the bone keeps its rest value). */
     private record BonePose(String bone, float rotX, float rotY, float rotZ, float posX, float posY, float posZ,
@@ -49,6 +51,12 @@ public final class GeoPoses {
     }
 
     private static final Map<EntityType<?>, List<Pose>> POSES = new HashMap<>();
+    /**
+     * The bones of the model are shared by every mob of the type: what a pose changed is put back once the posed pawn
+     * is drawn (rotation, position, scale of each bone, as GeckoLib left them), so no other mob draws in its pose.
+     */
+    private static final List<GeoBone> CHANGED = new ArrayList<>();
+    private static final List<float[]> BEFORE = new ArrayList<>();
 
     private GeoPoses() {
     }
@@ -79,11 +87,15 @@ public final class GeoPoses {
     }
 
     private static <T extends GeoAnimatable> void freeze(GeoModel<T> model, Pose pose) {
+        restore();
         Map<String, BonePose> byBone = new HashMap<>();
         for (BonePose bone : pose.bones()) byBone.put(bone.bone(), bone);
         for (GeoBone bone : model.getAnimationProcessor().getRegisteredBones()) {
             var rest = bone.getInitialSnapshot();
             if (rest == null) continue;
+            CHANGED.add(bone);
+            BEFORE.add(new float[]{bone.getRotX(), bone.getRotY(), bone.getRotZ(), bone.getPosX(), bone.getPosY(), bone.getPosZ(),
+                    bone.getScaleX(), bone.getScaleY(), bone.getScaleZ()});
             BonePose frozen = byBone.get(bone.getName());
             bone.setRotX(rest.getRotX() + orZero(frozen == null ? Float.NaN : frozen.rotX()));
             bone.setRotY(rest.getRotY() + orZero(frozen == null ? Float.NaN : frozen.rotY()));
@@ -95,6 +107,25 @@ public final class GeoPoses {
             bone.setScaleY(orOne(frozen == null ? Float.NaN : frozen.scaleY()));
             bone.setScaleZ(orOne(frozen == null ? Float.NaN : frozen.scaleZ()));
         }
+    }
+
+    /** After a posed pawn is drawn (GeckoLib's post-render event): its bones as they were before its pose. */
+    public static void restore() {
+        for (int i = 0; i < CHANGED.size(); i++) {
+            GeoBone bone = CHANGED.get(i);
+            float[] was = BEFORE.get(i);
+            bone.setRotX(was[0]);
+            bone.setRotY(was[1]);
+            bone.setRotZ(was[2]);
+            bone.setPosX(was[3]);
+            bone.setPosY(was[4]);
+            bone.setPosZ(was[5]);
+            bone.setScaleX(was[6]);
+            bone.setScaleY(was[7]);
+            bone.setScaleZ(was[8]);
+        }
+        CHANGED.clear();
+        BEFORE.clear();
     }
 
     private static float orZero(float value) {
@@ -114,7 +145,8 @@ public final class GeoPoses {
             for (Animation animation : new TreeMap<>(baked.animations()).values()) {
                 for (double moment : MOMENTS) {
                     Pose candidate = sample(animation, animation.length() * moment);
-                    if (candidate.bones().isEmpty()) continue;
+                    // (a moment where a part of it has vanished, shrunk to nothing, is no pose)
+                    if (candidate.bones().isEmpty() || vanishes(candidate)) continue;
                     if (poses.stream().noneMatch(other -> same(other, candidate))) poses.add(candidate);
                 }
             }
@@ -158,6 +190,13 @@ public final class GeoPoses {
         return Float.NaN;
     }
 
+    private static boolean vanishes(Pose pose) {
+        for (BonePose bone : pose.bones()) {
+            if (bone.scaleX() < VANISHED || bone.scaleY() < VANISHED || bone.scaleZ() < VANISHED) return true;
+        }
+        return false;
+    }
+
     /** Whether two moments look alike: every bone they set within the margins. */
     private static boolean same(Pose a, Pose b) {
         Map<String, BonePose> others = new HashMap<>();
@@ -189,5 +228,7 @@ public final class GeoPoses {
 
     public static void clear() {
         POSES.clear();
+        CHANGED.clear();
+        BEFORE.clear();
     }
 }
