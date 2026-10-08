@@ -66,7 +66,7 @@ public class PayloadReceivers {
         ClientPlayNetworking.registerGlobalReceiver(OpenTokenSpellPayload.ID, (payload, context) -> context.client().execute(() -> {
             MinecraftClient client = context.client();
             if (client.world == null || client.currentScreen != null) return;
-            if (client.world.getEntityById(payload.entityId()) instanceof MobEntity mob) {
+            if (client.world.getEntityById(payload.entityId()) instanceof net.minecraft.entity.LivingEntity mob) {
                 client.setScreen(new TokenSpellScreen(mob, payload.currentSize(), payload.resize(), payload.currentColor()));
             }
         }));

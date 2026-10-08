@@ -4,6 +4,8 @@
   "package": "fr.lordfinn.steveparty.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "PlayerEntityRendererPawnMixin",
+    "HeldItemRendererPawnMixin",
     "EntityLookToolWheelMixin",
     "EntityLookTelescopeMixin",
     "BipedEntityModelPipeSwimMixin",
