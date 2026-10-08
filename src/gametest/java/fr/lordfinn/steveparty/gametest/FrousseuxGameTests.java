@@ -196,8 +196,10 @@ public class FrousseuxGameTests implements FabricGameTest {
         context.assertTrue(frousseux.isRemoved(), "the ghost is gone");
         var state = context.getWorld().getBlockState(at);
         context.assertTrue(state.isOf(ModBlocks.FROUSSEUX_CANDLE_HOLDER), "a candle holder where it floated");
-        context.assertTrue(state.get(FrousseuxCandleHolderBlock.LIGHT) == FrousseuxEntity.Flame.LOW.light,
-                "its light is its weak flame's: " + state.get(FrousseuxCandleHolderBlock.LIGHT));
+        context.assertTrue(FrousseuxCandleHolderBlock.lightOf(state) == FrousseuxEntity.Flame.LOW.light,
+                "its light is its weak flame's: " + FrousseuxCandleHolderBlock.lightOf(state));
+        context.assertTrue(state.get(FrousseuxCandleHolderBlock.COLOR) == fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor.PURPLE,
+                "its colour, a block state");
         var holder = (FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(at);
         ItemStack item = FrousseuxCandleHolderBlock.itemOf(holder);
         context.assertTrue(item.contains(net.minecraft.component.DataComponentTypes.BLOCK_ENTITY_DATA), "its item keeps it");
@@ -239,6 +241,78 @@ public class FrousseuxGameTests implements FabricGameTest {
         Vec3d spot = frousseux.arrivalSpot(owner);
         net.minecraft.entity.Entity moved = fr.lordfinn.steveparty.entities.PetTeleports.bring(frousseux, context.getWorld(), spot, 0);
         context.assertTrue(moved == frousseux && frousseux.getPos().distanceTo(spot) < 1.0E-3, "brought to its spot, the same one");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void onlyItsOwnerWakesTheCandleHolder(TestContext context) {
+        floor(context);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
+        ServerPlayerEntity other = player(context, new BlockPos(5, 1, 5));
+        frousseux.tame(owner);
+        BlockPos at = BlockPos.ofFloored(frousseux.getPos().add(0, 0.1, 0));
+        FrousseuxCandleHolderBlock.fallAsleep(frousseux, context.getWorld(), owner);
+        var holder = (FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(at);
+        context.assertTrue(FrousseuxCandleHolderBlock.mayWake(holder, owner), "its owner wakes it");
+        context.assertFalse(FrousseuxCandleHolderBlock.isOwnersOrNobodys(holder, other), "it is not someone else's");
+        // someone else: only as an operator (the test server's mock players may be ones)
+        context.assertTrue(FrousseuxCandleHolderBlock.mayWake(holder, other) == (other.isCreative() || other.hasPermissionLevel(2)),
+                "someone else only as an operator or in creative");
+        other.changeGameMode(net.minecraft.world.GameMode.CREATIVE);
+        context.assertTrue(FrousseuxCandleHolderBlock.mayWake(holder, other), "a player in creative does");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theCandleHolderGoesOnItsSaucerAndOffAgain(TestContext context) {
+        floor(context);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
+        frousseux.tame(owner);
+        BlockPos at = BlockPos.ofFloored(frousseux.getPos().add(0, 0.1, 0));
+        FrousseuxCandleHolderBlock.fallAsleep(frousseux, context.getWorld(), owner);
+        ItemStack candle = FrousseuxCandleHolderBlock.itemOf((FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(at));
+        var recipe = new fr.lordfinn.steveparty.recipes.CandleSaucerRecipe(net.minecraft.recipe.book.CraftingRecipeCategory.MISC);
+        var on = net.minecraft.recipe.input.CraftingRecipeInput.create(2, 1,
+                java.util.List.of(candle, new ItemStack(fr.lordfinn.steveparty.items.ModItems.CANDLE_SAUCER)));
+        context.assertTrue(recipe.matches(on, context.getWorld()), "candle + saucer");
+        ItemStack onSaucer = recipe.craft(on, context.getWorld().getRegistryManager());
+        context.assertTrue(FrousseuxCandleHolderBlock.isOnSaucer(onSaucer), "on its saucer");
+        context.assertTrue(FrousseuxCandleHolderBlock.keptIn(onSaucer).getUuid("UUID").equals(FrousseuxCandleHolderBlock.keptIn(candle).getUuid("UUID")),
+                "the same Frousseux kept");
+        var off = net.minecraft.recipe.input.CraftingRecipeInput.create(1, 1, java.util.List.of(onSaucer));
+        context.assertTrue(recipe.matches(off, context.getWorld()), "on its saucer alone: off it");
+        context.assertFalse(FrousseuxCandleHolderBlock.isOnSaucer(recipe.craft(off, context.getWorld().getRegistryManager())), "off its saucer");
+        context.assertTrue(recipe.getRemainder(off).get(0).isOf(fr.lordfinn.steveparty.items.ModItems.CANDLE_SAUCER), "the saucer given back");
+        var twice = net.minecraft.recipe.input.CraftingRecipeInput.create(2, 1,
+                java.util.List.of(onSaucer, new ItemStack(fr.lordfinn.steveparty.items.ModItems.CANDLE_SAUCER)));
+        context.assertFalse(recipe.matches(twice, context.getWorld()), "never two saucers");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aCandleHolderSetOnAPlacedSaucerStandsOnIt(TestContext context) {
+        floor(context);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
+        frousseux.tame(owner);
+        BlockPos at = BlockPos.ofFloored(frousseux.getPos().add(0, 0.1, 0));
+        FrousseuxCandleHolderBlock.fallAsleep(frousseux, context.getWorld(), owner);
+        ItemStack candle = FrousseuxCandleHolderBlock.itemOf((FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(at));
+        java.util.UUID uuid = FrousseuxCandleHolderBlock.keptIn(candle).getUuid("UUID");
+        context.getWorld().setBlockState(at, net.minecraft.block.Blocks.AIR.getDefaultState());
+        BlockPos tray = context.getAbsolutePos(new BlockPos(5, 1, 3));
+        context.getWorld().setBlockState(tray, ModBlocks.CANDLE_SAUCER.getDefaultState());
+        owner.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, candle);
+        var hit = new net.minecraft.util.hit.BlockHitResult(Vec3d.ofCenter(tray), net.minecraft.util.math.Direction.UP, tray, false);
+        context.getWorld().getBlockState(tray).onUseWithItem(candle, context.getWorld(), owner, net.minecraft.util.Hand.MAIN_HAND, hit);
+        var state = context.getWorld().getBlockState(tray);
+        context.assertTrue(state.isOf(ModBlocks.FROUSSEUX_CANDLE_HOLDER) && state.get(FrousseuxCandleHolderBlock.SAUCER), "on its saucer");
+        var holder = (FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(tray);
+        context.assertTrue(holder.getFrousseux().getUuid("UUID").equals(uuid), "the same Frousseux");
+        context.assertTrue(owner.getMainHandStack().isEmpty(), "the item used up");
+        context.assertTrue(FrousseuxCandleHolderBlock.isOnSaucer(FrousseuxCandleHolderBlock.itemOf(holder)), "broken: one item keeping both");
         context.complete();
     }
 }

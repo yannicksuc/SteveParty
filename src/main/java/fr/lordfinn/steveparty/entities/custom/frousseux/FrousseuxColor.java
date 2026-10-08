@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.entities.custom.frousseux;
 
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.random.Random;
 
 /**
@@ -14,7 +15,7 @@ import net.minecraft.util.math.random.Random;
  * @param wax    its candle's wax colour (RGB)
  * @param weight how likely a wild one is this colour, against the others' weights
  */
-public enum FrousseuxColor {
+public enum FrousseuxColor implements StringIdentifiable {
     PLAIN("plain", Items.CANDLE, 0xFFAA3C, 0xF0E2BA, 30),
     WHITE("white", Items.WHITE_CANDLE, 0xFFECC0, 0xF6F6F6, 12),
     ORANGE("orange", Items.ORANGE_CANDLE, 0xFF8C28, 0xF08228, 8),
@@ -72,7 +73,8 @@ public enum FrousseuxColor {
         return rgb;
     }
 
-    /** Its name in its entity data ("Color") and its loot table conditions. */
+    /** Its name in its entity data ("Color"), its loot table conditions and the candle holder's block state. */
+    @Override
     public String asString() {
         return name;
     }

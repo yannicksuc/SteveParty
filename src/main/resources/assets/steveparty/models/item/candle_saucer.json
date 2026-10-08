@@ -1,9 +1,5 @@
 {
-  "parent": "minecraft:builtin/entity",
-  "gui_light": "side",
-  "textures": {
-    "particle": "steveparty:block/frousseux_candle_holder"
-  },
+  "parent": "steveparty:block/candle_saucer",
   "display": {
     "gui": {
       "rotation": [

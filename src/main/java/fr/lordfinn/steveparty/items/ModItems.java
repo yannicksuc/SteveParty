@@ -113,6 +113,11 @@ public class ModItems {
     public static final Item FROUSSEUX_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("frousseux_spawn_egg"),
             new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.FROUSSEUX, 0xFFF3D6, 0xFFAA3C,
                     new Item.Settings()));
+    /**
+     * The Candle Saucer, a little gold tray for the Frousseux candle holder to stand on: a block of its own
+     * (ModBlocks.CANDLE_SAUCER), crafted onto the candle holder too (CandleSaucerRecipe).
+     */
+    public static final Item CANDLE_SAUCER = ModBlocks.CANDLE_SAUCER.asItem();
     public static final Item[] GLANDOUILLE_SPAWN_EGGS = {GLANDOUILLE_SPAWN_EGG, YOUNG_GLANDOUILLE_SPAWN_EGG,
             MOSSY_GLANDOUILLE_SPAWN_EGG, FROSTY_GLANDOUILLE_SPAWN_EGG};
     public static final Item BLUE_STAR_FRAGMENT = register(Item.class, "blue_star_fragment");
@@ -404,6 +409,7 @@ public class ModItems {
             for (Item egg : GLANDOUILLE_SPAWN_EGGS) itemGroup.add(egg);
             itemGroup.add(FROUSSEUX_SPAWN_EGG);
             itemGroup.add(ModBlocks.FROUSSEUX_CANDLE_HOLDER);
+            itemGroup.add(CANDLE_SAUCER);
             itemGroup.add(ACORN);
             itemGroup.add(ACORN_HAT);
             // The 16 colours, in dye order: the blocks, then the fragments
