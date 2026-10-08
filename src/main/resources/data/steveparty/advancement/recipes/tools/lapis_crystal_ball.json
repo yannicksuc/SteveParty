@@ -1,22 +1,22 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_redstone_block": {
+    "has_lapis_block": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "minecraft:redstone_block"
+            "items": "minecraft:lapis_block"
           }
         ]
       }
     },
-    "has_power_star": {
+    "has_party_star": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "steveparty:power_star"
+            "items": "steveparty:party_star"
           }
         ]
       }
@@ -24,20 +24,20 @@
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "steveparty:garnet_crystal_ball"
+        "recipe": "steveparty:lapis_crystal_ball"
       }
     }
   },
   "requirements": [
     [
-      "has_redstone_block",
-      "has_power_star",
+      "has_lapis_block",
+      "has_party_star",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "steveparty:garnet_crystal_ball"
+      "steveparty:lapis_crystal_ball"
     ]
   }
 }

@@ -209,7 +209,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /** Production stopped with the button while powered: no auto-resume until the next rising edge. */
     private boolean manualStop = false;
     private long activationTime = NO_ACTIVATION;
-    /** Items that must leave the forge (legacy power star, extra cores): dropped on the next tick. */
+    /** Items that must leave the forge (legacy party star, extra cores): dropped on the next tick. */
     private final List<ItemStack> pendingDrops = new ArrayList<>();
     private float rotationTicks = 0f; // client only
     private long forgedTime = -1; // client only
@@ -307,7 +307,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         ItemStack center = inventory.get(CENTER_SLOT);
         if (!center.isEmpty()) {
             if (version < 2) {
-                // Legacy forge (power star in slot 12): give the star back
+                // Legacy forge (party star in slot 12): give the star back
                 pendingDrops.add(center);
             } else if (inventory.get(OUTPUT_SLOT).isEmpty()) {
                 // Version 2 kept the forged dice in the center slot: they move to the output slot

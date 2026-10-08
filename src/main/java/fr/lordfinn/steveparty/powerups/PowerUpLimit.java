@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * How many power-ups a player of a running party may carry, like the three items of Mario Party: the party's
+ * How many power-ups a player of a running party may carry, like the three-item limit of party board games: the party's
  * « Max power-ups » setting ({@link PartyControllerEntity#getMaxPowerUps}, 3 by default, 0 for no limit).
  * <p>
  * What counts, by the number of items of each stack: every power-up item ({@link PowerUpItem}), and every die
@@ -29,7 +29,7 @@ import java.util.UUID;
  * up past the limit. Outside a party, no limit. Server side.
  */
 public final class PowerUpLimit {
-    /** The setting's default: three, as in Mario Party. */
+    /** The setting's default: three, the genre's classic. */
     public static final int DEFAULT = 3;
     /** The highest the setting goes (0 being no limit). */
     public static final int MAX = 20;

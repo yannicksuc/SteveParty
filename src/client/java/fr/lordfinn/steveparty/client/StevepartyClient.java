@@ -30,7 +30,7 @@ import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
 import fr.lordfinn.steveparty.client.particle.ForgeBeamParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
-import fr.lordfinn.steveparty.client.particle.KamekShapeParticle;
+import fr.lordfinn.steveparty.client.particle.MagicShapeParticle;
 import fr.lordfinn.steveparty.client.particle.StarFlareParticle;
 import fr.lordfinn.steveparty.client.particle.MulaSparkleParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
@@ -346,7 +346,7 @@ public class StevepartyClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.ENCHANTED_CIRCULAR_PARTICLE, EnchantedCircularParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.FORGE_BEAM, ForgeBeamParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.MULA_SPARKLE, MulaSparkleParticle.Factory::new);
-        ParticleFactoryRegistry.getInstance().register(ModParticles.KAMEK_SHAPE, KamekShapeParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.MAGIC_SHAPE, MagicShapeParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.STAR_FLARE, StarFlareParticle.Factory::new);
     }
 

@@ -40,7 +40,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
 
 /**
- * The « Téléportation » tile (warp pipe): a token that <b>lands</b> on it (its move ends there) is sent to another
+ * The « Téléportation » tile: a token that <b>lands</b> on it (its move ends there) is sent to another
  * Teleport tile of the same network (the colour of its cartridge, see {@link TeleportNetwork}) on the same board,
  * picked at random or in turn.
  * <ul>

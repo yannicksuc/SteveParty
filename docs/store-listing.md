@@ -103,4 +103,4 @@ Bugs and ideas: [GitHub issues](https://github.com/yannicksuc/SteveParty/issues)
 
 ---
 
-*Steve Party Maker is an independent fan creation. It is not affiliated with Mojang, Microsoft or Nintendo.*
+*Steve Party Maker is an independent project. It is not affiliated with Mojang, Microsoft or Nintendo.*

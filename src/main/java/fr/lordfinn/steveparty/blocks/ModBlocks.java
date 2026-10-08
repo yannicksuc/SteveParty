@@ -140,7 +140,7 @@ public class ModBlocks {
     }
 
     /**
-     * Warp pipes, by kind ({@link fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind#ordinal()}) then colour (the plain
+     * Travel pipes, by kind ({@link fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind#ordinal()}) then colour (the plain
      * glass pipe: one block): never suffocating whoever travels inside.
      */
     public static final Block[][] PIPES = new Block[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values().length][];

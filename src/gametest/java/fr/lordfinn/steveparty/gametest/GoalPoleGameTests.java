@@ -374,7 +374,7 @@ public class GoalPoleGameTests implements FabricGameTest {
 
     // ------------------------------------------------------------------ landing reward
 
-    /** The "1up" golden heart never takes absorption away. */
+    /** The extra-life golden heart never takes absorption away. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void goldenHeartKeepsTheAbsorptionAlreadyThere(TestContext context) {
         PlayerEntity fresh = context.createMockPlayer(GameMode.SURVIVAL);

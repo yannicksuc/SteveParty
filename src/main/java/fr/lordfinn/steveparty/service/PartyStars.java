@@ -53,7 +53,7 @@ import java.util.UUID;
 import static net.minecraft.server.command.CommandManager.literal;
 
 /**
- * The star of a party, Mario Party style, on the star spaces given by the {@link StarCartridgeItem Star Cartridge}:
+ * The star of a party, as in party board games, on the star spaces given by the {@link StarCartridgeItem Star Cartridge}:
  * <ul>
  *     <li>when the party starts, the star stands on one of the active star spaces of its board (those within
  *     {@link PartyControllerEntity#START_TILES_SEARCH_RADIUS} blocks of the controller), at random;</li>

@@ -18,9 +18,9 @@ public class ModParticles {
     /** The Mula's tinted twinkles, star bits and sleepy z's (client-side animation effects). */
     public static final ParticleType<MulaSparkleEffect> MULA_SPARKLE =
             FabricParticleTypes.complex(MulaSparkleEffect.CODEC, MulaSparkleEffect.PACKET_CODEC);
-    /** The Tokenizer Wand's Kamek-style magic: coloured circles, triangles and squares. */
-    public static final ParticleType<KamekShapeEffect> KAMEK_SHAPE =
-            FabricParticleTypes.complex(KamekShapeEffect.CODEC, KamekShapeEffect.PACKET_CODEC);
+    /** The Tokenizer Wand's magic: coloured circles, triangles and squares. */
+    public static final ParticleType<MagicShapeEffect> MAGIC_SHAPE =
+            FabricParticleTypes.complex(MagicShapeEffect.CODEC, MagicShapeEffect.PACKET_CODEC);
     /** Star fragments blocks' solar eruptions: a flame blob arcing around the block (client display only). */
     public static final ParticleType<StarFlareEffect> STAR_FLARE =
             FabricParticleTypes.complex(StarFlareEffect.CODEC, StarFlareEffect.PACKET_CODEC);
@@ -34,7 +34,7 @@ public class ModParticles {
                 ENCHANTED_CIRCULAR_PARTICLE);
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("forge_beam"), FORGE_BEAM);
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("mula_sparkle"), MULA_SPARKLE);
-        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("kamek_shape"), KAMEK_SHAPE);
+        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("magic_shape"), MAGIC_SHAPE);
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("star_flare"), STAR_FLARE);
     }
 }

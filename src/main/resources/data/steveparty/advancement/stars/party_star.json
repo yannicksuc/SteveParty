@@ -2,14 +2,14 @@
   "parent": "steveparty:stars/root",
   "display": {
     "icon": {
-      "id": "steveparty:power_star",
+      "id": "steveparty:party_star",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.stars.power_star.title"
+      "translate": "advancements.steveparty.stars.party_star.title"
     },
     "description": {
-      "translate": "advancements.steveparty.stars.power_star.description"
+      "translate": "advancements.steveparty.stars.party_star.description"
     },
     "frame": "task"
   },
@@ -19,7 +19,7 @@
       "conditions": {
         "items": [
           {
-            "items": "steveparty:power_star"
+            "items": "steveparty:party_star"
           }
         ]
       }

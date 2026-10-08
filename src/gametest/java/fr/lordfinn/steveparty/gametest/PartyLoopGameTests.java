@@ -278,10 +278,10 @@ public class PartyLoopGameTests implements FabricGameTest {
         BlockPos chestPos = new BlockPos(1, 1, 1);
         context.setBlockState(chestPos, Blocks.CHEST);
         ChestBlockEntity chest = context.getBlockEntity(chestPos);
-        chest.setStack(0, new ItemStack(ModItems.POWER_STAR, 1));
+        chest.setStack(0, new ItemStack(ModItems.PARTY_STAR, 1));
         ItemStack price = new ItemStack(Items.GOLD_NUGGET, 20);
         price.set(ModComponents.IS_NEGATIVE, true);
-        ItemStack cartridge = cartridge(context, chestPos, 1, new ItemStack(ModItems.POWER_STAR, 1), price);
+        ItemStack cartridge = cartridge(context, chestPos, 1, new ItemStack(ModItems.PARTY_STAR, 1), price);
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         player.getInventory().insertStack(new ItemStack(Items.GOLD_NUGGET, 10));
         int[] cycle = {0};
@@ -293,7 +293,7 @@ public class PartyLoopGameTests implements FabricGameTest {
         context.assertTrue(CartridgeTransfers.apply(context.getWorld(), cartridge, player, () -> cycle[0], i -> cycle[0] = i),
                 "bought");
         context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(Items.GOLD_NUGGET), player.getInventory()), 5, "20 coins paid");
-        context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(ModItems.POWER_STAR), player.getInventory()), 1, "star received");
+        context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(ModItems.PARTY_STAR), player.getInventory()), 1, "star received");
         context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(Items.GOLD_NUGGET), chest), 20, "coins in the chest");
         context.complete();
     }

@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A pipe of one kind and colour: the quads of each shape ({@link PipeGeometry}), built the first time that shape is
  * drawn and kept. Plain quads (the vanilla way), so that chunks, items, falling blocks and every renderer draw it.
- * The item is a pipe standing on the ground (a mouth on top, capped at the bottom: a warp pipe).
+ * The item is a pipe standing on the ground (a mouth on top, capped at the bottom: a travel pipe).
  */
 public class PipeBakedModel implements BakedModel {
     private static final int ITEM_KEY = PipeShape.key(0, Direction.DOWN);

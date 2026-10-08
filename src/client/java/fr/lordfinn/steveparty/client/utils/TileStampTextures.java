@@ -546,7 +546,7 @@ public final class TileStampTextures {
 
     // ---------------------------------------------------------------- the pipe pictogram (for a pipe cartridge to come)
 
-    /** A warp pipe seen from the side (rim over its body), '#' in the darkest shade, 'o' its light highlight. */
+    /** A travel pipe seen from the side (rim over its body), '#' in the darkest shade, 'o' its light highlight. */
     private static final String[] PIPE = {
             "##############",
             "#oo###########",
@@ -575,7 +575,7 @@ public final class TileStampTextures {
     private static final float PIPE_HIGHLIGHT = -0.5f;
 
     /**
-     * A warp pipe on the blank tile face (its rounded bevel), all in the ramp of {@code rgb}: the pipe in the darkest
+     * A travel pipe on the blank tile face (its rounded bevel), all in the ramp of {@code rgb}: the pipe in the darkest
      * shade with a light highlight down its rim and body. No tile shows it yet: the face of a pipe cartridge to come.
      */
     public static Identifier pipeFace(int rgb, boolean small) {

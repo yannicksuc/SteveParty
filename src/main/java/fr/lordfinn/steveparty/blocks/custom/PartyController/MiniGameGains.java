@@ -19,7 +19,7 @@ public final class MiniGameGains {
     /** The row of those who took no place. */
     public static final int PARTICIPANTS = ROWS - 1;
     public static final int MAX = 99;
-    /** Like in Mario Party: 10 coins for the winner, then 5, 3 and 1; nothing for the others, and no star. */
+    /** The genre's classic: 10 coins for the winner, then 5, 3 and 1; nothing for the others, and no star. */
     public static final MiniGameGains DEFAULT = new MiniGameGains(new int[]{10, 5, 3, 1, 0}, new int[ROWS]);
 
     private final int[] coins;

@@ -10,7 +10,7 @@ import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
 
 /**
- * The Mula's little lights: a tinted sprite ({@link #TWINKLE} four-point twinkle, {@link #STAR_BIT} Luma star bit,
+ * The Mula's little lights: a tinted sprite ({@link #TWINKLE} four-point twinkle, {@link #STAR_BIT} star bit,
  * {@link #Z} sleepy z), each with its own motion (see the client's MulaSparkleParticle). Only spawned on the client
  * (animation effects), never sent by the server, but a particle type needs its codecs anyway.
  *

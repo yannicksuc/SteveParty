@@ -9,7 +9,7 @@ import net.minecraft.util.StringIdentifiable;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The network of a Teleport tile, by colour (like warp pipes): a token landing on a Teleport tile is sent to another
+ * The network of a Teleport tile, by colour (like the travel pipes): a token landing on a Teleport tile is sent to another
  * Teleport tile of the same colour on the same board. The tile's face and its cartridge's icon take the colour.
  */
 public enum TeleportNetwork implements StringIdentifiable {

@@ -23,7 +23,7 @@ import java.util.List;
 
 /**
  * « Cartouche Téléportation »: a token landing on its tile is sent to another Teleport tile of the same network (its
- * colour: violet, green, orange or blue) on the same board, like warp pipes. Its settings are its menu's modules
+ * colour: violet, green, orange or blue) on the same board, like the travel pipes. Its settings are its menu's modules
  * ({@link #modules()}): right click in the air with it, or its tile's interface (also opened by an empty hand on it).
  */
 public class TeleportCartridgeItem extends CartridgeItem {
