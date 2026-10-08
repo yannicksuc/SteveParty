@@ -24,11 +24,15 @@ import net.minecraft.world.biome.Biome;
  * Where Glandouilles live, in groups of 2 to 4, under the trees (biome tags in data/steveparty/tags/worldgen/biome):
  * the classic and young ones (sometimes an old one) where oaks grow ({@link #OAK_BIOMES}), the old mossy ones in the
  * old growth taigas ({@link #OLD_GROWTH_BIOMES}), the frosty ones in the snowy taigas ({@link #SNOWY_BIOMES}).
+ * A ripe planted acorn hatches into a classic one, a frosty one where it snows ({@link #SPROUT_FROSTY_BIOMES}), an old
+ * mossy one in the taigas and lush caves ({@link #SPROUT_MOSSY_BIOMES}).
  */
 public final class GlandouilleSpawns {
     public static final TagKey<Biome> OAK_BIOMES = TagKey.of(RegistryKeys.BIOME, Steveparty.id("glandouille_oak"));
     public static final TagKey<Biome> OLD_GROWTH_BIOMES = TagKey.of(RegistryKeys.BIOME, Steveparty.id("glandouille_old_growth"));
     public static final TagKey<Biome> SNOWY_BIOMES = TagKey.of(RegistryKeys.BIOME, Steveparty.id("glandouille_snowy"));
+    public static final TagKey<Biome> SPROUT_FROSTY_BIOMES = TagKey.of(RegistryKeys.BIOME, Steveparty.id("glandouille_sprout_frosty"));
+    public static final TagKey<Biome> SPROUT_MOSSY_BIOMES = TagKey.of(RegistryKeys.BIOME, Steveparty.id("glandouille_sprout_mossy"));
     /** Under the trees: leaves at most this many blocks above where it spawns. */
     private static final int CANOPY_SEARCH = 10;
 
@@ -68,6 +72,14 @@ public final class GlandouilleSpawns {
         float roll = random.nextFloat();
         if (roll < 0.07f) return GlandouilleVariant.MOSSY;
         if (roll < 0.35f) return GlandouilleVariant.YOUNG;
+        return GlandouilleVariant.CLASSIC;
+    }
+
+    /** The kind a ripe planted acorn at {@code pos} hatches into, from its biome (snow first: a snowy taiga is frosty). */
+    public static GlandouilleVariant sproutVariant(ServerWorldAccess world, BlockPos pos) {
+        RegistryEntry<Biome> biome = world.getBiome(pos);
+        if (biome.isIn(SPROUT_FROSTY_BIOMES)) return GlandouilleVariant.FROSTY;
+        if (biome.isIn(SPROUT_MOSSY_BIOMES)) return GlandouilleVariant.MOSSY;
         return GlandouilleVariant.CLASSIC;
     }
 }

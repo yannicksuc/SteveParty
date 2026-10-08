@@ -820,8 +820,9 @@ public class GlandouilleGameTests implements FabricGameTest {
 
     /** An acorn planted on farmland grows, and ripe, hatches into a young Glandouille. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
-    public void aPlantedAcornHatchesIntoAYoungOne(TestContext context) {
+    public void aPlantedAcornHatchesIntoAClassicOne(TestContext context) {
         floor(context);
+        biome(context, "minecraft:plains");
         BlockPos farmland = new BlockPos(3, 1, 3), crop = farmland.up();
         context.setBlockState(farmland, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
         BlockState planted = ModBlocks.ACORN_CROP.getDefaultState();
@@ -837,8 +838,70 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.assertTrue(context.getWorld().getBlockState(abs).isAir(), "the acorn hatched");
         List<GlandouilleEntity> born = context.getWorld().getEntitiesByClass(GlandouilleEntity.class, new Box(abs).expand(1), e -> true);
         context.assertEquals(born.size(), 1, "one Glandouille");
-        context.assertEquals(born.getFirst().getVariant(), GlandouilleVariant.YOUNG, "a young one");
+        context.assertEquals(born.getFirst().getVariant(), GlandouilleVariant.CLASSIC, "a classic one");
         context.complete();
+    }
+
+    /** A ripe acorn hatches into its biome's kind: frosty where it snows, the old mossy one in taigas and lush caves. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aPlantedAcornHatchesIntoItsBiomesKind(TestContext context) {
+        Map<String, GlandouilleVariant> expected = new java.util.LinkedHashMap<>();
+        expected.put("minecraft:plains", GlandouilleVariant.CLASSIC);
+        expected.put("minecraft:forest", GlandouilleVariant.CLASSIC);
+        expected.put("minecraft:snowy_plains", GlandouilleVariant.FROSTY);
+        expected.put("minecraft:snowy_taiga", GlandouilleVariant.FROSTY);
+        expected.put("minecraft:grove", GlandouilleVariant.FROSTY);
+        expected.put("minecraft:taiga", GlandouilleVariant.MOSSY);
+        expected.put("minecraft:old_growth_spruce_taiga", GlandouilleVariant.MOSSY);
+        expected.put("minecraft:lush_caves", GlandouilleVariant.MOSSY);
+        BlockPos abs = context.getAbsolutePos(new BlockPos(3, 1, 3));
+        expected.forEach((biome, variant) -> {
+            biome(context, biome);
+            context.getWorld().setBlockState(abs, ModBlocks.ACORN_CROP.getDefaultState().with(AcornCropBlock.AGE, AcornCropBlock.MAX_AGE));
+            GlandouilleEntity born = AcornCropBlock.hatch(context.getWorld(), abs);
+            context.assertTrue(born != null, "hatched in " + biome);
+            context.assertEquals(born.getVariant(), variant, "in " + biome);
+            born.discard();
+        });
+        context.complete();
+    }
+
+    /** Barely sprouted, an acorn may pop out of the ground at once, as a young one (5 %: forced here). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aBarelySproutedAcornMayPopOutYoung(TestContext context) {
+        floor(context);
+        biome(context, "minecraft:snowy_plains");
+        BlockPos farmland = new BlockPos(3, 1, 3), crop = farmland.up();
+        context.setBlockState(farmland, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
+        BlockPos abs = context.getAbsolutePos(crop);
+        var world = context.getWorld();
+        float chance = AcornCropBlock.earlyPopChance;
+        try {
+            AcornCropBlock.earlyPopChance = 0f;
+            context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
+            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+            context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), 1, "never: it just grows");
+            AcornCropBlock.earlyPopChance = 1f;
+            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+            context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), 2, "only at its first stage");
+            context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
+            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+        } finally {
+            AcornCropBlock.earlyPopChance = chance;
+        }
+        context.assertTrue(world.getBlockState(abs).isAir(), "popped out");
+        List<GlandouilleEntity> born = world.getEntitiesByClass(GlandouilleEntity.class, new Box(abs).expand(1), e -> true);
+        context.assertEquals(born.size(), 1, "one Glandouille");
+        context.assertEquals(born.getFirst().getVariant(), GlandouilleVariant.YOUNG, "a young one, whatever the biome");
+        context.complete();
+    }
+
+    /** Sets the biome of the whole test area (and a little around it). */
+    private static void biome(TestContext context, String biome) {
+        BlockPos from = context.getAbsolutePos(new BlockPos(-2, -2, -2)), to = context.getAbsolutePos(new BlockPos(10, 6, 10));
+        var server = context.getWorld().getServer();
+        server.getCommandManager().executeWithPrefix(server.getCommandSource().withWorld(context.getWorld()).withSilent(),
+                "fillbiome " + from.getX() + " " + from.getY() + " " + from.getZ() + " " + to.getX() + " " + to.getY() + " " + to.getZ() + " " + biome);
     }
 
     /** Bone meal: one stage per dose; ripe, a dose in three hatches it (here, doses until it does). */
@@ -850,9 +913,15 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
         BlockPos abs = context.getAbsolutePos(crop);
         var world = context.getWorld();
-        for (int age = 1; age <= AcornCropBlock.MAX_AGE; age++) {
-            context.assertTrue(net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs), "bone meal takes");
-            context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), age, "one stage per dose");
+        float chance = AcornCropBlock.earlyPopChance;
+        AcornCropBlock.earlyPopChance = 0f; // no early young one here
+        try {
+            for (int age = 1; age <= AcornCropBlock.MAX_AGE; age++) {
+                context.assertTrue(net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs), "bone meal takes");
+                context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), age, "one stage per dose");
+            }
+        } finally {
+            AcornCropBlock.earlyPopChance = chance;
         }
         for (int i = 0; i < 64 && world.getBlockState(abs).isOf(ModBlocks.ACORN_CROP); i++) {
             net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
