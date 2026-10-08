@@ -2609,6 +2609,8 @@
   "item.steveparty.mossy_glandouille_spawn_egg": "Œuf d'apparition de vieux Glandouille moussu",
   "item.steveparty.frosty_glandouille_spawn_egg": "Œuf d'apparition de Glandouille glacé",
   "message.steveparty.glandouille.too_high": "Cette tour serait trop haute (%s Glandouilles au plus)",
+  "subtitles.steveparty.glandouille.charge": "Un Glandouille charge",
+  "subtitles.steveparty.glandouille.dizzy": "Un Glandouille est sonné",
   "subtitles.steveparty.glandouille.ambient": "Un Glandouille ronchonne",
   "subtitles.steveparty.glandouille.hurt": "Un Glandouille est bousculé",
   "subtitles.steveparty.glandouille.death": "Un Glandouille rend l'âme",

@@ -104,6 +104,10 @@ public class ModSounds {
     public static final SoundEvent GLANDOUILLE_POOF = register("glandouille.poof");
     /** A ripe acorn hatching into a young Glandouille. */
     public static final SoundEvent GLANDOUILLE_HATCH = register("glandouille.hatch");
+    /** Head down, it starts its charge. */
+    public static final SoundEvent GLANDOUILLE_CHARGE = register("glandouille.charge");
+    /** Stunned, dizzy against a wall. */
+    public static final SoundEvent GLANDOUILLE_DIZZY = register("glandouille.dizzy");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }
