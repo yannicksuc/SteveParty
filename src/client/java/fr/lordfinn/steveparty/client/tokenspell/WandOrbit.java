@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.tokenspell;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.particles.MagicShapeEffect;
+import fr.lordfinn.steveparty.particles.SpellPalette;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -19,7 +19,7 @@ import org.joml.Vector3f;
 
 /**
  * Little magic shapes orbiting the Tokenizer Wand's jewel whenever it is held: a square, a circle, a triangle and
- * a second circle, in the four spell colours, full bright, slowly turning around the jewel with a little bob and a
+ * a second circle, in the spell gradient (fuchsia, violet, blue, then the jewel's own lapis), full bright, slowly turning around the jewel with a little bob and a
  * gentle pulse. Drawn with the held item itself (first and third person) into the same buffers, as opaque cut-outs
  * like the wand: so they never lag behind, and shader packs draw them with the hand, in front of the sky and clouds
  * (a translucent layer was drawn behind the clouds with Iris). Never on item icons, dropped items or item frames.
@@ -32,6 +32,8 @@ public final class WandOrbit {
             RenderLayer.getEntityCutoutNoCull(texture("magic_triangle")),
             RenderLayer.getEntityCutoutNoCull(texture("magic_circle"))};
     private static final int SHAPES = LAYERS.length;
+    /** One colour per shape, stepping down the gradient to the jewel's lapis. */
+    private static final int[] COLORS = {SpellPalette.FUCHSIA, SpellPalette.VIOLET, SpellPalette.BLUE, SpellPalette.LAPIS};
     /** Centre of the wand's jewel, in model space (model pixels / 16: x 8, y 29, z 8). */
     private static final float JEWEL_X = 0.5F, JEWEL_Y = 29F / 16F, JEWEL_Z = 0.5F;
     /** Orbit radius and shape half-size, in model space (the jewel is 6 pixels wide). */
@@ -82,7 +84,7 @@ public final class WandOrbit {
             float bob = MathHelper.sin(time * 1.7F + i * 1.3F) * (1.2F / 16F);
             matrix.transformPosition(JEWEL_X + MathHelper.cos(angle) * RADIUS, JEWEL_Y + bob,
                     JEWEL_Z + MathHelper.sin(angle) * RADIUS, POINT);
-            int color = MagicShapeEffect.COLORS[i % MagicShapeEffect.COLORS.length];
+            int color = COLORS[i];
             // A gentle pulse of size (the shapes are drawn as opaque cut-outs, like the wand itself)
             float pulse = 0.85F + 0.15F * MathHelper.sin(time * 2.3F + i * 2.1F);
             quad(vertexConsumers.getBuffer(LAYERS[i]), POINT, color, pulse);
