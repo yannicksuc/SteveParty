@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
+import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlockEntity;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxCompanion;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
@@ -154,6 +157,37 @@ public class FrousseuxGameTests implements FabricGameTest {
         Vec3d far = frousseux.getPos().add(9, 0, 0);
         owner.refreshPositionAndAngles(far.x, far.y, far.z, 0, 0);
         context.assertFalse(FrousseuxCompanion.shieldsFromWebs(owner), "too far from it: slowed again");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theCandleHolderKeepsTheSameFrousseux(TestContext context) {
+        floor(context);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
+        frousseux.tame(owner);
+        frousseux.setHealth(3f);
+        frousseux.setCustomName(net.minecraft.text.Text.literal("Mèche"));
+        frousseux.setColor(fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor.PURPLE);
+        java.util.UUID uuid = frousseux.getUuid();
+        BlockPos at = BlockPos.ofFloored(frousseux.getPos().add(0, 0.1, 0));
+        context.assertTrue(FrousseuxCandleHolderBlock.fallAsleep(frousseux, context.getWorld(), owner), "it falls asleep");
+        context.assertTrue(frousseux.isRemoved(), "the ghost is gone");
+        var state = context.getWorld().getBlockState(at);
+        context.assertTrue(state.isOf(ModBlocks.FROUSSEUX_CANDLE_HOLDER), "a candle holder where it floated");
+        context.assertTrue(state.get(FrousseuxCandleHolderBlock.LIGHT) == FrousseuxEntity.Flame.LOW.light,
+                "its light is its weak flame's: " + state.get(FrousseuxCandleHolderBlock.LIGHT));
+        var holder = (FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(at);
+        ItemStack item = FrousseuxCandleHolderBlock.itemOf(holder);
+        context.assertTrue(item.contains(net.minecraft.component.DataComponentTypes.BLOCK_ENTITY_DATA), "its item keeps it");
+        context.assertTrue(FrousseuxCandleHolderBlock.keptIn(item).getUuid("UUID").equals(uuid), "the same one in the item");
+        FrousseuxEntity awake = FrousseuxCandleHolderBlock.wakeUp(context.getWorld(), at);
+        context.assertTrue(awake != null && awake.getUuid().equals(uuid), "it wakes up, the same one");
+        context.assertTrue(context.getWorld().getBlockState(at).isAir(), "the block is gone");
+        context.assertTrue(awake.getHealth() == 3f, "the same health");
+        context.assertTrue(awake.isOwner(owner) && !awake.isSitting(), "its owner's, following");
+        context.assertTrue("Mèche".equals(awake.getCustomName().getString()), "its name");
+        context.assertTrue(awake.getColor() == fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor.PURPLE, "its colour");
         context.complete();
     }
 

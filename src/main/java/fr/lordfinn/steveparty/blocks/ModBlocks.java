@@ -458,6 +458,17 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.WOOL),  // (its own villager sounds: VillagerBlock#getSoundGroup)
             "villager_block", true);
 
+    /** A tamed Frousseux asleep as a candle holder (FrousseuxCandleHolderBlock): its light is its flame's. */
+    public static final Block FROUSSEUX_CANDLE_HOLDER = register(
+            fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock::new,
+            Block.Settings.create()
+                    .strength(0.3f)
+                    .nonOpaque()
+                    .sounds(BlockSoundGroup.CANDLE)
+                    .luminance(state -> state.get(fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock.LIGHT))
+                    .pistonBehavior(PistonBehavior.DESTROY),
+            "frousseux_candle_holder", true);
+
     public static final Block CASH_REGISTER = register(CashRegisterBlock::new,
             Block.Settings.create()
                     .strength(2.0f, BOARD_RESISTANCE)

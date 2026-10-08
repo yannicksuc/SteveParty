@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
+import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.player.PlayerEntity;
@@ -93,8 +94,9 @@ public final class FrousseuxCompanion {
                         && frousseux.squaredDistanceTo(player) <= WEB_RANGE * WEB_RANGE).isEmpty();
     }
 
-    /** A sitting one turned into a candle holder, where it floats (the candle holder block: next). */
+    /** A sitting one turned into a candle holder ({@link FrousseuxCandleHolderBlock}), where it floats. */
     static void toCandleHolder(FrousseuxEntity frousseux, ServerWorld world, PlayerEntity player) {
+        FrousseuxCandleHolderBlock.fallAsleep(frousseux, world, player);
     }
 
     /** Following its owner about, by their head, out of their way. */
