@@ -85,6 +85,7 @@ public class RecipeGameTests implements FabricGameTest {
             Map.entry("young_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("mossy_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("frosty_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            Map.entry("frousseux_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             // The 10 fixed-wood easel signs are kept for the worlds that have them: the material easel sign replaced them
             Map.entry("oak_easel_sign", "legacy"), Map.entry("spruce_easel_sign", "legacy"),
             Map.entry("birch_easel_sign", "legacy"), Map.entry("jungle_easel_sign", "legacy"),

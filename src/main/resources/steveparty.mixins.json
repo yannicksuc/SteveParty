@@ -63,7 +63,9 @@
     "ZoneBubbleServerPlayerMixin",
     "ZoneBubbleServerWorldMixin",
     "ZoneBubbleWorldChunkMixin",
-    "ZoneBubbleWorldMixin"
+    "ZoneBubbleWorldMixin",
+    "CobwebFrousseuxMixin",
+    "HostileFrousseuxMixin"
   ],
   "injectors": {
     "defaultRequire": 1

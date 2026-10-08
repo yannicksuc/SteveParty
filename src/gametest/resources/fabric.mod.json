@@ -102,7 +102,8 @@
       "fr.lordfinn.steveparty.gametest.PolishedTilesGameTests",
       "fr.lordfinn.steveparty.gametest.BoardExplosionGameTests",
       "fr.lordfinn.steveparty.gametest.PowerupTrapGameTests",
-      "fr.lordfinn.steveparty.gametest.StarWhistleGameTests"
+      "fr.lordfinn.steveparty.gametest.StarWhistleGameTests",
+      "fr.lordfinn.steveparty.gametest.FrousseuxGameTests"
     ]
   },
   "depends": {
