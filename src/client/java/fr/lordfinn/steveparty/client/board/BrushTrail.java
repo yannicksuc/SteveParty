@@ -6,6 +6,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape;
 import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.board.BrushLinkable;
+import fr.lordfinn.steveparty.board.BrushLinks;
+import fr.lordfinn.steveparty.board.CartridgeLinks;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -177,7 +180,7 @@ final class BrushTrail {
         for (int i = 1; i <= steps; i++) {
             float t = (float) i / steps;
             aimed = BrushAim.aimed(player, world, MathHelper.lerp(t, pitch, toPitch),
-                    yaw + MathHelper.wrapDegrees(toYaw - yaw) * t, BrushOverlay.ghosts());
+                    yaw + MathHelper.wrapDegrees(toYaw - yaw) * t, BrushOverlay.ghosts(), targets(world, player.getActiveItem()));
             if (aimed != null && !aimed.equals(last)) reach(world, player, aimed);
         }
         pitch = toPitch;
@@ -185,17 +188,26 @@ final class BrushTrail {
         return aimed;
     }
 
-    /** The stroke reaches a tile: a blot on it, and the band from the previous one (pale over a link it erases). */
+    /** What the held stroke aims at besides holders and ghosts: what its last holder links (as the server finds it). */
+    static java.util.function.Predicate<BlockPos> targets(ClientWorld world, ItemStack brush) {
+        int level = TileLinkerBrush.level(brush);
+        return target -> BrushLinks.aims(world, last, level, target);
+    }
+
+    /**
+     * The stroke reaches a holder of a cartridge (a tile, a router, a Hop Switch...): a blot on it, and the band from
+     * the previous one (pale over a link it erases).
+     */
     private static void reach(ClientWorld world, ClientPlayerEntity player, BlockPos tile) {
         Vec3d at = BoardSpaces.standPos(world, tile).add(0, LIFT, 0);
-        boolean ghost = BoardLinks.container(world, tile) == null;
-        // A ghost is only a target (reached once): the stroke goes on from the last tile
-        if (ghost && (last == null || inStroke(last, tile))) return;
+        boolean target = !BrushLinks.isHolder(world, tile);
+        // A ghost, a chest, a stall... is only a target (reached once): the stroke goes on from the last holder
+        if (target && (last == null || inStroke(last, tile) || CELLS.contains(tile))) return;
         int outcome = outcome(world, player.getActiveItem(), last, tile);
         MARKS.add(new Mark(last, tile.toImmutable(), lastAt == null ? at : lastAt, at, outcome, current));
         if (MARKS.size() > MAX_MARKS) MARKS.removeFirst();
-        if (ghost) {
-            if (outcome == ERASED) CELLS.add(tile.toImmutable());
+        if (target) {
+            if (outcome != NOTHING) CELLS.add(tile.toImmutable());
             return;
         }
         last = tile.toImmutable();
@@ -213,6 +225,7 @@ final class BrushTrail {
                 false, true, current));
         lastDab = null;
         if (last == null || BoardLinks.container(world, last) == null) return;
+        // A blob plans a board space's cell: only from a board space or router
         BlockPos cell = BrushAim.blobCell(world, surface.getBlockPos());
         if (cell.equals(last) || CELLS.contains(cell) || BrushOverlay.linked(world, player.getActiveItem(), last, cell)) return;
         CELLS.add(cell);
@@ -230,9 +243,11 @@ final class BrushTrail {
     /** What going from {@code from} to {@code to} does (as the server will): erase their link, make one, or nothing. */
     static int outcome(ClientWorld world, ItemStack brush, @Nullable BlockPos from, BlockPos to) {
         if (from == null || from.equals(to) || CELLS.contains(to)) return NOTHING;
-        if (BrushOverlay.linked(world, brush, from, to)) return ERASED;
-        return BoardLinks.container(world, from) != null && BoardLinks.container(world, to) instanceof BoardSpaceBlockEntity
-                ? LINKED : NOTHING;
+        return switch (BrushLinks.outcome(world, from, TileLinkerBrush.level(brush), to)) {
+            case ERASE -> ERASED;
+            case LINK -> LINKED;
+            case NOTHING -> NOTHING;
+        };
     }
 
     private static void render(WorldRenderContext context) {
@@ -446,16 +461,18 @@ final class BrushTrail {
             WorldDraw.path(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0xF0000000 | mark.outcome,
                     0.45, 0.45, phase, 0.3, 0);
         }
-        BlockPos aimed = BrushAim.aimed(player, client.world, context.tickCounter().getTickDelta(true), BrushOverlay.ghosts());
-        CartridgeContainerBlockEntity container = aimed == null ? null : BoardLinks.container(client.world, aimed);
-        if (container != null) {
-            ItemStack brush = player.getActiveItem();
+        ItemStack brush = player.getActiveItem();
+        BlockPos aimed = BrushAim.aimed(player, client.world, context.tickCounter().getTickDelta(true), BrushOverlay.ghosts(),
+                targets(client.world, brush));
+        if (aimed != null && BrushLinks.isHolder(client.world, aimed)) {
             Vec3d from = BoardSpaces.standPos(client.world, aimed).add(0, LIFT, 0).add(up);
-            for (BlockPos to : BoardLinks.links(container, BoardLinks.slotOf(container, TileLinkerBrush.level(brush)))) {
-                // The ghosts' links are drawn by BrushOverlay
-                if (inStroke(aimed, to) || BoardLinks.container(client.world, to) == null) continue;
-                WorldDraw.path(matrices, consumers, context.camera(), from, BoardSpaces.standPos(client.world, to).add(0, LIFT, 0).add(up),
-                        0xC0000000 | NOTHING, 0.4, 0.45, phase, 0.3, 0);
+            for (BrushLinkable kind : BrushLinks.of(client.world, aimed, TileLinkerBrush.level(brush))) {
+                for (BlockPos to : kind.targets(client.world)) {
+                    // The ghosts' links are drawn by BrushOverlay
+                    if (inStroke(aimed, to) || (kind instanceof CartridgeLinks.BoardPaths && BoardLinks.container(client.world, to) == null)) continue;
+                    WorldDraw.path(matrices, consumers, context.camera(), from, BoardSpaces.standPos(client.world, to).add(0, LIFT, 0).add(up),
+                            0xC0000000 | NOTHING, 0.4, 0.45, phase, 0.3, 0);
+                }
             }
         }
         consumers.draw();

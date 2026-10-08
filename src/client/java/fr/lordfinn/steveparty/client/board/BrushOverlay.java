@@ -1,9 +1,10 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BrushAim;
+import fr.lordfinn.steveparty.board.BrushLinkable;
+import fr.lordfinn.steveparty.board.BrushLinks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -29,7 +30,10 @@ import java.util.Set;
  * the frame tells what reaching that tile does (green, a link painted; red, one erased; white, nothing), and the paint
  * left behind and the arrows of the stroke are {@link BrushTrail}. The ghosts of the board spaces around (their
  * dangling links, to a cell without board space: see {@link BoardLinks#dangling}) are drawn as a dashed slab in that
- * cell, with the arrows of their links in orange; the brush aims at them like at tiles.
+ * cell, with the arrows of their links in orange; the brush aims at them like at tiles. The links of the other holders
+ * of a cartridge around (a Hop Switch to the blocks it switches, an inventory tile or a Piggy Bank to its chests...: see
+ * {@link BrushLinks}) flow from the holder to its targets in the colour of their kind; the brush aims at what the last
+ * holder painted (or its anchor) links.
  */
 final class BrushOverlay {
     static final int WHITE = 0xFFFFFFFF;
@@ -39,6 +43,14 @@ final class BrushOverlay {
     private static final double GHOST_HEIGHT = 0.125, DASH = 0.14, DASH_GAP = 0.1, DASH_WIDTH = 0.025;
     /** The ghosts of the brush in hand (refreshed each tick), each with the spaces linked to it. */
     private static Map<BlockPos, List<BlockPos>> ghosts = Map.of();
+    /** The holders' links the board view does not draw, refreshed every {@link #HOLDERS_REFRESH} ticks. */
+    private static List<HolderLinks> holders = List.of();
+    private static final int HOLDERS_REFRESH = 10;
+    private static int holdersAge;
+
+    /** A holder of a cartridge, its targets and their colour (see BrushLinkable). */
+    private record HolderLinks(Vec3d from, List<Vec3d> to, int color) {
+    }
 
     private BrushOverlay() {
     }
@@ -56,6 +68,34 @@ final class BrushOverlay {
         ItemStack brush = player == null ? ItemStack.EMPTY : player.getMainHandStack();
         ghosts = client.world == null || !TileLinkerBrush.isBrush(brush) ? Map.of()
                 : BrushAim.ghosts(player, client.world, TileLinkerBrush.level(brush));
+        if (client.world == null || !TileLinkerBrush.isBrush(brush)) {
+            holders = List.of();
+            holdersAge = HOLDERS_REFRESH;
+        } else if (++holdersAge >= HOLDERS_REFRESH) {
+            holdersAge = 0;
+            holders = holders(client.world, player, TileLinkerBrush.level(brush));
+        }
+    }
+
+    /** The links of the holders around (Hop Switches, inventory tiles, Piggy Banks...) the board view does not draw. */
+    private static List<HolderLinks> holders(ClientWorld world, ClientPlayerEntity player, int level) {
+        List<HolderLinks> found = new java.util.ArrayList<>();
+        for (BrushLinkable kind : BrushLinks.around(world, player.getEyePos(), BoardView.RADIUS, level)) {
+            if (kind.drawnByBoardView()) continue;
+            List<BlockPos> targets = kind.targets(world);
+            if (targets.isEmpty()) continue;
+            List<Vec3d> to = new java.util.ArrayList<>(targets.size());
+            for (BlockPos target : targets) to.add(anchor(world, target));
+            found.add(new HolderLinks(anchor(world, kind.holder()), to, kind.color()));
+        }
+        return found;
+    }
+
+    /** What the brush aims at besides holders and ghosts: what the stroke's last holder links, else its anchor's. */
+    static java.util.function.Predicate<BlockPos> targets(ClientWorld world, ItemStack brush) {
+        BlockPos from = BrushTrail.lastTile() != null ? BrushTrail.lastTile() : TileLinkerBrush.anchor(brush, world);
+        int level = TileLinkerBrush.level(brush);
+        return target -> BrushLinks.aims(world, from, level, target);
     }
 
     /** The cells of the ghosts the brush in hand aims at. */
@@ -74,7 +114,8 @@ final class BrushOverlay {
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
         Camera camera = context.camera();
         ghosts(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));
-        BlockPos aimed = BrushAim.aimed(player, world, context.tickCounter().getTickDelta(true), ghosts());
+        holderLinks(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));
+        BlockPos aimed = BrushAim.aimed(player, world, context.tickCounter().getTickDelta(true), ghosts(), targets(world, brush));
         if (aimed != null) {
             BlockPos last = BrushTrail.lastTile();
             int color = last == null || last.equals(aimed) ? WHITE : 0xFF000000 | BrushTrail.outcome(world, brush, last, aimed);
@@ -98,6 +139,17 @@ final class BrushOverlay {
             Vec3d to = BoardSpaces.standPos(world, pos).add(0, 0.2, 0);
             for (BlockPos from : ghost.getValue()) {
                 WorldDraw.path(matrices, consumers, camera, anchor(world, from), to, 0xC0000000 | DANGLING, 0.4, 0.45, phase, 0.3, 0);
+            }
+        }
+    }
+
+    /** Arrows flowing from each holder around to its targets, in the colour of the kind of link. */
+    private static void holderLinks(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world, float tickDelta) {
+        if (holders.isEmpty()) return;
+        double phase = (world.getTime() + tickDelta) / 20.0 * 2.5;
+        for (HolderLinks links : holders) {
+            for (Vec3d to : links.to()) {
+                WorldDraw.path(matrices, consumers, camera, links.from(), to, 0xC0000000 | links.color(), 0.4, 0.45, phase, 0.3, 0);
             }
         }
     }
@@ -126,8 +178,8 @@ final class BrushOverlay {
 
     /** A link from {@code a} to {@code b} in the slot of the brush's level: the stroke would erase it (not the way back). */
     static boolean linked(ClientWorld world, ItemStack brush, BlockPos a, BlockPos b) {
-        CartridgeContainerBlockEntity from = BoardLinks.container(world, a);
-        return from != null && BoardLinks.links(from, BoardLinks.slotOf(from, TileLinkerBrush.level(brush))).contains(b);
+        for (BrushLinkable kind : BrushLinks.of(world, a, TileLinkerBrush.level(brush))) if (kind.linked(world, b)) return true;
+        return false;
     }
 
     /** Where links start and end on a board space: a little above the middle of its surface. */

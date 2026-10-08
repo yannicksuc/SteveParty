@@ -119,6 +119,8 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // The Wrench checks the board (see WrenchActions)
         if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.WrenchItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        // The Tile Linker Brush paints the links of its bank's Inventory Cartridge (see BrushLinks)
+        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // Swapping the catalogue takes the same as taking it out: the right to edit, and no redstone lock
         if (stack.getItem() instanceof MiniGamesCatalogueItem
                 && world.getBlockEntity(pos) instanceof PartyControllerEntity controller && controller.canEdit(player)) {

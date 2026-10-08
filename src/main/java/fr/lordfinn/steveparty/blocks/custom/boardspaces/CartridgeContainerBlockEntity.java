@@ -188,6 +188,20 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
         super.writeNbt(nbt, wrapper);
     }
 
+    /**
+     * The cartridges are sent to the clients (on load and on each change, see BoardLinks#sync): the Tile Linker Brush
+     * and the board view show the links of every holder from them.
+     */
+    @Override
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        return createNbt(registries);
+    }
+
+    @Override
+    public @org.jetbrains.annotations.Nullable net.minecraft.network.packet.Packet<net.minecraft.network.listener.ClientPlayPacketListener> toUpdatePacket() {
+        return net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket.create(this);
+    }
+
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
