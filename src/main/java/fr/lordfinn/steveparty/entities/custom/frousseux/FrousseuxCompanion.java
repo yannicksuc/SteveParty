@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
 import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
+import fr.lordfinn.steveparty.entities.PetSlots;
 import fr.lordfinn.steveparty.entities.PetTeleports;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -34,6 +35,9 @@ import java.util.EnumSet;
  *     ({@link FrousseuxEntity#canHit}): their clicks go to the block or the mob behind it.</li>
  *     <li><b>Its owner's word</b> (an empty hand, see FrousseuxEntity#interactMob): sneaking, a following one sits
  *     and stays; a sitting one gets up on a plain click, and turns into a candle holder on a sneaking one.</li>
+ *     <li><b>Several of them</b>: each takes its own place (by its rank among its owner's following Frousseux:
+ *     PetSlots), fanned out side by side in front in a lit place, on the different places by them in the dark, and
+ *     they keep {@link #SPACING} apart.</li>
  *     <li><b>Cobwebs</b>: within {@link #WEB_RANGE} blocks of one of its Frousseux, they don't slow its owner
  *     ({@link #shieldsFromWebs}, CobwebBlockMixin).</li>
  * </ul>
@@ -56,7 +60,7 @@ public final class FrousseuxCompanion {
     /** In the lit mode from this ambient light; back to the dark mode at this or less; after this long (ticks). */
     public static final int LIT_FROM = 5, DARK_UNDER = 3, MODE_DELAY = 40;
     /**
-     * Its places in a lit place, in front of its owner (their body's facing, so turning the head to look at it
+     * Its places in a lit place, in front of its owner (their facing, settled: turning the head to look at it
      * doesn't move it away): a little to the left (away from the hand in view) and below the eyes, then to the
      * right, then nearer.
      */
@@ -110,18 +114,40 @@ public final class FrousseuxCompanion {
         return MathHelper.clamp(best, 0, 15);
     }
 
-    /** A lit-mode place's spot (the Frousseux's centre), in its owner's body facing. */
-    static Vec3d litSlot(PlayerEntity owner, double[] slot) {
-        float yaw = owner.getBodyYaw() * MathHelper.RADIANS_PER_DEGREE;
-        double sin = MathHelper.sin(yaw), cos = MathHelper.cos(yaw);
+    /**
+     * A lit-mode place's spot (the Frousseux's centre), facing {@code yaw}: its owner's facing, settled (see
+     * {@link Follow#settledYaw}), so turning their head to look at it doesn't move it away.
+     */
+    static Vec3d litSlot(PlayerEntity owner, double[] slot, float yaw) {
+        float radians = yaw * MathHelper.RADIANS_PER_DEGREE;
+        double sin = MathHelper.sin(radians), cos = MathHelper.cos(radians);
         return owner.getEyePos().add(-cos * slot[0] + sin * slot[2], slot[1], -sin * slot[0] - cos * slot[2]);
     }
 
+    /** Several in front of their owner (lit mode): side by side, this far apart (blocks). */
+    static final double FAN_STEP = 1.0;
+    /** Mates keep this far apart at least (centre to centre, blocks). */
+    static final double SPACING = 0.7;
+
+    /**
+     * Its place in front of its owner among {@code count} mates (lit mode): fanned out side by side, the {@code rank}th
+     * from the left, if in open air; else the first lit-mode place that is.
+     */
+    static Vec3d litSpot(World world, PlayerEntity owner, int rank, int count, float yaw) {
+        if (count > 1) {
+            double side = (rank - (count - 1) / 2.0) * FAN_STEP;
+            Vec3d eye = owner.getEyePos(), at = litSlot(owner, new double[]{side, -0.3, -2.1}, yaw);
+            if (!FrousseuxFlight.solid(world, BlockPos.ofFloored(at))
+                    && !FrousseuxFlight.solid(world, BlockPos.ofFloored(eye.add(at.subtract(eye).multiply(0.5))))) return at;
+        }
+        return litSpot(world, owner, yaw);
+    }
+
     /** In front of its owner, where it is seen (lit mode): the first lit-mode place in open air. */
-    static Vec3d litSpot(World world, PlayerEntity owner) {
+    static Vec3d litSpot(World world, PlayerEntity owner, float yaw) {
         Vec3d eye = owner.getEyePos();
         for (double[] slot : LIT_SLOTS) {
-            Vec3d at = litSlot(owner, slot);
+            Vec3d at = litSlot(owner, slot, yaw);
             if (!FrousseuxFlight.solid(world, BlockPos.ofFloored(at))
                     && !FrousseuxFlight.solid(world, BlockPos.ofFloored(eye.add(at.subtract(eye).multiply(0.5))))) return at;
         }
@@ -180,7 +206,7 @@ public final class FrousseuxCompanion {
     static Vec3d arrivalSpot(FrousseuxEntity frousseux, PlayerEntity owner) {
         World world = owner.getWorld();
         Vec3d centre = null;
-        if (frousseux.isLitMode()) centre = litSpot(world, owner);
+        if (frousseux.isLitMode()) centre = litSpot(world, owner, owner.getHeadYaw());
         else for (double[] slot : SLOTS) {
             Vec3d at = slot(owner, slot);
             if (fits(world, owner, at)) {
@@ -204,9 +230,28 @@ public final class FrousseuxCompanion {
         private int slot;
         private int repick;
         private @Nullable Vec3d centre;
+        /** Its owner's facing, settled: it follows their head only past {@link #SETTLE} degrees off (NaN: not yet). */
+        private float litYaw = Float.NaN;
+        private static final float SETTLE = 40;
+
+        /**
+         * Its owner's facing for its lit-mode place: dragged along by their head, but only once it is more than
+         * {@link #SETTLE} degrees off, so looking at it (or at one of its mates beside it) moves nothing.
+         */
+        float settledYaw(PlayerEntity owner) {
+            float head = owner.getHeadYaw();
+            if (Float.isNaN(litYaw)) litYaw = head;
+            float off = MathHelper.wrapDegrees(head - litYaw);
+            if (Math.abs(off) > SETTLE) litYaw += off - Math.signum(off) * SETTLE;
+            return litYaw;
+        }
+
+        /** Its mates: its owner's other Frousseux following them (each its own place, PetSlots). */
+        private final PetSlots.Group mates;
 
         Follow(FrousseuxEntity frousseux) {
             this.frousseux = frousseux;
+            this.mates = new PetSlots.Group(frousseux);
             setControls(EnumSet.of(Control.MOVE));
         }
 
@@ -243,17 +288,23 @@ public final class FrousseuxCompanion {
         public void tick() {
             if (owner == null) return;
             World world = frousseux.getWorld();
+            PlayerEntity owner = this.owner;
+            mates.refresh(16, 20, entity -> entity instanceof FrousseuxEntity mate && mate.isOwner(owner)
+                    && !mate.isSitting() && !mate.isBoardActor());
+            boolean held = centre != null && reachesFor(owner) && !holdsFlint(owner); // sneaking, empty hand: it stays put
             if (holdsFlint(owner)) {
                 centre = inFront(world, owner);
-            } else if (frousseux.isLitMode()) { // a lit place: in front, seen, clicked as usual
-                centre = litSpot(world, owner);
-            } else if (centre == null || !reachesFor(owner)) { // sneaking with an empty hand: it stays put
+            } else if (frousseux.isLitMode()) { // a lit place: in front, side by side with its mates, seen, clicked
+                centre = litSpot(world, owner, mates.index(), mates.count(), settledYaw(owner));
+            } else if (!held) {
                 if (--repick <= 0 || !fits(world, owner, slot(owner, SLOTS[slot]))) {
                     repick = 5;
-                    slot = pickSlot(world, owner);
+                    slot = pickSlot(world, owner, mates.index());
                 }
-                centre = slot(owner, SLOTS[slot]);
+                // more of them than places: the next round a little higher
+                centre = slot(owner, SLOTS[slot]).add(0, 0.55 * (mates.index() / SLOTS.length), 0);
             }
+            if (!held) centre = mates.pushApart(centre, SPACING);
             Vec3d feet = centre.subtract(0, FrousseuxEntity.HEIGHT / 2, 0);
             double distance = frousseux.getPos().distanceTo(feet);
             // too far behind: it pops back by them (their teleports: PetTeleports, as soon as they happen)
@@ -267,10 +318,12 @@ public final class FrousseuxCompanion {
             // where it looks is its look goals' (FrousseuxEntity): at its owner when close, about it otherwise
         }
 
-        /** Its place now: the one it has while it fits, else the first one that does, else behind. */
-        private int pickSlot(World world, PlayerEntity owner) {
-            if (fits(world, owner, slot(owner, SLOTS[slot]))) return slot;
-            for (int i = 0; i < SLOTS.length; i++) if (fits(world, owner, slot(owner, SLOTS[i]))) return i;
+        /** Its place now: its own (by its rank among its mates) if it fits, else the next one that does, else behind. */
+        private int pickSlot(World world, PlayerEntity owner, int rank) {
+            for (int i = 0; i < SLOTS.length; i++) {
+                int at = (rank + i) % SLOTS.length;
+                if (fits(world, owner, slot(owner, SLOTS[at]))) return at;
+            }
             return SLOTS.length - 1;
         }
     }
