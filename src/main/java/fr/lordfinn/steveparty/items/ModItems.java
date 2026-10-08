@@ -113,6 +113,10 @@ public class ModItems {
     public static final Item FROUSSEUX_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("frousseux_spawn_egg"),
             new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.FROUSSEUX, 0xFFF3D6, 0xFFAA3C,
                     new Item.Settings()));
+    /** The Boomcart's egg: iron grey, TNT red. */
+    public static final Item BOOMCART_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("boomcart_spawn_egg"),
+            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.BOOMCART, 0x8C8C90, 0xDB2F1F,
+                    new Item.Settings()));
     /**
      * The Candle Saucer, a little gold tray for the Frousseux candle holder to stand on: a block of its own
      * (ModBlocks.CANDLE_SAUCER), crafted onto the candle holder too (CandleSaucerRecipe).
@@ -408,6 +412,7 @@ public class ModItems {
             itemGroup.add(BOXED_TRADER_SPAWN_EGG);
             for (Item egg : GLANDOUILLE_SPAWN_EGGS) itemGroup.add(egg);
             itemGroup.add(FROUSSEUX_SPAWN_EGG);
+            itemGroup.add(BOOMCART_SPAWN_EGG);
             itemGroup.add(CANDLE_SAUCER);
             itemGroup.add(ACORN);
             itemGroup.add(ACORN_HAT);

@@ -118,6 +118,27 @@ public class ModSounds {
     public static final SoundEvent FROUSSEUX_RELIGHT = register("frousseux.relight");
     /** Its flame blown out by a wind charge: "pfff". */
     public static final SoundEvent FROUSSEUX_BLOWN_OUT = register("frousseux.blown_out");
+    // Boomcart (Pétaroule): vanilla sounds for now (assets/steveparty/sounds.json), a home-made recording later
+    /** Its grumpy grumble. */
+    public static final SoundEvent BOOMCART_AMBIENT = register("boomcart.ambient");
+    public static final SoundEvent BOOMCART_HURT = register("boomcart.hurt");
+    public static final SoundEvent BOOMCART_DEATH = register("boomcart.death");
+    /** Its iron wheels rolling, on rails or off. */
+    public static final SoundEvent BOOMCART_ROLL = register("boomcart.roll");
+    /** It gobbles its load (TNT or a rocket). */
+    public static final SoundEvent BOOMCART_LOAD = register("boomcart.load");
+    /** Its fuse lit, or passed on, with flint and steel. */
+    public static final SoundEvent BOOMCART_LIGHT = register("boomcart.light");
+    /** Its fuse hissing, higher as it burns down. */
+    public static final SoundEvent BOOMCART_FUSE = register("boomcart.fuse");
+    /** Lit, it panics. */
+    public static final SoundEvent BOOMCART_PANIC = register("boomcart.panic");
+    /** Hit, or someone too close: it roars. */
+    public static final SoundEvent BOOMCART_ROAR = register("boomcart.roar");
+    /** The same player tried to pass it on twice in a row: the flint only sparks. */
+    public static final SoundEvent BOOMCART_REFUSE = register("boomcart.refuse");
+    /** It blows (on top of the TNT's blast or the firework's sparks). */
+    public static final SoundEvent BOOMCART_EXPLODE = register("boomcart.explode");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

@@ -127,6 +127,19 @@ public class ModEntities {
                     .build(FROUSSEUX_KEY.getValue().toString())
     );
 
+    /** The Boomcart (Pétaroule), a grumpy living mine cart loaded with TNT (see BoomcartEntity). */
+    public static final RegistryKey<EntityType<?>> BOOMCART_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("boomcart"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity> BOOMCART = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("boomcart"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity>create(fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity::new, SpawnGroup.MONSTER)
+                    .dimensions(fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.WIDTH,
+                            fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.HEIGHT)
+                    .eyeHeight(0.45f)
+                    .maxTrackingRange(10)
+                    .build(BOOMCART_KEY.getValue().toString())
+    );
+
     /** A player turned into a pawn: a statue of the player on a token base (see PlayerPawnEntity). */
     public static final RegistryKey<EntityType<?>> PLAYER_PAWN_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("player_pawn"));
     public static final EntityType<fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity> PLAYER_PAWN = Registry.register(Registries.ENTITY_TYPE,
@@ -152,5 +165,6 @@ public class ModEntities {
         FabricDefaultAttributeRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.PLAYER_PAWN, fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.BOOMCART, fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.setAttributes());
     }
 }
