@@ -470,6 +470,12 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
         return isLit() ? PANIC_CRUISE : RAIL_CRUISE;
     }
 
+    /** A cart doesn't jump: it bumps into a step it can't roll up (it still bobs up in water). */
+    @Override
+    public void jump() {
+        if (isTouchingWater() || isInLava()) super.jump();
+    }
+
     @Override
     public boolean startRiding(Entity entity, boolean force) {
         return false; // it gets in nothing
