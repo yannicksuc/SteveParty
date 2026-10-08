@@ -221,7 +221,7 @@
 				"19A1A7E217DE13A3"
 			]
 			icon: {
-				id: "steveparty:power_star"
+				id: "steveparty:party_star"
 			}
 			id: "2D64151C55086784"
 			rewards: [
@@ -235,7 +235,7 @@
 					id: "4EC04EE9B1EDFE56"
 					item: {
 						count: 1
-						id: "steveparty:power_star"
+						id: "steveparty:party_star"
 					}
 					type: "item"
 				}

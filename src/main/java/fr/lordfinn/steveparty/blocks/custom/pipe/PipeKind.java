@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.pipe;
 
-/** The kinds of warp pipe. */
+/** The kinds of travel pipe. */
 public enum PipeKind {
     /** All plastic, in the 16 plastic colours. */
     OPAQUE("opaque", "pipe", true),

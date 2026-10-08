@@ -66,7 +66,7 @@ public class ModItems {
     public static Item blankDiceFace() {
         return DICE_FACES.getFirst();
     }
-    public static final Item GARNET_CRYSTAL_BALL = register(GarnetCrystalBallItem.class,"garnet_crystal_ball");
+    public static final Item LAPIS_CRYSTAL_BALL = register(LapisCrystalBallItem.class,"lapis_crystal_ball");
     public static final Item MINI_GAMES_CATALOGUE = registerUnstackable(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
     public static final Item INVENTORY_CARTRIDGE = register(InventoryCartridgeItem.class, "inventory_cartridge");
@@ -144,7 +144,7 @@ public class ModItems {
     public static boolean isStarFragment(Item item) {
         return STAR_FRAGMENTS.contains(item);
     }
-    public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
+    public static final Item PARTY_STAR = register(PartyStarItem.class, "party_star");
     /** The coin: the default Pièce currency of a party, minted from a gold nugget. */
     public static final Item COIN = register(Item.class, "coin");
     public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
@@ -221,6 +221,9 @@ public class ModItems {
     }
 
     public static void initialize() {
+        // Former ids of renamed items, so the ones already in saved worlds keep loading
+        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("power_star"), Steveparty.id("party_star"));
+        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("garnet_crystal_ball"), Steveparty.id("lapis_crystal_ball"));
         // Register the group.
         Registry.register(Registries.ITEM_GROUP, CUSTOM_ITEM_GROUP_KEY, CUSTOM_ITEM_GROUP);
 
@@ -279,7 +282,7 @@ public class ModItems {
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);
-            itemGroup.add(GARNET_CRYSTAL_BALL);
+            itemGroup.add(LAPIS_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(STEP_CONTROLLER);
             itemGroup.add(MINI_GAME_CONTROLLER);
@@ -400,7 +403,7 @@ public class ModItems {
             // The 16 colours, in dye order: the blocks, then the fragments
             for (Block block : STAR_FRAGMENTS_BLOCKS) itemGroup.add(block);
             for (Item fragment : STAR_FRAGMENTS) itemGroup.add(fragment);
-            itemGroup.add(POWER_STAR);
+            itemGroup.add(PARTY_STAR);
             itemGroup.add(COIN);
             itemGroup.add(GRAVITY_CORE);
             itemGroup.add(DICE_FORGE);

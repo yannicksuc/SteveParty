@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A warp pipe (« tuyau »), see {@link PipeShape} for its shape.
+ * A travel pipe (« tuyau »), see {@link PipeShape} for its shape.
  * <ul>
  *     <li>Placed, it joins the pipe it was placed against, and the neighbouring runs whose mouth faces it; placed
  *     against a solid block (and not a pipe), it is fixed to it.</li>

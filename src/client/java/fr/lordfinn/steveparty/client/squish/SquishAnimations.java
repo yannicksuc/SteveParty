@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.squish;
 
 import fr.lordfinn.steveparty.client.access.SquishStretchState;
-import fr.lordfinn.steveparty.particles.KamekShapeEffect;
+import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import fr.lordfinn.steveparty.payloads.custom.SquishAnimationPayload;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.sound.SoundCategory;
@@ -14,10 +14,10 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Random;
 
 /**
- * Client-only squish (tokenization) animation: the transformation of the Tokenizer Wand's spell, in the style of
- * Kamek's growth spell. The server applies the final scale once and sends a single {@link SquishAnimationPayload};
+ * Client-only squish (tokenization) animation: the transformation of the Tokenizer Wand's spell, a
+ * cartoon growth spell. The server applies the final scale once and sends a single {@link SquishAnimationPayload};
  * here the creature reaches its new size in a few jelly pulses (each step overshoots, then squashes and stretches
- * back into shape) while Kamek's shapes and sparkles swirl around it. Interpolated every frame with the tick delta,
+ * back into shape) while magic shapes and sparkles swirl around it. Interpolated every frame with the tick delta,
  * so it is smooth whatever the TPS / FPS, and costs nothing on the network.
  * <p>
  * Render thread only. No allocation per frame: one {@link Animation} per squish, looked up by entity id.
@@ -106,7 +106,7 @@ public final class SquishAnimations {
         return Math.max(0.05F, scale / animation.targetScale);
     }
 
-    /** Kamek's magic around the transforming creatures: a swirl of shapes and a sprinkle of sparkles. */
+    /** Magic around the transforming creatures: a swirl of shapes and a sprinkle of sparkles. */
     public static void tick(ClientWorld world) {
         if (world == null || ANIMATIONS.isEmpty()) return;
         long now = world.getTime();
@@ -125,12 +125,12 @@ public final class SquishAnimations {
                 double angle = age * 0.55 + arm * Math.PI;
                 double radius = width * 0.7 + 0.3;
                 double y = entity.getY() + height * ((age * 0.08 + arm * 0.5) % 1.0);
-                world.addParticle(KamekShapeEffect.shape(0.9F, 0.8F, 10), entity.getX() + Math.cos(angle) * radius, y,
+                world.addParticle(MagicShapeEffect.shape(0.9F, 0.8F, 10), entity.getX() + Math.cos(angle) * radius, y,
                         entity.getZ() + Math.sin(angle) * radius, -Math.sin(angle) * 0.04, 0.02, Math.cos(angle) * 0.04);
             }
-            // Sparkles sprinkled from above, like Kamek sprinkling his spell on a creature
+            // Sparkles sprinkled from above, like a spell sprinkled on a creature
             if (random.nextFloat() < 0.8F) {
-                world.addParticle(KamekShapeEffect.sparkle(1.0F, 0.95F, 14, KamekShapeEffect.RANDOM_COLOR),
+                world.addParticle(MagicShapeEffect.sparkle(1.0F, 0.95F, 14, MagicShapeEffect.RANDOM_COLOR),
                         entity.getX() + (random.nextDouble() - 0.5) * width * 1.6, entity.getY() + height + 0.4,
                         entity.getZ() + (random.nextDouble() - 0.5) * width * 1.6, 0, -0.06, 0);
             }
@@ -138,7 +138,7 @@ public final class SquishAnimations {
             int pulseTick = Math.max(1, animation.duration / PULSES);
             if (age > 0 && age % pulseTick == 0 && progress < 1) {
                 for (int i = 0; i < 8; i++) {
-                    world.addParticle(KamekShapeEffect.shape(1.0F, 0.82F, 0), entity.getX(), entity.getY() + height / 2, entity.getZ(),
+                    world.addParticle(MagicShapeEffect.shape(1.0F, 0.82F, 0), entity.getX(), entity.getY() + height / 2, entity.getZ(),
                             (random.nextDouble() - 0.5) * 0.35, (random.nextDouble() - 0.2) * 0.3, (random.nextDouble() - 0.5) * 0.35);
                 }
             }

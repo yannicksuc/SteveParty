@@ -140,7 +140,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 0.45F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 0.45F, 2.0F, 3),
                 new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 0.6F, 1.8F, 3))),
-        /** A teleport tile (warp pipe): a flute whirl going down while the token spins away (see TileTeleport). */
+        /** A teleport tile: a flute whirl going down while the token spins away (see TileTeleport). */
         TELEPORT("teleport", 0xA35CFF, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 1.26F, 2),

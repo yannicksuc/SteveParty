@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.client.tokenspell.MobTextureColors;
 import fr.lordfinn.steveparty.client.tokenspell.SpellShape;
 import fr.lordfinn.steveparty.client.tokenspell.TokenSpellHand;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
-import fr.lordfinn.steveparty.particles.KamekShapeEffect;
+import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import fr.lordfinn.steveparty.payloads.custom.TokenSpellPayload;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.sound.SoundCategory;
@@ -36,10 +36,10 @@ import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.NO_COLOR;
 import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.TOKEN_SIZE_STEP;
 
 /**
- * Token spell of the Tokenizer Wand, in the style of Kamek's magic: no panel, the player draws a magic circle
+ * Token spell of the Tokenizer Wand, a magic spell: no panel, the player draws a magic circle
  * directly on the screen, around the targeted mob. Non-pausing: the world keeps being rendered.
  * <ol>
- *   <li>Charging (short): Kamek's shapes gather into the wand and around the mob, a faint guide circle (dotted, pulsing,
+ *   <li>Charging (short): the magic shapes gather into the wand and around the mob, a faint guide circle (dotted, pulsing,
  *   a sparkle running round it) forms: the circle to trace over, not the result.</li>
  *   <li>Drawing: the player traces a circle freehand, anywhere on the screen, holding the left or the right mouse
  *   button (particles stream from the wand and along the stroke while it is held). On release, a circle is fitted
@@ -58,9 +58,9 @@ import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.TOKEN_SIZE_S
  * Esc cancels without doing anything (before the circle is drawn).
  */
 public class TokenSpellScreen extends Screen {
-    private static final Identifier[] SPRITES = {Steveparty.id("textures/particle/kamek_circle.png"),
-            Steveparty.id("textures/particle/kamek_triangle.png"), Steveparty.id("textures/particle/kamek_square.png"),
-            Steveparty.id("textures/particle/kamek_sparkle.png")};
+    private static final Identifier[] SPRITES = {Steveparty.id("textures/particle/magic_circle.png"),
+            Steveparty.id("textures/particle/magic_triangle.png"), Steveparty.id("textures/particle/magic_square.png"),
+            Steveparty.id("textures/particle/magic_sparkle.png")};
     private static final int SPARKLE = 3;
     /** Short: it never blocks drawing (a stroke can already be traced while it charges). */
     private static final int CHARGE_TICKS = 8;
@@ -135,7 +135,7 @@ public class TokenSpellScreen extends Screen {
     /** Centre of the circle: where the mob is drawn on the screen (followed smoothly). */
     private float centerX, centerY;
     private boolean centered;
-    /** Kamek shapes and sparkles drawn on the screen (GUI coordinates). */
+    /** Magic shapes and sparkles drawn on the screen (GUI coordinates). */
     private final List<GuiShape> shapes = new ArrayList<>();
 
     private static final class GuiShape {
@@ -335,7 +335,7 @@ public class TokenSpellScreen extends Screen {
         for (int i = 0; i < 2; i++) {
             Vec3d offset = new Vec3d(random.nextDouble() - 0.5, random.nextDouble() - 0.5, random.nextDouble() - 0.5).multiply(0.35);
             int life = 7;
-            client.world.addParticle(KamekShapeEffect.shape(0.12F, 1.0F, life), tip.x + offset.x, tip.y + offset.y, tip.z + offset.z,
+            client.world.addParticle(MagicShapeEffect.shape(0.12F, 1.0F, life), tip.x + offset.x, tip.y + offset.y, tip.z + offset.z,
                     -offset.x / life, -offset.y / life, -offset.z / life);
         }
         Vec3d center = mobCenter();
@@ -347,18 +347,18 @@ public class TokenSpellScreen extends Screen {
             int life = 10;
             Vec3d velocity = center.subtract(from).multiply(1.0 / life)
                     .add(-Math.sin(angle) * 0.05, 0, Math.cos(angle) * 0.05); // spirals in
-            client.world.addParticle(i == 0 ? KamekShapeEffect.sparkle(0.9F, 1.0F, life, KamekShapeEffect.RANDOM_COLOR)
-                    : KamekShapeEffect.shape(0.8F, 1.0F, life), from.x, from.y, from.z, velocity.x, velocity.y, velocity.z);
+            client.world.addParticle(i == 0 ? MagicShapeEffect.sparkle(0.9F, 1.0F, life, MagicShapeEffect.RANDOM_COLOR)
+                    : MagicShapeEffect.shape(0.8F, 1.0F, life), from.x, from.y, from.z, velocity.x, velocity.y, velocity.z);
         }
     }
 
-    /** The drawn circle, mirrored in Kamek shapes on the ground around the mob. */
+    /** The drawn circle, mirrored in magic shapes on the ground around the mob. */
     private void groundCircle() {
         double radius = size * WORLD_RADIUS_PER_BLOCK;
         int points = 12;
         for (int i = 0; i < points; i++) {
             double angle = ticks * 0.09 + i * MathHelper.TAU / points;
-            client.world.addParticle(KamekShapeEffect.shape(0.8F, 0F, 3), mob.getX() + Math.cos(angle) * radius,
+            client.world.addParticle(MagicShapeEffect.shape(0.8F, 0F, 3), mob.getX() + Math.cos(angle) * radius,
                     mob.getY() + 0.15, mob.getZ() + Math.sin(angle) * radius, 0, 0, 0);
         }
     }
@@ -375,7 +375,7 @@ public class TokenSpellScreen extends Screen {
         double height = baseOffset + body.height() * ratio;
         double radius = body.width() * ratio / 2 + 0.25;
         // Lightened: dark token colours (a cow's brown) would read as black specks
-        KamekShapeEffect sparkle = KamekShapeEffect.sparkle(1.0F, 0F, 5,
+        MagicShapeEffect sparkle = MagicShapeEffect.sparkle(1.0F, 0F, 5,
                 lerpColor(color == NO_COLOR ? HEIGHT_MARK_COLOR : color, 0xFFFFFF, 0.45F));
         for (int i = 0; i < 4; i++) {
             double angle = -ticks * 0.15 + i * Math.PI / 2;
@@ -390,14 +390,14 @@ public class TokenSpellScreen extends Screen {
         Vec3d tip = TokenSpellHand.tipInWorld(0.7);
         // A steady stream while the button is held: two shapes and a sparkle per tick
         for (int i = 0; i < 3; i++) {
-            KamekShapeEffect effect = i == 2 ? KamekShapeEffect.sparkle(0.14F, 0.9F, 0, KamekShapeEffect.RANDOM_COLOR)
-                    : KamekShapeEffect.shape(0.12F, 0.9F, 0);
+            MagicShapeEffect effect = i == 2 ? MagicShapeEffect.sparkle(0.14F, 0.9F, 0, MagicShapeEffect.RANDOM_COLOR)
+                    : MagicShapeEffect.shape(0.12F, 0.9F, 0);
             client.world.addParticle(effect, tip.x, tip.y, tip.z, (random.nextDouble() - 0.5) * 0.012,
                     (random.nextDouble() - 0.5) * 0.012, (random.nextDouble() - 0.5) * 0.012);
         }
     }
 
-    /** Validation: Kamek's stream of shapes, from the wand's tip to the mob. Each dies as it reaches the mob. */
+    /** Validation: a stream of magic shapes, from the wand's tip to the mob. Each dies as it reaches the mob. */
     private void shapeStream() {
         Random random = client.world.random;
         Vec3d tip = TokenSpellHand.tipInWorld(0.7);
@@ -406,8 +406,8 @@ public class TokenSpellScreen extends Screen {
             int life = 6 + random.nextInt(5);
             Vec3d velocity = path.multiply(1.0 / life).add((random.nextDouble() - 0.5) * 0.04,
                     (random.nextDouble() - 0.5) * 0.04, (random.nextDouble() - 0.5) * 0.04);
-            client.world.addParticle(i == 0 ? KamekShapeEffect.sparkle(0.5F, 1.0F, life, 0xFFFFFF)
-                    : KamekShapeEffect.shape(0.45F, 1.0F, life), tip.x, tip.y, tip.z, velocity.x, velocity.y, velocity.z);
+            client.world.addParticle(i == 0 ? MagicShapeEffect.sparkle(0.5F, 1.0F, life, 0xFFFFFF)
+                    : MagicShapeEffect.shape(0.45F, 1.0F, life), tip.x, tip.y, tip.z, velocity.x, velocity.y, velocity.z);
         }
     }
 
@@ -648,7 +648,7 @@ public class TokenSpellScreen extends Screen {
         if (shapes.size() >= 96) shapes.removeFirst();
         Random random = client.world.random;
         int shapeColor = sprite == SPARKLE && random.nextBoolean() ? 0xFFFFFF
-                : KamekShapeEffect.COLORS[random.nextInt(KamekShapeEffect.COLORS.length)];
+                : MagicShapeEffect.COLORS[random.nextInt(MagicShapeEffect.COLORS.length)];
         shapes.add(new GuiShape(x, y, vx, vy, life, sprite, shapeColor));
     }
 
@@ -850,7 +850,7 @@ public class TokenSpellScreen extends Screen {
         // About 35-50 % opacity: clearly a ghost, yet readable on the sky as on the grass
         int alpha = (int) ((90 + 40 * pulse) * fade);
         int points = Math.max(24, (int) (radius * MathHelper.TAU / 5));
-        int[] colors = KamekShapeEffect.COLORS;
+        int[] colors = MagicShapeEffect.COLORS;
         for (int i = 0; i < points; i++) {
             float angle = i * MathHelper.TAU / points;
             int x = Math.round(cx + MathHelper.cos(angle) * radius);
@@ -868,13 +868,13 @@ public class TokenSpellScreen extends Screen {
     }
 
     /**
-     * A soft, glowing, slightly irregular brush stroke in Kamek's four colours (flowing around), a fine inner line of
+     * A soft, glowing, slightly irregular brush stroke in the four spell colours (flowing around), a fine inner line of
      * the token's colour, and twinkling sparkles riding on it.
      */
     private void drawMagicCircle(DrawContext context, float cx, float cy, float radius, float time, float flash, int thickness) {
         if (radius < 1) return;
         int points = Math.max(48, (int) (radius * MathHelper.TAU * 0.9F));
-        int[] colors = KamekShapeEffect.COLORS;
+        int[] colors = MagicShapeEffect.COLORS;
         for (int i = 0; i < points; i++) {
             float angle = i * MathHelper.TAU / points;
             // Brush irregularity, slowly flowing
@@ -925,13 +925,13 @@ public class TokenSpellScreen extends Screen {
     }
 
     /**
-     * A freehand stroke in the same brush as the magic circle: soft glow, Kamek's four colours flowing along it, and
+     * A freehand stroke in the same brush as the magic circle: soft glow, the four spell colours flowing along it, and
      * sparkles twinkling on it.
      */
     private int strokeQuads;
 
     private void drawStroke(DrawContext context, List<float[]> points, float time) {
-        int[] colors = KamekShapeEffect.COLORS;
+        int[] colors = MagicShapeEffect.COLORS;
         float length = 0, nextSparkle = 20;
         int sparkles = 0;
         for (int i = 1; i < points.size(); i++) {
@@ -984,7 +984,7 @@ public class TokenSpellScreen extends Screen {
     }
 
     /**
-     * The only text on screen: the spell's incantation at the top, its letters in Kamek's colours with a gentle wave
+     * The only text on screen: the spell's incantation at the top, its letters in the spell colours with a gentle wave
      * and a shimmer running through them, next to a small pixel-art ring (the shape to draw). A scribble that is not
      * a circle gets a brief message under it.
      */
@@ -1000,7 +1000,7 @@ public class TokenSpellScreen extends Screen {
 
         var matrices = context.getMatrices();
         float x = x0 + ringSize + gap;
-        int[] colors = KamekShapeEffect.COLORS;
+        int[] colors = MagicShapeEffect.COLORS;
         for (int i = 0; i < spell.length(); i++) {
             String letter = String.valueOf(spell.charAt(i));
             // Pure spell colours, one per letter, shifting along slowly (blends between them look muddy on letters)
@@ -1053,9 +1053,9 @@ public class TokenSpellScreen extends Screen {
             "..#.....#..",
             "...#####..."};
 
-    /** The ring icon: Kamek's four colours flowing around it, a bright pixel running round. */
+    /** The ring icon: the four spell colours flowing around it, a bright pixel running round. */
     private void drawRingIcon(DrawContext context, int x0, int y0, int scale, float time) {
-        int[] colors = KamekShapeEffect.COLORS;
+        int[] colors = MagicShapeEffect.COLORS;
         float center = (RING.length - 1) / 2F;
         float shimmerAngle = (time * 0.15F) % MathHelper.TAU;
         for (int row = 0; row < RING.length; row++) {

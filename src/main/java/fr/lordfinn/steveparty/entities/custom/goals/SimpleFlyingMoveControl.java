@@ -39,7 +39,7 @@ public class SimpleFlyingMoveControl extends MoveControl {
     private static final float TURN_SHARE = 0.25f;
 
     private final float maxTurn;
-    /** The target is a point on the way (an arc of LumaHoverGoal): fly through it at full speed. */
+    /** The target is a point on the way (an arc of FloatHoverGoal): fly through it at full speed. */
     private boolean passThrough;
 
     public SimpleFlyingMoveControl(MobEntity entity, float maxTurn) {

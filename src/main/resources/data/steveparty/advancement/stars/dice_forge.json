@@ -1,5 +1,5 @@
 {
-  "parent": "steveparty:stars/power_star",
+  "parent": "steveparty:stars/party_star",
   "display": {
     "icon": {
       "id": "steveparty:dice_forge",

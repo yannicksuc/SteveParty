@@ -16,8 +16,8 @@ public class ModSounds {
     public static final SoundEvent PLUNGER_SUCK_OUT_SOUND_EVENT = register("plunger_suck_out");
     public static final SoundEvent GOAL_POLE_REACH = register("goal_pole_reach");
 
-    // Tokenizer Wand spell, Kamek-flavoured: whimsical, sparkly, bubbly. Only vanilla sounds, layered and re-pitched
-    // (assets/steveparty/sounds.json), no Nintendo audio.
+    // Tokenizer Wand spell: whimsical, sparkly, bubbly. Only vanilla sounds, layered and re-pitched
+    // (assets/steveparty/sounds.json).
     /** Charging: a rising amethyst shimmer, with an enchanting sweep. */
     public static final SoundEvent TOKEN_SPELL_CHARGE = register("token_spell.charge");
     public static final SoundEvent TOKEN_SPELL_CHARGE_SWEEP = register("token_spell.charge_sweep");

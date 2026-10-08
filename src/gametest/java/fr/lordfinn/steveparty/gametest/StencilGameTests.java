@@ -716,8 +716,8 @@ public class StencilGameTests implements FabricGameTest {
         context.assertTrue(result(context, 3, 3, empty, pellets, empty, empty, pellets, empty, pellets, new ItemStack(Items.SHULKER_BOX), pellets).isEmpty(),
                 "no more token from a shulker box");
         ItemStack redstone = new ItemStack(Items.REDSTONE_BLOCK);
-        context.assertTrue(result(context, 3, 3, empty, redstone, empty, redstone, new ItemStack(ModItems.POWER_STAR), redstone, empty, redstone, empty)
-                .isOf(ModItems.GARNET_CRYSTAL_BALL), "the crystal ball of the Tokenizer Wand is made with a Power Star");
+        context.assertTrue(result(context, 3, 3, empty, redstone, empty, redstone, new ItemStack(ModItems.PARTY_STAR), redstone, empty, redstone, empty)
+                .isOf(ModItems.LAPIS_CRYSTAL_BALL), "the crystal ball of the Tokenizer Wand is made with a Party Star");
         context.assertTrue(result(context, 3, 3, empty, redstone, empty, redstone, new ItemStack(Items.NETHER_STAR), redstone, empty, redstone, empty)
                 .isEmpty(), "no more crystal ball from a Nether Star");
         context.complete();

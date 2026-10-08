@@ -1,7 +1,7 @@
 {
   "name": "book.steveparty.guide.stars_mula.name",
   "icon": {
-    "item": "steveparty:power_star"
+    "item": "steveparty:party_star"
   },
   "sort_number": 7,
   "display_mode": "node",

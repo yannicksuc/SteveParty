@@ -142,7 +142,7 @@ public class DiceForgeBlock extends BlockWithEntity {
     @Override
     protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         // Drop the forge contents when the block is broken (ACTIVATED changes keep the same block):
-        // inventory + the inserted gravity core + items waiting to be given back (legacy power star)
+        // inventory + the inserted gravity core + items waiting to be given back (legacy party star)
         if (!state.isOf(newState.getBlock()) && !world.isClient
                 && world.getBlockEntity(pos) instanceof DiceForgeBlockEntity blockEntity) {
             for (ItemStack drop : blockEntity.getExtraDrops()) {

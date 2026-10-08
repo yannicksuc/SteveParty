@@ -19,7 +19,7 @@ import net.minecraft.util.Formatting;
 import java.util.List;
 
 /**
- * The Shop Cartridge (« Cartouche Boutique », lime green: yellow is the Star Cartridge's): a shop stop, Mario Party style (see
+ * The Shop Cartridge (« Cartouche Boutique », lime green: yellow is the Star Cartridge's): a shop stop, as in party board games (see
  * {@link fr.lordfinn.steveparty.service.ShopStops}).
  * <ul>
  *     <li>in a check point: a token passing through pauses there while its owner shops;</li>

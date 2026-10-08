@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Shop stops, Mario Party style, given by the {@link ShopCartridgeItem Shop Cartridge}:
+ * Shop stops, as in party board games, given by the {@link ShopCartridgeItem Shop Cartridge}:
  * <ul>
  *     <li>a check point holding it stops a token passing through ({@link #onTileReached});</li>
  *     <li>a tile holding it opens the shop when a token ends its move there ({@link #onLanding}); passing tokens go on.</li>

@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.entities.TokenBase;
-import fr.lordfinn.steveparty.particles.KamekShapeEffect;
+import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.mob.MobEntity;
@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The Tokenizer Wand's flare: holding the use button in the air, a small comet of Kamek magic flies from the wand in a
+ * The Tokenizer Wand's flare: holding the use button in the air, a small comet of magic flies from the wand in a
  * straight line, along where the player looks, up to {@link #RANGE} blocks. If it hits a mob the spell could take,
  * the spell opens on it (the held press then goes on drawing on the client); if it hits a block, another mob, or
  * reaches its range, or if the button is released before, it fizzles out.
@@ -137,21 +137,21 @@ public final class TokenizerFlare {
         Flare flare = FLARES.remove(player.getUuid());
         if (flare == null || !(player.getWorld() instanceof ServerWorld world)) return;
         Vec3d at = flare.position;
-        world.spawnParticles(KamekShapeEffect.sparkle(0.9F, 0.8F, 0, KamekShapeEffect.RANDOM_COLOR), at.x, at.y, at.z,
+        world.spawnParticles(MagicShapeEffect.sparkle(0.9F, 0.8F, 0, MagicShapeEffect.RANDOM_COLOR), at.x, at.y, at.z,
                 8, 0.15, 0.15, 0.15, 0.05);
         world.playSound(null, at.x, at.y, at.z, ModSounds.TOKEN_SPELL_FIZZLE, SoundCategory.PLAYERS, 1.0F, 1.0F);
     }
 
     /** The comet: a bright sparkle head and a few shapes left behind along the way. */
     private static void trail(ServerWorld world, Vec3d from, Vec3d to) {
-        world.spawnParticles(KamekShapeEffect.sparkle(1.6F, 0F, 4, 0xFFFFFF), to.x, to.y, to.z, 1, 0, 0, 0, 0);
+        world.spawnParticles(MagicShapeEffect.sparkle(1.6F, 0F, 4, 0xFFFFFF), to.x, to.y, to.z, 1, 0, 0, 0, 0);
         for (int i = 0; i < 3; i++) {
             Vec3d at = from.lerp(to, i / 3.0);
-            world.spawnParticles(KamekShapeEffect.shape(0.7F, 0.85F, 10), at.x, at.y, at.z, 1, 0.05, 0.05, 0.05, 0.01);
+            world.spawnParticles(MagicShapeEffect.shape(0.7F, 0.85F, 10), at.x, at.y, at.z, 1, 0.05, 0.05, 0.05, 0.01);
         }
     }
 
     private static void burst(ServerWorld world, Vec3d at) {
-        world.spawnParticles(KamekShapeEffect.shape(1.1F, 0.8F, 0), at.x, at.y, at.z, 12, 0.2, 0.2, 0.2, 0.2);
+        world.spawnParticles(MagicShapeEffect.shape(1.1F, 0.8F, 0), at.x, at.y, at.z, 12, 0.2, 0.2, 0.2, 0.2);
     }
 }

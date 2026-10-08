@@ -3,7 +3,7 @@
   "name": "book.steveparty.guide.getting_started.welcome.name",
   "description": "book.steveparty.guide.getting_started.welcome.description",
   "icon": {
-    "item": "steveparty:power_star"
+    "item": "steveparty:party_star"
   },
   "x": -1,
   "y": 0,

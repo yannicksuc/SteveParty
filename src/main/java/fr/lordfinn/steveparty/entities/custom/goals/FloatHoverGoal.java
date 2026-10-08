@@ -19,7 +19,7 @@ import java.util.Random;
  * them (its own colour preferred) leads: it picks the trips; when it sets off, the others set off too, to their own
  * slot around its goal (cohesion + alignment), and keep a little apart from their nearest mate (separation).
  */
-public class LumaHoverGoal extends Goal {
+public class FloatHoverGoal extends Goal {
     /** How far ahead on the curve the Mula aims (blocks), and the step the aim moves by along it. */
     private static final double LOOKAHEAD = 1.0, CURVE_STEP = 0.05;
     /** A trip that takes longer than this (blocked) is given up. */
@@ -42,7 +42,7 @@ public class LumaHoverGoal extends Goal {
     /** Flock mates keep this far apart (blocks). */
     private static final double SEPARATION = 1.1;
 
-    public LumaHoverGoal(MulaEntity entity, double speed, double minHeight, double maxHeight) {
+    public FloatHoverGoal(MulaEntity entity, double speed, double minHeight, double maxHeight) {
         this.entity = entity;
         this.speed = speed;
         this.minHeight = minHeight;

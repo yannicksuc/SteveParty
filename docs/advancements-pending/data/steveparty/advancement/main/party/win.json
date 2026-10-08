@@ -2,7 +2,7 @@
   "parent": "steveparty:main/party/finish",
   "display": {
     "icon": {
-      "id": "steveparty:power_star",
+      "id": "steveparty:party_star",
       "count": 1
     },
     "title": {

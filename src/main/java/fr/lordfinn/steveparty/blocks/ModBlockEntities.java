@@ -75,7 +75,7 @@ public class ModBlockEntities {
             Identifier.of(MOD_ID, "party_bell"),
             FabricBlockEntityTypeBuilder.create(PartyBellBlockEntity::new, ModBlocks.PARTY_BELL).build(null)
     );
-    /** Every warp pipe's (the cartridge slot of its mouths). */
+    /** Every travel pipe's (the cartridge slot of its mouths). */
     public static final BlockEntityType<fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity> PIPE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "pipe"),

@@ -201,7 +201,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                     RecipeCategory.BUILDING_BLOCKS, ModBlocks.starFragmentsBlock(dye));
         }
         generateStarFragmentMixing();
-        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.POWER_STAR, 1)
+        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.PARTY_STAR, 1)
                 .input(ModItems.BLUE_STAR_FRAGMENT)
                 .input(ModItems.GREEN_STAR_FRAGMENT)
                 .input(ModItems.YELLOW_STAR_FRAGMENT)
@@ -212,11 +212,11 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .criterion(hasItem(ModItems.YELLOW_STAR_FRAGMENT), conditionsFromItem(ModItems.YELLOW_STAR_FRAGMENT))
                 .criterion(hasItem(ModItems.RED_STAR_FRAGMENT), conditionsFromItem(ModItems.RED_STAR_FRAGMENT))
                 .criterion(hasItem(ModItems.PURPLE_STAR_FRAGMENT), conditionsFromItem(ModItems.PURPLE_STAR_FRAGMENT))
-                .offerTo(exporter, id("power_star_from_fragments"));
-        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.POWER_STAR, 1)
+                .offerTo(exporter, id("party_star_from_fragments"));
+        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.PARTY_STAR, 1)
                 .input(ModItems.BLACK_STAR_FRAGMENT, 5)
                 .criterion(hasItem(ModItems.BLACK_STAR_FRAGMENT), conditionsFromItem(ModItems.BLACK_STAR_FRAGMENT))
-                .offerTo(exporter, id("power_star_from_black_fragments"));
+                .offerTo(exporter, id("party_star_from_black_fragments"));
         // The coin (the default Pièce currency of a party): minted from a gold nugget, one for one
         ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.COIN, 1)
                 .input(Items.GOLD_NUGGET)
@@ -273,17 +273,17 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
      * a villager down with a piston.
      */
     private void generateSurvivalRecipes() {
-        // End-game: the forge needs a power star and netherite, its gravity core a heavy core (trial vaults)
+        // End-game: the forge needs a party star and netherite, its gravity core a heavy core (trial vaults)
         // wrapped in black star fragments, the fragments that also weigh the core down in the forge
         ShapedRecipeJsonBuilder.create(RecipeCategory.DECORATIONS, ModBlocks.DICE_FORGE)
                 .pattern(" P ")
                 .pattern("OBO")
                 .pattern("ONO")
-                .input('P', ModItems.POWER_STAR)
+                .input('P', ModItems.PARTY_STAR)
                 .input('O', Items.OBSIDIAN)
                 .input('B', Items.BLAST_FURNACE)
                 .input('N', Items.NETHERITE_INGOT)
-                .criterion(hasItem(ModItems.POWER_STAR), conditionsFromItem(ModItems.POWER_STAR))
+                .criterion(hasItem(ModItems.PARTY_STAR), conditionsFromItem(ModItems.PARTY_STAR))
                 .offerTo(exporter);
         ShapedRecipeJsonBuilder.create(RecipeCategory.DECORATIONS, ModBlocks.GRAVITY_CORE)
                 .pattern("CFC")
@@ -347,8 +347,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.REPLAY_CARTRIDGE, Items.REPEATER);
         // An ender pearl: the warp of the Teleport tile
         offerCartridge(ModItems.TELEPORT_CARTRIDGE, Items.ENDER_PEARL);
-        // A Power Star: the star the space sells
-        offerCartridge(ModItems.STAR_CARTRIDGE, ModItems.POWER_STAR);
+        // A Party Star: the star the space sells
+        offerCartridge(ModItems.STAR_CARTRIDGE, ModItems.PARTY_STAR);
         // An acorn: the Glandouilles that push the tokens on
         offerCartridge(ModItems.GLANDOUILLE_CARTRIDGE, ModItems.ACORN);
 

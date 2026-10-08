@@ -20,7 +20,7 @@
 	]
 	chapter.29E775242F126236.title: "Dés"
 	chapter.2B6392D48560B907.chapter_subtitle: [
-		"Des tuyaux façon Mario : on entre par une embouchure, on ressort par une autre."
+		"Des tuyaux de voyage : on entre par une embouchure, on ressort par une autre."
 	]
 	chapter.2B6392D48560B907.title: "Tuyaux"
 	chapter.3048A323DF8AC856.chapter_subtitle: [
@@ -127,6 +127,10 @@
 		"Mélangez les fragments comme des colorants : rouge + jaune. On récupère autant de fragments qu'on en a mis."
 	]
 	quest.081AE2BEE25879DB.title: "Fragment d'étoile orange"
+	quest.085FCFBD2E80A60F.quest_desc: [
+		"Un fragment de chaque : bleu, vert, jaune, rouge et violet (ou 5 fragments noirs), sans forme. Toujours brillante. C'est l'Étoile par défaut d'une partie, et elle entre dans la Forge à dés et les tuyaux de mini-jeu en fer et en or."
+	]
+	quest.085FCFBD2E80A60F.title: "Étoile de fête"
 	quest.08D5A8D740C540DC.quest_desc: [
 		"Mélangez les fragments comme des colorants : bleu + blanc. On récupère autant de fragments qu'on en a mis."
 	]
@@ -197,7 +201,7 @@
 	]
 	quest.10458D4F11AF735B.title: "Dalle en béton poli bleu clair"
 	quest.104F2426E5EBE598.quest_desc: [
-		"Le contrôleur ne crée ni pièce ni étoile : il paie les gains des mini-jeux depuis des coffres. Mettez une Cartouche d'inventaire liée à un coffre dans la case banque de l'onglet Gains, et remplissez le coffre des pièces et étoiles de la partie (Super étoiles par défaut)."
+		"Le contrôleur ne crée ni pièce ni étoile : il paie les gains des mini-jeux depuis des coffres. Mettez une Cartouche d'inventaire liée à un coffre dans la case banque de l'onglet Gains, et remplissez le coffre des pièces et étoiles de la partie (Étoiles de fête par défaut)."
 	]
 	quest.104F2426E5EBE598.title: "Le coffre des gains"
 	quest.114B635016EE5B45.quest_desc: [
@@ -221,9 +225,9 @@
 	]
 	quest.137ABC52300C1CE9.title: "Votre propre dé"
 	quest.13E6F42BB1F3D4AC.quest_desc: [
-		"Une étoile du Nether entourée de 4 blocs de redstone. Son seul usage : la tête de la Baguette de pions."
+		"Une Étoile de fête entourée de 4 blocs de lapis-lazuli. Son seul usage : la tête de la Baguette de pions."
 	]
-	quest.13E6F42BB1F3D4AC.title: "Boule de cristal en grenat"
+	quest.13E6F42BB1F3D4AC.title: "Boule de cristal en lapis"
 	quest.13F7D62B117D88BF.quest_desc: [
 		"Un enchantement trésor, uniquement pour la baguette : dans les coffres de manoir, ou lâché par les évocateurs et illusionnistes tués par un joueur. Il permet de redimensionner le pion de n'importe qui et d'exclure n'importe quel pion d'une partie, comme un arbitre."
 	]
@@ -237,7 +241,7 @@
 	]
 	quest.1569C7FE3FB27DB1.title: "Prendre sa place"
 	quest.1661B4C0B973F8ED.quest_desc: [
-		"Obsidienne pleureuse, 4 fragments d'étoile de n'importe quelle couleur et un noyau lourd. Posé, il attire tout à 8 blocs en orbite (pas de dégâts de chute dans le champ ; une armure complète en netherite résiste). Il alimente aussi la Forge à dés."
+		"Obsidienne pleureuse, 4 fragments d'étoile noirs et un noyau lourd. Posé, il attire tout à 8 blocs en orbite (pas de dégâts de chute dans le champ ; une armure complète en netherite résiste). Il alimente aussi la Forge à dés."
 	]
 	quest.1661B4C0B973F8ED.title: "Noyau de gravité"
 	quest.169B6F8AE6D4D572.quest_desc: [
@@ -390,7 +394,7 @@
 	]
 	quest.2BAA43480CA56926.title: "Mât d'arrivée"
 	quest.2BD1848C751D2C08.quest_desc: [
-		"Boule de cristal en grenat, bloc d'or et bâton de Blaze, en colonne. Une baguette dorée façon Kamek."
+		"Boule de cristal en lapis, bloc d'or et bâton de Blaze, en colonne. Une baguette dorée à orbe de lapis."
 	]
 	quest.2BD1848C751D2C08.title: "Baguette de pions"
 	quest.2CC4E00732BE3C9B.quest_desc: [
@@ -440,7 +444,7 @@
 	]
 	quest.30E06C6BD698E571.title: "Bloc de fragments d'étoile bleus"
 	quest.33F2B84D658F752B.quest_desc: [
-		"Cartouche + émeraude + pépite d'or. Un pion qui s'y arrête (ou qui passe un Point de déclenchement qui la porte) ouvre à son joueur la boutique du Marchand en carton le plus proche, façon Mario Party. Voir le chapitre Boutiques."
+		"Cartouche + émeraude + pépite d'or. Un pion qui s'y arrête (ou qui passe un Point de déclenchement qui la porte) ouvre à son joueur la boutique du Marchand en carton le plus proche. Voir le chapitre Boutiques."
 	]
 	quest.33F2B84D658F752B.title: "Cartouche Boutique"
 	quest.345F2775C4F5745A.quest_desc: [
@@ -501,15 +505,15 @@
 	]
 	quest.405FC7652C003313.title: "Maître forgeron"
 	quest.42057F6E6F797B1D.quest_desc: [
-		"Atterrissez au sommet d'un mât : « 1up », un cœur doré pendant 10 s, aucun dégât de chute, et vous voilà tête en bas. Chaque arrivée marque un point pour le socle."
+		"Atterrissez au sommet d'un mât : « +1 ♥ », une vie bonus : un cœur doré pendant 10 s, aucun dégât de chute, et vous voilà tête en bas. Chaque arrivée marque un point pour le socle."
 	]
-	quest.42057F6E6F797B1D.title: "1up !"
+	quest.42057F6E6F797B1D.title: "Vie bonus !"
 	quest.423032099703F693.quest_desc: [
 		"Un bloc de plastique au-dessus de granulés de plastique : 2 panneaux routiers de la couleur du bloc. La Clé change la plaque : ronde, carrée, losange, triangle, étoile, cœur. Sans poteau, il flotte."
 	]
 	quest.423032099703F693.title: "Panneau routier en plastique"
 	quest.42C4E05F055ED63B.quest_desc: [
-		"Une Super étoile en haut, de l'obsidienne, un haut fourneau et un lingot de netherite. Elle grave des dés avec les faces et les poids que vous choisissez, en boucle, à la main, par entonnoirs ou à la redstone."
+		"Une Étoile de fête en haut, de l'obsidienne, un haut fourneau et un lingot de netherite. Elle grave des dés avec les faces et les poids que vous choisissez, en boucle, à la main, par entonnoirs ou à la redstone."
 	]
 	quest.42C4E05F055ED63B.title: "Forge à dés"
 	quest.42D5C0FDC568C5B3.quest_desc: [
@@ -542,10 +546,6 @@
 		"Lâché par une Mula violet quand elle éclate."
 	]
 	quest.48EDC9CAA41959B9.title: "Fragment d'étoile violet"
-	quest.49297133DC9D18C2.quest_desc: [
-		"Un fragment de chaque : bleu, vert, jaune, rouge et violet (ou 5 fragments noirs), sans forme. Toujours brillante. C'est l'Étoile par défaut d'une partie, et elle entre dans la Forge à dés et les tuyaux de mini-jeu en fer et en or."
-	]
-	quest.49297133DC9D18C2.title: "Super étoile"
 	quest.4973F5A913628816.quest_desc: [
 		"Clic droit sur une Mula sauvage avec un fragment d'étoile de sa couleur : 1 chance sur 3. Apprivoisée, elle flotte au-dessus de vous comme un ballon et tourne autour de votre tête quand vous restez immobile."
 	]
@@ -571,7 +571,7 @@
 	]
 	quest.4BD97BC245ABD3F0.title: "Peindre un mur"
 	quest.4BE7B23596D212E5.quest_desc: [
-		"Les 16 couleurs de fragments d'étoile, et votre propre Super étoile."
+		"Les 16 couleurs de fragments d'étoile, et votre propre Étoile de fête."
 	]
 	quest.4BE7B23596D212E5.title: "Collectionneur d'étoiles"
 	quest.4C1ED42CA5A03E7A.quest_desc: [
@@ -672,7 +672,7 @@
 	]
 	quest.598F31A259B60ADB.title: "Maître bâtisseur"
 	quest.59BCFCAF6BA910B4.quest_desc: [
-		"6 lingots de fer, une Super étoile et le tuyau de mini-jeu en cuivre. Atteint toute la dimension."
+		"6 lingots de fer, une Étoile de fête et le tuyau de mini-jeu en cuivre. Atteint toute la dimension."
 	]
 	quest.59BCFCAF6BA910B4.title: "Tuyau de mini-jeu en fer"
 	quest.5A7CE62676D0F450.quest_desc: [
@@ -773,7 +773,7 @@
 	]
 	quest.6A47B29FC1D81DDA.title: "Face de dé premium 10"
 	quest.6AD835CCA129C2DD.quest_desc: [
-		"4 granulés de plastique + 1 colorant, sans forme : 4 blocs de la couleur du colorant. 8 blocs autour d'un colorant les reteignent. Les voisins de même couleur fusionnent en une seule pièce (jusqu'à 4x2x4)."
+		"4 granulés de plastique + 1 colorant + 1 éclat d'améthyste, sans forme : 4 blocs de la couleur du colorant. 8 blocs autour d'un colorant les reteignent. Les voisins de même couleur fusionnent en une seule pièce (jusqu'à 4x2x4)."
 	]
 	quest.6AD835CCA129C2DD.title: "Bloc de plastique rouge"
 	quest.6B5FF43F4D5E73E2.quest_desc: [
@@ -855,7 +855,7 @@
 	]
 	quest.778C3F69BBD69981.title: "Muret en béton poli bleu clair"
 	quest.77D47E2D75956F53.quest_desc: [
-		"4 lingots d'or, un œil de l'Ender, 2 Super étoiles et le tuyau de mini-jeu en fer. Atteint toutes les dimensions."
+		"4 lingots d'or, un œil de l'Ender, 2 Étoiles de fête et le tuyau de mini-jeu en fer. Atteint toutes les dimensions."
 	]
 	quest.77D47E2D75956F53.title: "Tuyau de mini-jeu en or"
 	quest.77FE553DBC59E8E9.quest_desc: [

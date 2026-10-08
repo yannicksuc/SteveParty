@@ -271,7 +271,7 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
     }
 
     /**
-     * The rank of each standing (same order), 1 for the best, like in Mario Party: the most stars first, the most coins
+     * The rank of each standing (same order), 1 for the best, as in party board games: the most stars first, the most coins
      * between equal stars; the same stars and coins share the rank (1, 1, 3...). The turn order breaks nothing: tied
      * tokens keep their order on screen.
      */
