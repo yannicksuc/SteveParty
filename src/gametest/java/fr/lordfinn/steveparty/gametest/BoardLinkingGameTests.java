@@ -585,11 +585,11 @@ public class BoardLinkingGameTests implements FabricGameTest {
     }
 
     /**
-     * A cartridge in the hand clicked on the ground opens its menu and links nothing; clicked where its linked tile was
-     * (the tile broken since), it unlinks it.
+     * A cartridge in the hand clicked on the ground selects that block as a destination, again unselects it; clicked
+     * in the air it opens its menu; clicked where its linked tile was (the tile broken since), it unlinks it.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void aCartridgeOnTheGroundOpensItsMenuOrUnlinksAMissingTile(TestContext context) {
+    public void aCartridgeSelectsTheGroundOpensItsMenuInTheAirOrUnlinksAMissingTile(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1));
         context.setBlockState(new BlockPos(3, 0, 3), Blocks.STONE);
         withPlayer(context, true, player -> {
@@ -597,9 +597,18 @@ public class BoardLinkingGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, held);
             BlockPos ground = context.getAbsolutePos(new BlockPos(3, 0, 3));
             ItemStack inHand = player.getMainHandStack();
-            inHand.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
-                    new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, ground, false)));
-            context.assertTrue(!inHand.contains(ModComponents.DESTINATIONS_COMPONENT), "the ground is not linked");
+            net.minecraft.util.hit.BlockHitResult onGround = new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0),
+                    net.minecraft.util.math.Direction.UP, ground, false);
+            player.interactionManager.interactBlock(player, context.getWorld(), inHand, Hand.MAIN_HAND, onGround);
+            context.assertEquals(inHand.get(ModComponents.DESTINATIONS_COMPONENT).destinations(), List.of(ground), "the ground is selected");
+            context.assertTrue(player.currentScreenHandler == player.playerScreenHandler, "no menu on a block");
+            player.interactionManager.interactBlock(player, context.getWorld(), inHand, Hand.MAIN_HAND, onGround);
+            context.assertTrue(!inHand.contains(ModComponents.DESTINATIONS_COMPONENT), "clicked again, the ground is unselected");
+
+            // In the air (looking up, nothing above): its menu
+            net.minecraft.util.math.Vec3d sky = context.getAbsolute(new net.minecraft.util.math.Vec3d(6.5, 1, 6.5));
+            player.refreshPositionAndAngles(sky.x, sky.y, sky.z, 0, -90);
+            inHand.use(context.getWorld(), player, Hand.MAIN_HAND);
             context.assertTrue(player.currentScreenHandler != player.playerScreenHandler, "its menu is open");
             player.closeHandledScreen();
 

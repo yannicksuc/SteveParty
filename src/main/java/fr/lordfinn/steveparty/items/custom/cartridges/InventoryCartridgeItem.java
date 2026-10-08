@@ -61,7 +61,8 @@ public class InventoryCartridgeItem extends CartridgeItem {
      *     is one; it does not open. With the cartridge in the off hand and nothing in the main hand, too;</li>
      *     <li>a board space or a router, sneaking: added to the destinations, or removed ({@link #useOnBlock}). Not
      *     sneaking, the board space opens its interface, where cartridges are put in, as for every cartridge;</li>
-     *     <li>anything else: its menu (see {@link CartridgeItem#useOnBlock}).</li>
+     *     <li>any other block: added to the destinations, or removed (see {@link CartridgeItem#useOnBlock}); its menu
+     *     opens in the air.</li>
      * </ul>
      */
     public static void initialize() {
@@ -104,7 +105,7 @@ public class InventoryCartridgeItem extends CartridgeItem {
 
     /**
      * Reached when the block did not take the click (sneaking, or a block without a use): a board space or a router
-     * is added to the destinations (or removed), in either hand; anything else as every cartridge (its menu).
+     * is added to the destinations (or removed), in either hand; any other block as every cartridge (main hand).
      */
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {

@@ -86,7 +86,7 @@
   "book.steveparty.guide.cartridges.advance_back.page1.text": "Cartouche + piston.",
   "book.steveparty.guide.cartridges.cartridge.description": "Destinations et rôles",
   "book.steveparty.guide.cartridges.cartridge.name": "Cartouches",
-  "book.steveparty.guide.cartridges.cartridge.page0.text": "Une **cartouche** donne à une case ses destinations. En main, clic droit sur un bloc pour l'ajouter comme destination, encore pour la retirer.\n\n- une destination : chemin tout tracé ;\n- plusieurs : bifurcation, le joueur choisit ;\n- aucune : cul-de-sac, le pion s'arrête.",
+  "book.steveparty.guide.cartridges.cartridge.page0.text": "Une **cartouche** donne à une case ses destinations. En main, clic droit sur n'importe quel bloc (le sol aussi ; accroupi sur une case) pour l'ajouter comme destination, encore pour la retirer.\n\n- une destination : chemin tout tracé ;\n- plusieurs : bifurcation, le joueur choisit ;\n- aucune : cul-de-sac, le pion s'arrête.",
   "book.steveparty.guide.cartridges.cartridge.page0.title": "Cartouches",
   "book.steveparty.guide.cartridges.cartridge.page1.text": "2 redstone, 2 papiers et 2 granulés de plastique.",
   "book.steveparty.guide.cartridges.cartridge.page2.text": "Chaque cartouche a son menu : clic droit dans le vide en la tenant, ou ouvre sa case. Une teinture sur la case recolore la cartouche active.\n\nChaque rôle ci-après est une cartouche simple + un ingrédient, sans forme.",

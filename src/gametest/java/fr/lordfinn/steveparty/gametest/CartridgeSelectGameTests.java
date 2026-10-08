@@ -20,16 +20,18 @@ import net.minecraft.world.GameMode;
 import java.util.List;
 
 /**
- * A cartridge in hand, sneaking, right-clicked on a board space through the whole server path (every global
- * {@code UseBlockCallback}, the block, then the item): the space is selected as a destination, and a second click
- * removes it.
+ * A cartridge in hand right-clicked through the whole server path (every global {@code UseBlockCallback}, the block,
+ * then the item) on a board space, sneaking, or on a plain block of the ground: that block is selected as a
+ * destination, and a second click removes it.
  */
 public class CartridgeSelectGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void aSneakingClickWithACartridgeSelectsTheBoardSpace(TestContext context) {
+    public void aCartridgeClickSelectsTheBoardSpaceOrTheGround(TestContext context) {
         List<BlockPos> tiles = BoardLinkingGameTests.tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1));
         BlockPos tile = tiles.getFirst();
+        context.setBlockState(new BlockPos(5, 0, 1), net.minecraft.block.Blocks.STONE);
+        BlockPos ground = context.getAbsolutePos(new BlockPos(5, 0, 1));
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         try {
             player.changeGameMode(GameMode.SURVIVAL);
@@ -46,6 +48,16 @@ public class CartridgeSelectGameTests implements FabricGameTest {
                 click(context, player, tile);
                 context.assertTrue(!player.getMainHandStack().contains(ModComponents.DESTINATIONS_COMPONENT),
                         kind + " unselects it on a second click");
+                // Not sneaking, a plain block of the ground: selected the same way
+                player.setSneaking(false);
+                click(context, player, ground);
+                links = player.getMainHandStack().get(ModComponents.DESTINATIONS_COMPONENT);
+                context.assertTrue(links != null && links.destinations().equals(List.of(ground)),
+                        kind + " selects the ground block it is used on, got " + links);
+                click(context, player, ground);
+                context.assertTrue(!player.getMainHandStack().contains(ModComponents.DESTINATIONS_COMPONENT),
+                        kind + " unselects the ground block on a second click");
+                player.setSneaking(true);
             }
         } finally {
             context.getWorld().getServer().getPlayerManager().remove(player);
