@@ -1,6 +1,10 @@
 package fr.lordfinn.steveparty.entities.custom.boomcart;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ai.goal.LookAroundGoal;
+import net.minecraft.entity.ai.goal.LookAtEntityGoal;
+import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
@@ -8,9 +12,12 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PathAwareEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -27,6 +34,10 @@ import software.bernie.geckolib.animation.RawAnimation;
  *     <li><b>Its load</b> ({@link #getLoad()}): a TNT block (the default), or a firework rocket in a barrel; drawn in
  *     it by BoomcartRenderer, saved with it.</li>
  *     <li><b>Its fuse</b> ({@link #getFuse()}): -1 while unlit, else the ticks left before it blows.</li>
+ *     <li><b>Rails</b>: on a rail it follows the track like a minecart ({@link BoomcartRails}), powered rails boosting
+ *     it, detector rails seeing it; it gives itself a push now and then. Off the rails it rolls about a little
+ *     ({@link BoomcartGoals}).</li>
+ *     <li><b>Never ridden</b>: nobody gets in, and it gets in nothing (a minecart, a boat).</li>
  *     <li><b>Its mouth</b>: wide open ({@link #isHungry()}, "feed me") while a player near it holds a load.</li>
  * </ul>
  */
@@ -53,6 +64,16 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     public static final String MAIN_CONTROLLER = "main", ACTION_CONTROLLER = "action";
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
+    /** Its own push on the rails, unlit: how hard, up to what speed, how often it starts one (1 in so many ticks). */
+    private static final double RAIL_PUSH = 0.02, RAIL_CRUISE = 0.12;
+    private static final int RAIL_PUSH_CHANCE = 80, RAIL_PUSH_TICKS = 30;
+    /** Turning on the rails: degrees per tick at most. */
+    private static final float RAIL_TURN = 30;
+
+    private boolean onRails;
+    /** Ticks left of its own push on the rails, and which way (+1: toward the track's exit b). */
+    private int railPushTicks;
+    private int railPushSign = 1;
     /** Client only: its lip's angle in the last frame drawn (BoomcartModel), whether its mouth is open. */
     public float clientLipAngle;
 
@@ -67,6 +88,14 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.2)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.3)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 32.0);
+    }
+
+    @Override
+    protected void initGoals() {
+        this.goalSelector.add(0, new SwimGoal(this));
+        this.goalSelector.add(5, new BoomcartGoals.Wander(this));
+        this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
+        this.goalSelector.add(7, new LookAroundGoal(this));
     }
 
     @Override
@@ -119,6 +148,70 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
 
     protected void setHungry(boolean hungry) {
         dataTracker.set(HUNGRY, hungry);
+    }
+
+    // ---------------------------------------------------------------- rails
+
+    /** On a rail, the track moving it. */
+    public boolean isOnRails() {
+        return onRails;
+    }
+
+    @Override
+    public void travel(Vec3d movementInput) {
+        if (!getWorld().isClient && isAlive() && rollOnRails()) return;
+        super.travel(movementInput);
+    }
+
+    /** A tick on the rails, if it's on one: true when the track moved it. */
+    private boolean rollOnRails() {
+        BoomcartRails.Track track = BoomcartRails.under(getWorld(), getPos());
+        if (track == null || getVelocity().y > 0.2) {
+            onRails = false;
+            return false;
+        }
+        onRails = true;
+        getNavigation().stop();
+        BoomcartRails.Step step = BoomcartRails.roll(getWorld(), track, getPos(), getVelocity(), railMotor(track),
+                railCruise());
+        setPosition(step.pos());
+        setVelocity(step.heading().multiply(step.speed()));
+        fallDistance = 0;
+        setOnGround(true);
+        if (step.speed() > 0.01) {
+            float yaw = (float) (MathHelper.atan2(step.heading().z, step.heading().x) * MathHelper.DEGREES_PER_RADIAN) - 90f;
+            setYaw(MathHelper.stepUnwrappedAngleTowards(getYaw(), yaw, RAIL_TURN));
+            bodyYaw = headYaw = getYaw();
+        }
+        if (!step.onRails()) onRails = false;
+        return true;
+    }
+
+    /** How it pushes itself along the track: now and then, a short push one way or the other. */
+    protected Vec3d railMotor(BoomcartRails.Track track) {
+        if (isHungry()) return Vec3d.ZERO;
+        if (railPushTicks > 0) {
+            railPushTicks--;
+        } else if (getVelocity().horizontalLengthSquared() < 1.0e-4 && random.nextInt(RAIL_PUSH_CHANCE) == 0) {
+            railPushTicks = RAIL_PUSH_TICKS;
+            railPushSign = random.nextBoolean() ? 1 : -1;
+        }
+        if (railPushTicks <= 0) return Vec3d.ZERO;
+        return new Vec3d(track.bx() - track.ax(), 0, track.bz() - track.az()).normalize().multiply(railPushSign * RAIL_PUSH);
+    }
+
+    protected double railCruise() {
+        return RAIL_CRUISE;
+    }
+
+    @Override
+    public boolean startRiding(Entity entity, boolean force) {
+        return false; // it gets in nothing
+    }
+
+    @Override
+    protected boolean canAddPassenger(Entity passenger) {
+        return false; // and nobody gets in
     }
 
     // ---------------------------------------------------------------- save
