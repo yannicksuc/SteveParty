@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.client.tokenspell.SpellShape;
 import fr.lordfinn.steveparty.client.tokenspell.TokenSpellHand;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.particles.MagicShapeEffect;
+import fr.lordfinn.steveparty.particles.SpellPalette;
 import fr.lordfinn.steveparty.payloads.custom.TokenSpellPayload;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.sound.SoundCategory;
@@ -77,7 +78,9 @@ public class TokenSpellScreen extends Screen {
     /** How long positions far from the cursor's jump point are taken as stale (before the jump), at most. */
     private static final long JUMP_SETTLE_NANOS = 150_000_000L;
     private static final float MIN_DRAWN_RADIUS = 8;
-    private static final int HEIGHT_MARK_COLOR = 0xC150EB;
+    /** Gradient steps around a loop (circle, guide, ring icon): fuchsia to lapis and back, without a seam. */
+    private static final float LOOP = 2 * (SpellPalette.GRADIENT.length - 1);
+    private static final int HEIGHT_MARK_COLOR = SpellPalette.PURPLE;
     /**
      * Beyond this distance (blocks) the spell is cast at once, before the mob gets out of reach (the server accepts
      * up to {@link TokenizerWandItem#MAX_SPELL_DISTANCE}).
@@ -376,7 +379,7 @@ public class TokenSpellScreen extends Screen {
         double radius = body.width() * ratio / 2 + 0.25;
         // Lightened: dark token colours (a cow's brown) would read as black specks
         MagicShapeEffect sparkle = MagicShapeEffect.sparkle(1.0F, 0F, 5,
-                lerpColor(color == NO_COLOR ? HEIGHT_MARK_COLOR : color, 0xFFFFFF, 0.45F));
+                lerpColor(color == NO_COLOR ? HEIGHT_MARK_COLOR : color, SpellPalette.LILAC, 0.45F));
         for (int i = 0; i < 4; i++) {
             double angle = -ticks * 0.15 + i * Math.PI / 2;
             client.world.addParticle(sparkle, mob.getX() + Math.cos(angle) * radius, mob.getY() + height + 0.05,
@@ -406,7 +409,7 @@ public class TokenSpellScreen extends Screen {
             int life = 6 + random.nextInt(5);
             Vec3d velocity = path.multiply(1.0 / life).add((random.nextDouble() - 0.5) * 0.04,
                     (random.nextDouble() - 0.5) * 0.04, (random.nextDouble() - 0.5) * 0.04);
-            client.world.addParticle(i == 0 ? MagicShapeEffect.sparkle(0.5F, 1.0F, life, 0xFFFFFF)
+            client.world.addParticle(i == 0 ? MagicShapeEffect.sparkle(0.5F, 1.0F, life, SpellPalette.LILAC)
                     : MagicShapeEffect.shape(0.45F, 1.0F, life), tip.x, tip.y, tip.z, velocity.x, velocity.y, velocity.z);
         }
     }
@@ -647,8 +650,7 @@ public class TokenSpellScreen extends Screen {
     private void addShape(float x, float y, float vx, float vy, int life, int sprite) {
         if (shapes.size() >= 96) shapes.removeFirst();
         Random random = client.world.random;
-        int shapeColor = sprite == SPARKLE && random.nextBoolean() ? 0xFFFFFF
-                : MagicShapeEffect.COLORS[random.nextInt(MagicShapeEffect.COLORS.length)];
+        int shapeColor = sprite == SPARKLE && random.nextBoolean() ? SpellPalette.LILAC : SpellPalette.random(random);
         shapes.add(new GuiShape(x, y, vx, vy, life, sprite, shapeColor));
     }
 
@@ -829,7 +831,7 @@ public class TokenSpellScreen extends Screen {
             drawStroke(context, stroke, time);
             if (!stroke.isEmpty()) {
                 float[] tip = stroke.getLast();
-                drawSprite(context, SPARKLE, tip[0], tip[1], 0xFFFFFF, 255);
+                drawSprite(context, SPARKLE, tip[0], tip[1], SpellPalette.LILAC, 255);
             }
         } else if (phase == Phase.DRAWING && morphing()) {
             drawStroke(context, morphPoints(delta, radius), time);
@@ -850,12 +852,11 @@ public class TokenSpellScreen extends Screen {
         // About 35-50 % opacity: clearly a ghost, yet readable on the sky as on the grass
         int alpha = (int) ((90 + 40 * pulse) * fade);
         int points = Math.max(24, (int) (radius * MathHelper.TAU / 5));
-        int[] colors = MagicShapeEffect.COLORS;
         for (int i = 0; i < points; i++) {
             float angle = i * MathHelper.TAU / points;
             int x = Math.round(cx + MathHelper.cos(angle) * radius);
             int y = Math.round(cy + MathHelper.sin(angle) * radius);
-            int rgb = lerpColor(colors[(i * colors.length / points) % colors.length], 0xFFFFFF, 0.2F);
+            int rgb = lerpColor(SpellPalette.flow(angle / MathHelper.TAU * LOOP), SpellPalette.LILAC, 0.2F);
             context.fill(x + 1, y + 1, x + 3, y + 3, (alpha / 3 << 24));
             context.fill(x, y, x + 2, y + 2, (alpha << 24) | rgb);
         }
@@ -863,18 +864,18 @@ public class TokenSpellScreen extends Screen {
         for (int k = 0; k < 4; k++) {
             float angle = time * 0.09F - k * 0.12F - MathHelper.HALF_PI;
             drawSprite(context, SPARKLE, cx + MathHelper.cos(angle) * radius, cy + MathHelper.sin(angle) * radius,
-                    0xFFFFFF, (int) ((200 - k * 50) * fade));
+                    SpellPalette.LILAC, (int) ((200 - k * 50) * fade));
         }
     }
 
     /**
-     * A soft, glowing, slightly irregular brush stroke in the four spell colours (flowing around), a fine inner line of
+     * A soft, glowing, slightly irregular brush stroke in the spell gradient (fuchsia to lapis and back, flowing
+     * around), a fine inner line of
      * the token's colour, and twinkling sparkles riding on it.
      */
     private void drawMagicCircle(DrawContext context, float cx, float cy, float radius, float time, float flash, int thickness) {
         if (radius < 1) return;
         int points = Math.max(48, (int) (radius * MathHelper.TAU * 0.9F));
-        int[] colors = MagicShapeEffect.COLORS;
         for (int i = 0; i < points; i++) {
             float angle = i * MathHelper.TAU / points;
             // Brush irregularity, slowly flowing
@@ -882,12 +883,8 @@ public class TokenSpellScreen extends Screen {
             float r = radius + wobble;
             int x = Math.round(cx + MathHelper.cos(angle) * r);
             int y = Math.round(cy + MathHelper.sin(angle) * r);
-            float along = (angle / MathHelper.TAU * colors.length + time * 0.03F) % colors.length;
-            int index = (int) along;
-            float blend = along - index;
-            blend = blend * blend * (3 - 2 * blend);
-            int rgb = lerpColor(colors[index], colors[(index + 1) % colors.length], blend);
-            if (flash > 0) rgb = lerpColor(rgb, 0xFFFFFF, flash);
+            int rgb = SpellPalette.flow(angle / MathHelper.TAU * LOOP + time * 0.06F);
+            if (flash > 0) rgb = lerpColor(rgb, SpellPalette.LILAC, flash);
             context.fill(x - 1 - thickness / 2, y - 1 - thickness / 2, x + 1 + thickness, y + 1 + thickness, 0x26000000 | rgb);
             context.fill(x, y, x + thickness, y + thickness, 0xF0000000 | rgb);
         }
@@ -905,7 +902,7 @@ public class TokenSpellScreen extends Screen {
             float angle = time * 0.05F + i * MathHelper.TAU / 5;
             float twinkle = 0.5F + 0.5F * MathHelper.sin(time * 0.6F + i * 2.1F);
             drawSprite(context, SPARKLE, cx + MathHelper.cos(angle) * radius, cy + MathHelper.sin(angle) * radius,
-                    i % 2 == 0 ? 0xFFFFFF : colors[i % colors.length], (int) (120 + 135 * twinkle));
+                    i % 2 == 0 ? SpellPalette.LILAC : SpellPalette.GRADIENT[i % SpellPalette.GRADIENT.length], (int) (120 + 135 * twinkle));
         }
     }
 
@@ -925,13 +922,12 @@ public class TokenSpellScreen extends Screen {
     }
 
     /**
-     * A freehand stroke in the same brush as the magic circle: soft glow, the four spell colours flowing along it, and
+     * A freehand stroke in the same brush as the magic circle: soft glow, the spell gradient flowing along it, and
      * sparkles twinkling on it.
      */
     private int strokeQuads;
 
     private void drawStroke(DrawContext context, List<float[]> points, float time) {
-        int[] colors = MagicShapeEffect.COLORS;
         float length = 0, nextSparkle = 20;
         int sparkles = 0;
         for (int i = 1; i < points.size(); i++) {
@@ -944,11 +940,7 @@ public class TokenSpellScreen extends Screen {
                 float f = (float) s / steps;
                 int x = Math.round(MathHelper.lerp(f, a[0], b[0]));
                 int y = Math.round(MathHelper.lerp(f, a[1], b[1]));
-                float along = ((length + f * segment) / 30F + time * 0.03F) % colors.length;
-                int index = (int) along;
-                float blend = along - index;
-                blend = blend * blend * (3 - 2 * blend);
-                int rgb = lerpColor(colors[index], colors[(index + 1) % colors.length], blend);
+                int rgb = SpellPalette.flow((length + f * segment) / 30F + time * 0.06F);
                 context.fill(x - 1, y - 1, x + 2, y + 2, 0x26000000 | rgb);
                 context.fill(x, y, x + 1, y + 1, 0xF0000000 | rgb);
                 // A long stroke is thousands of quads: flush them regularly (one huge batch overflowed the GUI's
@@ -959,7 +951,8 @@ public class TokenSpellScreen extends Screen {
             if (length - nextSparkle > 400) nextSparkle = length - 400;
             while (length >= nextSparkle && sparkles++ < MAX_STROKE_SPARKLES) {
                 float twinkle = 0.5F + 0.5F * MathHelper.sin(time * 0.6F + nextSparkle * 0.1F);
-                drawSprite(context, SPARKLE, b[0], b[1], (int) nextSparkle % 80 < 40 ? 0xFFFFFF : colors[(int) (nextSparkle / 40) % colors.length],
+                drawSprite(context, SPARKLE, b[0], b[1], (int) nextSparkle % 80 < 40 ? SpellPalette.LILAC
+                                : SpellPalette.GRADIENT[(int) (nextSparkle / 40) % SpellPalette.GRADIENT.length],
                         (int) (110 + 145 * twinkle));
                 nextSparkle += 40;
             }
@@ -1000,13 +993,13 @@ public class TokenSpellScreen extends Screen {
 
         var matrices = context.getMatrices();
         float x = x0 + ringSize + gap;
-        int[] colors = MagicShapeEffect.COLORS;
+        int[] colors = SpellPalette.GRADIENT;
         for (int i = 0; i < spell.length(); i++) {
             String letter = String.valueOf(spell.charAt(i));
             // Pure spell colours, one per letter, shifting along slowly (blends between them look muddy on letters)
             int rgb = colors[Math.floorMod(i + (int) (time / 10), colors.length)];
             float shimmer = (float) Math.pow(Math.max(0, MathHelper.sin(time * 0.12F - i * 0.45F)), 12);
-            rgb = lerpColor(rgb, 0xFFFFFF, shimmer * 0.8F);
+            rgb = lerpColor(rgb, SpellPalette.LILAC, shimmer * 0.8F);
             float wave = MathHelper.sin(time * 0.2F + i * 0.7F) * 1.5F;
             matrices.push();
             matrices.translate(x, y0 + wave, 0);
@@ -1015,7 +1008,7 @@ public class TokenSpellScreen extends Screen {
                 matrices.push();
                 matrices.translate(offset[0], offset[1], 0);
                 matrices.scale(scale, scale, 1);
-                context.drawText(textRenderer, letter, 0, 0, 0xFF1E1530, false);
+                context.drawText(textRenderer, letter, 0, 0, 0xFF000000 | SpellPalette.SHADOW, false);
                 matrices.pop();
             }
             matrices.scale(scale, scale, 1);
@@ -1033,8 +1026,8 @@ public class TokenSpellScreen extends Screen {
                 int messageY = y0 + textRenderer.fontHeight * scale + 9;
                 int left = (width - messageWidth) / 2;
                 context.fill(left - 4, messageY - 3, left + messageWidth + 4, messageY + textRenderer.fontHeight + 2,
-                        ((int) (0x90 * fade) << 24) | 0x1E1530);
-                context.drawText(textRenderer, message, left, messageY, ((int) (255 * fade) << 24) | 0xFFFFFF, false);
+                        ((int) (0x90 * fade) << 24) | SpellPalette.SHADOW);
+                context.drawText(textRenderer, message, left, messageY, ((int) (255 * fade) << 24) | SpellPalette.LILAC, false);
             }
         }
     }
@@ -1053,21 +1046,17 @@ public class TokenSpellScreen extends Screen {
             "..#.....#..",
             "...#####..."};
 
-    /** The ring icon: the four spell colours flowing around it, a bright pixel running round. */
+    /** The ring icon: the spell gradient flowing around it, a lilac glint running round. */
     private void drawRingIcon(DrawContext context, int x0, int y0, int scale, float time) {
-        int[] colors = MagicShapeEffect.COLORS;
         float center = (RING.length - 1) / 2F;
         float shimmerAngle = (time * 0.15F) % MathHelper.TAU;
         for (int row = 0; row < RING.length; row++) {
             for (int column = 0; column < RING[row].length(); column++) {
                 if (RING[row].charAt(column) != '#') continue;
                 float angle = (float) Math.atan2(row - center, column - center) + MathHelper.PI;
-                float along = (angle / MathHelper.TAU * colors.length + time * 0.03F) % colors.length;
-                int index = (int) along;
-                float blend = along - index;
-                int rgb = lerpColor(colors[index], colors[(index + 1) % colors.length], blend * blend * (3 - 2 * blend));
+                int rgb = SpellPalette.flow(angle / MathHelper.TAU * LOOP + time * 0.06F);
                 float distance = Math.abs(MathHelper.wrapDegrees((angle - shimmerAngle) * MathHelper.DEGREES_PER_RADIAN));
-                if (distance < 25) rgb = lerpColor(rgb, 0xFFFFFF, 1 - distance / 25);
+                if (distance < 25) rgb = lerpColor(rgb, SpellPalette.LILAC, 1 - distance / 25);
                 int x = x0 + column * scale, y = y0 + row * scale;
                 // Thick pixels with a soft shadow, like the letters
                 context.fill(x + 1, y + 1, x + scale + 1, y + scale + 1, 0x60000000);
@@ -1077,9 +1066,6 @@ public class TokenSpellScreen extends Screen {
     }
 
     private static int lerpColor(int from, int to, float t) {
-        int r = (int) MathHelper.lerp(t, (from >> 16) & 0xFF, (to >> 16) & 0xFF);
-        int g = (int) MathHelper.lerp(t, (from >> 8) & 0xFF, (to >> 8) & 0xFF);
-        int b = (int) MathHelper.lerp(t, from & 0xFF, to & 0xFF);
-        return (r << 16) | (g << 8) | b;
+        return SpellPalette.lerp(from, to, t);
     }
 }
