@@ -16,16 +16,19 @@ import java.util.List;
 
 /**
  * The Glandouille Cartridge: a token stopping on its tile is pushed {@link #distance} spaces on along the path by a
- * tower of Glandouilles, with every token the tower meets on the way (see GlandouilleTileBehavior). Its destination is
- * that number of spaces ahead: 0 is no destination, and nothing happens. Its menu also has the crew: the tower, or a
+ * tower of {@link #tower} Glandouilles, with every token the tower meets on the way (see GlandouilleTileBehavior). Each
+ * token it meets on the way makes one fall off the top; out of Glandouilles, it stops there, short of its destination.
+ * Its destination is that number of spaces ahead: 0 is no destination, and nothing happens. Its menu also has the crew: the tower, or a
  * lone Glandouille that tries to push, can't, and sulks (the tokens stay put). Its tile is brown; a dye on it changes
  * that.
  */
 public class GlandouilleCartridgeItem extends CartridgeItem {
     /** Its tile's brown. */
     public static final int COLOR = 0x9A5A2A;
-    public static final int MAX_DISTANCE = 12;
+    public static final int MAX_DISTANCE = 50;
     public static final int DEFAULT_DISTANCE = 3;
+    /** How many Glandouilles in its tower. */
+    public static final int MIN_TOWER = 1, MAX_TOWER = 25, DEFAULT_TOWER = 5;
 
     private static final String K = MENU_KEY + "glandouille.";
     private static final List<CartridgeModule> MODULES = List.of(
@@ -34,6 +37,8 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
                     (edit, value) -> edit.stack().set(ModComponents.GLANDOUILLE_DISTANCE, value), stack -> COLOR),
             new InfoModule("hint", null, 1, context -> List.of(
                     new InfoModule.Line(Text.translatable(K + "hint"), InfoModule.Tone.SOFT))),
+            new NumberModule("tower", K + "tower_size", MIN_TOWER, MAX_TOWER, GlandouilleCartridgeItem::tower,
+                    (edit, value) -> edit.stack().set(ModComponents.GLANDOUILLE_TOWER, value), stack -> COLOR),
             new ChoiceModule("crew", K + "crew",
                     List.of(new ChoiceModule.Option(K + "tower"), new ChoiceModule.Option(K + "lone")),
                     stack -> lone(stack) ? 1 : 0,
@@ -64,6 +69,12 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
         return Math.max(0, Math.min(MAX_DISTANCE, stack.getOrDefault(ModComponents.GLANDOUILLE_DISTANCE, DEFAULT_DISTANCE)));
     }
 
+    /** Glandouilles in its tower: {@link #MIN_TOWER} to {@link #MAX_TOWER}. */
+    public static int tower(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return DEFAULT_TOWER;
+        return Math.max(MIN_TOWER, Math.min(MAX_TOWER, stack.getOrDefault(ModComponents.GLANDOUILLE_TOWER, DEFAULT_TOWER)));
+    }
+
     /** The lone Glandouille (it can't push) rather than the tower. */
     public static boolean lone(ItemStack stack) {
         return stack != null && stack.getOrDefault(ModComponents.GLANDOUILLE_LONE, false);
@@ -76,6 +87,7 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
                 : Text.translatable("tooltip.steveparty.glandouille_cartridge.distance", distance))
                 .styled(style -> style.withColor(TextColor.fromRgb(0xD9A066)).withBold(true)));
         if (lone(stack)) tooltip.add(Text.translatable("tooltip.steveparty.glandouille_cartridge.lone").formatted(Formatting.GRAY));
+        else if (distance > 0) tooltip.add(Text.translatable("tooltip.steveparty.glandouille_cartridge.tower", tower(stack)).formatted(Formatting.GRAY));
         super.appendTooltip(stack, context, tooltip, type);
     }
 }

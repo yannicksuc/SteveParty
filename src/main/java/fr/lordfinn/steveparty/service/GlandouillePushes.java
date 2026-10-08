@@ -34,7 +34,10 @@ import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
 /**
  * What a Glandouille space does (see GlandouilleTileBehavior): a tower of invulnerable Glandouilles pops up behind the
  * token that stopped there and walks the path {@code distance} spaces on, pushing that token and every token it meets
- * on the way along with it, space by space, to its destination; there the tower leaves in a little cloud. The lone
+ * on the way along with it, space by space, to its destination; there the tower leaves in a little cloud. Each token it
+ * meets on the way (not the one it came for) makes the top Glandouille fall off, dizzy, and vanish; meeting one with
+ * its last Glandouille, that one falls too and the push stops right there, short of the destination: the tokens stay
+ * on that space. The lone
  * Glandouille of the cartridge's other setting only tries: it pushes, slips, gives up and sulks, and leaves; nobody
  * moves. Its Glandouilles are never saved and always removed at the end: none ever stays in the world.
  * <p>
@@ -48,9 +51,11 @@ public final class GlandouillePushes {
     public static final int STEP_TICKS = 12;
     /** The lone Glandouille's whole show (its push_fail animation lasts 4 s). */
     public static final int LONE_TICKS = 84;
-    /** How many Glandouilles in the board's tower, bottom first. */
+    /** The board's tower, bottom first: these kinds, over and over, as high as the cartridge says. */
     private static final GlandouilleVariant[] TOWER = {GlandouilleVariant.CLASSIC, GlandouilleVariant.YOUNG,
-            GlandouilleVariant.FROSTY, GlandouilleVariant.CLASSIC};
+            GlandouilleVariant.FROSTY, GlandouilleVariant.MOSSY};
+    /** A fallen Glandouille tumbles this long (ticks) before it vanishes; out of Glandouilles, the show ends after it. */
+    public static final int FALL_TICKS = 24;
     /** How far behind the token (and the tokens ahead of it) the tower stands. */
     private static final double BEHIND = 0.7;
 
@@ -77,7 +82,7 @@ public final class GlandouillePushes {
         visited.add(from);
         BlockPos at = from;
         int counted = 0;
-        for (int guard = 0; counted < steps && guard < 64; guard++) {
+        for (int guard = 0; counted < steps && guard < steps * 4 + 16; guard++) {
             BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, at);
             if (space == null) break;
             BlockPos next = null;
@@ -102,10 +107,11 @@ public final class GlandouillePushes {
     }
 
     /**
-     * The tower pushes {@code token} (stopped on {@code from}) along {@code route}; {@code onDone} runs once it has
-     * gone. False (nothing happens) for an empty route.
+     * A tower of {@code height} Glandouilles pushes {@code token} (stopped on {@code from}) along {@code route};
+     * {@code onDone} runs once it has gone. False (nothing happens) for an empty route.
      */
-    public static boolean pushTower(ServerWorld world, BlockPos from, List<BlockPos> route, MobEntity token, Runnable onDone) {
+    public static boolean pushTower(ServerWorld world, BlockPos from, List<BlockPos> route, MobEntity token, int height,
+                                    Runnable onDone) {
         if (route.isEmpty() || RUNNING.containsKey(token.getUuid())) return false;
         List<Vec3d> points = new ArrayList<>();
         points.add(BoardSpaces.standPos(world, from));
@@ -120,8 +126,8 @@ public final class GlandouillePushes {
         Vec3d start = points.get(0).subtract(dir.multiply(BEHIND));
         float yaw = yawOf(dir);
         GlandouilleEntity below = null;
-        for (GlandouilleVariant variant : TOWER) {
-            GlandouilleEntity one = spawn(world, variant, start, yaw);
+        for (int i = 0; i < Math.max(1, height); i++) {
+            GlandouilleEntity one = spawn(world, TOWER[i % TOWER.length], start, yaw);
             if (one == null) continue;
             if (below != null) one.startRiding(below, true);
             else show.bottom = one;
@@ -195,6 +201,10 @@ public final class GlandouillePushes {
         final MobEntity token;
         final Runnable onDone;
         final List<GlandouilleEntity> crew = new ArrayList<>();
+        /** Fallen off the tower, with the tick they fell at: they vanish {@link #FALL_TICKS} later. */
+        final Map<GlandouilleEntity, Integer> fallen = new HashMap<>();
+        /** Out of Glandouilles: the tick it stopped at, -1 while it walks. */
+        int stoppedAt = -1;
         final List<MobEntity> pushed = new ArrayList<>();
         List<Vec3d> points = List.of();
         List<BlockPos> spaces = List.of();
@@ -211,6 +221,11 @@ public final class GlandouillePushes {
         void tickTower() {
             if (done) return;
             tick++;
+            tickFallen();
+            if (stoppedAt >= 0) {
+                if (tick - stoppedAt >= FALL_TICKS) finish();
+                return;
+            }
             if (bottom == null || bottom.isRemoved()) {
                 finish();
                 return;
@@ -241,7 +256,17 @@ public final class GlandouillePushes {
             }
             float f = (walked % STEP_TICKS + 1) / (float) STEP_TICKS;
             // a token waiting on the next space joins the pushed ones as the tower gets there
-            if (walked % STEP_TICKS == STEP_TICKS - 1) gather(segment + 1);
+            if (walked % STEP_TICKS == STEP_TICKS - 1 && !gather(segment + 1)) {
+                // out of Glandouilles: everyone stays on that space
+                Vec3d end = points.get(segment + 1);
+                for (MobEntity one : pushed) {
+                    if (one.isRemoved()) continue;
+                    one.requestTeleport(end.x, end.y, end.z);
+                    one.setVelocity(Vec3d.ZERO);
+                }
+                stoppedAt = tick;
+                return;
+            }
             hold(segment, f);
             if (walked % 4 == 0) bottom.playSound(ModSounds.GLANDOUILLE_STEP, 0.8f, 1.2f);
         }
@@ -270,20 +295,55 @@ public final class GlandouillePushes {
             }
         }
 
-        /** The tokens standing on space {@code index} of the way join the pushed ones (the landing one first). */
-        private void gather(int index) {
+        /**
+         * The tokens standing on space {@code index} of the way join the pushed ones (the landing one first, for free);
+         * each other one makes the top Glandouille fall off. False if the tower ran out of Glandouilles there.
+         */
+        private boolean gather(int index) {
             if (index == 0 && !pushed.contains(token)) pushed.add(token);
-            if (index >= spaces.size()) return;
+            if (index >= spaces.size()) return true;
             BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, spaces.get(index));
-            if (space == null) return;
+            if (space == null) return true;
             for (MobEntity other : space.getTokensOnMe()) {
                 if (pushed.contains(other) || other instanceof GlandouilleEntity) continue;
                 // not one in the middle of its own move
                 if (other instanceof TokenizedEntityInterface tokenized && tokenized.steveparty$getNbSteps() > 0) continue;
-                pushed.add(other);
                 world.playSound(null, other.getX(), other.getY(), other.getZ(), ModSounds.GLANDOUILLE_RAM,
                         SoundCategory.NEUTRAL, 0.7f, 1.3f);
+                boolean last = crew.size() <= 1;
+                fallOff();
+                if (last) return false;
+                pushed.add(other);
             }
+            return true;
+        }
+
+        /** The top Glandouille falls off the tower, dizzy, tumbling aside. */
+        private void fallOff() {
+            if (crew.isEmpty()) return;
+            GlandouilleEntity top = crew.removeLast();
+            top.stopRiding();
+            // a board actor floats and has no AI: given back to physics for its fall
+            top.setNoGravity(false);
+            top.setAiDisabled(false);
+            top.actOut(GlandouilleEntity.Mood.STUNNED);
+            double angle = world.random.nextDouble() * Math.PI * 2;
+            top.setVelocity(Math.cos(angle) * 0.18, 0.4, Math.sin(angle) * 0.18);
+            top.velocityModified = true;
+            top.playSound(ModSounds.GLANDOUILLE_DIZZY, 1f, 1.1f);
+            fallen.put(top, tick);
+        }
+
+        /** The fallen ones vanish in a little cloud once their tumble is over. */
+        private void tickFallen() {
+            fallen.entrySet().removeIf(entry -> {
+                GlandouilleEntity one = entry.getKey();
+                if (one.isRemoved()) return true;
+                if (tick - entry.getValue() < FALL_TICKS) return false;
+                poof(world, one.getPos(), 6);
+                one.discard();
+                return true;
+            });
         }
 
         void tickLone() {
@@ -313,6 +373,8 @@ public final class GlandouillePushes {
                 one.stopRiding();
                 one.discard();
             }
+            for (GlandouilleEntity one : fallen.keySet()) one.discard();
+            fallen.clear();
             onDone.run();
         }
     }

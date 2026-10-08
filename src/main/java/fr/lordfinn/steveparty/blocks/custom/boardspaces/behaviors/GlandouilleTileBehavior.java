@@ -23,7 +23,8 @@ import java.util.List;
 
 /**
  * The role of a Glandouille Cartridge: a token stopping here is pushed {@link GlandouilleCartridgeItem#distance}
- * spaces on by a tower of Glandouilles, with the tokens the tower meets (see {@link GlandouillePushes}); the turn
+ * spaces on by a tower of {@link GlandouilleCartridgeItem#tower} Glandouilles, with the tokens the tower meets (one
+ * falls off for each; out of Glandouilles, it stops short, see {@link GlandouillePushes}); the turn
  * goes on once the tower has gone. A cartridge without destination (0 spaces), or a tile leading nowhere: nothing
  * happens (a plain landing). The lone Glandouille setting: it tries, fails, sulks; nobody moves. Going over the tile
  * does nothing. Outside a party it plays too, when a token's move ends here.
@@ -59,7 +60,7 @@ public class GlandouilleTileBehavior extends ABoardSpaceBehavior {
         if (GlandouilleCartridgeItem.lone(cartridge)) {
             return GlandouillePushes.pushAlone(world, pos, token, route.isEmpty() ? null : route.getFirst(), onDone);
         }
-        return GlandouillePushes.pushTower(world, pos, route, token, onDone);
+        return GlandouillePushes.pushTower(world, pos, route, token, GlandouilleCartridgeItem.tower(cartridge), onDone);
     }
 
     @Override
