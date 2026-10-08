@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.particles.MagicShapeEffect;
+import fr.lordfinn.steveparty.particles.SpellPalette;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.mob.MobEntity;
@@ -144,7 +145,7 @@ public final class TokenizerFlare {
 
     /** The comet: a bright sparkle head and a few shapes left behind along the way. */
     private static void trail(ServerWorld world, Vec3d from, Vec3d to) {
-        world.spawnParticles(MagicShapeEffect.sparkle(1.6F, 0F, 4, 0xFFFFFF), to.x, to.y, to.z, 1, 0, 0, 0, 0);
+        world.spawnParticles(MagicShapeEffect.sparkle(1.6F, 0F, 4, SpellPalette.LILAC), to.x, to.y, to.z, 1, 0, 0, 0, 0);
         for (int i = 0; i < 3; i++) {
             Vec3d at = from.lerp(to, i / 3.0);
             world.spawnParticles(MagicShapeEffect.shape(0.7F, 0.85F, 10), at.x, at.y, at.z, 1, 0.05, 0.05, 0.05, 0.01);
