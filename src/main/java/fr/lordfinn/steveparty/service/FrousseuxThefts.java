@@ -474,7 +474,9 @@ public final class FrousseuxThefts {
             Vec3d look = recipient.getRotationVec(1f);
             Vec3d front = new Vec3d(look.x, 0, look.z);
             front = front.lengthSquared() < 1.0E-4 ? new Vec3d(0, 0, 1) : front.normalize();
-            Vec3d spot = recipient.getPos().add(front.multiply(1.3)).add(0, 0.9, 0);
+            // in front of them, a little to their right: in sight, not in their face
+            Vec3d right = new Vec3d(-front.z, 0, front.x);
+            Vec3d spot = recipient.getPos().add(front.multiply(1.9)).add(right.multiply(0.7)).add(0, 1.0, 0);
             if (fly(spot, phaseTick)) deliver(recipient);
         }
 
