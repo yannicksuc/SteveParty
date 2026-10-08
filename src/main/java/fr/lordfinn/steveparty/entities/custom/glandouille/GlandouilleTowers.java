@@ -17,6 +17,12 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.entity.projectile.ProjectileUtil;
+import net.minecraft.util.Arm;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
@@ -33,10 +39,10 @@ import java.util.List;
  * <ul>
  *     <li><b>Spontaneous</b>: two calm Glandouilles meeting may climb on each other, up to {@link #SPONTANEOUS_MAX}.</li>
  *     <li><b>Carried</b>: right click with an empty hand on one of a tower picks it up with everyone above it, the ones
- *     below staying where they are (a lone one is picked up alone). The stack is held in front of the player's chest,
- *     arms forward ({@link #heldPos}). Right click with an empty hand on another tower: the carried one goes on top of
- *     it; on a block: it is put down there. A left click throws the bottom one of the stack forward, shot like a
- *     flicked one ({@link #throwCarried}). A carrier hit by anyone drops it in front of him ({@link #drop}). Built that
+ *     below staying where they are (a lone one is picked up alone). The stack is held in the main hand, low and to
+ *     that side like an item, so the crosshair stays clear ({@link #heldPos}). Right click with an empty hand on another tower: the carried one goes on top of
+ *     it; on a block: it is put down there. A left click throws the bottom one of the stack from the hand to where
+ *     the crosshair aims, shot like a flicked one ({@link #throwCarried}). A carrier hit by anyone drops it in front of him ({@link #drop}). Built that
  *     way, a tower has no height limit but the server's safety one ({@link ServerConfig#glandouilleMaxStack}).</li>
  *     <li><b>Flick</b>: hitting one inside a tower (not the bottom one) shoots it out like a missile along the blow,
  *     alone: the ones above it hop straight up and come back down onto the one below ({@link #hopOff}). The bottom one
@@ -50,8 +56,15 @@ import java.util.List;
 public final class GlandouilleTowers {
     /** Highest tower Glandouilles build by themselves. */
     public static final int SPONTANEOUS_MAX = 5;
-    /** A carried stack stands this high up the player (his chest), this far in front of him (blocks). */
-    public static final double HOLD_HEIGHT = 0.5, HOLD_GAP = 0.2;
+    /**
+     * A carried stack stands in the main hand: this high up the player (his hand), this far in front of his body and
+     * this far to the main hand's side (blocks).
+     */
+    public static final double HOLD_HEIGHT = 0.38, HOLD_FORWARD = 0.15, HOLD_SIDE = 0.62;
+    /** A throw goes to what the crosshair aims at, or this far along the look if nothing (blocks). */
+    public static final double AIM_RANGE = 64;
+    /** Aimed closer than this (blocks), a throw goes the way he looks rather than from the hand to the aimed point. */
+    public static final double AIM_MIN_DISTANCE = 3;
 
     private GlandouilleTowers() {
     }
@@ -169,10 +182,37 @@ public final class GlandouilleTowers {
         return true;
     }
 
-    /** Where a carried stack stands: in front of {@code player}'s chest, at arm's length, the way he looks. */
+    /** Where a carried stack stands: in {@code player}'s main hand, low and to that side, the way he looks. */
     public static Vec3d heldPos(PlayerEntity player, GlandouilleEntity carried) {
-        Vec3d front = Vec3d.fromPolar(0, player.getYaw()).multiply(player.getWidth() * 0.5 + carried.getWidth() * 0.5 + HOLD_GAP);
-        return player.getPos().add(front.x, player.getHeight() * HOLD_HEIGHT, front.z);
+        Vec3d hand = handOffset(player);
+        return player.getPos().add(hand.x, player.getHeight() * HOLD_HEIGHT, hand.z);
+    }
+
+    /** From {@code player}'s feet to his main hand, flat: a little forward, to the main hand's side. */
+    private static Vec3d handOffset(PlayerEntity player) {
+        float yaw = player.getYaw();
+        Vec3d front = Vec3d.fromPolar(0, yaw).multiply(player.getWidth() * 0.5 + HOLD_FORWARD);
+        // the right of where he looks is his yaw + 90 degrees
+        Vec3d side = Vec3d.fromPolar(0, yaw + (player.getMainArm() == Arm.RIGHT ? 90f : -90f)).multiply(HOLD_SIDE);
+        return front.add(side);
+    }
+
+    /** What {@code player}'s crosshair aims at: the entity or block hit, else a point {@link #AIM_RANGE} away. */
+    public static Vec3d aimPoint(PlayerEntity player) {
+        return aim(player).getPos();
+    }
+
+    /** What {@code player}'s crosshair aims at (an entity: its middle), a miss {@link #AIM_RANGE} away if nothing. */
+    private static HitResult aim(PlayerEntity player) {
+        Vec3d eye = player.getEyePos();
+        Vec3d look = player.getRotationVec(1f);
+        Vec3d end = eye.add(look.multiply(AIM_RANGE));
+        BlockHitResult block = player.getWorld().raycast(new RaycastContext(eye, end, RaycastContext.ShapeType.COLLIDER,
+                RaycastContext.FluidHandling.NONE, player));
+        Vec3d far = block.getType() == HitResult.Type.MISS ? end : block.getPos();
+        EntityHitResult entity = ProjectileUtil.raycast(player, eye, far, player.getBoundingBox().stretch(far.subtract(eye)).expand(1),
+                e -> !e.isSpectator() && e.canHit() && e.getRootVehicle() != player.getRootVehicle(), eye.squaredDistanceTo(far));
+        return entity != null ? new EntityHitResult(entity.getEntity(), entity.getEntity().getBoundingBox().getCenter()) : block;
     }
 
     /** {@code at} if {@code glandouille} fits there, else {@code fallback}. */
@@ -181,18 +221,19 @@ public final class GlandouilleTowers {
         return glandouille.getWorld().isSpaceEmpty(glandouille, box) ? at : fallback;
     }
 
-    /** {@code player} was hit: the stack he carries falls on the ground in front of him, still stacked. */
+    /** {@code player} was hit: the stack he carries falls on the ground under his hand, still stacked. */
     public static boolean drop(PlayerEntity player) {
         GlandouilleEntity carried = carried(player);
         if (carried == null) return false;
-        Vec3d front = Vec3d.fromPolar(0, player.getYaw()).multiply(player.getWidth() * 0.5 + carried.getWidth() * 0.5 + HOLD_GAP);
-        Vec3d at = freeOr(carried, player.getPos().add(front.x, 0, front.z), player.getPos());
+        Vec3d hand = handOffset(player);
+        Vec3d at = freeOr(carried, player.getPos().add(hand.x, 0, hand.z), player.getPos());
         return putDown(player, at, player.getYaw());
     }
 
     /**
-     * Left click with a stack in hand: its bottom one is thrown forward, shot like a flicked one (it lands on a tower
-     * it hits, dazes a player); the ones above stay in hand. False if nothing is carried.
+     * Left click with a stack in hand: its bottom one leaves the hand, a little forward, and flies to where the
+     * crosshair aims, shot like a flicked one (it lands on a tower it hits, dazes a player); the ones above stay in
+     * hand. False if nothing is carried.
      */
     public static boolean throwCarried(PlayerEntity player) {
         GlandouilleEntity thrown = carried(player);
@@ -202,10 +243,21 @@ public final class GlandouilleTowers {
         thrown.stopRiding();
         if (above != null) above.startRiding(player, true);
         Vec3d held = heldPos(player, thrown);
-        Vec3d at = freeOr(thrown, held, player.getPos().add(0, player.getHeight() * HOLD_HEIGHT, 0));
+        // out of the hand, clear of his body
+        Vec3d ahead = held.add(Vec3d.fromPolar(0, player.getYaw()).multiply(thrown.getWidth() * 0.5));
+        Vec3d at = freeOr(thrown, ahead, freeOr(thrown, held, player.getPos().add(0, player.getHeight() * HOLD_HEIGHT, 0)));
         thrown.refreshPositionAndAngles(at.x, at.y, at.z, player.getYaw(), 0);
         thrown.thrownBy(player);
-        thrown.launch(Vec3d.fromPolar(0, player.getYaw()));
+        // from the hand toward what the crosshair aims at; aimed at something too close, the hand being off to the side,
+        // that would throw it sideways: it goes the way he looks
+        HitResult hit = aim(player);
+        Vec3d target = hit.getPos();
+        // aimed at the top of a block (the ground), its feet go there; else its middle
+        boolean ground = hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK
+                && blockHit.getSide() == net.minecraft.util.math.Direction.UP;
+        Vec3d aim = target.subtract(at.add(0, ground ? 0 : thrown.getHeight() * 0.5, 0));
+        boolean tooClose = target.squaredDistanceTo(player.getEyePos()) < AIM_MIN_DISTANCE * AIM_MIN_DISTANCE;
+        thrown.launchThrown(tooClose || aim.lengthSquared() < 1.0E-4 ? player.getRotationVec(1f) : aim);
         player.swingHand(Hand.MAIN_HAND, true);
         return true;
     }

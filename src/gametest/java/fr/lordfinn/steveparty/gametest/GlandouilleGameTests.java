@@ -515,6 +515,41 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** A carried stack is held in the main hand: on its side (mirrored for a left-handed one), low, a little forward. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void aStackIsHeldInTheMainHand(TestContext context) {
+        floor(context);
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x: his right is +z
+        GlandouilleEntity one = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 1));
+        Vec3d right = GlandouilleTowers.heldPos(player, one).subtract(player.getPos());
+        context.assertTrue(right.x > 0.3 && right.z > 0.3, "forward, on the right: " + right);
+        context.assertTrue(right.y < player.getStandingEyeHeight() - 0.6, "low, under the crosshair: " + right.y);
+        player.setMainArm(net.minecraft.util.Arm.LEFT);
+        Vec3d left = GlandouilleTowers.heldPos(player, one).subtract(player.getPos());
+        context.assertTrue(left.z < -0.3, "mirrored for a left-handed one: " + left);
+        context.complete();
+    }
+
+    /** Thrown looking down at the floor a few blocks ahead, it lands there (not far away): it goes where he aims. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aThrowGoesWhereTheCrosshairAims(TestContext context) {
+        floor(context);
+        GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
+        player.setPitch(35f); // the floor, about 2.5 blocks ahead
+        context.assertTrue(GlandouilleTowers.pickUp(player, one), "carried");
+        context.waitAndRun(2, () -> {
+            double startX = player.getX();
+            context.assertTrue(GlandouilleTowers.throwCarried(player), "thrown");
+            context.waitAndRun(10, () -> {
+                double flown = one.getX() - startX;
+                context.assertTrue(flown > 1 && flown < 4.5, "landed where aimed: " + flown + " " + one.getMood());
+                context.assertTrue(one.getMood() != Mood.FLYING, "landed: " + one.getMood());
+                context.complete();
+            });
+        });
+    }
+
     /**
      * A left click with a stack in hand throws its bottom one forward, shot like a flicked one; the rest stays in hand,
      * one shorter, and the thrower is never hit by it.

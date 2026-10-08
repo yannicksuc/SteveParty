@@ -99,6 +99,13 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     /** How long a handled one stays awake (ticks): put down or landed, it does not drop off at once. */
     public static final int NAP_COOLDOWN_TICKS = 600;
     public static final int FLIGHT_TICKS = 30;
+    /** A flick goes straight (no gravity) for this many ticks, then falls. */
+    public static final int STRAIGHT_FLIGHT_TICKS = 10;
+    /** Flight speed (blocks per tick). */
+    public static final double FLIGHT_SPEED = 1.1;
+    /** A throw goes straight this far (blocks), then gravity comes back over {@link #GRAVITY_RAMP_TICKS}. */
+    public static final double THROW_STRAIGHT_BLOCKS = 50;
+    public static final int GRAVITY_RAMP_TICKS = 15;
     /** Let go of by the one under it (hit away): it hops straight up this hard, and gives up landing on a tower after {@link #HOP_TICKS}. */
     public static final double HOP_VELOCITY = 0.3;
     public static final int HOP_TICKS = 50;
@@ -171,6 +178,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     private boolean squashKill;
     private boolean variantFromData;
     private Vec3d flyDir = Vec3d.ZERO;
+    private int straightTicks = STRAIGHT_FLIGHT_TICKS, flightTicks = FLIGHT_TICKS;
+    /** A throw (aimed, gravity coming back smoothly), not a flick. */
+    private boolean thrown;
     private Vec3d slideVelocity = Vec3d.ZERO;
     private int slideRelaunches;
     /** Hopping off a tower: the tower it lands back on (null: the ground). */
@@ -820,12 +830,27 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
      * a lone one), it lands on top of it instead ({@link GlandouilleTowers#joinOnImpact}).
      */
     public void launch(Vec3d dir) {
+        startFlight(new Vec3d(dir.x, 0, dir.z), false);
+    }
+
+    /**
+     * Thrown out of a player's hand along {@code dir} (to his crosshair, up or down): straight, at a constant speed, for
+     * {@link #THROW_STRAIGHT_BLOCKS}, then gravity comes back little by little and it falls.
+     */
+    public void launchThrown(Vec3d dir) {
+        startFlight(dir, true);
+    }
+
+    private void startFlight(Vec3d dir, boolean thrown) {
         handled();
-        this.flyDir = new Vec3d(dir.x, 0, dir.z).normalize();
+        this.flyDir = dir.normalize();
+        this.thrown = thrown;
+        this.straightTicks = thrown ? (int) Math.ceil(THROW_STRAIGHT_BLOCKS / FLIGHT_SPEED) : STRAIGHT_FLIGHT_TICKS;
+        this.flightTicks = thrown ? straightTicks + GRAVITY_RAMP_TICKS + FLIGHT_TICKS : FLIGHT_TICKS;
         setNoGravity(true);
-        setVelocity(flyDir.x * 1.1, 0.08, flyDir.z * 1.1);
+        setVelocity(flyDir.x * FLIGHT_SPEED, thrown ? flyDir.y * FLIGHT_SPEED : 0.08, flyDir.z * FLIGHT_SPEED);
         this.velocityModified = true;
-        setMood(Mood.FLYING, FLIGHT_TICKS);
+        setMood(Mood.FLYING, flightTicks);
         playSound(ModSounds.GLANDOUILLE_FLICK, 1f, 1f);
     }
 
@@ -834,9 +859,24 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     }
 
     private void tickFlight(ServerWorld world) {
-        int flown = FLIGHT_TICKS - moodTicks;
-        if (flown < 10) setVelocity(flyDir.x * 1.1, getVelocity().y * 0.5, flyDir.z * 1.1);
-        else setNoGravity(false);
+        int flown = flightTicks - moodTicks;
+        if (flown < straightTicks) {
+            setVelocity(flyDir.x * FLIGHT_SPEED, thrown ? flyDir.y * FLIGHT_SPEED : getVelocity().y * 0.5, flyDir.z * FLIGHT_SPEED);
+            this.velocityModified = true;
+        } else if (thrown && flown < straightTicks + GRAVITY_RAMP_TICKS) {
+            // gravity comes back little by little: it bends down, then falls
+            float ramp = (flown - straightTicks + 1) / (float) GRAVITY_RAMP_TICKS;
+            setVelocity(getVelocity().add(0, -0.08 * ramp, 0));
+        } else {
+            setNoGravity(false);
+        }
+        // about to fly into a part of the world that doesn't tick (unloaded): it drops here instead of hanging there
+        if (!world.shouldTickEntity(BlockPos.ofFloored(getPos().add(getVelocity().multiply(2))))) {
+            setNoGravity(false);
+            setVelocity(getVelocity().multiply(0.2, 0, 0.2));
+            stun();
+            return;
+        }
         for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(0.3),
                 e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e) && !spares(e))) {
             // another tower (or a lone one): it lands on top of it and stays there
@@ -846,11 +886,11 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
                 setMood(Mood.CALM, 0);
                 return;
             }
-            shove(other, flyDir, SHOVE);
+            shove(other, new Vec3d(flyDir.x, 0, flyDir.z).normalize(), SHOVE);
             playSound(ModSounds.GLANDOUILLE_RAM, 1f, 1.2f);
         }
         if (flown % 2 == 0) world.spawnParticles(ParticleTypes.CLOUD, getX(), getY() + 0.3, getZ(), 1, 0, 0, 0, 0);
-        if (--moodTicks <= 0 || (flown > 2 && (this.horizontalCollision || isOnGround()))) {
+        if (--moodTicks <= 0 || (flown > 2 && (this.horizontalCollision || this.verticalCollision || isOnGround()))) {
             setNoGravity(false);
             if (this.horizontalCollision) playSound(ModSounds.GLANDOUILLE_BONK, 1f, 1.2f);
             setVelocity(getVelocity().multiply(0.2, 1, 0.2));

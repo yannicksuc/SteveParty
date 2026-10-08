@@ -2,8 +2,10 @@ package fr.lordfinn.steveparty.client.mixin;
 
 import fr.lordfinn.steveparty.client.entity.FirstPersonArm;
 import fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.util.Arm;
 import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -11,12 +13,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** A player carrying Glandouilles, seen from outside: both arms straight forward under the stack, the way he looks. */
+/** A player carrying Glandouilles, seen from outside: the main arm raised forward under the stack; the other swings. */
 @Mixin(PlayerEntityModel.class)
 public class PlayerEntityModelGlandouilleCarryMixin {
-    /** Arms raised to just under horizontal, a little inward. */
+    /** The main arm raised to a little under horizontal (the hand under the stack), turned a little outward. */
     @Unique
-    private static final float STEVEPARTY$CARRY_PITCH = -1.45F, STEVEPARTY$CARRY_INWARD = 0.12F;
+    private static final float STEVEPARTY$CARRY_PITCH = -1.1F, STEVEPARTY$CARRY_OUTWARD = 0.3F;
 
     /** After the biped pose, before the sleeves copy it. */
     @Inject(method = "setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V", at = @At(value = "INVOKE",
@@ -28,11 +30,10 @@ public class PlayerEntityModelGlandouilleCarryMixin {
         PlayerEntityModel<?> model = (PlayerEntityModel<?>) (Object) this;
         // the stack is held where he looks: the arms turn with the head
         float turn = MathHelper.clamp(headYaw, -60f, 60f) * MathHelper.RADIANS_PER_DEGREE;
-        model.rightArm.pitch = STEVEPARTY$CARRY_PITCH;
-        model.leftArm.pitch = STEVEPARTY$CARRY_PITCH;
-        model.rightArm.yaw = turn - STEVEPARTY$CARRY_INWARD;
-        model.leftArm.yaw = turn + STEVEPARTY$CARRY_INWARD;
-        model.rightArm.roll = 0F;
-        model.leftArm.roll = 0F;
+        boolean right = entity.getMainArm() == Arm.RIGHT;
+        ModelPart arm = right ? model.rightArm : model.leftArm;
+        arm.pitch = STEVEPARTY$CARRY_PITCH;
+        arm.yaw = turn + (right ? -STEVEPARTY$CARRY_OUTWARD : STEVEPARTY$CARRY_OUTWARD);
+        arm.roll = 0F;
     }
 }
