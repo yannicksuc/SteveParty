@@ -835,5 +835,144 @@
         "pitch": 0.8
       }
     ]
+  },
+  "boomcart.ambient": {
+    "subtitle": "subtitles.steveparty.boomcart.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.ambient",
+        "type": "event",
+        "volume": 0.35,
+        "pitch": 1.7
+      },
+      {
+        "name": "minecraft:entity.hoglin.ambient",
+        "type": "event",
+        "volume": 0.45,
+        "pitch": 1.4
+      }
+    ]
+  },
+  "boomcart.hurt": {
+    "subtitle": "subtitles.steveparty.boomcart.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.iron_golem.hurt",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.4
+      }
+    ]
+  },
+  "boomcart.death": {
+    "subtitle": "subtitles.steveparty.boomcart.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.iron_golem.death",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "boomcart.roll": {
+    "subtitle": "subtitles.steveparty.boomcart.roll",
+    "sounds": [
+      {
+        "name": "minecraft:block.chain.step",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 0.7
+      },
+      {
+        "name": "minecraft:block.metal.step",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 0.8
+      }
+    ]
+  },
+  "boomcart.load": {
+    "subtitle": "subtitles.steveparty.boomcart.load",
+    "sounds": [
+      {
+        "name": "minecraft:entity.generic.eat",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.6
+      }
+    ]
+  },
+  "boomcart.light": {
+    "subtitle": "subtitles.steveparty.boomcart.light",
+    "sounds": [
+      {
+        "name": "minecraft:item.flintandsteel.use",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 1.0
+      }
+    ]
+  },
+  "boomcart.fuse": {
+    "subtitle": "subtitles.steveparty.boomcart.fuse",
+    "sounds": [
+      {
+        "name": "minecraft:entity.creeper.primed",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "boomcart.panic": {
+    "subtitle": "subtitles.steveparty.boomcart.panic",
+    "sounds": [
+      {
+        "name": "minecraft:entity.piglin.retreat",
+        "type": "event",
+        "volume": 0.7,
+        "pitch": 1.4
+      },
+      {
+        "name": "minecraft:entity.hoglin.retreat",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.6
+      }
+    ]
+  },
+  "boomcart.roar": {
+    "subtitle": "subtitles.steveparty.boomcart.roar",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.roar",
+        "type": "event",
+        "volume": 0.45,
+        "pitch": 1.6
+      }
+    ]
+  },
+  "boomcart.refuse": {
+    "subtitle": "subtitles.steveparty.boomcart.refuse",
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.extinguish",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.6
+      }
+    ]
+  },
+  "boomcart.explode": {
+    "subtitle": "subtitles.steveparty.boomcart.explode",
+    "sounds": [
+      {
+        "name": "minecraft:entity.firework_rocket.blast",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.7
+      }
+    ]
   }
 }
