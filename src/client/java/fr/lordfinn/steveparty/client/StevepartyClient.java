@@ -191,6 +191,7 @@ public class StevepartyClient implements ClientModInitializer {
         fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud.initialize();
         fr.lordfinn.steveparty.client.minigame.PageZoneClient.initialize();
         fr.lordfinn.steveparty.client.items.InventoryCartridgeClient.initialize();
+        fr.lordfinn.steveparty.client.items.CartridgeClickGuard.initialize();
         fr.lordfinn.steveparty.client.items.BandanaArmorRenderer.register();
         fr.lordfinn.steveparty.client.items.ExplorerHelmetRenderer.register();
         fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent.register();
