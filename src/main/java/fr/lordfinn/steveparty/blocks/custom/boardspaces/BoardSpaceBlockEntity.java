@@ -371,18 +371,6 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         return BoardSpaceBehaviorFactory.get(determineBoardSpaceType(stack));
     }
 
-    @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        var nbt = super.toInitialChunkDataNbt(registries);
-        writeNbt(nbt, registries);
-        return nbt;
-    }
-
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
-    }
-
     /** Only ticks for board spaces whose role needs it (see ABoardSpaceBlock#getTicker). */
     @Override
     public void tick() {

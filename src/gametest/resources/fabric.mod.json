@@ -8,6 +8,7 @@
     "fabric-gametest": [
       "fr.lordfinn.steveparty.gametest.BoardSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.TileCartridgeGameTests",
+      "fr.lordfinn.steveparty.gametest.BrushCartridgeLinksGameTests",
       "fr.lordfinn.steveparty.gametest.RouterEventGameTests",
       "fr.lordfinn.steveparty.gametest.BoardPerfGameTests",
       "fr.lordfinn.steveparty.gametest.TileFeedbackGameTests",

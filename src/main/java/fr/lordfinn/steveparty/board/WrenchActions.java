@@ -271,6 +271,37 @@ public final class WrenchActions {
     }
 
     /**
+     * A block other than a board space was placed by {@code placer}: with the Tile Linker Brush in the off hand, a holder
+     * of a cartridge (Hop Switch, Piggy Bank, router...) becomes the brush's anchor; anything its anchor's cartridge
+     * links (a chest for an Inventory Cartridge, a switchable block for a Hop Switch...) is linked from it, as a click
+     * with that cartridge would, if it is near enough (see {@link BrushLinks}).
+     */
+    public static void onBlockPlaced(World world, BlockPos pos, @Nullable net.minecraft.entity.player.PlayerEntity placer) {
+        if (!(world instanceof ServerWorld serverWorld) || !(placer instanceof ServerPlayerEntity player)) return;
+        ItemStack brush = player.getOffHandStack();
+        if (!TileLinkerBrush.isBrush(brush)) return;
+        if (world.getBlockState(pos).getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock) return;
+        if (BrushLinks.isHolder(world, pos)) {
+            recorded(player, world, brush, () -> {
+                TileLinkerBrush.setAnchor(brush, world, pos);
+                say(player, Text.translatable("message.steveparty.tile_linker_brush.start", BoardText.pos(pos)));
+            });
+            return;
+        }
+        BlockPos anchor = TileLinkerBrush.anchor(brush, world);
+        if (anchor == null) return;
+        BrushLinkable kind = BrushLinks.kindFor(BrushLinks.of(world, anchor, TileLinkerBrush.level(brush)), world, pos);
+        if (kind == null || kind.linked(world, pos)) return;
+        double distance = Math.sqrt(anchor.getSquaredDistance(pos));
+        if (distance > AUTO_LINK_DISTANCE) {
+            warn(player, Text.translatable("message.steveparty.tile_linker_brush.too_far", (int) Math.round(distance), (int) AUTO_LINK_DISTANCE));
+            return;
+        }
+        BlockPos placed = pos.toImmutable();
+        recorded(player, world, brush, () -> TileLinkerBrush.toggle(player, serverWorld, anchor, kind, placed));
+    }
+
+    /**
      * A board space placed from an item holding its data (creative pick block with Ctrl, a copied item...): its
      * cartridges come without their links, which pointed at the neighbours of the original.
      */
@@ -292,25 +323,28 @@ public final class WrenchActions {
     // ---------------------------------------------------------------- chests of inventory tiles
 
     public static void initialize() {
-        // A click on a trading stall or a cash register with the Tile Linker Brush whose anchor holds a Shop Cartridge:
-        // the shop of that stall / register (its Boxed Trader) is the cartridge's shop, instead of the nearest merchant
+        // A click with the Tile Linker Brush on something its anchor's cartridge links (a chest for an Inventory
+        // Cartridge, a trading stall or cash register for a Shop Cartridge, a switchable block for a Hop Switch...):
+        // added, or removed if it is one, as a click with that cartridge would (see BrushLinks). A holder is painted.
         net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
-            ItemStack wrench = player.getMainHandStack();
-            if (!TileLinkerBrush.isBrush(wrench)) return ActionResult.PASS;
-            net.minecraft.block.Block block = world.getBlockState(hit.getBlockPos()).getBlock();
-            if (!(block instanceof fr.lordfinn.steveparty.blocks.custom.TradingStallBlock)
-                    && !(block instanceof fr.lordfinn.steveparty.blocks.custom.CashRegisterBlock)) return ActionResult.PASS;
-            ShopOrigin shop = shopOrigin(wrench, world);
-            if (shop == null) return ActionResult.PASS;
+            ItemStack brush = player.getMainHandStack();
+            if (!TileLinkerBrush.isBrush(brush)) return ActionResult.PASS;
+            BlockPos clicked = hit.getBlockPos().toImmutable();
+            if (BrushLinks.isHolder(world, clicked)) return ActionResult.PASS;
+            BlockPos anchor = TileLinkerBrush.anchor(brush, world);
+            if (anchor == null) return ActionResult.PASS;
+            java.util.List<BrushLinkable> kinds = BrushLinks.of(world, anchor, TileLinkerBrush.level(brush));
+            BrushLinkable kind = BrushLinks.kindFor(kinds, world, clicked);
+            if (kind == null) return ActionResult.PASS;
             if (world.isClient) return ActionResult.SUCCESS;
             ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-            BlockPos clicked = hit.getBlockPos().toImmutable();
+            // Held down, the use repeats: the same block is not toggled back and forth
             if (isRepeat(serverPlayer, clicked, world.getTime())) return ActionResult.SUCCESS;
-            recorded(serverPlayer, world, wrench, () -> linkShopFromBlock(serverPlayer, (ServerWorld) world, shop, clicked));
+            recorded(serverPlayer, world, brush, () -> TileLinkerBrush.toggle(serverPlayer, (ServerWorld) world, anchor, kind, clicked));
             return ActionResult.SUCCESS;
         });
-        // A click on a Boxed Trader with the same brush: that trader is the cartridge's shop
+        // A click on a Boxed Trader with the brush whose anchor holds a Shop Cartridge: that trader is the cartridge's shop
         net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
             ItemStack wrench = player.getMainHandStack();
@@ -320,56 +354,14 @@ public final class WrenchActions {
             if (world.isClient) return ActionResult.SUCCESS;
             ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
             if (isRepeat(serverPlayer, trader.getBlockPos(), world.getTime())) return ActionResult.SUCCESS;
+            if (!fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks.canBuildAt(serverPlayer, shop.container().getPos())) {
+                TileLinkerBrush.cannotEdit(serverPlayer, shop.container().getPos());
+                return ActionResult.SUCCESS;
+            }
             recorded(serverPlayer, world, wrench, () -> linkShop(serverPlayer, (ServerWorld) world, shop,
                     new ShopLinkComponent(trader.getUuid(), trader.getBlockPos().toImmutable())));
             return ActionResult.SUCCESS;
         });
-        // A click on a chest with the brush whose anchor is an inventory tile: that tile's chest (even without sneaking)
-        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
-            ItemStack wrench = player.getMainHandStack();
-            if (!TileLinkerBrush.isBrush(wrench) || !BoardLinks.isChest(world, hit.getBlockPos())) return ActionResult.PASS;
-            BlockPos origin = TileLinkerBrush.anchor(wrench, world);
-            CartridgeContainerBlockEntity container = origin == null ? null : BoardLinks.container(world, origin);
-            if (container == null) return ActionResult.PASS;
-            int slot = BoardLinks.slotOf(container, TileLinkerBrush.level(wrench));
-            if (!(container.getStack(slot).getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem)) {
-                return ActionResult.PASS;
-            }
-            if (world.isClient) return ActionResult.SUCCESS;
-            ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-            BlockPos chest = hit.getBlockPos().toImmutable();
-            // Held down, the use repeats: the same chest is not toggled back and forth
-            if (isRepeat(serverPlayer, chest, world.getTime())) return ActionResult.SUCCESS;
-            recorded(serverPlayer, world, wrench, () -> linkChest(serverPlayer, (ServerWorld) world, container, slot, chest));
-            return ActionResult.SUCCESS;
-        });
-    }
-
-    /**
-     * Adds {@code chest} to the containers of the inventory cartridge in {@code slot} (at the end), or removes it if
-     * it is one of them; a full list takes no more.
-     */
-    private static void linkChest(ServerPlayerEntity player, ServerWorld world, CartridgeContainerBlockEntity container, int slot, BlockPos chest) {
-        ItemStack cartridge = container.getStack(slot);
-        java.util.List<net.minecraft.util.math.GlobalPos> before = fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey());
-        var toggle = fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.toggle(cartridge, world, chest);
-        if (toggle == fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.Toggle.FULL) {
-            say(player, Text.translatable("message.steveparty.inventory_cartridge.full", fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.MAX));
-            playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 0.7f);
-            return;
-        }
-        BoardLinks.sync(container);
-        LinkHistory.record(player, new LinkHistory.ChestChange(container.getPos().toImmutable(), slot, before,
-                fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey())));
-        if (toggle == fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.Toggle.ADDED) {
-            BoardLinks.trail(world, container.getPos(), chest, 0x3C8CFF);
-            say(player, Text.translatable("message.steveparty.wrench.chest.linked", BoardText.pos(chest), BoardText.pos(container.getPos())));
-            playSound(world, player, ModSounds.SELECT_SOUND_EVENT, 1.1f);
-        } else {
-            say(player, Text.translatable("message.steveparty.wrench.chest.unlinked", BoardText.pos(chest), BoardText.pos(container.getPos())));
-            playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 1f);
-        }
     }
 
     // ---------------------------------------------------------------- shops of Shop Cartridges
@@ -392,7 +384,7 @@ public final class WrenchActions {
     }
 
     /** A trading stall or cash register clicked: the Boxed Trader it belongs to (Shopkeeper Key links) becomes the shop. */
-    private static void linkShopFromBlock(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin, BlockPos clicked) {
+    static void linkShopFromBlock(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin, BlockPos clicked) {
         VendorLinkPersistentState links = VendorLinkPersistentState.get(world.getServer());
         java.util.Set<UUID> traders = links == null ? java.util.Set.of()
                 : links.getVendorsLinkedTo(net.minecraft.util.math.GlobalPos.create(world.getRegistryKey(), clicked));
@@ -415,12 +407,7 @@ public final class WrenchActions {
         ShopLinkComponent before = cartridge.get(ModComponents.SHOP_LINK);
         BlockPos pos = origin.container().getPos().toImmutable();
         if (before != null && before.trader().equals(shop.trader())) {
-            cartridge.remove(ModComponents.SHOP_LINK);
-            BoardLinks.sync(origin.container());
-            LinkHistory.record(player, new LinkHistory.ShopChange(pos, origin.slot(), before, null));
-            BoardLinks.trail(world, pos, before.anchor(), BoardLinks.CUT_COLOR);
-            say(player, Text.translatable("message.steveparty.wrench.shop.unlinked", BoardText.pos(pos)));
-            playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 1f);
+            unlinkShop(player, world, origin);
             return;
         }
         cartridge.set(ModComponents.SHOP_LINK, shop);
@@ -431,6 +418,20 @@ public final class WrenchActions {
         say(player, Text.translatable("message.steveparty.wrench.shop.linked", BoardText.pos(pos),
                 trader != null ? trader.getDisplayName() : Text.translatable("entity.steveparty.boxed_trader")));
         world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_VILLAGER_TRADE, SoundCategory.PLAYERS, 0.6f, 1.2f);
+    }
+
+    /** The cartridge's shop is the nearest merchant again. */
+    static void unlinkShop(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin) {
+        ItemStack cartridge = origin.cartridge();
+        ShopLinkComponent before = cartridge.get(ModComponents.SHOP_LINK);
+        if (before == null) return;
+        BlockPos pos = origin.container().getPos().toImmutable();
+        cartridge.remove(ModComponents.SHOP_LINK);
+        BoardLinks.sync(origin.container());
+        LinkHistory.record(player, new LinkHistory.ShopChange(pos, origin.slot(), before, null));
+        BoardLinks.trail(world, pos, before.anchor(), BoardLinks.CUT_COLOR);
+        say(player, Text.translatable("message.steveparty.wrench.shop.unlinked", BoardText.pos(pos)));
+        playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 1f);
     }
 
     /** Colour of a shop link (particles, board view): the Shop Cartridge's lime green. */
