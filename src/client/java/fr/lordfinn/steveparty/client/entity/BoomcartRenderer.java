@@ -32,22 +32,25 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
  *     <li><b>TNT</b>: the vanilla TNT block (resource packs apply), 12 px, sunk in the cart and centred on the body;
  *     flashing white once lit, as vanilla primed TNT.</li>
  *     <li><b>Firework</b>: the vanilla barrel, open, the same size, and three rockets in it (single cubes, our texture),
- *     their heights and tilts as in v12.</li>
- *     <li><b>Fuses</b>: two crossed planes on the TNT's top, smaller ones on each rocket's tip, tilted with it. Their
- *     texture's frame goes unlit, lit, about to blow ({@link #fuseFrame}); lit, they glow and burn down, sinking into
- *     the load.</li>
+ *     their heights and tilts as in v13.</li>
+ *     <li><b>Fuses</b>: two crossed planes on the TNT's top, smaller ones on each rocket's tip, tilted with it. Lit,
+ *     their texture cycles through four crackling frames, then two white-hot ones in the last seconds
+ *     ({@link #fuseFrame}); they glow and burn down, sinking into the load.</li>
  * </ul>
- * The load's placements are the v12 ones (art/previews/boomcart/models/v12_*.json), in its block-model coordinates:
- * pixels, x 0..16, the face toward +z ({@link LoadLayer#toV12}).
+ * The load's placements are the v13 ones (art/previews/boomcart/models/v13_*.json), in its block-model coordinates:
+ * pixels, x 0..16, the face toward +z ({@link LoadLayer#toV13}).
  */
 public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
     private static final Identifier LOAD_TEXTURE = Steveparty.id("textures/entity/boomcart_load.png");
     private static final Identifier[] GLOW = {Steveparty.id("textures/entity/boomcart_glow.png"),
-            Steveparty.id("textures/entity/boomcart_open_glow.png"), Steveparty.id("textures/entity/boomcart_lit_glow.png")};
+            Steveparty.id("textures/entity/boomcart_open_glow.png"), Steveparty.id("textures/entity/boomcart_lit_glow.png"),
+            Steveparty.id("textures/entity/boomcart_blow_glow.png")};
     private static final int FULL_BRIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
     /** boomcart_load.png's size, and its fuse frames (7x9 each, side by side from this row). */
     private static final float LOAD_W = 64, LOAD_H = 32;
     private static final int FUSE_ROW = 10, FUSE_W = 7, FUSE_H = 9;
+    /** The fuse frames: unlit, then the lit ones (each shown this many ticks), then the about-to-blow ones. */
+    private static final int FUSE_LIT = 1, FUSE_LIT_FRAMES = 4, FUSE_LIT_TICKS = 2, FUSE_BLOW = 5, FUSE_BLOW_FRAMES = 2;
 
     public BoomcartRenderer(EntityRendererFactory.Context context) {
         super(context, new BoomcartModel());
@@ -56,12 +59,17 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
         addRenderLayer(new LoadLayer(this));
     }
 
-    /** The fuse's texture frame: 0 unlit, 1 lit, 2 about to blow (flickering toward it as the fuse runs out). */
-    static int fuseFrame(BoomcartEntity boomcart) {
+    /**
+     * The fuse's texture frame: 0 unlit; lit, the four crackling frames in turn; in the last seconds
+     * ({@link BoomcartModel#BLOW_TICKS}), the two white-hot ones swapping every tick. {@code phase} shifts the cycle,
+     * so the three rockets don't crackle in step.
+     */
+    static int fuseFrame(BoomcartEntity boomcart, int phase) {
         int fuse = boomcart.getFuse();
         if (fuse < 0) return 0;
-        int period = fuse < 30 ? 1 : fuse < 80 ? 2 : 4;
-        return (boomcart.age / period) % 2 == 0 ? 2 : 1;
+        int t = boomcart.age + phase;
+        if (fuse < BoomcartModel.BLOW_TICKS) return FUSE_BLOW + Math.floorMod(t, FUSE_BLOW_FRAMES);
+        return FUSE_LIT + Math.floorMod(t / FUSE_LIT_TICKS, FUSE_LIT_FRAMES);
     }
 
     /** How far the fuse has burnt, 0..1. */
@@ -93,17 +101,17 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
         private static final BlockState BARREL = Blocks.BARREL.getDefaultState()
                 .with(BarrelBlock.FACING, Direction.UP).with(BarrelBlock.OPEN, true);
 
-        /** A rocket of v12_d1_firework: its cube, its tilt (axis, degrees, around origin), its faces' uv. */
+        /** A rocket of v13_d1_firework: its cube, its tilt (axis, degrees, around origin), its faces' uv. */
         private record Rocket(float[] from, float[] to, char axis, float angle, float[] origin, float[][] uv) {
         }
 
         // uv: north, south, east, west, up, down (pixels of boomcart_load.png)
         private static final Rocket[] ROCKETS = {
-                new Rocket(new float[]{4.3f, 11, 6}, new float[]{7.3f, 20, 9}, 'z', 6, new float[]{5.8f, 14, 7.5f},
+                new Rocket(new float[]{4.3f, 11, 7}, new float[]{7.3f, 20, 10}, 'z', 6, new float[]{5.8f, 14, 8.5f},
                         new float[][]{{0, 0, 3, 9}, {3, 0, 6, 9}, {6, 0, 9, 9}, {9, 0, 12, 9}, {12, 0, 15, 3}, {15, 0, 18, 3}}),
-                new Rocket(new float[]{8.6f, 11, 6}, new float[]{11.6f, 18.5f, 9}, 'z', -6, new float[]{10.1f, 14, 7.5f},
+                new Rocket(new float[]{8.6f, 11, 7}, new float[]{11.6f, 18.5f, 10}, 'z', -6, new float[]{10.1f, 14, 8.5f},
                         new float[][]{{25, 0, 28, 8}, {28, 0, 31, 8}, {31, 0, 34, 8}, {34, 0, 37, 8}, {37, 0, 40, 3}, {40, 0, 43, 3}}),
-                new Rocket(new float[]{6.5f, 11, 9.8f}, new float[]{9.5f, 17, 12.8f}, 'x', 8, new float[]{8, 14, 11.3f},
+                new Rocket(new float[]{6.5f, 11, 10.8f}, new float[]{9.5f, 17, 13.8f}, 'x', 8, new float[]{8, 14, 12.3f},
                         new float[][]{{43, 0, 46, 6}, {46, 0, 49, 6}, {49, 0, 52, 6}, {52, 0, 55, 6}, {55, 0, 58, 3}, {58, 0, 61, 3}}),
         };
         /** The rockets' fuses: 6 px high on their tips, 4.67 wide (the TNT's: 9 x 7). */
@@ -121,21 +129,21 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
                                   int packedLight, int packedOverlay) {
             if (!bone.getName().equals("load")) return;
             poseStack.push();
-            toV12(poseStack);
-            int frame = fuseFrame(boomcart);
+            toV13(poseStack);
             float burnt = burnt(boomcart, partialTick);
             int fuseLight = boomcart.isLit() ? FULL_BRIGHT : packedLight;
             VertexConsumer load;
             if (boomcart.carriesFirework()) {
                 block(poseStack, bufferSource, BARREL, packedLight, false);
                 load = bufferSource.getBuffer(RenderLayer.getEntityCutoutNoCull(LOAD_TEXTURE));
-                for (Rocket rocket : ROCKETS) {
+                for (int k = 0; k < ROCKETS.length; k++) {
+                    Rocket rocket = ROCKETS[k];
                     poseStack.push();
                     tilt(poseStack, rocket.axis, rocket.angle, rocket.origin);
                     cube(poseStack.peek(), load, rocket.from, rocket.to, rocket.uv, packedLight, packedOverlay);
                     float cx = (rocket.from[0] + rocket.to[0]) / 2, cz = (rocket.from[2] + rocket.to[2]) / 2;
                     float y = rocket.to[1] - ROCKET_FUSE_SINK * burnt;
-                    float[] uv = fuseUv(frame);
+                    float[] uv = fuseUv(fuseFrame(boomcart, 3 * k));
                     plane(poseStack.peek(), load, cx - ROCKET_FUSE_W / 2, y, cz, cx + ROCKET_FUSE_W / 2, y + ROCKET_FUSE_H, cz,
                             uv, fuseLight);
                     plane(poseStack.peek(), load, cx, y, cz - ROCKET_FUSE_W / 2, cx, y + ROCKET_FUSE_H, cz + ROCKET_FUSE_W / 2,
@@ -147,11 +155,11 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
                 block(poseStack, bufferSource, TNT, packedLight, flash);
                 load = bufferSource.getBuffer(RenderLayer.getEntityCutoutNoCull(LOAD_TEXTURE));
                 float y = 14 - TNT_FUSE_SINK * burnt;
-                float[] uv = fuseUv(frame);
+                float[] uv = fuseUv(fuseFrame(boomcart, 0));
                 for (float angle : new float[]{45, -45}) {
                     poseStack.push();
-                    tilt(poseStack, 'y', angle, new float[]{8, 14, 9});
-                    plane(poseStack.peek(), load, 4.5f, y, 9, 11.5f, y + 9, 9, uv, fuseLight);
+                    tilt(poseStack, 'y', angle, new float[]{8, 14, 10});
+                    plane(poseStack.peek(), load, 4.5f, y, 10, 11.5f, y + 9, 10, uv, fuseLight);
                     poseStack.pop();
                 }
             }
@@ -161,20 +169,20 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
         }
 
         /**
-         * From the load bone's frame (the model's: blocks, x as in Blockbench, facing -z) to v12's: pixels, the body
-         * on x 0..16, z 0..18, facing +z. Half a turn around y: v12 (x, y, z) is the model's (8 - x, y, 10 - z).
+         * From the load bone's frame (the model's: blocks, x as in Blockbench, facing -z) to v13's: pixels, the body
+         * on x 0..16, z 0..18, facing +z. Half a turn around y: v13 (x, y, z) is the model's (8 - x, y, 10 - z).
          */
-        static void toV12(MatrixStack poseStack) {
+        static void toV13(MatrixStack poseStack) {
             poseStack.translate(0.5f, 0, 0.625f);
             poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180));
             poseStack.scale(1 / 16f, 1 / 16f, 1 / 16f);
         }
 
-        /** A vanilla block, 12 px, sunk in the cart: v12's [2, 2, 3] to [14, 14, 15]. */
+        /** A vanilla block, 12 px, sunk in the cart and centred on its box (body + lip, z 0..20): v13's [2, 2, 4] to [14, 14, 16]. */
         private static void block(MatrixStack poseStack, VertexConsumerProvider bufferSource, BlockState state, int light,
                                   boolean flash) {
             poseStack.push();
-            poseStack.translate(2, 2, 3);
+            poseStack.translate(2, 2, 4);
             poseStack.scale(12, 12, 12);
             TntMinecartEntityRenderer.renderFlashingBlock(MinecraftClient.getInstance().getBlockRenderManager(), state,
                     poseStack, bufferSource, light, flash);
