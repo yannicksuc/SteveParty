@@ -2664,9 +2664,7 @@
   "pose.steveparty.player_pawn.stand": "Debout",
   "pose.steveparty.player_pawn.wave": "Coucou",
   "pose.steveparty.player_pawn.victory": "Victoire",
-  "pose.steveparty.player_pawn.fist_pump": "Poing levé",
   "pose.steveparty.player_pawn.dice_punch": "Frappe du dé",
-  "pose.steveparty.player_pawn.trophy": "Trophée",
   "pose.steveparty.player_pawn.point": "Par là !",
   "pose.steveparty.player_pawn.salute": "Salut militaire",
   "pose.steveparty.player_pawn.thinker": "Penseur",
@@ -2679,6 +2677,11 @@
   "pose.steveparty.player_pawn.dab": "Dab",
   "pose.steveparty.player_pawn.sulk": "Bouderie du dernier",
   "pose.steveparty.player_pawn.ballerina": "Ballerine",
+  "pose.steveparty.player_pawn.sit_edge": "Jambes dans le vide",
+  "pose.steveparty.player_pawn.cross_legged": "En tailleur",
+  "pose.steveparty.player_pawn.lounge": "Détente",
+  "pose.steveparty.player_pawn.knees_hugged": "Genoux serrés",
+  "pose.steveparty.player_pawn.handstand": "Poirier",
   "command.steveparty.playerpawn.done": "%s joueur(s) changé(s) en pion",
   "command.steveparty.playerpawn.none": "Aucun joueur ne peut devenir un pion maintenant (déjà pion, ou sous le sort)"
 }

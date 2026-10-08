@@ -2664,9 +2664,7 @@
   "pose.steveparty.player_pawn.stand": "Standing",
   "pose.steveparty.player_pawn.wave": "Wave",
   "pose.steveparty.player_pawn.victory": "Victory",
-  "pose.steveparty.player_pawn.fist_pump": "Fist Pump",
   "pose.steveparty.player_pawn.dice_punch": "Dice Punch",
-  "pose.steveparty.player_pawn.trophy": "Trophy",
   "pose.steveparty.player_pawn.point": "Over There!",
   "pose.steveparty.player_pawn.salute": "Salute",
   "pose.steveparty.player_pawn.thinker": "Thinker",
@@ -2679,6 +2677,11 @@
   "pose.steveparty.player_pawn.dab": "Dab",
   "pose.steveparty.player_pawn.sulk": "Last Place Sulk",
   "pose.steveparty.player_pawn.ballerina": "Ballerina",
+  "pose.steveparty.player_pawn.sit_edge": "Dangling Legs",
+  "pose.steveparty.player_pawn.cross_legged": "Cross-Legged",
+  "pose.steveparty.player_pawn.lounge": "Lounging",
+  "pose.steveparty.player_pawn.knees_hugged": "Knees Hugged",
+  "pose.steveparty.player_pawn.handstand": "Handstand",
   "command.steveparty.playerpawn.done": "%s player(s) turned into pawns",
   "command.steveparty.playerpawn.none": "No player can be turned into a pawn now (already one, or under the spell)"
 }
