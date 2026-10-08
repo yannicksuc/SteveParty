@@ -108,16 +108,18 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         int w = StencilGunScreenHandler.WIDTH, h = StencilGunScreenHandler.HEIGHT;
         // The hammer's panel in its wood, as the top part of the mod's block screens
         panel(context, x, y, w, StencilGunScreenHandler.TOP_HEIGHT);
-        // The plates as the tool wheels draw theirs, on a drop shadow: the one under the mouse grown and lighter
+        // The plates as the tool wheels draw theirs: the one under the mouse grown and lighter
         ToolWheel.Hover hover = plateAt(mouseX, mouseY);
         ToolWheel.drawPlates(context, WHEEL, cx, cy, hover == null ? null : hover.arc(), hover == null ? -1 : hover.index(),
-                hub(mouseX, mouseY), 1f, false, false, true);
+                hub(mouseX, mouseY), 1f, false, false);
         // Its slots sunk into the wood, as the block screens' slots in their panel's colour (riding their plate out),
-        // an empty one showing the see-through silhouette of what it takes
+        // an empty one showing the see-through silhouette of what it takes, a filled one its item on a drop shadow as
+        // the wheels' item icons
         Sprite[] silhouettes = new Sprite[2];
         for (int i = 0; i < StencilGunItem.SIZE; i++) {
             Slot slot = handler.slots.get(i);
             ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, THEME.slot(), THEME.rim(), THEME.rim());
+            if (slot.hasStack()) ToolWheel.drawItemShadow(context, slot.getStack(), x + slot.x, y + slot.y);
             if (slot.hasStack() || !(slot instanceof StencilGunScreenHandler.FilteredSlot filtered) || client == null) continue;
             int kind = filtered.takesStencils() ? 1 : 0;
             if (silhouettes[kind] == null) {
@@ -243,6 +245,10 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     }
 
     private void frame(DrawContext context, Slot slot, int color) {
+        // Above the item's drop shadow (drawn at the items' depth), which reaches the frame's right and bottom
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 300);
         context.drawBorder(this.x + slot.x - 1, this.y + slot.y - 1, 18, 18, color);
+        context.getMatrices().pop();
     }
 }

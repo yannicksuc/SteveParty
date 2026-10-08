@@ -140,27 +140,9 @@ final class BrushWheel implements ToolWheel.Provider {
         return kinds;
     }
 
-    /**
-     * An item drawn {@code scale} times its size (2: still whole pixels), on a drop shadow one of its pixels down right
-     * (its silhouette darkened, behind it), like the wheel's sprite icons.
-     */
+    /** An item drawn {@code scale} times its size, on its drop shadow (the wheels' item icons). */
     static ToolWheel.Icon big(ItemStack stack, float scale) {
-        return (context, x, y) -> {
-            context.getMatrices().push();
-            context.getMatrices().translate(x, y, 0);
-            context.getMatrices().scale(scale, scale, 1);
-            context.getMatrices().push();
-            context.getMatrices().translate(1, 1, -50);
-            // Items are drawn in batches: flushed before and after, so that the darkening applies to the shadow only
-            context.draw();
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.16f, 0.06f, 0.08f, 1f);
-            context.drawItem(stack, -8, -8);
-            context.draw();
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            context.getMatrices().pop();
-            context.drawItem(stack, -8, -8);
-            context.getMatrices().pop();
-        };
+        return ToolWheel.item(stack, scale);
     }
 
     /** The gold of the Advanced Tiles. */
