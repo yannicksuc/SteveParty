@@ -10,8 +10,10 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.TexturedRenderLayers;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BeaconBlockEntityRenderer;
+import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -34,7 +36,7 @@ import java.util.List;
 public final class StarSpaceRenderer {
     /** Over the space's surface, in blocks; its size; degrees per tick it turns. */
     private static final double HEIGHT = 1.6;
-    private static final float SCALE = 1.4F, SPIN = 3.0F;
+    private static final float SCALE = 1.26F, SPIN = 3.0F;
     /** Farther than this, the star and its beam are not drawn (beyond any board; a beacon's range too), in blocks. */
     private static final double MAX_DISTANCE = 256;
     /** The beam's colour: the Star space's yellow (ARGB). */
@@ -70,22 +72,35 @@ public final class StarSpaceRenderer {
             float tickDelta = context.tickCounter().getTickDelta(true);
             float time = world.getTime() + tickDelta;
             VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
+            // The stars first, opaque: the item layer is translucent, and its faces (unsorted, partly see-through on the
+            // texture's mipmaps from afar) showed the cubes behind them through the front ones. Drawn before the beams
+            // so that the beam's glow tints the part of the star inside it.
+            BakedModel model = client.getItemRenderer().getModel(star, world, null, 0);
+            VertexConsumerProvider opaque = layer -> consumers.getBuffer(
+                    layer == TexturedRenderLayers.getEntityTranslucentCull() ? TexturedRenderLayers.getEntityCutout() : layer);
             for (BlockPos space : stars) {
                 Vec3d at = BoardSpaces.standPos(world, space);
                 if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
-                // The beam: from the space's surface up to the build height (the vanilla beam, centred on its cell)
+                matrices.push();
+                matrices.translate(at.x - camera.x, at.y + HEIGHT + 0.12 * MathHelper.sin(time * 0.08F) - camera.y, at.z - camera.z);
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * SPIN));
+                matrices.scale(SCALE, SCALE, SCALE);
+                // No display transform (the item's "fixed" one shifts it off its centre): the model's box centred on
+                // the beam's axis, so that it turns on the spot
+                client.getItemRenderer().renderItem(star, ModelTransformationMode.NONE, false, matrices, opaque, 0xF000F0,
+                        OverlayTexture.DEFAULT_UV, model);
+                matrices.pop();
+            }
+            consumers.draw();
+            // The beams: from each space's surface up to the build height (the vanilla beam, centred on its cell)
+            for (BlockPos space : stars) {
+                Vec3d at = BoardSpaces.standPos(world, space);
+                if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
                 int bottom = MathHelper.floor(at.y);
                 matrices.push();
                 matrices.translate(at.x - 0.5 - camera.x, bottom - camera.y, at.z - 0.5 - camera.z);
                 BeaconBlockEntityRenderer.renderBeam(matrices, consumers, BeaconBlockEntityRenderer.BEAM_TEXTURE, tickDelta,
                         1.0F, world.getTime(), 0, Math.max(1, world.getTopY() - bottom), BEAM_COLOR, 0.2F, 0.25F);
-                matrices.pop();
-                matrices.push();
-                matrices.translate(at.x - camera.x, at.y + HEIGHT + 0.12 * MathHelper.sin(time * 0.08F) - camera.y, at.z - camera.z);
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * SPIN));
-                matrices.scale(SCALE, SCALE, SCALE);
-                client.getItemRenderer().renderItem(star, ModelTransformationMode.FIXED, 0xF000F0, OverlayTexture.DEFAULT_UV,
-                        matrices, consumers, world, 0);
                 matrices.pop();
             }
             consumers.draw();
