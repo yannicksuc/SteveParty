@@ -417,7 +417,6 @@ public class StevepartyClient implements ClientModInitializer {
         GoalPoleFlipTracker.clear();
         fr.lordfinn.steveparty.client.flip.GoalPoleCameraRoll.clear();
         SquishAnimations.clear();
-        fr.lordfinn.steveparty.client.pawn.PawnSkins.clear();
         fr.lordfinn.steveparty.client.renderer.DestinationsRenderer.clear();
         // The carriers of the last world, else kept (with their world) until a world renders again
         fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity.CLIENT_CARRIERS.clear();
