@@ -88,6 +88,13 @@ public final class DevClientCommands {
                             });
                             return 1;
                         }))
+                        // Hitboxes shown or not (F3 + B)
+                        .then(ClientCommandManager.literal("hitboxes")
+                                .then(ClientCommandManager.argument("shown", com.mojang.brigadier.arguments.BoolArgumentType.bool()).executes(context -> {
+                                    context.getSource().getClient().getEntityRenderDispatcher().setRenderHitboxes(
+                                            com.mojang.brigadier.arguments.BoolArgumentType.getBool(context, "shown"));
+                                    return 1;
+                                })))
                         // The GUI scale (0: auto)
                         .then(ClientCommandManager.literal("guiscale")
                                 .then(ClientCommandManager.argument("scale", IntegerArgumentType.integer(0, 6)).executes(context -> {
