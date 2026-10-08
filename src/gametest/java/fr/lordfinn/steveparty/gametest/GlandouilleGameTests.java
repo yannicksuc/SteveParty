@@ -17,6 +17,7 @@ import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
 import fr.lordfinn.steveparty.service.GlandouillePushes;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
@@ -1024,14 +1025,18 @@ public class GlandouilleGameTests implements FabricGameTest {
 
     /** The path's tiles, each linked to the next; the first holds {@code first}. */
     private static BoardSpaceBlockEntity path(TestContext context, ItemStack first) {
+        return path(context, first, PATH);
+    }
+
+    private static BoardSpaceBlockEntity path(TestContext context, ItemStack first, List<BlockPos> path) {
         BoardSpaceBlockEntity start = null;
-        for (int i = 0; i < PATH.size(); i++) {
-            BlockPos pos = PATH.get(i);
+        for (int i = 0; i < path.size(); i++) {
+            BlockPos pos = path.get(i);
             context.setBlockState(pos.down(), Blocks.STONE);
             context.setBlockState(pos, ModBlocks.TILE);
             ItemStack cartridge = i == 0 ? first : new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
             List<BlockPos> next = new ArrayList<>();
-            if (i + 1 < PATH.size()) next.add(context.getAbsolutePos(PATH.get(i + 1)));
+            if (i + 1 < path.size()) next.add(context.getAbsolutePos(path.get(i + 1)));
             cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(next, ""));
             BoardSpaceBlockEntity tile = context.getBlockEntity(pos);
             tile.setStack(0, cartridge);
@@ -1047,6 +1052,12 @@ public class GlandouilleGameTests implements FabricGameTest {
         token.steveparty$setStatus(TokenStatus.IN_GAME);
         atEnd(context, () -> token.steveparty$setTokenized(false));
         return pig;
+    }
+
+    private static ItemStack cartridge(int distance, boolean lone, int tower) {
+        ItemStack stack = cartridge(distance, lone);
+        stack.set(ModComponents.GLANDOUILLE_TOWER, tower);
+        return stack;
     }
 
     private static ItemStack cartridge(int distance, boolean lone) {
@@ -1114,6 +1125,69 @@ public class GlandouilleGameTests implements FabricGameTest {
                 context.complete();
             });
         });
+    }
+
+    /** Each token met on the way makes the top one fall off; the tower still brings everyone to its destination. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void eachTokenMetMakesOneFallOff(TestContext context) {
+        BoardSpaceBlockEntity tile = path(context, cartridge(3, false, 4));
+        List<GlandouilleEntity> spawned = spawned(context);
+        PigEntity lander = token(context, PATH.get(0));
+        PigEntity first = token(context, PATH.get(1));
+        PigEntity second = token(context, PATH.get(2));
+        context.waitAndRun(2, () -> {
+            tile.getBoardSpaceBehavior().onDestinationReached(context.getWorld(), tile.getPos(), lander, tile, null);
+            context.assertEquals(spawned.size(), 4, "a tower of 4");
+            GlandouilleEntity bottom = spawned.getFirst();
+            context.assertEquals(GlandouilleTowers.height(bottom), 4, "the one it came for costs nothing");
+            context.waitAndRun(GlandouillePushes.SETUP_TICKS + 2 * GlandouillePushes.STEP_TICKS + 2, () -> {
+                context.assertEquals(GlandouilleTowers.height(bottom), 2, "two met, two fell off");
+                context.waitAndRun(GlandouillePushes.STEP_TICKS + 10, () -> {
+                    Vec3d destination = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(PATH.get(3)));
+                    for (PigEntity pig : List.of(lander, first, second)) {
+                        context.assertTrue(horizontal(pig.getPos(), destination) < 0.5, "everyone at the destination: " + pig.getPos());
+                    }
+                    context.waitAndRun(GlandouillePushes.FALL_TICKS + 2, () -> {
+                        context.assertTrue(around(context).isEmpty(), "none left, fallen ones included");
+                        context.complete();
+                    });
+                });
+            });
+        });
+    }
+
+    /** Out of Glandouilles (a tower of 2 meeting 2 tokens), it stops on the second one's space, short of 3 spaces. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void outOfGlandouillesTheTowerStopsShort(TestContext context) {
+        BoardSpaceBlockEntity tile = path(context, cartridge(3, false, 2));
+        PigEntity lander = token(context, PATH.get(0));
+        PigEntity first = token(context, PATH.get(1));
+        PigEntity second = token(context, PATH.get(2));
+        context.waitAndRun(2, () -> {
+            tile.getBoardSpaceBehavior().onDestinationReached(context.getWorld(), tile.getPos(), lander, tile, null);
+            context.waitAndRun(GlandouillePushes.SETUP_TICKS + 3 * GlandouillePushes.STEP_TICKS + GlandouillePushes.FALL_TICKS + 4, () -> {
+                context.assertFalse(GlandouillePushes.isRunning(lander), "over");
+                Vec3d stop = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(PATH.get(2)));
+                for (PigEntity pig : List.of(lander, first, second)) {
+                    context.assertTrue(horizontal(pig.getPos(), stop) < 0.5, "all stopped on the third space: " + pig.getPos());
+                }
+                context.assertTrue(around(context).isEmpty(), "none left");
+                context.complete();
+            });
+        });
+    }
+
+    /** The cartridge goes up to 50 spaces and 25 Glandouilles (5 by default); the route follows 50 spaces. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void theCartridgeGoesUpTo50Spaces(TestContext context) {
+        ItemStack stack = cartridge(50, false);
+        context.assertEquals(GlandouilleCartridgeItem.distance(stack), 50, "50 spaces");
+        context.assertEquals(GlandouilleCartridgeItem.tower(new ItemStack(ModItems.GLANDOUILLE_CARTRIDGE)), 5, "5 by default");
+        List<BlockPos> snake = new ArrayList<>();
+        for (int z = 0; z < 7; z++) for (int x = 0; x < 8; x++) snake.add(new BlockPos(z % 2 == 0 ? x : 7 - x, 1, z));
+        BoardSpaceBlockEntity tile = path(context, stack, snake);
+        context.assertEquals(GlandouillePushes.route(context.getWorld(), tile.getPos(), 50).size(), 50, "50 spaces on");
+        context.complete();
     }
 
     /** The lone one: it tries, can't, sulks and goes; the token stays. */
