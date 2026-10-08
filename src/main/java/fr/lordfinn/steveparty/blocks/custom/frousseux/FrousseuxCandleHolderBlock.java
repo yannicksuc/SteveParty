@@ -322,11 +322,7 @@ public class FrousseuxCandleHolderBlock extends BlockWithEntity {
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
         NbtCompound kept = keptIn(stack);
-        if (kept.isEmpty()) {
-            tooltip.add(Text.translatable("tooltip.steveparty.frousseux_candle_holder.empty").formatted(Formatting.GRAY));
-            if (isOnSaucer(stack)) tooltip.add(Text.translatable("tooltip.steveparty.frousseux_candle_holder.saucer").formatted(Formatting.GRAY));
-            return;
-        }
+        if (kept.isEmpty()) return; // (only a tamed Frousseux makes one: an empty one has nothing to say)
         Text candle = FrousseuxCandleHolderBlockEntity.colorOf(kept).candle.getName();
         Text name = null;
         if (kept.contains("CustomName", NbtElement.STRING_TYPE) && context.getRegistryLookup() != null) {

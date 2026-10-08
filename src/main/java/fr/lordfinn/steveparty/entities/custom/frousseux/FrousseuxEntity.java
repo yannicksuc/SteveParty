@@ -113,17 +113,18 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** One strike of flint and steel in this many tames a wild one. */
     public static final int TAME_CHANCE = 3;
 
-    /** Its flame by health: size and brightness drawn (FrousseuxModel, FrousseuxRenderer), and its light level. */
+    /**
+     * Its flame by health: its light level, and its brightness drawn; its size is its own frames, a bone a stage
+     * (FrousseuxRenderer: never scaled, a pixel stays a pixel).
+     */
     public enum Flame {
-        FULL(15, 1.0f, 1.0f), HIGH(12, 0.82f, 0.92f), LOW(9, 0.62f, 0.78f), EMBER(6, 0.38f, 0.6f);
+        FULL(15, 1.0f), HIGH(12, 0.92f), LOW(9, 0.78f), EMBER(6, 0.6f);
 
         public final int light;
-        public final float size;
         public final float brightness;
 
-        Flame(int light, float size, float brightness) {
+        Flame(int light, float brightness) {
             this.light = light;
-            this.size = size;
             this.brightness = brightness;
         }
 

@@ -408,7 +408,6 @@ public class ModItems {
             itemGroup.add(BOXED_TRADER_SPAWN_EGG);
             for (Item egg : GLANDOUILLE_SPAWN_EGGS) itemGroup.add(egg);
             itemGroup.add(FROUSSEUX_SPAWN_EGG);
-            itemGroup.add(ModBlocks.FROUSSEUX_CANDLE_HOLDER);
             itemGroup.add(CANDLE_SAUCER);
             itemGroup.add(ACORN);
             itemGroup.add(ACORN_HAT);

@@ -35,7 +35,9 @@ import software.bernie.geckolib.util.Color;
 public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     private static final Identifier WAX = Steveparty.id("textures/entity/frousseux_wax.png");
     private static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
-    private static final Identifier HEART = Steveparty.id("textures/entity/frousseux_flame_heart.png");
+    private static final Identifier CORE = Steveparty.id("textures/entity/frousseux_flame_core.png");
+    /** Its flame's bones, one a stage (FrousseuxEntity.Flame order): each its own size, pixel for pixel. */
+    private static final String[] STAGE_BONES = {"flame_full", "flame_high", "flame_low", "flame_ember"};
     private static final int FULL_BRIGHT = 0xF000F0;
 
     private final ItemRenderer itemRenderer;
@@ -110,12 +112,12 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     /**
      * The wax shell alone, without culling: the body's cube (left out of the main pass by FrousseuxModel) and the outer
      * layers; their inner faces show, mirrored. The hands keep their bones (the sleeves hang on them) but not their own
-     * cubes for this pass; the lids and the wick are left out. Then every bone is put back as the next passes (the
+     * cubes for this pass; the lids and the flame are left out. Then every bone is put back as the next passes (the
      * pool, the flame) want it: the body's cube shown, the overlays hidden.
      */
     private static final class ShellLayer extends GeoRenderLayer<FrousseuxEntity> {
         private static final String[] HOLDERS = {"left_hand", "right_hand"};
-        private static final String[] OTHERS = {"lids", "wick"};
+        private static final String[] OTHERS = {"lids", "flame"};
         private final boolean[] othersHidden = new boolean[OTHERS.length];
 
         ShellLayer(GeoRenderer<FrousseuxEntity> renderer) {
@@ -153,10 +155,11 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     }
 
     /**
-     * Its flame, alone (the other bones hidden for these passes): the animated flame texture tinted its flame colour
-     * made more saturated (FrousseuxColor#flameEdge: it still reads under shaders' glow), dimmer as its health goes
-     * down, then its heart, a small soft glow of a paler shade melting into it (frousseux_flame_heart.png), both
-     * unshaded and full bright (a light, not a lit thing), see-through. The flame bone is hidden from every other pass (FrousseuxModel).
+     * Its flame, alone (the other bones hidden for these passes; of its stage's bones, its stage's only): its wick and
+     * flame on one pair of crossed planes, a pixel of texture for a pixel of model. The animated flame texture tinted
+     * its flame colour made more saturated (FrousseuxColor#flameEdge: it still reads under shaders' glow), dimmer as
+     * its health goes down; then, on the same faces, its heart and its wick (frousseux_flame_core.png, the same frames),
+     * tinted a paler shade. Both unshaded and full bright (a light, not a lit thing), see-through. The flame bone is hidden from every other pass (FrousseuxModel).
      */
     private static final class FlameLayer extends GeoRenderLayer<FrousseuxEntity> {
         private static final String[] OTHERS = {"body_overlay", "left_hand", "right_hand", "lids"};
@@ -171,10 +174,9 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                            VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay) {
             if (frousseux.deathTime > 0) return;
-            GeoBone body = bakedModel.getBone("body").orElse(null), wick = bakedModel.getBone("wick").orElse(null),
-                    flame = bakedModel.getBone("flame").orElse(null);
-            if (body == null || wick == null || flame == null) return;
-            boolean bodyHidden = body.isHidden(), wickHidden = wick.isHidden();
+            GeoBone body = bakedModel.getBone("body").orElse(null), flame = bakedModel.getBone("flame").orElse(null);
+            if (body == null || flame == null) return;
+            boolean bodyHidden = body.isHidden();
             for (int i = 0; i < OTHERS.length; i++) {
                 GeoBone bone = bakedModel.getBone(OTHERS[i]).orElse(null);
                 if (bone == null) continue;
@@ -183,9 +185,12 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             }
             body.setHidden(true);
             body.setChildrenHidden(false);
-            wick.setHidden(true);
-            wick.setChildrenHidden(false);
             flame.setHidden(false);
+            int stage = frousseux.getFlame().ordinal();
+            for (int i = 0; i < STAGE_BONES.length; i++) {
+                int index = i;
+                bakedModel.getBone(STAGE_BONES[i]).ifPresent(bone -> bone.setHidden(index != stage));
+            }
 
             float brightness = frousseux.getFlame().brightness;
             int tint = frousseux.getColor().flameEdge;
@@ -198,12 +203,12 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             int pale = frousseux.getColor().flameHeart;
             int hr = (int) (((pale >> 16) & 0xFF) * brightness), hg = (int) (((pale >> 8) & 0xFF) * brightness),
                     hb = (int) ((pale & 0xFF) * brightness);
-            RenderLayer heartLayer = RenderLayer.getBeaconBeam(HEART, true);
+            AnimatableTexture.setAndUpdate(CORE);
+            RenderLayer heartLayer = RenderLayer.getBeaconBeam(CORE, true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, heartLayer, bufferSource.getBuffer(heartLayer),
                     partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, withAlpha(0xFF000000 | hr << 16 | hg << 8 | hb, frousseux.flameAlpha(partialTick)));
 
             flame.setHidden(true);
-            wick.setHidden(wickHidden);
             body.setHidden(bodyHidden);
             body.setChildrenHidden(false);
             for (int i = 0; i < OTHERS.length; i++) {
