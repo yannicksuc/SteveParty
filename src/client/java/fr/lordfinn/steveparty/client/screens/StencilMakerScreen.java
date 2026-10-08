@@ -64,7 +64,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     /** Behind the stencil: the Stencil Maker's light top (its block texture), the cut pixels stand out from the metal. */
     private static final int CANVAS_BODY = 0xFFB4B4B4;
     /** Over the stencil's metal: its stains (paint, rust) barely visible, they would distract from the drawing. */
-    private static final int METAL_VEIL = 0xD82E2F35;
+    private static final int METAL_VEIL = 0xF52E2F35;
     private static final Identifier MAKER_TEXTURE = Steveparty.id("textures/block/stencil_maker.png");
     private static final int THUMB_BODY = 0xFF2B3237, THUMB_HOVER = 0xFF56636C, THUMB_PIXEL = 0xFFE8E8E8;
     /** Locked patterns: a darker cell, a dim padlock. */
