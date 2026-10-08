@@ -8,7 +8,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.DEFAULT_TOKEN_SIZE;
-import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.MAX_TOKEN_SIZE;
 import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.MIN_TOKEN_SIZE;
 
 /**
@@ -47,12 +46,12 @@ public final class TokenBase {
 
     /**
      * How big the base is compared to the base of a pawn of the default size: the pawn's size (the biggest dimension
-     * of its body, like the size chosen with the wand) over the default size, within the wand's size bounds.
+     * of its body, like the size chosen with the wand) over the default size, no smaller than the wand's smallest.
      */
     public static float sizeFactor(EntityDimensions body) {
         float size = Math.max(body.width(), body.height());
-        if (!(size > 0)) return 1.0F;
-        return MathHelper.clamp(size, MIN_TOKEN_SIZE, MAX_TOKEN_SIZE) / DEFAULT_TOKEN_SIZE;
+        if (!(size > 0) || !Float.isFinite(size)) return 1.0F;
+        return Math.max(size, MIN_TOKEN_SIZE) / DEFAULT_TOKEN_SIZE;
     }
 
     /** Height of the base under a body of these dimensions, in blocks. */

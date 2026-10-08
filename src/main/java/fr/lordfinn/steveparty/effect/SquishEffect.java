@@ -94,7 +94,8 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
 
     /** Amplifier matching a size (drives the spin speed of the client animation). */
     public static int amplifierForSize(float sizeInBlocks) {
-        return Math.max(1, Math.round(sizeInBlocks * 10));
+        // (sent to the clients as a byte: a big pawn stays at its top)
+        return net.minecraft.util.math.MathHelper.clamp(Math.round(sizeInBlocks * 10), 1, Byte.MAX_VALUE);
     }
 
     /**

@@ -134,6 +134,26 @@ public class PlayerPawnGameTests implements FabricGameTest {
         });
     }
 
+    /** The spell on a player: up to five times a player's size (9 blocks), clamped by the server. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aPlayerPawnIsAtMostFiveTimesAPlayer(TestContext context) {
+        ServerPlayerEntity caster = playerAt(context, 1.5, 1.5);
+        caster.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TOKENIZER_WAND));
+        ServerPlayerEntity target = playerAt(context, TARGET_POS.getX() + 0.5, TARGET_POS.getZ() + 0.5);
+        context.assertTrue(TokenizerWandItem.castSpell(caster, target.getId(), 50F, BLUE) == SpellResult.TOKENIZED, "tokenized");
+        context.runAtTick(POSSESSED_TICK, () -> {
+            try {
+                List<PlayerPawnEntity> pawns = pawns(context, target);
+                context.assertTrue(pawns.size() == 1, "one pawn");
+                float size = ((TokenizedEntityInterface) pawns.getFirst()).steveparty$getTokenSize();
+                context.assertTrue(Math.abs(size - 9.0F) < 0.02F, "9 blocks: " + size);
+            } finally {
+                leave(context, caster, target);
+            }
+            context.complete();
+        });
+    }
+
     // ---------------------------------------------------------------- getting out
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)

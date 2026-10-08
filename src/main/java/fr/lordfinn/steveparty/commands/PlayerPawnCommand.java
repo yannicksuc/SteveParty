@@ -18,7 +18,7 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 /**
- * Operator tool, level 2: {@code /playerpawn <players> [size]} casts the token spell on players, as the Tokenizer
+ * Operator tool, level 2: {@code /playerpawn <players> [size]} (size in blocks, up to five times a player's) casts the token spell on players, as the Tokenizer
  * Wand does (they become pawns they are inside; sneak to get out). The pawns belong to whoever runs the command
  * (to the player themselves from the console or a command block).
  */
@@ -35,7 +35,7 @@ public final class PlayerPawnCommand {
                 .requires(source -> source.hasPermissionLevel(2))
                 .then(argument("players", EntityArgumentType.players())
                         .executes(context -> run(context, TokenizerWandItem.DEFAULT_TOKEN_SIZE))
-                        .then(argument("size", FloatArgumentType.floatArg(TokenizerWandItem.MIN_TOKEN_SIZE, TokenizerWandItem.MAX_TOKEN_SIZE))
+                        .then(argument("size", FloatArgumentType.floatArg(TokenizerWandItem.MIN_TOKEN_SIZE))
                                 .executes(context -> run(context, FloatArgumentType.getFloat(context, "size"))))));
     }
 
@@ -46,7 +46,7 @@ public final class PlayerPawnCommand {
         for (ServerPlayerEntity player : players) {
             if (!PawnPossessions.canTokenize(player)) continue;
             UUID owner = source != null ? source.getUuid() : player.getUuid();
-            PawnPossessions.startSpell(player, owner, TokenizerWandItem.clampTokenSize(size), TokenizerWandItem.NO_COLOR);
+            PawnPossessions.startSpell(player, owner, TokenizerWandItem.clampTokenSize(player, size), TokenizerWandItem.NO_COLOR);
             count++;
         }
         int done = count;
