@@ -46,4 +46,12 @@ public interface TokenizedEntityInterface {
      * when it is not a token. Not saved nor synced.
      */
     int steveparty$getPawnAge();
+
+    /**
+     * Pose the pawn is frozen in, cycled with a right click (see {@code TokenPoses}). Only a number: each client turns
+     * it into a pose of the mob's own model (0 = the still default), the number of poses being the client's business.
+     */
+    int steveparty$getTokenPose();
+
+    void steveparty$setTokenPose(int pose);
 }

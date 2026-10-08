@@ -2683,5 +2683,6 @@
   "pose.steveparty.player_pawn.knees_hugged": "Genoux serrés",
   "pose.steveparty.player_pawn.handstand": "Poirier",
   "command.steveparty.playerpawn.done": "%s joueur(s) changé(s) en pion",
-  "command.steveparty.playerpawn.none": "Aucun joueur ne peut devenir un pion maintenant (déjà pion, ou sous le sort)"
+  "command.steveparty.playerpawn.none": "Aucun joueur ne peut devenir un pion maintenant (déjà pion, ou sous le sort)",
+  "message.steveparty.token_pose": "Pose %s/%s"
 }
