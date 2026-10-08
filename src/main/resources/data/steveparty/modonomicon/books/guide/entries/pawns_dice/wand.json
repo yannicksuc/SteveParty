@@ -19,7 +19,7 @@
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:tokenizer_wand",
-      "recipe_id_2": "steveparty:garnet_crystal_ball",
+      "recipe_id_2": "steveparty:lapis_crystal_ball",
       "text": "book.steveparty.guide.pawns_dice.wand.page1.text"
     }
   ]

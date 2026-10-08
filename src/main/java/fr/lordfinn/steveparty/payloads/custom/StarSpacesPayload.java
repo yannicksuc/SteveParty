@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Where the stars of the running parties of the player's world stand (see fr.lordfinn.steveparty.service.PartyStars):
- * the client draws a Power Star floating over each of these board spaces. The whole list, sent when a star moves and
+ * the client draws a Party Star floating over each of these board spaces. The whole list, sent when a star moves and
  * every few seconds (a player joining or changing world gets it then).
  */
 public record StarSpacesPayload(List<BlockPos> spaces) implements CustomPayload {

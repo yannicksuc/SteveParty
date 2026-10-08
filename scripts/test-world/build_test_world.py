@@ -460,7 +460,7 @@ def plastic_station(x0=2010, z0=1995):
         cmds.append('setblock %d %d %d steveparty:%s_plastic_block' % (px0 + 1 + 2 * k, Y - 5, pz0 + 4, c))
     cmds += ['setblock %d %d %d steveparty:orange_plastic_block' % (px0 + 3, Y - 4, pz0 + 2),
              'setblock %d %d %d steveparty:plastic_road_sign[plate=star,mount=floor,waterlogged=true]'
-             '{PlateColor:"yellow",SymbolShape:%s,Color:"red"}' % (px0 + 6, Y - 1, pz0 + 1, shape_nbt('power_star')),
+             '{PlateColor:"yellow",SymbolShape:%s,Color:"red"}' % (px0 + 6, Y - 1, pz0 + 1, shape_nbt('party_star')),
              label((px0 + px1) / 2 + 0.5, Y + 2, pz1 + 1.5, 'Plastique qui flotte + colonne de bulles', 'white', 0.8, False)]
 
     # Hop switch: jumping on it switches the plastic wall off for a while
@@ -477,7 +477,7 @@ def plastic_station(x0=2010, z0=1995):
 
 def sign_station(x0=2035, z0=1995):
     cmds = ['# Sign station'] + plot_title(x0, z0, 'PANNEAUX')
-    pats = ['up_arrow', 'right_arrow', 'left_arrow', 'no_entry', 'warning', 'heart', 'star' if 'star' in PATTERNS else 'power_star',
+    pats = ['up_arrow', 'right_arrow', 'left_arrow', 'no_entry', 'warning', 'heart', 'star' if 'star' in PATTERNS else 'party_star',
             'creeper_face', 'coin', 'question_block', 'mushroom', 'crown', 'key', 'flag', 'house', 'sun']
     dyes = ['white', 'yellow', 'red', 'black', 'blue', 'lime', 'orange', 'magenta']
 
@@ -523,7 +523,7 @@ def sign_station(x0=2035, z0=1995):
     # Row 5: stencil paint on the floor and on a wall, and the stencil maker
     z = z0 + 18
     for k, (pat, dye) in enumerate([('up_arrow', 'yellow'), ('heart', 'red'), ('creeper_face', 'lime'),
-                                    ('power_star', 'orange')]):
+                                    ('party_star', 'orange')]):
         cmds.append('setblock %d %d %d steveparty:stencil_paint[orientation=up_north]{SymbolShape:%s,Color:"%s"}'
                     % (x0 + 1 + 2 * k, Y, z, shape_nbt(pat), dye))
     cmds += ['fill %d %d %d %d %d %d minecraft:white_concrete' % (x0 + 9, Y, z + 1, x0 + 12, Y + 1, z + 1)]
@@ -556,9 +556,9 @@ def building_station(x0=2060, z0=1995):
 
 def misc_station(x0=2010, z0=2020):
     cmds = ['# Misc station'] + plot_title(x0, z0, 'DIVERS')
-    items = [('garnet_crystal_ball', 'Garnet Crystal Ball'), ('mini_games_catalogue', 'Catalogue'),
+    items = [('lapis_crystal_ball', 'Lapis Crystal Ball'), ('mini_games_catalogue', 'Catalogue'),
              ('mini_game_page', 'Page de mini-jeu'), ('triple_jump_shoes', 'Triple Jump Shoes'),
-             ('plunger', 'Plunger'), ('power_star', 'Power Star'), ('tokenizer_wand', 'Tokenizer Wand'),
+             ('plunger', 'Plunger'), ('party_star', 'Party Star'), ('tokenizer_wand', 'Tokenizer Wand'),
              ('token', 'Token'), ('wrench', 'Wrench'), ('stencil_gun', 'Stencil Gun'), ('flag', 'Drapeau'),
              ('bandana', 'Bandana'), ('mula_spawn_egg', 'Oeuf de Mula'), ('plastic_pellets', 'Granulés'),
              ('plastic_stick', 'Bâton en plastique')]
@@ -689,7 +689,7 @@ def tile_sizes_station(x0=2035, z0=2045):
     showcase = [
         ('tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), '', 'Tuile tamponnée (sans cartouche)'),
         ('advanced_tile', 'size=standard', 'Stamp:' + stamp('heart', 'pink'), '', 'Tuile avancée tamponnée'),
-        ('tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), stamped_cartridge('power_star', 'yellow'),
+        ('tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), stamped_cartridge('party_star', 'yellow'),
          'Cartouche tamponnée : elle prime'),
         ('advanced_tile', 'size=standard', 'Stamp:' + stamp('skull', 'black'), '{Slot:0b,id:"steveparty:board_space_behavior",count:1}',
          'Tuile tamponnée + cartouche non tamponnée'),
@@ -993,7 +993,7 @@ def all_items():
     groups.append(('Plateau', ['advanced_tile', 'tile', 'check_point', 'board_space_redstone_router', 'party_controller',
                                'step_controller', 'board_space_behavior', 'board_space_behavior_stop',
                                'tile_behavior_start', 'inventory_cartridge', 'wrench', 'tokenizer_wand', 'token',
-                               'plunger', 'mini_games_catalogue', 'mini_game_page', 'garnet_crystal_ball',
+                               'plunger', 'mini_games_catalogue', 'mini_game_page', 'lapis_crystal_ball',
                                'shop_cartridge',
                                'advance_back_cartridge', 'replay_cartridge', 'teleport_cartridge']))
     faces = ['blank_dice_face'] + ['dice_face_%d' % i for i in range(0, 11)] + \
@@ -1005,7 +1005,7 @@ def all_items():
                                               'skeleton_key', 'homing')]
     groups.append(('Dés : faces spéciales et modules', special_faces + modules))
     stars = ['%s_star_fragment' % c for c in STAR_COLOURS]
-    groups.append(('Mulas et étoiles', ['mula_spawn_egg', 'telescope', 'power_star'] + stars +
+    groups.append(('Mulas et étoiles', ['mula_spawn_egg', 'telescope', 'party_star'] + stars +
                    ['%s_star_fragments_block' % c for c in STAR_COLOURS]))
     groups.append(('Boutique et divers', ['trading_stall', 'cash_register', 'looting_box', 'villager_block',
                                           'shopkeeper_key', 'bandana', 'goal_pole_base', 'goal_pole', 'flag',

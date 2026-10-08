@@ -19,7 +19,7 @@ import java.util.Set;
  * them in chests ({@link StencilUnlocks}).
  */
 public final class StencilPatterns {
-    public enum Category { SIGNS, MINECRAFT, MARIO }
+    public enum Category { SIGNS, MINECRAFT, PARTY }
 
     /** Always offered by the stencil maker, in survival too: the plain arrows, the cross and the check. */
     private static final Set<String> FREE = Set.of("up_arrow", "right_arrow", "down_arrow", "left_arrow", "cross", "check");
@@ -624,7 +624,7 @@ public final class StencilPatterns {
                 "................",
                 "................",
                 "................");
-        add("mushroom", Category.MARIO,
+        add("mushroom", Category.PARTY,
                 ".....######.....",
                 "...##########...",
                 "..####....####..",
@@ -636,20 +636,20 @@ public final class StencilPatterns {
                 "################",
                 ".##############.",
                 "...##########...",
-                "...###.##.###...",
-                "...###.##.###...",
+                "...##########...",
+                "...##########...",
                 "...##########...",
                 "....########....",
                 "................");
-        add("star", Category.MARIO,
+        add("star", Category.PARTY,
                 ".......##.......",
                 ".......##.......",
                 "......####......",
                 "......####......",
                 "################",
                 ".##############.",
-                "..####.##.####..",
-                "...###.##.###...",
+                "..############..",
+                "...##########...",
                 "...##########...",
                 "...##########...",
                 "..############..",
@@ -658,7 +658,7 @@ public final class StencilPatterns {
                 ".####......####.",
                 ".##..........##.",
                 "................");
-        add("coin", Category.MARIO,
+        add("coin", Category.PARTY,
                 "................",
                 "................",
                 ".....######.....",
@@ -675,10 +675,10 @@ public final class StencilPatterns {
                 ".....######.....",
                 "................",
                 "................");
-        add("looting_box", Category.MARIO,
+        add("looting_box", Category.PARTY,
                 "................",
                 ".##############.",
-                ".#.##########.#.",
+                ".##############.",
                 ".####......####.",
                 ".###........###.",
                 ".###..####..###.",
@@ -689,10 +689,10 @@ public final class StencilPatterns {
                 ".##############.",
                 ".######..######.",
                 ".######..######.",
-                ".#.##########.#.",
+                ".##############.",
                 ".##############.",
                 "................");
-        add("flower", Category.MARIO,
+        add("flower", Category.PARTY,
                 "................",
                 "....########....",
                 "...##......##...",
@@ -709,7 +709,7 @@ public final class StencilPatterns {
                 "...##########...",
                 ".....######.....",
                 "................");
-        add("pipe", Category.MARIO,
+        add("pipe", Category.PARTY,
                 "................",
                 "................",
                 "..############..",
@@ -726,7 +726,7 @@ public final class StencilPatterns {
                 "....########....",
                 "................",
                 "................");
-        add("ghost", Category.MARIO,
+        add("ghost", Category.PARTY,
                 ".....#####......",
                 "...#########....",
                 "..###########...",
@@ -743,7 +743,7 @@ public final class StencilPatterns {
                 "...#########....",
                 "......####......",
                 "................");
-        add("shell", Category.MARIO,
+        add("shell", Category.PARTY,
                 "................",
                 "......####......",
                 ".....######.....",
@@ -760,7 +760,8 @@ public final class StencilPatterns {
                 "......####......",
                 "................",
                 "................");
-        add("bomb", Category.MARIO,
+        add("bomb", Category.PARTY,
+                "................",
                 "..........##....",
                 ".........#..#...",
                 "........#.......",
@@ -768,16 +769,15 @@ public final class StencilPatterns {
                 "......####......",
                 "....########....",
                 "...##########...",
-                "...###.##.###...",
-                "..####.##.####..",
+                "...##########...",
+                "..############..",
                 "..############..",
                 "..############..",
                 "...##########...",
                 "...##########...",
                 "....########....",
-                "..####....####..",
-                "..####....####..");
-        add("crown", Category.MARIO,
+                "................");
+        add("crown", Category.PARTY,
                 "................",
                 "................",
                 "................",
@@ -794,7 +794,7 @@ public final class StencilPatterns {
                 "................",
                 "................",
                 "................");
-        add("key", Category.MARIO,
+        add("key", Category.PARTY,
                 "....######......",
                 "...########.....",
                 "...########.....",
@@ -811,7 +811,7 @@ public final class StencilPatterns {
                 "......###.......",
                 "......####......",
                 "......####......");
-        add("flag", Category.MARIO,
+        add("flag", Category.PARTY,
                 "...##...........",
                 "...##########...",
                 "...###########..",
@@ -828,7 +828,7 @@ public final class StencilPatterns {
                 "...##...........",
                 "..####..........",
                 ".######.........");
-        add("dice_1", Category.MARIO,
+        add("dice_1", Category.PARTY,
                 "################",
                 "#..............#",
                 "#..............#",
@@ -845,7 +845,7 @@ public final class StencilPatterns {
                 "#..............#",
                 "#..............#",
                 "################");
-        add("dice_2", Category.MARIO,
+        add("dice_2", Category.PARTY,
                 "################",
                 "#..............#",
                 "#..............#",
@@ -862,7 +862,7 @@ public final class StencilPatterns {
                 "#..............#",
                 "#..............#",
                 "################");
-        add("dice_3", Category.MARIO,
+        add("dice_3", Category.PARTY,
                 "################",
                 "#..............#",
                 "#..............#",
@@ -879,7 +879,7 @@ public final class StencilPatterns {
                 "#..............#",
                 "#..............#",
                 "################");
-        add("dice_4", Category.MARIO,
+        add("dice_4", Category.PARTY,
                 "################",
                 "#..............#",
                 "#..............#",
@@ -896,7 +896,7 @@ public final class StencilPatterns {
                 "#..............#",
                 "#..............#",
                 "################");
-        add("dice_5", Category.MARIO,
+        add("dice_5", Category.PARTY,
                 "################",
                 "#..............#",
                 "#..............#",
@@ -913,7 +913,7 @@ public final class StencilPatterns {
                 "#..............#",
                 "#..............#",
                 "################");
-        add("dice_6", Category.MARIO,
+        add("dice_6", Category.PARTY,
                 "################",
                 "#..............#",
                 "#..............#",

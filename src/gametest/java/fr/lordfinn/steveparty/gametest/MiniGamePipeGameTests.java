@@ -703,10 +703,10 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             context.assertEquals(drops.size(), 1, "the page dropped");
             drops.forEach(net.minecraft.entity.Entity::discard);
 
-            // The recipes: copper round a sheet of paper; iron and a Power Star round the copper one; gold, two Power Stars and
+            // The recipes: copper round a sheet of paper; iron and a Party Star round the copper one; gold, two Party Stars and
             // an eye of ender round the iron one
             ItemStack copper = new ItemStack(Items.COPPER_INGOT), iron = new ItemStack(Items.IRON_INGOT), gold = new ItemStack(Items.GOLD_INGOT),
-                    star = new ItemStack(ModItems.POWER_STAR), none = ItemStack.EMPTY;
+                    star = new ItemStack(ModItems.PARTY_STAR), none = ItemStack.EMPTY;
             context.assertTrue(crafted(context, 3, 3, copper, none, copper, copper, new ItemStack(Items.PAPER), copper, copper, none, copper)
                     .isOf(ModBlocks.COPPER_MINIGAME_PIPE.asItem()), "copper mini-game pipe");
             context.assertTrue(crafted(context, 3, 3, iron, star, iron, iron, new ItemStack(ModBlocks.COPPER_MINIGAME_PIPE), iron, iron, none, iron)

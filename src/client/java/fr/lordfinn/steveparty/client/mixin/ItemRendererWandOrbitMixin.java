@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Kamek's shapes orbiting the Tokenizer Wand's jewel, drawn with the held wand (first and third person). */
+/** Magic shapes orbiting the Tokenizer Wand's jewel, drawn with the held wand (first and third person). */
 @Mixin(ItemRenderer.class)
 public class ItemRendererWandOrbitMixin {
 

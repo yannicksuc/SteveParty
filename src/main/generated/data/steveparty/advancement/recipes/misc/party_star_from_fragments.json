@@ -43,7 +43,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "steveparty:power_star_from_fragments"
+        "recipe": "steveparty:party_star_from_fragments"
       },
       "trigger": "minecraft:recipe_unlocked"
     },
@@ -70,7 +70,7 @@
   ],
   "rewards": {
     "recipes": [
-      "steveparty:power_star_from_fragments"
+      "steveparty:party_star_from_fragments"
     ]
   }
 }

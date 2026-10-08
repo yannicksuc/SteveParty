@@ -86,7 +86,7 @@ public class ModEntities {
                     .build(FORGE_CORE_KEY.getValue().toString())
     );
 
-    /** What carries a traveller through a warp pipe (invisible, ridden). */
+    /** What carries a traveller through a travel pipe (invisible, ridden). */
     public static final RegistryKey<EntityType<?>> PIPE_CARRIER_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("pipe_carrier"));
     public static final EntityType<fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity> PIPE_CARRIER = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("pipe_carrier"),

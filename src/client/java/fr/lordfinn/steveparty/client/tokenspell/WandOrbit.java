@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.tokenspell;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.particles.KamekShapeEffect;
+import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -18,7 +18,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
- * Kamek's little shapes orbiting the Tokenizer Wand's jewel whenever it is held: a square, a circle, a triangle and
+ * Little magic shapes orbiting the Tokenizer Wand's jewel whenever it is held: a square, a circle, a triangle and
  * a second circle, in the four spell colours, full bright, slowly turning around the jewel with a little bob and a
  * gentle pulse. Drawn with the held item itself (first and third person) into the same buffers, as opaque cut-outs
  * like the wand: so they never lag behind, and shader packs draw them with the hand, in front of the sky and clouds
@@ -27,10 +27,10 @@ import org.joml.Vector3f;
  */
 public final class WandOrbit {
     private static final RenderLayer[] LAYERS = {
-            RenderLayer.getEntityCutoutNoCull(texture("kamek_square")),
-            RenderLayer.getEntityCutoutNoCull(texture("kamek_circle")),
-            RenderLayer.getEntityCutoutNoCull(texture("kamek_triangle")),
-            RenderLayer.getEntityCutoutNoCull(texture("kamek_circle"))};
+            RenderLayer.getEntityCutoutNoCull(texture("magic_square")),
+            RenderLayer.getEntityCutoutNoCull(texture("magic_circle")),
+            RenderLayer.getEntityCutoutNoCull(texture("magic_triangle")),
+            RenderLayer.getEntityCutoutNoCull(texture("magic_circle"))};
     private static final int SHAPES = LAYERS.length;
     /** Centre of the wand's jewel, in model space (model pixels / 16: x 8, y 29, z 8). */
     private static final float JEWEL_X = 0.5F, JEWEL_Y = 29F / 16F, JEWEL_Z = 0.5F;
@@ -82,7 +82,7 @@ public final class WandOrbit {
             float bob = MathHelper.sin(time * 1.7F + i * 1.3F) * (1.2F / 16F);
             matrix.transformPosition(JEWEL_X + MathHelper.cos(angle) * RADIUS, JEWEL_Y + bob,
                     JEWEL_Z + MathHelper.sin(angle) * RADIUS, POINT);
-            int color = KamekShapeEffect.COLORS[i % KamekShapeEffect.COLORS.length];
+            int color = MagicShapeEffect.COLORS[i % MagicShapeEffect.COLORS.length];
             // A gentle pulse of size (the shapes are drawn as opaque cut-outs, like the wand itself)
             float pulse = 0.85F + 0.15F * MathHelper.sin(time * 2.3F + i * 2.1F);
             quad(vertexConsumers.getBuffer(LAYERS[i]), POINT, color, pulse);

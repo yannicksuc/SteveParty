@@ -13,7 +13,7 @@
 	quests: [
 		{
 			dependencies: [
-				"123B0FCCF856E8AB"
+				"5E174C6DCB411FC0"
 			]
 			id: "1661B4C0B973F8ED"
 			rewards: [
@@ -47,7 +47,7 @@
 		}
 		{
 			dependencies: [
-				"49297133DC9D18C2"
+				"085FCFBD2E80A60F"
 			]
 			id: "42C4E05F055ED63B"
 			rewards: [

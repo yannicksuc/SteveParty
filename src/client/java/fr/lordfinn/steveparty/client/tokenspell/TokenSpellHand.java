@@ -28,7 +28,7 @@ public final class TokenSpellHand {
     private static final float ITEM_DEPTH = 0.72F;
     /** Vanilla resting position of the held item (right arm; x is mirrored for the left arm). */
     private static final float REST_X = 0.56F, REST_Y = -0.52F;
-    /** Centre of the Kamek wand's jewel, in model space (model pixels / 16: x 8, y 29, z 8). */
+    /** Centre of the wand's jewel, in model space (model pixels / 16: x 8, y 29, z 8). */
     private static final Vector3f JEWEL = new Vector3f(0.5F, 29F / 16F, 0.5F);
     private static final float SMOOTHING = 14F;
     /** The arm comes from this point, below the bottom corner of the hand's side (in half screen widths / heights). */

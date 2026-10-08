@@ -314,21 +314,21 @@ public class DiceForgeGameTests implements FabricGameTest {
         });
     }
 
-    /** Old forges kept a power star in slot 12: it is given back (dropped), never deleted. */
+    /** Old forges kept a party star in slot 12: it is given back (dropped), never deleted. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void legacyPowerStarIsDropped(TestContext context) {
+    public void legacyPartyStarIsDropped(TestContext context) {
         context.setBlockState(FORGE_POS, ModBlocks.DICE_FORGE.getDefaultState());
         DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
         NbtCompound nbt = new NbtCompound();
         NbtList items = new NbtList();
-        NbtCompound star = (NbtCompound) new ItemStack(ModItems.POWER_STAR).encode(context.getWorld().getRegistryManager());
+        NbtCompound star = (NbtCompound) new ItemStack(ModItems.PARTY_STAR).encode(context.getWorld().getRegistryManager());
         star.putByte("Slot", (byte) 12);
         items.add(star);
         nbt.put("Items", items);
         forge.read(nbt, context.getWorld().getRegistryManager());
         context.assertTrue(forge.getStack(CENTER_SLOT).isEmpty(), "star removed from the output slot");
         context.waitAndRun(5, () -> {
-            context.expectItemAt(ModItems.POWER_STAR, FORGE_POS.up(), 2.0);
+            context.expectItemAt(ModItems.PARTY_STAR, FORGE_POS.up(), 2.0);
             context.complete();
         });
     }

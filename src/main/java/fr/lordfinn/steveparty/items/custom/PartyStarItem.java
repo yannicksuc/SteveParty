@@ -7,8 +7,8 @@ import net.minecraft.util.Rarity;
 import static net.minecraft.component.DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE;
 import static net.minecraft.component.DataComponentTypes.RARITY;
 
-public class PowerStarItem extends Item {
-    public PowerStarItem(Settings settings) {
+public class PartyStarItem extends Item {
+    public PartyStarItem(Settings settings) {
         super( settings.component(RARITY, Rarity.RARE).component(ENCHANTMENT_GLINT_OVERRIDE, true));
     }
 

@@ -1,6 +1,6 @@
 {
 	icon: {
-		id: "steveparty:power_star"
+		id: "steveparty:party_star"
 	}
 	id: "536A6CC3E21C8B88"
 	loot_size: 1
@@ -10,7 +10,7 @@
 			id: "74957E9242F95B2F"
 			item: {
 				count: 1
-				id: "steveparty:power_star"
+				id: "steveparty:party_star"
 			}
 			weight: 3.0f
 		}

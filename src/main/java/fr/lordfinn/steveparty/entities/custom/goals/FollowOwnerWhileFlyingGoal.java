@@ -9,7 +9,7 @@ import net.minecraft.entity.ai.goal.Goal;
 import java.util.EnumSet;
 
 /**
- * A tamed Mula floats after its owner, 2 blocks above them, like a Luma trailing behind Mario: gently when close,
+ * A tamed Mula floats after its owner, 2 blocks above them, like a little star trailing behind its owner: gently when close,
  * faster the farther it lags (it still catches up with a sprinting player), and teleports beyond the follow range as
  * before. Within {@value #DIRECT_RANGE} blocks it floats straight to its place above the owner's head (the move control
  * steers and slows it); farther, it flies straight too while nothing stands between them (one ray every

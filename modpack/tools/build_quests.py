@@ -139,7 +139,7 @@ GROUPS = [
     # key, icon, en, fr
     ("board_game", "steveparty:party_controller", "The Board Game", "Le jeu de plateau"),
     ("commerce", "steveparty:trading_stall", "Commerce", "Commerce"),
-    ("stars", "steveparty:power_star", "Stars", "Étoiles"),
+    ("stars", "steveparty:party_star", "Stars", "Étoiles"),
     ("decoration", "steveparty:red_plastic_block", "Decoration", "Décoration"),
 ]
 
@@ -309,8 +309,8 @@ q("stop", -3, CART_Y, I("board_space_behavior_stop"), deps=["cartridge"], reward
         ["Cartouche + teinture rouge. Un pion qui atteint une case Stop y termine son déplacement, quels que soient ses pas restants. Marche aussi sur un Point de déclenchement."]))
 
 q("shop", -1.5, CART_Y, I("shop_cartridge"), deps=["cartridge"], rewards=T1(),
-  desc=(["Cartridge + emerald + gold nugget. A pawn that ends on it (or passes a Checkpoint with it) opens the shop of the nearest Boxed Trader for its player, Mario Party style. See the Shops chapter."],
-        ["Cartouche + émeraude + pépite d'or. Un pion qui s'y arrête (ou qui passe un Point de déclenchement qui la porte) ouvre à son joueur la boutique du Marchand en carton le plus proche, façon Mario Party. Voir le chapitre Boutiques."]))
+  desc=(["Cartridge + emerald + gold nugget. A pawn that ends on it (or passes a Checkpoint with it) opens the shop of the nearest Boxed Trader for its player. See the Shops chapter."],
+        ["Cartouche + émeraude + pépite d'or. Un pion qui s'y arrête (ou qui passe un Point de déclenchement qui la porte) ouvre à son joueur la boutique du Marchand en carton le plus proche. Voir le chapitre Boutiques."]))
 
 q("advance", 0, CART_Y, I("advance_back_cartridge"), deps=["cartridge"], rewards=T1(),
   desc=(["Cartridge + piston. The pawn that ends on it moves again, 1 to 6 spaces forward (green) or back (pink). Sneak + scroll with it in hand sets the count and direction."],
@@ -352,13 +352,13 @@ chapter("pawns", "board_game", "steveparty:tokenizer_wand",
         (["Any mob can become a pawn with the Tokenizer Wand."],
          ["N'importe quel mob devient un pion avec la Baguette de pions."]))
 
-q("crystal_ball", 0, 0, I("garnet_crystal_ball"), deps=["welcome.done"], rewards=T2(),
-  desc=(["A nether star surrounded by 4 blocks of redstone. Its only use: the head of the Tokenizer Wand."],
-        ["Une étoile du Nether entourée de 4 blocs de redstone. Son seul usage : la tête de la Baguette de pions."]))
+q("crystal_ball", 0, 0, I("lapis_crystal_ball"), deps=["welcome.done"], rewards=T2(),
+  desc=(["A Party Star surrounded by 4 blocks of lapis lazuli. Its only use: the head of the Tokenizer Wand."],
+        ["Une Étoile de fête entourée de 4 blocs de lapis-lazuli. Son seul usage : la tête de la Baguette de pions."]))
 
 q("wand", 2, 0, I("tokenizer_wand"), deps=["crystal_ball"], rewards=T3(), size=1.25,
-  desc=(["Garnet crystal ball, gold block and blaze rod, in a column. A golden wand in Kamek style."],
-        ["Boule de cristal en grenat, bloc d'or et bâton de Blaze, en colonne. Une baguette dorée façon Kamek."]))
+  desc=(["Lapis crystal ball, gold block and blaze rod, in a column. A golden wand with a lapis orb."],
+        ["Boule de cristal en lapis, bloc d'or et bâton de Blaze, en colonne. Une baguette dorée à orbe de lapis."]))
 
 q("pionificus", 4, 0, C(), deps=["wand"], rewards=T2(), icon="steveparty:tokenizer_wand",
   title=("Pionificus!", "Pionificus !"),
@@ -514,8 +514,8 @@ q("dashboard", 2, 0, C(), deps=["controller"], rewards=T1(), icon="steveparty:pa
 
 q("bank", 2, 2, C(), deps=["dashboard", "board.inventory"], rewards=T1(), icon="minecraft:chest",
   title=("The prize chest", "Le coffre des gains"),
-  desc=(["The controller creates no coins and no stars: it pays mini-game prizes from chests. Put an Inventory Cartridge linked to a chest in the bank slot of the Prizes tab, and fill the chest with the party's coins and stars (Power Stars by default)."],
-        ["Le contrôleur ne crée ni pièce ni étoile : il paie les gains des mini-jeux depuis des coffres. Mettez une Cartouche d'inventaire liée à un coffre dans la case banque de l'onglet Gains, et remplissez le coffre des pièces et étoiles de la partie (Super étoiles par défaut)."]))
+  desc=(["The controller creates no coins and no stars: it pays mini-game prizes from chests. Put an Inventory Cartridge linked to a chest in the bank slot of the Prizes tab, and fill the chest with the party's coins and stars (Party Stars by default)."],
+        ["Le contrôleur ne crée ni pièce ni étoile : il paie les gains des mini-jeux depuis des coffres. Mettez une Cartouche d'inventaire liée à un coffre dans la case banque de l'onglet Gains, et remplissez le coffre des pièces et étoiles de la partie (Étoiles de fête par défaut)."]))
 
 q("first_party", 4, 0, C(), deps=["dashboard", "pawns.bind"], rewards=MILESTONE(), icon="minecraft:firework_rocket",
   shape="hexagon", size=1.5,
@@ -664,13 +664,13 @@ q("copper_pipe", -2, 7.5, I("copper_minigame_pipe"), deps=["link_pipes"], reward
   desc=(["6 copper ingots around a paper. Click it with a page: it becomes the entrance to that mini-game outside a party, within 100 blocks. Coloured pipes linked to it send each player to their role."],
         ["6 lingots de cuivre autour d'un papier. Cliquez-le avec une page : il devient l'entrée de ce mini-jeu hors partie, à 100 blocs. Les tuyaux de couleur reliés à lui envoient chaque joueur vers son rôle."]))
 
-q("iron_pipe", 0, 7.5, I("iron_minigame_pipe"), deps=["copper_pipe", "mulas.power_star"], rewards=T3(),
-  desc=(["6 iron ingots, a Power Star and the copper mini-game pipe. Reaches the whole dimension."],
-        ["6 lingots de fer, une Super étoile et le tuyau de mini-jeu en cuivre. Atteint toute la dimension."]))
+q("iron_pipe", 0, 7.5, I("iron_minigame_pipe"), deps=["copper_pipe", "mulas.party_star"], rewards=T3(),
+  desc=(["6 iron ingots, a Party Star and the copper mini-game pipe. Reaches the whole dimension."],
+        ["6 lingots de fer, une Étoile de fête et le tuyau de mini-jeu en cuivre. Atteint toute la dimension."]))
 
 q("golden_pipe", 2, 7.5, I("golden_minigame_pipe"), deps=["iron_pipe"], rewards=[XP(100), COINS(5)],
-  desc=(["4 gold ingots, an eye of ender, 2 Power Stars and the iron mini-game pipe. Reaches every dimension."],
-        ["4 lingots d'or, un œil de l'Ender, 2 Super étoiles et le tuyau de mini-jeu en fer. Atteint toutes les dimensions."]))
+  desc=(["4 gold ingots, an eye of ender, 2 Party Stars and the iron mini-game pipe. Reaches every dimension."],
+        ["4 lingots d'or, un œil de l'Ender, 2 Étoiles de fête et le tuyau de mini-jeu en fer. Atteint toutes les dimensions."]))
 
 done("done", 12.5, 0, ["test_run", "trial", "catalogue", "results", "zone", "formats", "gold_podium",
                      "silver_podium", "bronze_podium", "copper_pipe"],
@@ -699,9 +699,9 @@ q("flag", 4, -1.5, I("flag"), deps=["pole"], rewards=T1(),
         ["Trois laines : la couleur de la laine fait celle du drapeau (mélangée comme le cuir). Clic droit sur un segment pour l'accrocher ; il descend quand le but est atteint. Reteignez-le dans la grille."]))
 
 q("one_up", 4, 0, C(), deps=["pole"], rewards=T2(), icon="minecraft:golden_apple",
-  title=("1up!", "1up !"),
-  desc=(["Land on top of a pole: \"1up\", a golden heart for 10 s, no fall damage, and you stand upside down. Each landing scores a point for the base."],
-        ["Atterrissez au sommet d'un mât : « 1up », un cœur doré pendant 10 s, aucun dégât de chute, et vous voilà tête en bas. Chaque arrivée marque un point pour le socle."]))
+  title=("Extra Life!", "Vie bonus !"),
+  desc=(["Land on top of a pole: \"+1 ♥\", an extra life: a golden heart for 10 s, no fall damage, and you stand upside down. Each landing scores a point for the base."],
+        ["Atterrissez au sommet d'un mât : « +1 ♥ », une vie bonus : un cœur doré pendant 10 s, aucun dégât de chute, et vous voilà tête en bas. Chaque arrivée marque un point pour le socle."]))
 
 q("goal", 4, 1.5, C(), deps=["pole", "board.wrench"], rewards=T1(), icon="minecraft:target",
   title=("Set a goal", "Régler un but"),
@@ -778,7 +778,7 @@ done("done", 10, 0, ["shop_stop", "open_shop", "costume"],
 
 
 # === Mulas and stars ===========================================================================
-chapter("mulas", "stars", "steveparty:power_star",
+chapter("mulas", "stars", "steveparty:party_star",
         ("Mulas and Stars", "Mulas et étoiles"),
         (["Little flying star creatures, and the 16 star fragments they leave behind."],
          ["De petites créatures d'étoile volantes, et les 16 fragments d'étoile qu'elles laissent."]))
@@ -848,7 +848,7 @@ q("frag_block", 6, 5.25, I("blue_star_fragments_block"), deps=["frag_blue"], rew
   desc=(["9 fragments of one colour: a glowing, glass-like block of animated plasma (16 colours, 12 variants each). The black one is a starry night. It attracts curious Mulas."],
         ["9 fragments d'une couleur : un bloc lumineux, translucide, de plasma animé (16 couleurs, 12 variantes chacune). Le noir est une nuit étoilée. Il attire les Mulas curieuses."]))
 
-q("power_star", 12, 3, I("power_star"), deps=["frag_blue", "frag_green", "frag_yellow", "frag_red", "frag_purple"],
+q("party_star", 12, 3, I("party_star"), deps=["frag_blue", "frag_green", "frag_yellow", "frag_red", "frag_purple"],
   rewards=[XP(100), COINS(5)], shape="hexagon", size=1.5,
   desc=(["One fragment each of blue, green, yellow, red and purple (or 5 black fragments), shapeless. Always shining. It is the default Star of a party, and goes into the Dice Forge and the iron and golden mini-game pipes."],
         ["Un fragment de chaque : bleu, vert, jaune, rouge et violet (ou 5 fragments noirs), sans forme. Toujours brillante. C'est l'Étoile par défaut d'une partie, et elle entre dans la Forge à dés et les tuyaux de mini-jeu en fer et en or."]))
@@ -858,11 +858,11 @@ q("luck", 8, 3, C(), deps=["burst"], rewards=T1(), optional=True, icon="minecraf
   desc=(["Brewing stand: awkward potion + any star fragment gives a Potion of Luck (Luck I, 5:00), the only survival recipe for it."],
         ["Alambic : potion étrange + n'importe quel fragment d'étoile donne une Potion de chance (Chance I, 5:00), sa seule recette en survie."]))
 
-done("done", 14.5, 0, ["power_star", "frag_magenta", "frag_light_gray", "frag_brown", "frag_lime", "frag_light_blue",
+done("done", 14.5, 0, ["party_star", "frag_magenta", "frag_light_gray", "frag_brown", "frag_lime", "frag_light_blue",
                        "frag_cyan", "frag_orange", "frag_black", "telescope", "tame"],
      ("Star collector", "Collectionneur d'étoiles"),
-     (["All 16 colours of star fragments, and a Power Star of your own."],
-      ["Les 16 couleurs de fragments d'étoile, et votre propre Super étoile."]),
+     (["All 16 colours of star fragments, and a Party Star of your own."],
+      ["Les 16 couleurs de fragments d'étoile, et votre propre Étoile de fête."]),
      "steveparty:white_star_fragments_block")
 
 
@@ -876,9 +876,9 @@ q("core", 0, 0, I("gravity_core"), deps=["mulas.frag_black"], rewards=T3(),
   desc=(["Crying obsidian, 4 black star fragments and a heavy core. Placed, it pulls everything within 8 blocks into orbit (no fall damage inside; full netherite armour resists). It also powers the Dice Forge."],
         ["Obsidienne pleureuse, 4 fragments d'étoile noirs et un noyau lourd. Posé, il attire tout à 8 blocs en orbite (pas de dégâts de chute dans le champ ; une armure complète en netherite résiste). Il alimente aussi la Forge à dés."]))
 
-q("forge", 0, -2.5, I("dice_forge"), deps=["mulas.power_star"], rewards=T3(), size=1.5,
-  desc=(["A Power Star on top, obsidian, a blast furnace and a netherite ingot. It engraves dice with the faces and weights you choose, in a loop, by hand, hoppers or redstone."],
-        ["Une Super étoile en haut, de l'obsidienne, un haut fourneau et un lingot de netherite. Elle grave des dés avec les faces et les poids que vous choisissez, en boucle, à la main, par entonnoirs ou à la redstone."]))
+q("forge", 0, -2.5, I("dice_forge"), deps=["mulas.party_star"], rewards=T3(), size=1.5,
+  desc=(["A Party Star on top, obsidian, a blast furnace and a netherite ingot. It engraves dice with the faces and weights you choose, in a loop, by hand, hoppers or redstone."],
+        ["Une Étoile de fête en haut, de l'obsidienne, un haut fourneau et un lingot de netherite. Elle grave des dés avec les faces et les poids que vous choisissez, en boucle, à la main, par entonnoirs ou à la redstone."]))
 
 q("ignite", 2, -1.25, C(), deps=["core", "forge"], rewards=T2(), icon="steveparty:gravity_core",
   title=("Ignite the forge", "Allumer la forge"),
@@ -976,8 +976,8 @@ done("done", 8.5, 0.25, ["stud", "slab", "stairs", "wall", "fence", "float", "ho
 # === Pipes =====================================================================================
 chapter("pipes", "decoration", "steveparty:lime_pipe",
         ("Pipes", "Tuyaux"),
-        (["Mario-style pipes: go in one mouth, come out of another."],
-         ["Des tuyaux façon Mario : on entre par une embouchure, on ressort par une autre."]))
+        (["Travel pipes: go in one mouth, come out of another."],
+         ["Des tuyaux de voyage : on entre par une embouchure, on ressort par une autre."]))
 
 q("pipe", 0, 0, I("lime_pipe", 6), deps=["plastic.block"], rewards=T1(), size=1.25,
   desc=(["6 plastic blocks of one colour in two columns: 6 opaque pipes (16 colours). A pipe placed against another (or in front of its mouth) connects to it."],
@@ -1165,8 +1165,8 @@ for ch in CHAPTERS:
     if ch["key"] == "welcome":
         _current = ch
 q("finale", 0, 7.5, C(), deps=[c["key"] + ".done" for c in CHAPTERS if c["key"] != "welcome"],
-  rewards=[LV(10), IT("power_star", 3), IT("dice_module_lucky", 1), COINS(50)],
-  icon="steveparty:power_star", shape="heart", size=2.5,
+  rewards=[LV(10), IT("party_star", 3), IT("dice_module_lucky", 1), COINS(50)],
+  icon="steveparty:party_star", shape="heart", size=2.5,
   title=("Steve Party Master", "Maître de Steve Party"),
   sub=("Every chapter complete", "Tous les chapitres terminés"),
   desc=(["You have built, played and collected everything Steve Party Maker has to offer. Thank you for playing the beta!"],
@@ -1185,9 +1185,9 @@ REWARD_TABLES = [
          (IT("blue_star_fragment", 4), 2), (IT("red_star_fragment", 4), 2), (IT("yellow_star_fragment", 4), 2),
          (IT("green_star_fragment", 4), 2), (IT("purple_star_fragment", 4), 2), (XP(100), 4),
      ]},
-    {"key": "star_chest", "title": ("Star Chest", "Coffre étoilé"), "icon": "steveparty:power_star",
+    {"key": "star_chest", "title": ("Star Chest", "Coffre étoilé"), "icon": "steveparty:party_star",
      "rewards": [
-         (IT("power_star", 1), 3), (IT("coin", 25), 4), (IT("triple_dice", 1), 3), (IT("premium_dice_face_10", 2), 3),
+         (IT("party_star", 1), 3), (IT("coin", 25), 4), (IT("triple_dice", 1), 3), (IT("premium_dice_face_10", 2), 3),
          (IT("dice_module_lucky", 1), 2), (IT("dice_module_reroll", 1), 2), (IT("dice_module_choice", 1), 1),
          (IT("dice_module_power_up", 1), 1), (IT("dice_module_skeleton_key", 1), 2), (IT("swap_dice_face", 2), 2),
          (IT("black_star_fragment", 1), 1), (IT("white_star_fragments_block", 1), 2), (LV(10), 3),

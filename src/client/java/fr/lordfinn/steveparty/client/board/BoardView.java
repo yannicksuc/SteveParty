@@ -42,7 +42,7 @@ import java.util.Set;
 /**
  * The board view: while the Tile Linker Brush is held (either hand), or the Explorer's Helmet is worn
  * with its lamp lit (see {@link ExplorerHelmet}; the details it adds are {@link HelmetView}'s), the links of the board spaces around are drawn like the
- * paths of a Mario Party board: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
+ * paths of a party board game: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
  * start on a green one), forks get a gold « ? », dead ends a red « ! » and spaces no start leads to an orange « ! »,
  * gently pulsing. The teleport tiles of a network are no paths: dashed arcs in the network's colour with sparkles riding

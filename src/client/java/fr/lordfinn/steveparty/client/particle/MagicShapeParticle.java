@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.client.particle;
 
-import fr.lordfinn.steveparty.particles.KamekShapeEffect;
+import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.particle.Particle;
@@ -12,14 +12,14 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
 
 /**
- * Kamek-style magic of the Tokenizer Wand, full bright:
+ * The Tokenizer Wand's magic, full bright:
  * <ul>
  *   <li>shape: an outlined circle, triangle or square that pops in, spins, then shrinks and fades;</li>
  *   <li>sparkle: a four-point sparkle that twinkles (pulses) upright and fades.</li>
  * </ul>
  */
-public class KamekShapeParticle extends SpriteBillboardParticle {
-    /** Sprites of kamek_shape.json: three shapes, then the sparkle. */
+public class MagicShapeParticle extends SpriteBillboardParticle {
+    /** Sprites of magic_shape.json: three shapes, then the sparkle. */
     private static final int SHAPES = 3, SPARKLE_SPRITE = 3, SPRITES = 4;
 
     private final boolean sparkle;
@@ -27,16 +27,16 @@ public class KamekShapeParticle extends SpriteBillboardParticle {
     private final float spin;
     private final float phase;
 
-    protected KamekShapeParticle(ClientWorld world, double x, double y, double z, double vx, double vy, double vz,
-                                 KamekShapeEffect effect, SpriteProvider sprites) {
+    protected MagicShapeParticle(ClientWorld world, double x, double y, double z, double vx, double vy, double vz,
+                                 MagicShapeEffect effect, SpriteProvider sprites) {
         super(world, x, y, z);
         this.velocityX = vx;
         this.velocityY = vy;
         this.velocityZ = vz;
-        this.sparkle = effect.style() == KamekShapeEffect.SPARKLE;
+        this.sparkle = effect.style() == MagicShapeEffect.SPARKLE;
         setSprite(sprites.getSprite(sparkle ? SPARKLE_SPRITE : random.nextInt(SHAPES), SPRITES - 1));
-        int color = effect.color() == KamekShapeEffect.RANDOM_COLOR
-                ? KamekShapeEffect.COLORS[random.nextInt(KamekShapeEffect.COLORS.length)] : effect.color();
+        int color = effect.color() == MagicShapeEffect.RANDOM_COLOR
+                ? MagicShapeEffect.COLORS[random.nextInt(MagicShapeEffect.COLORS.length)] : effect.color();
         setColor(((color >> 16) & 0xFF) / 255F, ((color >> 8) & 0xFF) / 255F, (color & 0xFF) / 255F);
         this.baseScale = 0.1F * effect.scale() * (0.8F + random.nextFloat() * 0.4F);
         this.scale = sparkle ? baseScale : baseScale * 0.4F;
@@ -77,7 +77,7 @@ public class KamekShapeParticle extends SpriteBillboardParticle {
     }
 
     @Environment(EnvType.CLIENT)
-    public static class Factory implements ParticleFactory<KamekShapeEffect> {
+    public static class Factory implements ParticleFactory<MagicShapeEffect> {
         private final SpriteProvider sprites;
 
         public Factory(SpriteProvider sprites) {
@@ -85,9 +85,9 @@ public class KamekShapeParticle extends SpriteBillboardParticle {
         }
 
         @Override
-        public Particle createParticle(KamekShapeEffect effect, ClientWorld world, double x, double y, double z,
+        public Particle createParticle(MagicShapeEffect effect, ClientWorld world, double x, double y, double z,
                                        double velocityX, double velocityY, double velocityZ) {
-            return new KamekShapeParticle(world, x, y, z, velocityX, velocityY, velocityZ, effect, sprites);
+            return new MagicShapeParticle(world, x, y, z, velocityX, velocityY, velocityZ, effect, sprites);
         }
     }
 }

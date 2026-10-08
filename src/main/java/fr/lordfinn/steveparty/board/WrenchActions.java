@@ -452,7 +452,7 @@ public final class WrenchActions {
     /** A new link: a small star pop on the linked space (few particles, short). */
     private static void starPop(ServerWorld world, BlockPos target) {
         net.minecraft.util.math.Vec3d at = BoardSpaces.standPos(world, target).add(0, 0.35, 0);
-        world.spawnParticles(fr.lordfinn.steveparty.particles.KamekShapeEffect.sparkle(2.4F, 0.8F, 9, fr.lordfinn.steveparty.particles.KamekShapeEffect.YELLOW),
+        world.spawnParticles(fr.lordfinn.steveparty.particles.MagicShapeEffect.sparkle(2.4F, 0.8F, 9, 0xF7D038),
                 at.x, at.y, at.z, 3, 0.15, 0.1, 0.15, 0.02);
     }
 

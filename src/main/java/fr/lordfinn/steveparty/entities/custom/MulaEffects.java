@@ -40,7 +40,7 @@ public final class MulaEffects {
     /** A Mula drawn within this many ticks gets its particles. */
     private static final int VISIBLE_TICKS = 3;
 
-    /** Star bits come in every colour, like a Luma's. */
+    /** Star bits come in every colour. */
     private static final MulaSparkleEffect[] RAINBOW_BITS = {
             bit(0xFFE45C), bit(0x7FD4FF), bit(0xFF8AD8), bit(0x8CFF8C), bit(0xC59BFF), bit(0xFFFFFF)};
     private static final MulaSparkleEffect WHITE_TWINKLE = new MulaSparkleEffect(0xFFFFFF, 1f, MulaSparkleEffect.TWINKLE);
@@ -330,8 +330,8 @@ public final class MulaEffects {
 
     /**
      * Fed (the meal counter changed): the food rises gently from the feeder's hand, turns slowly, shrinks and melts into
-     * motes of light in the Mula's colour that spiral round it and sink into its body. No mouth, no gulp: like a Luma
-     * taking in star bits. The body answers with the synced "celebrate" (inhale, shimmer, warm swell), timed so the
+     * motes of light in the Mula's colour that spiral round it and sink into its body. No mouth, no gulp: it simply
+     * takes the light in. The body answers with the synced "celebrate" (inhale, shimmer, warm swell), timed so the
      * motes arrive when it swells; its size and inner lights grow at that moment (MulaMotion holds them till then).
      */
     void onFed() {
@@ -653,7 +653,7 @@ public final class MulaEffects {
     }
 
     /**
-     * Its everyday voice, Luma-like and never twice the same in a row: a single twinkle, a little rising or falling
+     * Its everyday voice, chiming and never twice the same in a row: a single twinkle, a little rising or falling
      * arpeggio of chimes, a soft high chirp, or a bubbly pop, with a twinkle of light. Resting, only rare soft twinkles.
      */
     private void tickVoice(Random random, double cx, double cy, double cz, float size) {

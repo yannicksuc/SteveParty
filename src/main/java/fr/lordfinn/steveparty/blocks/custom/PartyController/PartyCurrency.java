@@ -8,13 +8,13 @@ import net.minecraft.item.ItemStack;
 import java.util.function.Supplier;
 
 /**
- * The two currencies of a party, like in Mario Party: the stars rank the players, the coins break the ties. Each party
+ * The two currencies of a party, as in party board games: the stars rank the players, the coins break the ties. Each party
  * controller picks the item used for each one (its Settings page); a player's stars / coins are the items of that kind
  * in their inventory (same item and same components: a renamed nugget is not a plain nugget).
  */
 public enum PartyCurrency {
-    /** The main currency: the mod's Power Star by default. */
-    STAR("StarItem", () -> ModItems.POWER_STAR),
+    /** The main currency: the mod's Party Star by default. */
+    STAR("StarItem", () -> ModItems.PARTY_STAR),
     /** The sub-currency: the mod's coin by default (a gold nugget minted at the crafting table). */
     COIN("CoinItem", () -> ModItems.COIN);
 

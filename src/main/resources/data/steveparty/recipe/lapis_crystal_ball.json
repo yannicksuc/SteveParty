@@ -9,13 +9,13 @@
   ],
   "key": {
     "R": {
-      "item": "minecraft:redstone_block"
+      "item": "minecraft:lapis_block"
     },
     "W": {
-      "item": "steveparty:power_star"
+      "item": "steveparty:party_star"
     }
   },
   "result": {
-    "id": "steveparty:garnet_crystal_ball"
+    "id": "steveparty:lapis_crystal_ball"
   }
 }

@@ -20,7 +20,7 @@
 	]
 	chapter.29E775242F126236.title: "Dice"
 	chapter.2B6392D48560B907.chapter_subtitle: [
-		"Mario-style pipes: go in one mouth, come out of another."
+		"Travel pipes: go in one mouth, come out of another."
 	]
 	chapter.2B6392D48560B907.title: "Pipes"
 	chapter.3048A323DF8AC856.chapter_subtitle: [
@@ -127,6 +127,10 @@
 		"Mix star fragments like dyes: red + yellow. You get back as many fragments as you put in."
 	]
 	quest.081AE2BEE25879DB.title: "Orange Star Fragment"
+	quest.085FCFBD2E80A60F.quest_desc: [
+		"One fragment each of blue, green, yellow, red and purple (or 5 black fragments), shapeless. Always shining. It is the default Star of a party, and goes into the Dice Forge and the iron and golden mini-game pipes."
+	]
+	quest.085FCFBD2E80A60F.title: "Party Star"
 	quest.08D5A8D740C540DC.quest_desc: [
 		"Mix star fragments like dyes: blue + white. You get back as many fragments as you put in."
 	]
@@ -197,7 +201,7 @@
 	]
 	quest.10458D4F11AF735B.title: "Polished Light Blue Concrete Slab"
 	quest.104F2426E5EBE598.quest_desc: [
-		"The controller creates no coins and no stars: it pays mini-game prizes from chests. Put an Inventory Cartridge linked to a chest in the bank slot of the Prizes tab, and fill the chest with the party's coins and stars (Power Stars by default)."
+		"The controller creates no coins and no stars: it pays mini-game prizes from chests. Put an Inventory Cartridge linked to a chest in the bank slot of the Prizes tab, and fill the chest with the party's coins and stars (Party Stars by default)."
 	]
 	quest.104F2426E5EBE598.title: "The prize chest"
 	quest.114B635016EE5B45.quest_desc: [
@@ -221,9 +225,9 @@
 	]
 	quest.137ABC52300C1CE9.title: "Your own die"
 	quest.13E6F42BB1F3D4AC.quest_desc: [
-		"A nether star surrounded by 4 blocks of redstone. Its only use: the head of the Tokenizer Wand."
+		"A Party Star surrounded by 4 blocks of lapis lazuli. Its only use: the head of the Tokenizer Wand."
 	]
-	quest.13E6F42BB1F3D4AC.title: "Garnet Crystal Ball"
+	quest.13E6F42BB1F3D4AC.title: "Lapis Crystal Ball"
 	quest.13F7D62B117D88BF.quest_desc: [
 		"A treasure enchantment for the wand only: found in woodland mansion chests, or dropped by evokers and illusioners killed by a player. With it you can resize anyone's pawn and exclude any pawn from a party, like a referee."
 	]
@@ -237,7 +241,7 @@
 	]
 	quest.1569C7FE3FB27DB1.title: "Take your place"
 	quest.1661B4C0B973F8ED.quest_desc: [
-		"Crying obsidian, 4 star fragments of any colour and a heavy core. Placed, it pulls everything within 8 blocks into orbit (no fall damage inside; full netherite armour resists). It also powers the Dice Forge."
+		"Crying obsidian, 4 black star fragments and a heavy core. Placed, it pulls everything within 8 blocks into orbit (no fall damage inside; full netherite armour resists). It also powers the Dice Forge."
 	]
 	quest.1661B4C0B973F8ED.title: "Gravity Core"
 	quest.169B6F8AE6D4D572.quest_desc: [
@@ -390,7 +394,7 @@
 	]
 	quest.2BAA43480CA56926.title: "Goal Pole"
 	quest.2BD1848C751D2C08.quest_desc: [
-		"Garnet crystal ball, gold block and blaze rod, in a column. A golden wand in Kamek style."
+		"Lapis crystal ball, gold block and blaze rod, in a column. A golden wand with a lapis orb."
 	]
 	quest.2BD1848C751D2C08.title: "Tokenizer Wand"
 	quest.2CC4E00732BE3C9B.quest_desc: [
@@ -440,7 +444,7 @@
 	]
 	quest.30E06C6BD698E571.title: "Block of Blue Star Fragments"
 	quest.33F2B84D658F752B.quest_desc: [
-		"Cartridge + emerald + gold nugget. A pawn that ends on it (or passes a Checkpoint with it) opens the shop of the nearest Boxed Trader for its player, Mario Party style. See the Shops chapter."
+		"Cartridge + emerald + gold nugget. A pawn that ends on it (or passes a Checkpoint with it) opens the shop of the nearest Boxed Trader for its player. See the Shops chapter."
 	]
 	quest.33F2B84D658F752B.title: "Shop Cartridge"
 	quest.345F2775C4F5745A.quest_desc: [
@@ -501,15 +505,15 @@
 	]
 	quest.405FC7652C003313.title: "Forgemaster"
 	quest.42057F6E6F797B1D.quest_desc: [
-		"Land on top of a pole: \"1up\", a golden heart for 10 s, no fall damage, and you stand upside down. Each landing scores a point for the base."
+		"Land on top of a pole: \"+1 ♥\", an extra life: a golden heart for 10 s, no fall damage, and you stand upside down. Each landing scores a point for the base."
 	]
-	quest.42057F6E6F797B1D.title: "1up!"
+	quest.42057F6E6F797B1D.title: "Extra Life!"
 	quest.423032099703F693.quest_desc: [
 		"A plastic block over plastic pellets: 2 road signs of the block's colour. The Wrench cycles the plate: round, square, diamond, triangle, star, heart. Off its post, it floats."
 	]
 	quest.423032099703F693.title: "Plastic Road Sign"
 	quest.42C4E05F055ED63B.quest_desc: [
-		"A Power Star on top, obsidian, a blast furnace and a netherite ingot. It engraves dice with the faces and weights you choose, in a loop, by hand, hoppers or redstone."
+		"A Party Star on top, obsidian, a blast furnace and a netherite ingot. It engraves dice with the faces and weights you choose, in a loop, by hand, hoppers or redstone."
 	]
 	quest.42C4E05F055ED63B.title: "Dice Forge"
 	quest.42D5C0FDC568C5B3.quest_desc: [
@@ -542,10 +546,6 @@
 		"Dropped by a purple Mula when it bursts."
 	]
 	quest.48EDC9CAA41959B9.title: "Purple Star Fragment"
-	quest.49297133DC9D18C2.quest_desc: [
-		"One fragment each of blue, green, yellow, red and purple (or 5 black fragments), shapeless. Always shining. It is the default Star of a party, and goes into the Dice Forge and the iron and golden mini-game pipes."
-	]
-	quest.49297133DC9D18C2.title: "Power Star"
 	quest.4973F5A913628816.quest_desc: [
 		"Right-click a wild Mula with a star fragment of its own colour: 1 chance in 3. Tamed, it floats above you like a balloon and orbits your head when you stand still."
 	]
@@ -571,7 +571,7 @@
 	]
 	quest.4BD97BC245ABD3F0.title: "Paint a wall"
 	quest.4BE7B23596D212E5.quest_desc: [
-		"All 16 colours of star fragments, and a Power Star of your own."
+		"All 16 colours of star fragments, and a Party Star of your own."
 	]
 	quest.4BE7B23596D212E5.title: "Star collector"
 	quest.4C1ED42CA5A03E7A.quest_desc: [
@@ -672,7 +672,7 @@
 	]
 	quest.598F31A259B60ADB.title: "Master builder"
 	quest.59BCFCAF6BA910B4.quest_desc: [
-		"6 iron ingots, a Power Star and the copper mini-game pipe. Reaches the whole dimension."
+		"6 iron ingots, a Party Star and the copper mini-game pipe. Reaches the whole dimension."
 	]
 	quest.59BCFCAF6BA910B4.title: "Iron Mini-game Pipe"
 	quest.5A7CE62676D0F450.quest_desc: [
@@ -773,7 +773,7 @@
 	]
 	quest.6A47B29FC1D81DDA.title: "Premium Die Face 10"
 	quest.6AD835CCA129C2DD.quest_desc: [
-		"4 plastic pellets + 1 dye, shapeless: 4 blocks of the dye's colour. 8 blocks around a dye recolour them. Neighbours of the same colour merge into one piece (up to 4x2x4)."
+		"4 plastic pellets + 1 dye + 1 amethyst shard, shapeless: 4 blocks of the dye's colour. 8 blocks around a dye recolour them. Neighbours of the same colour merge into one piece (up to 4x2x4)."
 	]
 	quest.6AD835CCA129C2DD.title: "Red Plastic Block"
 	quest.6B5FF43F4D5E73E2.quest_desc: [
@@ -855,7 +855,7 @@
 	]
 	quest.778C3F69BBD69981.title: "Polished Light Blue Concrete Wall"
 	quest.77D47E2D75956F53.quest_desc: [
-		"4 gold ingots, an eye of ender, 2 Power Stars and the iron mini-game pipe. Reaches every dimension."
+		"4 gold ingots, an eye of ender, 2 Party Stars and the iron mini-game pipe. Reaches every dimension."
 	]
 	quest.77D47E2D75956F53.title: "Golden Mini-game Pipe"
 	quest.77FE553DBC59E8E9.quest_desc: [
