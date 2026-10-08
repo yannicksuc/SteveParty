@@ -1173,7 +1173,24 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     protected @Nullable SoundEvent getAmbientSound() {
-        return isSleeping() || boardActor ? null : ModSounds.GLANDOUILLE_AMBIENT;
+        if (isSleeping() || boardActor) return null;
+        // In a tower it keeps still and mostly quiet: one of them mutters now and then
+        if (inTower() && random.nextFloat() > TOWER_CHATTER) return null;
+        // A crowd (a mini-game full of them) never sounds like more than a few: each one speaks as much less
+        int crowd = getWorld().getEntitiesByClass(GlandouilleEntity.class, getBoundingBox().expand(CROWD_RADIUS), g -> g != this).size() + 1;
+        if (crowd > CROWD_VOICES && random.nextFloat() > (float) CROWD_VOICES / crowd) return null;
+        return ModSounds.GLANDOUILLE_AMBIENT;
+    }
+
+    /** Around one (blocks), never more mutters than this many Glandouilles would make. */
+    private static final double CROWD_RADIUS = 10;
+    private static final int CROWD_VOICES = 3;
+
+    /** In a tower, the share of its ambient mutters it still says (and how loud, see {@link #playSound}). */
+    private static final float TOWER_CHATTER = 0.25f, TOWER_VOLUME = 0.5f;
+
+    private boolean inTower() {
+        return hasVehicle() || GlandouilleTowers.hasRider(this);
     }
 
     @Override
@@ -1193,12 +1210,15 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     private static final float PITCH_JITTER = 0.08f;
 
     /**
-     * Its voice by variant (the young one higher, the big mossy one lower), a little different each time: every sound
+     * Its voice by variant (the young one higher and softer, the big mossy one lower and louder), a little different each
+     * time, softer in a tower when it mutters: every sound
      * of the Glandouille goes through here (vanilla's ambient, hurt and death too).
      */
     @Override
     public void playSound(SoundEvent sound, float volume, float pitch) {
-        super.playSound(sound, volume, pitch * voicePitch() * (1 + (random.nextFloat() * 2 - 1) * PITCH_JITTER));
+        float loud = volume * voiceVolume();
+        if (sound == ModSounds.GLANDOUILLE_AMBIENT && inTower()) loud *= TOWER_VOLUME;
+        super.playSound(sound, loud, pitch * voicePitch() * (1 + (random.nextFloat() * 2 - 1) * PITCH_JITTER));
     }
 
     private float voicePitch() {
@@ -1206,6 +1226,15 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
             case YOUNG -> 1.25f;
             case MOSSY -> 0.8f;
             default -> 1f;
+        };
+    }
+
+    /** A small creature: softer than the vanilla mobs its sounds are matched to; the young one softer still. */
+    private float voiceVolume() {
+        return switch (getVariant()) {
+            case YOUNG -> 0.6f;
+            case MOSSY -> 0.9f;
+            default -> 0.75f;
         };
     }
 
