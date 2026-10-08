@@ -45,11 +45,14 @@ public final class LinkHistory {
     public record LinksChange(BlockPos pos, int slot, List<BlockPos> before, List<BlockPos> after) implements Change {
         @Override
         public boolean apply(ServerWorld world, boolean undo) {
-            CartridgeContainerBlockEntity container = BoardLinks.container(world, pos);
-            if (container == null) return false;
+            // Any holder's cartridge: a board space's, a router's, a Hop Switch's...
+            BrushLinks.Held held = BrushLinks.held(world, pos, slot);
+            if (held == null || !(held.cartridge().getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem)) return false;
             List<BlockPos> expected = undo ? after : before;
-            if (!BoardLinks.links(container, slot).equals(expected)) return false;
-            return BoardLinks.setLinks(world, container, slot, undo ? before : after);
+            if (!BoardLinks.links(held.cartridge()).equals(expected)) return false;
+            BoardLinks.setLinks(held.cartridge(), undo ? before : after, world);
+            held.sync().run();
+            return true;
         }
     }
 
@@ -68,13 +71,13 @@ public final class LinkHistory {
                               java.util.List<net.minecraft.util.math.GlobalPos> after) implements Change {
         @Override
         public boolean apply(ServerWorld world, boolean undo) {
-            CartridgeContainerBlockEntity container = BoardLinks.container(world, pos);
-            if (container == null) return false;
-            ItemStack cartridge = container.getStack(slot);
+            BrushLinks.Held held = BrushLinks.held(world, pos, slot);
+            if (held == null) return false;
+            ItemStack cartridge = held.cartridge();
             if (cartridge.isEmpty() || !fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey())
                     .equals(undo ? after : before)) return false;
             fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, undo ? before : after);
-            BoardLinks.sync(container);
+            held.sync().run();
             return true;
         }
     }
