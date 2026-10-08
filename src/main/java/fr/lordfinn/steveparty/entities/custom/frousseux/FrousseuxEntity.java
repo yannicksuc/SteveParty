@@ -35,6 +35,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypeFilter;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -96,6 +97,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
     private static final int DODGE_COOLDOWN = 8;
     /** What it steals: one of these, never more than one at a time. */
     public static final TagKey<Item> SHINY = TagKey.of(RegistryKeys.ITEM, Steveparty.id("frousseux_shiny"));
+    /** Held in either hand, these keep a player from being robbed. */
+    public static final TagKey<Item> WARDS = TagKey.of(RegistryKeys.ITEM, Steveparty.id("frousseux_wards"));
     /** A player this close to a wild one gets robbed, at most once every {@link #STEAL_COOLDOWN} ticks. */
     public static final double STEAL_RANGE = 2.0;
     public static final int STEAL_COOLDOWN = 300;
@@ -513,8 +516,16 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
         for (PlayerEntity player : world.getPlayers()) {
             if (player.isSpectator() || player.isCreative() || !player.isAlive()) continue;
             if (player.getBoundingBox().squaredMagnitude(centre) > STEAL_RANGE * STEAL_RANGE) continue;
+            if (isWarded(world, player)) continue;
             if (stealFrom(player)) return;
         }
+    }
+
+    /** Never robbed: a player on fire, holding a torch or a lantern (either hand), or with a Frousseux of their own. */
+    public static boolean isWarded(ServerWorld world, PlayerEntity player) {
+        if (player.isOnFire() || player.getMainHandStack().isIn(WARDS) || player.getOffHandStack().isIn(WARDS)) return true;
+        return !world.getEntitiesByType(TypeFilter.instanceOf(FrousseuxEntity.class),
+                frousseux -> frousseux.isTamed() && frousseux.isOwner(player)).isEmpty();
     }
 
     /**
