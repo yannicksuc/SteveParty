@@ -80,7 +80,7 @@ public class InventoryCartridgeGameTests implements FabricGameTest {
     /**
      * The click reads its target, in either hand: a chest is added (it does not open); with the cartridge in the off
      * hand and nothing in the main hand too; sneaking on a board space adds a destination; a plain click on a board
-     * space opens its interface (where cartridges go in); a click on stone does nothing.
+     * space opens its interface (where cartridges go in); a click on stone makes it a destination.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theClickDecidesByItsTarget(TestContext context) {
@@ -122,8 +122,9 @@ public class InventoryCartridgeGameTests implements FabricGameTest {
                     "and no destination changed");
 
             click(context, player, Hand.MAIN_HAND, stone);
-            context.assertTrue(cartridge.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations().size() == 1
-                    && CartridgeContainers.in(cartridge, context.getWorld()).size() == 2, "stone: nothing");
+            context.assertTrue(cartridge.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations()
+                    .equals(List.of(context.getAbsolutePos(tile), context.getAbsolutePos(stone)))
+                    && CartridgeContainers.in(cartridge, context.getWorld()).size() == 2, "stone: a destination, no container");
         } finally {
             context.getWorld().getServer().getPlayerManager().remove(player);
         }

@@ -86,7 +86,7 @@
   "book.steveparty.guide.cartridges.advance_back.page1.text": "Cartridge + piston.",
   "book.steveparty.guide.cartridges.cartridge.description": "Destinations and roles",
   "book.steveparty.guide.cartridges.cartridge.name": "Cartridges",
-  "book.steveparty.guide.cartridges.cartridge.page0.text": "A **Cartridge** gives a space its destinations. Holding it, right-click a block to add it as a destination, again to remove it.\n\n- one destination: a set path;\n- several: a fork, the player chooses;\n- none: a dead end, the pawn stops.",
+  "book.steveparty.guide.cartridges.cartridge.page0.text": "A **Cartridge** gives a space its destinations. Holding it, right-click any block (the ground too; sneak on a space) to add it as a destination, again to remove it.\n\n- one destination: a set path;\n- several: a fork, the player chooses;\n- none: a dead end, the pawn stops.",
   "book.steveparty.guide.cartridges.cartridge.page0.title": "Cartridges",
   "book.steveparty.guide.cartridges.cartridge.page1.text": "2 redstone, 2 paper and 2 Plastic Pellets.",
   "book.steveparty.guide.cartridges.cartridge.page2.text": "Every cartridge has its own menu: right-click in the air while holding it, or open its space. A dye on the space recolours the active cartridge.\n\nEach role below is a plain Cartridge plus one ingredient, shapeless.",
