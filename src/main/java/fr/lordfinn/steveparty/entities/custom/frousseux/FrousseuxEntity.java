@@ -70,8 +70,9 @@ import java.util.UUID;
  *     it never suffocates.</li>
  *     <li><b>Shy</b>: a player within {@link #LOOK_RANGE} blocks looking at it, it freezes and hides its eyes; it goes
  *     on once nobody looks.</li>
- *     <li><b>Hits</b>: blows in melee do nothing (a puff, and it slips a little away); projectiles hurt it; a wind charge
- *     blows its flame out, whether it hits it or bursts by it; fire and lava do nothing; potions work.</li>
+ *     <li><b>Hits</b>: blows in melee do nothing (a puff, and it slips a little away); projectiles of any kind, wind
+ *     charges, explosions, fire and lava do nothing either. Only potions harm it (instant damage, poison, wither) and
+ *     commands (or the void): the only ways to kill it ({@link #canHurtIt}). As a candle holder, it burns.</li>
  *     <li><b>Flint and steel</b>: relights its flame, giving back health; on a wild one, a try at taming it.</li>
  *     <li><b>Loot</b>: sometimes its candle, always with Looting (loot table entities/frousseux); and what it stole.</li>
  *     <li><b>A thief</b>: a wild one steals one shiny thing ({@link #SHINY}) off a player coming within
@@ -105,6 +106,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** A player this close to a wild one gets robbed, at most once every {@link #STEAL_COOLDOWN} ticks. */
     public static final double STEAL_RANGE = 2.0;
     public static final int STEAL_COOLDOWN = 300;
+    /** And never the same player again before this long (ticks: 10 minutes). */
+    public static final int VICTIM_COOLDOWN = 12000;
     /** How long a stolen (or given back) item flies, and how long it flees laughing after a theft (ticks). */
     public static final int ITEM_FLIGHT_TICKS = 12, FLEE_TICKS = 120;
     /** One strike of flint and steel in this many tames a wild one. */
@@ -136,8 +139,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     private static final TrackedData<Integer> COLOR =
             DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Boolean> SHY =
-            DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-    private static final TrackedData<Boolean> BLOWN_OUT =
             DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Optional<UUID>> OWNER =
             DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
@@ -181,8 +182,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** The item's flight going on, this many ticks more (server); when it started (client, its age). */
     private int itemFlightTicks;
     private int itemFlightStart = Integer.MIN_VALUE;
-    /** A wind charge burst by it: its flame is blown out on its next tick (see {@link #isImmuneToExplosion}). */
-    private @Nullable AbstractWindChargeEntity windBurst;
+    /** The players it robbed and until when it leaves them be (world time), each: {@link #VICTIM_COOLDOWN}. */
+    private final java.util.Map<UUID, Long> robbed = new java.util.HashMap<>();
 
     public FrousseuxEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -225,7 +226,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         super.initDataTracker(builder);
         builder.add(COLOR, 0);
         builder.add(SHY, false);
-        builder.add(BLOWN_OUT, false);
         builder.add(FLAME_STAGE, (byte) -1);
         builder.add(OWNER, Optional.empty());
         builder.add(SITTING, false);
@@ -271,11 +271,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** Hiding its eyes: a player is looking at it. */
     public boolean isShy() {
         return this.dataTracker.get(SHY);
-    }
-
-    /** Its flame was blown out (a wind charge): no flame drawn, it is dying. */
-    public boolean isBlownOut() {
-        return this.dataTracker.get(BLOWN_OUT);
     }
 
     /** Free to look about: alive, not hiding its eyes, not fleeing, not the board's. */
@@ -452,12 +447,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
             light.clear(world);
             return;
         }
-        if (windBurst != null) {
-            AbstractWindChargeEntity charge = windBurst;
-            windBurst = null;
-            blowOut(world, getDamageSources().windCharge(charge, charge.getOwner() instanceof LivingEntity l ? l : null));
-            return;
-        }
         if (dodgeCooldown > 0) dodgeCooldown--;
         if (stealCooldown > 0) stealCooldown--;
         tickItemFlight();
@@ -481,7 +470,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     private void tickClient() {
         tickFlameLean();
         tickFade();
-        if (!isAlive() || isBlownOut()) return;
+        if (!isAlive()) return;
         // the stolen (or given back) item's sparkles on its way
         Vec3d flying = itemFlightOffset(0);
         if (flying != null && random.nextInt(2) == 0) {
@@ -612,7 +601,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
      * something.
      */
     public boolean stealFrom(PlayerEntity player) {
-        if (!stolen.isEmpty() || isTamed() || boardActor) return false;
+        if (!stolen.isEmpty() || isTamed() || boardActor || robbedLately(player)) return false;
         PlayerInventory inventory = player.getInventory();
         int found = 0, slot = -1;
         for (int i = 0; i < inventory.size(); i++) {
@@ -627,6 +616,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         this.dataTracker.set(SHOWN_ITEM, taken.copy());
         startItemFlight(player, true);
         stealCooldown = STEAL_COOLDOWN;
+        robbed.put(player.getUuid(), getWorld().getTime() + VICTIM_COOLDOWN);
         fleeTicks = FLEE_TICKS;
         fleeFrom = player;
         shyTicks = 0;
@@ -638,6 +628,12 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         }
         laugh();
         return true;
+    }
+
+    /** It robbed {@code player} less than {@link #VICTIM_COOLDOWN} ago: it leaves them be. */
+    public boolean robbedLately(PlayerEntity player) {
+        Long until = robbed.get(player.getUuid());
+        return until != null && getWorld().getTime() < until;
     }
 
     /** Gives what it stole back to {@code player}: it flies to them, into their inventory (or at their feet). */
@@ -701,22 +697,21 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     @Override
     public boolean damage(DamageSource source, float amount) {
         if (getWorld().isClient || boardActor || isRemoved()) return false;
-        if (source.isOf(DamageTypes.IN_WALL) || source.isOf(DamageTypes.DROWN)) return false;
-        if (isWindCharge(source)) {
-            if (isAlive()) blowOut((ServerWorld) getWorld(), source);
-            return true;
-        }
         if (isMelee(source)) {
             dodge((ServerWorld) getWorld(), source.getAttacker());
             return false;
         }
-        // its owner's arrows and the like never hurt it (it follows them about, it is often in the way)
-        if (isTamed() && source.getAttacker() instanceof PlayerEntity player && isOwner(player)) return false;
+        if (!canHurtIt(source)) return false;
         return super.damage(source, amount);
     }
 
-    private static boolean isWindCharge(DamageSource source) {
-        return source.isOf(DamageTypes.WIND_CHARGE) || source.getSource() instanceof AbstractWindChargeEntity;
+    /**
+     * What may hurt it, so the only ways to kill it: potions (instant damage, splash or lingering; poison and wither
+     * effects) and what nothing withstands (commands, the void). Not projectiles of any kind, explosions, fire...
+     */
+    public static boolean canHurtIt(DamageSource source) {
+        return source.isOf(DamageTypes.MAGIC) || source.isOf(DamageTypes.INDIRECT_MAGIC) || source.isOf(DamageTypes.WITHER)
+                || source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY);
     }
 
     /** A blow from someone right there: no projectile, no explosion, no magic. */
@@ -766,27 +761,16 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     }
 
     /**
-     * A wind charge bursting by it: its flame is blown out. The burst never hurts what it pushes, so it is caught here
-     * (asked before the push): no push, and the flame goes out on its next tick, out of the explosion's loop.
+     * Explosions never hurt it nor push it (creepers, wind charges...): a wind charge bursting by it only makes its
+     * flame flicker (a puff of smoke).
      */
     @Override
     public boolean isImmuneToExplosion(Explosion explosion) {
-        if (explosion.getEntity() instanceof AbstractWindChargeEntity charge && !boardActor && isAlive()
-                && !getWorld().isClient) {
-            if (windBurst == null) windBurst = charge;
-            return true;
+        if (boardActor) return super.isImmuneToExplosion(explosion);
+        if (explosion.getEntity() instanceof AbstractWindChargeEntity && getWorld() instanceof ServerWorld world && isAlive()) {
+            world.spawnParticles(ParticleTypes.SMOKE, getX(), getY() + HEIGHT + 0.2, getZ(), 4, 0.06, 0.1, 0.06, 0.01);
         }
-        return super.isImmuneToExplosion(explosion);
-    }
-
-    /** The wind charge's one-shot: the flame blown out (smoke, a "pfff"), its light gone, dead. */
-    private void blowOut(ServerWorld world, DamageSource source) {
-        this.dataTracker.set(BLOWN_OUT, true);
-        light.clear(world);
-        world.spawnParticles(ParticleTypes.SMOKE, getX(), getY() + HEIGHT + 0.2, getZ(), 12, 0.08, 0.15, 0.08, 0.03);
-        world.spawnParticles(ParticleTypes.POOF, getX(), getBodyY(0.5), getZ(), 6, 0.15, 0.15, 0.15, 0.02);
-        super.damage(source, Float.MAX_VALUE);
-        if (isAlive()) kill(); // Resistance and the like: blown out all the same
+        return true;
     }
 
     @Override
@@ -939,6 +923,18 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (isSitting()) nbt.putBoolean("Sitting", true);
         if (!stolen.isEmpty()) nbt.put("Stolen", stolen.encode(getRegistryManager()));
         if (stealCooldown > 0) nbt.putInt("StealCooldown", stealCooldown);
+        if (!robbed.isEmpty()) {
+            net.minecraft.nbt.NbtList list = new net.minecraft.nbt.NbtList();
+            long now = getWorld().getTime();
+            robbed.forEach((who, until) -> {
+                if (until <= now) return;
+                NbtCompound entry = new NbtCompound();
+                entry.putUuid("Player", who);
+                entry.putLong("Until", until);
+                list.add(entry);
+            });
+            nbt.put("Robbed", list);
+        }
         light.write(nbt);
     }
 
@@ -955,6 +951,11 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
                 ? ItemStack.fromNbt(getRegistryManager(), nbt.get("Stolen")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
         this.dataTracker.set(SHOWN_ITEM, stolen.copy());
         stealCooldown = nbt.getInt("StealCooldown");
+        robbed.clear();
+        for (net.minecraft.nbt.NbtElement element : nbt.getList("Robbed", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) {
+            NbtCompound entry = (NbtCompound) element;
+            if (entry.containsUuid("Player")) robbed.put(entry.getUuid("Player"), entry.getLong("Until"));
+        }
         light.read(nbt);
     }
 
@@ -972,7 +973,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
 
     @Override
     protected @Nullable SoundEvent getDeathSound() {
-        return isBlownOut() ? ModSounds.FROUSSEUX_BLOWN_OUT : ModSounds.FROUSSEUX_DEATH;
+        return ModSounds.FROUSSEUX_BLOWN_OUT; // its flame goes out
     }
 
     @Override

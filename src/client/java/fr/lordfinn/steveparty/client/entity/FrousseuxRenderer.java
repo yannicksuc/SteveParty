@@ -52,7 +52,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     @Override
     public void render(FrousseuxEntity frousseux, float entityYaw, float partialTick, MatrixStack poseStack,
                        VertexConsumerProvider bufferSource, int packedLight) {
-        int light = frousseux.isBlownOut() || frousseux.deathTime > 0 ? packedLight
+        int light = frousseux.deathTime > 0 ? packedLight
                 : LightmapTextureManager.pack(15, LightmapTextureManager.getSkyLightCoordinates(packedLight));
         if (frousseux.bodyAlpha(partialTick) <= 0.01f && frousseux.flameAlpha(partialTick) <= 0.01f) return; // out of its owner's way
         super.render(frousseux, entityYaw, partialTick, poseStack, bufferSource, light);
@@ -168,7 +168,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
         public void render(MatrixStack poseStack, FrousseuxEntity frousseux, BakedGeoModel bakedModel, @Nullable RenderLayer renderType,
                            VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay) {
-            if (frousseux.isBlownOut() || frousseux.deathTime > 0) return;
+            if (frousseux.deathTime > 0) return;
             GeoBone body = bakedModel.getBone("body").orElse(null), wick = bakedModel.getBone("wick").orElse(null),
                     flame = bakedModel.getBone("flame").orElse(null);
             if (body == null || wick == null || flame == null) return;

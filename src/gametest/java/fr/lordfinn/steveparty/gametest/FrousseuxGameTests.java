@@ -315,4 +315,44 @@ public class FrousseuxGameTests implements FabricGameTest {
         context.assertTrue(FrousseuxCandleHolderBlock.isOnSaucer(FrousseuxCandleHolderBlock.itemOf(holder)), "broken: one item keeping both");
         context.complete();
     }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void onlyPotionsAndCommandsHurtIt(TestContext context) {
+        floor(context);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        var sources = frousseux.getDamageSources();
+        context.assertFalse(frousseux.damage(sources.thrown(null, null), 4f), "a thrown thing does nothing");
+        context.assertFalse(frousseux.damage(sources.explosion(null, null), 4f), "an explosion does nothing");
+        context.assertFalse(frousseux.damage(sources.onFire(), 4f), "fire does nothing");
+        context.assertTrue(frousseux.getHealth() == frousseux.getMaxHealth(), "unhurt");
+        context.assertTrue(frousseux.damage(sources.magic(), 3f), "a potion hurts it");
+        context.assertTrue(frousseux.getHealth() < frousseux.getMaxHealth(), "hurt");
+        frousseux.kill();
+        context.assertFalse(frousseux.isAlive(), "a command kills it");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itLeavesTheSameVictimBeForTenMinutes(TestContext context) {
+        floor(context);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
+        ServerPlayerEntity other = player(context, new BlockPos(4, 1, 4));
+        player.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 5));
+        other.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 5));
+        context.assertTrue(frousseux.stealFrom(player), "robbed once");
+        frousseux.giveBack(player);
+        context.assertTrue(frousseux.robbedLately(player), "remembered");
+        context.assertFalse(frousseux.stealFrom(player), "not the same player again so soon");
+        context.assertTrue(frousseux.stealFrom(other), "someone else, yes");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theCandleHolderBurns(TestContext context) {
+        var fire = net.fabricmc.fabric.api.registry.FlammableBlockRegistry.getDefaultInstance().get(ModBlocks.FROUSSEUX_CANDLE_HOLDER);
+        context.assertTrue(fire != null && fire.getBurnChance() > 0 && fire.getSpreadChance() > 0, "it catches fire and burns");
+        context.assertTrue(ModBlocks.FROUSSEUX_CANDLE_HOLDER.getDefaultState().isBurnable(), "lava sets it alight");
+        context.complete();
+    }
 }

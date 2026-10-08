@@ -47,7 +47,7 @@ public final class FrousseuxSafeZone {
     }
 
     private static boolean guards(FrousseuxEntity frousseux) {
-        return frousseux.isAlive() && !frousseux.isBoardActor() && !frousseux.isBlownOut();
+        return frousseux.isAlive() && !frousseux.isBoardActor();
     }
 
     /**
