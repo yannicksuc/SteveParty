@@ -8,8 +8,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 /**
- * One visual language for the HUDs of the mod's tools held in hand (the Stencil Hammer, the Wrench): small plates just
- * above the hotbar, cut like the mod's screens (teal like the Tile's, gold when active: see
+ * One visual language for the HUDs of the mod's tools held in hand: small plates just above the hotbar (a tool's whole
+ * HUD is laid out by {@link ToolHudPanel}), cut like the mod's screens (teal like the Tile's, gold when active: see
  * the art sources), and a see-through hint line above them.
  */
 public final class ToolHud {
@@ -34,10 +34,15 @@ public final class ToolHud {
      * InGameHudToolHudMixin): just above the hotbar, or the health, armour and air rows (as high as they climb).
      */
     public static int top(DrawContext context) {
+        return bottom(context) - BOX;
+    }
+
+    /** Bottom of a tool HUD: just above the hotbar, or the health, armour and air rows (as high as they climb). */
+    public static int bottom(DrawContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
         boolean statusBars = client.interactionManager != null && client.interactionManager.hasStatusBars();
         int above = statusBars && client.player != null ? statusRowsTop(client.player) : HOTBAR_TOP;
-        return context.getScaledWindowHeight() - above - 2 - BOX;
+        return context.getScaledWindowHeight() - above - 2;
     }
 
     /** The top of the hotbar above the screen's bottom. */
