@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * A player turned into a pawn: a little statue of the player (their skin, big head and big arms) on a token base.
+ * A player turned into a pawn: a little statue of the player (their skin, a big head) on a token base.
  * <p>
  * It is a regular token (tokenized mob, see {@code TokenEntityMixin}): moved on boards, stored in a Token, resized with
  * the wand like any pawn. On top of that, the player it was made from can be inside it ({@link #getPossessor}, see
