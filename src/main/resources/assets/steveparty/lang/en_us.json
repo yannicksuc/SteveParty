@@ -2678,5 +2678,7 @@
   "pose.steveparty.player_pawn.zombie": "Zombie",
   "pose.steveparty.player_pawn.dab": "Dab",
   "pose.steveparty.player_pawn.sulk": "Last Place Sulk",
-  "pose.steveparty.player_pawn.ballerina": "Ballerina"
+  "pose.steveparty.player_pawn.ballerina": "Ballerina",
+  "command.steveparty.playerpawn.done": "%s player(s) turned into pawns",
+  "command.steveparty.playerpawn.none": "No player can be turned into a pawn now (already one, or under the spell)"
 }

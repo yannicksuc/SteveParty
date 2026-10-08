@@ -316,7 +316,7 @@ public class TokenizerWandItem extends Item {
             sendPlayerRefused(player);
             return SpellResult.NOT_ALLOWED;
         }
-        PawnPossessions.startSpell(target, player, clampTokenSize(requestedSize), sanitizeColor(requestedColor));
+        PawnPossessions.startSpell(target, player.getUuid(), clampTokenSize(requestedSize), sanitizeColor(requestedColor));
         player.getItemCooldownManager().set(wand.getItem(), SPELL_COOLDOWN);
         playSpellEffects(target);
         playCastBurst(player, target);
