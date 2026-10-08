@@ -14,11 +14,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** First person, carrying Glandouilles: both bare arms forward and close together (whatever the hands hold), no item. */
+/**
+ * First person, carrying Glandouilles: the main hand is bare, low on its side, under the stack (whatever it holds); the
+ * other hand is drawn as usual.
+ */
 @Mixin(HeldItemRenderer.class)
 public class HeldItemRendererGlandouilleCarryMixin {
-    /** How far each arm comes in toward the middle (screen units), and turns in (degrees). */
-    private static final float INWARD = 0.14f, TURN_IN = 5f;
+    /** How far the main arm goes down (screen units). */
+    private static final float DOWN = 0.12f;
 
     @Shadow
     private void renderArmHoldingItem(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light,
@@ -30,16 +33,12 @@ public class HeldItemRendererGlandouilleCarryMixin {
     private void steveparty$carryArms(AbstractClientPlayerEntity player, float tickDelta, float pitch, Hand hand,
                                       float swingProgress, ItemStack item, float equipProgress, MatrixStack matrices,
                                       VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
-        if (!GlandouilleCarryClient.carrying(player)) return;
+        if (hand != Hand.MAIN_HAND || !GlandouilleCarryClient.carrying(player)) return;
         ci.cancel();
         if (player.isInvisible()) return;
-        Arm arm = hand == Hand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
         matrices.push();
-        // Closer together than the vanilla arms, each a little turned in, as around a box held in front
-        float side = arm == Arm.RIGHT ? 1f : -1f;
-        matrices.translate(-side * INWARD, 0f, 0f);
-        matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(side * TURN_IN));
-        renderArmHoldingItem(matrices, vertexConsumers, light, equipProgress, hand == Hand.MAIN_HAND ? swingProgress : 0f, arm);
+        matrices.translate(0f, -DOWN, 0f);
+        renderArmHoldingItem(matrices, vertexConsumers, light, equipProgress, swingProgress, player.getMainArm());
         matrices.pop();
     }
 }
