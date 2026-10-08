@@ -66,7 +66,9 @@ public class PartyButton extends PressableWidget {
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        boolean highlighted = active && (isHovered() || isFocused());
+        // focus only shows when it came from the keyboard: a clicked button keeps the focus but must not stay lit
+        boolean keyboardFocus = isFocused() && MinecraftClient.getInstance().getNavigationType().isKeyboard();
+        boolean highlighted = active && (isHovered() || keyboardFocus);
         boolean held = highlighted && isHovered() && MinecraftClient.getInstance().mouse.wasLeftButtonClicked();
         PartyGui.Theme theme = !active ? PartyGui.BUTTON_DISABLED
                 : selected ? PartyGui.BUTTON_SELECTED

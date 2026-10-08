@@ -72,6 +72,8 @@
       "fr.lordfinn.steveparty.gametest.TelescopeGameTests",
       "fr.lordfinn.steveparty.gametest.StencilGameTests",
       "fr.lordfinn.steveparty.gametest.TokenSpellGameTests",
+      "fr.lordfinn.steveparty.gametest.PlayerPawnGameTests",
+      "fr.lordfinn.steveparty.gametest.TokenPoseGameTests",
       "fr.lordfinn.steveparty.gametest.TokenBaseGameTests",
       "fr.lordfinn.steveparty.gametest.TokenDropsGameTests",
       "fr.lordfinn.steveparty.gametest.TokenPawnGameTests",
@@ -103,7 +105,8 @@
       "fr.lordfinn.steveparty.gametest.PolishedTilesGameTests",
       "fr.lordfinn.steveparty.gametest.BoardExplosionGameTests",
       "fr.lordfinn.steveparty.gametest.PowerupTrapGameTests",
-      "fr.lordfinn.steveparty.gametest.StarWhistleGameTests"
+      "fr.lordfinn.steveparty.gametest.StarWhistleGameTests",
+      "fr.lordfinn.steveparty.gametest.FrousseuxGameTests"
     ]
   },
   "depends": {

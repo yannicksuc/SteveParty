@@ -21,8 +21,8 @@ import java.util.EnumSet;
  * <p>
  * At most {@code mulaMaxFollowers} Mulas follow one player (MulaEscorts); the others stay where they are.
  * <p>
- * Several Mulas following the same player keep {@value #SPACING} blocks apart: each one's place above the owner is
- * pushed away from its nearest mates, and Mulas resting too close to one another drift apart.
+ * Several Mulas following the same player keep {@value #SPACING} blocks apart: each has its own place on a ring above
+ * the owner (by its rank among them, PetSlots), pushed away from its nearest mates besides.
  */
 public class FollowOwnerWhileFlyingGoal extends Goal {
     /** Ticks between two path computations (vanilla pets use the same). */
@@ -55,9 +55,12 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
     /** Moved less than this (blocks) since the last look while on a path: stuck, it flies straight for a while. */
     private static final double STUCK = 0.5;
     private int escortRetryTicks;
+    /** Its mates: its owner's other Mulas following them, each its own place on a ring above them (PetSlots). */
+    private final fr.lordfinn.steveparty.entities.PetSlots.Group mates;
 
     public FollowOwnerWhileFlyingGoal(MulaEntity entity, double speed, float minDistance, float maxDistance) {
         this.entity = entity;
+        this.mates = new fr.lordfinn.steveparty.entities.PetSlots.Group(entity);
         this.speed = speed;
         this.minDistance = minDistance;
         this.maxDistance = maxDistance;
@@ -126,6 +129,27 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
         }
     }
 
+    /**
+     * Its place: 2 blocks above its owner, alone; with mates, its own place on a ring around that spot (by its rank,
+     * PetSlots), wide enough for {@link #SPACING} between neighbours; then pushed out of the nearest Mulas' way.
+     */
+    private double[] place() {
+        PlayerEntity owner = this.owner;
+        java.util.UUID id = owner.getUuid();
+        mates.refresh(24, 20, other -> other instanceof MulaEntity mula && mula.isTamed() && id.equals(mula.getOwnerUuid())
+                && !mula.isSitting() && fr.lordfinn.steveparty.entities.custom.MulaEscorts.isFollower(id, mula));
+        double[] place = {owner.getX(), owner.getY() + 2.0, owner.getZ()};
+        int count = mates.count();
+        if (count > 1) {
+            double radius = Math.max(1.0, SPACING * 1.1 * count / (2 * Math.PI));
+            double angle = 2 * Math.PI * mates.index() / count;
+            place[0] += Math.cos(angle) * radius;
+            place[2] += Math.sin(angle) * radius;
+        }
+        spreadOut(place);
+        return place;
+    }
+
     @Override
     public void start() {
         repathTicks = 0;
@@ -153,11 +177,10 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
         // Look at the owner
         entity.getLookControl().lookAt(owner, 10.0f, 10.0f);
 
-        // Already close to the owner: only drifting out of another Mula
+        // Already close to the owner: to its own place on the ring, out of the way of the other Mulas
         if (entity.squaredDistanceTo(owner) <= (double)(minDistance * minDistance)) {
             entity.getNavigation().stop();
-            double[] place = {entity.getX(), entity.getY(), entity.getZ()};
-            spreadOut(place);
+            double[] place = place();
             entity.getMoveControl().moveTo(place[0], place[1], place[2], speed * MIN_SPEED);
             return;
         }
@@ -180,9 +203,8 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
         if (!close && !look && !direct) return; // following its path
         if (look) repathTicks = REPATH_TICKS;
 
-        // Target 2 blocks above player, out of the way of the other Mulas
-        double[] place = {owner.getX(), owner.getY() + 2.0, owner.getZ()};
-        spreadOut(place);
+        // Target 2 blocks above player, its own place on the ring, out of the way of the other Mulas
+        double[] place = place();
         double targetX = place[0];
         double targetY = place[1];
         double targetZ = place[2];

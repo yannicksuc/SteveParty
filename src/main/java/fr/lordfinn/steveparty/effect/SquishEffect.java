@@ -94,7 +94,8 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
 
     /** Amplifier matching a size (drives the spin speed of the client animation). */
     public static int amplifierForSize(float sizeInBlocks) {
-        return Math.max(1, Math.round(sizeInBlocks * 10));
+        // (sent to the clients as a byte: a big pawn stays at its top)
+        return net.minecraft.util.math.MathHelper.clamp(Math.round(sizeInBlocks * 10), 1, Byte.MAX_VALUE);
     }
 
     /**
@@ -157,6 +158,14 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
         if (initialHeight <= 0) return scaleAttribute.getBaseValue();
         double maxHeight = 0.1 * amplifier;
         return maxHeight / initialHeight;
+    }
+
+    /**
+     * Plays the transformation on the clients for an entity whose scale was set otherwise (a player under the spell:
+     * {@code PawnPossessions}): from {@code startScale} to {@code targetScale}, {@code sizeInBlocks} driving the spin.
+     */
+    public static void playAnimation(LivingEntity entity, float startScale, float targetScale, int duration, float sizeInBlocks) {
+        sendAnimation(entity, startScale, targetScale, duration, amplifierForSize(sizeInBlocks));
     }
 
     private static void sendAnimation(LivingEntity entity, float startScale, float targetScale, int duration, int amplifier) {

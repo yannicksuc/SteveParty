@@ -18,7 +18,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Arm;
@@ -31,7 +31,6 @@ import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import java.util.List;
 
-import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.MAX_TOKEN_SIZE;
 import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.MIN_TOKEN_SIZE;
 import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.NO_COLOR;
 import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.TOKEN_SIZE_STEP;
@@ -45,8 +44,9 @@ import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.TOKEN_SIZE_S
  *   <li>Drawing: the player traces a circle freehand, anywhere on the screen, holding the left or the right mouse
  *   button (particles stream from the wand and along the stroke while it is held). On release, a circle is fitted
  *   to the stroke (centroid, mean radius) and the stroke morphs into the clean circle, centred back on the mob. The
- *   bigger the circle, the bigger the token: the radius is proportional to the size (a full-size circle is
- *   {@link TokenizerWandItem#MAX_TOKEN_SIZE} blocks). No size is shown, no fine-tuning: the drawing decides.
+ *   bigger the circle, the bigger the token: the radius is proportional to the size (a circle as big as the screen
+ *   is the biggest token of that mob, {@link TokenizerWandItem#maxTokenSize}). No size is shown, no fine-tuning: the
+ *   drawing decides.
  *   Something that is not a loop is ignored with a brief message, and the player draws again. The only text on
  *   screen is the incantation, next to a small ring icon (the shape to draw). The same circle, in shapes, is
  *   mirrored on the ground around the mob, and sparkles mark the token's future height. The first person wand
@@ -72,7 +72,13 @@ public class TokenSpellScreen extends Screen {
      * The stroke keeps its last points only: looping round and round never makes it grow without end (drawing it,
      * thousands of dots and sparkles a frame, froze the game), and the circle is fitted to the last loops drawn.
      */
-    private static final int MAX_STROKE_POINTS = 800;
+    private static final int MAX_STROKE_POINTS = 2400;
+    /** Points kept along a circle as big as the screen (closer points are skipped): the cap is several such loops. */
+    private static final float POINTS_PER_FULL_CIRCLE = 360;
+    /** Space left between a full-size circle and the edges of the screen (GUI pixels). */
+    private static final float SCREEN_MARGIN = 6;
+    /** A full-size circle is never smaller than this (GUI pixels), even in a tiny window. */
+    private static final float MIN_FULL_RADIUS = 40;
     /** Most sparkles riding on a stroke (one every 40 pixels). */
     private static final int MAX_STROKE_SPARKLES = 48;
     /** How long positions far from the cursor's jump point are taken as stale (before the jump), at most. */
@@ -93,7 +99,9 @@ public class TokenSpellScreen extends Screen {
 
     private enum Phase { CHARGING, DRAWING, VALIDATING }
 
-    private final MobEntity mob;
+    private final LivingEntity mob;
+    /** The biggest token this mob can become (a circle as big as the screen), in blocks. */
+    private final float maxSize;
     private final int color;
     private float size;
     private int ticks;
@@ -157,10 +165,11 @@ public class TokenSpellScreen extends Screen {
         }
     }
 
-    public TokenSpellScreen(MobEntity mob, float initialSize, boolean resize, int currentColor) {
+    public TokenSpellScreen(LivingEntity mob, float initialSize, boolean resize, int currentColor) {
         super(Text.translatableWithFallback(resize ? "screen.steveparty.token_spell.resize_title" : "screen.steveparty.token_spell.title",
                 resize ? "Resizing spell" : "Token spell"));
         this.mob = mob;
+        this.maxSize = TokenizerWandItem.maxTokenSize(mob);
         this.size = snap(initialSize);
         boolean colorKept = resize && currentColor != NO_COLOR;
         // Computed once: when the texture has tied colours, the pick is random and must not change while drawing
@@ -487,12 +496,14 @@ public class TokenSpellScreen extends Screen {
         if (!stroke.isEmpty()) {
             float[] last = stroke.getLast();
             float step = (float) Math.hypot(x - last[0], y - last[1]);
-            if (step < 2) return;
+            // Sampled by distance: a loop as big as the screen is a few hundred points at any GUI scale
+            if (step < Math.max(2, maxRadius() * MathHelper.TAU / POINTS_PER_FULL_CIRCLE)) return;
             strokeLength += step;
             keptLength += step;
         }
         stroke.add(new float[]{x, y});
-        // At most two and a half full-size circles, and MAX_STROKE_POINTS points: the oldest go
+        // At most two and a half full-size circles (the whole loop being closed stays drawn), and MAX_STROKE_POINTS
+        // points: the oldest go
         float maxLength = maxRadius() * MathHelper.TAU * 2.5F;
         while (stroke.size() > 2 && (stroke.size() > MAX_STROKE_POINTS || keptLength > maxLength)) {
             float[] first = stroke.removeFirst(), next = stroke.getFirst();
@@ -502,7 +513,7 @@ public class TokenSpellScreen extends Screen {
 
     /**
      * Fits a circle to the stroke (centroid, mean distance to it): its radius gives the size, with the same scale as
-     * before (a full-size circle is {@link TokenizerWandItem#MAX_TOKEN_SIZE} blocks). A stroke that is not a loop, or
+     * before (a full-size circle is the biggest token of the mob). A stroke that is not a loop, or
      * too small, is ignored with a hint (nothing is cast, the player draws again). Otherwise the stroke morphs into
      * the clean circle around the mob, then the spell is cast.
      */
@@ -537,7 +548,7 @@ public class TokenSpellScreen extends Screen {
         }
         float deviation = (float) Math.sqrt(Math.max(0, sumSquares / stroke.size() - meanRadius * meanRadius));
         roundness = MathHelper.clamp(1 - deviation / meanRadius * 2.5F, 0, 1);
-        size = snap(meanRadius / maxRadius() * MAX_TOKEN_SIZE);
+        size = snap(meanRadius / maxRadius() * maxSize);
         // Morph: every point of the stroke slides to its place on the clean circle, around the mob
         morphFrom.clear();
         morphAngles.clear();
@@ -617,18 +628,18 @@ public class TokenSpellScreen extends Screen {
 
     // ------------------------------------------------------------------ size
 
-    private static float snap(float size) {
+    private float snap(float size) {
         float snapped = Math.round(size / TOKEN_SIZE_STEP) * TOKEN_SIZE_STEP;
-        return MathHelper.clamp(snapped, MIN_TOKEN_SIZE, MAX_TOKEN_SIZE);
+        return MathHelper.clamp(snapped, MIN_TOKEN_SIZE, maxSize);
     }
 
-    /** Radius (GUI pixels) of a full-size circle: fits the screen, the token texts above it. */
+    /** Radius (GUI pixels) of a full-size circle: as big as the screen (its smaller side), a small margin left. */
     private float maxRadius() {
-        return MathHelper.clamp(height * 0.32F, 50, 140);
+        return Math.max(MIN_FULL_RADIUS, Math.min(width, height) / 2F - SCREEN_MARGIN);
     }
 
     private float radiusFor(float tokenSize) {
-        return tokenSize / MAX_TOKEN_SIZE * maxRadius();
+        return tokenSize / maxSize * maxRadius();
     }
 
     // ------------------------------------------------------------------ screen shapes

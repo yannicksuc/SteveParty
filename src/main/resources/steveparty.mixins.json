@@ -33,6 +33,7 @@
     "TokenMerchantMixin",
     "TokenCreeperMixin",
     "TokenVanillaActionsMixin",
+    "TokenPoseInteractMixin",
     "TokenWitherBossBarMixin",
     "TokenLightningMixin",
     "TokenLightningTargetMixin",
@@ -64,7 +65,9 @@
     "ZoneBubbleServerPlayerMixin",
     "ZoneBubbleServerWorldMixin",
     "ZoneBubbleWorldChunkMixin",
-    "ZoneBubbleWorldMixin"
+    "ZoneBubbleWorldMixin",
+    "CobwebFrousseuxMixin",
+    "HostileFrousseuxMixin"
   ],
   "injectors": {
     "defaultRequire": 1

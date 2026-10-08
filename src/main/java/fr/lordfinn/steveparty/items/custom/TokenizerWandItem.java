@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.effect.SquishEffect;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.entities.custom.pawn.PawnPossessions;
 import fr.lordfinn.steveparty.payloads.custom.OpenTokenSpellPayload;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -66,11 +67,12 @@ public class TokenizerWandItem extends Item {
 
     /**
      * Bounds of the token size: its biggest dimension (height, or width when wider than tall), in blocks.
-     * 0.25 keeps a token clickable and its name readable; 2 blocks keeps it smaller than a board space column and
-     * below the height of a player. The default (1 block) is the size tokens always had.
+     * 0.25 keeps a token clickable and its name readable. The biggest is {@value #MAX_SIZE_FACTOR} times the mob's own
+     * size ({@link #maxTokenSize}): a chicken pawn stays smaller than a zombie one. The default (1 block) is the size
+     * tokens always had.
      */
     public static final float MIN_TOKEN_SIZE = 0.25F;
-    public static final float MAX_TOKEN_SIZE = 2.0F;
+    public static final float MAX_SIZE_FACTOR = 5.0F;
     public static final float DEFAULT_TOKEN_SIZE = 1.0F;
     /** Slider / rounding step of the token size, in blocks. */
     public static final float TOKEN_SIZE_STEP = 0.05F;
@@ -119,6 +121,7 @@ public class TokenizerWandItem extends Item {
 
     @Override
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+        if (entity instanceof PlayerEntity target) return useOnPlayer(user, target);
         if (!(entity instanceof MobEntity mob)) return super.useOnEntity(stack, user, entity, hand);
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         // Bosses can't become tokens (exploit: shrinking/controlling them)
@@ -136,6 +139,23 @@ public class TokenizerWandItem extends Item {
             openSpell(player, mob);
         }
         return ActionResult.SUCCESS;
+    }
+
+    /** The spell on another player: they become a player pawn (see {@link PawnPossessions}). */
+    private static ActionResult useOnPlayer(PlayerEntity user, PlayerEntity target) {
+        if (user.getWorld().isClient) return ActionResult.SUCCESS;
+        if (!(user instanceof ServerPlayerEntity player)) return ActionResult.FAIL;
+        if (!PawnPossessions.canTokenize(target) || PawnPossessions.isInsideAPawn(player)) {
+            sendPlayerRefused(player);
+            return ActionResult.FAIL;
+        }
+        openSpell(player, target);
+        return ActionResult.SUCCESS;
+    }
+
+    private static void sendPlayerRefused(ServerPlayerEntity player) {
+        MessageUtils.sendToPlayer(player, Text.translatableWithFallback("message.steveparty.player_pawn.refused",
+                "The spell can't take this player now."), MessageUtils.MessageType.ACTION_BAR);
     }
 
     /**
@@ -207,16 +227,16 @@ public class TokenizerWandItem extends Item {
         OPEN_SPELLS.remove(player);
     }
 
-    static void openSpell(ServerPlayerEntity player, MobEntity mob) {
+    /** Opens the spell screen of {@code player} on {@code target}: a mob, or another player. */
+    static void openSpell(ServerPlayerEntity player, LivingEntity target) {
         if (player.getServer() != null) OPEN_SPELLS.put(player.getUuid(), player.getServer().getTicks());
-        TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
-        boolean resize = token.steveparty$isTokenized();
-        float size = resize ? currentTokenSize(mob) : DEFAULT_TOKEN_SIZE;
-        int color = resize ? token.steveparty$getTokenColor() : NO_COLOR;
+        boolean resize = target instanceof MobEntity mob && ((TokenizedEntityInterface) mob).steveparty$isTokenized();
+        float size = resize ? currentTokenSize((MobEntity) target) : DEFAULT_TOKEN_SIZE;
+        int color = resize ? ((TokenizedEntityInterface) target).steveparty$getTokenColor() : NO_COLOR;
         if (ServerPlayNetworking.canSend(player, OpenTokenSpellPayload.ID)) {
-            ServerPlayNetworking.send(player, new OpenTokenSpellPayload(mob.getId(), size, resize, color));
+            ServerPlayNetworking.send(player, new OpenTokenSpellPayload(target.getId(), size, resize, color));
         }
-        player.getWorld().playSound(null, mob.getBlockPos(), SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME,
+        player.getWorld().playSound(null, target.getBlockPos(), SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME,
                 SoundCategory.PLAYERS, 1.0F, 1.2F);
     }
 
@@ -228,13 +248,34 @@ public class TokenizerWandItem extends Item {
             EntityDimensions body = mob.getDimensions(EntityPose.STANDING);
             size = Math.max(body.width(), body.height());
         }
-        return clampTokenSize(Math.round(size / TOKEN_SIZE_STEP) * TOKEN_SIZE_STEP);
+        return clampTokenSize(mob, Math.round(size / TOKEN_SIZE_STEP) * TOKEN_SIZE_STEP);
     }
 
-    /** @return {@code size} clamped to [{@value #MIN_TOKEN_SIZE}, {@value #MAX_TOKEN_SIZE}] (default if not a number). */
-    public static float clampTokenSize(float size) {
-        if (!Float.isFinite(size)) return DEFAULT_TOKEN_SIZE;
-        return MathHelper.clamp(size, MIN_TOKEN_SIZE, MAX_TOKEN_SIZE);
+    /**
+     * The entity's own size: its biggest dimension at its natural scale (whatever it was resized to), body only (not
+     * the base of a token). A player: 1.8 blocks.
+     */
+    public static float naturalSize(LivingEntity entity) {
+        EntityDimensions body = entity.getDimensions(EntityPose.STANDING);
+        float scale = entity.getScale();
+        float size = Math.max(body.width(), body.height()) / (scale > 0 ? scale : 1);
+        return Float.isFinite(size) && size > 0 ? size : DEFAULT_TOKEN_SIZE;
+    }
+
+    /** The biggest token {@code entity} can become: {@value #MAX_SIZE_FACTOR} times its own size, on the size steps. */
+    public static float maxTokenSize(LivingEntity entity) {
+        float max = (float) Math.floor(naturalSize(entity) * MAX_SIZE_FACTOR / TOKEN_SIZE_STEP + 1.0E-3) * TOKEN_SIZE_STEP;
+        return Math.max(MIN_TOKEN_SIZE, max);
+    }
+
+    /**
+     * @return {@code size} clamped to [{@value #MIN_TOKEN_SIZE}, {@link #maxTokenSize} of {@code entity}] (the default
+     * if not a number)
+     */
+    public static float clampTokenSize(LivingEntity entity, float size) {
+        float max = maxTokenSize(entity);
+        if (!Float.isFinite(size)) return Math.min(DEFAULT_TOKEN_SIZE, max);
+        return MathHelper.clamp(size, MIN_TOKEN_SIZE, max);
     }
 
     /** @return {@code color} if it is a valid 0xRRGGBB colour, else {@link #NO_COLOR}. */
@@ -252,6 +293,7 @@ public class TokenizerWandItem extends Item {
         if (wand.isEmpty()) return SpellResult.NO_WAND;
         if (player.getItemCooldownManager().isCoolingDown(wand.getItem())) return SpellResult.COOLDOWN;
         Entity entity = player.getWorld().getEntityById(entityId);
+        if (entity instanceof ServerPlayerEntity target && target != player) return castOnPlayer(player, wand, target, requestedSize, requestedColor);
         if (!(entity instanceof MobEntity mob) || !mob.isAlive()) return SpellResult.INVALID_TARGET;
         if (mob.getWorld() != player.getWorld() || player.squaredDistanceTo(mob) > MAX_SPELL_DISTANCE * MAX_SPELL_DISTANCE) {
             MessageUtils.sendToPlayer(player, Text.translatableWithFallback("message.steveparty.token_spell_out_of_reach",
@@ -269,7 +311,7 @@ public class TokenizerWandItem extends Item {
             return SpellResult.NOT_ALLOWED;
         }
 
-        float size = clampTokenSize(requestedSize);
+        float size = clampTokenSize(mob, requestedSize);
         int color = sanitizeColor(requestedColor);
         boolean othersHear = !resize || !resizedLately(mob);
         if (resize) {
@@ -281,6 +323,27 @@ public class TokenizerWandItem extends Item {
         playCastBurst(player, mob);
         if (othersHear) playCastSounds(player, mob);
         return resize ? SpellResult.RESIZED : SpellResult.TOKENIZED;
+    }
+
+    /** The spell cast on another player: they shrink, and become a player pawn (see {@link PawnPossessions}). */
+    private static SpellResult castOnPlayer(ServerPlayerEntity player, ItemStack wand, ServerPlayerEntity target,
+                                            float requestedSize, int requestedColor) {
+        if (target.getWorld() != player.getWorld() || player.squaredDistanceTo(target) > MAX_SPELL_DISTANCE * MAX_SPELL_DISTANCE) {
+            MessageUtils.sendToPlayer(player, Text.translatableWithFallback("message.steveparty.token_spell_out_of_reach",
+                    "The spell fizzles: the mob is out of reach."), MessageUtils.MessageType.ACTION_BAR);
+            return SpellResult.OUT_OF_REACH;
+        }
+        // One pawn per player: not one already under the spell or in a pawn (and not from inside a pawn)
+        if (!PawnPossessions.canTokenize(target) || PawnPossessions.isInsideAPawn(player)) {
+            sendPlayerRefused(player);
+            return SpellResult.NOT_ALLOWED;
+        }
+        PawnPossessions.startSpell(target, player.getUuid(), clampTokenSize(target, requestedSize), sanitizeColor(requestedColor));
+        player.getItemCooldownManager().set(wand.getItem(), SPELL_COOLDOWN);
+        playSpellEffects(target);
+        playCastBurst(player, target);
+        playCastSounds(player, target);
+        return SpellResult.TOKENIZED;
     }
 
     /** @return the Tokenizer Wand held by {@code player} (main hand first), or an empty stack. */
@@ -395,7 +458,7 @@ public class TokenizerWandItem extends Item {
      * The spell's zap (at the caster) and whoosh (at the mob), for the players around. Not for the caster: their
      * client already played them when the circle locked.
      */
-    private static void playCastSounds(ServerPlayerEntity player, MobEntity mob) {
+    private static void playCastSounds(ServerPlayerEntity player, LivingEntity mob) {
         World world = player.getWorld();
         world.playSound(player, player.getX(), player.getEyeY(), player.getZ(), ModSounds.TOKEN_SPELL_CAST,
                 SoundCategory.PLAYERS, 1.0F, 1.0F);
@@ -403,7 +466,7 @@ public class TokenizerWandItem extends Item {
                 SoundCategory.PLAYERS, 1.0F, 1.0F);
     }
 
-    private static void playSpellEffects(MobEntity mob) {
+    private static void playSpellEffects(LivingEntity mob) {
         // (the transformation's boings and sparkles are played by every client with the squish animation)
         if (mob.getWorld() instanceof ServerWorld world) {
             // A magic puff as the spell hits: coloured shapes bursting out of the mob, and sparkles
@@ -421,7 +484,7 @@ public class TokenizerWandItem extends Item {
      * effect. Sent to the other players around: the caster's own client already played it (validation phase of the
      * spell screen), from where the wand really is in first person.
      */
-    private static void playCastBurst(ServerPlayerEntity player, MobEntity mob) {
+    private static void playCastBurst(ServerPlayerEntity player, LivingEntity mob) {
         if (!(player.getWorld() instanceof ServerWorld world)) return;
         boolean mainHand = player.getMainHandStack().getItem() instanceof TokenizerWandItem;
         boolean rightHanded = (player.getMainArm() == Arm.RIGHT) == mainHand;
@@ -461,6 +524,8 @@ public class TokenizerWandItem extends Item {
         super.appendTooltip(stack, context, tooltip, type);
         tooltip.add(Text.translatableWithFallback("tooltip.steveparty.tokenizer_wand.tokenize",
                 "Use on a mob: cast the token spell and choose its size").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatableWithFallback("tooltip.steveparty.tokenizer_wand.player",
+                "Use on a player: they become a pawn (sneak to get out)").formatted(Formatting.GRAY));
         tooltip.add(Text.translatableWithFallback("tooltip.steveparty.tokenizer_wand.resize",
                 "Use on one of your tokens: resize it").formatted(Formatting.GRAY));
         tooltip.add(Text.translatableWithFallback("tooltip.steveparty.tokenizer_wand.move",

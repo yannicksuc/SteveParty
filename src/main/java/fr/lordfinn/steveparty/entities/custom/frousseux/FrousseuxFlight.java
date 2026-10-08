@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.entities.custom.frousseux;
 
 import fr.lordfinn.steveparty.entities.custom.goals.SimpleFlyingMoveControl;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.util.math.BlockPos;
@@ -103,6 +104,30 @@ public final class FrousseuxFlight {
         return null;
     }
 
+    /**
+     * Somewhere to flee to (its feet), away from {@code from} (anywhere if null), 4 to 7 blocks off, over a floor if
+     * there is one near, by the thin-walls rule; or null.
+     */
+    static @Nullable Vec3d fleeTarget(FrousseuxEntity frousseux, @Nullable Entity from, Random random) {
+        World world = frousseux.getWorld();
+        Vec3d centre = frousseux.getBoundingBox().getCenter();
+        double half = frousseux.getHeight() / 2;
+        double away = from == null ? random.nextDouble() * Math.PI * 2
+                : Math.atan2(frousseux.getZ() - from.getZ(), frousseux.getX() - from.getX());
+        for (int tries = 0; tries < 12; tries++) {
+            double angle = away + (random.nextDouble() - 0.5) * 1.8;
+            double distance = 4 + random.nextDouble() * 3;
+            double x = frousseux.getX() + Math.cos(angle) * distance, z = frousseux.getZ() + Math.sin(angle) * distance;
+            BlockPos pos = BlockPos.ofFloored(x, frousseux.getY() + random.nextInt(3) - 1, z);
+            if (solid(world, pos)) continue;
+            Integer floor = floorBelow(world, pos);
+            double y = floor == null ? pos.getY() : floor + MIN_HOVER + random.nextDouble() * (MAX_HOVER - MIN_HOVER);
+            Vec3d target = new Vec3d(x, y, z);
+            if (fits(frousseux, target) && canFly(world, centre, target.add(0, half, 0))) return target;
+        }
+        return null;
+    }
+
     /** The top of the floor under {@code pos} (a y), within {@link #FLOOR_SEARCH} blocks. */
     private static @Nullable Integer floorBelow(World world, BlockPos pos) {
         BlockPos.Mutable at = pos.mutableCopy();
@@ -144,6 +169,46 @@ public final class FrousseuxFlight {
 
         void stop() {
             state = MoveControl.State.WAIT;
+        }
+    }
+
+    /** A thief on the run: away from whom it robbed, fast, a new way every second (laughing: FrousseuxEntity). */
+    static final class Flee extends Goal {
+        private static final double SPEED = FrousseuxEntity.FLY_SPEED * 2.6;
+        private final FrousseuxEntity frousseux;
+        private int repick;
+
+        Flee(FrousseuxEntity frousseux) {
+            this.frousseux = frousseux;
+            setControls(EnumSet.of(Control.MOVE));
+        }
+
+        @Override
+        public boolean canStart() {
+            return frousseux.isFleeing() && !frousseux.isTamed() && !frousseux.isBoardActor();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return canStart();
+        }
+
+        @Override
+        public void start() {
+            repick = 0;
+        }
+
+        @Override
+        public void tick() {
+            if (--repick > 0 && frousseux.flight().isMovingTo()) return;
+            repick = 20;
+            Vec3d to = fleeTarget(frousseux, frousseux.fleeFrom(), frousseux.getRandom());
+            if (to != null) frousseux.getMoveControl().moveTo(to.x, to.y, to.z, SPEED);
+        }
+
+        @Override
+        public void stop() {
+            frousseux.flight().stop();
         }
     }
 

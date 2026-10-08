@@ -18,4 +18,9 @@ public interface TokenBaseRenderState {
     float steveparty$getBaseRadius();
 
     void steveparty$setTokenBase(boolean token, int color, float height, float radius);
+
+    /** The pose of a posed mob pawn for the frame being drawn (see {@link MobPoses}), else null. */
+    MobPoses.Frame steveparty$getPoseFrame();
+
+    void steveparty$setPoseFrame(MobPoses.Frame frame);
 }
