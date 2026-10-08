@@ -221,7 +221,9 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
                 icon = item;
             } else if (value instanceof EntityType<?> entity) {
                 name = entity.getName();
-                SpawnEggItem egg = SpawnEggItem.forEntity(entity);
+                // the classic Glandouille's egg, not the last one registered for its type
+                SpawnEggItem egg = entity == fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE
+                        ? (SpawnEggItem) fr.lordfinn.steveparty.items.ModItems.GLANDOUILLE_SPAWN_EGG : SpawnEggItem.forEntity(entity);
                 icon = egg != null ? egg : Items.PAPER;
             } else {
                 continue;

@@ -56,7 +56,15 @@ public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity>
         brow(processor.getBone("right_brow"), brows, hide, asleep);
         for (String eye : EYES) {
             GeoBone bone = processor.getBone(eye);
-            if (bone != null) bone.setHidden(asleep);
+            if (bone == null) continue;
+            bone.setHidden(asleep);
+            // the brows hang on the eyes: they stay (the pupils hide themselves), unsquashed by the sleep animation
+            bone.setChildrenHidden(false);
+            if (asleep) {
+                bone.setScaleX(1);
+                bone.setScaleY(1);
+                bone.setScaleZ(1);
+            }
         }
         GeoBone cap = processor.getBone("cap");
         if (cap != null) cap.setHidden(!glandouille.hasHat());
@@ -68,15 +76,16 @@ public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity>
     private static final float CALM_FROWN = 0.35f;
     /** How much of {@code hide} (pixels) the calm brows sit higher than the angry ones. */
     private static final float CALM_LIFT = 0.2f;
+    /** Asleep: the brows stay, just above the closed eyes, a little frowned (a grumpy nap, not an angry one). */
+    private static final float SLEEP_FROWN = 0.4f, SLEEP_DROP = 1f;
 
-    /** {@code out}: 0 calm, 1 angry; {@code hide}: how far up (pixels) the brows can go under the cap, its variant's. */
+    /** {@code out}: 0 calm, 1 angry (unused asleep); {@code hide}: how far up (pixels) the brows can go under the cap, its variant's. */
     private static void brow(GeoBone brow, float out, float hide, boolean asleep) {
         if (brow == null) return;
-        brow.setHidden(asleep);
         // absolute: no animation moves the brows
-        brow.setPosY((1 - out) * CALM_LIFT * hide);
+        brow.setPosY(asleep ? -SLEEP_DROP : (1 - out) * CALM_LIFT * hide);
         if (brow.getInitialSnapshot() != null) {
-            brow.setRotZ(brow.getInitialSnapshot().getRotZ() * MathHelper.lerp(out, CALM_FROWN, 1f));
+            brow.setRotZ(brow.getInitialSnapshot().getRotZ() * (asleep ? SLEEP_FROWN : MathHelper.lerp(out, CALM_FROWN, 1f)));
         }
     }
 }

@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom.glandouille;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -25,8 +26,9 @@ import net.minecraft.world.BlockView;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A planted acorn (the Acorn item on farmland): it grows like a crop, 4 stages; ripe, it hatches into a young
- * Glandouille (the block is gone, the Glandouille stands there).
+ * A planted acorn (the Acorn item on farmland): it grows like a crop, 4 stages; ripe, it hatches into a Glandouille
+ * (the block is gone, the Glandouille stands there) of its biome's kind ({@link GlandouilleSpawns#sproutVariant}).
+ * Barely sprouted, it may pop out of the ground at once instead, as a young one ({@link #earlyPopChance}).
  */
 public class AcornCropBlock extends CropBlock {
     public static final MapCodec<AcornCropBlock> CODEC = createCodec(AcornCropBlock::new);
@@ -106,10 +108,17 @@ public class AcornCropBlock extends CropBlock {
         return 1;
     }
 
+    /** Chance that a sprout leaving its first stage pops out of the ground at once, as a young one (tests change it). */
+    public static float earlyPopChance = 0.05f;
+
     @Override
     public void grow(ServerWorld world, Random random, BlockPos pos, BlockState state) {
-        if (isMature(state)) hatch(world, pos);
-        else super.grow(world, random, pos, state);
+        if (isMature(state)) {
+            hatch(world, pos);
+            return;
+        }
+        super.grow(world, random, pos, state);
+        popEarly(world, random, pos, state);
     }
 
     /** Ripe: it hatches (one random tick in two); else it grows like any crop. */
@@ -120,25 +129,39 @@ public class AcornCropBlock extends CropBlock {
             return;
         }
         super.randomTick(state, world, pos, random);
+        popEarly(world, random, pos, state);
+    }
+
+    /** {@code before} just grew out of its first stage: it may pop out at once, as a young one (whatever the biome). */
+    private void popEarly(ServerWorld world, Random random, BlockPos pos, BlockState before) {
+        if (getAge(before) != 0) return;
+        BlockState now = world.getBlockState(pos);
+        if (!now.isOf(this) || getAge(now) != 1 || random.nextFloat() >= earlyPopChance) return;
+        hatch(world, pos, GlandouilleVariant.YOUNG);
+    }
+
+    /** The ripe acorn at {@code pos} hatches into a Glandouille of its biome's kind. */
+    public static @Nullable GlandouilleEntity hatch(ServerWorld world, BlockPos pos) {
+        return hatch(world, pos, GlandouilleSpawns.sproutVariant(world, pos));
     }
 
     /**
-     * The ripe acorn at {@code pos} becomes a young Glandouille (with its cap), asleep (by itself or after the last bone
-     * meal). Returns it, or null if it failed.
+     * The acorn at {@code pos} becomes a {@code variant} Glandouille (with its cap), asleep (by itself or after the last
+     * bone meal). Returns it, or null if it failed.
      */
-    public static @Nullable GlandouilleEntity hatch(ServerWorld world, BlockPos pos) {
-        GlandouilleEntity young = ModEntities.GLANDOUILLE.create(world);
-        if (young == null) return null;
+    public static @Nullable GlandouilleEntity hatch(ServerWorld world, BlockPos pos, GlandouilleVariant variant) {
+        GlandouilleEntity hatched = ModEntities.GLANDOUILLE.create(world);
+        if (hatched == null) return null;
         world.removeBlock(pos, false);
-        young.refreshPositionAndAngles(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, world.random.nextFloat() * 360f, 0);
-        young.initialize(world, world.getLocalDifficulty(pos), SpawnReason.BREEDING, null);
-        young.setVariant(GlandouilleVariant.YOUNG);
-        young.setHat(true);
-        young.setPersistent();
-        world.spawnEntity(young);
-        young.hatchAsleep();
+        hatched.refreshPositionAndAngles(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, world.random.nextFloat() * 360f, 0);
+        hatched.initialize(world, world.getLocalDifficulty(pos), SpawnReason.BREEDING, null);
+        hatched.setVariant(variant);
+        hatched.setHat(true);
+        hatched.setPersistent();
+        world.spawnEntity(hatched);
+        hatched.hatchAsleep();
         world.playSound(null, pos, ModSounds.GLANDOUILLE_HATCH, SoundCategory.BLOCKS, 1f, 1f);
         world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 10, 0.3, 0.3, 0.3, 0);
-        return young;
+        return hatched;
     }
 }
