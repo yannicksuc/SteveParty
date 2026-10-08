@@ -112,7 +112,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     /*
      * Comparator levels of a token stopping on a board space, by role, from 15 down (the wiki has the table). A role
      * gives its level through ABoardSpaceBehavior#comparatorLevel; by default the one of its landing kind. 1 is a token
-     * passing; 2 is still free for new roles.
+     * passing.
      */
     public static final int LEVEL_DEFAULT = 15, LEVEL_BONUS = 14, LEVEL_MALUS = 13, LEVEL_ITEM = 12, LEVEL_START = 11,
             LEVEL_STOP = 10;
@@ -124,6 +124,8 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     public static final int LEVEL_STAR = 4;
     /** A Glandouille space: a token stopping on it (pushed on by a tower, or not). */
     public static final int LEVEL_GLANDOUILLE = 3;
+    /** A Frousseux space: a token stopping on it (a Frousseux sent to steal, or not). */
+    public static final int LEVEL_FROUSSEUX = 2;
 
     /** The level of a landing kind (roles without a level of their own); an unknown kind: the default level. */
     public static int landingSignal(TileFeedback.Landing landing) {
@@ -140,6 +142,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
             case TELEPORT -> LEVEL_TELEPORT;
             case STAR -> LEVEL_STAR;
             case GLANDOUILLE -> LEVEL_GLANDOUILLE;
+            case FROUSSEUX -> LEVEL_FROUSSEUX;
             default -> LEVEL_DEFAULT;
         };
     }

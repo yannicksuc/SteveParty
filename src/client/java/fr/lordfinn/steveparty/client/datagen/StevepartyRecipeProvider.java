@@ -351,6 +351,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.STAR_CARTRIDGE, ModItems.PARTY_STAR);
         // An acorn: the Glandouilles that push the tokens on
         offerCartridge(ModItems.GLANDOUILLE_CARTRIDGE, ModItems.ACORN);
+        // A candle: the Frousseux, a candle ghost that steals
+        offerCartridge(ModItems.FROUSSEUX_CARTRIDGE, Items.CANDLE);
 
         // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
         // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)

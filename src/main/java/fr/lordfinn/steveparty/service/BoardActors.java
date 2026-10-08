@@ -1,0 +1,101 @@
+package fr.lordfinn.steveparty.service;
+
+import fr.lordfinn.steveparty.utils.ServerMemory;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.registry.tag.DamageTypeTags;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * The mobs a board space summons for its show (the Glandouilles of a Glandouille space, the Frousseux of a Frousseux
+ * space...): « board actors ». Every one of them:
+ * <ul>
+ *     <li>is invulnerable: nothing hurts it (creative players included) but what nothing withstands, commands
+ *     ({@code /kill}) and the void. A space may still listen to blows (the Frousseux's coin defence) as long as they
+ *     never hurt;</li>
+ *     <li>is removed at the end of its space's sequence ({@link #end}), whatever ends it: normal end, interrupted
+ *     sequence, party over, player gone, server stopping;</li>
+ *     <li>is never kept: one that slipped into a save (marked by {@link #TAG}) is removed as soon as it loads.</li>
+ * </ul>
+ * A space spawns its actors through {@link #join} (or marks one with {@link #mark}, its own entity class keeping it out
+ * of saves), and calls {@link #end} with the same sequence id when its show is over. Server thread only.
+ */
+public final class BoardActors {
+    /** The scoreboard tag of a board actor (saved with it: how a stray one is recognised on load). */
+    public static final String TAG = "steveparty.board_actor";
+
+    /** The board actors alive now (an actor loading without being here is a stray one). */
+    private static final Set<UUID> LIVE = ServerMemory.forgetOnStop(new HashSet<>());
+    /** The actors of each running sequence. */
+    private static final Map<UUID, List<Entity>> SEQUENCES = ServerMemory.forgetOnStop(new HashMap<>());
+
+    private BoardActors() {
+    }
+
+    public static void initialize() {
+        // Nothing hurts it but commands and the void (not even a creative player)
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
+                !isBoardActor(entity) || source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY));
+        // A stray actor (saved by mistake, or left by a crash) is removed as soon as it loads
+        ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+            if (isBoardActor(entity) && !LIVE.contains(entity.getUuid())) entity.discard();
+        });
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
+            if (isBoardActor(entity)) LIVE.remove(entity.getUuid());
+        });
+        // Stopping: every show's actors go (they are never saved anyway)
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            for (UUID sequence : new ArrayList<>(SEQUENCES.keySet())) end(sequence);
+        });
+    }
+
+    /** Whether {@code entity} is a board actor (both sides for the tag; server side it is what counts). */
+    public static boolean isBoardActor(Entity entity) {
+        return entity.getCommandTags().contains(TAG);
+    }
+
+    /**
+     * Makes {@code entity} a board actor, before it is spawned: invulnerable, tagged, known alive. Its removal is up to
+     * whoever spawned it ({@link #join} does it with its sequence).
+     */
+    public static <T extends Entity> T mark(T entity) {
+        entity.addCommandTag(TAG);
+        entity.setInvulnerable(true);
+        if (entity instanceof MobEntity mob) mob.setPersistent(); // never despawns in the middle of its show
+        LIVE.add(entity.getUuid());
+        return entity;
+    }
+
+    /** {@link #mark}s {@code entity} (before it is spawned) and makes it one of {@code sequence}'s actors. */
+    public static <T extends Entity> T join(UUID sequence, T entity) {
+        mark(entity);
+        SEQUENCES.computeIfAbsent(sequence, id -> new ArrayList<>()).add(entity);
+        return entity;
+    }
+
+    /** The show {@code sequence} is over (or stopped): its actors are removed. */
+    public static void end(UUID sequence) {
+        List<Entity> actors = SEQUENCES.remove(sequence);
+        if (actors == null) return;
+        for (Entity actor : actors) {
+            LIVE.remove(actor.getUuid());
+            if (!actor.isRemoved()) actor.discard();
+        }
+    }
+
+    /** The actors of {@code sequence} still in the world (for the GameTests). */
+    public static int alive(UUID sequence) {
+        List<Entity> actors = SEQUENCES.get(sequence);
+        return actors == null ? 0 : (int) actors.stream().filter(actor -> !actor.isRemoved()).count();
+    }
+}

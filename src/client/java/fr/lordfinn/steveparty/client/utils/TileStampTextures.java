@@ -486,6 +486,42 @@ public final class TileStampTextures {
                 key -> register(glyphValues(small ? SMALL_ACORN : ACORN, small, ACORN_SHADES), rgb, small));
     }
 
+    /** The Frousseux: a little ghost with its wick and flame on its head, two eyes, a ragged sheet hem. */
+    private static final String[] FROUSSEUX = {
+            "......ff......",
+            ".....ffff.....",
+            ".....ffff.....",
+            "......ww......",
+            "..oooooooooo..",
+            "..oooooooooo..",
+            "..oo#oooo#oo..",
+            "..oo#oooo#oo..",
+            "..oooooooooo..",
+            "..oooooooooo..",
+            "..oooooooooo..",
+            "..oooooooooo..",
+            "..oo.ooo.ooo..",
+            "..o...o...o..."};
+    private static final String[] SMALL_FROUSSEUX = {
+            "....ff....",
+            "...ffff...",
+            "....ww....",
+            ".oooooooo.",
+            ".o#oooo#o.",
+            ".o#oooo#o.",
+            ".oooooooo.",
+            ".oooooooo.",
+            ".oo.oo.oo.",
+            ".o...o..o."};
+    private static final Map<Character, Float> FROUSSEUX_SHADES =
+            Map.of('#', FEATURE, 'w', FEATURE, 'o', -0.55f, 'f', -0.9f);
+
+    /** The Frousseux space's face: the little candle ghost on the blank tile face, in the ramp of {@code rgb} (night indigo). */
+    public static Identifier frousseuxFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("frousseux", rgb, small),
+                key -> register(glyphValues(small ? SMALL_FROUSSEUX : FROUSSEUX, small, FROUSSEUX_SHADES), rgb, small));
+    }
+
     // ---------------------------------------------------------------- the Teleport face
 
     /** Images of the portal's drift (its rings one pixel further in at each) and how long each one shows. */
