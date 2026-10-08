@@ -127,6 +127,19 @@ public class ModEntities {
                     .build(FROUSSEUX_KEY.getValue().toString())
     );
 
+    /** The Boomcart (Pétaroule), a grumpy living mine cart loaded with TNT (see BoomcartEntity). */
+    public static final RegistryKey<EntityType<?>> BOOMCART_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("boomcart"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity> BOOMCART = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("boomcart"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity>create(fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity::new, SpawnGroup.MONSTER)
+                    .dimensions(fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.WIDTH,
+                            fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.HEIGHT)
+                    .eyeHeight(0.45f)
+                    .maxTrackingRange(10)
+                    .build(BOOMCART_KEY.getValue().toString())
+    );
+
     public static void initialize() {
         // The Boxed Trader was the Hiding Trader: worlds saved before the rename keep their merchants and spawn eggs
         fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("hiding_trader"), Steveparty.id("boxed_trader"));
@@ -137,5 +150,6 @@ public class ModEntities {
         FabricDefaultAttributeRegistry.register(ModEntities.MULA_ENTITY, MulaEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.BOOMCART, fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.setAttributes());
     }
 }

@@ -2637,6 +2637,8 @@
   "subtitles.steveparty.frousseux.laugh": "Un Frousseux ricane",
   "subtitles.steveparty.frousseux.relight": "La flamme d'un Frousseux se rallume",
   "subtitles.steveparty.frousseux.blown_out": "La flamme d'un Frousseux est soufflée",
+  "entity.steveparty.boomcart": "Pétaroule",
+  "item.steveparty.boomcart_spawn_egg": "Œuf d'apparition de Pétaroule",
   "item.steveparty.glandouille_cartridge": "Cartouche Glandouille",
   "tooltip.steveparty.cartridge.glandouille_cartridge": "Glandouille : un pion qui s'arrête ici est poussé de quelques cases par une tour de Glandouilles, avec tous les pions que la tour croise. Sans destination (0 case), il ne se passe rien",
   "tooltip.steveparty.glandouille_cartridge.distance": "🌰 Pousse de %s cases",
