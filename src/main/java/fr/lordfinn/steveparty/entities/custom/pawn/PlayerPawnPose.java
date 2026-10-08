@@ -14,7 +14,7 @@ public enum PlayerPawnPose {
     //            head              right arm          left arm            right leg      left leg
     STAND("stand", 0, 0, 0, 0, 0, 4, 0, 0, -4, 0, 0, 0, 0),
     WAVE("wave", 0, -10, -6, 0, -10, 140, 0, 0, -6, 0, 0, 0, 0),
-    VICTORY("victory", -15, 0, 0, 0, 0, 150, 0, 0, -150, 0, 4, 0, -4),
+    VICTORY("victory", -15, 0, 0, 0, 0, 150, 0, 0, -150, 0, 4, 0, -4, 0.3F, 0, 0, false),
     // Jumping to punch the dice overhead: the head turned away from the arm, legs apart, off the base
     DICE_PUNCH("dice_punch", -35, 25, 15, 0, 0, 155, 25, 0, -30, -65, 0, 50, 0, 5, 0, 0, false),
     POINT("point", 0, -15, 0, -90, -15, 0, 0, 0, -6, 0, 0, 0, 0),
@@ -22,7 +22,7 @@ public enum PlayerPawnPose {
     THINKER("thinker", 18, 10, 0, -115, 40, 0, -55, -35, 0, 0, 0, 0, 0),
     SHRUG("shrug", 0, 0, 12, -40, 0, 40, -40, 0, -40, 0, 0, 0, 0),
     T_POSE("t_pose", 0, 0, 0, 0, 0, 90, 0, 0, -90, 0, 0, 0, 0),
-    FLEX("flex", -8, 0, 0, -20, 0, 125, -20, 0, -125, 4, 4, 0, -4),
+    FLEX("flex", -8, 0, 0, -20, 0, 125, -20, 0, -125, 4, 4, 0, -4, 0.3F, 0, 0, false),
     RUN("run", -5, 0, 0, 55, 0, 6, -60, 0, -6, -45, 0, 40, 0),
     KICK("kick", 5, 0, 0, 0, 0, 30, 20, 0, -30, -75, 0, 0, 0),
     ZOMBIE("zombie", 0, 0, 8, -90, 0, 0, -90, 0, 0, 0, 0, 0, 0),
@@ -31,11 +31,12 @@ public enum PlayerPawnPose {
     DAB("dab", 15, -10, 12, 0, 0, 130, -100, 30, 0, 0, 0, 0, 0),
     SULK("sulk", 40, 0, 0, 10, 0, 2, 10, 0, -2, 0, 0, 0, 0),
     BALLERINA("ballerina", -10, 0, 0, 0, 0, 150, 0, 0, -95, 0, 0, -30, -25),
-    // Sitting on the base (lowered by the length of the legs)
-    SIT_EDGE("sit_edge", 10, 0, 0, -35, 0, 10, -35, 0, -10, -60, 4, -50, -4, -12, 5, 0, false),
-    CROSS_LEGGED("cross_legged", 0, 0, 0, -45, -15, 0, -45, 15, 0, -90, 35, -90, -35, -12, 0, 0, false),
-    LOUNGE("lounge", -15, 0, 0, 35, 0, 15, 35, 0, -15, -70, 6, -65, -6, -12, 0, -25, false),
-    KNEES_HUGGED("knees_hugged", 20, 0, 0, -75, -20, 0, -75, 20, 0, -135, 2, -135, -2, -12, 0, 0, false),
+    // Sitting on the base: lowered by the length of the legs, the thighs resting on it (the base is thin: the legs
+    // can't hang down from its edge, they would go into the ground)
+    SIT_EDGE("sit_edge", 10, 0, 0, -35, 0, 10, -35, 0, -10, -80, 4, -74, -4, -9.5F, 5, 0, false),
+    CROSS_LEGGED("cross_legged", 0, 0, 0, -45, -15, 0, -45, 15, 0, -90, 35, -90, -35, -9, 0, 0, false),
+    LOUNGE("lounge", -15, 0, 0, 35, 0, 15, 35, 0, -15, -120, 6, -115, -6, -10.5F, 0, 25, false),
+    KNEES_HUGGED("knees_hugged", 20, 0, 0, -75, -20, 0, -75, 20, 0, -135, 2, -135, -2, -10.5F, 0, 0, false),
     // Upside down on its hands, looking at the floor: the head bent back, clear of the base
     HANDSTAND("handstand", -90, 0, 0, 0, 0, 172, 0, 0, -172, 0, 10, 0, -10, 0, 0, 0, true);
 
