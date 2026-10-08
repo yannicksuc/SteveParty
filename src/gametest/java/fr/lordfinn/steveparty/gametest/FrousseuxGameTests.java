@@ -14,6 +14,7 @@ import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -80,6 +81,26 @@ public class FrousseuxGameTests implements FabricGameTest {
         player.getInventory().setStack(0, new ItemStack(Items.COBBLESTONE, 10));
         context.assertFalse(frousseux.stealFrom(player), "nothing to steal");
         context.assertTrue(frousseux.getStolen().isEmpty(), "carries nothing");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void fireLightAndAPetWardOffThieves(TestContext context) {
+        floor(context);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
+        context.assertFalse(FrousseuxEntity.isWarded(context.getWorld(), player), "bare-handed: fair game");
+        player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.LANTERN));
+        context.assertTrue(FrousseuxEntity.isWarded(context.getWorld(), player), "a lantern in the off hand");
+        player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.TORCH));
+        context.assertTrue(FrousseuxEntity.isWarded(context.getWorld(), player), "a torch in the main hand");
+        player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+        player.setFireTicks(100);
+        context.assertTrue(FrousseuxEntity.isWarded(context.getWorld(), player), "on fire");
+        player.setFireTicks(0);
+        frousseux(context, new BlockPos(5, 1, 5)).tame(player);
+        context.assertTrue(FrousseuxEntity.isWarded(context.getWorld(), player), "a Frousseux of their own");
         context.complete();
     }
 
