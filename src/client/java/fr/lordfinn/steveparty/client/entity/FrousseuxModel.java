@@ -10,8 +10,9 @@ import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 
 /**
- * The Frousseux's model (geo/entity/frousseux.geo.json, from the art sources). Its sheet is drawn see-through (a
- * ghost; its eyes are opaque in the texture). On top of the keyframed animations: its flame's size by its health
+ * The Frousseux's model (geo/entity/frousseux.geo.json, from the art sources): a melted candle of wax, its drips on
+ * an outer layer, its hands floating beside it. Its body's wax is drawn a little see-through (a ghost still; its
+ * drips and eyes are opaque in the texture). On top of the keyframed animations: its flame's size by its health
  * ({@link FrousseuxEntity.Flame}) with a little flicker, gone once dead or blown out; its lids closed while it blinks
  * now and then and while it hides its eyes. Nothing allocated per frame.
  */
