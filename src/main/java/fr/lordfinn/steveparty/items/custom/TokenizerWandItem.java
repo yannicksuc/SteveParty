@@ -23,7 +23,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
-import fr.lordfinn.steveparty.particles.KamekShapeEffect;
+import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import net.minecraft.util.Arm;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.registry.RegistryKey;
@@ -405,17 +405,17 @@ public class TokenizerWandItem extends Item {
     private static void playSpellEffects(MobEntity mob) {
         // (the transformation's boings and sparkles are played by every client with the squish animation)
         if (mob.getWorld() instanceof ServerWorld world) {
-            // Kamek-style puff as the spell hits: coloured shapes bursting out of the mob, and sparkles
+            // A magic puff as the spell hits: coloured shapes bursting out of the mob, and sparkles
             double y = mob.getY() + mob.getHeight() / 2;
-            world.spawnParticles(KamekShapeEffect.shape(1.4F, 0.82F, 0), mob.getX(), y, mob.getZ(),
+            world.spawnParticles(MagicShapeEffect.shape(1.4F, 0.82F, 0), mob.getX(), y, mob.getZ(),
                     24, 0.25, 0.3, 0.25, 0.25);
-            world.spawnParticles(KamekShapeEffect.sparkle(1.3F, 0.9F, 0, 0xFFFFFF), mob.getX(), y, mob.getZ(),
+            world.spawnParticles(MagicShapeEffect.sparkle(1.3F, 0.9F, 0, 0xFFFFFF), mob.getX(), y, mob.getZ(),
                     14, 0.45, 0.5, 0.45, 0.02);
         }
     }
 
     /**
-     * Kamek-style spell: a stream of coloured shapes flies from the caster's wand to the mob. Each shape gets its own
+     * The spell: a stream of coloured shapes flies from the caster's wand to the mob. Each shape gets its own
      * speed and dies when it reaches the mob, so the stream stretches along the way. Particles only, no gameplay
      * effect. Sent to the other players around: the caster's own client already played it (validation phase of the
      * spell screen), from where the wand really is in first person.
@@ -440,7 +440,7 @@ public class TokenizerWandItem extends Item {
             for (ServerPlayerEntity viewer : world.getPlayers()) {
                 if (viewer == player || viewer.squaredDistanceTo(from) > 48 * 48) continue;
                 // count 0: the "delta" is the exact velocity of the particle
-                world.spawnParticles(viewer, KamekShapeEffect.shape(1.0F, 1.0F, life), false, from.x, from.y, from.z, 0,
+                world.spawnParticles(viewer, MagicShapeEffect.shape(1.0F, 1.0F, life), false, from.x, from.y, from.z, 0,
                         velocity.x, velocity.y, velocity.z, 1.0);
             }
         }

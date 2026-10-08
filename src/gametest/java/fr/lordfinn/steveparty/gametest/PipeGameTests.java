@@ -51,7 +51,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
-/** Warp pipes: shapes and connections, the Wrench, going in, travelling, warps. */
+/** Travel pipes: shapes and connections, the Wrench, going in, travelling, warps. */
 public class PipeGameTests implements FabricGameTest {
 
     private static final Block RED = ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][14];
@@ -327,7 +327,7 @@ public class PipeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
     public void cappedEndWarpsToTheNearestMouthOfItsColour(TestContext context) {
         Block lime = pipe(PipeKind.OPAQUE, 5);
-        // The warp pipe: one block on the ground, a mouth on top, capped into the ground
+        // The travel pipe: one block on the ground, a mouth on top, capped into the ground
         context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE);
         context.setBlockState(new BlockPos(1, 2, 1), pipe(lime, PipeSolid.DOWN));
         // Nearer, but cyan

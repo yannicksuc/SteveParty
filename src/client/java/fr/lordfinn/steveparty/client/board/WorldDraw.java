@@ -43,7 +43,7 @@ public final class WorldDraw {
 
     /**
      * A board path from {@code a} to {@code b}: chevrons lying on the way, pointing and scrolling toward {@code b} (like
-     * the paths of a Mario Party board). {@code phase} (blocks) moves them; the ends ({@code margin}) stay clear for the
+     * the paths of a party board game). {@code phase} (blocks) moves them; the ends ({@code margin}) stay clear for the
      * tiles, and the chevrons fade in and out there.
      *
      * @param shift sideways offset (blocks, to the right of the travel direction): two opposite paths don't overlap

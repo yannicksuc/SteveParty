@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.entities.custom;
 import net.minecraft.util.math.MathHelper;
 
 /**
- * Client-side motion state of a Mula, the "float layer" of its animation: a Luma-like hover that never stops (bob with
+ * Client-side motion state of a Mula, the "float layer" of its animation: a floating hover that never stops (bob with
  * squash &amp; stretch, a slow sway, a lean into its flight and a bank into its turns), the fly / idle choice, and a
  * springy visual size. Updated once per client tick with plain arithmetic (no allocation), read at render time with
  * the partial tick so everything is interpolated between ticks.

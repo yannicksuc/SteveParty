@@ -1,7 +1,7 @@
 {
   "name": "book.steveparty.guide.getting_started.name",
   "icon": {
-    "item": "steveparty:power_star"
+    "item": "steveparty:party_star"
   },
   "sort_number": 0,
   "display_mode": "node",

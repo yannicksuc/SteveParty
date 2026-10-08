@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.entities.custom;
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.goals.FollowOwnerWhileFlyingGoal;
-import fr.lordfinn.steveparty.entities.custom.goals.LumaHoverGoal;
+import fr.lordfinn.steveparty.entities.custom.goals.FloatHoverGoal;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaBodyControl;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaGoals;
@@ -575,7 +575,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.goalSelector.add(6, new MulaGoals.Play(this));
 		this.goalSelector.add(6, new MulaGoals.Shiny(this));
 		this.goalSelector.add(7, new MulaGoals.Sky(this));
-		this.goalSelector.add(8, new LumaHoverGoal(this, 0.2, 1.5, 6.0));
+		this.goalSelector.add(8, new FloatHoverGoal(this, 0.2, 1.5, 6.0));
 		super.initGoals();
 	}
 

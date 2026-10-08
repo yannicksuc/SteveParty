@@ -98,13 +98,13 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         grantGoldenHeart(player);
         world.playSound(null, pos, GOAL_POLE_REACH, SoundCategory.BLOCKS, 1f, 1.2f);
         spawnFloatingText((ServerWorld) this.world,
-                "1up", player.getPos().add(0,2,0).toVector3f(),
+                "+1 ♥", player.getPos().add(0,2,0).toVector3f(),
                 0x43FA44, 50, 0.04f);
         GoalPoleNetwork.onLanding(this, player);
     }
 
     /**
-     * The "1up": one golden heart (2 absorption points) for 10 seconds. The absorption the player already has is
+     * The extra life: one golden heart (2 absorption points) for 10 seconds. The absorption the player already has is
      * kept: subtracting 2 from whatever the effect left used to take hearts away from players who already had
      * absorption (golden apple, or landing again while the previous heart was still there).
      */

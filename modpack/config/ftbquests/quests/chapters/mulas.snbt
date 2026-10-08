@@ -4,7 +4,7 @@
 	filename: "mulas"
 	group: "60AFE736E3EC9353"
 	icon: {
-		id: "steveparty:power_star"
+		id: "steveparty:party_star"
 	}
 	id: "082A487049C9D78A"
 	images: [ ]
@@ -828,16 +828,16 @@
 				"19AA36BD5464D0A3"
 				"48EDC9CAA41959B9"
 			]
-			id: "49297133DC9D18C2"
+			id: "085FCFBD2E80A60F"
 			rewards: [
 				{
-					id: "0727603BF07E44EE"
+					id: "0BB7F7051884D9FB"
 					type: "xp"
 					xp: 100
 				}
 				{
 					count: 5
-					id: "2C66C4FD2956E661"
+					id: "3D5D2B2207EE2F5B"
 					item: {
 						count: 1
 						id: "steveparty:coin"
@@ -849,10 +849,10 @@
 			size: 1.5d
 			tasks: [
 				{
-					id: "04266FB5FFED7499"
+					id: "516549B9EA340CE7"
 					item: {
 						count: 1
-						id: "steveparty:power_star"
+						id: "steveparty:party_star"
 					}
 					type: "item"
 				}
@@ -895,7 +895,7 @@
 		}
 		{
 			dependencies: [
-				"49297133DC9D18C2"
+				"085FCFBD2E80A60F"
 				"6FC6A979673D9964"
 				"2275C38C50DEE4C0"
 				"1447F66898AC91E0"

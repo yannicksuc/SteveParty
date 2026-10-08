@@ -2,7 +2,7 @@
   "parent": "steveparty:main/root",
   "display": {
     "icon": {
-      "id": "steveparty:garnet_crystal_ball",
+      "id": "steveparty:lapis_crystal_ball",
       "count": 1
     },
     "title": {
@@ -19,7 +19,7 @@
       "conditions": {
         "items": [
           {
-            "items": "steveparty:garnet_crystal_ball"
+            "items": "steveparty:lapis_crystal_ball"
           }
         ]
       }

@@ -139,8 +139,8 @@ public class PartyHudGameTests implements FabricGameTest {
         try {
             PigEntity pig = spawnToken(context, new BlockPos(2, 1, 2), player.getUuid());
             PartyControllerEntity controller = startParty(context, pig.getUuid(), UUID.randomUUID());
-            player.getInventory().setStack(10, new ItemStack(ModItems.POWER_STAR, 2));
-            player.getInventory().setStack(11, new ItemStack(ModItems.POWER_STAR));
+            player.getInventory().setStack(10, new ItemStack(ModItems.PARTY_STAR, 2));
+            player.getInventory().setStack(11, new ItemStack(ModItems.PARTY_STAR));
             player.getInventory().setStack(14, new ItemStack(Items.NETHER_STAR, 7));
             player.getInventory().setStack(12, new ItemStack(ModItems.COIN, 20));
             ItemStack renamed = new ItemStack(ModItems.COIN, 5);
@@ -148,9 +148,9 @@ public class PartyHudGameTests implements FabricGameTest {
             player.getInventory().setStack(13, renamed);
 
             PartyLiveData live = capture(context, controller);
-            context.assertTrue(live.starItem().isOf(ModItems.POWER_STAR) && live.coinItem().isOf(ModItems.COIN), "the default currencies, for the icons");
+            context.assertTrue(live.starItem().isOf(ModItems.PARTY_STAR) && live.coinItem().isOf(ModItems.COIN), "the default currencies, for the icons");
             PartyLiveData.Standing standing = live.standings().getFirst();
-            context.assertEquals(standing.stars(), 3, "the Power Stars held (nether stars are no longer the party's star)");
+            context.assertEquals(standing.stars(), 3, "the Party Stars held (nether stars are no longer the party's star)");
             context.assertEquals(standing.coins(), 20, "the plain coins held (not the renamed ones)");
             context.assertEquals(live.standings().get(1).stars(), 0, "an unknown owner holds nothing");
 

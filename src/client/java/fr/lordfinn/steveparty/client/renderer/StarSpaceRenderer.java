@@ -25,7 +25,7 @@ import net.minecraft.util.math.Vec3d;
 import java.util.List;
 
 /**
- * The party stars (see fr.lordfinn.steveparty.service.PartyStars): a big Power Star floating and turning over each
+ * The party stars (see fr.lordfinn.steveparty.service.PartyStars): a big Party Star floating and turning over each
  * star space holding one, drawn at any distance (no entity, nothing ticks on the server), with a few gold sparks rising
  * from it and a golden beacon beam up to the build height, so that it is seen from afar. The spaces come from
  * {@link StarSpacesPayload}.
@@ -64,7 +64,7 @@ public final class StarSpaceRenderer {
             MinecraftClient client = MinecraftClient.getInstance();
             ClientWorld world = client.world;
             if (world == null) return;
-            if (star.isEmpty()) star = new ItemStack(ModItems.POWER_STAR);
+            if (star.isEmpty()) star = new ItemStack(ModItems.PARTY_STAR);
             MatrixStack matrices = context.matrixStack();
             Vec3d camera = context.camera().getPos();
             float tickDelta = context.tickCounter().getTickDelta(true);

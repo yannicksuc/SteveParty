@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_power_star": {
+    "has_party_star": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:power_star"
+            "items": "steveparty:party_star"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_power_star"
+      "has_party_star"
     ]
   ],
   "rewards": {

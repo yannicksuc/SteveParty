@@ -70,11 +70,11 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
         return stack.isOf(item) && stack.getCount() == 1;
     }
 
-    /** Defaults (the mod's Power Star and Coin), one item of the kind picked is kept, saved and loaded; the two differ. */
+    /** Defaults (the mod's Party Star and Coin), one item of the kind picked is kept, saved and loaded; the two differ. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void currenciesHaveDefaultsAndAreSaved(TestContext context) {
         PartyControllerEntity controller = place(context);
-        context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), ModItems.POWER_STAR), "default star: the mod's Power Star");
+        context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), ModItems.PARTY_STAR), "default star: the mod's Party Star");
         context.assertTrue(isOf(controller.getCurrency(PartyCurrency.COIN), ModItems.COIN), "default coin: the mod's coin");
 
         ItemStack coin = new ItemStack(Items.GOLD_NUGGET, 12);
@@ -93,11 +93,11 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
 
         PartyControllerEntity old = new PartyControllerEntity(controller.getPos(), controller.getCachedState());
         old.read(new NbtCompound(), registries);
-        context.assertTrue(isOf(old.getCurrency(PartyCurrency.STAR), ModItems.POWER_STAR)
+        context.assertTrue(isOf(old.getCurrency(PartyCurrency.STAR), ModItems.PARTY_STAR)
                 && isOf(old.getCurrency(PartyCurrency.COIN), ModItems.COIN), "nothing saved: the defaults");
 
         controller.setCurrency(PartyCurrency.STAR, ItemStack.EMPTY);
-        context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), ModItems.POWER_STAR), "nothing picked: back to the default");
+        context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), ModItems.PARTY_STAR), "nothing picked: back to the default");
         context.complete();
     }
 
@@ -232,7 +232,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             context.assertTrue(!controller.canEdit(player), "Adventure mode: read only");
             handler.setCursorStack(new ItemStack(Items.DIAMOND, 4));
             handler.onSlotClick(SLOT_STAR, 0, SlotActionType.PICKUP, player);
-            context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), ModItems.POWER_STAR), "Adventure: the star is unchanged");
+            context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), ModItems.PARTY_STAR), "Adventure: the star is unchanged");
             handler.onButtonClick(player, BUTTON_ROUNDS_UP);
             context.assertEquals(controller.getPartyData().getNbTurn(), 10, "Adventure: the rounds are unchanged");
             handler.onButtonClick(player, BUTTON_LAUNCH);
@@ -248,7 +248,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), Items.DIAMOND), "the coin's item refused as star");
             handler.setCursorStack(ItemStack.EMPTY);
             handler.onSlotClick(SLOT_STAR, 0, SlotActionType.PICKUP, player);
-            context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), ModItems.POWER_STAR), "empty hand: the default again");
+            context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), ModItems.PARTY_STAR), "empty hand: the default again");
             context.assertTrue(!handler.getSlot(SLOT_COIN).canTakeItems(player) && !handler.getSlot(SLOT_COIN).canInsert(new ItemStack(Items.DIAMOND)),
                     "a setting slot is never filled or emptied");
             handler.onButtonClick(player, BUTTON_ROUNDS_UP);

@@ -181,7 +181,7 @@ public class RecipeGameTests implements FabricGameTest {
         ItemStack e = ItemStack.EMPTY;
         ItemStack obsidian = new ItemStack(Items.OBSIDIAN);
         ItemStack forge = result(context, 3, 3,
-                e, new ItemStack(ModItems.POWER_STAR), e,
+                e, new ItemStack(ModItems.PARTY_STAR), e,
                 obsidian, new ItemStack(Items.BLAST_FURNACE), obsidian,
                 obsidian, new ItemStack(Items.NETHERITE_INGOT), obsidian);
         context.assertTrue(forge.isOf(ModBlocks.DICE_FORGE.asItem()), "dice forge, got " + forge);
@@ -207,7 +207,7 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.PISTON)).isOf(ModItems.ADVANCE_BACK_CARTRIDGE), "move forward / back cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.REPEATER)).isOf(ModItems.REPLAY_CARTRIDGE), "roll again cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.ENDER_PEARL)).isOf(ModItems.TELEPORT_CARTRIDGE), "teleport cartridge");
-        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.POWER_STAR)).isOf(ModItems.STAR_CARTRIDGE), "star cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.PARTY_STAR)).isOf(ModItems.STAR_CARTRIDGE), "star cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.ACORN)).isOf(ModItems.GLANDOUILLE_CARTRIDGE), "glandouille cartridge");
 
         // The Tile and the Advanced Tile (their cartridges loaded: TileCartridgeGameTests)

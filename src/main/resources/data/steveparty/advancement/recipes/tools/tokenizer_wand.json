@@ -11,12 +11,12 @@
         ]
       }
     },
-    "has_garnet_crystal_ball": {
+    "has_lapis_crystal_ball": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "steveparty:garnet_crystal_ball"
+            "items": "steveparty:lapis_crystal_ball"
           }
         ]
       }
@@ -41,7 +41,7 @@
   "requirements": [
     [
       "has_blaze_rod",
-      "has_garnet_crystal_ball",
+      "has_lapis_crystal_ball",
       "has_gold_block",
       "has_the_recipe"
     ]

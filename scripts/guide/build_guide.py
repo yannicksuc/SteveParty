@@ -137,8 +137,8 @@ def category(cid, icon, name, entries, parallax="flow"):
 
 
 # ---------------------------------------------------------------- Getting started
-category("getting_started", "steveparty:power_star", ("Getting Started", "Bien débuter"), [
-    E("welcome", "steveparty:power_star", ("Welcome!", "Bienvenue !"),
+category("getting_started", "steveparty:party_star", ("Getting Started", "Bien débuter"), [
+    E("welcome", "steveparty:party_star", ("Welcome!", "Bienvenue !"),
       ("What Steve Party Maker is about", "Ce qu'est Steve Party Maker"), [
         T("Steve Party Maker turns Minecraft into a **party board game**: build a board block by block, "
           "turn any mob into a pawn, roll the dice, play mini-games and collect stars, all in survival.\n\n"
@@ -464,11 +464,11 @@ category("cartridges", "steveparty:board_space_behavior", ("Cartridges", "Cartou
     ], parents=["cartridge"], gate="lay_the_board"),
     E("star", "steveparty:star_cartridge", ("Star Cartridge", "Cartouche Étoile"), ("Buy the star", "Acheter l'étoile"), [
         T("Makes a **yellow star space** (tile or Checkpoint). When a party starts, the **star** lands on one active "
-          "star space at random: a big Power Star floats over it.\n\n"
+          "star space at random: a big Party Star floats over it.\n\n"
           "A pawn passing over it stops; with enough coins, its player chooses in the chat to **buy** it (20 coins "
           "by default; bought by itself after 15 s). The star then moves to **another** star space.",
           "Crée une **case étoile jaune** (tuile ou point de déclenchement). Au début d'une partie, l'**étoile** se "
-          "pose sur une case étoile active au hasard : une grande Super étoile flotte au-dessus.\n\n"
+          "pose sur une case étoile active au hasard : une grande Étoile de fête flotte au-dessus.\n\n"
           "Un pion qui passe dessus s'arrête ; s'il a assez de pièces, son joueur choisit dans le chat de "
           "l'**acheter** (20 pièces par défaut ; achetée d'office après 15 s). L'étoile part alors sur **une autre** "
           "case étoile."),
@@ -488,7 +488,7 @@ category("cartridges", "steveparty:board_space_behavior", ("Cartridges", "Cartou
           "vendue y est prise, et les pièces payées y retournent (ce qui ne rentre pas tombe près du contrôleur).\n\n"
           "Plus d'étoile dans la banque : rien n'est vendu, le pion continue.",
           "The Bank", "La banque"),
-        C("steveparty:star_cartridge", None, "Cartridge + Power Star.", "Cartouche + Super étoile."),
+        C("steveparty:star_cartridge", None, "Cartridge + Party Star.", "Cartouche + Étoile de fête."),
     ], parents=["cartridge"], gate="lay_the_board"),
     E("inventory", "steveparty:inventory_cartridge", ("Inventory Cartridge", "Cartouche d'inventaire"), ("Bonus and malus spaces", "Cases bonus et malus"), [
         T("Gives or takes items. Right-click up to **8 chests** with it to link them; right-click in the air for "
@@ -521,9 +521,9 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
           "lancer une flammèche jusqu'à 32 blocs) : le sort *Pionificus !* s'ouvre.\n\n"
           "Trace un cercle autour du mob : sur le guide = pion d'1 bloc, deux fois plus grand = 2 blocs (max), "
           "plus petit = plus petit, jusqu'à 0,25. Échap annule. Impossible sur le Dragon et le Wither."),
-        C("steveparty:tokenizer_wand", "steveparty:garnet_crystal_ball",
-          "Wand: Garnet Crystal Ball, gold block, blaze rod. Ball: redstone blocks around a nether star.",
-          "Baguette : boule de grenat, bloc d'or, bâton de Blaze. Boule : blocs de redstone autour d'une étoile du Nether."),
+        C("steveparty:tokenizer_wand", "steveparty:lapis_crystal_ball",
+          "Wand: Lapis Crystal Ball, gold block, blaze rod. Ball: lapis lazuli blocks around a Party Star.",
+          "Baguette : boule de lapis, bloc d'or, bâton de Blaze. Boule : blocs de lapis-lazuli autour d'une Étoile de fête."),
     ]),
     E("pawns", "minecraft:armor_stand", ("Pawns", "Pions"), ("A mob turned figurine", "Un mob devenu figurine"), [
         T("A pawn is a figurine: no AI, silent, invulnerable, it can't be pushed or leashed, and feeding or "
@@ -687,11 +687,11 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
     ], parents=["controller"], gate="party_time"),
     E("rewards", "steveparty:coin", ("Coins, Stars & Rewards", "Pièces, étoiles et gains"), ("How players are paid", "Comment les joueurs sont payés"), [
         T("A player's stars and coins are those items in their inventory; ranking goes by stars, then coins. "
-          "Defaults: the **Coin** and the **Power Star** (change them in the Rewards tab).\n\n"
+          "Defaults: the **Coin** and the **Party Star** (change them in the Rewards tab).\n\n"
           "Rewards are paid from chests: put an Inventory Cartridge linked to chests in the bank slot. The "
           "controller never creates coins or stars: only the star sold on a **star space** is made.",
           "Les étoiles et pièces d'un joueur sont ces objets dans son inventaire ; classement aux étoiles, puis "
-          "aux pièces. Par défaut : la **pièce** et la **Super étoile** (à changer dans l'onglet Gains).\n\n"
+          "aux pièces. Par défaut : la **pièce** et la **Étoile de fête** (à changer dans l'onglet Gains).\n\n"
           "Les gains sont pris dans des coffres : mets une cartouche d'inventaire liée à des coffres dans la case "
           "banque. Le contrôleur ne crée jamais ni pièce ni étoile : seule l'étoile vendue sur une **case étoile** est créée."),
         C("steveparty:coin", None, "One gold nugget makes a Coin.", "Une pépite d'or donne une pièce."),
@@ -818,11 +818,11 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
     ], parents=["controller"], gate="party_time"),
     E("goal_pole", "steveparty:goal_pole", ("Goal Pole", "Mât d'arrivée"), ("Jump to the top and score", "Sauter au sommet et marquer"), [
         T("Place a **Goal Pole Base**, stack **Goal Pole** segments on it and hang one **Flag**: it goes to the "
-          "top. Land on top of the pole: **1up**, a golden heart, no fall damage, and a point for the base.\n\n"
+          "top. Land on top of the pole: **+1 ♥**, an extra life: a golden heart, no fall damage, and a point for the base.\n\n"
           "The base counts landings (or any scoreboard criterion) for the party players, everyone, nearby players "
           "or a selector. Set it up with the Wrench.",
           "Pose un **socle de mât d'arrivée**, empile des segments de **mât d'arrivée** et accroche un "
-          "**drapeau** : il se place en haut. Atterris au sommet : **1up**, un cœur doré, pas de dégâts de chute, "
+          "**drapeau** : il se place en haut. Atterris au sommet : **+1 ♥**, une vie bonus : un cœur doré, pas de dégâts de chute, "
           "et un point pour le socle.\n\nLe socle compte les arrivées (ou un critère de scoreboard) pour les joueurs "
           "de la partie, tous, ceux à proximité ou un sélecteur. Réglage à la clé."),
         T("Right-click the pole: its goal (at least 1 by default). The flag stays up until it is reached, then "
@@ -1026,7 +1026,7 @@ category("shops", "steveparty:trading_stall", ("Shops", "Boutiques"), [
 ])
 
 # ---------------------------------------------------------------- Stars & the Mula
-category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles et Mula"), [
+category("stars_mula", "steveparty:party_star", ("Stars & the Mula", "Étoiles et Mula"), [
     E("mula", "steveparty:mula_spawn_egg", ("The Mula", "La Mula"), ("A little flying star", "Une petite étoile volante"), [
         T("A small flying star creature. Mulas come in **blue, red, green, yellow, purple** and, rarely, "
           "**black**. They fall from the sky on an **Ephemeride** night, or hatch from a spawn egg.\n\n"
@@ -1086,13 +1086,13 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
           "s'allume alors au-dessus de l'endroit où les Mulas sont descendues."),
         C("steveparty:telescope"),
     ], parents=["mula"], gate="stardust", at=(0, 3)),
-    E("power_star", "steveparty:power_star", ("Power Star", "Super étoile"), ("Five colours, one star", "Cinq couleurs, une étoile"), [
+    E("party_star", "steveparty:party_star", ("Party Star", "Étoile de fête"), ("Five colours, one star", "Cinq couleurs, une étoile"), [
         T("A rare, always shining item: one fragment each of **blue, green, yellow, red and purple**, or "
           "**5 black** fragments.\n\nIt crowns the Dice Forge recipe and is the default **Star** of a party.",
           "Un objet rare, toujours brillant : un fragment de chaque couleur **bleu, vert, jaune, rouge et "
           "violet**, ou **5 fragments noirs**.\n\nIl couronne la recette de la forge à dés et c'est l'**Étoile** "
           "par défaut d'une partie."),
-        C("steveparty:power_star_from_fragments", "steveparty:power_star_from_black_fragments"),
+        C("steveparty:party_star_from_fragments", "steveparty:party_star_from_black_fragments"),
     ], parents=["fragments"], gate="stardust"),
     E("gravity_core", "steveparty:gravity_core", ("Gravity Core", "Noyau de gravité"), ("A tiny planet", "Une petite planète"), [
         T("Placed, it glows and **pulls** everything within 8 blocks into an orbit, without fall damage; full "
@@ -1105,7 +1105,7 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
           "Son vrai rôle : réveiller la **forge à dés**."),
         C("steveparty:gravity_core", None, "Crying obsidian, 4 black star fragments and a heavy core.",
           "Obsidienne pleureuse, 4 fragments d'étoile noirs et un noyau lourd."),
-    ], parents=["power_star"], gate="stardust"),
+    ], parents=["party_star"], gate="stardust"),
     E("dice_forge", "steveparty:dice_forge", ("Dice Forge", "Forge à dés"), ("Carve your own dice", "Graver ses propres dés"), [
         T("Right-click it with a **Gravity Core** to wake it up. In its screen:\n"
           "- a ring of **12 face** slots: a stack's size is the face's weight;\n"
@@ -1115,8 +1115,8 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
           "- un anneau de **12 faces** : la taille d'une pile est le poids de la face ;\n"
           "- **5 fragments d'étoile**, de couleurs toutes différentes (le noir peut se répéter et n'est jamais "
           "consommé) ;\n- **faces vierges** : une par face utilisée ;\n- **5 modules**."),
-        C("steveparty:dice_forge", None, "Power Star, obsidian, a blast furnace and a netherite ingot.",
-          "Super étoile, obsidienne, un haut fourneau et un lingot de netherite."),
+        C("steveparty:dice_forge", None, "Party Star, obsidian, a blast furnace and a netherite ingot.",
+          "Étoile de fête, obsidienne, un haut fourneau et un lingot de netherite."),
     ], parents=["gravity_core"], gate="stardust"),
     E("forging", "steveparty:default_dice", ("Forging Dice", "Forger des dés"), ("A die every five seconds", "Un dé toutes les cinq secondes"), [
         T("Click the arrow between the blank faces and the die (**FORGE**): one die every 5 s, in a loop, while ingredients last. Each die uses its "
@@ -1205,10 +1205,10 @@ category("decoration", "steveparty:white_plastic_block", ("Decoration", "Décora
         C("steveparty:hop_switch"),
     ], parents=["plastic_blocks"]),
     E("pipes", "steveparty:white_pipe", ("Pipes", "Tuyaux"), ("Enter here, come out there", "Entrer ici, ressortir là"), [
-        T("Mario-style pipes. Placed against a pipe or its mouth, they connect. Enter a mouth (right-click, "
+        T("Travel pipes. Placed against a pipe or its mouth, they connect. Enter a mouth (right-click, "
           "sneak in front of it, or fall in): you shoot through and come out of another end at random.\n\n"
           "A pipe going into a solid block teleports to the nearest mouth of that colour within 100 blocks.",
-          "Des tuyaux façon Mario. Posés contre un tuyau ou son embouchure, ils se raccordent. Entre par une "
+          "Des tuyaux de voyage. Posés contre un tuyau ou son embouchure, ils se raccordent. Entre par une "
           "embouchure (clic droit, accroupi devant, ou en tombant dedans) : tu files et ressors par un autre bout "
           "au hasard.\n\nUn tuyau qui rentre dans un bloc plein téléporte vers l'embouchure la plus proche de "
           "cette couleur, à 100 blocs."),

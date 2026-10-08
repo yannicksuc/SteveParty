@@ -1,6 +1,6 @@
 {
   "parent": "item/handheld",
   "textures": {
-    "layer0": "steveparty:item/garnet_crystal_ball"
+    "layer0": "steveparty:item/lapis_crystal_ball"
   }
 }
