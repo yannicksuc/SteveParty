@@ -250,14 +250,11 @@ public class StevepartyClient implements ClientModInitializer {
         }, ModItems.STENCIL_GUN);
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
-        // The Mula egg is drawn (textures/item/mula_spawn_egg.png): no spawn-egg tint over it
-        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG);
-        // The Glandouille eggs share one entity type: vanilla tints only one egg per type, each one is tinted here
-        for (net.minecraft.item.Item egg : ModItems.GLANDOUILLE_SPAWN_EGGS) {
-            net.minecraft.item.SpawnEggItem spawnEgg = (net.minecraft.item.SpawnEggItem) egg;
-            ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFF000000 | spawnEgg.getColor(tintIndex), egg);
-        }
-        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.BOXED_TRADER_SPAWN_EGG);
+        // Every Steve Party egg is drawn per mob (textures/item/*_spawn_egg.png, 1.21.5 style): item/generated gives
+        // layer0 tint index 0, so the vanilla spawn-egg tint is replaced by a white one
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG,
+                ModItems.BOXED_TRADER_SPAWN_EGG, ModItems.FROUSSEUX_SPAWN_EGG);
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.GLANDOUILLE_SPAWN_EGGS);
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
 
