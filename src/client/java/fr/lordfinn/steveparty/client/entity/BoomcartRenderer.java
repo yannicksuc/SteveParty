@@ -15,6 +15,7 @@ import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.TntMinecartEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationAxis;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
@@ -89,7 +90,8 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
 
     private static final class LoadLayer extends GeoRenderLayer<BoomcartEntity> {
         private static final BlockState TNT = Blocks.TNT.getDefaultState();
-        private static final BlockState BARREL = Blocks.BARREL.getDefaultState().with(BarrelBlock.OPEN, true);
+        private static final BlockState BARREL = Blocks.BARREL.getDefaultState()
+                .with(BarrelBlock.FACING, Direction.UP).with(BarrelBlock.OPEN, true);
 
         /** A rocket of v12_d1_firework: its cube, its tilt (axis, degrees, around origin), its faces' uv. */
         private record Rocket(float[] from, float[] to, char axis, float angle, float[] origin, float[][] uv) {
