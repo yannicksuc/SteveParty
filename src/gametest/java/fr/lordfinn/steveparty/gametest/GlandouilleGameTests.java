@@ -1190,6 +1190,59 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** The path, and the cartridge on its last tile (to push back along it). */
+    private static BoardSpaceBlockEntity pathEndingWith(TestContext context, ItemStack cartridge) {
+        path(context, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
+        BoardSpaceBlockEntity last = context.getBlockEntity(PATH.getLast());
+        cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(List.of(), ""));
+        last.setStack(0, cartridge);
+        return last;
+    }
+
+    /** Below 0, the tower walks the path back, pushing the token and the ones it meets; 0 does nothing, -5 by default. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void aNegativeDistancePushesBack(TestContext context) {
+        context.assertEquals(GlandouilleCartridgeItem.distance(new ItemStack(ModItems.GLANDOUILLE_CARTRIDGE)), -5, "-5 by default");
+        BoardSpaceBlockEntity tile = pathEndingWith(context, cartridge(-2, false, 5));
+        PigEntity lander = token(context, PATH.get(3));
+        PigEntity met = token(context, PATH.get(2));
+        PigEntity beyond = token(context, PATH.get(0));
+        context.waitAndRun(2, () -> {
+            Vec3d beyondBefore = beyond.getPos();
+            tile.getBoardSpaceBehavior().onDestinationReached(context.getWorld(), tile.getPos(), lander, tile, null);
+            context.assertTrue(GlandouillePushes.isRunning(lander), "the tower is pushing back");
+            context.waitAndRun(GlandouillePushes.SETUP_TICKS + 2 * GlandouillePushes.STEP_TICKS + 10, () -> {
+                Vec3d destination = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(PATH.get(1)));
+                context.assertFalse(GlandouillePushes.isRunning(lander), "over");
+                context.assertTrue(horizontal(lander.getPos(), destination) < 0.5, "2 spaces back: " + lander.getPos());
+                context.assertTrue(horizontal(met.getPos(), destination) < 0.5, "with the one met: " + met.getPos());
+                context.assertTrue(beyond.getPos().distanceTo(beyondBefore) < 0.3, "not the one beyond");
+                context.complete();
+            });
+        });
+    }
+
+    /** Going back too, out of Glandouilles (2 meeting 2 tokens) it stops on the second one's space. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void goingBackOutOfGlandouillesItStopsShort(TestContext context) {
+        BoardSpaceBlockEntity tile = pathEndingWith(context, cartridge(-3, false, 2));
+        PigEntity lander = token(context, PATH.get(3));
+        PigEntity first = token(context, PATH.get(2));
+        PigEntity second = token(context, PATH.get(1));
+        context.waitAndRun(2, () -> {
+            tile.getBoardSpaceBehavior().onDestinationReached(context.getWorld(), tile.getPos(), lander, tile, null);
+            context.waitAndRun(GlandouillePushes.SETUP_TICKS + 3 * GlandouillePushes.STEP_TICKS + GlandouillePushes.FALL_TICKS + 4, () -> {
+                context.assertFalse(GlandouillePushes.isRunning(lander), "over");
+                Vec3d stop = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(PATH.get(1)));
+                for (PigEntity pig : List.of(lander, first, second)) {
+                    context.assertTrue(horizontal(pig.getPos(), stop) < 0.5, "all stopped on the second space: " + pig.getPos());
+                }
+                context.assertTrue(around(context).isEmpty(), "none left");
+                context.complete();
+            });
+        });
+    }
+
     /** The lone one: it tries, can't, sulks and goes; the token stays. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
     public void theLoneOneCannotPush(TestContext context) {

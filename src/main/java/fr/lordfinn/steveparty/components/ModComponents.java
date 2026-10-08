@@ -87,9 +87,12 @@ public class ModComponents {
     /** Move Forward / Back cartridge: spaces a token landing on its tile moves on (1..6 forward, -1..-6 back). */
     public static final ComponentType<Integer> ADVANCE_BACK_STEPS =
             registerComponent("advance-back-steps", Codec.intRange(-6, 6));
-    /** Glandouille Cartridge: how many spaces ahead its tower pushes the tokens (0: no destination, nothing happens). */
+    /**
+     * Glandouille Cartridge: how many spaces ahead its tower pushes the tokens, back along the path if negative (0: no
+     * destination, nothing happens).
+     */
     public static final ComponentType<Integer> GLANDOUILLE_DISTANCE =
-            registerComponent("glandouille-distance", Codec.intRange(0, 50));
+            registerComponent("glandouille-distance", Codec.intRange(-50, 50));
     /** Glandouille Cartridge: how many Glandouilles in its tower (one falls off for each token it starts pushing). */
     public static final ComponentType<Integer> GLANDOUILLE_TOWER =
             registerComponent("glandouille-tower", Codec.intRange(1, 25));

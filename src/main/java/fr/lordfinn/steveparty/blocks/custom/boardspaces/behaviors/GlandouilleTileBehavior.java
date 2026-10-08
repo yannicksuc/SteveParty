@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
+import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.GlandouillePushes;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
@@ -23,7 +24,8 @@ import java.util.List;
 
 /**
  * The role of a Glandouille Cartridge: a token stopping here is pushed {@link GlandouilleCartridgeItem#distance}
- * spaces on by a tower of {@link GlandouilleCartridgeItem#tower} Glandouilles, with the tokens the tower meets (one
+ * spaces on (back along the path, as a Reversed die moves it, if negative) by a tower of
+ * {@link GlandouilleCartridgeItem#tower} Glandouilles, with the tokens the tower meets (one
  * falls off for each; out of Glandouilles, it stops short, see {@link GlandouillePushes}); the turn
  * goes on once the tower has gone. A cartridge without destination (0 spaces), or a tile leading nowhere: nothing
  * happens (a plain landing). The lone Glandouille setting: it tries, fails, sulks; nobody moves. Going over the tile
@@ -56,7 +58,9 @@ public class GlandouilleTileBehavior extends ABoardSpaceBehavior {
         int distance = GlandouilleCartridgeItem.distance(cartridge);
         if (distance == 0) return false;
         BlockPos pos = tile.getPos();
-        List<BlockPos> route = GlandouillePushes.route(world, pos, distance);
+        // backward: the way a Reversed die walks a token back (the way it came, then the links backward)
+        List<BlockPos> route = distance > 0 ? GlandouillePushes.route(world, pos, distance)
+                : AdvanceBackMoves.planBack(world, token, pos, -distance).spaces();
         if (GlandouilleCartridgeItem.lone(cartridge)) {
             return GlandouillePushes.pushAlone(world, pos, token, route.isEmpty() ? null : route.getFirst(), onDone);
         }
@@ -93,6 +97,7 @@ public class GlandouilleTileBehavior extends ABoardSpaceBehavior {
         }
         TileFeedback.Landing landing = TileFeedback.Landing.GLANDOUILLE;
         if (lone) TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing, landing.noticeKey() + ".lone");
+        else if (distance < 0) TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing, landing.noticeKey() + ".back", -distance);
         else TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing, landing.noticeKey(), distance);
     }
 
