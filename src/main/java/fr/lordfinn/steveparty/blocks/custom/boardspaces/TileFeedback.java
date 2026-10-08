@@ -151,7 +151,13 @@ public final class TileFeedback {
         GLANDOUILLE("glandouille", 0x9A5A2A, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.749F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.749F, 4),
-                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.45F, 1.0F, 8)));
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.45F, 1.0F, 8))),
+        /** A Frousseux space: a sneaky tiptoe of plucked notes and a flame flaring up (see FrousseuxTileBehavior). */
+        FROUSSEUX("frousseux", 0x3B1FB8, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.4F, 1.26F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.4F, 1.0F, 3),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.4F, 1.26F, 6),
+                new Layer(SoundEvents.ITEM_FIRECHARGE_USE, 0.25F, 1.6F, 8)));
 
         private final String key;
         /** Particle colour when the tile's own colour doesn't fit (plain white tile, or a themed burst). */
@@ -435,6 +441,10 @@ public final class TileFeedback {
             }
             case GLANDOUILLE -> {
                 world.spawnParticles(ParticleTypes.POOF, at.x, y, at.z, 8, 0.35, 0.1, 0.35, 0.02);
+                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
+            }
+            case FROUSSEUX -> {
+                world.spawnParticles(ParticleTypes.SMALL_FLAME, at.x, y + 0.2, at.z, 6, 0.3, 0.15, 0.3, 0.01);
                 world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
             }
             case ITEM, DEFAULT -> world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE),

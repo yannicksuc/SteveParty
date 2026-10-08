@@ -18,7 +18,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Étoile »: a star space, where the party's star may stand and be bought (see fr.lordfinn.steveparty.service.PartyStars). */
     TILE_STAR("tile_star"),
     /** « Glandouille »: a tower of Glandouilles pushes the tokens some spaces on (see GlandouilleTileBehavior). */
-    TILE_GLANDOUILLE("tile_glandouille");
+    TILE_GLANDOUILLE("tile_glandouille"),
+    /** « Frousseux »: a Frousseux steals coins or stars from another player (see FrousseuxTileBehavior). */
+    TILE_FROUSSEUX("tile_frousseux");
 
     private final String name;
 

@@ -88,6 +88,10 @@ public class ModItems {
     public static final Item GLANDOUILLE_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.class, "glandouille_cartridge",
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.COLOR));
+    /** Its tile's face is night indigo until dyed; steals 15 coins by default. */
+    public static final Item FROUSSEUX_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.class, "frousseux_cartridge",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.COLOR));
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item MINI_GAME_REMOTE = registerUnstackable(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.class, "mini_game_remote");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
@@ -288,6 +292,7 @@ public class ModItems {
             }
             itemGroup.add(STAR_CARTRIDGE);
             itemGroup.add(GLANDOUILLE_CARTRIDGE);
+            itemGroup.add(FROUSSEUX_CARTRIDGE);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);

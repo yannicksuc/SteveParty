@@ -16,12 +16,12 @@ public final class NumberModule extends CartridgeModule {
     private final ToIntFunction<ItemStack> getter;
     private final ObjIntConsumer<CartridgeEdit> setter;
     private final ToIntFunction<ItemStack> color;
+    private final java.util.function.Predicate<ItemStack> enabled;
 
-    /**
-     * @param color the colour of the figure and of the lit lamps, for the cartridge's state (e.g. green forward)
-     */
+    /** Like the other constructor, greyed out (unchangeable) while {@code enabled} says no. */
     public NumberModule(String id, String labelKey, int min, int max, ToIntFunction<ItemStack> getter,
-                        ObjIntConsumer<CartridgeEdit> setter, ToIntFunction<ItemStack> color) {
+                        ObjIntConsumer<CartridgeEdit> setter, ToIntFunction<ItemStack> color,
+                        java.util.function.Predicate<ItemStack> enabled) {
         super(id, labelKey);
         if (min > max) throw new IllegalArgumentException("empty range: " + id);
         this.min = min;
@@ -29,6 +29,20 @@ public final class NumberModule extends CartridgeModule {
         this.getter = getter;
         this.setter = setter;
         this.color = color;
+        this.enabled = enabled;
+    }
+
+    /**
+     * @param color the colour of the figure and of the lit lamps, for the cartridge's state (e.g. green forward)
+     */
+    public NumberModule(String id, String labelKey, int min, int max, ToIntFunction<ItemStack> getter,
+                        ObjIntConsumer<CartridgeEdit> setter, ToIntFunction<ItemStack> color) {
+        this(id, labelKey, min, max, getter, setter, color, stack -> true);
+    }
+
+    @Override
+    public boolean enabled(ItemStack stack) {
+        return enabled.test(stack);
     }
 
     public int min() {
