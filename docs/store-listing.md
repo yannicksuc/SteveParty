@@ -16,10 +16,10 @@ Everything is crafted in survival, and redstone can drive almost all of it.
 
 - **Board spaces** in several sizes and slopes, stamped with their colour, joined by waypoints and junctions.
 - **Cartridges** give each space its behaviour: move forward or back, teleport, open a shop, replay a turn…
-- A **wrench** to trace the path and a **redstone router** to wire spaces to your own contraptions.
+- A **Tile Linker Brush** to paint the path, a **wrench** to open the board spaces, and a **redstone router** to wire spaces to your own contraptions.
 
 ![Board spaces, cartridges, waypoint, junction, wrench and redstone router](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/board.png)
-![The Wrench in hand traces the path between the board spaces](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/board-wrench.png)
+![The Tile Linker Brush in hand shows the path between the board spaces](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/board-wrench.png)
 ![A board space's interface: its Teleport cartridge and its settings](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/tile-cartridge-ui.png)
 
 ### ♟️ Any mob can be a pawn
