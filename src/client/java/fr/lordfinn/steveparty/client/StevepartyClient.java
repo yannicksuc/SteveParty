@@ -342,6 +342,9 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.client.entity.GlandouilleRenderer::new);
         EntityRendererRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.client.entity.FrousseuxRenderer::new);
+        EntityRendererRegistry.register(ModEntities.PLAYER_PAWN, fr.lordfinn.steveparty.client.pawn.PlayerPawnRenderer::new);
+        fr.lordfinn.steveparty.client.pawn.PawnPossessionClient.initialize();
+        fr.lordfinn.steveparty.client.token.PawnPoseFeedback.initialize();
         // its owner's crosshair goes through a following Frousseux, unless they reach for it
         fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.CLIENT_PASS_THROUGH = frousseux -> {
             net.minecraft.entity.player.PlayerEntity player = net.minecraft.client.MinecraftClient.getInstance().player;

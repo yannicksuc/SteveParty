@@ -52,6 +52,8 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     @Unique
     private static final TrackedData<Integer> TOKEN_STATUS = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique
+    private static final TrackedData<Integer> TOKEN_POSE = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.INTEGER);
+    @Unique
     private Vec3d targetPosition;
     @Unique
     private double targetPositionSpeed;
@@ -97,6 +99,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         builder.add(TOKEN_OWNER, Optional.empty());
         builder.add(NB_STEPS, 0);
         builder.add(TOKEN_STATUS, 0);
+        builder.add(TOKEN_POSE, 0);
     }
 
     public boolean steveparty$isTokenized() {
@@ -188,6 +191,14 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         this.dataTracker.set(TOKEN_STATUS, status);
     }
 
+    public int steveparty$getTokenPose() {
+        return this.dataTracker.get(TOKEN_POSE);
+    }
+
+    public void steveparty$setTokenPose(int pose) {
+        this.dataTracker.set(TOKEN_POSE, Math.max(0, pose));
+    }
+
     public UUID steveparty$getTokenOwner() {
         return this.dataTracker.get(TOKEN_OWNER).orElse(null);
     }
@@ -245,6 +256,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             this.steveparty$setStatus(nbt.getInt("TokenStatus"));
         }
 
+        this.steveparty$setTokenPose(nbt.getInt("TokenPose"));
         this.steveparty$setTokenSize(nbt.contains("TokenSize", NbtElement.NUMBER_TYPE) ? nbt.getFloat("TokenSize") : 0);
         this.steveparty$setTokenColor(nbt.contains("TokenColor", NbtElement.NUMBER_TYPE) ? nbt.getInt("TokenColor") : -1);
 
@@ -265,6 +277,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             nbt.putUuid("TokenOwner", tokenOwner);
         }
         nbt.putInt("TokenStatus", this.steveparty$getStatus());
+        if (this.steveparty$getTokenPose() != 0) nbt.putInt("TokenPose", this.steveparty$getTokenPose());
         if (this.steveparty$tokenSize > 0) {
             nbt.putFloat("TokenSize", this.steveparty$tokenSize);
         }

@@ -30,6 +30,13 @@ public final class DevClientCommands {
                             KeyBinding.onKeyPressed(InputUtil.Type.MOUSE.createFromCode(GLFW.GLFW_MOUSE_BUTTON_RIGHT));
                             return 1;
                         }))
+                        // The camera: first person, third person from behind (F5) or from the front
+                        .then(ClientCommandManager.literal("perspective")
+                                .then(ClientCommandManager.argument("view", IntegerArgumentType.integer(0, 2)).executes(context -> {
+                                    context.getSource().getClient().options.setPerspective(
+                                            net.minecraft.client.option.Perspective.values()[IntegerArgumentType.getInteger(context, "view")]);
+                                    return 1;
+                                })))
                         // The wheel of the tool in hand, open, its cursor at (x, y) from its centre (GUI pixels)
                         .then(ClientCommandManager.literal("wheel")
                                 .then(ClientCommandManager.argument("x", IntegerArgumentType.integer())
