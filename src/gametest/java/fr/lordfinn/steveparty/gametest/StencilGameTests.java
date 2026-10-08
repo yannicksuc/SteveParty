@@ -938,7 +938,8 @@ public class StencilGameTests implements FabricGameTest {
             handler.quickMove(player, StencilGunScreenHandler.PLAYER_START);
             context.assertTrue(StencilGunItem.contents(gun).stream().anyMatch(stack -> stack.isOf(Items.LIME_DYE) && stack.getCount() == 4),
                     "the dye went into the hammer: " + StencilGunItem.contents(gun));
-            context.assertTrue(!handler.slots.get(0).getBackgroundSprite().getSecond().equals(handler.slots.get(StencilGunItem.STENCIL_SLOTS).getBackgroundSprite().getSecond()),
+            context.assertTrue(!((StencilGunScreenHandler.FilteredSlot) handler.slots.get(0)).silhouette()
+                            .equals(((StencilGunScreenHandler.FilteredSlot) handler.slots.get(StencilGunItem.STENCIL_SLOTS)).silhouette()),
                     "a stencil and a dye silhouette");
         } finally {
             context.getWorld().getServer().getPlayerManager().remove(player);
