@@ -2640,7 +2640,6 @@
   "block.steveparty.frousseux_candle_holder": "Wickling Candle Holder",
   "tooltip.steveparty.frousseux_candle_holder.kept": "A Wickling asleep, its %s on its head",
   "tooltip.steveparty.frousseux_candle_holder.named": "%s asleep, its %s on its head",
-  "tooltip.steveparty.frousseux_candle_holder.empty": "Empty: a plain candle, no Wickling inside",
   "tooltip.steveparty.frousseux_candle_holder.wake": "Placed, right-click it with an empty hand to wake it up",
   "block.steveparty.candle_saucer": "Candle Saucer",
   "tooltip.steveparty.frousseux_candle_holder.saucer": "On its saucer",

@@ -2640,7 +2640,6 @@
   "block.steveparty.frousseux_candle_holder": "Bougeoir de Frousseux",
   "tooltip.steveparty.frousseux_candle_holder.kept": "Un Frousseux endormi, sa %s sur la tête",
   "tooltip.steveparty.frousseux_candle_holder.named": "%s endormi, sa %s sur la tête",
-  "tooltip.steveparty.frousseux_candle_holder.empty": "Vide : une simple bougie, sans Frousseux dedans",
   "tooltip.steveparty.frousseux_candle_holder.wake": "Posé, clic droit main vide pour le réveiller",
   "block.steveparty.candle_saucer": "Soucoupe à bougie",
   "tooltip.steveparty.frousseux_candle_holder.saucer": "Sur sa soucoupe",

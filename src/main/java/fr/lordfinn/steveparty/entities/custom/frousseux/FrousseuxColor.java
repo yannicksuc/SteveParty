@@ -36,7 +36,7 @@ public enum FrousseuxColor implements StringIdentifiable {
 
     /** The ivory of its wax body, and how much of the candle's colour shows over it in the pool on its top. */
     private static final int IVORY = 0xF8E8C8;
-    private static final float ACCENT_STRENGTH = 0.6f;
+    private static final float ACCENT_STRENGTH = 0.33f;
     private static final FrousseuxColor[] VALUES = values();
     private static final int TOTAL_WEIGHT;
 
@@ -51,7 +51,7 @@ public enum FrousseuxColor implements StringIdentifiable {
     public final Item candle;
     public final int flame;
     public final int wax;
-    /** The tint of the pool on its top: {@link #wax} over ivory, clearly its colour, never the full dye. */
+    /** The tint of the pool on its top: a light touch of {@link #wax} over ivory, never the full dye. */
     public final int accent;
     /**
      * Its flame's tint: {@link #flame} more saturated, so the colour still reads when the light washes it out
