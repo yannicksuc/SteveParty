@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.Mood;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -893,6 +894,18 @@ public class GlandouilleGameTests implements FabricGameTest {
         List<GlandouilleEntity> born = world.getEntitiesByClass(GlandouilleEntity.class, new Box(abs).expand(1), e -> true);
         context.assertEquals(born.size(), 1, "one Glandouille");
         context.assertEquals(born.getFirst().getVariant(), GlandouilleVariant.YOUNG, "a young one, whatever the biome");
+        context.complete();
+    }
+
+    /** The young one never spawns by itself: only from an acorn barely sprouted, its egg or a command. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void theYoungOneNeverSpawnsNaturally(TestContext context) {
+        biome(context, "minecraft:forest");
+        BlockPos abs = context.getAbsolutePos(new BlockPos(3, 1, 3));
+        for (int i = 0; i < 2000; i++) {
+            context.assertTrue(GlandouilleSpawns.variantFor(context.getWorld(), abs, context.getWorld().random) != GlandouilleVariant.YOUNG,
+                    "never a young one");
+        }
         context.complete();
     }
 
