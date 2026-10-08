@@ -7,25 +7,15 @@ import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.util.math.MathHelper;
 
 /**
- * The statue of a player pawn: the player model with the proportions of a little figurine (a normal body, a big head
- * and big arms), standing in its {@linkplain PlayerPawnPose pose}. The overlay layers (hat, sleeves, jacket, pants)
- * follow their part.
+ * The statue of a player pawn: the player model with the proportions of a little figurine (body, arms and legs as a
+ * player's, only the head bigger), standing in its {@linkplain PlayerPawnPose pose}. The overlay layers (hat,
+ * sleeves, jacket, pants) follow their part.
  */
 public class PlayerPawnModel extends PlayerEntityModel<PlayerPawnEntity> {
     public static final float HEAD_SCALE = 1.5F;
-    /** Arms: thicker, a little longer. */
-    public static final float ARM_THICKNESS = 1.35F;
-    public static final float ARM_LENGTH = 1.12F;
-    /** The thicker arms move out as much, not into the body (pixels). */
-    private static final float ARM_OUTSET = 0.6F;
-
-    private final float rightArmPivotX;
-    private final float leftArmPivotX;
 
     public PlayerPawnModel(ModelPart root, boolean thinArms) {
         super(root, thinArms);
-        this.rightArmPivotX = this.rightArm.pivotX;
-        this.leftArmPivotX = this.leftArm.pivotX;
     }
 
     @Override
@@ -38,12 +28,8 @@ public class PlayerPawnModel extends PlayerEntityModel<PlayerPawnEntity> {
         this.leftArm.setAngles(rad(pose.leftArmPitch), rad(pose.leftArmYaw), rad(pose.leftArmRoll));
         this.rightLeg.setAngles(rad(pose.rightLegPitch), 0, rad(pose.rightLegRoll));
         this.leftLeg.setAngles(rad(pose.leftLegPitch), 0, rad(pose.leftLegRoll));
-        this.rightArm.pivotX = this.rightArmPivotX - ARM_OUTSET;
-        this.leftArm.pivotX = this.leftArmPivotX + ARM_OUTSET;
 
         scale(this.head, HEAD_SCALE, HEAD_SCALE, HEAD_SCALE);
-        scale(this.rightArm, ARM_THICKNESS, ARM_LENGTH, ARM_THICKNESS);
-        scale(this.leftArm, ARM_THICKNESS, ARM_LENGTH, ARM_THICKNESS);
         follow(this.hat, this.head);
         follow(this.jacket, this.body);
         follow(this.rightSleeve, this.rightArm);
