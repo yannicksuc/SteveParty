@@ -35,6 +35,7 @@ import software.bernie.geckolib.util.Color;
 public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     private static final Identifier WAX = Steveparty.id("textures/entity/frousseux_wax.png");
     private static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
+    private static final Identifier HEART = Steveparty.id("textures/entity/frousseux_flame_heart.png");
     private static final int FULL_BRIGHT = 0xF000F0;
 
     private final ItemRenderer itemRenderer;
@@ -152,9 +153,10 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     }
 
     /**
-     * Its flame, alone (the other bones hidden for these passes): the animated flame texture tinted its flame colour,
-     * dimmer as its health goes down, then its white heart (the body's texture), both unshaded and full bright (a
-     * light, not a lit thing), see-through. The flame bone is hidden from every other pass (FrousseuxModel).
+     * Its flame, alone (the other bones hidden for these passes): the animated flame texture tinted its flame colour
+     * made more saturated (FrousseuxColor#flameEdge: it still reads under shaders' glow), dimmer as its health goes
+     * down, then its heart, a small soft glow of a paler shade melting into it (frousseux_flame_heart.png), both
+     * unshaded and full bright (a light, not a lit thing), see-through. The flame bone is hidden from every other pass (FrousseuxModel).
      */
     private static final class FlameLayer extends GeoRenderLayer<FrousseuxEntity> {
         private static final String[] OTHERS = {"body_overlay", "left_hand", "right_hand", "lids"};
@@ -186,17 +188,19 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             flame.setHidden(false);
 
             float brightness = frousseux.getFlame().brightness;
-            int tint = frousseux.getColor().flame;
+            int tint = frousseux.getColor().flameEdge;
             int r = (int) (((tint >> 16) & 0xFF) * brightness), g = (int) (((tint >> 8) & 0xFF) * brightness),
                     b = (int) ((tint & 0xFF) * brightness);
             AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta): GeckoLib animates it
             RenderLayer layer = RenderLayer.getBeaconBeam(FLAME, true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, withAlpha(0xFF000000 | r << 16 | g << 8 | b, frousseux.flameAlpha(partialTick)));
-            int heart = (int) (255 * brightness);
-            RenderLayer heartLayer = RenderLayer.getBeaconBeam(getTextureResource(frousseux), true);
+            int pale = frousseux.getColor().flameHeart;
+            int hr = (int) (((pale >> 16) & 0xFF) * brightness), hg = (int) (((pale >> 8) & 0xFF) * brightness),
+                    hb = (int) ((pale & 0xFF) * brightness);
+            RenderLayer heartLayer = RenderLayer.getBeaconBeam(HEART, true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, heartLayer, bufferSource.getBuffer(heartLayer),
-                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, withAlpha(0xFF000000 | heart << 16 | heart << 8 | heart, frousseux.flameAlpha(partialTick)));
+                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, withAlpha(0xFF000000 | hr << 16 | hg << 8 | hb, frousseux.flameAlpha(partialTick)));
 
             flame.setHidden(true);
             wick.setHidden(wickHidden);
