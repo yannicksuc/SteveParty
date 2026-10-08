@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.gui.wheel;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
@@ -47,8 +49,6 @@ public final class ToolWheel {
     private static final double HALF_GAP = 1.0;
     /** How much a hovered sector grows outward (pixels). */
     private static final int HOVER_GROW = 3;
-    /** The drop shadow under a wheel set on a panel: its offset (pixels, down right) and colour. */
-    private static final int SHADOW_OFFSET = 3, SHADOW = 0x55000000;
 
     private static final int GOLD_OUTLINE = 0xFF5B2E00, GOLD_LIGHT = 0xFFFFF87E, GOLD = 0xFFFFD83D;
 
@@ -364,7 +364,7 @@ public final class ToolWheel {
         boolean blink = cta && client.world != null && (client.world.getTime() / 8) % 2 == 0;
 
         drawPlates(context, layout, cx, cy, hover == null ? null : hover.arc(), hover == null ? -1 : hover.index(),
-                hover != null && hover.arc() == null, fit, cta, blink, false);
+                hover != null && hover.arc() == null, fit, cta, blink);
 
         // Icons
         for (Arc arc : layout.arcs()) {
@@ -421,21 +421,44 @@ public final class ToolWheel {
     /**
      * The wheel's plates centred on ({@code cx}, {@code cy}), pixel by pixel (cached: rasterised again only when
      * something shown changes): the hovered one grown outward and lighter, the hub lighter when hovered. Every wheel
-     * draws its plates through here (the tool wheels, the hammer's refill); {@code shadow} lays the wheel on a drop
-     * shadow, down right, for a wheel set on a panel.
+     * draws its plates through here (the tool wheels, the hammer's refill).
      */
     public static void drawPlates(DrawContext context, Layout layout, int cx, int cy, @Nullable Arc hoverArc, int hoverIndex,
-                                  boolean hubHovered, float fit, boolean cta, boolean blink, boolean shadow) {
-        List<WheelRaster.Run> runs = WheelRaster.runs(layout, hoverArc, hoverIndex, hubHovered, fit, cta, blink);
-        if (shadow) {
-            for (WheelRaster.Run run : runs) {
-                context.fill(cx + run.x0() + SHADOW_OFFSET, cy + run.y() + SHADOW_OFFSET, cx + run.x1() + SHADOW_OFFSET,
-                        cy + run.y() + 1 + SHADOW_OFFSET, SHADOW);
-            }
-        }
-        for (WheelRaster.Run run : runs) {
+                                  boolean hubHovered, float fit, boolean cta, boolean blink) {
+        for (WheelRaster.Run run : WheelRaster.runs(layout, hoverArc, hoverIndex, hubHovered, fit, cta, blink)) {
             context.fill(cx + run.x0(), cy + run.y(), cx + run.x1(), cy + run.y() + 1, run.color());
         }
+    }
+
+    /**
+     * An item drawn {@code scale} times its size (2: still whole pixels), centred, on its drop shadow (see
+     * {@link #drawItemShadow}), like the wheel's sprite icons.
+     */
+    public static Icon item(ItemStack stack, float scale) {
+        return (context, x, y) -> {
+            context.getMatrices().push();
+            context.getMatrices().translate(x, y, 0);
+            context.getMatrices().scale(scale, scale, 1);
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, -50);
+            drawItemShadow(context, stack, -8, -8);
+            context.getMatrices().pop();
+            context.drawItem(stack, -8, -8);
+            context.getMatrices().pop();
+        };
+    }
+
+    /**
+     * The drop shadow of an item drawn at ({@code x}, {@code y}) (its top left corner): its silhouette darkened, one of
+     * its pixels down right. Drawn before the item, so the item covers it.
+     */
+    public static void drawItemShadow(DrawContext context, ItemStack stack, int x, int y) {
+        // Items are drawn in batches: flushed before and after, so that the darkening applies to the shadow only
+        context.draw();
+        RenderSystem.setShaderColor(0.16f, 0.06f, 0.08f, 1f);
+        context.drawItem(stack, x + 1, y + 1);
+        context.draw();
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
     /** Where the middle of {@code sector} is drawn (from the centre), or null. */
