@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
@@ -11,6 +12,8 @@ import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.ToIntFunction;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
@@ -18,18 +21,21 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
 /**
  * Draws a Frousseux: its candle wax, a little see-through (FrousseuxModel), then over the same model the pool on its
- * top, tinted a hint of its candle's wax colour ({@code FrousseuxColor.accent}), and its flame, tinted its flame
+ * top, tinted a hint of its candle's wax colour ({@code FrousseuxColor.accent}), its emo fringe, mostly its
+ * candle's wax colour ({@code FrousseuxColor.fringe}), and its flame, tinted its flame
  * colour and glowing, dimmer as its health goes down ({@link FrousseuxEntity.Flame}). The body is lit by its own flame. The three textures share one UV layout and never overlap.
  */
 public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     private static final Identifier WAX = Steveparty.id("textures/entity/frousseux_wax.png");
     private static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
+    private static final Identifier FRINGE = Steveparty.id("textures/entity/frousseux_fringe.png");
     private static final int FULL_BRIGHT = 0xF000F0;
 
     public FrousseuxRenderer(EntityRendererFactory.Context context) {
         super(context, new FrousseuxModel());
         this.shadowRadius = 0.2f;
-        addRenderLayer(new WaxLayer(this));
+        addRenderLayer(new WaxLayer(this, WAX, color -> color.accent));
+        addRenderLayer(new WaxLayer(this, FRINGE, color -> color.fringe));
         addRenderLayer(new FlameLayer(this));
     }
 
@@ -42,18 +48,24 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
         super.render(frousseux, entityYaw, partialTick, poseStack, bufferSource, light);
     }
 
+    /** A greyscale texture over the same model, tinted with one of its candle's colours. */
     private static final class WaxLayer extends GeoRenderLayer<FrousseuxEntity> {
-        WaxLayer(GeoRenderer<FrousseuxEntity> renderer) {
+        private final Identifier texture;
+        private final ToIntFunction<FrousseuxColor> tint;
+
+        WaxLayer(GeoRenderer<FrousseuxEntity> renderer, Identifier texture, ToIntFunction<FrousseuxColor> tint) {
             super(renderer);
+            this.texture = texture;
+            this.tint = tint;
         }
 
         @Override
         public void render(MatrixStack poseStack, FrousseuxEntity frousseux, BakedGeoModel bakedModel, @Nullable RenderLayer renderType,
                            VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay) {
-            RenderLayer layer = RenderLayer.getEntityCutoutNoCull(WAX);
+            RenderLayer layer = RenderLayer.getEntityCutout(texture);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
-                    partialTick, packedLight, packedOverlay, 0xFF000000 | frousseux.getColor().accent);
+                    partialTick, packedLight, packedOverlay, 0xFF000000 | tint.applyAsInt(frousseux.getColor()));
         }
     }
 
