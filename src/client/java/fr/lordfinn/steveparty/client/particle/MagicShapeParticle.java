@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.particle;
 
 import fr.lordfinn.steveparty.particles.MagicShapeEffect;
+import fr.lordfinn.steveparty.particles.SpellPalette;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.particle.Particle;
@@ -36,7 +37,7 @@ public class MagicShapeParticle extends SpriteBillboardParticle {
         this.sparkle = effect.style() == MagicShapeEffect.SPARKLE;
         setSprite(sprites.getSprite(sparkle ? SPARKLE_SPRITE : random.nextInt(SHAPES), SPRITES - 1));
         int color = effect.color() == MagicShapeEffect.RANDOM_COLOR
-                ? MagicShapeEffect.COLORS[random.nextInt(MagicShapeEffect.COLORS.length)] : effect.color();
+                ? SpellPalette.random(random) : effect.color();
         setColor(((color >> 16) & 0xFF) / 255F, ((color >> 8) & 0xFF) / 255F, (color & 0xFF) / 255F);
         this.baseScale = 0.1F * effect.scale() * (0.8F + random.nextFloat() * 0.4F);
         this.scale = sparkle ? baseScale : baseScale * 0.4F;

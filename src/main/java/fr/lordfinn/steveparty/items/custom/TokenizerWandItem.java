@@ -24,6 +24,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import fr.lordfinn.steveparty.particles.MagicShapeEffect;
+import fr.lordfinn.steveparty.particles.SpellPalette;
 import net.minecraft.util.Arm;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.registry.RegistryKey;
@@ -409,7 +410,7 @@ public class TokenizerWandItem extends Item {
             double y = mob.getY() + mob.getHeight() / 2;
             world.spawnParticles(MagicShapeEffect.shape(1.4F, 0.82F, 0), mob.getX(), y, mob.getZ(),
                     24, 0.25, 0.3, 0.25, 0.25);
-            world.spawnParticles(MagicShapeEffect.sparkle(1.3F, 0.9F, 0, 0xFFFFFF), mob.getX(), y, mob.getZ(),
+            world.spawnParticles(MagicShapeEffect.sparkle(1.3F, 0.9F, 0, SpellPalette.LILAC), mob.getX(), y, mob.getZ(),
                     14, 0.45, 0.5, 0.45, 0.02);
         }
     }
