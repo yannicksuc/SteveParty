@@ -81,7 +81,9 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
         public void render(MatrixStack poseStack, FrousseuxEntity frousseux, BakedGeoModel bakedModel, @Nullable RenderLayer renderType,
                            VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay) {
-            RenderLayer layer = RenderLayer.getEntityCutout(WAX);
+            // see-through wax as the rest, two-sided: from inside the hollow body it closes the top, which hides the
+            // flame (drawn after it) by depth
+            RenderLayer layer = RenderLayer.getEntityTranslucent(WAX);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, packedLight, packedOverlay, 0xFF000000 | frousseux.getColor().accent);
         }
