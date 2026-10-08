@@ -36,6 +36,8 @@ public abstract class TokenVanillaActionsMixin {
     private void steveparty$keepPawnsIntact(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         MobEntity mob = (MobEntity) (Object) this;
         if (!TokenBase.isToken(mob)) return;
+        // An empty hand poses it (TokenPoseInteractMixin), even a pet's
+        if (fr.lordfinn.steveparty.entities.TokenPoses.posesOnClick(mob, player, hand)) return;
         if (steveparty$breaksPawn(mob, player.getStackInHand(hand))) cir.setReturnValue(ActionResult.PASS);
     }
 
