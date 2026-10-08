@@ -22,8 +22,8 @@ import java.util.List;
 
 /**
  * Draws the coloured pawn base ("socle") under the tokens: a small octagonal disc, {@link TokenBase#baseHeight}
- * high, lying on the ground at the entity's feet, world aligned (it ignores the body yaw). Its height and its radius
- * follow the size of the pawn ({@link TokenBase#sizeFactor}).
+ * high, lying on the ground at the entity's feet, world aligned (it ignores the body yaw): the smallest octagon around
+ * the hitbox, always in the same proportions ({@link TokenBase#baseApothem}), so its texture pixels stay square.
  * <p>
  * The texture ({@link #TEXTURE}, 32x16, grayscale) is tinted with the token colour through the vertex colour:
  * left 16x16 = top face (an octagon: lip, light rim, bevel, fill), right half = sides (rows 0-2, top to bottom) and
@@ -36,12 +36,6 @@ public final class TokenBaseRenderer {
     public static final Identifier TEXTURE = Steveparty.id("textures/entity/token_base.png");
     /** Base colour of a token whose name is not coloured. */
     public static final int DEFAULT_COLOR = 0xC8C8C8;
-
-    /** Radius bounds under a pawn of the default size (scaled with the size of the pawn). */
-    private static final float MIN_RADIUS = 0.2F;
-    private static final float MAX_RADIUS = 0.75F;
-    /** Radius of the base relatively to the width of the token. */
-    private static final float RADIUS_PER_WIDTH = 0.55F;
 
     private static final float TEXTURE_WIDTH = 32.0F;
     private static final float TEXTURE_HEIGHT = 16.0F;
@@ -100,10 +94,9 @@ public final class TokenBaseRenderer {
         });
     }
 
-    /** Radius of the base (centre to flat side) under {@code entity}: follows its width, bounds scaled with its size. */
+    /** Radius of the base (centre to flat side) under {@code entity}: around its hitbox. */
     public static float radiusFor(Entity entity) {
-        float factor = TokenBase.sizeFactor(entity.getDimensions(entity.getPose()));
-        return MathHelper.clamp(entity.getWidth() * RADIUS_PER_WIDTH, MIN_RADIUS * factor, MAX_RADIUS * factor);
+        return TokenBase.baseApothem(entity.getWidth());
     }
 
     /**

@@ -4,19 +4,16 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityAttachmentType;
 import net.minecraft.entity.EntityAttachments;
 import net.minecraft.entity.EntityDimensions;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-
-import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.DEFAULT_TOKEN_SIZE;
-import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.MIN_TOKEN_SIZE;
 
 /**
  * Coloured pawn base ("socle") every token stands on.
  * <p>
  * The base is part of the token's physical hitbox: when the dimensions of a tokenized mob are computed
  * ({@code TokenBaseDimensionsMixin}, in {@code Entity#calculateDimensions}) their height is increased by the base
- * height ({@link #baseHeight}), after the scale attribute (squish) is applied. The base follows the size of the pawn:
- * {@link #BASE_HEIGHT} for a pawn of the default size, thinner under a small pawn, thicker under a big one. The feet
+ * height ({@link #baseHeight}), after the scale attribute (squish) is applied. The base follows the width of the
+ * pawn's hitbox, always in the same proportions: the smallest octagon around the hitbox square ({@link #baseApothem}),
+ * {@link #HEIGHT_PER_APOTHEM} as high as it is wide from its centre (the texture's pixels stay square). The feet
  * of the entity (its position) stay on the ground, at the bottom of the base; the mob model is drawn as much higher
  * by the client renderers. The eye height, name tag and passenger attachment points are raised by the same amount.
  * <p>
@@ -24,10 +21,16 @@ import static fr.lordfinn.steveparty.items.custom.TokenizerWandItem.MIN_TOKEN_SI
  * (see {@link #getBodyHeight}), which is what the squish size computations need.
  */
 public final class TokenBase {
-    /** Height of the base under a pawn of the default size, in blocks (3 pixels). */
-    public static final float BASE_HEIGHT = 3.0F / 16.0F;
-    /** The base never gets thinner than one pixel. */
-    public static final float MIN_BASE_HEIGHT = 1.0F / 16.0F;
+    /**
+     * Centre to flat side of the octagon, per block of hitbox width: the smallest octagon (flat sides facing the axes
+     * and the diagonals) holding the hitbox square, corners included (they touch its diagonal sides).
+     */
+    public static final float APOTHEM_PER_WIDTH = (float) (1.0 / Math.sqrt(2.0));
+    /**
+     * Height of the base per block of apothem: the texture's top (16 pixels from flat side to flat side) and its side
+     * strip (3 pixels high) keep square pixels at any size.
+     */
+    public static final float HEIGHT_PER_APOTHEM = 3.0F / 8.0F;
 
     private static final EntityAttachmentType[] ATTACHMENT_TYPES = EntityAttachmentType.values();
 
@@ -44,19 +47,14 @@ public final class TokenBase {
         return entity.getDimensions(entity.getPose()).height();
     }
 
-    /**
-     * How big the base is compared to the base of a pawn of the default size: the pawn's size (the biggest dimension
-     * of its body, like the size chosen with the wand) over the default size, no smaller than the wand's smallest.
-     */
-    public static float sizeFactor(EntityDimensions body) {
-        float size = Math.max(body.width(), body.height());
-        if (!(size > 0) || !Float.isFinite(size)) return 1.0F;
-        return Math.max(size, MIN_TOKEN_SIZE) / DEFAULT_TOKEN_SIZE;
+    /** Centre to flat side of the base under a hitbox {@code width} blocks wide, in blocks. */
+    public static float baseApothem(float width) {
+        return Float.isFinite(width) && width > 0 ? width * APOTHEM_PER_WIDTH : 0.0F;
     }
 
     /** Height of the base under a body of these dimensions, in blocks. */
     public static float baseHeight(EntityDimensions body) {
-        return Math.max(MIN_BASE_HEIGHT, BASE_HEIGHT * sizeFactor(body));
+        return baseApothem(body.width()) * HEIGHT_PER_APOTHEM;
     }
 
     /** Height of the base {@code entity} stands on (whether it is a token or not). */

@@ -13,13 +13,13 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 
-/** Tokens stand on a base: their hitbox is {@link TokenBase#BASE_HEIGHT} higher, feet on the ground. */
+/** Tokens stand on a base: their hitbox is {@link TokenBase#baseHeight} higher, feet on the ground. */
 public class TokenBaseGameTests implements FabricGameTest {
     private static final float EPSILON = 1.0E-4F;
     private static final float PIG_HEIGHT = EntityType.PIG.getDimensions().height();
     private static final float PIG_EYE_HEIGHT = EntityType.PIG.getDimensions().eyeHeight();
-    /** Base under a pig token of its natural size (0.9 block): a bit thinner than under a 1-block pawn. */
-    private static final float PIG_BASE = TokenBase.BASE_HEIGHT * Math.max(EntityType.PIG.getDimensions().width(), PIG_HEIGHT);
+    /** Base under a pig token of its natural size: the octagon around its 0.9 block wide hitbox, 3/8 as high. */
+    private static final float PIG_BASE = EntityType.PIG.getDimensions().width() / (float) Math.sqrt(2) * 3 / 8;
 
     private static void assertClose(TestContext context, double actual, double expected, String message) {
         context.assertTrue(Math.abs(actual - expected) < EPSILON, message + ": expected " + expected + ", got " + actual);
@@ -71,8 +71,8 @@ public class TokenBaseGameTests implements FabricGameTest {
             assertClose(context, TokenBase.getBodyHeight(half), PIG_HEIGHT * 0.5F, "scaled body");
             assertClose(context, half.getHeight(), PIG_HEIGHT * 0.5F + PIG_BASE * 0.5F, "half the pawn, half the base");
             assertClose(context, big.getHeight(), PIG_HEIGHT * 2.0F + PIG_BASE * 2.0F, "twice the pawn, twice the base");
-            assertClose(context, tiny.getHeight() - TokenBase.getBodyHeight(tiny), TokenBase.MIN_BASE_HEIGHT,
-                    "a tiny pawn still stands on a one-pixel base");
+            assertClose(context, tiny.getHeight() - TokenBase.getBodyHeight(tiny), PIG_BASE * 0.1F,
+                    "a tiny pawn, a tiny base (same proportions)");
             assertClose(context, big.getBoundingBox().minY, big.getY(), "feet on the ground");
             context.complete();
         });
@@ -113,6 +113,24 @@ public class TokenBaseGameTests implements FabricGameTest {
         assertClose(context, reloaded.getHeight(), PIG_HEIGHT, "reloaded regular height");
         assertClose(context, reloaded.getBoundingBox().getLengthY(), PIG_HEIGHT, "reloaded regular hitbox");
         reloaded.discard();
+        context.complete();
+    }
+
+    /**
+     * The base holds the whole hitbox (its square, corners included, inside the octagon) and keeps its proportions
+     * (height over apothem) at every size.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theBaseHoldsTheHitboxInTheSameProportions(TestContext context) {
+        for (float width : new float[]{0.1F, 0.6F, 0.9F, 1.4F, 4.5F, 9.75F}) {
+            float apothem = TokenBase.baseApothem(width);
+            float half = width / 2;
+            // The square's corner (half, half) against the octagon's diagonal side: (x + z) / sqrt(2) <= apothem
+            context.assertTrue((half + half) / Math.sqrt(2) <= apothem + EPSILON, "corner inside, width " + width);
+            context.assertTrue(half <= apothem, "side inside, width " + width);
+            float height = TokenBase.baseHeight(net.minecraft.entity.EntityDimensions.fixed(width, 1.0F));
+            assertClose(context, height / apothem, 3.0 / 8.0, "same proportions, width " + width);
+        }
         context.complete();
     }
 }
