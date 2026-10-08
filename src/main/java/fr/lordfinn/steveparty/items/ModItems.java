@@ -109,6 +109,10 @@ public class ModItems {
             fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.MOSSY, 0x7A5A3A, 0x5E8E38);
     public static final Item FROSTY_GLANDOUILLE_SPAWN_EGG = glandouilleEgg("frosty_glandouille_spawn_egg",
             fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.FROSTY, 0xA8BCD8, 0xF4F8FF);
+    /** The Frousseux's egg: a colour drawn at random, as a wild one's. */
+    public static final Item FROUSSEUX_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("frousseux_spawn_egg"),
+            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.FROUSSEUX, 0xFFF3D6, 0xFFAA3C,
+                    new Item.Settings()));
     public static final Item[] GLANDOUILLE_SPAWN_EGGS = {GLANDOUILLE_SPAWN_EGG, YOUNG_GLANDOUILLE_SPAWN_EGG,
             MOSSY_GLANDOUILLE_SPAWN_EGG, FROSTY_GLANDOUILLE_SPAWN_EGG};
     public static final Item BLUE_STAR_FRAGMENT = register(Item.class, "blue_star_fragment");
@@ -395,6 +399,7 @@ public class ModItems {
             itemGroup.add(MULA_SPAWN_EGG);
             itemGroup.add(BOXED_TRADER_SPAWN_EGG);
             for (Item egg : GLANDOUILLE_SPAWN_EGGS) itemGroup.add(egg);
+            itemGroup.add(FROUSSEUX_SPAWN_EGG);
             itemGroup.add(ACORN);
             itemGroup.add(ACORN_HAT);
             // The 16 colours, in dye order: the blocks, then the fragments

@@ -111,6 +111,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.service.PartyStars.initialize();
         fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns.initialize();
         fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers.initialize();
+        fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxSpawns.initialize();
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             for (ServerPlayerEntity player : world.getPlayers()) {

@@ -108,6 +108,16 @@ public class ModSounds {
     public static final SoundEvent GLANDOUILLE_CHARGE = register("glandouille.charge");
     /** Stunned, dizzy against a wall. */
     public static final SoundEvent GLANDOUILLE_DIZZY = register("glandouille.dizzy");
+    // Frousseux (Wickling): vanilla sounds for now (assets/steveparty/sounds.json), a home-made recording later
+    public static final SoundEvent FROUSSEUX_AMBIENT = register("frousseux.ambient");
+    public static final SoundEvent FROUSSEUX_HURT = register("frousseux.hurt");
+    public static final SoundEvent FROUSSEUX_DEATH = register("frousseux.death");
+    /** Its little laugh, slipping away from a blow. */
+    public static final SoundEvent FROUSSEUX_LAUGH = register("frousseux.laugh");
+    /** Its flame relit with flint and steel. */
+    public static final SoundEvent FROUSSEUX_RELIGHT = register("frousseux.relight");
+    /** Its flame blown out by a wind charge: "pfff". */
+    public static final SoundEvent FROUSSEUX_BLOWN_OUT = register("frousseux.blown_out");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

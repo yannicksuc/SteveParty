@@ -115,8 +115,7 @@ public class SimpleFlyingMoveControl extends MoveControl {
                 // Blocked just ahead: stop going sideways, gently rise if falling into it
                 BlockPos nextBlockpos = BlockPos.ofFloored(entity.getX() + dx * speed, entity.getY() + dy * speed,
                         entity.getZ() + dz * speed);
-                BlockState nextBlockstate = entity.getWorld().getBlockState(nextBlockpos);
-                if (!nextBlockstate.canPathfindThrough(NavigationType.AIR)) {
+                if (blockedAhead(nextBlockpos)) {
                     dx = dz = 0;
                     if (v.y < 0) dy = 0.1;
                 }
@@ -154,6 +153,12 @@ public class SimpleFlyingMoveControl extends MoveControl {
                 entity.setVelocity(vx, vy, vz);
             }
         }
+    }
+
+    /** A block it can't fly into lies just ahead (a ghost passing through walls says no: its route was checked). */
+    protected boolean blockedAhead(BlockPos pos) {
+        BlockState state = entity.getWorld().getBlockState(pos);
+        return !state.canPathfindThrough(NavigationType.AIR);
     }
 
     /** Heading for the end of its path (or for a lone target): the only point it must slow down at. */
