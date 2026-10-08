@@ -18,6 +18,7 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Which board space a ray is on, the way the player sees it rather than by its hitbox: the Tile Linker Brush and the
@@ -34,6 +35,8 @@ import java.util.Set;
  * lingering on one spot of a surface where there is no board space (see {@link Blob}).
  */
 public final class BrushAim {
+    /** No other holder nor target: only board spaces, routers and ghosts are aimed at (the Wrench, the helmet). */
+    private static final Predicate<BlockPos> BOARD_ONLY = pos -> false;
     /** Board spaces can be aimed at this far away. */
     public static final double REACH = WrenchActions.LONG_REACH;
     /** What is drawn of a board space reaches at least this high in its cell... */
@@ -71,6 +74,16 @@ public final class BrushAim {
         return along(world, entity, entity.getEyePos(), direction(pitch, yaw), ghosts);
     }
 
+    /** The holder, ghost or target ({@code targets}: see {@link BrushLinks#aims}) {@code entity} would look at with this rotation, or null. */
+    public static @Nullable BlockPos aimed(Entity entity, World world, float pitch, float yaw, Set<BlockPos> ghosts, Predicate<BlockPos> targets) {
+        return along(world, entity, entity.getEyePos(), direction(pitch, yaw), ghosts, targets);
+    }
+
+    /** The holder, ghost or target {@code entity} looks at (its eyes, its look), or null. */
+    public static @Nullable BlockPos aimed(Entity entity, World world, float tickDelta, Set<BlockPos> ghosts, Predicate<BlockPos> targets) {
+        return along(world, entity, entity.getCameraPosVec(tickDelta), entity.getRotationVec(tickDelta), ghosts, targets);
+    }
+
     /** The ghosts of the brush held by {@code entity} at {@code level}: its dangling links within reach, see {@link BoardLinks#dangling}. */
     public static java.util.Map<BlockPos, java.util.List<BlockPos>> ghosts(Entity entity, World world, int level) {
         return BoardLinks.dangling(world, entity.getEyePos(), REACH, level);
@@ -90,12 +103,23 @@ public final class BrushAim {
 
     /** The board space or ghost on the ray from {@code eye} toward {@code direction}, or null. */
     public static @Nullable BlockPos along(World world, Entity entity, Vec3d eye, Vec3d direction, Set<BlockPos> ghosts) {
+        return along(world, entity, eye, direction, ghosts, BOARD_ONLY);
+    }
+
+    /**
+     * The board space, ghost or other holder of a cartridge (see {@link BrushLinks}) on the ray, or the block it hits
+     * if {@code targets} takes it (what the last holder of the stroke links: a chest, a stall...), or null.
+     */
+    public static @Nullable BlockPos along(World world, Entity entity, Vec3d eye, Vec3d direction, Set<BlockPos> ghosts,
+                                           Predicate<BlockPos> targets) {
         Vec3d end = eye.add(direction.normalize().multiply(REACH));
         HitResult hit = world.raycast(new RaycastContext(eye, end, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, entity));
         hit = BoardSpaces.preferTile(world, eye, end, hit);
         if (hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK) {
             BlockPos pos = BoardSpaces.resolve(world, blockHit.getBlockPos());
             if (BoardLinks.container(world, pos) != null) return pos;
+            // The brush's stroke: any holder of a cartridge, and what the last one links
+            if (targets != BOARD_ONLY && (BrushLinks.isHolder(world, pos) || targets.test(pos))) return pos;
         }
         // The visual pass, up to (a little past) what the ray hit
         Vec3d until = hit.getType() == HitResult.Type.MISS ? end

@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -203,7 +204,8 @@ public final class TileLinkerBrush {
         for (int i = 1; i <= steps; i++) {
             float t = (float) i / steps;
             pos = BrushAim.aimed(player, world, MathHelper.lerp(t, fromPitch, pitch),
-                    fromYaw + MathHelper.wrapDegrees(yaw - fromYaw) * t, stroke.ghosts);
+                    fromYaw + MathHelper.wrapDegrees(yaw - fromYaw) * t, stroke.ghosts,
+                    target -> BrushLinks.aims(world, stroke.last, level(brush), target));
             if (pos == null || pos.equals(last)) continue;
             last = pos;
             paint(player, brush, world, pos);
@@ -211,7 +213,11 @@ public final class TileLinkerBrush {
         return pos;
     }
 
-    /** The stroke of {@code player} reaches the board space (or router) at {@code pos}. */
+    /**
+     * The stroke of {@code player} reaches the block at {@code pos}: a holder (a block holding a cartridge, see
+     * {@link BrushLinks}) is linked from the previous one of the stroke and the stroke goes on from it; anything else
+     * (a ghost, a chest, a stall, a switchable block...) is only a target of the previous holder.
+     */
     public static void paint(ServerPlayerEntity player, ItemStack brush, ServerWorld world, BlockPos pos) {
         Stroke stroke = STROKES.computeIfAbsent(player.getUuid(), uuid -> {
             Stroke started = new Stroke();
@@ -219,63 +225,72 @@ public final class TileLinkerBrush {
             return started;
         });
         if (pos.equals(stroke.last)) return;
-        if (BoardLinks.container(world, pos) == null) {
-            // A ghost: only a target, the stroke goes on from the last board space
-            eraseGhost(player, brush, world, stroke, pos);
+        if (!BrushLinks.isHolder(world, pos)) {
+            target(player, brush, world, stroke, pos);
             return;
         }
         BlockPos from = stroke.last;
         stroke.last = pos.toImmutable();
-        CartridgeContainerBlockEntity origin = from == null ? null : BoardLinks.container(world, from);
         CartridgeContainerBlockEntity target = BoardLinks.container(world, pos);
         // A kind of Cartridge picked on the wheel: the painted board space gets one (links kept)
         if (target instanceof BoardSpaceBlockEntity && cartridge(brush) != null) {
             WrenchActions.swapCartridge(player, world, pos, target, BoardLinks.slotOf(target, level(brush)), true);
         }
-        if (origin == null || target == null) {
-            // The first tile of a stroke: only the brush touching it (nothing selected, nothing said)
-            if (target != null) setAnchor(brush, world, pos);
+        BrushLinks.Held origin = from == null ? null : BrushLinks.holder(world, from, level(brush));
+        if (origin == null) {
+            // The first holder of a stroke: only the brush touching it (nothing selected, nothing said)
+            setAnchor(brush, world, pos);
             world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS, 0.5f, 1.2f);
             return;
         }
         WrenchActions.recorded(player, world, brush, () -> {
             setAnchor(brush, world, pos);
-            link(player, brush, world, from, origin, pos, target);
+            link(player, brush, world, from, pos);
         });
     }
 
-    private static void link(ServerPlayerEntity player, ItemStack brush, ServerWorld world, BlockPos from,
-                             CartridgeContainerBlockEntity origin, BlockPos to, CartridgeContainerBlockEntity target) {
-        int level = level(brush);
-        int slot = BoardLinks.slotOf(origin, level);
-        // Over a link again the same way: erased (the other way, the way back is added: both are kept)
-        if (BoardLinks.links(origin, slot).contains(to)) {
-            WrenchActions.removeLink(player, world, origin, slot, to);
-            erased(player, world, from, to);
+    /** From the holder {@code from} to the holder {@code to}: its link erased if there is one, else added if it can be. */
+    private static void link(ServerPlayerEntity player, ItemStack brush, ServerWorld world, BlockPos from, BlockPos to) {
+        List<BrushLinkable> kinds = BrushLinks.of(world, from, level(brush));
+        BrushLinkable kind = BrushLinks.kindFor(kinds, world, to);
+        if (kind == null) {
+            // A holder linked to nothing of the kind: a router, a Hop Switch...
+            boolean board = kinds.stream().anyMatch(k -> k instanceof CartridgeLinks.BoardPaths);
+            WrenchActions.warn(player, Text.translatable(board ? "message.steveparty.tile_linker_brush.not_board_space"
+                    : "message.steveparty.tile_linker_brush.not_target", BoardText.pos(to)));
             return;
         }
-        if (!(target instanceof BoardSpaceBlockEntity)) {
-            WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.not_board_space"));
-            return;
-        }
-        if (WrenchActions.addLink(player, world, from, origin, slot, to)) {
-            say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(from), BoardText.pos(to)));
-            world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.45f, 1.2f);
-        }
+        toggle(player, world, from, kind, to);
     }
 
-    /** A ghost reached: the link to it from the last board space of the stroke is erased (not one it just blobbed or erased). */
-    private static void eraseGhost(ServerPlayerEntity player, ItemStack brush, ServerWorld world, Stroke stroke, BlockPos ghost) {
+    /**
+     * Something not holding a cartridge reached (a ghost, a chest, a stall...): a target of the last holder of the
+     * stroke, linked or unlinked once per stroke; the stroke goes on from that holder.
+     */
+    private static void target(ServerPlayerEntity player, ItemStack brush, ServerWorld world, Stroke stroke, BlockPos pos) {
         BlockPos from = stroke.last;
-        CartridgeContainerBlockEntity origin = from == null ? null : BoardLinks.container(world, from);
-        if (origin == null || stroke.cells.contains(ghost)) return;
-        int slot = BoardLinks.slotOf(origin, level(brush));
-        if (!BoardLinks.links(origin, slot).contains(ghost)) return;
-        stroke.cells.add(ghost);
-        WrenchActions.recorded(player, world, brush, () -> {
-            WrenchActions.removeLink(player, world, origin, slot, ghost);
-            erased(player, world, from, ghost);
-        });
+        if (from == null || stroke.cells.contains(pos)) return;
+        BrushLinkable kind = BrushLinks.kindFor(BrushLinks.of(world, from, level(brush)), world, pos);
+        // A ghost is only erased (a blob plans a cell, see blob)
+        if (kind == null || (kind instanceof CartridgeLinks.BoardPaths && !kind.linked(world, pos))) return;
+        stroke.cells.add(pos.toImmutable());
+        WrenchActions.recorded(player, world, brush, () -> toggle(player, world, from, kind, pos));
+    }
+
+    /** {@code target} linked from the holder at {@code from} (the kind {@code kind} of its links), or unlinked if it was. */
+    static void toggle(ServerPlayerEntity player, ServerWorld world, BlockPos from, BrushLinkable kind, BlockPos target) {
+        BrushLinks.Held held = BrushLinks.holder(world, from, POWERED);
+        if (held != null && !held.canEdit(player)) {
+            cannotEdit(player, from);
+            return;
+        }
+        if (kind.linked(world, target)) kind.unlink(player, world, target);
+        else kind.link(player, world, target);
+    }
+
+    /** The player may not change the holder at {@code pos} (adventure mode, protected area, a party running...). */
+    static void cannotEdit(ServerPlayerEntity player, BlockPos pos) {
+        WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.cannot_edit", BoardText.pos(pos)));
     }
 
     /** A blob made on {@code surface}: the last board space of the stroke is linked to its cell. */
@@ -294,7 +309,7 @@ public final class TileLinkerBrush {
         });
     }
 
-    private static void erased(ServerPlayerEntity player, ServerWorld world, BlockPos from, BlockPos to) {
+    static void erased(ServerPlayerEntity player, ServerWorld world, BlockPos from, BlockPos to) {
         say(player, Text.translatable("message.steveparty.tile_linker_brush.erased", BoardText.pos(from), BoardText.pos(to)));
         world.playSound(null, player.getBlockPos(), ModSounds.CANCEL_SOUND_EVENT, SoundCategory.PLAYERS, 0.6f, 1f);
     }

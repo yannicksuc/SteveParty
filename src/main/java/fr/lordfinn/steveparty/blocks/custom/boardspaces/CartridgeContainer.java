@@ -62,8 +62,8 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         if (mainHandStack.isEmpty() && offHandStack.isEmpty()) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         // The Wrench opens board spaces and routers, or swaps their cartridge for the off hand one (see WrenchActions)
         if (mainHandStack.getItem() instanceof WrenchItem && isLinkedWithWrench()) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
-        // The Tile Linker Brush paints links over them
-        if (mainHandStack.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem && isLinkedWithWrench()) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        // The Tile Linker Brush paints links over every holder of a cartridge (see BrushLinks)
+        if (mainHandStack.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // A Wrench in the off hand lets the main hand item act
         boolean offHandOpener = offHandStack.getItem() instanceof CartridgeContainerOpener
                 && (mainHandStack.isEmpty() || !(offHandStack.getItem() instanceof WrenchItem));
