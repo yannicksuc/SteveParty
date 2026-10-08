@@ -47,6 +47,8 @@ public final class ToolWheel {
     private static final double HALF_GAP = 1.0;
     /** How much a hovered sector grows outward (pixels). */
     private static final int HOVER_GROW = 3;
+    /** The drop shadow under a wheel set on a panel: its offset (pixels, down right) and colour. */
+    private static final int SHADOW_OFFSET = 3, SHADOW = 0x55000000;
 
     private static final int GOLD_OUTLINE = 0xFF5B2E00, GOLD_LIGHT = 0xFFFFF87E, GOLD = 0xFFFFD83D;
 
@@ -295,7 +297,7 @@ public final class ToolWheel {
     }
 
     /** The hovered sector: an arc and its index, or the hub ({@code arc} null). */
-    private record Hover(@Nullable Arc arc, int index) {
+    public record Hover(@Nullable Arc arc, int index) {
     }
 
     private static @Nullable Sector hovered() {
@@ -306,8 +308,16 @@ public final class ToolWheel {
 
     private static @Nullable Hover hover() {
         Layout layout = ToolWheel.layout;
-        if (layout == null || layout.rings().isEmpty()) return null;
-        double length = Math.sqrt(cursorX * cursorX + cursorY * cursorY);
+        return layout == null ? null : hoverAt(layout, cursorX, cursorY);
+    }
+
+    /**
+     * The sector of {@code layout} at ({@code x}, {@code y}) from its centre (unscaled GUI pixels): the hub (if it has
+     * a sector), else the nearest ring's sector in that direction, however far.
+     */
+    public static @Nullable Hover hoverAt(Layout layout, double x, double y) {
+        if (layout.rings().isEmpty()) return null;
+        double length = Math.sqrt(x * x + y * y);
         // The hub: its own sector (back...), or nothing
         if (length < hubRadius(layout)) return layout.hub() != null ? new Hover(null, 0) : null;
         // The ring the cursor is over (between two rings: the nearer)
@@ -321,7 +331,7 @@ public final class ToolWheel {
                 ring = i;
             }
         }
-        float angle = (float) Math.toDegrees(Math.atan2(cursorX, -cursorY));
+        float angle = (float) Math.toDegrees(Math.atan2(x, -y));
         for (Arc arc : layout.arcs()) {
             if (arc.ring() != ring || arc.sectors().isEmpty()) continue;
             float span = arc.to() - arc.from();
@@ -331,6 +341,11 @@ public final class ToolWheel {
             return new Hover(arc, index);
         }
         return null;
+    }
+
+    /** How far from the centre a hovered plate reaches (unscaled GUI pixels): its ring's outside, grown. */
+    public static float reach(Layout layout) {
+        return outerRadius(layout) + HOVER_GROW;
     }
 
     // ---------------------------------------------------------------- drawing
@@ -348,11 +363,8 @@ public final class ToolWheel {
         boolean cta = onboarding && layout.featured() != null;
         boolean blink = cta && client.world != null && (client.world.getTime() / 8) % 2 == 0;
 
-        // The plates, pixel by pixel (cached: drawn again only when something shown changes)
-        for (WheelRaster.Run run : WheelRaster.runs(layout, hover == null ? null : hover.arc(), hover == null ? -1 : hover.index(),
-                hover != null && hover.arc() == null, fit, cta, blink)) {
-            context.fill(cx + run.x0(), cy + run.y(), cx + run.x1(), cy + run.y() + 1, run.color());
-        }
+        drawPlates(context, layout, cx, cy, hover == null ? null : hover.arc(), hover == null ? -1 : hover.index(),
+                hover != null && hover.arc() == null, fit, cta, blink, false);
 
         // Icons
         for (Arc arc : layout.arcs()) {
@@ -403,6 +415,26 @@ public final class ToolWheel {
             context.getMatrices().translate(0, 0, 600);
             context.drawOrderedTooltip(client.textRenderer, lines, tipX, tipY);
             context.getMatrices().pop();
+        }
+    }
+
+    /**
+     * The wheel's plates centred on ({@code cx}, {@code cy}), pixel by pixel (cached: rasterised again only when
+     * something shown changes): the hovered one grown outward and lighter, the hub lighter when hovered. Every wheel
+     * draws its plates through here (the tool wheels, the hammer's refill); {@code shadow} lays the wheel on a drop
+     * shadow, down right, for a wheel set on a panel.
+     */
+    public static void drawPlates(DrawContext context, Layout layout, int cx, int cy, @Nullable Arc hoverArc, int hoverIndex,
+                                  boolean hubHovered, float fit, boolean cta, boolean blink, boolean shadow) {
+        List<WheelRaster.Run> runs = WheelRaster.runs(layout, hoverArc, hoverIndex, hubHovered, fit, cta, blink);
+        if (shadow) {
+            for (WheelRaster.Run run : runs) {
+                context.fill(cx + run.x0() + SHADOW_OFFSET, cy + run.y() + SHADOW_OFFSET, cx + run.x1() + SHADOW_OFFSET,
+                        cy + run.y() + 1 + SHADOW_OFFSET, SHADOW);
+            }
+        }
+        for (WheelRaster.Run run : runs) {
+            context.fill(cx + run.x0(), cy + run.y(), cx + run.x1(), cy + run.y() + 1, run.color());
         }
     }
 

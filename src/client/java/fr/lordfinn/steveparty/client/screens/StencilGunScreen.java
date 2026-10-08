@@ -9,12 +9,15 @@ import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilGunScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -105,14 +108,25 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         int w = StencilGunScreenHandler.WIDTH, h = StencilGunScreenHandler.HEIGHT;
         // The hammer's panel in its wood, as the top part of the mod's block screens
         panel(context, x, y, w, StencilGunScreenHandler.TOP_HEIGHT);
-        boolean hub = hub(mouseX, mouseY);
-        for (ToolWheel.WheelRaster.Run run : ToolWheel.WheelRaster.runs(WHEEL, null, -1, hub, 1f, false, false)) {
-            context.fill(cx + run.x0(), cy + run.y(), cx + run.x1(), cy + run.y() + 1, run.color());
-        }
-        // Its slots sunk into the wood, as the block screens' slots in their panel's colour
+        // The plates as the tool wheels draw theirs, on a drop shadow: the one under the mouse grown and lighter
+        ToolWheel.Hover hover = plateAt(mouseX, mouseY);
+        ToolWheel.drawPlates(context, WHEEL, cx, cy, hover == null ? null : hover.arc(), hover == null ? -1 : hover.index(),
+                hub(mouseX, mouseY), 1f, false, false, true);
+        // Its slots sunk into the wood, as the block screens' slots in their panel's colour (riding their plate out),
+        // an empty one showing the see-through silhouette of what it takes
+        Sprite[] silhouettes = new Sprite[2];
         for (int i = 0; i < StencilGunItem.SIZE; i++) {
             Slot slot = handler.slots.get(i);
             ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, THEME.slot(), THEME.rim(), THEME.rim());
+            if (slot.hasStack() || !(slot instanceof StencilGunScreenHandler.FilteredSlot filtered) || client == null) continue;
+            int kind = filtered.takesStencils() ? 1 : 0;
+            if (silhouettes[kind] == null) {
+                silhouettes[kind] = client.getSpriteAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE).apply(filtered.silhouette());
+            }
+            // Blended here: each fill above leaves blending off
+            RenderSystem.enableBlend();
+            context.drawSprite(x + slot.x, y + slot.y, 0, 16, 16, silhouettes[kind]);
+            RenderSystem.disableBlend();
         }
         // The player's inventory under it: the panel every block screen of the mod has, its tab under the wood
         RenderSystem.enableBlend();
@@ -150,6 +164,16 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
 
     private void title(DrawContext context, Text text, int centerX, int y) {
         context.drawText(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, 0xFFFFFFFF, true);
+    }
+
+    /** The slot plate under the mouse (not the titles' nor the hub), or null. */
+    private ToolWheel.@Nullable Hover plateAt(double mouseX, double mouseY) {
+        double dx = mouseX - (x + StencilGunScreenHandler.CENTER_X), dy = mouseY - (y + StencilGunScreenHandler.CENTER_Y);
+        double length = Math.sqrt(dx * dx + dy * dy);
+        if (length < StencilGunScreenHandler.RING_INNER || length >= ToolWheel.reach(WHEEL)) return null;
+        ToolWheel.Hover hover = ToolWheel.hoverAt(WHEEL, dx, dy);
+        // The first two arcs are the titles' (see layout)
+        return hover == null || hover.arc() == null || WHEEL.arcs().indexOf(hover.arc()) < 2 ? null : hover;
     }
 
     private boolean hub(double mouseX, double mouseY) {
