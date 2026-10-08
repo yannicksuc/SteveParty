@@ -1174,6 +1174,10 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
+        // Its own NoAI, not the "riding, so not thinking" of isAiDisabled: saved in a tower or in hand, it would wake up
+        // with no AI at all, frozen in the air once let go
+        if (!super.isAiDisabled()) nbt.remove("NoAI");
+        nbt.putBoolean("OwnNoAI", true);
         nbt.putInt("Variant", getVariant().ordinal());
         nbt.putBoolean("Hat", hasHat() || hatPopTicks > 0);
         nbt.putInt("Stomps", stomps);
@@ -1188,6 +1192,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
+        // Saved by an older version (it has its own data, not the OwnNoAI mark) in a tower or in hand, its NoAI was the
+        // riding one: it thinks (and falls) again. A NoAI given by a command (no saved data of its own) stays.
+        if (nbt.contains("Stomps") && !nbt.contains("OwnNoAI") && !boardActor) setAiDisabled(false);
         // Saved floating by an older version (a flight cut short): it falls again
         if (!boardActor && getMood() != Mood.FLYING) setNoGravity(false);
         if (nbt.contains("Variant")) {
