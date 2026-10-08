@@ -1345,7 +1345,7 @@
   "gui.steveparty.telescope.hint.wheel": "Molette : remonter les nuits (%s à rejouer)",
   "gui.steveparty.telescope.hint.leave": "S'accroupir : quitter le télescope",
   "tooltip.steveparty.token.summon": "Utiliser sur un bloc pour l'invoquer.",
-  "message.steveparty.token.captured": "Le pion a été rangé dans l'item Pion !",
+  "message.steveparty.token.captured": "Le pion a été rangé dans l'item de Pion !",
   "message.steveparty.token.summoned": "Le pion a été invoqué !",
   "message.steveparty.token.summoned_on_trader": "Le mob a été invoqué sur le marchand !",
   "message.steveparty.token.captured_from_trader": "Le mob a été repris au marchand !",
