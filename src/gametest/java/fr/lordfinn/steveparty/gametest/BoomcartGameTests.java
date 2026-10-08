@@ -4,15 +4,20 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartFuse;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DetectorRailBlock;
 import net.minecraft.block.RailBlock;
 import net.minecraft.block.enums.RailShape;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.FireworkExplosionComponent;
+import net.minecraft.component.type.FireworksComponent;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
@@ -20,14 +25,17 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
  * The Boomcart: the hot potato's rules (lit, passed on with shorter and shorter extensions, never twice in a row by
  * the same player, retargeted at someone else), its loads (swapped, the other one given back), its blast by load (TNT
- * breaks blocks unless mobGriefing is off; a firework breaks none and hurts nobody, it shoves), and the rails (it
+ * breaks blocks unless mobGriefing is off; a firework breaks none and hurts nobody, it shoves, its show is its
+ * rocket's own stars or a default one for a plain rocket, and the rocket is saved with it), and the rails (it
  * follows a curve, a detector rail sees it).
  */
 public class BoomcartGameTests implements FabricGameTest {
@@ -163,6 +171,68 @@ public class BoomcartGameTests implements FabricGameTest {
             }
             context.complete();
         });
+    }
+
+    /** A rocket with two stars of its own, flight 2. */
+    private static ItemStack starRocket() {
+        ItemStack rocket = new ItemStack(Items.FIREWORK_ROCKET);
+        rocket.set(DataComponentTypes.FIREWORKS, new FireworksComponent(2, List.of(
+                new FireworkExplosionComponent(FireworkExplosionComponent.Type.CREEPER, IntList.of(0xE02020),
+                        IntList.of(0x2040E0), true, false),
+                new FireworkExplosionComponent(FireworkExplosionComponent.Type.BURST, IntList.of(0x20E040, 0xFFFFFF),
+                        IntList.of(), false, true))));
+        return rocket;
+    }
+
+    /**
+     * Its show is its rocket's own: every star (shape, colours, fade, trail, twinkle); a plain rocket (flight only)
+     * gets the default ball and star. Neither breaks a block nor hurts anyone, a survival player standing by included.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void fireworkShowIsTheRocketsOwn(TestContext context) {
+        floor(context);
+        ItemStack stars = starRocket();
+        BoomcartEntity custom = context.spawnEntity(ModEntities.BOOMCART, new BlockPos(2, 1, 2));
+        custom.setLoad(stars);
+        ItemStack plainRocket = new ItemStack(Items.FIREWORK_ROCKET);
+        plainRocket.set(DataComponentTypes.FIREWORKS, new FireworksComponent(3, List.of()));
+        BoomcartEntity plain = context.spawnEntity(ModEntities.BOOMCART, new BlockPos(5, 1, 5));
+        plain.setLoad(plainRocket);
+        ServerPlayerEntity player = player(context, new BlockPos(3, 1, 3), Hand.MAIN_HAND, ItemStack.EMPTY);
+        player.changeGameMode(GameMode.SURVIVAL);
+        PigEntity pig = context.spawnMob(EntityType.PIG, new BlockPos(4, 1, 4));
+        float playerHealth = player.getHealth(), pigHealth = pig.getHealth();
+        custom.explode(context.getWorld());
+        plain.explode(context.getWorld());
+        context.assertEquals(custom.shownBurst(), stars.get(DataComponentTypes.FIREWORKS).explosions(),
+                "the rocket's own stars");
+        context.assertEquals(plain.shownBurst(), BoomcartEntity.DEFAULT_BURST, "a plain rocket: the default show");
+        context.waitAndRun(5, () -> {
+            context.assertEquals(player.getHealth(), playerHealth, "the player isn't hurt");
+            context.assertEquals(pig.getHealth(), pigHealth, "the pig isn't hurt");
+            for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) {
+                context.assertTrue(context.getBlockState(new BlockPos(x, 0, z)).isOf(Blocks.STONE), "floor intact");
+            }
+            remove(context, player);
+            context.complete();
+        });
+    }
+
+    /** Saved and loaded again, it still carries the same rocket, its stars included. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aSavedBoomcartKeepsItsRockets(TestContext context) {
+        ItemStack stars = starRocket();
+        BoomcartEntity boomcart = context.spawnEntity(ModEntities.BOOMCART, new BlockPos(3, 1, 3));
+        boomcart.setLoad(stars);
+        NbtCompound nbt = new NbtCompound();
+        boomcart.writeNbt(nbt);
+        BoomcartEntity reloaded = ModEntities.BOOMCART.create(context.getWorld());
+        context.assertTrue(reloaded != null, "a new Boomcart");
+        reloaded.readNbt(nbt);
+        context.assertTrue(ItemStack.areItemsAndComponentsEqual(reloaded.getLoad(), stars),
+                "the same rocket: " + reloaded.getLoad().getComponents());
+        boomcart.discard();
+        context.complete();
     }
 
     // ---------------------------------------------------------------- rails
