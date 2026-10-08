@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
+import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
@@ -118,8 +119,7 @@ public final class HudPaint {
 
     /** Forgets every painted picture (painted again when needed). */
     static void clear() {
-        var manager = MinecraftClient.getInstance().getTextureManager();
-        for (Tex tex : TEXTURES.values()) manager.destroyTexture(tex.id());
+        for (Tex tex : TEXTURES.values()) ClientTextures.destroy(tex.id());
         TEXTURES.clear();
     }
 

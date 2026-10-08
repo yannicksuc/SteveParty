@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.minigame;
 
+import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud;
@@ -73,7 +74,7 @@ public final class MiniGamePageClient {
         @Override
         protected boolean removeEldestEntry(Map.Entry<TextureKey, Identifier> eldest) {
             if (size() <= MAX_TEXTURES) return false;
-            MinecraftClient.getInstance().getTextureManager().destroyTexture(eldest.getValue());
+            ClientTextures.destroy(eldest.getValue());
             return true;
         }
     };
@@ -127,7 +128,7 @@ public final class MiniGamePageClient {
         ASKED_IMAGES.clear();
         INCOMING.clear();
         IMAGES.clear();
-        TEXTURES.values().forEach(texture -> MinecraftClient.getInstance().getTextureManager().destroyTexture(texture));
+        TEXTURES.values().forEach(texture -> ClientTextures.destroy(texture));
         TEXTURES.clear();
         MiniGameCardHud.clear();
         MiniGameResultsHud.clear();

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
+import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
@@ -80,7 +81,7 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
         @Override
         protected boolean removeEldestEntry(Map.Entry<Key, Identifier> eldest) {
             if (size() <= MAX_CACHED) return false;
-            MinecraftClient.getInstance().getTextureManager().destroyTexture(eldest.getValue());
+            ClientTextures.destroy(eldest.getValue());
             return true;
         }
     };
@@ -165,7 +166,7 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
 
             @Override
             public void reload(ResourceManager manager) {
-                TEXTURES.values().forEach(id -> MinecraftClient.getInstance().getTextureManager().destroyTexture(id));
+                TEXTURES.values().forEach(id -> ClientTextures.destroy(id));
                 TEXTURES.clear();
             }
         });
