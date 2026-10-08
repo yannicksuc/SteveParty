@@ -145,6 +145,9 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
      */
     private static final TrackedData<Byte> FLAME_STAGE =
             DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.BYTE);
+    /** A tamed one in a lit place (FrousseuxCompanion): in front of its owner, in their crosshair. */
+    private static final TrackedData<Boolean> LIT_MODE =
+            DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> SITTING =
             DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** The item drawn under it (what it carries), or flying to or from it. */
@@ -222,6 +225,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
         builder.add(FLAME_STAGE, (byte) -1);
         builder.add(OWNER, Optional.empty());
         builder.add(SITTING, false);
+        builder.add(LIT_MODE, false);
         builder.add(SHOWN_ITEM, ItemStack.EMPTY);
         builder.add(ITEM_FLIGHT, 0);
     }
@@ -355,15 +359,56 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
     }
 
     /**
-     * Its owner's crosshair goes through a following Frousseux (it is never in the way of their mining, building or
-     * fighting), except when they reach for it: flint and steel in hand, or sneaking with an empty hand
-     * ({@link FrousseuxCompanion#reachesFor}). Asked by the owner's client (the crosshair); the server, other
-     * players and projectiles see it as usual.
+     * In the dark, its owner's crosshair goes through a following Frousseux (it is never in the way of their mining,
+     * building or fighting), except when they reach for it: flint and steel in hand, or sneaking with an empty hand
+     * ({@link FrousseuxCompanion#reachesFor}). In a lit place ({@link #isLitMode}) it floats in front of them and is
+     * clicked as usual. Asked by the owner's client (the crosshair); the server, other players and projectiles see
+     * it as usual.
      */
     @Override
     public boolean canHit() {
-        if (getWorld().isClient && isTamed() && !isSitting() && CLIENT_PASS_THROUGH.test(this)) return false;
+        if (getWorld().isClient && isTamed() && !isSitting() && !isLitMode() && CLIENT_PASS_THROUGH.test(this)) return false;
         return super.canHit();
+    }
+
+    /** Tamed, its owner in a lit place: it floats in front of them (FrousseuxCompanion). */
+    public boolean isLitMode() {
+        return this.dataTracker.get(LIT_MODE);
+    }
+
+    /** A facing asked for this tick (FrousseuxCompanion), turned to after its flight has turned it; NaN: none. */
+    private float wantedYaw = Float.NaN;
+
+    /** Turns it towards {@code yaw} this tick, a little at a time (after its flight and body have had their say). */
+    void faceYaw(float yaw) {
+        this.wantedYaw = yaw;
+    }
+
+    /** Ticks the ambient light around its owner has asked for the other mode (it switches after a while). */
+    private int lightModeTicks;
+
+    /**
+     * Lit or dark mode, once a second, from the light around its owner without its own
+     * ({@link FrousseuxCompanion#ambientLight}):
+     * lit from {@link FrousseuxCompanion#LIT_FROM}, dark again at {@link FrousseuxCompanion#DARK_UNDER} or less,
+     * each after {@link FrousseuxCompanion#MODE_DELAY} ticks of it (no flicker at the threshold).
+     */
+    private void tickLightMode(ServerWorld world) {
+        PlayerEntity owner = isTamed() ? getOwnerPlayer() : null;
+        boolean lit = isLitMode();
+        boolean wants = lit;
+        if (owner != null) {
+            int ambient = FrousseuxCompanion.ambientLight(world, BlockPos.ofFloored(owner.getEyePos()));
+            wants = lit ? ambient > FrousseuxCompanion.DARK_UNDER : ambient >= FrousseuxCompanion.LIT_FROM;
+        } else if (!isTamed()) {
+            wants = false;
+        }
+        if (wants == lit) {
+            lightModeTicks = 0;
+        } else if ((lightModeTicks += 20) >= FrousseuxCompanion.MODE_DELAY || !isTamed()) {
+            lightModeTicks = 0;
+            this.dataTracker.set(LIT_MODE, wants);
+        }
     }
 
     /** Set by the client: whether the local player is this one's owner, not reaching for it. */
@@ -401,6 +446,13 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
     }
 
     private void tickServer(ServerWorld world) {
+        if (!Float.isNaN(wantedYaw)) {
+            float yaw = MathHelper.stepUnwrappedAngleTowards(getYaw(), wantedYaw, 10f);
+            setYaw(yaw);
+            setBodyYaw(yaw);
+            setHeadYaw(yaw);
+            wantedYaw = Float.NaN;
+        }
         if (boardActor) return;
         if (!isAlive()) {
             light.clear(world);
@@ -422,6 +474,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity {
         }
         if (!isTamed() && age % 5 == 0 && stolen.isEmpty() && stealCooldown <= 0) tryStealing(world);
         if (age % 4 == 0) tickShy(world);
+        if (age % 20 == 7) tickLightMode(world);
         if (age % 20 == 0) updateFlameStage(); // its greatest health may change (effects, attributes)
         if (age % 2 == 0) light.update(world, BlockPos.ofFloored(getBoundingBox().getCenter()), getFlame().light);
         if (age % 10 == 0 && !flight.isMovingTo()) {

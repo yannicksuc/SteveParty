@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
 import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.player.PlayerEntity;
@@ -9,6 +11,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,12 +20,16 @@ import java.util.EnumSet;
 /**
  * A tamed Frousseux and its owner: a lamp that floats along, never in the way.
  * <ul>
- *     <li><b>Where it floats</b>: by its owner's head, but never in front of them: at a shoulder, above and behind,
+ *     <li><b>Lit or dark</b>: in a lit place (ambient light {@link #LIT_FROM} or more, its own left out:
+ *     {@link #ambientLight}) it floats in front of its owner, a little to the side and below their eyes, seen and
+ *     clicked as any mob. In the dark (caves) it becomes the mining lamp below. It switches after a short while of the
+ *     other light ({@link #MODE_DELAY}), with a dead band ({@link #DARK_UNDER}), moving there smoothly.</li>
+ *     <li><b>Where it floats in the dark</b>: by its owner's head, but never in front of them: at a shoulder, above and behind,
  *     or behind ({@link #SLOTS}), always outside a cone of {@link #CONE_HALF_ANGLE} degrees around where they look,
  *     in open air (never in a block). It keeps its place while it fits and moves on smoothly when they turn.</li>
  *     <li><b>Reaching for it</b> ({@link #reachesFor}): flint and steel in hand, it comes in front of them, within
  *     reach (to relight it). Sneaking with an empty hand, it stays put, so they can turn to it and click it.</li>
- *     <li><b>Never in the crosshair</b>: their crosshair goes through it unless they reach for it
+ *     <li><b>In the dark, never in the crosshair</b>: their crosshair goes through it unless they reach for it
  *     ({@link FrousseuxEntity#canHit}): their clicks go to the block or the mob behind it.</li>
  *     <li><b>Its owner's word</b> (an empty hand, see FrousseuxEntity#interactMob): sneaking, a following one sits
  *     and stays; a sitting one gets up on a plain click, and turns into a candle holder on a sneaking one.</li>
@@ -35,6 +42,8 @@ public final class FrousseuxCompanion {
     public static final double WEB_RANGE = 8.0;
     /** Farther than this from its owner, it pops back to them. */
     static final double TELEPORT_DISTANCE = 14.0;
+    /** Farther than this, it doesn't pop back: left behind. */
+    static final double LEFT_BEHIND = 48.0;
     /** Never in this cone around its owner's look (half its angle, degrees): 30 asked, a margin for its lag. */
     static final double CONE_HALF_ANGLE = 38.0;
     private static final double CONE_COS = Math.cos(Math.toRadians(CONE_HALF_ANGLE));
@@ -44,6 +53,15 @@ public final class FrousseuxCompanion {
      */
     static final double[][] SLOTS = {{0.85, 0.3, 0.45}, {-0.85, 0.3, 0.45}, {0, 0.8, 0.5}, {0.45, 0.05, 1.1},
             {-0.45, 0.05, 1.1}, {0, 0.05, 1.4}};
+
+    /** In the lit mode from this ambient light; back to the dark mode at this or less; after this long (ticks). */
+    public static final int LIT_FROM = 5, DARK_UNDER = 3, MODE_DELAY = 40;
+    /**
+     * Its places in a lit place, in front of its owner (their body's facing, so turning the head to look at it
+     * doesn't move it away): a little to the left (away from the hand in view) and below the eyes, then to the
+     * right, then nearer.
+     */
+    static final double[][] LIT_SLOTS = {{-0.75, -0.3, -2.1}, {0.75, -0.3, -2.1}, {-0.45, -0.3, -1.3}, {0, -0.3, -1.0}};
 
     private FrousseuxCompanion() {
     }
@@ -63,6 +81,52 @@ public final class FrousseuxCompanion {
         double sin = MathHelper.sin(yaw), cos = MathHelper.cos(yaw);
         // facing (-sin, cos), its right (-cos, -sin)
         return owner.getEyePos().add(-cos * slot[0] + sin * slot[2], slot[1], -sin * slot[0] - cos * slot[2]);
+    }
+
+    /** How far around its owner light sources are looked for (blocks, horizontally and vertically). */
+    static final int SOURCE_REACH = 7, SOURCE_REACH_Y = 4;
+
+    /**
+     * The light at {@code at} without the Frousseux's own: the sky's (by the time of day and the weather), or the
+     * brightest light source around (torches, lanterns, glowstone, lava...: its light less its distance, walls not
+     * counted). The light engine can't tell its own light from the rest (its light is the brightest near it), so
+     * the sources are looked for, leaving out the invisible light blocks (its own, and any other Frousseux's).
+     * A few thousand block reads: asked once a second.
+     */
+    public static int ambientLight(World world, BlockPos at) {
+        int best = world.getLightLevel(LightType.SKY, at) - world.getAmbientDarkness();
+        BlockPos.Mutable pos = new BlockPos.Mutable();
+        for (int dy = -SOURCE_REACH_Y; dy <= SOURCE_REACH_Y; dy++) {
+            for (int dx = -SOURCE_REACH; dx <= SOURCE_REACH; dx++) {
+                for (int dz = -SOURCE_REACH; dz <= SOURCE_REACH; dz++) {
+                    int distance = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+                    if (15 - distance <= best) continue; // can't beat what is found already
+                    pos.set(at.getX() + dx, at.getY() + dy, at.getZ() + dz);
+                    BlockState state = world.getBlockState(pos);
+                    int luminance = state.getLuminance();
+                    if (luminance - distance > best && !state.isOf(Blocks.LIGHT)) best = luminance - distance;
+                }
+            }
+        }
+        return MathHelper.clamp(best, 0, 15);
+    }
+
+    /** A lit-mode place's spot (the Frousseux's centre), in its owner's body facing. */
+    static Vec3d litSlot(PlayerEntity owner, double[] slot) {
+        float yaw = owner.getBodyYaw() * MathHelper.RADIANS_PER_DEGREE;
+        double sin = MathHelper.sin(yaw), cos = MathHelper.cos(yaw);
+        return owner.getEyePos().add(-cos * slot[0] + sin * slot[2], slot[1], -sin * slot[0] - cos * slot[2]);
+    }
+
+    /** In front of its owner, where it is seen (lit mode): the first lit-mode place in open air. */
+    static Vec3d litSpot(World world, PlayerEntity owner) {
+        Vec3d eye = owner.getEyePos();
+        for (double[] slot : LIT_SLOTS) {
+            Vec3d at = litSlot(owner, slot);
+            if (!FrousseuxFlight.solid(world, BlockPos.ofFloored(at))
+                    && !FrousseuxFlight.solid(world, BlockPos.ofFloored(eye.add(at.subtract(eye).multiply(0.5))))) return at;
+        }
+        return inFront(world, owner);
     }
 
     /** A place it may float at: out of the cone of its owner's look, in open air, with open air on the way there. */
@@ -147,6 +211,8 @@ public final class FrousseuxCompanion {
             World world = frousseux.getWorld();
             if (holdsFlint(owner)) {
                 centre = inFront(world, owner);
+            } else if (frousseux.isLitMode()) { // a lit place: in front, seen, clicked as usual
+                centre = litSpot(world, owner);
             } else if (centre == null || !reachesFor(owner)) { // sneaking with an empty hand: it stays put
                 if (--repick <= 0 || !fits(world, owner, slot(owner, SLOTS[slot]))) {
                     repick = 5;
@@ -156,18 +222,22 @@ public final class FrousseuxCompanion {
             }
             Vec3d feet = centre.subtract(0, FrousseuxEntity.HEIGHT / 2, 0);
             double distance = frousseux.getPos().distanceTo(feet);
-            if (frousseux.squaredDistanceTo(owner) > TELEPORT_DISTANCE * TELEPORT_DISTANCE) {
+            double away = frousseux.squaredDistanceTo(owner);
+            // too far behind: it pops back by them; far away (a teleport, a long flight), it is left behind, as a
+            // wolf is (popping into another place as its chunk unloads loses it for the clients)
+            if (away > TELEPORT_DISTANCE * TELEPORT_DISTANCE && away < LEFT_BEHIND * LEFT_BEHIND) {
                 frousseux.flight().stop();
                 frousseux.requestTeleport(feet.x, feet.y, feet.z);
                 return;
             }
             frousseux.getMoveControl().moveTo(feet.x, feet.y, feet.z, MathHelper.clamp(distance * 0.2, 0.05, 0.7));
-            // nearly still: it looks where its owner looks
+            // nearly still: in front of its owner it faces them, by them it looks where they look
             if (frousseux.getVelocity().horizontalLengthSquared() < 0.0025) {
-                float yaw = MathHelper.stepUnwrappedAngleTowards(frousseux.getYaw(), owner.getHeadYaw(), 8f);
-                frousseux.setYaw(yaw);
-                frousseux.setBodyYaw(yaw);
-                frousseux.setHeadYaw(yaw);
+                float wanted = frousseux.isLitMode() || holdsFlint(owner)
+                        ? (float) (MathHelper.atan2(owner.getZ() - frousseux.getZ(), owner.getX() - frousseux.getX())
+                        * MathHelper.DEGREES_PER_RADIAN) - 90f
+                        : owner.getHeadYaw();
+                frousseux.faceYaw(wanted);
             }
         }
 
