@@ -127,6 +127,20 @@ public class ModEntities {
                     .build(FROUSSEUX_KEY.getValue().toString())
     );
 
+    /** A player turned into a pawn: a statue of the player on a token base (see PlayerPawnEntity). */
+    public static final RegistryKey<EntityType<?>> PLAYER_PAWN_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("player_pawn"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity> PLAYER_PAWN = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("player_pawn"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity>create(fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity::new, SpawnGroup.MISC)
+                    .dimensions(fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.WIDTH,
+                            fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.HEIGHT)
+                    .eyeHeight(fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.EYE_HEIGHT)
+                    .makeFireImmune()
+                    .maxTrackingRange(10)
+                    .build(PLAYER_PAWN_KEY.getValue().toString())
+    );
+
     public static void initialize() {
         // The Boxed Trader was the Hiding Trader: worlds saved before the rename keep their merchants and spawn eggs
         fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("hiding_trader"), Steveparty.id("boxed_trader"));
@@ -136,6 +150,7 @@ public class ModEntities {
         FabricDefaultAttributeRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.MULA_ENTITY, MulaEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.PLAYER_PAWN, fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.setAttributes());
     }
 }
