@@ -6,12 +6,12 @@ import net.minecraft.util.math.random.Random;
 
 /**
  * The 17 Frousseux, one per candle: the plain candle and the 16 dye colours. One model and one set of textures for
- * all (textures/entity/frousseux*.png): the flame and the wax on its top are greyscale there, tinted when drawn with
- * {@link #flame} and {@link #wax}. Born in a cave, its colour is drawn at random by {@link #weight}: the plain and
- * earthy candles are common, the bright ones rare.
+ * all (textures/entity/frousseux*.png): the flame and the pool of wax on its top are greyscale there, tinted when drawn
+ * with {@link #flame} and {@link #accent} (its wax colour, faded into the ivory of its body). Born in a cave, its
+ * colour is drawn at random by {@link #weight}: the plain and earthy candles are common, the bright ones rare.
  *
  * @param flame  its flame's colour (RGB), drawn glowing
- * @param wax    the colour of the wax on its top and its drips (RGB)
+ * @param wax    its candle's wax colour (RGB)
  * @param weight how likely a wild one is this colour, against the others' weights
  */
 public enum FrousseuxColor {
@@ -33,6 +33,9 @@ public enum FrousseuxColor {
     RED("red", Items.RED_CANDLE, 0xFF5A46, 0xBE322D, 4),
     BLACK("black", Items.BLACK_CANDLE, 0xAA8CFF, 0x322D37, 2);
 
+    /** The ivory of its wax body, and how much of the candle's colour shows over it in the pool on its top. */
+    private static final int IVORY = 0xF8E8C8;
+    private static final float ACCENT_STRENGTH = 0.25f;
     private static final FrousseuxColor[] VALUES = values();
     private static final int TOTAL_WEIGHT;
 
@@ -47,6 +50,8 @@ public enum FrousseuxColor {
     public final Item candle;
     public final int flame;
     public final int wax;
+    /** The tint of the pool on its top: a hint of {@link #wax} over ivory, never the full dye. */
+    public final int accent;
     public final int weight;
 
     FrousseuxColor(String name, Item candle, int flame, int wax, int weight) {
@@ -54,7 +59,17 @@ public enum FrousseuxColor {
         this.candle = candle;
         this.flame = flame;
         this.wax = wax;
+        this.accent = mix(IVORY, wax, ACCENT_STRENGTH);
         this.weight = weight;
+    }
+
+    private static int mix(int from, int to, float amount) {
+        int rgb = 0;
+        for (int shift = 16; shift >= 0; shift -= 8) {
+            int a = (from >> shift) & 0xFF, b = (to >> shift) & 0xFF;
+            rgb |= Math.round(a + (b - a) * amount) << shift;
+        }
+        return rgb;
     }
 
     /** Its name in its entity data ("Color") and its loot table conditions. */

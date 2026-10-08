@@ -17,9 +17,9 @@ import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
 /**
- * Draws a Frousseux: its see-through sheet (FrousseuxModel), then over the same model the wax on its top, tinted its
- * candle's wax colour, and its flame, tinted its flame colour and glowing, dimmer as its health goes down
- * ({@link FrousseuxEntity.Flame}). The body is lit by its own flame. The three textures share one UV layout and never overlap.
+ * Draws a Frousseux: its candle wax, a little see-through (FrousseuxModel), then over the same model the pool on its
+ * top, tinted a hint of its candle's wax colour ({@code FrousseuxColor.accent}), and its flame, tinted its flame
+ * colour and glowing, dimmer as its health goes down ({@link FrousseuxEntity.Flame}). The body is lit by its own flame. The three textures share one UV layout and never overlap.
  */
 public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     private static final Identifier WAX = Steveparty.id("textures/entity/frousseux_wax.png");
@@ -53,7 +53,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                            int packedLight, int packedOverlay) {
             RenderLayer layer = RenderLayer.getEntityCutoutNoCull(WAX);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
-                    partialTick, packedLight, packedOverlay, 0xFF000000 | frousseux.getColor().wax);
+                    partialTick, packedLight, packedOverlay, 0xFF000000 | frousseux.getColor().accent);
         }
     }
 
