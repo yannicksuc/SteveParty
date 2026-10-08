@@ -8,7 +8,12 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
@@ -20,8 +25,8 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
 /**
  * Draws a Frousseux: its candle wax, a little see-through (FrousseuxModel), then over the same model the pool on its
- * top, tinted a hint of its candle's wax colour ({@code FrousseuxColor.accent}), and its flame, tinted its flame
- * colour and glowing, dimmer as its health goes down ({@link FrousseuxEntity.Flame}). Its hands are drawn one-sided;
+ * top, tinted a hint of its candle's wax colour ({@code FrousseuxColor.accent}), and its flame ({@link FlameLayer}),
+ * tinted its flame colour and glowing, dimmer as its health goes down ({@link FrousseuxEntity.Flame}). Its hands are drawn one-sided;
  * its wax shell (the body's cube, hollow underneath, its overlay and the sleeves) two-sided, so the inside of its
  * walls shows from below and the drips on the far faces show through the gaps. The body is lit by its
  * own flame. The three textures share one UV layout and never overlap.
@@ -31,8 +36,11 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     private static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
     private static final int FULL_BRIGHT = 0xF000F0;
 
+    private final ItemRenderer itemRenderer;
+
     public FrousseuxRenderer(EntityRendererFactory.Context context) {
         super(context, new FrousseuxModel());
+        this.itemRenderer = context.getItemRenderer();
         this.shadowRadius = 0.2f;
         addRenderLayer(new ShellLayer(this));
         addRenderLayer(new WaxLayer(this));
@@ -46,6 +54,22 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
         int light = frousseux.isBlownOut() || frousseux.deathTime > 0 ? packedLight
                 : LightmapTextureManager.pack(15, LightmapTextureManager.getSkyLightCoordinates(packedLight));
         super.render(frousseux, entityYaw, partialTick, poseStack, bufferSource, light);
+        renderShownItem(frousseux, partialTick, poseStack, bufferSource, light);
+    }
+
+    /** What it stole: under its body, turning slowly, or flying from the player to it (or back). */
+    private void renderShownItem(FrousseuxEntity frousseux, float partialTick, MatrixStack poseStack,
+                                 VertexConsumerProvider bufferSource, int light) {
+        Vec3d at = frousseux.itemOffset(partialTick);
+        if (at == null) return;
+        float time = frousseux.age + partialTick;
+        poseStack.push();
+        poseStack.translate(at.x, at.y + 0.03 * MathHelper.sin(time * 0.15f), at.z);
+        poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * 3f));
+        poseStack.scale(0.8f, 0.8f, 0.8f);
+        itemRenderer.renderItem(frousseux.getShownItem(), ModelTransformationMode.GROUND, light, OverlayTexture.DEFAULT_UV,
+                poseStack, bufferSource, frousseux.getWorld(), frousseux.getId());
+        poseStack.pop();
     }
 
     private static final class WaxLayer extends GeoRenderLayer<FrousseuxEntity> {
@@ -108,7 +132,15 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
         }
     }
 
+    /**
+     * Its flame, alone (the other bones hidden for these passes): the animated flame texture tinted its flame colour,
+     * dimmer as its health goes down, then its white heart (the body's texture), both unshaded and full bright (a
+     * light, not a lit thing), see-through. The flame bone is hidden from every other pass (FrousseuxModel).
+     */
     private static final class FlameLayer extends GeoRenderLayer<FrousseuxEntity> {
+        private static final String[] OTHERS = {"body_overlay", "left_hand", "right_hand", "lids"};
+        private final boolean[] othersHidden = new boolean[OTHERS.length];
+
         FlameLayer(GeoRenderer<FrousseuxEntity> renderer) {
             super(renderer);
         }
@@ -118,14 +150,43 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                            VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay) {
             if (frousseux.isBlownOut() || frousseux.deathTime > 0) return;
+            GeoBone body = bakedModel.getBone("body").orElse(null), wick = bakedModel.getBone("wick").orElse(null),
+                    flame = bakedModel.getBone("flame").orElse(null);
+            if (body == null || wick == null || flame == null) return;
+            boolean bodyHidden = body.isHidden(), wickHidden = wick.isHidden();
+            for (int i = 0; i < OTHERS.length; i++) {
+                GeoBone bone = bakedModel.getBone(OTHERS[i]).orElse(null);
+                if (bone == null) continue;
+                othersHidden[i] = bone.isHidden();
+                bone.setHidden(true);
+            }
+            body.setHidden(true);
+            body.setChildrenHidden(false);
+            wick.setHidden(true);
+            wick.setChildrenHidden(false);
+            flame.setHidden(false);
+
             float brightness = frousseux.getFlame().brightness;
             int tint = frousseux.getColor().flame;
             int r = (int) (((tint >> 16) & 0xFF) * brightness), g = (int) (((tint >> 8) & 0xFF) * brightness),
                     b = (int) ((tint & 0xFF) * brightness);
             AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta): GeckoLib animates it
-            RenderLayer layer = RenderLayer.getEntityTranslucentEmissive(FLAME);
+            RenderLayer layer = RenderLayer.getBeaconBeam(FLAME, true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, 0xFF000000 | r << 16 | g << 8 | b);
+            int heart = (int) (255 * brightness);
+            RenderLayer heartLayer = RenderLayer.getBeaconBeam(getTextureResource(frousseux), true);
+            getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, heartLayer, bufferSource.getBuffer(heartLayer),
+                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, 0xFF000000 | heart << 16 | heart << 8 | heart);
+
+            flame.setHidden(true);
+            wick.setHidden(wickHidden);
+            body.setHidden(bodyHidden);
+            body.setChildrenHidden(false);
+            for (int i = 0; i < OTHERS.length; i++) {
+                int index = i;
+                bakedModel.getBone(OTHERS[i]).ifPresent(bone -> bone.setHidden(othersHidden[index]));
+            }
         }
     }
 }

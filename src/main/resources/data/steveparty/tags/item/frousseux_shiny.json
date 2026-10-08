@@ -1,0 +1,18 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:iron_ingot",
+    "minecraft:iron_nugget",
+    "minecraft:raw_iron",
+    "minecraft:gold_ingot",
+    "minecraft:gold_nugget",
+    "minecraft:raw_gold",
+    "minecraft:copper_ingot",
+    "minecraft:raw_copper",
+    "minecraft:diamond",
+    "minecraft:emerald",
+    "minecraft:lapis_lazuli",
+    "minecraft:redstone",
+    "minecraft:amethyst_shard"
+  ]
+}
