@@ -95,6 +95,22 @@ public enum PlayerPawnPose {
         return Text.translatable("pose.steveparty.player_pawn." + id);
     }
 
+    /**
+     * Whether it reads well from afar, on a podium: a big, clear gesture (not sitting, upside down nor subtle).
+     */
+    public boolean podium() {
+        return switch (this) {
+            case WAVE, VICTORY, DICE_PUNCH, POINT, SALUTE, T_POSE, FLEX, RUN, KICK, DAB, BALLERINA -> true;
+            default -> false;
+        };
+    }
+
+    /** One of the {@link #podium} poses, picked by {@code seed} (any int). */
+    public static PlayerPawnPose podiumPose(int seed) {
+        PlayerPawnPose[] podium = java.util.Arrays.stream(VALUES).filter(PlayerPawnPose::podium).toArray(PlayerPawnPose[]::new);
+        return podium[Math.floorMod(seed, podium.length)];
+    }
+
     public PlayerPawnPose next() {
         return VALUES[(ordinal() + 1) % VALUES.length];
     }

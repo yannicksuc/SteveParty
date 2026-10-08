@@ -1239,4 +1239,31 @@ public class PodiumGameTests implements FabricGameTest {
         context.assertTrue(received.title().equals("Course") && received.rows().equals(sent.rows()) && received.coinItem().isOf(Items.EMERALD), "results sent and read back");
         context.complete();
     }
+
+    /** The figure stands in a podium pose, picked again only when it is someone else; saved with the column. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theFigureTakesAPodiumPose(TestContext context) {
+        BlockPos bottom = column(context, 1, 1, 2);
+        PodiumBlockEntity podium = master(context, bottom);
+        UUID alice = UUID.randomUUID();
+        podium.setOccupant(new PodiumOccupant(alice, "Alice", -1, 1, 0));
+        var pose = podium.getFigurePose();
+        context.assertTrue(pose.podium(), "a pose that reads from afar: " + pose);
+        // The same figure, moved to another place: same pose
+        podium.setOccupant(new PodiumOccupant(alice, "Alice", -1, 2, 0));
+        context.assertTrue(podium.getFigurePose() == pose, "kept while it is the same player");
+        boolean changed = false;
+        for (int i = 0; i < 40 && !changed; i++) {
+            podium.setOccupant(new PodiumOccupant(UUID.randomUUID(), "Bob", -1, 1, 0));
+            context.assertTrue(podium.getFigurePose().podium(), "always a podium pose");
+            changed = podium.getFigurePose() != pose;
+        }
+        context.assertTrue(changed, "someone else: picked again");
+        var shown = podium.getFigurePose();
+        NbtCompound nbt = podium.createNbt(context.getWorld().getRegistryManager());
+        podium.setOccupant(null);
+        podium.read(nbt, context.getWorld().getRegistryManager());
+        context.assertTrue(podium.getFigurePose() == shown, "saved and synced with the column");
+        context.complete();
+    }
 }

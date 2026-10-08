@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.components.TileStampComponent;
+import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnPose;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
 import fr.lordfinn.steveparty.podium.PodiumSignal;
 import fr.lordfinn.steveparty.podium.Podiums;
@@ -36,6 +37,8 @@ public class PodiumBlockEntity extends SyncedBlockEntity implements TickableBloc
     // --- Kept by the bottom block of the column
     private PodiumSignal signal = PodiumSignal.REGISTER;
     private @Nullable PodiumOccupant occupant;
+    /** The pose of its figure: a podium pose picked at random each time the figure is someone else. */
+    private @Nullable PlayerPawnPose figurePose;
     private boolean inputPowered = false;
     /** The look stamped on the banner (drawn on the top block). */
     private @Nullable TileStampComponent bannerStamp;
@@ -64,10 +67,25 @@ public class PodiumBlockEntity extends SyncedBlockEntity implements TickableBloc
         return occupant;
     }
 
+    /**
+     * The pose its figure stands in (see {@link PlayerPawnPose#podium}): picked when the figure became who it is
+     * (columns saved before poses: one picked from the figure's player, the same everywhere).
+     */
+    public PlayerPawnPose getFigurePose() {
+        if (figurePose != null) return figurePose;
+        PodiumOccupant.Figure figure = occupant == null ? null : occupant.figure();
+        return PlayerPawnPose.podiumPose(figure == null ? 0 : figure.player().hashCode());
+    }
+
     /** Who is registered on the column (null: nobody). Told to the clients and to the comparators of the column. */
     public void setOccupant(@Nullable PodiumOccupant occupant) {
         if (Objects.equals(this.occupant, occupant)) return;
         boolean wasEmpty = this.occupant == null;
+        UUID before = this.occupant == null || this.occupant.figure() == null ? null : this.occupant.figure().player();
+        UUID after = occupant == null || occupant.figure() == null ? null : occupant.figure().player();
+        if (after != null && !after.equals(before)) {
+            figurePose = PlayerPawnPose.podiumPose(world != null ? world.getRandom().nextInt() : new java.util.Random().nextInt());
+        }
         this.occupant = occupant;
         sync();
         if (world != null && !world.isClient && wasEmpty != (occupant == null)) {
@@ -148,6 +166,7 @@ public class PodiumBlockEntity extends SyncedBlockEntity implements TickableBloc
         nbt.putString("Signal", signal.name());
         nbt.putBoolean("InputPowered", inputPowered);
         if (occupant != null) nbt.put("Occupant", occupant.toNbt());
+        if (figurePose != null) nbt.putString("FigurePose", figurePose.id());
         if (bannerStamp != null)
             TileStampComponent.CODEC.encodeStart(wrapper.getOps(NbtOps.INSTANCE), bannerStamp)
                     .ifSuccess(element -> nbt.put("BannerStamp", element));
@@ -159,6 +178,7 @@ public class PodiumBlockEntity extends SyncedBlockEntity implements TickableBloc
         signal = PodiumSignal.byName(nbt.getString("Signal"));
         inputPowered = nbt.getBoolean("InputPowered");
         occupant = nbt.contains("Occupant", NbtElement.COMPOUND_TYPE) ? PodiumOccupant.fromNbt(nbt.getCompound("Occupant")) : null;
+        figurePose = nbt.contains("FigurePose", NbtElement.STRING_TYPE) ? PlayerPawnPose.byId(nbt.getString("FigurePose")) : null;
         bannerStamp = nbt.contains("BannerStamp")
                 ? TileStampComponent.CODEC.parse(wrapper.getOps(NbtOps.INSTANCE), nbt.get("BannerStamp")).result().orElse(null)
                 : null;
