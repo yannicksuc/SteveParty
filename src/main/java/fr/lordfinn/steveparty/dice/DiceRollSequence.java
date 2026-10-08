@@ -330,10 +330,12 @@ public final class DiceRollSequence {
         List<DicePrompts.Option> options = new ArrayList<>();
         for (DiceFace face : faces) options.add(optionOf(List.of(face)));
         int random = Math.max(0, faces.indexOf(DiceFacesComponent.roll(die.getDieStack(), lead.getRandom())));
-        Text title = group.size() > 1
-                ? Text.translatable("gui.steveparty.dice_prompt.choice.die", dieIndex + 1, group.size())
-                : Text.translatable("gui.steveparty.dice_prompt.choice");
-        prompt = DicePrompts.ask(lead.getOnlineOwner(), title, DicePrompts.Layout.GRID, options, promptTimeout, random, index -> {
+        // One prompt per die, shown as one section per die of the throw (the faces already picked above)
+        Text title = Text.translatable(group.size() > 1 ? "gui.steveparty.dice_prompt.choice.dice" : "gui.steveparty.dice_prompt.choice");
+        List<DicePrompts.Option> picked = new ArrayList<>();
+        for (DiceFace face : chosen) picked.add(optionOf(List.of(face)));
+        prompt = DicePrompts.askStep(lead.getOnlineOwner(), title, DicePrompts.Layout.GRID, options, promptTimeout, random,
+                picked, group.size(), index -> {
             if (lead.isRemoved() || phase != Phase.ROLLING || chosen.size() != dieIndex) return;
             DiceFace face = faces.get(index);
             chosen.add(face);

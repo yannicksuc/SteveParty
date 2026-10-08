@@ -532,4 +532,86 @@ public class DiceModulesGameTests implements FabricGameTest {
             });
         });
     }
+
+    // ---------------------------------------------------------------- Double / Triple Dice
+
+    /** {@code roller} throws a Double / Triple Dice ({@code multi}) carrying the faces and modules of {@code die}. */
+    private static DiceEntity thrownMulti(TestContext context, ServerPlayerEntity roller, Item multi, ItemStack die) {
+        ItemStack stack = new ItemStack(multi);
+        if (die.get(DiceFacesComponent.TYPE) != null) stack.set(DiceFacesComponent.TYPE, die.get(DiceFacesComponent.TYPE));
+        stack = DiceModules.set(stack, DiceModules.of(die));
+        roller.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, stack);
+        Box around = roller.getBoundingBox().expand(8);
+        Set<DiceEntity> before = new HashSet<>(context.getWorld().getEntitiesByClass(DiceEntity.class, around, e -> true));
+        stack.use(context.getWorld(), roller, net.minecraft.util.Hand.MAIN_HAND);
+        List<DiceEntity> dice = context.getWorld().getEntitiesByClass(DiceEntity.class, around, e -> !before.contains(e));
+        for (DiceEntity die1 : dice) atEnd(context, () -> {
+            if (!die1.isRemoved()) die1.discard();
+        });
+        context.assertTrue(!dice.isEmpty(), "the dice are thrown");
+        return dice.getFirst().lead();
+    }
+
+    /** Answers the pending prompt of {@code roller} with the face {@code face} of {@code die}. */
+    private static void pick(TestContext context, ServerPlayerEntity roller, ItemStack die, DiceFace face, String what) {
+        DicePrompts.Prompt prompt = DicePrompts.pending(roller);
+        context.assertTrue(prompt != null, "asked: " + what);
+        context.assertTrue(DicePrompts.answer(roller, prompt.id(), faces(die).indexOf(face)), "answered: " + what);
+    }
+
+    /** Choice on a Double Dice: the roller picks the face of each of its two dice, one after the other. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = BATCH)
+    public void choicePicksEachDieOfADoubleDice(TestContext context) {
+        ServerPlayerEntity roller = player(context);
+        ItemStack die = with(die("dice_face_1", "dice_face_4", "coin_dice_face_3"), DiceModules.CHOICE, 1);
+        DiceEntity dice = thrownMulti(context, roller, ModItems.DOUBLE_DICE, die);
+        context.assertEquals(dice.group().size(), 2, "two dice");
+        pick(context, roller, die, new DiceFace(Kind.NORMAL, 4), "the first die");
+        context.assertTrue(!dice.isRollFinished(), "the second die is still to be picked");
+        context.assertTrue(dice.group().get(1).isRolling(), "the second die still turns");
+        DicePrompts.Prompt second = DicePrompts.pending(roller);
+        context.assertTrue(second != null && second.steps() == 2 && second.picked().size() == 1,
+                "the second picker shows both dice, the first one picked");
+        pick(context, roller, die, new DiceFace(Kind.COIN, 3), "the second die");
+        context.assertTrue(dice.isRollFinished(), "both picked: the roll is final");
+        context.assertEquals(dice.getRolledFaces(), List.of(new DiceFace(Kind.NORMAL, 4), new DiceFace(Kind.COIN, 3)), "the faces picked");
+        context.assertEquals(dice.group().get(1).getRolledFace(), new DiceFace(Kind.COIN, 3), "the second die shows its face");
+        context.assertEquals(dice.getOutcome().steps(), 4, "4 steps");
+        context.assertEquals(dice.getOutcome().coins(), 3, "and 3 coins");
+        context.assertTrue(DicePrompts.pending(roller) == null, "nothing else is asked");
+        context.complete();
+    }
+
+    /** Choice on a Triple Dice: three picks; a double picked is a double. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = BATCH)
+    public void choicePicksEachDieOfATripleDice(TestContext context) {
+        ServerPlayerEntity roller = player(context);
+        ItemStack die = with(new ItemStack(ModItems.DEFAULT_DICE), DiceModules.CHOICE, 1);
+        DiceEntity dice = thrownMulti(context, roller, ModItems.TRIPLE_DICE, die);
+        context.assertEquals(dice.group().size(), 3, "three dice");
+        pick(context, roller, die, new DiceFace(Kind.NORMAL, 2), "the first die");
+        pick(context, roller, die, new DiceFace(Kind.NORMAL, 7), "the second die");
+        context.assertTrue(!dice.isRollFinished(), "the third die is still to be picked");
+        pick(context, roller, die, new DiceFace(Kind.NORMAL, 7), "the third die");
+        context.assertTrue(dice.isRollFinished(), "all three picked");
+        context.assertEquals(dice.getRolledFaces(), List.of(new DiceFace(Kind.NORMAL, 2), new DiceFace(Kind.NORMAL, 7),
+                new DiceFace(Kind.NORMAL, 7)), "the faces picked, in order");
+        context.assertEquals(dice.getOutcome().steps(), 16, "2 + 7 + 7");
+        context.complete();
+    }
+
+    /** Choice with Reversed and Lucky on a Double Dice: both faces picked (no Lucky pick), the total is reversed. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = BATCH)
+    public void choiceOnADoubleDiceCombinesWithReversed(TestContext context) {
+        ServerPlayerEntity roller = player(context);
+        ItemStack die = with(with(with(new ItemStack(ModItems.DEFAULT_DICE), DiceModules.CHOICE, 1), DiceModules.REVERSED, 1),
+                DiceModules.LUCKY, 2);
+        DiceEntity dice = thrownMulti(context, roller, ModItems.DOUBLE_DICE, die);
+        pick(context, roller, die, new DiceFace(Kind.NORMAL, 3), "the first die");
+        pick(context, roller, die, new DiceFace(Kind.NORMAL, 5), "the second die");
+        context.assertTrue(dice.isRollFinished(), "both picked");
+        context.assertEquals(dice.getOutcome().steps(), -8, "3 + 5, reversed");
+        context.assertTrue(DicePrompts.pending(roller) == null, "no Lucky pick");
+        context.complete();
+    }
 }
