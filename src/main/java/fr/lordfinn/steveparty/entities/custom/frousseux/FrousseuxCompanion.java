@@ -188,7 +188,7 @@ public final class FrousseuxCompanion {
 
         Follow(FrousseuxEntity frousseux) {
             this.frousseux = frousseux;
-            setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+            setControls(EnumSet.of(Control.MOVE));
         }
 
         @Override
@@ -245,14 +245,7 @@ public final class FrousseuxCompanion {
                 return;
             }
             frousseux.getMoveControl().moveTo(feet.x, feet.y, feet.z, MathHelper.clamp(distance * 0.2, 0.05, 0.7));
-            // nearly still: in front of its owner it faces them, by them it looks where they look
-            if (frousseux.getVelocity().horizontalLengthSquared() < 0.0025) {
-                float wanted = frousseux.isLitMode() || holdsFlint(owner)
-                        ? (float) (MathHelper.atan2(owner.getZ() - frousseux.getZ(), owner.getX() - frousseux.getX())
-                        * MathHelper.DEGREES_PER_RADIAN) - 90f
-                        : owner.getHeadYaw();
-                frousseux.faceYaw(wanted);
-            }
+            // where it looks is its look goals' (FrousseuxEntity): at its owner when close, about it otherwise
         }
 
         /** Its place now: the one it has while it fits, else the first one that does, else behind. */

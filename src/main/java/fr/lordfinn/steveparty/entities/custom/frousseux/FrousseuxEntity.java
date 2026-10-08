@@ -205,16 +205,17 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         this.goalSelector.add(1, new FrousseuxFlight.Flee(this));
         this.goalSelector.add(2, new FrousseuxCompanion.Follow(this));
         this.goalSelector.add(5, new FrousseuxFlight.Wander(this));
-        this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 6.0f) {
+        // where it looks, wild or tamed (still or following): at a player close by (its owner, mostly), else about it
+        this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 6.0f, 0.06f) {
             @Override
             public boolean canStart() {
-                return isFree() && super.canStart();
+                return looksAbout() && super.canStart();
             }
         });
         this.goalSelector.add(7, new LookAroundGoal(this) {
             @Override
             public boolean canStart() {
-                return isFree() && super.canStart();
+                return looksAbout() && super.canStart();
             }
         });
     }
@@ -275,6 +276,11 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** Its flame was blown out (a wind charge): no flame drawn, it is dying. */
     public boolean isBlownOut() {
         return this.dataTracker.get(BLOWN_OUT);
+    }
+
+    /** Free to look about: alive, not hiding its eyes, not fleeing, not the board's. */
+    private boolean looksAbout() {
+        return isAlive() && !isShy() && !boardActor && fleeTicks <= 0;
     }
 
     /** Free to wander: alive, wild, not hiding its eyes, not fleeing. */
@@ -379,14 +385,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         return this.dataTracker.get(LIT_MODE);
     }
 
-    /** A facing asked for this tick (FrousseuxCompanion), turned to after its flight has turned it; NaN: none. */
-    private float wantedYaw = Float.NaN;
-
-    /** Turns it towards {@code yaw} this tick, a little at a time (after its flight and body have had their say). */
-    void faceYaw(float yaw) {
-        this.wantedYaw = yaw;
-    }
-
     /** Ticks the ambient light around its owner has asked for the other mode (it switches after a while). */
     private int lightModeTicks;
 
@@ -449,13 +447,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     }
 
     private void tickServer(ServerWorld world) {
-        if (!Float.isNaN(wantedYaw)) {
-            float yaw = MathHelper.stepUnwrappedAngleTowards(getYaw(), wantedYaw, 10f);
-            setYaw(yaw);
-            setBodyYaw(yaw);
-            setHeadYaw(yaw);
-            wantedYaw = Float.NaN;
-        }
         if (boardActor) return;
         if (!isAlive()) {
             light.clear(world);
