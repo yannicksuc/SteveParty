@@ -21,6 +21,8 @@ public final class PawnPoseFeedback {
 
     public static void initialize() {
         TokenPoses.setClientFeedback(PawnPoseFeedback::show);
+        // A posed GeckoLib pawn drawn: the shared bones back as they were (see GeoPoses)
+        software.bernie.geckolib.event.GeoRenderEvent.Entity.Post.EVENT.register(event -> GeoPoses.restore());
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
             @Override
             public Identifier getFabricId() {
