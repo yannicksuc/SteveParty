@@ -205,6 +205,26 @@ public class FrousseuxSpaceGameTests implements FabricGameTest {
         });
     }
 
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE_THEFT + 20, batchId = BATCH)
+    public void victimLeavingEndsTheDefence(TestContext context) {
+        ServerPlayerEntity thief = player(context), victim = player(context);
+        List<MobEntity> tokens = new ArrayList<>();
+        PartyControllerEntity party = party(context, tokens, thief, victim);
+        give(victim, Items.GOLD_INGOT, 30);
+        boolean[] done = {false};
+        MobEntity token = tokens.getFirst();
+        start(context, party, token, thief, false, 10, done);
+        when(context, () -> FrousseuxThefts.phase(token) == Phase.DEFENCE, WHOLE_THEFT, "the defence", () -> {
+            FrousseuxEntity actor = FrousseuxThefts.actor(token);
+            context.getWorld().getServer().getPlayerManager().remove(victim);
+            when(context, () -> done[0], WHOLE_THEFT, "the theft ends", () -> {
+                context.assertTrue(actor.isRemoved(), "the Frousseux is gone");
+                context.assertEquals(count(thief, Items.GOLD_INGOT), 10, "the sender still gets the loot");
+                context.complete();
+            });
+        });
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void cartridgeSettings(TestContext context) {
         ItemStack cartridge = new ItemStack(ModItems.FROUSSEUX_CARTRIDGE);

@@ -51,7 +51,7 @@ import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
  *     <li><b>Stars</b>: stolen at once, no defence.</li>
  * </ul>
  * Then it brings what it still carries to its player and vanishes in a puff of smoke. It is a board actor: no wild
- * behaviour, invulnerable, never saved, always removed at the end.
+ * behaviour, invulnerable, never saved, always removed at the end ({@link BoardActors}).
  * <p>
  * Nothing is ever lost: the loot is the victim's until stolen, then carried (here) until given; a party ending, the
  * Frousseux gone or the server stopping in the middle settles it at once (to its player, else back to the victim, else
@@ -225,6 +225,7 @@ public final class FrousseuxThefts {
             if (one == null) return false;
             one.setColor(FrousseuxColor.random(world.getRandom()));
             one.makeBoardActor();
+            BoardActors.join(task, one);
             Vec3d stand = BoardSpaces.standPos(world, tile);
             Vec3d side = Vec3d.fromPolar(0, token.getYaw() + 90).multiply(0.9);
             appearAt = stand.add(side);
@@ -601,10 +602,8 @@ public final class FrousseuxThefts {
             SCHEDULER.cancel(task);
             RUNNING.remove(token.getUuid());
             if (carried > 0) dropLoot();
-            if (actor != null) {
-                actor.onBoardHit(null);
-                if (!actor.isRemoved()) actor.discard();
-            }
+            if (actor != null) actor.onBoardHit(null);
+            BoardActors.end(task);
             onDone.run();
         }
     }
