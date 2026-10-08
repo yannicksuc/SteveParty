@@ -206,15 +206,15 @@ public class MiniGamePartyStep extends PartyStep {
             return;  // Exit early if not a ServerWorld
         }
 
-        // Step 2: Send a message to interested players that the mini-game is starting
-        sendStartMessage(partyControllerEntity);
-
-        // Step 3: Check if there are mini-games to play, exit early if none
+        // Step 2: Check if there are mini-games to play, else tell the players and skip
         hidePreview(partyControllerEntity);
         // The pages show the title they have now
         MiniGamesCatalogueItem.refreshPages(serverWorld.getServer(), partyControllerEntity.catalogue);
         List<ItemStack> miniGames = partyControllerEntity.getMiniGames();
         if (miniGames.isEmpty()) {
+            MessageUtils.sendToPlayers(partyControllerEntity.getInterestedPlayersEntities(),
+                    Text.translatable("message.steveparty.no_minigame").setStyle(Style.EMPTY.withColor(0xFFA500)),
+                    MessageUtils.MessageType.CHAT);
             partyControllerEntity.nextStep();
             return;
         }
@@ -235,6 +235,9 @@ public class MiniGamePartyStep extends PartyStep {
             partyControllerEntity.nextStep();
             return;
         }
+
+        // Mini-games are on: tell the players
+        sendStartMessage(partyControllerEntity);
 
         // Step 6: Choose a random disposition for the mini-games
         TeamDisposition chosenDisposition = chooseRandomDisposition(miniGamesToTeamDispositions);

@@ -210,6 +210,7 @@
   "message.steveparty.game_ended": "La partie est terminée !",
   "message.steveparty.party_stopped": "La partie a été arrêtée par %s.",
   "message.steveparty.party_stopped.removed": "La partie a été arrêtée : son Contrôleur de fête a disparu.",
+  "message.steveparty.no_minigame": "Aucun mini-jeu dans le catalogue du Contrôleur de partie : pas de mini-jeu ce tour-ci.",
   "message.steveparty.no_compatible_minigame": "Aucun mini-jeu du catalogue ne convient aux équipes actuelles : passé.",
   "block.steveparty.polished_concrete_tiles": "Carrelage en béton poli",
   "block.steveparty.polished_terracotta_tiles": "Carrelage en terre cuite polie",

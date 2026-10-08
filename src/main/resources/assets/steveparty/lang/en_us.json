@@ -828,6 +828,7 @@
   "message.steveparty.game_ended": "The party is over!",
   "message.steveparty.party_stopped": "The party was stopped by %s.",
   "message.steveparty.party_stopped.removed": "The party was stopped: its Party Controller is gone.",
+  "message.steveparty.no_minigame": "No mini-game in the Party Controller's catalogue: no mini-game this round.",
   "message.steveparty.no_compatible_minigame": "No mini-game in the catalogue fits the current teams: skipped.",
   "block.steveparty.polished_concrete_tiles": "Polished Concrete Tiles",
   "block.steveparty.polished_terracotta_tiles": "Polished Terracotta Tiles",
