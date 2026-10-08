@@ -257,8 +257,6 @@ public final class BoardView {
                 plate = WorldDraw.Plate.GREEN;
             } else if (distance != null) {
                 number = Text.literal(Integer.toString(distance));
-            } else if (!hasStart) {
-                number = Text.literal("·");
             }
             boolean deadEnd = built.isDeadEnd(node), notReached = built.isUnreachable(node);
             if (deadEnd) deadEnds++;
