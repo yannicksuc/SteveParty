@@ -64,7 +64,7 @@ public final class TileStampTextures {
         @Override
         protected boolean removeEldestEntry(Map.Entry<Key, Identifier> eldest) {
             if (size() <= MAX_CACHED) return false;
-            MinecraftClient.getInstance().getTextureManager().destroyTexture(eldest.getValue());
+            ClientTextures.destroy(eldest.getValue());
             return true;
         }
     };
@@ -88,7 +88,7 @@ public final class TileStampTextures {
 
             @Override
             public void reload(ResourceManager manager) {
-                TEXTURES.values().forEach(id -> MinecraftClient.getInstance().getTextureManager().destroyTexture(id));
+                TEXTURES.values().forEach(id -> ClientTextures.destroy(id));
                 TEXTURES.clear();
                 TEMPLATES.clear();
             }

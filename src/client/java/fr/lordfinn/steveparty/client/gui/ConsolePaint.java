@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.hud.HudShapes;
@@ -261,8 +262,7 @@ public final class ConsolePaint {
 
     /** Forgets every painted shape (painted again when needed). */
     public static void clear() {
-        var manager = MinecraftClient.getInstance().getTextureManager();
-        for (Tex tex : TEXTURES.values()) manager.destroyTexture(tex.id());
+        for (Tex tex : TEXTURES.values()) ClientTextures.destroy(tex.id());
         TEXTURES.clear();
     }
 }

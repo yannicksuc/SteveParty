@@ -8,7 +8,6 @@ import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.client.texture.TextureManager;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
@@ -124,8 +123,7 @@ public class StencilResourceManager {
 
     private static void destroy(Identifier texture) {
         if (texture == null) return;
-        TextureManager textureManager = MinecraftClient.getInstance().getTextureManager();
-        textureManager.destroyTexture(texture);
+        ClientTextures.destroy(texture);
     }
 
     private static @Nullable Identifier createTexture(byte[] shape, Kind kind) {

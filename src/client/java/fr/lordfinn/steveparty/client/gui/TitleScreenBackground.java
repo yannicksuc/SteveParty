@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -88,8 +89,8 @@ public final class TitleScreenBackground {
             if (client.world != null && intro != null) endIntro(client);
             if (texturesLoaded && client.world != null) {
                 texturesLoaded = false;
-                for (Layer layer : LAYERS) client.getTextureManager().destroyTexture(layer.texture);
-                client.getTextureManager().destroyTexture(LOGO);
+                for (Layer layer : LAYERS) ClientTextures.destroy(layer.texture);
+                ClientTextures.destroy(LOGO);
             }
         });
     }

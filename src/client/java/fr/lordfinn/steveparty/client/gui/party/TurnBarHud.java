@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.hud.TurnStripLayout.Kind;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Type;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -271,7 +272,10 @@ final class TurnBarHud {
         UUID owner = player == null ? null : player.owner;
         if (owner != null) {
             Identifier skin = SkinUtils.getPlayerSkin(owner);
+            Identifier fallback = DefaultSkinHelper.getSkinTextures(owner).texture();
             HudDraw.faded(alpha, () -> {
+                // The default face of the UUID under it: a skin that is not (or no longer) there never leaves a blank
+                if (!fallback.equals(skin)) context.drawTexture(fallback, x, y, 8, 8, 8, 8, 8, 8, 64, 64);
                 context.drawTexture(skin, x, y, 8, 8, 8, 8, 8, 8, 64, 64);
                 context.drawTexture(skin, x, y, 8, 8, 40, 8, 8, 8, 64, 64);
             });

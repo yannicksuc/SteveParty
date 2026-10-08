@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.client.MinecraftClient;
@@ -137,7 +138,7 @@ final class TitleLogoIntro {
     }
 
     void free(MinecraftClient client) {
-        for (Identifier atlas : atlases) client.getTextureManager().destroyTexture(atlas);
+        for (Identifier atlas : atlases) ClientTextures.destroy(atlas);
     }
 
     /** Draws a frame in box coordinates (the caller's matrices place the box); blending is the caller's. */
