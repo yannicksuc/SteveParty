@@ -40,6 +40,8 @@ import java.util.List;
 public final class CartridgeLinks {
     /** Colour of the links to containers (also the chest trail). */
     public static final int CONTAINER_COLOR = 0x3C8CFF;
+    /** Colour of a router's links to the board spaces it powers: redstone. */
+    public static final int ROUTER_COLOR = 0xE03030;
     /** Colour of a Hop Switch's links to the blocks it switches. */
     public static final int SWITCH_COLOR = 0xE070FF;
 
@@ -73,7 +75,7 @@ public final class CartridgeLinks {
 
         @Override
         public int color() {
-            return BoardLinks.LINK_COLOR;
+            return container instanceof BoardSpaceBlockEntity ? BoardLinks.LINK_COLOR : ROUTER_COLOR;
         }
 
         @Override
@@ -102,9 +104,10 @@ public final class CartridgeLinks {
             return true;
         }
 
+        /** A board space's paths are the board view's; a router's are not paths (drawn by the brush overlay). */
         @Override
         public boolean drawnByBoardView() {
-            return true;
+            return container instanceof BoardSpaceBlockEntity;
         }
     }
 
