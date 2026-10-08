@@ -44,6 +44,10 @@ public class ModRecipes {
     public static final RecipeSerializer<MultiDiceRecipe> MULTI_DICE = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_multi_dice"), new SpecialRecipeSerializer<>(MultiDiceRecipe::new));
 
+    /** The Frousseux candle holder onto its Candle Saucer, and off it again (the saucer given back). */
+    public static final RecipeSerializer<CandleSaucerRecipe> CANDLE_SAUCER = Registry.register(Registries.RECIPE_SERIALIZER,
+            Steveparty.id("crafting_special_candle_saucer"), new SpecialRecipeSerializer<>(CandleSaucerRecipe::new));
+
     public static void initialize() {
     }
 }

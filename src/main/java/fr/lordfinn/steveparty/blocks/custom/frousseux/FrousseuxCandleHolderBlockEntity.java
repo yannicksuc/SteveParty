@@ -12,15 +12,14 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * The Frousseux sleeping in a candle holder: its whole entity data (its identity: UUID, colour, name, owner, health,
- * effects...), without where it was ({@link FrousseuxCandleHolderBlock#keptData}). Seen by the clients (they draw it)
+ * effects...), without where it was ({@link FrousseuxCandleHolderBlock#keptData}). Sent to the clients
  * and kept by the block's item when broken. Empty: a candle holder that never held one (from the creative tab).
+ * Its colour and flame are block states too (FrousseuxCandleHolderBlock): its look and light need no block entity.
  */
 public class FrousseuxCandleHolderBlockEntity extends SyncedBlockEntity {
     public static final String KEY = "Frousseux";
 
     private NbtCompound frousseux = new NbtCompound();
-    /** The client's copy of it, drawn by the block entity renderer (kept as an Object: client-only type there). */
-    public @Nullable Object clientModel;
 
     public FrousseuxCandleHolderBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.FROUSSEUX_CANDLE_HOLDER, pos, state);
@@ -32,9 +31,13 @@ public class FrousseuxCandleHolderBlockEntity extends SyncedBlockEntity {
 
     public void setFrousseux(NbtCompound frousseux) {
         this.frousseux = frousseux.copy();
-        this.clientModel = null;
         markDirty();
         syncToClients();
+    }
+
+    /** Its owner (who may wake it), or null for one that never had one. */
+    public @Nullable java.util.UUID getOwner() {
+        return frousseux.containsUuid("Owner") ? frousseux.getUuid("Owner") : null;
     }
 
     public FrousseuxColor getColor() {
@@ -62,6 +65,5 @@ public class FrousseuxCandleHolderBlockEntity extends SyncedBlockEntity {
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
         frousseux = nbt.getCompound(KEY).copy();
-        clientModel = null;
     }
 }

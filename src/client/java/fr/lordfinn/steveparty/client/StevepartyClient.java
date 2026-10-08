@@ -299,7 +299,8 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.LOOTING_BOX_ENTITY, LootingBoxBlockEntityRenderer::new);
         // The villager block is drawn alive (reactions, looking around) by its renderer, not as a baked block
         BlockEntityRendererFactories.register(ModBlockEntities.VILLAGER_BLOCK_ENTITY, fr.lordfinn.steveparty.client.blockentity.VillagerBlockEntityRenderer::new);
-        // A Frousseux asleep as a candle holder: drawn as itself, block and item alike
+        // A Frousseux asleep as a candle holder: drawn whole by its block entity renderer (16 ways, its flame); its
+        // item, the same
         BlockEntityRendererFactories.register(ModBlockEntities.FROUSSEUX_CANDLE_HOLDER, fr.lordfinn.steveparty.client.blockentity.FrousseuxCandleHolderRenderer::new);
         net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(ModBlocks.FROUSSEUX_CANDLE_HOLDER,
                 fr.lordfinn.steveparty.client.blockentity.FrousseuxCandleHolderRenderer.ITEM);

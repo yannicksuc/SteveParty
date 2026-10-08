@@ -465,9 +465,18 @@ public class ModBlocks {
                     .strength(0.3f)
                     .nonOpaque()
                     .sounds(BlockSoundGroup.CANDLE)
-                    .luminance(state -> state.get(fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock.LIGHT))
+                    .luminance(fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock::lightOf)
                     .pistonBehavior(PistonBehavior.DESTROY),
             "frousseux_candle_holder", true);
+
+    /** The Candle Saucer, a little gold tray: placed on its own, or under a candle holder (CandleSaucerBlock). */
+    public static final Block CANDLE_SAUCER = register(fr.lordfinn.steveparty.blocks.custom.frousseux.CandleSaucerBlock::new,
+            Block.Settings.create()
+                    .strength(0.5f)
+                    .nonOpaque()
+                    .sounds(BlockSoundGroup.METAL)
+                    .pistonBehavior(PistonBehavior.DESTROY),
+            "candle_saucer", true);
 
     public static final Block CASH_REGISTER = register(CashRegisterBlock::new,
             Block.Settings.create()
