@@ -70,6 +70,14 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
         return Color.ofARGB(Argb.alpha(frousseux.bodyAlpha(partialTick)), 255, 255, 255);
     }
 
+    /**
+     * Its two-sided wax: see-through, writing its depth; faded out of its owner's way, none (FrousseuxGhostLayers: its
+     * flame, drawn after it, shows through it from every side).
+     */
+    private static RenderLayer shell(FrousseuxEntity frousseux, Identifier texture) {
+        return frousseux.isFaded() ? FrousseuxGhostLayers.noCull(texture) : RenderLayer.getEntityTranslucent(texture);
+    }
+
     /** {@code rgb} opaque, each channel times {@code brightness} (0 to 1): a flame's colour at its stage. */
     public static int shade(int rgb, float brightness) {
         return Argb.opaque(Argb.scale(rgb, brightness));
@@ -106,7 +114,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                            int packedLight, int packedOverlay) {
             // see-through wax as the rest, two-sided: from inside the hollow body it closes the top, which hides the
             // flame (drawn after it) by depth
-            RenderLayer layer = RenderLayer.getEntityTranslucent(WAX);
+            RenderLayer layer = shell(frousseux, WAX);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, packedLight, packedOverlay, withAlpha(0xFF000000 | frousseux.getColor().accent, frousseux.bodyAlpha(partialTick)));
         }
@@ -135,7 +143,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             GeoBones.hide(bakedModel, "body", false);
             for (String name : HOLDERS) GeoBones.hideOnlyItself(bakedModel, name);
             GeoBones.hideFor(bakedModel, OTHERS, othersHidden);
-            RenderLayer layer = RenderLayer.getEntityTranslucent(getTextureResource(frousseux));
+            RenderLayer layer = shell(frousseux, getTextureResource(frousseux));
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, packedLight, packedOverlay, withAlpha(0xFFFFFFFF, frousseux.bodyAlpha(partialTick)));
             GeoBones.restore(bakedModel, OTHERS, othersHidden);

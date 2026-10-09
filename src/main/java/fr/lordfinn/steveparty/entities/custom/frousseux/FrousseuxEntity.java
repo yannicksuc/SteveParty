@@ -558,6 +558,11 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         return MathHelper.lerp(partialTick, prevBodyAlpha, bodyAlpha);
     }
 
+    /** Whether it is fading, faded or coming back for the local player: its body, see-through, hides nothing. */
+    public boolean isFaded() {
+        return bodyAlpha < 1 || prevBodyAlpha < 1;
+    }
+
     public float flameAlpha(float partialTick) {
         return MathHelper.lerp(partialTick, prevFlameAlpha, flameAlpha);
     }
