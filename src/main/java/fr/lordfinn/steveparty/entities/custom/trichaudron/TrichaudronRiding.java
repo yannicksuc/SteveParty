@@ -61,6 +61,12 @@ public final class TrichaudronRiding {
     /** Standing on the bottom of shallow lava, it is drawn (and its riders sat) this much lower: no knee flush with it. */
     public static final float SHALLOW_SINK = 0.5f;
     public static final float SWIM_FACTOR = 0.8f;
+    /**
+     * Its float: vertical speed toward its depth, this much a block off (a tick), at most {@link #SWIM_MAX_VY}, eased
+     * in by this share a tick; and a slow sway of its depth, {@code SWIM_BOB} blocks over {@code SWIM_BOB_TICKS}.
+     */
+    public static final double SWIM_SPRING = 0.12, SWIM_MAX_VY = 0.12, SWIM_DAMPING = 0.35, SWIM_BOB = 0.03;
+    public static final int SWIM_BOB_TICKS = 120;
 
     private TrichaudronRiding() {
     }
