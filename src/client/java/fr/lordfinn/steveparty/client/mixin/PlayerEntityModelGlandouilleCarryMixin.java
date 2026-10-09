@@ -13,7 +13,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** A player carrying Glandouilles, seen from outside: the main arm raised forward under the stack; the other swings. */
+/**
+ * A player carrying Glandouilles, seen from outside: the main arm raised forward under the stack (drawn on it, see
+ * GlandouilleInHand), swinging a little as he walks and up when he throws; the other one swings as usual.
+ */
 @Mixin(PlayerEntityModel.class)
 public class PlayerEntityModelGlandouilleCarryMixin {
     /** The main arm raised to a little under horizontal (the hand under the stack), turned a little outward. */
@@ -32,7 +35,9 @@ public class PlayerEntityModelGlandouilleCarryMixin {
         float turn = MathHelper.clamp(headYaw, -60f, 60f) * MathHelper.RADIANS_PER_DEGREE;
         boolean right = entity.getMainArm() == Arm.RIGHT;
         ModelPart arm = right ? model.rightArm : model.leftArm;
-        arm.pitch = STEVEPARTY$CARRY_PITCH;
+        float walk = MathHelper.cos(limbAngle * 0.6662F + (right ? MathHelper.PI : 0F)) * 0.3F * limbDistance;
+        float swing = MathHelper.sin(MathHelper.sqrt(model.handSwingProgress) * MathHelper.PI) * 0.9F;
+        arm.pitch = STEVEPARTY$CARRY_PITCH + walk - swing;
         arm.yaw = turn + (right ? -STEVEPARTY$CARRY_OUTWARD : STEVEPARTY$CARRY_OUTWARD);
         arm.roll = 0F;
     }
