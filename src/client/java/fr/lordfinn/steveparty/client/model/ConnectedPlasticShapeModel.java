@@ -13,6 +13,7 @@ import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 import org.jetbrains.annotations.Nullable;
@@ -70,8 +71,8 @@ public class ConnectedPlasticShapeModel implements BakedModel {
                     Sprite to = layout == null ? null : sprites[mask(world, layout, pos, emitter, quad.getFace())];
                     if (to != null && to != from) {
                         for (int i = 0; i < 4; i++) {
-                            emitter.uv(i, remap(emitter.u(i), from.getMinU(), from.getMaxU(), to.getMinU(), to.getMaxU()),
-                                    remap(emitter.v(i), from.getMinV(), from.getMaxV(), to.getMinV(), to.getMaxV()));
+                            emitter.uv(i, MathHelper.map(emitter.u(i), from.getMinU(), from.getMaxU(), to.getMinU(), to.getMaxU()),
+                                    MathHelper.map(emitter.v(i), from.getMinV(), from.getMaxV(), to.getMinV(), to.getMaxV()));
                         }
                     }
                     emitter.emit();
@@ -146,10 +147,6 @@ public class ConnectedPlasticShapeModel implements BakedModel {
             if (t >= min && t <= max) bits |= 1 << k;
         }
         return bits;
-    }
-
-    private static float remap(float value, float fromMin, float fromMax, float toMin, float toMax) {
-        return toMin + (value - fromMin) / (fromMax - fromMin) * (toMax - toMin);
     }
 
     // Everything else (items, particles, fallback) uses the standalone texture
