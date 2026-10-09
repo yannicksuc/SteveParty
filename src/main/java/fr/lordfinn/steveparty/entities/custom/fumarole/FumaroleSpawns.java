@@ -1,18 +1,16 @@
 package fr.lordfinn.steveparty.entities.custom.fumarole;
 
+import fr.lordfinn.steveparty.entities.MobSpawns;
 import fr.lordfinn.steveparty.entities.ModEntities;
-import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.SpawnLocationTypes;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
-import net.minecraft.world.Heightmap;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.biome.BiomeKeys;
 
@@ -30,10 +28,9 @@ public final class FumaroleSpawns {
     }
 
     public static void initialize() {
-        SpawnRestriction.register(ModEntities.FUMAROLE, SpawnLocationTypes.UNRESTRICTED,
-                Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, FumaroleSpawns::canSpawn);
-        BiomeModifications.addSpawn(BiomeSelectors.includeByKey(BiomeKeys.NETHER_WASTES, BiomeKeys.BASALT_DELTAS,
-                BiomeKeys.SOUL_SAND_VALLEY), SpawnGroup.MONSTER, ModEntities.FUMAROLE, WEIGHT, 1, 1);
+        MobSpawns.register(ModEntities.FUMAROLE, SpawnLocationTypes.UNRESTRICTED, FumaroleSpawns::canSpawn,
+                BiomeSelectors.includeByKey(BiomeKeys.NETHER_WASTES, BiomeKeys.BASALT_DELTAS, BiomeKeys.SOUL_SAND_VALLEY),
+                SpawnGroup.MONSTER, WEIGHT, 1, 1);
     }
 
     static boolean canSpawn(EntityType<FumaroleEntity> type, ServerWorldAccess world, SpawnReason reason,

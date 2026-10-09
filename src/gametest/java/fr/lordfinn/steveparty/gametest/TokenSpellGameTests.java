@@ -25,6 +25,7 @@ import net.minecraft.village.VillagerProfession;
 import net.minecraft.util.ActionResult;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.registry.ModGameRules;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.passive.TurtleEntity;
 import net.minecraft.item.ItemStack;
@@ -304,7 +305,7 @@ public class TokenSpellGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void bossesAllowedByTheGameRule(TestContext context) {
-        GameRules.BooleanRule rule = context.getWorld().getGameRules().get(TokenizerWandItem.TOKENIZE_BOSSES);
+        GameRules.BooleanRule rule = context.getWorld().getGameRules().get(ModGameRules.TOKENIZE_BOSSES);
         boolean before = rule.get();
         rule.set(true, context.getWorld().getServer());
         WitherEntity wither = spawn(context, EntityType.WITHER);

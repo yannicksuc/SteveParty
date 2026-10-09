@@ -3,8 +3,11 @@ package fr.lordfinn.steveparty.sounds;
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 public class ModSounds {
     public static final SoundEvent CLOSE_TILE_GUI_SOUND_EVENT = register("close_tile_gui");
@@ -182,12 +185,12 @@ public class ModSounds {
     }
 
     /** The "linked" click of a block (a page, a pipe, a podium, a destination), heard by everyone around. */
-    public static void playSelect(net.minecraft.world.World world, net.minecraft.util.math.BlockPos pos) {
-        world.playSound(null, pos, SELECT_SOUND_EVENT, net.minecraft.sound.SoundCategory.BLOCKS, 1.0F, 1.0F);
+    public static void playSelect(World world, BlockPos pos) {
+        world.playSound(null, pos, SELECT_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
     /** The "unlinked" click of a block, heard by everyone around. */
-    public static void playCancel(net.minecraft.world.World world, net.minecraft.util.math.BlockPos pos) {
-        world.playSound(null, pos, CANCEL_SOUND_EVENT, net.minecraft.sound.SoundCategory.BLOCKS, 1.0F, 1.0F);
+    public static void playCancel(World world, BlockPos pos) {
+        world.playSound(null, pos, CANCEL_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 }
