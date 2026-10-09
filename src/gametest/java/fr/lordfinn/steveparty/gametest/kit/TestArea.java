@@ -37,9 +37,10 @@ public final class TestArea {
 
     /**
      * Loads the land within {@code margin} blocks of the test's template for {@code ticks} ticks, and waits until every
-     * chunk of it (the template's own included) ticks entities.
+     * chunk of it ticks entities (nothing to do without a margin).
      */
     public static void load(TestContext context, int margin, int ticks) {
+        if (margin <= 0) return; // the template alone: the runner holds it
         ServerWorld world = context.getWorld();
         Box box = context.getTestBox().expand(margin, 0, margin);
         List<ChunkPos> chunks = new ArrayList<>();
@@ -48,11 +49,9 @@ public final class TestArea {
                 chunks.add(new ChunkPos(cx, cz));
             }
         }
-        if (margin > 0) {
-            ChunkTicketType<ChunkPos> ticket = TICKETS.computeIfAbsent(ticks + 20,
-                    expiry -> ChunkTicketType.create("steveparty_gametest_" + expiry, Comparator.comparingLong(ChunkPos::toLong), expiry));
-            for (ChunkPos chunk : chunks) world.getChunkManager().addTicket(ticket, chunk, 2, chunk); // level 31: entities tick
-        }
+        ChunkTicketType<ChunkPos> ticket = TICKETS.computeIfAbsent(ticks + 20,
+                expiry -> ChunkTicketType.create("steveparty_gametest_" + expiry, Comparator.comparingLong(ChunkPos::toLong), expiry));
+        for (ChunkPos chunk : chunks) world.getChunkManager().addTicket(ticket, chunk, 2, chunk); // level 31: entities tick
         if (ready(world, chunks)) return;
         long deadline = System.nanoTime() + WAIT_NANOS;
         for (ChunkPos chunk : chunks) world.getChunk(chunk.x, chunk.z); // generated or read, on the spot

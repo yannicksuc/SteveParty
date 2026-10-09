@@ -7,10 +7,9 @@ import net.minecraft.test.TestContext;
 import java.lang.reflect.Method;
 
 /**
- * SteveParty's game tests: each one starts only once the land it plays on is loaded and ticks entities
- * ({@link TestArea#load}): its template and, for the classes whose tests play beyond it, {@link #landAround()} blocks
- * around it. The runner only keeps the templates' own chunks loaded: an entity beyond them did not tick whenever the
- * template happened to lie near a chunk's edge that run.
+ * SteveParty's game tests. The runner only keeps the templates' own chunks loaded: a class whose tests play beyond
+ * the template says how far ({@link #landAround()}), and each of its tests starts once that land is loaded and ticks
+ * entities ({@link TestArea#load}). An entity there used not to tick whenever the template lay near a chunk's edge.
  */
 public interface SteveGameTest extends FabricGameTest {
     /**
