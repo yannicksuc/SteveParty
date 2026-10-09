@@ -92,7 +92,7 @@ public class ModItems {
     public static final Item FROUSSEUX_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.class, "frousseux_cartridge",
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.COLOR));
-    /** Its tile's face is witch purple until dyed; draws the Mistigri's sentences by their weights. */
+    /** Its tile's face is witch plum until dyed; draws the Mistigri's sentences by their weights. */
     public static final Item MISTIGRI_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.class, "mistigri_cartridge",
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.COLOR));

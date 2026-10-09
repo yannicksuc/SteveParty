@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.items.custom.cartridges;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import fr.lordfinn.steveparty.service.MistigriSentences.Sentence;
@@ -21,46 +22,78 @@ import java.util.Map;
  * The Mistigri Cartridge: a token stopping on its tile meets the Mistigri, who leaps onto the space and rolls his giant
  * loaded die: it draws a sentence for the token's player (see MistigriTileBehavior and MistigriSentences). Its menu sets
  * how likely each sentence is (a weight, 0 to {@link #MAX_WEIGHT}: 0 never drawn) and the amounts: the small and the
- * big fine, what everyone pays, how far back. Its tile is witch purple; a dye on it changes that.
+ * big fine, what everyone pays, how far back. Its tile is witch plum; a dye on it changes that.
  * <p>
  * The settings live in one component ({@link ModComponents#MISTIGRI_SETTINGS}), by name: {@code w_<sentence>} for the
  * weights, then {@link #COINS_SMALL}, {@link #COINS_BIG}, {@link #EVERYONE}, {@link #BACK}; a missing one is its default.
  */
 public class MistigriCartridgeItem extends CartridgeItem {
-    /** Its tile's witch purple. */
-    public static final int COLOR = 0x6B2FA0;
+    /** Its tile's witch plum. */
+    public static final int COLOR = 0x8A2A6E;
     public static final int MAX_WEIGHT = 9, MAX_COINS = 99, MAX_BACK = 6;
     public static final String COINS_SMALL = "coins_small", COINS_BIG = "coins_big", EVERYONE = "everyone", BACK = "back";
     private static final Map<String, Integer> DEFAULTS = Map.of(COINS_SMALL, 10, COINS_BIG, 20, EVERYONE, 5, BACK, 3);
 
     private static final String K = MENU_KEY + "mistigri.";
+    /** The sentences' swatches in the menu: gold, orange, rust, star yellow, red, rewind pink, cursed violet, pity green. */
+    private static final int[] SWATCHES = {0xE8C547, 0xE07B2A, 0xA0522D, 0xFFD83D, 0xD94040, 0xE23C9A, 0x912CD6, 0x6CBF4A};
     private static final List<CartridgeModule> MODULES = modules0();
 
+    /**
+     * One column beside a tile: the sentence picked in a row of swatches, then its weight, its amount (greyed out for
+     * the sentences without one) and how often it is drawn.
+     */
     private static List<CartridgeModule> modules0() {
-        List<CartridgeModule> modules = new ArrayList<>();
-        modules.add(description("mistigri_cartridge", 3));
+        List<ChoiceModule.Option> options = new ArrayList<>();
         for (Sentence sentence : Sentence.values()) {
-            modules.add(new NumberModule("w_" + sentence.id, K + "weight." + sentence.id, 0, MAX_WEIGHT,
-                    stack -> weight(stack, sentence), (edit, value) -> put(edit.stack(), "w_" + sentence.id, value),
-                    stack -> COLOR));
-            switch (sentence) {
-                case COINS_SMALL -> modules.add(amount(COINS_SMALL, MAX_COINS, sentence));
-                case COINS_BIG -> modules.add(amount(COINS_BIG, MAX_COINS, sentence));
-                case EVERYONE -> modules.add(amount(EVERYONE, MAX_COINS, sentence));
-                case BACK -> modules.add(amount(BACK, MAX_BACK, sentence));
-                default -> {
-                }
-            }
+            options.add(new ChoiceModule.Option(K + "sentence." + sentence.id, SWATCHES[sentence.ordinal()],
+                    "message.steveparty.mistigri_space.sentence." + sentence.id));
         }
-        modules.add(new InfoModule("hint", null, 2, context -> List.of(
-                new InfoModule.Line(Text.translatable(K + "hint"), InfoModule.Tone.SOFT))));
-        return List.copyOf(modules);
+        return List.of(
+                description("mistigri_cartridge", 3),
+                new ChoiceModule("sentence", K + "sentence", options, stack -> selected(stack).ordinal(),
+                        (edit, value) -> put(edit.stack(), EDITED, value)),
+                new NumberModule("weight", K + "weight", 0, MAX_WEIGHT, stack -> weight(stack, selected(stack)),
+                        (edit, value) -> put(edit.stack(), "w_" + selected(edit.stack()).id, value), stack -> COLOR),
+                new NumberModule("amount", K + "amount", 1, MAX_COINS, stack -> amountOf(stack, selected(stack)),
+                        (edit, value) -> {
+                            String key = amountKey(selected(edit.stack()));
+                            if (key != null) put(edit.stack(), key, value);
+                        }, stack -> COLOR, stack -> amountKey(selected(stack)) != null),
+                new InfoModule("chance", null, 1, context -> List.of(new InfoModule.Line(
+                        Text.translatable(K + "chance", chance(context.stack(), selected(context.stack()))), InfoModule.Tone.SOFT))));
     }
 
-    /** The amount of a sentence, greyed out while that sentence is never drawn. */
-    private static NumberModule amount(String key, int max, Sentence sentence) {
-        return new NumberModule(key, K + key, 1, max, stack -> amount(stack, key),
-                (edit, value) -> put(edit.stack(), key, value), stack -> COLOR, stack -> weight(stack, sentence) > 0);
+    /** The settings key of the sentence being edited in the menu. */
+    private static final String EDITED = "edited";
+
+    /** The sentence the menu edits now. */
+    public static Sentence selected(ItemStack stack) {
+        int index = settings(stack).getOrDefault(EDITED, 0);
+        return Sentence.values()[Math.clamp(index, 0, Sentence.values().length - 1)];
+    }
+
+    /** The amount setting of {@code sentence}, null if it has none. */
+    public static String amountKey(Sentence sentence) {
+        return switch (sentence) {
+            case COINS_SMALL -> COINS_SMALL;
+            case COINS_BIG -> COINS_BIG;
+            case EVERYONE -> EVERYONE;
+            case BACK -> BACK;
+            default -> null;
+        };
+    }
+
+    private static int amountOf(ItemStack stack, Sentence sentence) {
+        String key = amountKey(sentence);
+        return key == null ? sentence.amount(stack) : amount(stack, key);
+    }
+
+    /** How often {@code sentence} is drawn, in percent. */
+    public static int chance(ItemStack stack, Sentence sentence) {
+        int total = 0;
+        for (Sentence each : Sentence.values()) total += weight(stack, each);
+        return total == 0 ? 0 : Math.round(100f * weight(stack, sentence) / total);
     }
 
     public MistigriCartridgeItem(Settings settings) {
@@ -116,13 +149,13 @@ public class MistigriCartridgeItem extends CartridgeItem {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         int total = 0;
-        for (Sentence sentence : Sentence.values()) total += weight(stack, sentence);
         for (Sentence sentence : Sentence.values()) {
             int weight = weight(stack, sentence);
+            total += weight;
             if (weight == 0) continue;
             tooltip.add(Text.translatable("tooltip.steveparty.mistigri_cartridge.sentence",
                             Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack)),
-                            Math.round(100f * weight / Math.max(1, total)))
+                            chance(stack, sentence))
                     .styled(style -> style.withColor(TextColor.fromRgb(0xC9A2F0))));
         }
         if (total == 0) tooltip.add(Text.translatable("tooltip.steveparty.mistigri_cartridge.none").formatted(Formatting.GRAY));

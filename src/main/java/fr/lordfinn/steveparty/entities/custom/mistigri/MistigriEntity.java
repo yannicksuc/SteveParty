@@ -218,7 +218,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     }
 
     /** Loafs on top of the chest at {@code pos} (it won't open under him: MistigriJinx). */
-    void loafOn(@Nullable BlockPos pos) {
+    public void loafOn(@Nullable BlockPos pos) {
         setLoafing(true);
         chest = pos == null ? null : pos.toImmutable();
     }
@@ -462,7 +462,8 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         super.readCustomDataFromNbt(nbt);
         fishFed = nbt.getInt("FishFed");
         fishToTame = nbt.getInt("FishToTame");
-        setAngry(nbt.getInt("Angry"));
+        angryTicks = nbt.getInt("Angry");
+        this.dataTracker.set(ANGRY, angryTicks > 0);
         if (nbt.contains("Chest")) loafOn(BlockPos.fromLong(nbt.getLong("Chest")));
         else setLoafing(nbt.getBoolean("Loafing"));
         nextSwatTime = nbt.getLong("NextSwat");

@@ -123,14 +123,14 @@ public final class MistigriJinx {
     }
 
     /** Keeps Luck on his owner while near him (refreshed every second, a little longer than that). */
-    static void giveLuck(ServerWorld world, MistigriEntity mistigri) {
+    public static void giveLuck(ServerWorld world, MistigriEntity mistigri) {
         if (!(mistigri.getOwner() instanceof PlayerEntity owner) || owner.getWorld() != world) return;
         if (owner.squaredDistanceTo(mistigri) > LUCK_RANGE * LUCK_RANGE) return;
         owner.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, 60, 0, true, false, true), mistigri);
     }
 
     /** The players crossing his path (every other tick). */
-    static void tickCrossings(ServerWorld world, MistigriEntity mistigri) {
+    public static void tickCrossings(ServerWorld world, MistigriEntity mistigri) {
         long now = world.getTime();
         Map<UUID, Watch> watches = mistigri.watches;
         for (PlayerEntity player : world.getPlayers()) {
