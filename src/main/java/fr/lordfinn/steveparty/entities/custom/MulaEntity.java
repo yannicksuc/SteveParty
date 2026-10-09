@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.goals.FollowOwnerWhileFlyingGoal;
@@ -53,7 +54,7 @@ import software.bernie.geckolib.animation.AnimationState;
 
 import java.util.*;
 
-public class MulaEntity extends TameableEntity implements GeoEntity, fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere {
+public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwnerAnywhere {
 
 	private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
 
@@ -395,7 +396,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, fr.lordfinn
 			}
 			return;
 		}
-		if (this.age % 20 == 3 && isTamed()) fr.lordfinn.steveparty.entities.PetTeleports.remember(this);
+		tickFollow(isTamed());
 		if (spawnSite != 0 && spawnSiteEpoch != MulaSpawnSites.epoch()) {
 			spawnSiteEpoch = MulaSpawnSites.epoch();
 			if (leaveWithRetiredSite()) return;
@@ -525,12 +526,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, fr.lordfinn
 	 */
 	@Override
 	public void tryTeleportToOwner() {
-		if (getOwner() instanceof net.minecraft.server.network.ServerPlayerEntity owner && owner.getWorld() == getWorld()
-				&& squaredDistanceTo(owner) > fr.lordfinn.steveparty.entities.PetTeleports.NEAR * fr.lordfinn.steveparty.entities.PetTeleports.NEAR) {
-			if (goesWithOwner(owner)) fr.lordfinn.steveparty.entities.PetTeleports.bring(this, owner.getServerWorld(), arrivalSpot(owner), getYaw());
-			return;
-		}
-		super.tryTeleportToOwner();
+		if (!catchUpFar(getOwner())) super.tryTeleportToOwner();
 	}
 
 	/** @return true while it is a board token: a static pawn, with none of its life (see {@link #tickAsToken}). */

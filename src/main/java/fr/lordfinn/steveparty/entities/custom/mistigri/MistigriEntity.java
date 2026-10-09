@@ -333,11 +333,9 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         if (boardActor || !isAlive()) return;
         tickSwat(world);
         if (age % 2 == 0) MistigriBadLuck.tickCrossings(world, this);
+        tickFollow(isTamed());
         if (age % 20 == 5) {
-            if (isTamed()) {
-                MistigriBadLuck.giveLuck(world, this);
-                PetTeleports.remember(this);
-            }
+            if (isTamed()) MistigriBadLuck.giveLuck(world, this);
             if (!isAngry() && wolfNearby(world)) setAngry(ANGRY_TICKS);
         }
         // got off his chest (pushed, the chest broken): no longer sitting on it
@@ -479,19 +477,13 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     /** Going along: tamed by them, not told to sit, not on a lead or riding, not the board's. */
     @Override
     public boolean goesWithOwner(ServerPlayerEntity owner) {
-        return isAlive() && isTamed() && owner.getUuid().equals(getOwnerUuid()) && !isSitting() && !boardActor
-                && !isLeashed() && !hasVehicle();
+        return followsFreely(owner) && isTamed() && !isSitting() && !boardActor;
     }
 
     /** Far behind: recreated by them (PetTeleports) rather than moved in place, which could leave him unseen. */
     @Override
     public void tryTeleportToOwner() {
-        if (getOwner() instanceof ServerPlayerEntity owner && owner.getWorld() == getWorld()
-                && squaredDistanceTo(owner) > PetTeleports.NEAR * PetTeleports.NEAR) {
-            if (goesWithOwner(owner)) PetTeleports.bring(this, owner.getServerWorld(), arrivalSpot(owner), getYaw());
-            return;
-        }
-        super.tryTeleportToOwner();
+        if (!catchUpFar(getOwner())) super.tryTeleportToOwner();
     }
 
     // ---------------------------------------------------------------- save

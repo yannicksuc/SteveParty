@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.entities.custom.frousseux;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
-import fr.lordfinn.steveparty.entities.PetTeleports;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
@@ -503,7 +502,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (age % 4 == 0) tickShy(world);
         if (age % 20 == 7) tickLightMode(world);
         if (age % 20 == 0) updateFlameStage();
-        if (age % 20 == 3 && isTamed()) PetTeleports.remember(this); // its greatest health may change (effects, attributes)
+        tickFollow(isTamed());
         if (age % 2 == 0) light.update(world, BlockPos.ofFloored(getBoundingBox().getCenter()), getFlame().light);
         if (age % 10 == 0 && !flight.isMovingTo()) {
             Vec3d out = FrousseuxFlight.escape(this);
@@ -947,7 +946,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** Going along: tamed by them, following (not sitting, not on a lead or riding), not a board actor. */
     @Override
     public boolean goesWithOwner(ServerPlayerEntity owner) {
-        return isAlive() && isOwner(owner) && !isSitting() && !boardActor && !isLeashed() && !hasVehicle();
+        return followsFreely(owner) && !isSitting() && !boardActor;
     }
 
     @Override
