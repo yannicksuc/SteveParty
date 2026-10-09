@@ -154,6 +154,33 @@ public class ModEntities {
                     .build(PLAYER_PAWN_KEY.getValue().toString())
     );
 
+    /** The Mistigri (Jinx), the big black witch's cat of bad luck (see MistigriEntity). */
+    public static final RegistryKey<EntityType<?>> MISTIGRI_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mistigri"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity> MISTIGRI = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("mistigri"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity>create(fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity::new, SpawnGroup.CREATURE)
+                    .dimensions(fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.WIDTH,
+                            fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.HEIGHT)
+                    .eyeHeight(1.2f)
+                    .maxTrackingRange(10)
+                    .build(MISTIGRI_KEY.getValue().toString())
+    );
+
+    /** The Mistigri's giant loaded die, a prop of his board space (see MistigriSentences). */
+    public static final RegistryKey<EntityType<?>> MISTIGRI_DIE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mistigri_die"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity> MISTIGRI_DIE = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("mistigri_die"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity>create(fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity::new, SpawnGroup.MISC)
+                    .dimensions(1.5f, 1.5f)
+                    .makeFireImmune()
+                    .disableSummon()
+                    .maxTrackingRange(10)
+                    .trackingTickInterval(1)
+                    .build(MISTIGRI_DIE_KEY.getValue().toString())
+    );
+
     public static void initialize() {
         // The Boxed Trader was the Hiding Trader: worlds saved before the rename keep their merchants and spawn eggs
         fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("hiding_trader"), Steveparty.id("boxed_trader"));
@@ -166,5 +193,6 @@ public class ModEntities {
         FabricDefaultAttributeRegistry.register(ModEntities.PLAYER_PAWN, fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOOMCART, fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.MISTIGRI, fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.setAttributes());
     }
 }

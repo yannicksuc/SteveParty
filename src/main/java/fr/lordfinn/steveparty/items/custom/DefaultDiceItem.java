@@ -72,6 +72,24 @@ public class DefaultDiceItem extends Item {
         return TypedActionResult.success(player.getStackInHand(hand), world.isClient());
     }
 
+    /** The mob the die being thrown is bound to ({@link #throwAt}), null for an ordinary throw. Server thread. */
+    private static @org.jetbrains.annotations.Nullable net.minecraft.entity.LivingEntity aimedAt;
+
+    /**
+     * Throws the die in {@code player}'s hand at {@code target}, bound to it: it floats to it and rolls above it rather
+     * than at the nearest mob (a die used on a cat: see MistigriSummoning). The usual rules of a throw apply.
+     */
+    public static ActionResult throwAt(PlayerEntity player, Hand hand, net.minecraft.entity.LivingEntity target) {
+        ItemStack stack = player.getStackInHand(hand);
+        if (!(stack.getItem() instanceof DefaultDiceItem item)) return ActionResult.PASS;
+        aimedAt = target;
+        try {
+            return item.use(player.getWorld(), player, hand).getResult();
+        } finally {
+            aimedAt = null;
+        }
+    }
+
     protected void decrementDiceInHand(PlayerEntity player, Hand hand) {
         player.getStackInHand(hand).decrementUnlessCreative(1, player);
     }
@@ -113,7 +131,8 @@ public class DefaultDiceItem extends Item {
     protected void configureDiceEntity(DiceEntity diceEntity, PlayerEntity player, Hand hand) {
         diceEntity.setVelocity(throwVelocity(player));
         diceEntity.setOwner(player.getUuid());
-        diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
+        if (aimedAt != null && aimedAt.isAlive()) diceEntity.setTargetEntity(aimedAt);
+        else diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
         diceEntity.setItemReference(player.getStackInHand(hand).copyWithCount(1));
     }
 

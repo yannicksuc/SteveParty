@@ -254,7 +254,7 @@ public class StevepartyClient implements ClientModInitializer {
         // Every Steve Party egg is drawn per mob (textures/item/*_spawn_egg.png, 1.21.5 style): item/generated gives
         // layer0 tint index 0, so the vanilla spawn-egg tint is replaced by a white one
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG,
-                ModItems.BOXED_TRADER_SPAWN_EGG, ModItems.FROUSSEUX_SPAWN_EGG, ModItems.BOOMCART_SPAWN_EGG);
+                ModItems.BOXED_TRADER_SPAWN_EGG, ModItems.FROUSSEUX_SPAWN_EGG, ModItems.BOOMCART_SPAWN_EGG, ModItems.MISTIGRI_SPAWN_EGG);
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.GLANDOUILLE_SPAWN_EGGS);
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
@@ -341,6 +341,8 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.client.entity.GlandouilleRenderer::new);
         EntityRendererRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.client.entity.FrousseuxRenderer::new);
         EntityRendererRegistry.register(ModEntities.BOOMCART, fr.lordfinn.steveparty.client.entity.BoomcartRenderer::new);
+        EntityRendererRegistry.register(ModEntities.MISTIGRI, fr.lordfinn.steveparty.client.entity.MistigriRenderer::new);
+        EntityRendererRegistry.register(ModEntities.MISTIGRI_DIE, fr.lordfinn.steveparty.client.entity.MistigriDieRenderer::new);
         EntityRendererRegistry.register(ModEntities.PLAYER_PAWN, fr.lordfinn.steveparty.client.pawn.PlayerPawnRenderer::new);
         fr.lordfinn.steveparty.client.pawn.PawnPossessionClient.initialize();
         fr.lordfinn.steveparty.client.token.PawnPoseFeedback.initialize();

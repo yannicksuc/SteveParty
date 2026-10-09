@@ -143,6 +143,8 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
             case STAR -> LEVEL_STAR;
             case GLANDOUILLE -> LEVEL_GLANDOUILLE;
             case FROUSSEUX -> LEVEL_FROUSSEUX;
+            // no level left: the Mistigri's space reads as the malus it is
+            case MISTIGRI -> LEVEL_MALUS;
             default -> LEVEL_DEFAULT;
         };
     }
