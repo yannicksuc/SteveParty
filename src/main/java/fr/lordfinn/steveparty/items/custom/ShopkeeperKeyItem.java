@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
@@ -177,16 +178,18 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
         player.sendMessage(status, false);
     }
 
-    /** How to set up a shop with the key: the next step first (link a trader, then his blocks), each block's role. */
-    @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         boolean linked = stack.contains(ModComponents.SHOPKEEPER_UUID);
-        tooltip.add(Text.translatable("tooltip.steveparty.shopkeeper_key." + (linked ? "linked" : "unlinked"))
-                .formatted(linked ? Formatting.GREEN : Formatting.YELLOW));
-        for (String line : List.of("blocks", "stall", "stock", "register", "toggle")) {
-            tooltip.add(Text.translatable("tooltip.steveparty.shopkeeper_key." + line).formatted(Formatting.GRAY));
-        }
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.SHOP);
+        if (linked) tips.state(Tooltips.good(Text.translatable("tooltip.steveparty.shopkeeper_key.linked")));
+        tips.summary("tooltip.steveparty.shopkeeper_key.summary");
+        tips.more(more -> {
+            more.use(Tooltips.Keys.use(), "tooltip.steveparty.shopkeeper_key.unlinked");
+            more.use(Tooltips.Keys.use(), "tooltip.steveparty.shopkeeper_key.toggle");
+            more.note("tooltip.steveparty.shopkeeper_key.blocks");
+            for (String line : List.of("stall", "stock", "register")) more.note("tooltip.steveparty.shopkeeper_key." + line);
+        });
         if (linked) super.appendTooltip(stack, context, tooltip, type);
     }
 

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilInteractions;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
 import fr.lordfinn.steveparty.components.InventoryComponent;
@@ -254,22 +255,27 @@ public class StencilGunItem extends Item {
         Load load = selectedLoad(stack);
         List<ItemStack> contents = contents(stack);
         StencilGunSelection selection = validSelection(contents, selection(stack));
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL);
         if (load.shape() != null) {
             StencilPatterns.Pattern pattern = StencilPatterns.byShape(load.shape());
-            Text name = pattern != null ? pattern.name() : Text.translatable("tooltip.steveparty.stencil.custom");
-            tooltip.add(Text.translatable("tooltip.steveparty.stencil_gun.stencil", name).formatted(Formatting.GRAY));
+            tips.state("tooltip.steveparty.stencil_gun.stencil", Tooltips.look(pattern != null ? pattern.name()
+                    : Text.translatable("tooltip.steveparty.stencil.custom")));
         } else {
-            tooltip.add(Text.translatable("tooltip.steveparty.stencil_gun.no_stencil").formatted(Formatting.GRAY));
+            tips.state("tooltip.steveparty.stencil_gun.stencil", Tooltips.bad(Text.translatable("tooltip.steveparty.stencil_gun.no_stencil")));
         }
         Text paint = load.color() != null
                 ? Text.translatable("color.minecraft." + load.color().getName())
                 : Text.translatable("tooltip.steveparty.stencil_sign.engraved");
-        tooltip.add(Text.translatable("tooltip.steveparty.stencil_gun.color", paint).formatted(Formatting.GRAY));
+        net.minecraft.text.MutableText value = Tooltips.value(paint);
         if (selection.dye() != StencilGunSelection.ENGRAVE && load.dyeSlot() >= 0) {
-            tooltip.add(Text.translatable("tooltip.steveparty.stencil_gun.dye_left", contents.get(load.dyeSlot()).getCount()).formatted(Formatting.DARK_GRAY));
+            value.append(Text.translatable("tooltip.steveparty.stencil_gun.dye_left", contents.get(load.dyeSlot()).getCount()).formatted(Tooltips.DIM));
         }
-        tooltip.add(Text.translatable("tooltip.steveparty.stencil_gun.usage").formatted(Formatting.DARK_GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.stencil_gun.no_tool").formatted(Formatting.DARK_GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.stencil.remove").formatted(Formatting.DARK_GRAY));
+        tips.state("tooltip.steveparty.stencil_gun.color", value);
+        tips.summary("tooltip.steveparty.stencil_gun.summary");
+        tips.more(more -> more
+                .use(Tooltips.Keys.use(), "tooltip.steveparty.stencil_gun.usage")
+                .use(Tooltips.Keys.attack(), "tooltip.steveparty.stencil_gun.wheel")
+                .note("tooltip.steveparty.stencil_gun.no_tool")
+                .note("tooltip.steveparty.stencil.remove"));
     }
 }

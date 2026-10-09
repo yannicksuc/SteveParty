@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -120,9 +121,11 @@ public class BoxCostumeItem extends Item implements Equipment {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("item.steveparty.box_costume.tooltip.wear").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("item.steveparty.box_costume.tooltip.hide").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("item.steveparty.box_costume.tooltip.origin").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
+        Tooltips.of(tooltip).tags(Tooltips.Tag.COSTUME)
+                .summary("item.steveparty.box_costume.tooltip.wear")
+                .more(more -> more
+                        .use(Tooltips.Keys.sneak(), "item.steveparty.box_costume.tooltip.hide")
+                        .note("item.steveparty.box_costume.tooltip.origin"));
         super.appendTooltip(stack, context, tooltip, type);
     }
 }

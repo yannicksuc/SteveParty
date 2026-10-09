@@ -267,6 +267,8 @@ public class StevepartyClient implements ClientModInitializer {
         ExplorerHelmetRenderer.register();
         MiniGamePageTooltipComponent.register();
         Tooltips.setShiftProbe(net.minecraft.client.gui.screen.Screen::hasShiftDown);
+        net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register((stack, context, type, lines) ->
+                fr.lordfinn.steveparty.items.tooltip.ItemTips.append(stack, lines));
         TitleScreenBackground.initialize();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));
 

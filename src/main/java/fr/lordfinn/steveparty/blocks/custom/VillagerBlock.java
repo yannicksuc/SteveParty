@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
@@ -157,7 +158,6 @@ public class VillagerBlock extends FallingBlock implements BlockEntityProvider {
         }
     }
 
-    /** Who is squashed inside (profession and name), for a villager block item that keeps a villager. */
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
@@ -175,8 +175,9 @@ public class VillagerBlock extends FallingBlock implements BlockEntityProvider {
                 // an unreadable name: the profession alone
             }
         }
-        tooltip.add((name != null ? Text.translatable("tooltip.steveparty.villager_block.named", name, job)
-                : Text.translatable("tooltip.steveparty.villager_block.villager", job)).formatted(Formatting.GRAY));
+        Tooltips.of(tooltip).state("tooltip.steveparty.villager_block.villager", name != null
+                ? Tooltips.value(Text.translatable("tooltip.steveparty.villager_block.named", name, job))
+                : Tooltips.value(job));
     }
 
     @Override

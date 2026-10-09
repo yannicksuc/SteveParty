@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilInteractions;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
@@ -85,18 +86,21 @@ public class StencilItem extends Item {
                 && target.isSideSolidFullSquare(world, context.getBlockPos(), context.getSide());
     }
 
-    @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
         byte[] shape = getShape(stack);
         StencilPatterns.Pattern pattern = StencilPatterns.byShape(shape);
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL);
         // The name of the pattern only: the stencil's icon already shows its shape
-        if (pattern != null) tooltip.add(pattern.name().copy().formatted(Formatting.GOLD));
-        else if (!StencilShape.isBlank(shape)) tooltip.add(Text.translatable("tooltip.steveparty.stencil.custom").formatted(Formatting.GOLD));
-        tooltip.add(Text.translatable("tooltip.steveparty.stencil.usage").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.stencil.usage_tools").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.stencil.usage_engrave").formatted(Formatting.DARK_GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.stencil.remove").formatted(Formatting.DARK_GRAY));
+        if (pattern != null) tips.state("tooltip.steveparty.stencil.pattern", Tooltips.look(pattern.name()));
+        else if (!StencilShape.isBlank(shape)) tips.state("tooltip.steveparty.stencil.pattern",
+                Tooltips.look(Text.translatable("tooltip.steveparty.stencil.custom")));
+        tips.summary("tooltip.steveparty.stencil.summary");
+        tips.more(more -> more
+                .use(Tooltips.Keys.use(), "tooltip.steveparty.stencil.usage")
+                .use(Tooltips.Keys.use(), "tooltip.steveparty.stencil.usage_tools")
+                .use(Tooltips.Keys.use(), "tooltip.steveparty.stencil.usage_engrave")
+                .note("tooltip.steveparty.stencil.remove"));
     }
 }

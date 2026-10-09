@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.effect.SquishEffect;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -516,13 +517,12 @@ public class TokenizerWandItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatableWithFallback("tooltip.steveparty.tokenizer_wand.tokenize",
-                "Use on a mob: cast the token spell and choose its size").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatableWithFallback("tooltip.steveparty.tokenizer_wand.player",
-                "Use on a player: they become a pawn (sneak to get out)").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatableWithFallback("tooltip.steveparty.tokenizer_wand.resize",
-                "Use on one of your tokens: resize it").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatableWithFallback("tooltip.steveparty.tokenizer_wand.move",
-                "To move a token, store it in a Token").formatted(Formatting.DARK_GRAY));
+        Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL)
+                .summary("tooltip.steveparty.tokenizer_wand.summary")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.tokenizer_wand.tokenize")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.tokenizer_wand.player")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.tokenizer_wand.resize")
+                        .note("tooltip.steveparty.tokenizer_wand.move"));
     }
 }

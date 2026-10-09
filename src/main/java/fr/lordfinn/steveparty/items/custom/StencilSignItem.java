@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.RockSignBlock;
@@ -48,20 +49,12 @@ public class StencilSignItem extends BlockItem {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
+        Tooltips tips = Tooltips.of(tooltip);
         if (getBlock() instanceof PlasticRoadSignBlock) {
             PlasticRoadSignBlock.Plate plate = stack.getOrDefault(DataComponentTypes.BLOCK_STATE, BlockStateComponent.DEFAULT)
                     .getValue(PlasticRoadSignBlock.PLATE);
             if (plate == null) plate = PlasticRoadSignBlock.Plate.ROUND;
-            tooltip.add(Text.translatable("tooltip.steveparty.plastic_road_sign.plate." + plate.asString()).formatted(Formatting.GRAY));
-        }
-        if (getBlock() instanceof WoodenPanelBlock || getBlock() instanceof WoodenCutoutPanelBlock || getBlock() instanceof PlasticRoadSignBlock) {
-            tooltip.add(Text.translatable("tooltip.steveparty.sign_post.usage").formatted(Formatting.DARK_GRAY));
-        }
-        if (getBlock() instanceof WoodenCutoutPanelBlock) {
-            tooltip.add(Text.translatable("tooltip.steveparty.cutout_panel.usage").formatted(Formatting.DARK_GRAY));
-        }
-        if (getBlock() instanceof RockSignBlock) {
-            tooltip.add(Text.translatable("tooltip.steveparty.rock_sign.usage").formatted(Formatting.DARK_GRAY));
+            tips.state("tooltip.steveparty.plastic_road_sign.plate", Tooltips.value(Text.translatable("tooltip.steveparty.plastic_road_sign.plate." + plate.asString())));
         }
         StencilCanvasComponent canvas = stack.get(ModComponents.STENCIL_CANVAS);
         if (canvas != null) {
@@ -71,8 +64,15 @@ public class StencilSignItem extends BlockItem {
             Text finish = canvas.color()
                     .<Text>map(color -> Text.translatable("color.minecraft." + color.getName()))
                     .orElse(Text.translatable("tooltip.steveparty.stencil_sign.engraved"));
-            tooltip.add(Text.translatable("tooltip.steveparty.stencil_sign.symbol", symbol, finish).formatted(Formatting.GRAY));
-            if (canvas.glowing()) tooltip.add(Text.translatable("tooltip.steveparty.stencil_sign.glowing").formatted(Formatting.AQUA));
+            tips.state("tooltip.steveparty.stencil_sign.symbol", Tooltips.look(Text.translatable("tooltip.steveparty.stamp.look", symbol, finish)));
+            if (canvas.glowing()) tips.state(Tooltips.setting(Text.translatable("tooltip.steveparty.stencil_sign.glowing")));
         }
+        tips.more(more -> {
+            if (getBlock() instanceof WoodenPanelBlock || getBlock() instanceof WoodenCutoutPanelBlock || getBlock() instanceof PlasticRoadSignBlock) {
+                more.use(Tooltips.Keys.use(), "tooltip.steveparty.sign_post.usage");
+            }
+            if (getBlock() instanceof WoodenCutoutPanelBlock) more.note("tooltip.steveparty.cutout_panel.usage");
+            if (getBlock() instanceof RockSignBlock) more.note("tooltip.steveparty.rock_sign.usage");
+        });
     }
 }
