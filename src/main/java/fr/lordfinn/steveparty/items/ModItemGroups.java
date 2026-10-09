@@ -41,12 +41,16 @@ import static fr.lordfinn.steveparty.items.ModItems.*;
  * then building and decoration. Every listed item is in exactly one tab (CreativeTabsGameTests).
  */
 public final class ModItemGroups {
-    /** Board and party. Keeps the former single tab's id (the guide book opens it). */
-    public static final RegistryKey<ItemGroup> BOARD = key("item_group");
-    public static final RegistryKey<ItemGroup> MINI_GAMES = key("mini_games");
-    public static final RegistryKey<ItemGroup> CREATURES = key("creatures");
-    public static final RegistryKey<ItemGroup> BUILDING = key("building");
+    // Fabric lists the tabs of mods in the order of their ids: the numbers keep them in this order
+    /** Board and party (the guide book opens it). */
+    public static final RegistryKey<ItemGroup> BOARD = key("1_board");
+    public static final RegistryKey<ItemGroup> MINI_GAMES = key("2_mini_games");
+    public static final RegistryKey<ItemGroup> CREATURES = key("3_creatures");
+    public static final RegistryKey<ItemGroup> BUILDING = key("4_building");
     public static final List<RegistryKey<ItemGroup>> ALL = List.of(BOARD, MINI_GAMES, CREATURES, BUILDING);
+
+    /** The stencils shown next to the stencil tools (with the blank one, five in all); the others end the tab. */
+    private static final List<String> SAMPLE_STENCILS = List.of("up_arrow", "creeper", "mushroom", "star");
 
     private ModItemGroups() {
     }
@@ -124,11 +128,12 @@ public final class ModItemGroups {
                 BOOMCART_SPAWN_EGG, FUMAROLE_SPAWN_EGG, ModItems.MAGPIE_NEST);
     }
 
-    /** Stencils, signs, plastic and polished blocks. */
+    /** Stencils, signs, plastic and polished blocks, then the stencil library. */
     private static void building(ItemGroup.DisplayContext context, ItemGroup.Entries entries) {
+        // Only a few stencils here, the blank one and a sample of patterns: the whole library closes the tab
         addAll(entries, STENCIL_MAKER, STENCIL_GUN, STENCIL);
-        for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
-            entries.add(StencilItem.of(pattern));
+        for (String id : SAMPLE_STENCILS) {
+            entries.add(StencilItem.of(StencilPatterns.byId(id)));
         }
         // The 10 fixed-wood easel signs stay in the game for the worlds that have them, but are no longer
         // listed: the material easel sign covers every planks, modded ones included
@@ -167,6 +172,9 @@ public final class ModItemGroups {
         }
         for (PolishedTilesBlock tiles : POLISHED_TILES) {
             for (ItemStack stack : tiles.creativeStacks()) entries.add(stack);
+        }
+        for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
+            if (!SAMPLE_STENCILS.contains(pattern.id())) entries.add(StencilItem.of(pattern));
         }
     }
 

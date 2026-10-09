@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.ModItemGroups;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
@@ -14,6 +16,7 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -65,6 +68,27 @@ public class CreativeTabsGameTests implements FabricGameTest {
         context.assertTrue(missing.isEmpty(), "in no creative tab: " + missing);
         context.assertTrue(twice.isEmpty(), "in several creative tabs: " + twice);
         context.assertTrue(listedAnyway.isEmpty(), "listed, yet meant to stay out: " + listedAnyway);
+        context.complete();
+    }
+
+    /** The building tab shows five stencils by the stencil tools; the rest of the library closes the tab. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void fewStencilsFirstTheLibraryLast(TestContext context) {
+        ServerWorld world = context.getWorld();
+        ItemGroup group = Registries.ITEM_GROUP.getOrThrow(ModItemGroups.BUILDING);
+        group.updateEntries(new ItemGroup.DisplayContext(world.getEnabledFeatures(), false, world.getRegistryManager()));
+        List<ItemStack> stacks = List.copyOf(group.getDisplayStacks());
+        int lastOther = -1, stencils = 0;
+        for (int i = 0; i < stacks.size(); i++) {
+            if (stacks.get(i).isOf(ModItems.STENCIL)) stencils++;
+            else lastOther = i;
+        }
+        int before = 0;
+        for (int i = 0; i < lastOther; i++) {
+            if (stacks.get(i).isOf(ModItems.STENCIL)) before++;
+        }
+        context.assertTrue(before == 5, "stencils before the end of the tab: " + before);
+        context.assertTrue(stencils == StencilPatterns.all().size() + 1, "every pattern and the blank stencil listed: " + stencils);
         context.complete();
     }
 }
