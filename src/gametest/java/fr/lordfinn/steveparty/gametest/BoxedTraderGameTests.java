@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderBoxes;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.BandanaItem;
@@ -37,14 +38,6 @@ import java.util.List;
 
 /** Boxed Trader: bandana and box theft, Box Costume, wearable Bandana, who he pays attention to, wandering, grid alignment. */
 public class BoxedTraderGameTests implements FabricGameTest {
-
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) {
-            for (int z = 0; z < 8; z++) {
-                context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
-            }
-        }
-    }
 
     private static BoxedTraderEntity trader(TestContext context) {
         return context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(3, 1, 3));
@@ -84,7 +77,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void shearsStealTheBandanaOfAnOpenMerchant(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = trader(context);
         ServerPlayerEntity player = playerNear(context, trader);
         context.waitAndRun(3, () -> {
@@ -112,7 +105,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
     /** Shorn of his bandana, then of his box's look: each time he hides for the theft, then comes out by himself. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 2 * (BoxedTraderEntity.SHOCK_TICKS + BoxedTraderEntity.THEFT_HIDE_TICKS) + 100)
     public void afterEachTheftHeComesOutByHimself(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = trader(context);
         ServerPlayerEntity player = playerNear(context, trader);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SHEARS));
@@ -142,7 +135,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void shearsDoNothingOnAClosedOrGlitchedMerchant(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity closed = trader(context);
         BoxedTraderEntity glitched = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(5, 1, 3));
         ServerPlayerEntity player = playerNear(context, closed);
@@ -165,7 +158,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void shearingTwiceTakesTheBandanaThenTheLookOfTheBox(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = trader(context);
         trader.setBlockState(Blocks.OAK_PLANKS.getDefaultState());
         ServerPlayerEntity player = playerNear(context, trader);
@@ -217,7 +210,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aBoxCostumeGivesTheBoxItsLookBack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = trader(context);
         trader.setHasBandana(false);
         trader.setBoxGlitched(true);
@@ -234,7 +227,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aBlockGivesAGlitchedBoxANewLookInsteadOfTrading(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = trader(context);
         trader.setHasBandana(false);
         trader.setBoxGlitched(true);
@@ -316,7 +309,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aMerchantFromHisSpawnEggGetsARandomBox(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         java.util.Set<net.minecraft.block.Block> seen = new java.util.HashSet<>();
         for (int i = 0; i < 12; i++) {
             BoxedTraderEntity trader = ModEntities.BOXED_TRADER_ENTITY.spawnFromItemStack(context.getWorld(), new ItemStack(ModItems.BOXED_TRADER_SPAWN_EGG),
@@ -411,7 +404,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void aHiddenPlayerWhoStopsBecomesABlockOfTheGrid(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerPlayerEntity player = hiddenPlayerAt(context, new Vec3d(3.3, 1, 2.8));
         Vec3d start = player.getPos();
         Vec3d centre = context.getAbsolute(new Vec3d(3.5, 1, 2.5));
@@ -454,7 +447,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aHiddenPlayerOffTheGridOrOnABadCellIsNoBlock(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         // In water
         context.setBlockState(new BlockPos(5, 1, 5), Blocks.WATER);
         ServerPlayerEntity wet = hiddenPlayerAt(context, new Vec3d(5.3, 1, 5.3));
@@ -506,7 +499,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aBandanaCanBeGivenBackToABaldMerchant(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = trader(context);
         trader.setHasBandana(false);
         trader.setBandanaColor(0);
@@ -551,7 +544,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void heIgnoresPlayersWearingABandana(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = trader(context);
         ServerPlayerEntity wearer = playerNear(context, trader);
         wearer.equipStack(EquipmentSlot.HEAD, BandanaItem.create(1));
@@ -584,7 +577,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 700)
     public void anUnassignedMerchantWandersAround(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = trader(context);
         ServerPlayerEntity player = playerNear(context, trader);
         Vec3d start = trader.getPos();
@@ -597,7 +590,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400)
     public void anAssignedMerchantStaysPut(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = trader(context);
         VendorLinkPersistentState.get(context.getWorld().getServer()).linkBlock(trader.getUuid(),
                 GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(new BlockPos(0, 1, 0))));
@@ -611,7 +604,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aClosedMerchantIsAlignedWithTheGrid(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoxedTraderEntity trader = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new Vec3d(3.3, 1, 2.8));
         trader.setYaw(37);
         trader.setBodyYaw(37);
@@ -629,7 +622,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void aHiddenPlayerOnANonFullFloorBecomesABlockToo(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         context.setBlockState(new BlockPos(1, 0, 1), Blocks.DIRT_PATH);
         context.setBlockState(new BlockPos(5, 1, 1), Blocks.STONE_SLAB);
         context.setBlockState(new BlockPos(1, 1, 5), Blocks.WHITE_CARPET);
@@ -655,7 +648,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void aHiddenBlockStopsOthersAndStaysOneUnderThem(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerPlayerEntity hider = hiddenPlayerAt(context, new Vec3d(3.5, 1, 3.5));
         costumeTicks(hider, 2);
         ServerPlayerEntity walker = TestPlayers.mock(context, GameMode.SURVIVAL);
@@ -686,7 +679,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void anObserverSeesTheHiddenBlockWithoutHisGroundFlag(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         // As another client sees him: right on the centre, the ground flag not (yet) synced, never moved by this side
         ServerPlayerEntity hider = hiddenPlayerAt(context, new Vec3d(3.5, 1, 3.5));
         hider.setOnGround(false);

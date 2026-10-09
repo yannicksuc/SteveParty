@@ -34,7 +34,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
 import java.util.Arrays;
@@ -197,8 +196,7 @@ public class MiniGameFormatGameTests implements FabricGameTest {
 
     private static ServerPlayerEntity player(TestContext context, double x, double y, double z) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
+        TestPlayers.place(context, player, x, y, z);
         return player;
     }
 
@@ -212,12 +210,6 @@ public class MiniGameFormatGameTests implements FabricGameTest {
 
     private static GlobalPos global(TestContext context, BlockPos relative) {
         return GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(relative));
-    }
-
-    private static boolean near(TestContext context, ServerPlayerEntity player, BlockPos mouth) {
-        Vec3d at = context.getRelative(player.getPos());
-        return !player.hasVehicle() && Math.abs(at.x - (mouth.getX() + 0.5)) < 1.2 && Math.abs(at.z - (mouth.getZ() + 0.5)) < 1.2
-                && at.y >= mouth.getY() + 0.9;
     }
 
     /**

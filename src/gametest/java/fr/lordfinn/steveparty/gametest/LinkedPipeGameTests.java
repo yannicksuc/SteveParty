@@ -57,8 +57,7 @@ public class LinkedPipeGameTests implements FabricGameTest {
     private static ServerPlayerEntity player(TestContext context, double x, double y, double z) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
+        TestPlayers.place(context, player, x, y, z);
         return player;
     }
 

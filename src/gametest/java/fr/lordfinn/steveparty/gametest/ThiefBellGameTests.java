@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
@@ -32,10 +33,6 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  */
 public class ThiefBellGameTests implements FabricGameTest {
     private static final String BATCH = "thief_bell";
-
-    private static int count(ServerPlayerEntity player, Item item) {
-        return InventoryUtils.count(player.getInventory(), new ItemStack(item));
-    }
 
     /** A party of the given players (one token each, in this order), counting gold ingots as coins, emeralds as stars. */
     private static PartyControllerEntity party(TestContext context, ServerPlayerEntity... players) {

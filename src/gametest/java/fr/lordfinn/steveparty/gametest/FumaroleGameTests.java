@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleBlast;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumarolePumping;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleRiding;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -49,10 +50,6 @@ public class FumaroleGameTests implements FabricGameTest {
         FumaroleEntity fumarole = context.spawnEntity(ModEntities.FUMAROLE, at);
         fumarole.setAiDisabled(true);
         return fumarole;
-    }
-
-    private static void floor(TestContext context, int size) {
-        for (int x = 0; x < size; x++) for (int z = 0; z < size; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
     }
 
     /** A clear strip beyond the 8-block template (whatever stands there), floored. */
@@ -108,7 +105,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void spawnsAtLeastHalfFullWithItsStats(TestContext context) {
-        floor(context, 8);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         for (int i = 0; i < 5; i++) {
             FumaroleEntity fumarole = ModEntities.FUMAROLE.create(world);
@@ -126,7 +123,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void bucketsTakeAndPourOnlyLava(TestContext context) {
-        floor(context, 8);
+        TestBoards.floor(context, 8);
         FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
         fumarole.setTank(5);
         ServerPlayerEntity player = player(context, new ItemStack(Items.BUCKET));
@@ -151,7 +148,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_pump")
     public void pumpingLeavesTheSource(TestContext context) {
-        floor(context, 16);
+        TestBoards.floor(context, 16);
         FumaroleEntity fumarole = spawn(context, new BlockPos(2, 1, 7));
         fumarole.setTank(0);
         pool(context, new BlockPos(9, 0, 7), 1, 1);
@@ -175,7 +172,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void emptyingItMakesItTamable(TestContext context) {
-        floor(context, 8);
+        TestBoards.floor(context, 8);
         FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
         ServerPlayerEntity player = player(context, new ItemStack(Items.BUCKET));
         fumarole.setTank(2);
@@ -193,7 +190,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void eachHeadTrustsWhoFedIt(TestContext context) {
-        floor(context, 8);
+        TestBoards.floor(context, 8);
         FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
         ServerPlayerEntity a = player(context, ItemStack.EMPTY), b = player(context, ItemStack.EMPTY);
         ItemStack cream = new ItemStack(Items.MAGMA_CREAM, 16);
@@ -224,7 +221,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void tamedAndSaddledItIsRidden(TestContext context) {
-        floor(context, 8);
+        TestBoards.floor(context, 8);
         FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
         ServerPlayerEntity owner = player(context, ItemStack.EMPTY), friend = player(context, ItemStack.EMPTY);
         tame(fumarole, owner);
@@ -248,7 +245,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void anUntamedOneThrowsItsRiderOff(TestContext context) {
-        floor(context, 8);
+        TestBoards.floor(context, 8);
         FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
         ServerPlayerEntity player = player(context, ItemStack.EMPTY);
         player.interact(fumarole, Hand.MAIN_HAND);
@@ -507,7 +504,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = GRIEFING_BATCH, tickLimit = 40)
     public void deathSpillsLavaOnlyWithMobGriefing(TestContext context) {
-        floor(context, 8);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         GameRules.BooleanRule griefing = world.getGameRules().get(GameRules.DO_MOB_GRIEFING);
         boolean before = griefing.get();
@@ -540,7 +537,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void eachHeadHasItsOwnVentAndTarget(TestContext context) {
-        floor(context, 8);
+        TestBoards.floor(context, 8);
         FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
         PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(1, 1, 1));
         int heads = FumaroleEntity.HEADS.length;
@@ -559,7 +556,7 @@ public class FumaroleGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void itsTankTamingAndSaddleAreSaved(TestContext context) {
-        floor(context, 8);
+        TestBoards.floor(context, 8);
         FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
         ServerPlayerEntity owner = player(context, ItemStack.EMPTY), friend = player(context, ItemStack.EMPTY);
         fumarole.feedHead(friend, 2, new ItemStack(Items.MAGMA_CREAM));

@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxCompanion;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -27,10 +28,6 @@ import net.minecraft.world.GameMode;
  */
 public class FrousseuxGameTests implements FabricGameTest {
 
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
-    }
-
     private static FrousseuxEntity frousseux(TestContext context, BlockPos at) {
         FrousseuxEntity one = context.spawnEntity(ModEntities.FROUSSEUX, at);
         one.setAiDisabled(true);
@@ -39,8 +36,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     private static ServerPlayerEntity player(TestContext context, BlockPos at) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
-        Vec3d pos = context.getAbsolute(Vec3d.ofBottomCenter(at));
-        player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
+        TestPlayers.place(context, player, Vec3d.ofBottomCenter(at), 0, 0);
         player.getInventory().clear();
         return player;
     }
@@ -58,7 +54,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void itStealsOneItemNeverTheStack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
         player.getInventory().setStack(0, new ItemStack(Items.COBBLESTONE, 10));
@@ -75,7 +71,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void nothingShinyNothingStolen(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
         player.getInventory().setStack(0, new ItemStack(Items.COBBLESTONE, 10));
@@ -86,7 +82,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void fireLightAndAPetWardOffThieves(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
         context.assertFalse(FrousseuxEntity.isWarded(context.getWorld(), player), "bare-handed: fair game");
@@ -106,7 +102,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void meleeHitsAreDodged(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
         Vec3d before = frousseux.getPos();
@@ -120,7 +116,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void tamingGivesTheItemBack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
         player.getInventory().setStack(2, new ItemStack(Items.GOLD_INGOT, 3));
@@ -135,7 +131,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void flintAndSteelFirstGetsTheItemBack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
         player.getInventory().setStack(2, new ItemStack(Items.EMERALD, 1));
@@ -150,7 +146,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void killedItDropsWhatItStole(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
         player.getInventory().setStack(2, new ItemStack(Items.REDSTONE, 4));
@@ -167,7 +163,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void cobwebsLetItsOwnerThrough(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(1, 1, 1));
         ServerPlayerEntity owner = player(context, new BlockPos(4, 1, 4));
         ServerPlayerEntity other = player(context, new BlockPos(4, 1, 5));
@@ -183,7 +179,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theCandleHolderKeepsTheSameFrousseux(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
         frousseux.tame(owner);
@@ -226,7 +222,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void itGoesWithItsOwnerOnlyWhileFollowing(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
         ServerPlayerEntity other = player(context, new BlockPos(5, 1, 5));
@@ -246,7 +242,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void onlyItsOwnerWakesTheCandleHolder(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
         ServerPlayerEntity other = player(context, new BlockPos(5, 1, 5));
@@ -266,7 +262,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theCandleHolderGoesOnItsSaucerAndOffAgain(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
         frousseux.tame(owner);
@@ -293,7 +289,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aCandleHolderSetOnAPlacedSaucerStandsOnIt(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
         frousseux.tame(owner);
@@ -318,7 +314,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void onlyPotionsAndCommandsHurtIt(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         var sources = frousseux.getDamageSources();
         context.assertFalse(frousseux.damage(sources.thrown(null, null), 4f), "a thrown thing does nothing");
@@ -334,7 +330,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void itLeavesTheSameVictimBeForTenMinutes(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
         ServerPlayerEntity other = player(context, new BlockPos(4, 1, 4));

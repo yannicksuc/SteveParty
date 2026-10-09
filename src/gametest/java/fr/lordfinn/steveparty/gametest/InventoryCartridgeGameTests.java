@@ -43,8 +43,7 @@ public class InventoryCartridgeGameTests implements FabricGameTest {
 
     private static ServerPlayerEntity player(TestContext context) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
-        Vec3d at = context.getAbsolute(new Vec3d(3.5, 1, 3.5));
-        player.refreshPositionAndAngles(at.x, at.y, at.z, 0, 0);
+        TestPlayers.place(context, player, 3.5, 1, 3.5);
         return player;
     }
 

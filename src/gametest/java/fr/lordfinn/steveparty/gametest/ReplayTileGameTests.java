@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepFactory;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
@@ -25,7 +25,6 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
@@ -60,35 +59,7 @@ public class ReplayTileGameTests implements FabricGameTest {
     }
 
     private static PigEntity spawnToken(TestContext context, BlockPos pos, @Nullable UUID owner) {
-        PigEntity pig = context.spawnMob(EntityType.PIG, pos.up());
-        TokenizedEntityInterface token = (TokenizedEntityInterface) pig;
-        token.steveparty$setTokenized(true);
-        token.steveparty$setTokenOwner(owner);
-        token.steveparty$setStatus(TokenStatus.IN_GAME);
-        return pig;
-    }
-
-    /**
-     * A party of {@code a} and {@code b} (two rounds), started up to the first turn of {@code a}. The test removes the
-     * controller before it completes (a test has a single final task).
-     */
-    private static PartyControllerEntity startParty(TestContext context, UUID a, UUID b) {
-        context.setBlockState(CONTROLLER.down(), Blocks.STONE);
-        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
-        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
-        PartyData data = new PartyData();
-        data.addToken(a);
-        data.addToken(b);
-        data.addStep(new PartyStep());
-        for (int round = 0; round < 2; round++) {
-            data.addStep(new TokenTurnPartyStep(a, null));
-            data.addStep(new TokenTurnPartyStep(b, null));
-        }
-        data.addStep(new EndPartyStep(new ArrayList<>(List.of(a, b))));
-        controller.setPartyData(data);
-        controller.nextStep();
-        controller.nextStep();
-        return controller;
+        return TestBoards.token(context, pos.up(), owner);
     }
 
     private static List<Played> record(TestContext context) {
@@ -123,7 +94,7 @@ public class ReplayTileGameTests implements FabricGameTest {
         BoardSpaceBlockEntity tile = placeTile(context, pos, new ItemStack(ModItems.REPLAY_CARTRIDGE));
         PigEntity token = spawnToken(context, pos, null);
         UUID a = token.getUuid(), b = UUID.randomUUID();
-        PartyControllerEntity controller = startParty(context, a, b);
+        PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 2, a, b);
         PartyData data = controller.getPartyData();
         context.assertEquals(data.getStepIndex(), 1, "turn of a");
         int steps = data.getSteps().size();
@@ -169,7 +140,7 @@ public class ReplayTileGameTests implements FabricGameTest {
         BoardSpaceBlockEntity bonus = placeTile(context, bonusPos, bonusCartridge);
         PigEntity token = spawnToken(context, replayPos, null);
         UUID a = token.getUuid(), b = UUID.randomUUID();
-        PartyControllerEntity controller = startParty(context, a, b);
+        PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 2, a, b);
         PartyData data = controller.getPartyData();
 
         replay.onDestinationReached(token, controller);
@@ -198,7 +169,7 @@ public class ReplayTileGameTests implements FabricGameTest {
         placeTile(context, pos, new ItemStack(ModItems.REPLAY_CARTRIDGE));
         PigEntity token = spawnToken(context, pos, null);
         UUID other = UUID.randomUUID();
-        PartyControllerEntity controller = startParty(context, other, token.getUuid());
+        PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 2, other, token.getUuid());
         int steps = controller.getPartyData().getSteps().size();
         context.assertEquals(ReplayBoardSpaceBehavior.grant(controller, token), Landing.DEFAULT, "not its turn");
         context.assertEquals(ReplayBoardSpaceBehavior.grant(null, token), Landing.DEFAULT, "no party");
@@ -215,7 +186,7 @@ public class ReplayTileGameTests implements FabricGameTest {
         BlockPos pos = new BlockPos(2, 1, 2);
         BoardSpaceBlockEntity tile = placeTile(context, pos, new ItemStack(ModItems.REPLAY_CARTRIDGE));
         PigEntity token = spawnToken(context, pos, player.getUuid());
-        PartyControllerEntity controller = startParty(context, token.getUuid(), UUID.randomUUID());
+        PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 2, token.getUuid(), UUID.randomUUID());
         PartyData data = controller.getPartyData();
 
         // The player threw a (named, like a forged one) Power-up die: it was spent

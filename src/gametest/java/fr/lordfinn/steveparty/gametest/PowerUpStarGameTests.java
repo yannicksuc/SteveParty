@@ -78,12 +78,6 @@ public class PowerUpStarGameTests implements FabricGameTest {
         return controller;
     }
 
-    private static ServerPlayerEntity player(TestContext context) {
-        @SuppressWarnings("removal")
-        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
-        return player;
-    }
-
     private static boolean use(TestContext context, ServerPlayerEntity player, ItemStack stack) {
         player.setStackInHand(Hand.MAIN_HAND, stack);
         return player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND).getResult().isAccepted();
@@ -99,7 +93,7 @@ public class PowerUpStarGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "powerup_star_goldenPipe")
     public void goldenPipeBringsThePawnJustBeforeTheStar(TestContext context) {
-        ServerPlayerEntity player = player(context);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         PartyControllerEntity controller = board(context, player, END);
         context.assertTrue(PowerUpStar.relocator() instanceof PartyStarRelocator, "the party's star by default");
         context.waitAndRun(2, () -> {
@@ -120,7 +114,7 @@ public class PowerUpStarGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "powerup_star_whistle")
     public void starWhistleSendsTheStarToAnotherStarSpace(TestContext context) {
-        ServerPlayerEntity player = player(context);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         PartyControllerEntity controller = board(context, player, START);
         context.waitAndRun(2, () -> {
             context.assertTrue(use(context, player, new ItemStack(PowerUps.STAR_WHISTLE.item(), 2)), "used");
