@@ -1,12 +1,15 @@
 package fr.lordfinn.steveparty.entities.custom.glandouille;
 
 import fr.lordfinn.steveparty.items.ModItems;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,6 +38,46 @@ final class GlandouilleGoals {
         @Override
         public boolean shouldContinue() {
             return !glandouille.hasHat() && glandouille.isFree() && super.shouldContinue();
+        }
+    }
+
+    /** Chased by a Mistigri at play (cat and mouse): it runs away from him, fast, until he gives up. */
+    static final class FleeCat extends Goal {
+        private final GlandouilleEntity glandouille;
+        private int repath;
+
+        FleeCat(GlandouilleEntity glandouille) {
+            this.glandouille = glandouille;
+            setControls(EnumSet.of(Control.MOVE));
+        }
+
+        @Override
+        public boolean canStart() {
+            return glandouille.scaredOf() != null && glandouille.isFree();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return canStart();
+        }
+
+        @Override
+        public void start() {
+            repath = 0;
+        }
+
+        @Override
+        public void stop() {
+            glandouille.getNavigation().stop();
+        }
+
+        @Override
+        public void tick() {
+            Entity cat = glandouille.scaredOf();
+            if (cat == null || --repath > 0 && !glandouille.getNavigation().isIdle()) return;
+            repath = 15;
+            Vec3d away = NoPenaltyTargeting.findFrom(glandouille, 10, 4, cat.getPos());
+            if (away != null) glandouille.getNavigation().startMovingTo(away.x, away.y, away.z, 1.5);
         }
     }
 
