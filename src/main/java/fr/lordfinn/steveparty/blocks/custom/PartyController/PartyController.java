@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
+import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -118,9 +120,9 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // The Wrench checks the board (see WrenchActions)
-        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.WrenchItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        if (stack.getItem() instanceof WrenchItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // The Tile Linker Brush paints the links of its bank's Inventory Cartridge (see BrushLinks)
-        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        if (stack.getItem() instanceof TileLinkerBrushItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // Swapping the catalogue takes the same as taking it out: the right to edit, and no redstone lock
         if (stack.getItem() instanceof MiniGamesCatalogueItem
                 && world.getBlockEntity(pos) instanceof PartyControllerEntity controller && controller.canEdit(player)) {

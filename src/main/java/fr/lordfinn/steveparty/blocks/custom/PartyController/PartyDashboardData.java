@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
+import fr.lordfinn.steveparty.minigame.MiniGameFormat;
+import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
@@ -185,8 +188,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
         List<TimelineStep> all = new ArrayList<>();
         all.add(new TimelineStep(StepKind.START_ROLLS, 0, -1, 0));
         int round = 1;
-        for (fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep.ExpandedCard card
-                : fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep.expand(program, rounds)) {
+        for (BasicGameGeneratorStep.ExpandedCard card
+                : BasicGameGeneratorStep.expand(program, rounds)) {
             switch (card.type()) {
                 case TURNS -> all.add(new TimelineStep(StepKind.TURNS, round, -1, 0));
                 case MINIGAME -> all.add(new TimelineStep(StepKind.MINI_GAME, round++, -1, 0));
@@ -320,10 +323,10 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             MiniGamePageData content = world.getServer() == null ? null : MiniGamePages.of(world.getServer(), page);
             int pipes = content == null ? 0 : content.pipeLinks().size(), playable = 0;
             if (content != null) {
-                for (fr.lordfinn.steveparty.minigame.MiniGameFormat format : content.formats()) if (content.hasPipesFor(format)) playable++;
+                for (MiniGameFormat format : content.formats()) if (content.hasPipesFor(format)) playable++;
             }
             int podiums = content == null ? 0 : (int) content.podiumLinks().stream()
-                    .filter(link -> link.kind() == fr.lordfinn.steveparty.minigame.MiniGamePodiumLink.Kind.PODIUM).count();
+                    .filter(link -> link.kind() == MiniGamePodiumLink.Kind.PODIUM).count();
             pages.add(new Page(slot, page, pipes, playable, played[slot], podiums));
         }
 
