@@ -75,8 +75,10 @@ import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -100,9 +102,11 @@ import java.util.UUID;
  *     {@link #getHeadTarget}) and its own vent ({@link #getVent}). Wild, one blasts at a time, the heads taking turns
  *     ({@link FumaroleGoals.Blast}); ridden, each rider fires his own head.</li>
  *     <li><b>The thermal blast</b>: see {@link FumaroleBlast}.</li>
- *     <li><b>Neutral, territorial</b>: it fights back whoever hurts it, and a player coming within {@link #TERRITORY}
- *     blocks of its shell ({@link #inTerritory}) makes it angry for {@link #ANGER_TICKS} ticks (unless all its heads trust him). Tamed, it only fights
- *     back.</li>
+ *     <li><b>Neutral</b>: it leaves players alone until one provokes it ({@link #provoke}): hits it (projectiles too),
+ *     takes lava from its tank while it is wild, or climbs on while it is wild. From then on it fights that player,
+ *     and only him, for {@link #ANGER_TICKS} ticks, and calms down once that is over and he keeps
+ *     {@link #CALM_DISTANCE} blocks from its shell. Its owner and players all its heads trust never provoke it. Mobs
+ *     that hurt it are fought back (FumaroleGoals.Revenge).</li>
  *     <li><b>In lava</b> it swims, floating with its tank out ({@link FumaroleRiding#SWIM_DEPTH}); it is born on the
  *     shores of the Nether's lava lakes or in them.</li>
  *     <li><b>Its death</b>: its lava spills (with mobGriefing, up to {@link #SPILL_MAX} sources), it drops its saddle and
@@ -139,9 +143,9 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     public static final float BODY_TURN = 3, LOOK_TURN = 4;
 
     public static final double PUMP_MIN = 2.0, PUMP_MAX = 9.0, PUMP_DOWN = 6.0, PUMP_UP = 1.0;
-    /** Its territory: this many blocks out from its shell (its hitbox's edge, not its centre: it is huge). */
-    public static final double TERRITORY = 12.0;
+    /** How long a provocation lasts (ticks), and how far (blocks from its shell) the player must keep to calm it. */
     public static final int ANGER_TICKS = 600;
+    public static final double CALM_DISTANCE = 16.0;
     /** Lava sources spilt on death: one per this many buckets, at most {@link #SPILL_MAX}. */
     public static final int SPILL_PER = 9, SPILL_MAX = 3;
     /** An untamed one throws its rider off after this many ticks (and up to this many more), fidgeting before. */
@@ -188,6 +192,9 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     /** The players each head trusts (fed it a magma cream). */
     private final List<Set<UUID>> trust = new ArrayList<>();
     private @Nullable UUID owner;
+    /** The players who provoked it, and until when (world time) it stays angry with each. */
+    private final Map<UUID, Long> grudges = new HashMap<>();
+    /** Until when (age) it stays angry with a mob that hurt it. */
     private int angryUntil;
     /** Server: each head's aim (world yaw; degrees), and when it may fire again (ridden). */
     private final float[] aimYaw = new float[HEADS.length];
@@ -207,6 +214,8 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     /** Client only: the tank's drawn level, easing toward the synced one (buckets). */
     public float clientTankLevel = -1, prevClientTankLevel = -1;
+    /** Client: how much lower it is drawn standing in shallow lava (eased; see {@link #lavaSink}). */
+    private float clientSink, prevClientSink;
     /** Client only: each head's drawn aim (yaw from the body, Minecraft pitch), eased; and last tick's; its roll. */
     public final float[] clientYaw = new float[HEADS.length], clientPitch = new float[HEADS.length];
     public final float[] prevClientYaw = new float[HEADS.length], prevClientPitch = new float[HEADS.length];
@@ -251,7 +260,6 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 12.0f));
         this.goalSelector.add(7, new LookAroundGoal(this));
         this.targetSelector.add(1, new FumaroleGoals.Revenge(this));
-        this.targetSelector.add(2, new FumaroleGoals.Territory(this));
     }
 
     @Override
@@ -451,6 +459,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     /** An empty bucket takes a bucket of lava; emptied, an untamed one becomes tamable. */
     public void takeBucket(PlayerEntity player, Hand hand) {
+        if (!isTamed()) provoke(player); // stealing a wild one's lava
         setTank(getTank() - 1);
         player.setStackInHand(hand, ItemUsage.exchangeStack(player.getStackInHand(hand), player, new ItemStack(Items.LAVA_BUCKET)));
         playSound(SoundEvents.ITEM_BUCKET_FILL_LAVA, 1.0f, 1.0f);
@@ -547,7 +556,10 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     private void mount(PlayerEntity player) {
         player.setYaw(getYaw());
         player.startRiding(this);
-        if (!isTamed()) scheduleThrow();
+        if (!isTamed()) {
+            scheduleThrow();
+            provoke(player); // climbing on a wild one: once thrown off, it fights him
+        }
     }
 
     private void scheduleThrow() {
@@ -577,7 +589,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     protected Vec3d getPassengerAttachmentPos(Entity passenger, EntityDimensions dimensions, float scaleFactor) {
         int index = Math.max(0, getPassengerList().indexOf(passenger));
-        return FumaroleRiding.seat(index, RIM_HEIGHT, RIM_FORWARD).rotateY(-getYaw() * MathHelper.RADIANS_PER_DEGREE);
+        return FumaroleRiding.seat(index, RIM_HEIGHT - lavaSink(1), RIM_FORWARD).rotateY(-getYaw() * MathHelper.RADIANS_PER_DEGREE);
     }
 
     @Override
@@ -623,6 +635,17 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
                 .add(0, head.up(), 0);
     }
 
+    /** Standing on the bottom of lava deep enough to cover its knees: {@link FumaroleRiding#SHALLOW_SINK}, else 0. */
+    private float sinkGoal() {
+        return isOnGround() && isInLava() && getFluidHeight(FluidTags.LAVA) > FumaroleRiding.SWIM_MIN_DEPTH
+                ? FumaroleRiding.SHALLOW_SINK : 0;
+    }
+
+    /** How much lower it is drawn, its riders sat (client: eased; server: as it stands). */
+    public float lavaSink(float partialTick) {
+        return getWorld().isClient ? MathHelper.lerp(partialTick, prevClientSink, clientSink) : sinkGoal();
+    }
+
     public Vec3d nozzle(int head) {
         float yaw = getWorld().isClient ? bodyYaw + clientYaw[head] : aimYaw[head];
         return nozzle(HEADS[head], bodyYaw, yaw);
@@ -633,7 +656,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         FumaroleHead h = HEADS[head];
         float body = MathHelper.lerpAngleDegrees(partialTick, prevBodyYaw, bodyYaw);
         float yaw = body + MathHelper.lerp(partialTick, prevClientYaw[head], clientYaw[head]);
-        Vec3d pos = getLerpedPos(partialTick);
+        Vec3d pos = getLerpedPos(partialTick).add(0, -lavaSink(partialTick), 0);
         return pos.add(Vec3d.fromPolar(0, body).multiply(h.base()))
                 .add(Vec3d.fromPolar(0, body + 90).multiply(h.side()))
                 .add(Vec3d.fromPolar(0, yaw).multiply(h.neckReach()))
@@ -683,11 +706,6 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         double dy = Math.max(0, Math.max(shell.minY - other.maxY, other.minY - shell.maxY));
         double dz = Math.max(0, Math.max(shell.minZ - other.maxZ, other.minZ - shell.maxZ));
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }
-
-    /** Whether {@code entity} is within its territory: {@link #TERRITORY} blocks of its shell. */
-    public boolean inTerritory(Entity entity) {
-        return distanceFromShell(entity) <= TERRITORY;
     }
 
     public boolean inRange(int head, Entity target) {
@@ -896,8 +914,18 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     protected void mobTick() {
         super.mobTick();
         LivingEntity target = getTarget();
-        if (target != null && inTerritory(target) && !isTamed()) provoke();
-        if (target instanceof PlayerEntity player && trustedByAll(player)) setTarget(null);
+        if (target instanceof PlayerEntity player && (trustedByAll(player) || isOwner(player))) setTarget(null);
+        long now = getWorld().getTime();
+        grudges.entrySet().removeIf(grudge -> {
+            if (now < grudge.getValue()) return false;
+            PlayerEntity player = getWorld().getPlayerByUuid(grudge.getKey());
+            return player == null || distanceFromShell(player) > CALM_DISTANCE;
+        });
+        if (getTarget() instanceof PlayerEntity player && !hasGrudge(player)) setTarget(null); // calmed down
+        if ((getTarget() == null || !getTarget().isAlive()) && !grudges.isEmpty() && age % 10 == 0) {
+            PlayerEntity foe = nearestGrudge();
+            if (foe != null) setTarget(foe);
+        }
     }
 
     @Override
@@ -950,25 +978,53 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- anger
 
-    public void provoke() {
-        angryUntil = age + ANGER_TICKS;
+    /** This player provoked it: it fights him for {@link #ANGER_TICKS} ticks (never its owner or a fully trusted one). */
+    public void provoke(PlayerEntity player) {
+        provoke(player, ANGER_TICKS);
     }
 
-    public boolean isAngry() {
-        return age < angryUntil;
+    public void provoke(PlayerEntity player, int ticks) {
+        if (getWorld().isClient || isOwner(player) || trustedByAll(player) || player.getAbilities().creativeMode || player.isSpectator()) return;
+        grudges.merge(player.getUuid(), getWorld().getTime() + ticks, Math::max);
+        if (getTarget() == null || !getTarget().isAlive()) setTarget(player);
     }
 
-    @Override
-    public void setTarget(@Nullable LivingEntity target) {
-        if (target != null && target != getTarget()) provoke();
-        super.setTarget(target);
+    /** Whether it is (still) angry with this player. */
+    public boolean hasGrudge(PlayerEntity player) {
+        return grudges.containsKey(player.getUuid());
+    }
+
+    /** The nearest player it is angry with, within its follow range and in sight; null if none. */
+    private @Nullable PlayerEntity nearestGrudge() {
+        double range = getAttributeValue(EntityAttributes.GENERIC_FOLLOW_RANGE);
+        PlayerEntity best = null;
+        double bestDistance = range * range;
+        for (UUID uuid : grudges.keySet()) {
+            PlayerEntity player = getWorld().getPlayerByUuid(uuid);
+            if (player == null || !player.isAlive() || player.isSpectator() || player.getAbilities().creativeMode) continue;
+            double d = squaredDistanceTo(player);
+            if (d < bestDistance && getVisibilityCache().canSee(player)) {
+                best = player;
+                bestDistance = d;
+            }
+        }
+        return best;
+    }
+
+    /** Whether it has calmed down about {@code target}: no grudge left (players), or the anger over and them away. */
+    public boolean calmAbout(LivingEntity target) {
+        if (target instanceof PlayerEntity player) return !hasGrudge(player);
+        return age >= angryUntil && distanceFromShell(target) > CALM_DISTANCE;
     }
 
     @Override
     public boolean damage(DamageSource source, float amount) {
         if (source.getAttacker() != null && hasPassenger(source.getAttacker())) return false; // its own riders
         boolean damaged = super.damage(source, amount);
-        if (damaged && source.getAttacker() == getTarget()) provoke();
+        if (damaged && !getWorld().isClient) {
+            if (source.getAttacker() instanceof PlayerEntity player) provoke(player);
+            else if (source.getAttacker() instanceof LivingEntity) angryUntil = age + ANGER_TICKS;
+        }
         return damaged;
     }
 
@@ -980,6 +1036,8 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
             bodyYaw = getYaw();
             headYaw = getYaw();
         }
+        prevClientSink = clientSink;
+        clientSink += MathHelper.clamp(sinkGoal() - clientSink, -0.05f, 0.05f);
         prevClientTankLevel = clientTankLevel < 0 ? getTank() : clientTankLevel;
         float goal = getTank();
         clientTankLevel = clientTankLevel < 0 ? goal : clientTankLevel + MathHelper.clamp(goal - clientTankLevel, -0.15f, 0.15f);
@@ -1214,6 +1272,15 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
             heads.add(list);
         }
         nbt.put("Trust", heads);
+        NbtList grudgeList = new NbtList();
+        long now = getWorld().getTime();
+        grudges.forEach((uuid, until) -> {
+            NbtCompound grudge = new NbtCompound();
+            grudge.putUuid("Player", uuid);
+            grudge.putLong("Ticks", Math.max(0, until - now));
+            grudgeList.add(grudge);
+        });
+        nbt.put("Grudges", grudgeList);
         if (!inventory.getStack(0).isEmpty()) nbt.put("Saddle", inventory.getStack(0).encode(getRegistryManager()));
     }
 
@@ -1230,6 +1297,12 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
             trust.get(head).clear();
             if (head >= heads.size()) continue;
             for (NbtElement uuid : heads.getList(head)) trust.get(head).add(NbtHelper.toUuid(uuid));
+        }
+        grudges.clear();
+        long now = getWorld() == null ? 0 : getWorld().getTime();
+        for (NbtElement element : nbt.getList("Grudges", NbtElement.COMPOUND_TYPE)) {
+            NbtCompound grudge = (NbtCompound) element;
+            if (grudge.containsUuid("Player")) grudges.put(grudge.getUuid("Player"), now + grudge.getLong("Ticks"));
         }
         inventory.setStack(0, nbt.contains("Saddle") ? ItemStack.fromNbt(getRegistryManager(), nbt.get("Saddle"))
                 .filter(stack -> stack.isOf(Items.SADDLE)).orElse(ItemStack.EMPTY) : ItemStack.EMPTY);

@@ -72,8 +72,11 @@ public class FumaroleRenderer extends GeoEntityRenderer<FumaroleEntity> {
     @Override
     public void render(FumaroleEntity fumarole, float entityYaw, float partialTick, MatrixStack poseStack,
                        VertexConsumerProvider bufferSource, int packedLight) {
+        poseStack.push();
+        poseStack.translate(0, -fumarole.lavaSink(partialTick), 0); // in shallow lava: no knee flush with its surface
         super.render(fumarole, entityYaw, partialTick, poseStack, bufferSource, packedLight);
         if (fumarole.isSaddled()) renderSaddles(fumarole, partialTick, poseStack, bufferSource, packedLight);
+        poseStack.pop();
         renderReins(fumarole, partialTick, poseStack, bufferSource, packedLight);
     }
 
