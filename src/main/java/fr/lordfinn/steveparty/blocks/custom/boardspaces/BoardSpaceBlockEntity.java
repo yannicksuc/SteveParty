@@ -28,6 +28,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
@@ -190,6 +191,12 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public ItemStack getActiveCartridgeItemStack() {
         if (this.world == null) return ItemStack.EMPTY;
         return this.getStack(getActiveSlot());
+    }
+
+    /** Its active cartridge if it is a {@code type} (the role it gives), else null. */
+    public @Nullable ItemStack getActiveCartridge(Class<? extends Item> type) {
+        ItemStack stack = getActiveCartridgeItemStack();
+        return type.isInstance(stack.getItem()) ? stack : null;
     }
 
     public void setActiveCartridgeItemStack(ItemStack stack) {

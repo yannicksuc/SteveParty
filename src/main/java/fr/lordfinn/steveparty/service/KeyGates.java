@@ -78,8 +78,7 @@ public final class KeyGates {
 
     /** The Key gate cartridge of {@code space}, or null. */
     public static @Nullable ItemStack gateOf(BoardSpaceBlockEntity space) {
-        ItemStack stack = space.getActiveCartridgeItemStack();
-        return stack.getItem() instanceof KeyGateCartridgeItem ? stack : null;
+        return space.getActiveCartridge(KeyGateCartridgeItem.class);
     }
 
     /** True while a key keeps the gate of {@code space} open (for good, or for its rounds of the party). */
