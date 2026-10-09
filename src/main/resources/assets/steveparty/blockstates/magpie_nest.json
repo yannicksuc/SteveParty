@@ -1,16 +1,19 @@
 {
   "variants": {
-    "coins=0": {
-      "model": "steveparty:block/magpie_nest_0"
+    "facing=north": {
+      "model": "steveparty:block/magpie_nest"
     },
-    "coins=1": {
-      "model": "steveparty:block/magpie_nest_1"
+    "facing=east": {
+      "model": "steveparty:block/magpie_nest",
+      "y": 90
     },
-    "coins=2": {
-      "model": "steveparty:block/magpie_nest_2"
+    "facing=south": {
+      "model": "steveparty:block/magpie_nest",
+      "y": 180
     },
-    "coins=3": {
-      "model": "steveparty:block/magpie_nest_3"
+    "facing=west": {
+      "model": "steveparty:block/magpie_nest",
+      "y": 270
     }
   }
 }

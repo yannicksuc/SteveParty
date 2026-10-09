@@ -180,6 +180,13 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(TelescopeBlockEntity::new, ModBlocks.TELESCOPE).build(null)
     );
 
+    /** What a Magpie Nest holds: coins (its pot's when linked) and shiny things. */
+    public static final BlockEntityType<MagpieNestBlockEntity> MAGPIE_NEST_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "magpie_nest"),
+            FabricBlockEntityTypeBuilder.create(MagpieNestBlockEntity::new, ModBlocks.MAGPIE_NEST).build(null)
+    );
+
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

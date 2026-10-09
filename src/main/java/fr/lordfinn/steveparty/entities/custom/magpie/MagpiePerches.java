@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.magpie;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -22,7 +23,8 @@ import org.jetbrains.annotations.Nullable;
  * blocks high (so nothing jumps over it) but its post ends at the top of the block: the bird stands on the
  * <em>outline</em> shape (the one drawn when you aim at the block), on top of the part nearest to the block's middle
  * (the post of a fence or a wall, a chain's links, the upper step of a stairs, a slab's top...), centred on it.
- * Its favourite perches: the block tag {@code steveparty:magpie_perches} (fences, walls, logs and woods stripped or
+ * A Magpie Nest: in it (its middle) when empty, on the free corner of its rim beside a pile of coins
+ * ({@link MagpieNestBlockEntity#perch}). Its favourite perches: the block tag {@code steveparty:magpie_perches} (fences, walls, logs and woods stripped or
  * not, chains).
  */
 public final class MagpiePerches {
@@ -40,6 +42,7 @@ public final class MagpiePerches {
         BlockState state = world.getBlockState(pos);
         if (!state.getFluidState().isEmpty() || isHarmful(state)) return null;
         if (state.getCollisionShape(world, pos).isEmpty()) return null; // grass, flowers: nothing to stand on
+        if (world.getBlockEntity(pos) instanceof MagpieNestBlockEntity nest) return nest.perch(); // in it, or on its rim
         VoxelShape shape = state.getOutlineShape(world, pos, ShapeContext.absent());
         if (shape.isEmpty()) return null;
         double top = shape.getMax(Direction.Axis.Y);

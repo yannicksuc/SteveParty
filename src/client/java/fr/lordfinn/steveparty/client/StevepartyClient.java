@@ -226,6 +226,8 @@ public class StevepartyClient implements ClientModInitializer {
         ModelLoadingPlugin.register(new PipeModelPlugin());
         PipeBulgeRenderer.register();
         BlockEntityRendererFactories.register(ModBlockEntities.MINIGAME_PIPE_ENTITY, MiniGamePipeNotchRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.MAGPIE_NEST_ENTITY, fr.lordfinn.steveparty.client.blockentity.MagpieNestRenderer::new);
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAGPIE_NEST, fr.lordfinn.steveparty.client.blockentity.MagpieNestRenderer.ITEM);
         MiniGamePipeNotchRenderer.registerHint();
         // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
         for (PipeKind kind : PipeKind.values()) {
