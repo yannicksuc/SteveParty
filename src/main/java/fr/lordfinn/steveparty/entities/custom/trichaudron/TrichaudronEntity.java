@@ -107,7 +107,7 @@ import java.util.UUID;
  *     him that, not the fall off). Someone who never emptied it is always thrown, and provokes it.</li>
  *     <li><b>Tamed</b>: its screen (saddle slot, lava gauge) opens like a horse's ({@link #openInventory}): its rider's
  *     inventory key, or a sneaking click while nobody rides it;
- *     saddled, up to three players ride it on the tank's front rim ({@link TrichaudronRiding}).</li>
+ *     saddled, up to three players ride it, in the middle of the tank and on its side rims ({@link TrichaudronRiding}).</li>
  *     <li><b>Its heads</b> ({@link #HEADS}): three necks, each a turret of its own: its own aim (synced:
  *     {@link #getHeadTarget}) and its own vent ({@link #getVent}). Wild, one blasts at a time, the heads taking turns
  *     ({@link TrichaudronGoals.Blast}); ridden, each rider fires his own head.</li>
@@ -135,8 +135,8 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     public static final float WIDTH = 3.2f, HEIGHT = 3.8125f, EYE_HEIGHT = 2.76f;
     public static final int TANK_MAX = 27, SPAWN_TANK_MIN = 14, SPAWN_TANK_MAX = 20;
     public static final double MAX_HEALTH = 80, ARMOR = 10, SPEED = 0.09;
-    /** The tank's front rim, where the riders sit: its height, how far ahead of the middle. */
-    public static final double RIM_HEIGHT = 3.75, RIM_FORWARD = 1.06;
+    /** The height the riders sit at: on the tank's rims (TrichaudronRiding#seat). */
+    public static final double RIM_HEIGHT = 3.75;
 
     /**
      * Its heads, centre first, and where each rests: measured on the v14 export (pose_s): the centre neck 11 segments
@@ -577,7 +577,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     @Override
     protected Vec3d getPassengerAttachmentPos(Entity passenger, EntityDimensions dimensions, float scaleFactor) {
         int index = Math.max(0, getPassengerList().indexOf(passenger));
-        return TrichaudronRiding.seat(index, RIM_HEIGHT - lavaSink(1), RIM_FORWARD).rotateY(-getYaw() * MathHelper.RADIANS_PER_DEGREE);
+        return TrichaudronRiding.seat(index, RIM_HEIGHT - lavaSink(1)).rotateY(-getYaw() * MathHelper.RADIANS_PER_DEGREE);
     }
 
     @Override

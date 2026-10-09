@@ -7,7 +7,7 @@ package fr.lordfinn.steveparty.entities.custom.trichaudron;
  * (negative: left) and {@code base} ahead; the nozzle {@code reach} further on along {@code restYaw} (degrees from the
  * body, positive to the right) and {@code up} high, pointing {@code restPitch} down; the top of its neck, where a
  * rider's reins hold it, {@code neckReach} along and {@code neckUp} high. A head turns about its neck's base. Its
- * rider sits {@code seat} blocks to the turtle's right on the tank's front rim.
+ * rider's side: the sign of {@code seat} (its rider sits on the tank's right rim when positive, left when negative; the centre's in the middle).
  */
 public record TrichaudronHead(int index, String suffix, double side, double base, double reach, double up,
                            float restYaw, float restPitch, double neckReach, double neckUp, double seat) {

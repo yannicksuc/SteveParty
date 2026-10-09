@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * Riding a tamed, saddled Trichaudron: up to three riders side by side on the tank's front rim, each holding the reins of
+ * Riding a tamed, saddled Trichaudron: up to three riders, the first in the middle of the tank, the others on its left
+ * and right rims, each holding the reins of
  * one head (the first the centre one, then the left, then the right).
  * <ul>
  *     <li><b>Steering together</b> ({@link #combine}): every rider's keys count, added up. Opposite keys cancel (left +
@@ -122,11 +123,18 @@ public final class TrichaudronRiding {
         return charge >= CHARGE_COSTLY ? 2 : 1;
     }
 
-    /** The seat of the rider holding this head (0 centre, 1 left, 2 right), as a vehicle attachment (local, y up). */
-    public static Vec3d seat(int index, double rimHeight, double rimForward) {
+    /** How far from the tank's middle its side rims are (blocks: the middle of its 6 px walls, the model at 1.1). */
+    public static final double SIDE_RIM = 1.1;
+
+    /**
+     * The seat of the rider holding this head, as a vehicle attachment (local, y up): the first (centre head) in the
+     * middle of the tank, the second (left head) on its left rim, the third (right head) on its right rim.
+     */
+    public static Vec3d seat(int index, double rimHeight) {
         TrichaudronHead head = TrichaudronEntity.HEADS[Math.min(index, TrichaudronEntity.HEADS.length - 1)];
-        // local x points to the turtle's left (at yaw 0, east): its right is -x
-        return new Vec3d(-head.seat(), rimHeight, rimForward);
+        if (index == 0) return new Vec3d(0, rimHeight, 0);
+        // local x points to the turtle's left (at yaw 0, east): its right is -x; a head's seat sign gives its side
+        return new Vec3d(-Math.signum(head.seat()) * SIDE_RIM, rimHeight, 0);
     }
 
     /**
