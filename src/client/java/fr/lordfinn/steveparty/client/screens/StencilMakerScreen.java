@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.client.screens;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.client.gui.GuiText;
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
@@ -210,7 +212,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         return button.content((context, textRenderer, centerX, centerY, color) -> {
             String text = button.getMessage().getString();
             int room = width - 8 - ICON_SIZE - 4;
-            if (textRenderer.getWidth(text) > room) text = textRenderer.trimToWidth(text, room - textRenderer.getWidth("…")).stripTrailing() + "…";
+            text = GuiText.fit(textRenderer, text, room);
             int left = centerX - (ICON_SIZE + 4 + textRenderer.getWidth(text)) / 2;
             drawIcon(context, icon, left, centerY - ICON_SIZE / 2, color);
             context.drawText(textRenderer, text, left + ICON_SIZE + 4, centerY - 4, color, false);
@@ -522,7 +524,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (mouseX >= libraryBoxX && mouseX < libraryBoxX + libraryBoxWidth && mouseY >= libraryBoxY && mouseY < libraryBoxY + contentHeight) {
+        if (HitArea.contains(mouseX, mouseY, libraryBoxX, libraryBoxY, libraryBoxWidth, contentHeight)) {
             libraryScroll = Math.clamp(libraryScroll - (int) Math.signum(verticalAmount), 0, maxLibraryScroll());
             return true;
         }
@@ -552,7 +554,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         }
         for (int i = first; i < last; i++) {
             int cellX = libraryX + (i % libraryColumns) * CELL, cellY = libraryY + (i / libraryColumns - libraryScroll) * CELL;
-            boolean hovered = mouseX >= cellX && mouseX < cellX + CELL && mouseY >= cellY && mouseY < cellY + CELL;
+            boolean hovered = HitArea.contains(mouseX, mouseY, cellX, cellY, CELL, CELL);
             LibraryItem item = items.get(i);
             int cx = cellX + 1, cy = cellY + 1;
             if (item.locked()) {
@@ -613,7 +615,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     }
 
     private boolean isInsideStencil(double mouseX, double mouseY) {
-        return mouseX >= stencilX && mouseX < stencilX + 16 * PIXEL_SIZE && mouseY >= stencilY && mouseY < stencilY + 16 * PIXEL_SIZE;
+        return HitArea.contains(mouseX, mouseY, stencilX, stencilY, 16 * PIXEL_SIZE, 16 * PIXEL_SIZE);
     }
 
     // ---------------------------------------------------------------- sounds

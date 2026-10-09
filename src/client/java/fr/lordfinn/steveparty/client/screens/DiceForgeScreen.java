@@ -4,7 +4,9 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
+import fr.lordfinn.steveparty.client.gui.GuiItems;
 import fr.lordfinn.steveparty.client.gui.HandCursor;
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.Status;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
@@ -265,7 +267,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     private static boolean isOverSlot(double px, double py, int slotX, int slotY) {
-        return px >= slotX - 1 && px < slotX + 17 && py >= slotY - 1 && py < slotY + 17;
+        return HitArea.contains(px, py, slotX - 1, slotY - 1, 18, 18);
     }
 
     private float getSmoothProgress(float delta) {
@@ -434,7 +436,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         int index = slot.id;
         if (index < DiceForgeBlockEntity.SIZE && !slot.hasStack()) {
             ItemStack ghost = getGhostStack(index);
-            if (!ghost.isEmpty()) drawTranslucentItem(context, ghost, slot.x, slot.y, GHOST_ALPHA);
+            if (!ghost.isEmpty()) GuiItems.tinted(context, ghost, slot.x, slot.y, 1f, 1f, 1f, GHOST_ALPHA);
         }
         super.drawSlot(context, slot);
     }
@@ -446,14 +448,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         Item ghost = handler.getGhost(index);
         if (ghost != null) return new ItemStack(ghost);
         return index == BLANK_SLOT ? blankFace : ItemStack.EMPTY;
-    }
-
-    private static void drawTranslucentItem(DrawContext context, ItemStack stack, int x, int y, float alpha) {
-        context.draw();
-        RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
-        context.drawItem(stack, x, y);
-        context.draw();
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
     @Override

@@ -1,19 +1,17 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
-import fr.lordfinn.steveparty.client.utils.ClientTextures;
-import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.gui.ConsolePaint;
+import fr.lordfinn.steveparty.client.gui.paint.PaintedTextures;
+import fr.lordfinn.steveparty.client.gui.paint.PaintedTextures.Tex;
+import fr.lordfinn.steveparty.client.gui.paint.PixelArt;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
-import fr.lordfinn.steveparty.utils.Argb;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * The party HUDs' pictures, painted like the approved mock-ups paint them (the art sources,
@@ -23,21 +21,9 @@ import java.util.Map;
  * <p>
  * Each picture is painted once, when a layout first needs it (never per frame), into a texture of its own at one
  * texture pixel per GUI pixel; they are kept (the few widths the names make) and drawn with a vertex colour, so that
- * plates can fade.
+ * plates can fade. The {@link PixelArt} kit's party HUD theme.
  */
 public final class HudPaint {
-    /** A colour ramp of the kit: outline, highlight, body, shadow (opaque ARGB, or with their own alpha). */
-    public record Ramp(int outline, int hi, int body, int shadow) {
-        static Ramp of(int outline, int hi, int body, int shadow) {
-            return new Ramp(0xFF000000 | outline, 0xFF000000 | hi, 0xFF000000 | body, 0xFF000000 | shadow);
-        }
-
-        /** The standings' rows: the colour, very light. */
-        Ramp pastel() {
-            return new Ramp(outline, 0xFFFFFFFF, Argb.opaque(Argb.lerp(body, 0xFFFFFFFF, 0.8f)), Argb.opaque(Argb.lerp(body, 0xFFFFFFFF, 0.6f)));
-        }
-    }
-
     /** The players' colours, in the order the tokens without a colour take them. */
     static final Ramp[] PLAYERS = {
             Ramp.of(0x4a0808, 0xffb7ae, 0xe8413c, 0xb02e26), // red
@@ -74,8 +60,8 @@ public final class HudPaint {
         Ramp best = PLAYERS[0];
         long bestDistance = Long.MAX_VALUE;
         for (Ramp ramp : PLAYERS) {
-            int dr = ColorHelper.Argb.getRed(ramp.body) - ((color >> 16) & 0xFF), dg = ColorHelper.Argb.getGreen(ramp.body) - ((color >> 8) & 0xFF),
-                    db = ColorHelper.Argb.getBlue(ramp.body) - (color & 0xFF);
+            int dr = ColorHelper.Argb.getRed(ramp.body()) - ((color >> 16) & 0xFF), dg = ColorHelper.Argb.getGreen(ramp.body()) - ((color >> 8) & 0xFF),
+                    db = ColorHelper.Argb.getBlue(ramp.body()) - (color & 0xFF);
             long distance = 2L * dr * dr + 4L * dg * dg + 3L * db * db;
             if (distance < bestDistance) {
                 bestDistance = distance;
@@ -87,46 +73,33 @@ public final class HudPaint {
 
     // ------------------------------------------------------------------ textures
 
-    /** A painted picture. */
-    record Tex(Identifier id, int width, int height) {
-    }
-
-    private static final int MAX_TEXTURES = 384;
-    private static final Map<String, Tex> TEXTURES = new LinkedHashMap<>();
-    private static int serial;
+    private static final PaintedTextures TEXTURES = new PaintedTextures("party_hud/painted_", 384);
 
     private HudPaint() {
     }
 
-    private static Tex texture(String key, int width, int height, java.util.function.Consumer<int[][]> paint) {
-        Tex known = TEXTURES.get(key);
-        if (known != null) return known;
-        if (TEXTURES.size() >= MAX_TEXTURES) clear();
-        int[][] pixels = new int[height][width];
-        paint.accept(pixels);
-        NativeImage image = new NativeImage(width, height, true);
-        for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) image.setColor(x, y, ColorHelper.Abgr.toAbgr(pixels[y][x]));
-        Identifier id = Steveparty.id("party_hud/painted_" + serial++);
-        MinecraftClient.getInstance().getTextureManager().registerTexture(id, new NativeImageBackedTexture(image));
-        Tex tex = new Tex(id, width, height);
-        TEXTURES.put(key, tex);
-        return tex;
+    /** The picture named {@code key}, {@code width} x {@code height}, painted by {@code paint} on first use. */
+    private static Tex texture(String key, int width, int height, Consumer<int[][]> paint) {
+        return TEXTURES.get(key, () -> {
+            int[][] pixels = new int[height][width];
+            paint.accept(pixels);
+            return pixels;
+        });
     }
 
     /** Forgets every painted picture (painted again when needed). */
     static void clear() {
-        for (Tex tex : TEXTURES.values()) ClientTextures.destroy(tex.id());
         TEXTURES.clear();
     }
 
     static void draw(DrawContext context, Tex tex, int x, int y, float alpha) {
         if (alpha <= 0.02f) return;
-        HudDraw.faded(alpha, () -> context.drawTexture(tex.id(), x, y, 0, 0, tex.width(), tex.height(), tex.width(), tex.height()));
+        HudDraw.faded(alpha, () -> tex.draw(context, x, y));
     }
 
     // ------------------------------------------------------------------ shapes
 
-    static final int SHADOW = 1, OUTLINE = 2, BAND = 4;
+    static final int SHADOW = PixelArt.SHADOW, OUTLINE = PixelArt.OUTLINE, BAND = PixelArt.BAND;
 
     /** A shape in the kit's look, in a picture with {@link HudShapes#PAD} pixels of margin. */
     static Tex shape(Form form, int w, int h, Ramp ramp, int flags) {
@@ -135,56 +108,7 @@ public final class HudPaint {
     }
 
     private static void paint(int[][] out, boolean[][] m, Ramp ramp, int flags) {
-        boolean outline = (flags & OUTLINE) != 0;
-        boolean[][] grown = HudShapes.dilate(m, 1);
-        int h = m.length, w = m[0].length;
-        if ((flags & SHADOW) != 0) {
-            boolean[][] base = outline ? grown : m;
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) {
-                    if (base[y][x]) continue;
-                    if (y >= 2 && base[y - 2][x] && out[y][x] == 0) out[y][x] = 0x32000000;
-                    if (y >= 1 && base[y - 1][x]) out[y][x] = 0x69000000;
-                }
-            }
-        }
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                if (m[y][x]) out[y][x] = ramp.body();
-                else if (outline && grown[y][x]) out[y][x] = ramp.outline();
-            }
-        }
-        // The bevel: the highlight on the top and left edges, then the shadow on the bottom and right ones
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                if (!m[y][x]) continue;
-                boolean top = y == 0 || !m[y - 1][x], left = x == 0 || !m[y][x - 1];
-                if (top || left) out[y][x] = ramp.hi();
-            }
-        }
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                if (!m[y][x]) continue;
-                boolean bottom = y == h - 1 || !m[y + 1][x], right = x == w - 1 || !m[y][x + 1];
-                if (bottom || right) out[y][x] = ramp.shadow();
-            }
-        }
-        if ((flags & BAND) != 0) {
-            // A glossy band: the two top rows of each column, moved two rows down (not on the side edges)
-            int light = Argb.opaque(Argb.lerp(ramp.body(), 0xFFFFFFFF, 0.45f));
-            for (int y = 2; y < h; y++) {
-                for (int x = 1; x < w - 1; x++) {
-                    if (!m[y][x] || isTop(m, x, y) || !isTop(m, x, y - 2)) continue;
-                    if (!m[y][x - 1] || !m[y][x + 1]) continue;
-                    out[y][x] = light;
-                }
-            }
-        }
-    }
-
-    /** One of the two top rows of its column: in the shape, the pixel two rows above it is not. */
-    private static boolean isTop(boolean[][] m, int x, int y) {
-        return m[y][x] && (y < 2 || !m[y - 2][x]);
+        PixelArt.paint(out, m, ramp, 1, flags);
     }
 
     /** The current step's halo round a shape: 2 px of pale gold, then 1 px of dark gold at half alpha. */
@@ -254,22 +178,12 @@ public final class HudPaint {
 
     /** A small icon from rows of characters, each one a colour (space: nothing). */
     static Tex pattern(String key, String[] rows, Map<Character, Integer> colours) {
-        int width = 0;
-        for (String row : rows) width = Math.max(width, row.length());
-        int w = width;
-        return texture("p" + key, w, rows.length, out -> {
-            for (int y = 0; y < rows.length; y++) {
-                for (int x = 0; x < rows[y].length(); x++) {
-                    Integer c = colours.get(rows[y].charAt(x));
-                    if (c != null) out[y][x] = c;
-                }
-            }
-        });
+        return TEXTURES.get("p" + key, () -> PixelArt.pattern(rows, colours));
     }
 
-    /** The mini-game's icon, 10 x 8: the same as the dashboard's ({@link fr.lordfinn.steveparty.client.gui.ConsolePaint#GAMEPAD}). */
+    /** The mini-game's icon, 10 x 8: the same as the dashboard's ({@link ConsolePaint#GAMEPAD}). */
     static Tex gamepad() {
-        return pattern("gamepad", fr.lordfinn.steveparty.client.gui.ConsolePaint.GAMEPAD, fr.lordfinn.steveparty.client.gui.ConsolePaint.GAMEPAD_COLOURS);
+        return pattern("gamepad", ConsolePaint.GAMEPAD, ConsolePaint.GAMEPAD_COLOURS);
     }
 
     static Tex bell() {

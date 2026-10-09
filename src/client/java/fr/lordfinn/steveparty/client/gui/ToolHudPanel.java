@@ -174,7 +174,7 @@ public final class ToolHudPanel {
             for (int i = 0; i < lines.size(); i++) {
                 var line = lines.get(i);
                 int y = bottom - LINE * (lines.size() - i) + 1;
-                context.drawTextWithShadow(textRenderer, line, centerX - textRenderer.getWidth(line) / 2, y, ToolHud.HINT);
+                context.drawCenteredTextWithShadow(textRenderer, line, centerX, y, ToolHud.HINT);
             }
             bottom -= LINE * lines.size();
         }

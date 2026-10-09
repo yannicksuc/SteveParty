@@ -114,8 +114,7 @@ public class PartyButton extends PressableWidget {
         boolean shadow = style == Style.PRIMARY && active;
         if (!isHovered()) {
             marqueeStart = -1;
-            String ellipsis = "…";
-            String cut = textRenderer.trimToWidth(message.getString(), Math.max(0, room - textRenderer.getWidth(ellipsis))).stripTrailing() + ellipsis;
+            String cut = GuiText.cut(textRenderer, message.getString(), room);
             Text shown = Text.literal(cut).setStyle(message.getStyle());
             context.drawText(textRenderer, shown, left + (room - textRenderer.getWidth(shown)) / 2, top, color, shadow);
             return;

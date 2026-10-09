@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.payloads.custom.DicePromptAnswerPayload;
@@ -118,7 +119,7 @@ public class DicePickScreen extends Screen {
     private int optionAt(double mouseX, double mouseY) {
         for (int i = 0; i < options().size(); i++) {
             int[] b = bounds(i);
-            if (mouseX >= b[0] && mouseX < b[0] + b[2] && mouseY >= b[1] && mouseY < b[1] + b[3]) return i;
+            if (HitArea.contains(mouseX, mouseY, b[0], b[1], b[2], b[3])) return i;
         }
         return -1;
     }
@@ -150,7 +151,7 @@ public class DicePickScreen extends Screen {
                     PartyGui.button(context, x, y, CELL, CELL, PartyGui.BUTTON_SELECTED, false);
                     drawIcon(context, done, x, y);
                     PartyGui.statusIcon(context, x + CELL + 4, y + (CELL - 7) / 2, true);
-                    if (mouseX >= x && mouseX < x + CELL && mouseY >= y && mouseY < y + CELL) tooltip = done.label();
+                    if (HitArea.contains(mouseX, mouseY, x, y, CELL, CELL)) tooltip = done.label();
                 } else if (i > step()) {
                     // A die still to come
                     PartyGui.button(context, x, y, CELL, CELL, PartyGui.BUTTON_DISABLED, false);
