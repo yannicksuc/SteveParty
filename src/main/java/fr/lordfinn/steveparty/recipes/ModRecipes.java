@@ -18,6 +18,9 @@ public class ModRecipes {
     /** Mini-game page + paper: linked copies of the page. */
     public static final RecipeSerializer<MiniGamePageCopyRecipe> MINI_GAME_PAGE_COPY = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_mini_game_page_copy"), new SpecialRecipeSerializer<>(MiniGamePageCopyRecipe::new));
+    /** A signed Trap + unsigned Traps: signed copies (the signed one stays in the grid). */
+    public static final RecipeSerializer<TrapCopyRecipe> TRAP_COPY = Registry.register(Registries.RECIPE_SERIALIZER,
+            Steveparty.id("crafting_special_trap_copy"), new SpecialRecipeSerializer<>(TrapCopyRecipe::new));
     /** The flag from 3 wools: the wool's colour is the flag's (mixed when the wools differ). */
     public static final FlagFromWoolRecipe.Serializer FLAG_FROM_WOOL = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("flag_from_wool"), new FlagFromWoolRecipe.Serializer());

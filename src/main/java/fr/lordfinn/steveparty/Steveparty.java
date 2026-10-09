@@ -63,7 +63,6 @@ import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchableConfig;
 import fr.lordfinn.steveparty.payloads.ModPayloads;
 import fr.lordfinn.steveparty.podium.Podiums;
-import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
 import fr.lordfinn.steveparty.recipes.ModRecipes;
 import fr.lordfinn.steveparty.registry.LegacyIds;
 import fr.lordfinn.steveparty.registry.ModGameRules;
@@ -170,7 +169,6 @@ public class Steveparty implements ModInitializer {
         TileLinkerBrush.initialize();
         new TokenMovementService();
         ShopStops.initialize();
-        TrapEffect.initialize();
         PartyStars.initialize();
         GlandouilleSpawns.initialize();
         GlandouilleTowers.initialize();

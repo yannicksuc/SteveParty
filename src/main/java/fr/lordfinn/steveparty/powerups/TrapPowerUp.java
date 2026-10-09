@@ -1,17 +1,20 @@
 package fr.lordfinn.steveparty.powerups;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.components.TrapSetupComponent;
+import fr.lordfinn.steveparty.items.custom.TrapPowerUpItem;
 import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.item.Item;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Piège / Trap: a hidden trap on the board space its player's pawn stands on ({@link TrapEffect}); the next pawn of
- * another player stopping there gives them {@value TrapEffect#COINS} coins. Secret: only its player is told (no
- * announcement to the party). Refused (kept) when the pawn stands on no board space.
+ * Piège / Trap: a trap, seen by everyone, on the board space its player's pawn stands on ({@link TrapEffect}); the
+ * next pawn of another player stopping there springs it. Unsigned, it steals {@link TrapEffect#COINS} coins; signed
+ * ({@link TrapSetupComponent}, see {@link TrapPowerUpItem}), it does what its signer chose. Refused (kept) when the
+ * pawn stands on no board space, or on a trapped one.
  */
 public class TrapPowerUp extends PowerUp {
     public TrapPowerUp() {
@@ -19,29 +22,32 @@ public class TrapPowerUp extends PowerUp {
     }
 
     @Override
+    public Item createItem(Item.Settings settings) {
+        return new TrapPowerUpItem(this, settings);
+    }
+
+    @Override
     public @Nullable Text refusal(PowerUpUse use) {
-        return use.tokenEntity() instanceof MobEntity token && BoardSpaces.boardSpaceOf(token) != null
-                ? null : Text.translatable("message.steveparty.powerup.trap.no_space");
+        return use.tokenEntity() instanceof MobEntity token ? TrapEffect.refusal(use.controller(), token)
+                : Text.translatable("message.steveparty.powerup.trap.no_space");
     }
 
     @Override
     public Result apply(PowerUpUse use) {
         if (!(use.tokenEntity() instanceof MobEntity token))
             return Result.refused(Text.translatable("message.steveparty.powerup.trap.no_space"));
-        return switch (TrapEffect.use(use.controller(), token)) {
-            case SET, REPLACED -> Result.APPLIED;
-            case NO_SPACE, NO_PLAYER -> Result.refusedSilently();
+        return switch (TrapEffect.use(use.controller(), token, TrapSetupComponent.effectOf(use.item()))) {
+            case SET -> Result.APPLIED;
+            case OCCUPIED -> Result.refused(Text.translatable("message.steveparty.powerup.trap.occupied"));
+            case NO_SPACE -> Result.refused(Text.translatable("message.steveparty.powerup.trap.no_space"));
+            case NO_PLAYER -> Result.refusedSilently();
         };
     }
 
-    /** Secret: the party is not told (it would show where the trap is). */
+    /** Told to everyone: the trap is no secret, nor what it does. */
     @Override
     public @Nullable MutableText announcement(PowerUpUse use) {
-        return null;
-    }
-
-    @Override
-    protected Object[] descriptionArgs() {
-        return new Object[]{TrapEffect.COINS};
+        return Text.translatable("powerup.steveparty.trap.announce", use.player().getDisplayName(),
+                TrapSetupComponent.effectOf(use.item()).describe().formatted(Formatting.RED));
     }
 }

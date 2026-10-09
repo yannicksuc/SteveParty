@@ -136,6 +136,9 @@ public class ModComponents {
      */
     public static final ComponentType<Map<String, Integer>> BOARD_CARTRIDGE_STATE =
             registerComponent("board-cartridge-state", Codec.unboundedMap(Codec.STRING, Codec.INT));
+    /** A signed Trap power-up: what it does once sprung and who signed it (an unsigned one steals coins). */
+    public static final ComponentType<TrapSetupComponent> TRAP_SETUP =
+            registerComponent("trap-setup", TrapSetupComponent.CODEC);
     /** The items the Pie stole into a Common pot (kept in its cartridge, given to the pot's winner). */
     public static final ComponentType<List<ItemStack>> POT_ITEMS =
             registerComponent("pot-items", ItemStack.CODEC.listOf());

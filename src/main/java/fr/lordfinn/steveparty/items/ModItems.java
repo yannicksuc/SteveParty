@@ -329,7 +329,7 @@ public class ModItems {
 
         // One item per power-up (see PowerUps)
         for (PowerUp powerUp : PowerUps.all()) {
-            Item item = new PowerUpItem(powerUp, new Item.Settings());
+            Item item = powerUp.createItem(new Item.Settings());
             POWER_UPS.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(powerUp.itemPath())), item));
         }
 
