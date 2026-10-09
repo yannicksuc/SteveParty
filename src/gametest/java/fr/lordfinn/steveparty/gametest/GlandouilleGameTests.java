@@ -233,6 +233,27 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** Carried, a whole tower ignores suffocation (the blocks around its carrier); put down, it suffocates again. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aCarriedTowerIsNeverSmothered(TestContext context) {
+        TestBoards.floor(context, 8);
+        List<GlandouilleEntity> tower = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(5, 1, 5));
+        ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 0f);
+        context.assertTrue(GlandouilleTowers.pickUp(player, tower.getFirst()), "picks up the tower");
+        for (GlandouilleEntity acorn : tower) {
+            float health = acorn.getHealth();
+            acorn.damage(context.getWorld().getDamageSources().inWall(), 1f);
+            context.assertTrue(acorn.getHealth() == health, "a carried one isn't smothered");
+        }
+        Vec3d ground = Vec3d.ofBottomCenter(context.getAbsolutePos(new BlockPos(2, 1, 2)));
+        context.assertTrue(GlandouilleTowers.putDown(player, ground, 0f), "puts it down");
+        GlandouilleEntity bottom = tower.getFirst();
+        float health = bottom.getHealth();
+        bottom.damage(context.getWorld().getDamageSources().inWall(), 1f);
+        context.assertTrue(bottom.getHealth() < health, "put down, it can be smothered again");
+        context.complete();
+    }
+
     /** A carried tower put on another one makes it higher than 5; put down on a block, it stands there. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aCarriedTowerGoesOnTop(TestContext context) {
