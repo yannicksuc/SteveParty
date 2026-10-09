@@ -1,6 +1,10 @@
 package fr.lordfinn.steveparty.client.render.geo;
 
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
+import java.util.Map;
+import java.util.WeakHashMap;
 import software.bernie.geckolib.animation.AnimationProcessor;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.cache.object.GeoBone;
@@ -72,5 +76,50 @@ public final class GeoBones {
 
     public static void scale(@Nullable GeoBone bone, float scale) {
         scale(bone, scale, scale, scale);
+    }
+
+    // ------------------------------------------------------------------ offsets on top of the animation
+
+    private static final int RX = 0, RY = 1, RZ = 2, SX = 3, SY = 4, SZ = 5, CHANNELS = 6;
+    /** Per bone and channel: the value we last wrote, and the base we wrote it on (NaN: never). */
+    private static final Map<GeoBone, float[]> WRITTEN = new WeakHashMap<>();
+
+    /**
+     * A rotation added to a bone's current one, or a scale multiplied into it, without ever piling up. GeckoLib leaves a
+     * bone that no running animation keys exactly as it was (and our own write marks it as changed, so it isn't even
+     * eased back to its rest): adding to its current value again next frame would add to our own last offset, and the
+     * offsets would add up frame after frame (a Trichaudron's shell ended up lying on its side). So when the bone still
+     * holds the very value we wrote, we start again from the base we wrote it on.
+     */
+    public static void addRotX(@Nullable GeoBone bone, float radians) {
+        if (bone != null) bone.setRotX(offset(bone, RX, bone.getRotX(), radians, false));
+    }
+
+    public static void addRotY(@Nullable GeoBone bone, float radians) {
+        if (bone != null) bone.setRotY(offset(bone, RY, bone.getRotY(), radians, false));
+    }
+
+    public static void addRotZ(@Nullable GeoBone bone, float radians) {
+        if (bone != null) bone.setRotZ(offset(bone, RZ, bone.getRotZ(), radians, false));
+    }
+
+    /** Multiplies the bone's x and y scale (see {@link #addRotX}: no compounding frame after frame). */
+    public static void multiplyScaleXY(@Nullable GeoBone bone, float factor) {
+        if (bone == null) return;
+        bone.setScaleX(offset(bone, SX, bone.getScaleX(), factor, true));
+        bone.setScaleY(offset(bone, SY, bone.getScaleY(), factor, true));
+    }
+
+    private static float offset(GeoBone bone, int channel, float current, float amount, boolean multiply) {
+        float[] written = WRITTEN.computeIfAbsent(bone, b -> {
+            float[] fresh = new float[CHANNELS * 2];
+            Arrays.fill(fresh, Float.NaN);
+            return fresh;
+        });
+        float base = written[channel] == current ? written[CHANNELS + channel] : current; // our own last write: its base
+        float value = multiply ? base * amount : base + amount;
+        written[channel] = value;
+        written[CHANNELS + channel] = base;
+        return value;
     }
 }
