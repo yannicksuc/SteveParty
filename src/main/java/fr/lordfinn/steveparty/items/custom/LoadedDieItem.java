@@ -46,7 +46,7 @@ public class LoadedDieItem extends Item {
         }
         stack.decrementUnlessCreative(1, user);
         world.spawnParticles(ParticleTypes.WITCH, entity.getX(), entity.getBodyY(0.6), entity.getZ(), 16, 0.3, 0.4, 0.3, 0.05);
-        world.playSound(null, entity.getX(), entity.getY(), entity.getZ(), ModSounds.MISTIGRI_JINX, SoundCategory.PLAYERS, 0.8f, 0.9f);
+        world.playSound(null, entity.getX(), entity.getY(), entity.getZ(), ModSounds.MISTIGRI_BAD_LUCK, SoundCategory.PLAYERS, 0.8f, 0.9f);
         MessageUtils.sendToPlayer(victim, Text.translatable("message.steveparty.loaded_die.cursed")
                 .formatted(Formatting.DARK_PURPLE), MessageUtils.MessageType.ACTION_BAR);
         if (user instanceof ServerPlayerEntity player && player != victim) {

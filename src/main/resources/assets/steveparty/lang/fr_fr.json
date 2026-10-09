@@ -2762,7 +2762,7 @@
   "subtitles.steveparty.mistigri.hurt": "Le Mistigri a mal",
   "subtitles.steveparty.mistigri.death": "Le Mistigri meurt",
   "subtitles.steveparty.mistigri.transform": "Un chat noir devient un Mistigri",
-  "subtitles.steveparty.mistigri.jinx": "La malchance frappe",
+  "subtitles.steveparty.mistigri.bad_luck": "La malchance frappe",
   "item.steveparty.mistigri_cartridge": "Cartouche Mistigri",
   "tooltip.steveparty.cartridge.mistigri_cartridge": "Mistigri : un pion qui s'arrête ici croise le chat noir de la malchance, qui lance son dé pipé et rend une sentence contre son joueur",
   "tooltip.steveparty.mistigri_cartridge.sentence": "🐈 %s (%s %%)",

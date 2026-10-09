@@ -266,7 +266,7 @@ public final class MistigriGoals {
 
     /**
      * Sits on a chest (or a barrel), as cats do: walks to it, hops on, and loafs there a long while; it won't open under
-     * him (MistigriJinx).
+     * him (MistigriBadLuck).
      */
     static final class SitOnChest extends Goal {
         private final MistigriEntity mistigri;
@@ -290,7 +290,7 @@ public final class MistigriGoals {
         @Override
         public boolean shouldContinue() {
             if (chest == null || mistigri.isAngry() || mistigri.isSitting() || mistigri.isActing() && !seated) return false;
-            if (!MistigriJinx.isSeat(mistigri.getWorld().getBlockState(chest).getBlock())) return false;
+            if (!MistigriBadLuck.isSeat(mistigri.getWorld().getBlockState(chest).getBlock())) return false;
             return seated ? ticks < stay && mistigri.chest() != null : ticks < 200;
         }
 
@@ -339,10 +339,10 @@ public final class MistigriGoals {
         BlockPos best = null;
         double bestDistance = Double.MAX_VALUE;
         for (BlockPos pos : BlockPos.iterate(feet.add(-SEARCH, -2, -SEARCH), feet.add(SEARCH, 2, SEARCH))) {
-            if (!MistigriJinx.isSeat(world.getBlockState(pos).getBlock())) continue;
+            if (!MistigriBadLuck.isSeat(world.getBlockState(pos).getBlock())) continue;
             if (!world.getBlockState(pos.up()).getCollisionShape(world, pos.up()).isEmpty()
                     || !world.getBlockState(pos.up(2)).getCollisionShape(world, pos.up(2)).isEmpty()) continue;
-            if (MistigriJinx.sitter(world, pos) != null) continue;
+            if (MistigriBadLuck.sitter(world, pos) != null) continue;
             double distance = pos.getSquaredDistance(feet);
             if (distance < bestDistance) {
                 bestDistance = distance;

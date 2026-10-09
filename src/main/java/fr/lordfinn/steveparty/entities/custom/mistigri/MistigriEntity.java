@@ -55,11 +55,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * The Mistigri (Jinx): a big all-black witch's tomcat, a capricious tyrant who hands out bad luck. Never spawns by
+ * The Mistigri: a big all-black witch's tomcat, a capricious tyrant who hands out bad luck. Never spawns by
  * itself: a black cat by a witch hut becomes one when a die bound to it lands on a 1 or a 0 ({@link MistigriSummoning}).
  * <ul>
  *     <li><b>Bad luck</b>: crossing in front of him (his path, a few blocks ahead) gives Bad Luck for a while
- *     ({@link MistigriJinx}). He never hurts anyone himself.</li>
+ *     ({@link MistigriBadLuck}). He never hurts anyone himself.</li>
  *     <li><b>A cat</b>: knocks the items off item frames and the books out of chiseled bookshelves, sits on chests
  *     (they won't open under him), follows a player about staring at them, grooms, stretches, yawns, naps.</li>
  *     <li><b>Angry</b> ({@link #isAngry}): hit, or a wolf too close. Arched back, hackles and tail bristling, he hisses;
@@ -67,7 +67,7 @@ import java.util.UUID;
  *     <li><b>Fish</b>: each raw fish fed to a wild one counts; enough of them ({@link #fishToTame}) tame him.</li>
  *     <li><b>Tamed</b>: follows his owner like the mod's other pets (through teleports, each its own place:
  *     FollowsOwnerAnywhere, PetSlots), sits on their word, gives them Luck nearby and makes the monsters around him
- *     miss now and then ({@link MistigriJinx}). Crossing him never jinxes his owner.</li>
+ *     miss now and then ({@link MistigriBadLuck}). Crossing him never brings his owner bad luck.</li>
  *     <li><b>Loot</b>: the Loaded Die (loot table entities/mistigri).</li>
  * </ul>
  * A board space's Mistigri ({@link #isBoardActor}) does none of that: invulnerable, moved by the board, never saved.
@@ -123,10 +123,10 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     private boolean boardActor;
     /** The chest he sits on, while loafing on it. */
     private @Nullable BlockPos chest;
-    /** The jinx's watch of the players in front of him (see MistigriJinx). */
-    final Map<UUID, MistigriJinx.Watch> watches = new HashMap<>();
-    /** Each player's next possible jinx (world time). */
-    final Map<UUID, Long> jinxCooldowns = new HashMap<>();
+    /** The bad luck's watch of the players in front of him (see MistigriBadLuck). */
+    final Map<UUID, MistigriBadLuck.Watch> watches = new HashMap<>();
+    /** Each player's next possible bad luck (world time). */
+    final Map<UUID, Long> badLuckCooldowns = new HashMap<>();
     /** The next time he may knock something off (world time): not every minute. */
     long nextSwatTime;
 
@@ -217,7 +217,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         if (!loafing) chest = null;
     }
 
-    /** Loafs on top of the chest at {@code pos} (it won't open under him: MistigriJinx). */
+    /** Loafs on top of the chest at {@code pos} (it won't open under him: MistigriBadLuck). */
     public void loafOn(@Nullable BlockPos pos) {
         setLoafing(true);
         chest = pos == null ? null : pos.toImmutable();
@@ -287,10 +287,10 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         if (actionTicks > 0 && --actionTicks == 0) this.dataTracker.set(ACTION, Action.NONE.ordinal());
         if (angryTicks > 0 && --angryTicks == 0) this.dataTracker.set(ANGRY, false);
         if (boardActor || !isAlive()) return;
-        if (age % 2 == 0) MistigriJinx.tickCrossings(world, this);
+        if (age % 2 == 0) MistigriBadLuck.tickCrossings(world, this);
         if (age % 20 == 5) {
             if (isTamed()) {
-                MistigriJinx.giveLuck(world, this);
+                MistigriBadLuck.giveLuck(world, this);
                 PetTeleports.remember(this);
             }
             if (!isAngry() && wolfNearby(world)) setAngry(ANGRY_TICKS);
@@ -536,7 +536,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         return cache;
     }
 
-    /** Where he looks from, for the jinx (his body's facing, a flat unit vector). */
+    /** Where he looks from, for his bad luck (his body's facing, a flat unit vector). */
     Vec3d facing() {
         float yaw = getBodyYaw() * MathHelper.RADIANS_PER_DEGREE;
         return new Vec3d(-MathHelper.sin(yaw), 0, MathHelper.cos(yaw));
