@@ -57,7 +57,8 @@ public final class HudShapes {
         return m;
     }
 
-    private static boolean[][] cut(int w, int h, int c) {
+    /** A rectangle with its corners cut by {@code c} pixels (buttons: 1, panels: 2). */
+    public static boolean[][] cut(int w, int h, int c) {
         boolean[][] m = new boolean[h][w];
         for (boolean[] row : m) Arrays.fill(row, true);
         for (int k = 0; k < c; k++) {

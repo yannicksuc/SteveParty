@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.gui.DrawContext;
 
-import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -21,17 +20,6 @@ public final class PixelArt {
     }
 
     // ------------------------------------------------------------------ masks
-
-    /** A rectangle with its corners cut by {@code c} pixels (buttons: 1, panels: 2). */
-    public static boolean[][] cut(int w, int h, int c) {
-        boolean[][] m = new boolean[h][w];
-        for (boolean[] row : m) Arrays.fill(row, true);
-        for (int k = 0; k < c; k++) {
-            int[][] corners = {{k, 0}, {0, k}, {w - 1 - k, 0}, {w - 1, k}, {k, h - 1}, {0, h - 1 - k}, {w - 1 - k, h - 1}, {w - 1, h - 1 - k}};
-            for (int[] p : corners) if (p[1] >= 0 && p[1] < h && p[0] >= 0 && p[0] < w) m[p[1]][p[0]] = false;
-        }
-        return m;
-    }
 
     /** {@code inner} with one pixel of margin all round, in a {@code w} x {@code h} mask: room for its outline. */
     public static boolean[][] margin(boolean[][] inner, int w, int h) {
