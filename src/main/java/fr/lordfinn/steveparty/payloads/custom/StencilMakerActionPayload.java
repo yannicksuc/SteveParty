@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.payloads.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
+import fr.lordfinn.steveparty.payloads.ServerboundPayload;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilMakerScreenHandler;
 import fr.lordfinn.steveparty.stencil.StencilLibrary;
@@ -16,7 +17,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
  * Client → server, from the stencil maker editor: take the stencil out, or save / remove / (un)favourite a pattern
  * in the player's stencil library.
  */
-public record StencilMakerActionPayload(Action action, byte[] shape) implements CustomPayload {
+public record StencilMakerActionPayload(Action action, byte[] shape) implements ServerboundPayload {
     public static final Id<StencilMakerActionPayload> ID = new Id<>(Steveparty.id("stencil_maker_action"));
 
     public enum Action { TAKE_OUT, SAVE, DELETE, FAVORITE }
@@ -32,6 +33,7 @@ public record StencilMakerActionPayload(Action action, byte[] shape) implements 
     }
 
     /** Server side: only while the player has a stencil maker open and in reach. */
+    @Override
     public void handle(ServerPlayerEntity player) {
         if (!(player.currentScreenHandler instanceof StencilMakerScreenHandler handler)) return;
         StencilMakerBlockEntity maker = handler.getBlockEntity();

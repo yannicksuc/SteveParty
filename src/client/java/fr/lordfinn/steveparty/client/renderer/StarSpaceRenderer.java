@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.client.renderer;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.StarSpacesPayload;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
@@ -55,11 +55,10 @@ public final class StarSpaceRenderer {
     }
 
     public static void initialize() {
-        ClientPlayNetworking.registerGlobalReceiver(StarSpacesPayload.ID,
-                (payload, context) -> context.client().execute(() -> {
-                    stars = List.copyOf(payload.spaces());
-                    heardAt = context.client().world == null ? 0 : context.client().world.getTime();
-                }));
+        ClientPayloads.receive(StarSpacesPayload.ID, (payload, context) -> {
+            stars = List.copyOf(payload.spaces());
+            heardAt = context.client().world == null ? 0 : context.client().world.getTime();
+        });
         ClientTickEvents.END_CLIENT_TICK.register(StarSpaceRenderer::tick);
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             if (stars.isEmpty() || context.matrixStack() == null) return;

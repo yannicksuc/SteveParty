@@ -25,7 +25,7 @@ import java.util.List;
  */
 public record DicePromptPayload(int id, Text title, boolean list, List<DicePrompts.Option> options, int timeoutTicks,
                                 int defaultIndex, List<DicePrompts.Option> picked, int steps) implements CustomPayload {
-    public static final CustomPayload.Id<DicePromptPayload> ID = new CustomPayload.Id<>(Steveparty.id("dice-prompt"));
+    public static final CustomPayload.Id<DicePromptPayload> ID = new CustomPayload.Id<>(Steveparty.id("dice_prompt"));
     private static final int MAX_OPTIONS = 64;
 
     public static final PacketCodec<RegistryByteBuf, DicePromptPayload> CODEC = new PacketCodec<>() {

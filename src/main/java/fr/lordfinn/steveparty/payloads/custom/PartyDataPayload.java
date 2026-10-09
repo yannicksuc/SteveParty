@@ -1,14 +1,13 @@
 package fr.lordfinn.steveparty.payloads.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 
-import static fr.lordfinn.steveparty.payloads.ModPayloads.PARTY_DATA_PAYLOAD;
-
 public record PartyDataPayload(PartyData partyData) implements CustomPayload {
-    public static final CustomPayload.Id<PartyDataPayload> ID = new CustomPayload.Id<>(PARTY_DATA_PAYLOAD);
+    public static final CustomPayload.Id<PartyDataPayload> ID = new CustomPayload.Id<>(Steveparty.id("party_data"));
     public static final PacketCodec<PacketByteBuf, PartyDataPayload> CODEC =
             new PacketCodec<>() {
                 @Override

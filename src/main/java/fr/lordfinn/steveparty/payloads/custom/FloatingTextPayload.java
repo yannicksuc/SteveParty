@@ -1,13 +1,12 @@
 package fr.lordfinn.steveparty.payloads.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
-
-import static fr.lordfinn.steveparty.payloads.ModPayloads.FLOATING_TEXT_PAYLOAD;
 
 public record FloatingTextPayload(
         Vector3f pos,
@@ -19,7 +18,7 @@ public record FloatingTextPayload(
         String text
 ) implements CustomPayload {
 
-    public static final CustomPayload.Id<FloatingTextPayload> ID = new CustomPayload.Id<>(FLOATING_TEXT_PAYLOAD);
+    public static final CustomPayload.Id<FloatingTextPayload> ID = new CustomPayload.Id<>(Steveparty.id("floating_text"));
 
     // 7 fields: PacketCodec.tuple stops at 6 in 1.21.1, so written field by field (same order)
     public static final PacketCodec<RegistryByteBuf, FloatingTextPayload> CODEC =

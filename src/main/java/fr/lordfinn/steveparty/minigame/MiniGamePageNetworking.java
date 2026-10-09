@@ -1,14 +1,24 @@
 package fr.lordfinn.steveparty.minigame;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.payloads.ModPayloads;
-import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
+import fr.lordfinn.steveparty.payloads.Payloads;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.Action;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.Data;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.Edit;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.ImageChunk;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.ImageRequest;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.PipeOrder;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.PipeRole;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.PodiumUnlink;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.Ready;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.Request;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.Status;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.TestAction;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.TestQuery;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads.Upload;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -53,30 +63,18 @@ public final class MiniGamePageNetworking {
 
     public static void initialize() {
         MiniGamePagePayloads.register();
-        ServerPlayNetworking.registerGlobalReceiver(Edit.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () -> edit(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(Action.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () -> action(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(Upload.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () -> upload(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.PipeRole.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () -> pipeRole(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.PipeOrder.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () -> pipeOrder(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.PodiumUnlink.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () -> podiumUnlink(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestQuery.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () -> testQuery(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestAction.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () -> testAction(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Ready.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () ->
-                        fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep.toggleReady(context.player())));
-        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Request.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () ->
-                        send(context.player(), new MiniGamePagePayloads.Data(MiniGamePages.get(context.player().server, payload.page())))));
-        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.ImageRequest.ID, (payload, context) ->
-                ModPayloads.runInPacketOrder(context.player(), () -> sendImage(context.player(), payload.hash())));
+        Payloads.c2s(Edit.ID, Edit.CODEC, MiniGamePageNetworking::edit);
+        Payloads.c2s(Action.ID, Action.CODEC, MiniGamePageNetworking::action);
+        Payloads.c2s(Upload.ID, Upload.CODEC, MiniGamePageNetworking::upload);
+        Payloads.c2s(PipeRole.ID, PipeRole.CODEC, MiniGamePageNetworking::pipeRole);
+        Payloads.c2s(PipeOrder.ID, PipeOrder.CODEC, MiniGamePageNetworking::pipeOrder);
+        Payloads.c2s(PodiumUnlink.ID, PodiumUnlink.CODEC, MiniGamePageNetworking::podiumUnlink);
+        Payloads.c2s(TestQuery.ID, TestQuery.CODEC, MiniGamePageNetworking::testQuery);
+        Payloads.c2s(TestAction.ID, TestAction.CODEC, MiniGamePageNetworking::testAction);
+        Payloads.c2s(Ready.ID, Ready.CODEC, (player, payload) -> MiniGamePartyStep.toggleReady(player));
+        Payloads.c2s(Request.ID, Request.CODEC, (player, payload) ->
+                send(player, new Data(MiniGamePages.get(player.server, payload.page()))));
+        Payloads.c2s(ImageRequest.ID, ImageRequest.CODEC, (player, payload) -> sendImage(player, payload.hash()));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> UPLOADS.remove(handler.getPlayer().getUuid()));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             UPLOADS.clear();
@@ -157,7 +155,7 @@ public final class MiniGamePageNetworking {
     }
 
     /** A linked pipe moved to another role in the editor, or unlinked there. @return true if it was done */
-    public static boolean pipeRole(ServerPlayerEntity player, MiniGamePagePayloads.PipeRole payload) {
+    public static boolean pipeRole(ServerPlayerEntity player, PipeRole payload) {
         if (editable(player, payload.hand(), payload.page()) == null) return false;
         if (payload.role() < 0) return MiniGamePages.removeLink(player.server, payload.page(), payload.mouth());
         MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(payload.role());
@@ -165,7 +163,7 @@ public final class MiniGamePageNetworking {
     }
 
     /** A linked podium (or goal pole base) unlinked in the editor. @return true if it was done */
-    public static boolean podiumUnlink(ServerPlayerEntity player, MiniGamePagePayloads.PodiumUnlink payload) {
+    public static boolean podiumUnlink(ServerPlayerEntity player, PodiumUnlink payload) {
         if (editable(player, payload.hand(), payload.page()) == null) return false;
         return MiniGamePages.removePodiumLinks(player.server, payload.page(), java.util.List.of(payload.pos()));
     }
@@ -178,7 +176,7 @@ public final class MiniGamePageNetworking {
     }
 
     /** The editor asks whether its page can be tested now (the state of its « Test » button). */
-    public static void testQuery(ServerPlayerEntity player, MiniGamePagePayloads.TestQuery payload) {
+    public static void testQuery(ServerPlayerEntity player, TestQuery payload) {
         if (!payload.page().equals(MiniGamePages.idOf(player.getStackInHand(payload.hand())))) return;
         send(player, testStatus(payload.page(), MiniGameTest.check(player.server, payload.page())));
     }
@@ -189,7 +187,7 @@ public final class MiniGamePageNetworking {
      * @return what became of it: {@code READY} when a test started, {@code RUNNING} when one was stopped, else why
      * nothing started; null if the player may not (not holding the page, not allowed to build)
      */
-    public static MiniGameTest.@Nullable Status testAction(ServerPlayerEntity player, MiniGamePagePayloads.TestAction payload) {
+    public static MiniGameTest.@Nullable Status testAction(ServerPlayerEntity player, TestAction payload) {
         if (editable(player, payload.hand(), payload.page()) == null) return null;
         if (!payload.start()) {
             MiniGameTest.stop(payload.page());
@@ -201,7 +199,7 @@ public final class MiniGamePageNetworking {
     }
 
     /** A role's players sent in turn or at random, chosen in the editor. @return true if it was done */
-    public static boolean pipeOrder(ServerPlayerEntity player, MiniGamePagePayloads.PipeOrder payload) {
+    public static boolean pipeOrder(ServerPlayerEntity player, PipeOrder payload) {
         MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(payload.role());
         if (role == null || !role.hasOrder() || editable(player, payload.hand(), payload.page()) == null) return false;
         MiniGamePages.setRandom(player.server, payload.page(), role, payload.random());

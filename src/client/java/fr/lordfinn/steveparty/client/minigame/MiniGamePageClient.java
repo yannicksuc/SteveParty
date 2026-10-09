@@ -1,8 +1,11 @@
 package fr.lordfinn.steveparty.client.minigame;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud;
+import fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud;
+import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.client.screens.MiniGamePageEditorScreen;
 import fr.lordfinn.steveparty.client.utils.DynamicTextureCache;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
@@ -10,13 +13,12 @@ import fr.lordfinn.steveparty.minigame.MiniGamePageImage;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImages;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
@@ -78,11 +80,9 @@ public final class MiniGamePageClient {
     }
 
     public static void initialize() {
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Data.ID, (payload, context) ->
-                context.client().execute(() -> put(payload.data())));
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.ImageChunk.ID, (payload, context) ->
-                context.client().execute(() -> onImageChunk(payload)));
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Open.ID, (payload, context) -> context.client().execute(() -> {
+        ClientPayloads.receive(MiniGamePagePayloads.Data.ID, (payload, context) -> put(payload.data()));
+        ClientPayloads.receive(MiniGamePagePayloads.ImageChunk.ID, (payload, context) -> onImageChunk(payload));
+        ClientPayloads.receive(MiniGamePagePayloads.Open.ID, (payload, context) -> {
             MinecraftClient client = context.client();
             if (client.player == null) return;
             if (!payload.data().id().equals(MiniGamePageData.NO_ID)) put(payload.data());
@@ -91,28 +91,25 @@ public final class MiniGamePageClient {
                 String status = client.currentScreen instanceof MiniGamePageEditorScreen editor ? editor.handOver() : null;
                 client.setScreen(new MiniGamePageEditorScreen(payload.hand(), payload.data(), payload.canEdit(), payload.linked(), status));
             }
-        }));
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Status.ID, (payload, context) -> context.client().execute(() -> {
+        });
+        ClientPayloads.receive(MiniGamePagePayloads.Status.ID, (payload, context) -> {
             if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor) editor.onStatus(payload.page(), payload.code());
-        }));
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Preview.ID, (payload, context) -> context.client().execute(() -> {
+        });
+        ClientPayloads.receive(MiniGamePagePayloads.Preview.ID, (payload, context) -> {
             if (payload.show()) {
                 if (!payload.data().id().equals(MiniGamePageData.NO_ID)) put(payload.data());
                 MiniGameCardHud.show(payload.data(), payload.format(), payload.countdown());
             } else {
                 MiniGameCardHud.hide();
             }
-        }));
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestLabel.ID, (payload, context) ->
-                context.client().execute(() -> MiniGameResultsHud.test(payload.show() ? payload.title() : null)));
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Practice.ID, (payload, context) ->
-                context.client().execute(() -> fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud.show(payload)));
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestStatus.ID, (payload, context) -> context.client().execute(() -> {
+        });
+        ClientPayloads.receive(MiniGamePagePayloads.TestLabel.ID, (payload, context) -> MiniGameResultsHud.test(payload.show() ? payload.title() : null));
+        ClientPayloads.receive(MiniGamePagePayloads.Practice.ID, (payload, context) -> MiniGamePracticeHud.show(payload));
+        ClientPayloads.receive(MiniGamePagePayloads.TestStatus.ID, (payload, context) -> {
             if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor)
                 editor.onTestStatus(payload.page(), payload.status(), payload.players(), payload.format(), payload.shortfall());
-        }));
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Results.ID, (payload, context) ->
-                context.client().execute(() -> MiniGameResultsHud.show(payload.results())));
+        });
+        ClientPayloads.receive(MiniGamePagePayloads.Results.ID, (payload, context) -> MiniGameResultsHud.show(payload.results()));
     }
 
     /** Everything kept is about one server: forgotten when the connection ends. */
@@ -125,7 +122,7 @@ public final class MiniGamePageClient {
         TEXTURES.clear();
         MiniGameCardHud.clear();
         MiniGameResultsHud.clear();
-        fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud.clear();
+        MiniGamePracticeHud.clear();
     }
 
     // ------------------------------------------------------------------ content

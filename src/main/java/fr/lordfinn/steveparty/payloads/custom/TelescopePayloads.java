@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.payloads.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import fr.lordfinn.steveparty.payloads.Payloads;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
@@ -22,11 +22,10 @@ public final class TelescopePayloads {
     private TelescopePayloads() {
     }
 
+    /** The server → client payloads (the client → server ones are registered with their handlers by TelescopeService). */
     public static void register() {
-        PayloadTypeRegistry.playS2C().register(Open.ID, Open.CODEC);
-        PayloadTypeRegistry.playS2C().register(Guides.ID, Guides.CODEC);
-        PayloadTypeRegistry.playC2S().register(Found.ID, Found.CODEC);
-        PayloadTypeRegistry.playC2S().register(Leave.ID, Leave.CODEC);
+        Payloads.s2c(Open.ID, Open.CODEC);
+        Payloads.s2c(Guides.ID, Guides.CODEC);
     }
 
     private static <T extends CustomPayload> CustomPayload.Id<T> id(String name) {
