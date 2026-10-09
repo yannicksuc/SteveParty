@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
 import fr.lordfinn.steveparty.service.KeyGates;
 import net.minecraft.item.ItemStack;
 

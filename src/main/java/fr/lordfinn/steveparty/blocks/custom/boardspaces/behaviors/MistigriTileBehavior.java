@@ -35,7 +35,7 @@ public class MistigriTileBehavior extends MobTileBehavior {
         ItemStack cartridge = tile.getActiveCartridgeItemStack();
         MistigriSentences.Start start = MistigriSentences.start(world, pos, token, party, cartridge, null, onDone);
         TileFeedback.Landing landing = start == MistigriSentences.Start.STARTED ? TileFeedback.Landing.MISTIGRI : TileFeedback.Landing.DEFAULT;
-        TileFeedback.land(world, tile, token, party, landing, landing.noticeKey());
+        TileFeedback.land(world, tile, token, party, landing);
     }
 
     @Override

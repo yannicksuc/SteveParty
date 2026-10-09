@@ -89,8 +89,7 @@ public class ThresholdTileBehavior extends ABoardSpaceBehavior {
             TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.STOP,
                     "message.steveparty.tile_landed.threshold", ThresholdCartridgeItem.label(boardSpaceEntity.getActiveCartridgeItemStack()));
         } else {
-            TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.DEFAULT,
-                    TileFeedback.Landing.DEFAULT.noticeKey());
+            landPlain(serverWorld, boardSpaceEntity, token, partyController);
         }
     }
 

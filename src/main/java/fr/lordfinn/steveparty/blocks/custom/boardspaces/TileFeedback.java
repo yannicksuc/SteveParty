@@ -311,7 +311,12 @@ public final class TileFeedback {
      * the party's players (none without a party).
      */
     public static void land(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token, @Nullable PartyControllerEntity party) {
-        Landing landing = landingOf(tile);
+        land(world, tile, token, party, landingOf(tile));
+    }
+
+    /** A landing of the given kind (not necessarily the tile's own) with its own notice. */
+    public static void land(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token, @Nullable PartyControllerEntity party,
+                            Landing landing) {
         land(world, tile, token, party, landing, landing.noticeKey());
     }
 
