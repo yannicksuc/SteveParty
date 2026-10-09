@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.entities.custom.fumarole;
+package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * Riding a tamed, saddled Fumarole: up to three riders side by side on the tank's front rim, each holding the reins of
+ * Riding a tamed, saddled Trichaudron: up to three riders side by side on the tank's front rim, each holding the reins of
  * one head (the first the centre one, then the left, then the right).
  * <ul>
  *     <li><b>Steering together</b> ({@link #combine}): every rider's keys count, added up. Opposite keys cancel (left +
@@ -32,12 +32,12 @@ import java.util.function.Predicate;
  *     slower.</li>
  * </ul>
  */
-public final class FumaroleRiding {
+public final class TrichaudronRiding {
     public static final int MAX_RIDERS = 3;
     /** One rider's speed (movement attribute units; the wild turtle crawls at 0.12), and each extra agreeing rider's share. */
     public static final float RIDE_SPEED = 0.25f, EXTRA_RIDER_SPEED = 0.6f;
     /** Degrees a tick per rider turning. */
-    public static final float TURN_PER_RIDER = 4.0f;
+    public static final float TURN_PER_RIDER = 2.5f;
     public static final int FIRE_COOLDOWN = 30;
     public static final int CHARGE_MIN = 8, CHARGE_MAX = 40;
     /** The leap: upward speed at the least and at a full charge, forward push at a full charge. */
@@ -49,11 +49,16 @@ public final class FumaroleRiding {
     public static final int CLIMB_MAX = 10;
     public static final double CLIMB_SPEED = 0.35, CLIMB_OVER_SPEED = 0.25;
     public static final int CLIMB_TIMEOUT = 100;
-    /** In lava it floats this deep (blocks of lava over its feet), slower by this much. */
-    public static final double SWIM_DEPTH = 1.5, SWIM_MIN_DEPTH = 0.6;
+    /**
+     * In lava it floats this deep (blocks of lava over its feet: the surface clear of its shell's underside, its legs'
+     * tops and its knees, no face of its model flush with it), slower by this much.
+     */
+    public static final double SWIM_DEPTH = 2.0, SWIM_MIN_DEPTH = 0.6;
+    /** Standing on the bottom of shallow lava, it is drawn (and its riders sat) this much lower: no knee flush with it. */
+    public static final float SHALLOW_SINK = 0.5f;
     public static final float SWIM_FACTOR = 0.8f;
 
-    private FumaroleRiding() {
+    private TrichaudronRiding() {
     }
 
     /** The riders' keys added up: forward (positive: ahead) and turn (positive: to the left), each in -3..3. */
@@ -103,7 +108,7 @@ public final class FumaroleRiding {
 
     /** The seat of the rider holding this head (0 centre, 1 left, 2 right), as a vehicle attachment (local, y up). */
     public static Vec3d seat(int index, double rimHeight, double rimForward) {
-        FumaroleHead head = FumaroleEntity.HEADS[Math.min(index, FumaroleEntity.HEADS.length - 1)];
+        TrichaudronHead head = TrichaudronEntity.HEADS[Math.min(index, TrichaudronEntity.HEADS.length - 1)];
         // local x points to the turtle's left (at yaw 0, east): its right is -x
         return new Vec3d(-head.seat(), rimHeight, rimForward);
     }

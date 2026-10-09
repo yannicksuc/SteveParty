@@ -10,7 +10,7 @@ import fr.lordfinn.steveparty.entities.custom.MulaStarEntity;
 import fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
-import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity;
@@ -149,19 +149,19 @@ public class ModEntities {
                     .build(BOOMCART_KEY.getValue().toString())
     );
 
-    /** The Fumarole (Fumerolle), a huge tortoise of the Nether with a tank of lava on its back (see FumaroleEntity). */
-    public static final RegistryKey<EntityType<?>> FUMAROLE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("fumarole"));
-    public static final EntityType<FumaroleEntity> FUMAROLE = Registry.register(Registries.ENTITY_TYPE,
-            Steveparty.id("fumarole"),
+    /** The Trichaudron (EN: Tricauldron), a huge tortoise of the Nether with a tank of lava on its back (see TrichaudronEntity). */
+    public static final RegistryKey<EntityType<?>> TRICHAUDRON_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("trichaudron"));
+    public static final EntityType<TrichaudronEntity> TRICHAUDRON = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("trichaudron"),
             EntityType.Builder
-                    .<FumaroleEntity>create(FumaroleEntity::new, SpawnGroup.MONSTER)
-                    .dimensions(FumaroleEntity.WIDTH,
-                            FumaroleEntity.HEIGHT)
-                    .eyeHeight(FumaroleEntity.EYE_HEIGHT)
+                    .<TrichaudronEntity>create(TrichaudronEntity::new, SpawnGroup.MONSTER)
+                    .dimensions(TrichaudronEntity.WIDTH,
+                            TrichaudronEntity.HEIGHT)
+                    .eyeHeight(TrichaudronEntity.EYE_HEIGHT)
                     .makeFireImmune()
                     .maxTrackingRange(12)
                     .trackingTickInterval(1) // ridden, it moves server side: every tick keeps the riders smooth
-                    .build(FUMAROLE_KEY.getValue().toString())
+                    .build(TRICHAUDRON_KEY.getValue().toString())
     );
 
     /** A player turned into a pawn: a statue of the player on a token base (see PlayerPawnEntity). */
@@ -226,6 +226,6 @@ public class ModEntities {
         FabricDefaultAttributeRegistry.register(ModEntities.FROUSSEUX, FrousseuxEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOOMCART, BoomcartEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.MISTIGRI, MistigriEntity.setAttributes());
-        FabricDefaultAttributeRegistry.register(ModEntities.FUMAROLE, FumaroleEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.TRICHAUDRON, TrichaudronEntity.setAttributes());
     }
 }
