@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.dice.DiceThrow;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
@@ -29,11 +30,7 @@ public final class TurnMoves {
     public record Roll(int total, List<Integer> faces, @Nullable BlockPos origin) {
         /** At least {@code count} dice of the throw show the same number (a pair: 2, three of a kind: 3). */
         public boolean hasSame(int count) {
-            Map<Integer, Integer> seen = new HashMap<>();
-            for (int face : faces) {
-                if (seen.merge(face, 1, Integer::sum) >= count) return true;
-            }
-            return false;
+            return DiceThrow.hasSame(faces, count); // the same double / triple as the reveal of the throw
         }
     }
 

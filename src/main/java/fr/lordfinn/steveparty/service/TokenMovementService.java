@@ -5,13 +5,13 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
-import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
+import fr.lordfinn.steveparty.dice.DiceThrow;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
@@ -79,11 +79,7 @@ public class TokenMovementService {
 
     /** The numbers shown by the dice of the throw (the faces that walk steps), one per die. */
     private static List<Integer> numberFaces(DiceEntity dice) {
-        List<Integer> faces = new ArrayList<>();
-        for (DiceFacesComponent.DiceFace face : dice.getRolledFaces()) {
-            if (face.steps() > 0) faces.add(face.steps());
-        }
-        return faces;
+        return DiceThrow.numbers(dice.getRolledFaces());
     }
 
     private MobEntity getTargetedToken(ServerWorld world, DiceEntity dice, UUID ownerUUID) {
