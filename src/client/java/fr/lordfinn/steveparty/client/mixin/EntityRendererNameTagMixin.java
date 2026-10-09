@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.items.custom.BoxCostumeBlock;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -23,7 +24,7 @@ public abstract class EntityRendererNameTagMixin {
     private boolean steveparty$hideNameTag(EntityRenderer<?> renderer, Entity entity, Operation<Boolean> original) {
         if (PipeTravellerPose.hidesNameTag(entity)) return false;
         // Hidden in the box (or a block of the grid): straight from the synced state, whatever the box animation
-        if (entity instanceof net.minecraft.entity.player.PlayerEntity player
+        if (entity instanceof PlayerEntity player
                 && (BoxCostumeItem.isHiddenInBox(player)
                 || BoxCostumeBlock.isBlockAligned(player))) return false;
         if (entity instanceof BoxCostumeRenderState costume) {

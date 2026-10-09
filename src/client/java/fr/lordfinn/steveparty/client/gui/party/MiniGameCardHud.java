@@ -20,6 +20,7 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.function.IntFunction;
 
 /**
  * The card of the mini-game the party controller drew: its picture, its title, how it will be played and the start of
@@ -144,10 +145,10 @@ public final class MiniGameCardHud {
         }
 
         // How it is played: its formats (pawn chips), the one played gold rimmed; once faded in (the chips don't fade)
-        java.util.List<MiniGameFormat> formats = page.formats();
-        java.util.function.IntFunction<FormatChips.Look> look =
+        List<MiniGameFormat> formats = page.formats();
+        IntFunction<FormatChips.Look> look =
                 i -> new FormatChips.Look(false, i == played, false, false, 13);
-        java.util.List<int[]> at = FormatChips.flow(font, formats, look, pictureWidth, 3);
+        List<int[]> at = FormatChips.flow(font, formats, look, pictureWidth, 3);
         int rowWidth = 0;
         for (int[] chip : at) if (chip[1] == 0) rowWidth = chip[0] + chip[2];
         if (alpha > 0.6f) {

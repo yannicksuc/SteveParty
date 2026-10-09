@@ -31,6 +31,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -79,7 +81,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     }
 
     private Object signature() {
-        return List.of(state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.format(), java.util.Arrays.toString(handler.shortfall()),
+        return List.of(state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.format(), Arrays.toString(handler.shortfall()),
                 handler.isLocked(), handler.forbiddenPos());
     }
 
@@ -157,7 +159,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     }
 
     /** The chips shown on the monitor this frame: {x, y, w, index}, for their tooltips. */
-    private final List<int[]> chipsShown = new java.util.ArrayList<>();
+    private final List<int[]> chipsShown = new ArrayList<>();
 
     /** The status line's colour, on the monitor's dark screen. */
     private static int statusColor(State state) {

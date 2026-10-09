@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.client.entity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.render.geo.EmissiveLayer;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -39,7 +41,7 @@ public class MistigriRenderer extends GeoEntityRenderer<MistigriEntity> {
         /** Their colour over the texture: 45 % opaque, greyed. */
         private static final int COLOR = 0x73C4C2CC;
         /** Each bone's hidden and children-hidden flags before, restored after. */
-        private final java.util.Map<GeoBone, boolean[]> hidden = new java.util.IdentityHashMap<>();
+        private final Map<GeoBone, boolean[]> hidden = new IdentityHashMap<>();
 
         WhiskerLayer(GeoRenderer<MistigriEntity> renderer) {
             super(renderer);

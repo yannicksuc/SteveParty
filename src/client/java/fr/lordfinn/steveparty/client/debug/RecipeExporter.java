@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.debug;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.CraftingScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 
@@ -14,7 +15,7 @@ public class RecipeExporter {
     private static final char[] fallbackSymbols = {'@', '#', '$', '%', '&', '*', '+', '-', '='};
 
     public static void exportRecipe(MinecraftClient client) {
-        if (!(client.player.currentScreenHandler instanceof net.minecraft.screen.CraftingScreenHandler craftingHandler)) {
+        if (!(client.player.currentScreenHandler instanceof CraftingScreenHandler craftingHandler)) {
             client.player.sendMessage(Text.literal("Open a crafting table first."), true);
             return;
         }

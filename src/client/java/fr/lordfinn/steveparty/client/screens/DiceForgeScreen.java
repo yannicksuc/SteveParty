@@ -18,6 +18,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
@@ -101,7 +102,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private float fit = 1f;
 
     private final ItemStack gravityCore = new ItemStack(ModBlocks.GRAVITY_CORE);
-    private final ItemStack blankFace = new ItemStack(net.minecraft.registry.Registries.ITEM.get(Steveparty.id("blank_dice_face")));
+    private final ItemStack blankFace = new ItemStack(Registries.ITEM.get(Steveparty.id("blank_dice_face")));
 
     /** The arrow's pixels: a 2 px shaft, then a head 6 px tall narrowing over 3 columns. */
     private static int[][] arrowPixels() {

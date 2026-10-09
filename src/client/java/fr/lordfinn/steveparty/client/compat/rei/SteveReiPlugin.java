@@ -33,6 +33,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -246,7 +247,7 @@ public class SteveReiPlugin implements REIClientPlugin {
 
     /** {@code die} carrying the Power-up module (on top of its own modules). */
     private static ItemStack powerUp(ItemStack die) {
-        Map<DiceModule, Integer> modules = new java.util.LinkedHashMap<>(DiceModules.of(die));
+        Map<DiceModule, Integer> modules = new LinkedHashMap<>(DiceModules.of(die));
         modules.put(DiceModules.POWER_UP, 1);
         return DiceModules.set(die, modules);
     }

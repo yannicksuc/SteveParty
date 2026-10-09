@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.utils.Argb;
+import java.util.Locale;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -66,7 +67,7 @@ final class HudDraw {
     }
 
     private static Identifier plateSprite(ToolHud.Plate plate) {
-        return Steveparty.id("board/plate_" + plate.name().toLowerCase(java.util.Locale.ROOT));
+        return Steveparty.id("board/plate_" + plate.name().toLowerCase(Locale.ROOT));
     }
 
     static void icon(DrawContext context, Identifier icon, int x, int y, float alpha) {

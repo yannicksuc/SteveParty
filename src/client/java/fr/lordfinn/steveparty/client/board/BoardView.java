@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.service.ShopStops;
+import net.minecraft.block.RedstoneWireBlock;
 import net.minecraft.item.ItemStack;
 import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.board.BoardRevision;
@@ -29,6 +30,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3f;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -232,7 +234,7 @@ public final class BoardView {
                 // A level picked: its links as if powered that much, in the colour of redstone at that power
                 boolean followed = level != TileLinkerBrush.POWERED || edge.active();
                 int color = level == TileLinkerBrush.POWERED || edge.target() == BoardGraph.Target.BROKEN ? color(edge, colors)
-                        : 0xFF000000 | net.minecraft.block.RedstoneWireBlock.getWireColor(Math.max(level, 4));
+                        : 0xFF000000 | RedstoneWireBlock.getWireColor(Math.max(level, 4));
                 // Other cartridges of an Advanced Tile: a little higher, dimmed, not moving
                 double lift = followed ? 0 : 0.06 * (1 + edge.slot() % 4);
                 Box bounds = new Box(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z).expand(0.5);
@@ -422,13 +424,13 @@ public final class BoardView {
         if (label.teleportAlone) {
             // A teleport tile alone in its network: to the left of the number
             float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
-            org.joml.Vector3f right = new org.joml.Vector3f(1, 0, 0).rotate(camera.getRotation());
+            Vector3f right = new Vector3f(1, 0, 0).rotate(camera.getRotation());
             Vec3d beside = top.subtract(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);
             WorldDraw.plateLabel(matrices, consumers, camera, beside, WARNING, WorldDraw.Plate.PURPLE, WorldDraw.PLATE_TEXT, scale * pulse);
         }
         if (label.fork) {
             // The junction marker, beside the number (to the right as seen from the camera)
-            org.joml.Vector3f right = new org.joml.Vector3f(1, 0, 0).rotate(camera.getRotation());
+            Vector3f right = new Vector3f(1, 0, 0).rotate(camera.getRotation());
             Vec3d beside = top.add(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);
             WorldDraw.plateLabel(matrices, consumers, camera, beside, FORK, WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, scale);
         }

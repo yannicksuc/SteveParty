@@ -11,6 +11,7 @@ import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 /**
  * The HUD of a tool held in hand (Tile Linker Brush, Stencil Hammer...), described by the tool and laid out here, in the
@@ -181,7 +182,7 @@ public final class ToolHudPanel {
         ToolHud.occupy(bottom);
     }
 
-    private static <T> List<List<T>> wrap(List<T> elements, java.util.function.ToIntFunction<T> width, int available) {
+    private static <T> List<List<T>> wrap(List<T> elements, ToIntFunction<T> width, int available) {
         List<List<T>> rows = new ArrayList<>();
         List<T> row = new ArrayList<>();
         int used = 0;
@@ -199,7 +200,7 @@ public final class ToolHudPanel {
         return rows;
     }
 
-    private static <T> int rowWidth(List<T> row, java.util.function.ToIntFunction<T> width) {
+    private static <T> int rowWidth(List<T> row, ToIntFunction<T> width) {
         int total = 0;
         for (T element : row) total += width.applyAsInt(element);
         return total + Math.max(0, row.size() - 1) * GAP;

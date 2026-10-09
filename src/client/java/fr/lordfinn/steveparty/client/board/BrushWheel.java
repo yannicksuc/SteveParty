@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.board;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
@@ -181,9 +182,9 @@ final class BrushWheel implements ToolWheel.Provider {
     static ToolWheel.Icon sprite(Identifier sprite, int scale) {
         int size = 16 * scale;
         return (context, x, y) -> {
-            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+            RenderSystem.enableBlend();
             context.drawGuiTexture(sprite, x - size / 2, y - size / 2, size, size);
-            com.mojang.blaze3d.systems.RenderSystem.disableBlend();
+            RenderSystem.disableBlend();
         };
     }
 

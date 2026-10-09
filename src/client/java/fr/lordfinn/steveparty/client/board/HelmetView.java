@@ -37,10 +37,12 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -117,7 +119,7 @@ public final class HelmetView {
         if (aim != null && graph.node(aim) == null) aim = null;
         BlockPos at = client.player.getBlockPos();
         boolean moved = builtAt == null || !builtAt.equals(at);
-        if (age++ >= REBUILD_TICKS || moved || !java.util.Objects.equals(aim, aimed)) {
+        if (age++ >= REBUILD_TICKS || moved || !Objects.equals(aim, aimed)) {
             aimed = aim;
             build(client.world, graph, client.player.getEyePos());
             builtAt = at.toImmutable();
@@ -161,7 +163,7 @@ public final class HelmetView {
             if (node.pos().equals(aimed)) continue;
             if (Vec3d.ofCenter(node.pos()).squaredDistanceTo(eye) <= DETAIL_RADIUS_SQ) near.add(node);
         }
-        near.sort(java.util.Comparator.comparingDouble(node -> Vec3d.ofCenter(node.pos()).squaredDistanceTo(eye)));
+        near.sort(Comparator.comparingDouble(node -> Vec3d.ofCenter(node.pos()).squaredDistanceTo(eye)));
         List<Detail> built = new ArrayList<>();
         BoardGraph.Node aimedNode = aimed != null ? graph.node(aimed) : null;
         if (aimedNode != null) built.add(detail(world, graph, aimedNode, true));
