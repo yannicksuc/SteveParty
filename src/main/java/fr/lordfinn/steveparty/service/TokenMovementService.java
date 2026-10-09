@@ -264,7 +264,10 @@ public class TokenMovementService {
                 .filter(BoardSpaceDestination::isTile)
                 .toList();
 
-        BoardSpaceDestination homing = destinations.size() > 1 ? DiceRollEffects.chooseFork(mob, destinations) : null;
+        // A closed Key gate: an exit it locks is refused without a key (see KeyGates)
+        if (KeyGates.holdsAtExit(mob, tileEntity, destinations)) return;
+        List<BoardSpaceDestination> forks = KeyGates.homingChoices(mob, tileEntity, destinations);
+        BoardSpaceDestination homing = destinations.size() > 1 ? DiceRollEffects.chooseFork(mob, forks) : null;
         if (homing != null) {
             // Homing module: the token takes a branch by itself, nobody is asked
             moveEntity(mob, homing.position());
@@ -328,6 +331,8 @@ public class TokenMovementService {
             tileEntity.hideDestinations();
             return;
         }
+        // A branch locked by a closed Key gate: the arrows stay while its player answers (see KeyGates)
+        if (KeyGates.holdsAtChoice(mob, tileEntity, tileDestination)) return;
         tileEntity.hideDestinations();
         moveEntity(mob, tileDestination.position());
     }

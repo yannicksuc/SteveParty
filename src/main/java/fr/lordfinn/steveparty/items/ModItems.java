@@ -106,6 +106,13 @@ public class ModItems {
                     fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem.COLOR));
     /** The Pie's nest (ModBlocks.MAGPIE_NEST): a decorative block, a Common pot's nest when set near its space. */
     public static final Item MAGPIE_NEST = fr.lordfinn.steveparty.blocks.ModBlocks.MAGPIE_NEST.asItem();
+    /** Its tile's face and its gates are teal until dyed; a token leaving it by a locked exit needs a Gate Key. */
+    public static final Item KEY_GATE_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem.class, "key_gate_cartridge",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem.COLOR));
+    /** The Gate Key: opens a Key gate on the board, used up (KeyGates). */
+    public static final Item GATE_KEY = register(fr.lordfinn.steveparty.items.custom.GateKeyItem.class, "gate_key",
+            new Item.Settings().maxCount(16));
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item MINI_GAME_REMOTE = registerUnstackable(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.class, "mini_game_remote");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
@@ -322,6 +329,8 @@ public class ModItems {
             itemGroup.add(THRESHOLD_CARTRIDGE);
             itemGroup.add(POT_CARTRIDGE);
             itemGroup.add(MAGPIE_NEST);
+            itemGroup.add(KEY_GATE_CARTRIDGE);
+            itemGroup.add(GATE_KEY);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);

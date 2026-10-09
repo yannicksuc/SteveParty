@@ -26,7 +26,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Obstacle à seuil »: a token reaching it goes on only if its roll meets a condition (see ThresholdTileBehavior). */
     TILE_THRESHOLD("tile_threshold"),
     /** « Pot commun »: passing tokens feed a pot, the token stopping on it wins it (see PotTileBehavior). */
-    TILE_POT("tile_pot");
+    TILE_POT("tile_pot"),
+    /** « Portail à clé »: gates on some exits, opened by a Gate Key (see KeyGateTileBehavior). */
+    TILE_KEY_GATE("tile_key_gate");
 
     private final String name;
 

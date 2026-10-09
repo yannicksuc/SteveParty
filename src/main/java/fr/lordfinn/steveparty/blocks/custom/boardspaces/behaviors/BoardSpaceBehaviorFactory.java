@@ -23,6 +23,7 @@ public class BoardSpaceBehaviorFactory {
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_MISTIGRI, new MistigriTileBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_THRESHOLD, new ThresholdTileBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_POT, new PotTileBehavior());
+            BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_KEY_GATE, new KeyGateTileBehavior());
         }
 
         public static ABoardSpaceBehavior get(BoardSpaceType type) {

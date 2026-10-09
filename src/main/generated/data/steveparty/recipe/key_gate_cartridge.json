@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "cartridge",
+  "ingredients": [
+    {
+      "item": "steveparty:board_space_behavior"
+    },
+    {
+      "item": "steveparty:gate_key"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:key_gate_cartridge"
+  }
+}
