@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.FlagItem;
@@ -272,13 +273,15 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         return side.rotateYClockwise();
     }
 
-    /** In the inventory: the three right-clicks on a pole. */
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        for (String line : List.of("goal", "turn", "shears")) {
-            tooltip.add(Text.translatable("block.steveparty.goal_pole.tooltip." + line).formatted(Formatting.GRAY));
-        }
+        Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME)
+                .summary("block.steveparty.goal_pole.tooltip.summary")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), "block.steveparty.goal_pole.tooltip.goal")
+                        .use(Tooltips.Keys.use(), "block.steveparty.goal_pole.tooltip.turn")
+                        .use(Tooltips.Keys.use(), "block.steveparty.goal_pole.tooltip.shears"));
     }
 
     @Override

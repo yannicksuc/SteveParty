@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
@@ -76,12 +77,14 @@ public class FrousseuxCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+    protected void appendState(ItemStack stack, Tooltips tips) {
         boolean stars = stealsStars(stack);
-        tooltip.add(Text.translatable("tooltip.steveparty.frousseux_cartridge." + (stars ? "stars" : "coins"), amount(stack))
-                .styled(headline(0xFFD27A)));
-        tooltip.add(Text.translatable("tooltip.steveparty.frousseux_cartridge." + (stars ? "no_defence" : "defence"))
-                .formatted(Formatting.GRAY));
-        super.appendTooltip(stack, context, tooltip, type);
+        tips.state(Text.translatable("tooltip.steveparty.frousseux_cartridge." + (stars ? "stars" : "coins"),
+                Tooltips.rgb(amount(stack), 0xFFD27A)));
+    }
+
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        more.note("tooltip.steveparty.frousseux_cartridge." + (stealsStars(stack) ? "no_defence" : "defence"));
     }
 }

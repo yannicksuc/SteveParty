@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.entity;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaFood;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
@@ -16,9 +17,8 @@ public final class MulaFoodTooltip {
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
             MulaEntity.MulaVariant variant = MulaFood.eatenBy(stack);
             if (variant == null) return;
-            lines.add(Text.translatable("tooltip.steveparty.mula_food",
-                    Text.translatable("mula.steveparty.colour." + variant.name().toLowerCase(Locale.ROOT)))
-                    .withColor(variant.getGlowColor()));
+            Tooltips.tag(lines, Text.translatable("tooltip.steveparty.mula_food",
+                    Text.translatable("mula.steveparty.colour." + variant.name().toLowerCase(Locale.ROOT))), variant.getGlowColor());
         });
     }
 }

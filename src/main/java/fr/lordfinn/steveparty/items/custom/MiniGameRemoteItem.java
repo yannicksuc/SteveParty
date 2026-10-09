@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
@@ -150,15 +151,18 @@ public class MiniGameRemoteItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         GlobalPos link = stack.get(ModComponents.MINI_GAME_REMOTE_LINK);
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME);
         if (link == null) {
-            tooltip.add(Text.translatable("tooltip.steveparty.mini_game_remote.not_linked").formatted(Formatting.RED));
+            tips.warn(Text.translatable("tooltip.steveparty.mini_game_remote.not_linked"));
         } else {
             BlockPos pos = link.pos();
-            tooltip.add(Text.translatable("tooltip.steveparty.mini_game_remote.linked", pos.getX(), pos.getY(), pos.getZ(),
-                    link.dimension().getValue().toString()).formatted(Formatting.GREEN));
+            tips.state("tooltip.steveparty.mini_game_remote.linked", Tooltips.good(Text.translatable("tooltip.steveparty.position",
+                    pos.getX(), pos.getY(), pos.getZ())));
         }
-        for (String line : new String[]{"link", "play", "ready"}) {
-            tooltip.add(Text.translatable("tooltip.steveparty.mini_game_remote." + line).formatted(Formatting.GRAY));
-        }
+        tips.summary("tooltip.steveparty.mini_game_remote.play");
+        tips.more(more -> more
+                .use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.mini_game_remote.link")
+                .use(Tooltips.Keys.use(), "tooltip.steveparty.mini_game_remote.use")
+                .note("tooltip.steveparty.mini_game_remote.ready"));
     }
 }

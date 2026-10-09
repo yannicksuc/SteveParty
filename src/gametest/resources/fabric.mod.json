@@ -93,6 +93,7 @@
       "fr.lordfinn.steveparty.gametest.BoxedTraderGameTests",
       "fr.lordfinn.steveparty.gametest.LangGameTests",
       "fr.lordfinn.steveparty.gametest.CreativeTabsGameTests",
+      "fr.lordfinn.steveparty.gametest.TooltipGameTests",
       "fr.lordfinn.steveparty.gametest.StarFragmentsBlockGameTests",
       "fr.lordfinn.steveparty.gametest.StarFragmentMixingGameTests",
       "fr.lordfinn.steveparty.gametest.VillagerBlockGameTests",

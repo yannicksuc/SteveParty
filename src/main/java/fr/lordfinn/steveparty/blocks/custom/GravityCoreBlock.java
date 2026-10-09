@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
@@ -176,12 +177,14 @@ public class GravityCoreBlock extends Block implements BlockEntityProvider {
         }
     }
 
-    /** What it does once placed, and how not to get stuck in its orbit. */
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        tooltip.add(Text.translatable("block.steveparty.gravity_core.tooltip.pull").formatted(Formatting.LIGHT_PURPLE));
-        tooltip.add(Text.translatable("block.steveparty.gravity_core.tooltip.armour").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("block.steveparty.gravity_core.tooltip.escape").formatted(Formatting.GRAY));
+        Tooltips.of(tooltip)
+                .summary("block.steveparty.gravity_core.tooltip.pull")
+                .more(more -> more
+                        .use(Tooltips.Keys.sneak(), "block.steveparty.gravity_core.tooltip.escape")
+                        .note("block.steveparty.gravity_core.tooltip.armour")
+                        .note("block.steveparty.gravity_core.tooltip.break"));
     }
 }

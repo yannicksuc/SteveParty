@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
@@ -69,14 +70,10 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
                 .with(Properties.HORIZONTAL_FACING, ctx.getHorizontalPlayerFacing().getOpposite());
     }
 
-    /** In the inventory: what it does in a shop. */
     @Override
-    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip,
-                              TooltipType options) {
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        for (String line : List.of("till")) {
-            tooltip.add(Text.translatable("tooltip.steveparty.cash_register." + line).formatted(Formatting.GRAY));
-        }
+        Tooltips.of(tooltip).tags(Tooltips.Tag.SHOP).summary("tooltip.steveparty.cash_register.till");
     }
 
     @Override

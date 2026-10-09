@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
@@ -60,7 +61,8 @@ public class BandanaItem extends ArmorItem {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("item.steveparty.bandana.color." + COLOR_NAMES[getColor(stack)]).formatted(Formatting.GRAY));
+        Tooltips.of(tooltip).tags(Tooltips.Tag.COSTUME)
+                .state("tooltip.steveparty.colour", Tooltips.value(Text.translatable("item.steveparty.bandana.color." + COLOR_NAMES[getColor(stack)])));
         super.appendTooltip(stack, context, tooltip, type);
     }
 }

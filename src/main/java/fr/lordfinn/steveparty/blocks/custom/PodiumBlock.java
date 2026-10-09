@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.ItemResults;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
@@ -283,9 +284,14 @@ public class PodiumBlock extends Block implements BlockEntityProvider {
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        for (String line : List.of("places", "register", "signal", "page", "reset")) {
-            tooltip.add(Text.translatable("tooltip.steveparty.podium." + line).formatted(Formatting.GRAY));
-        }
+        Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME)
+                .summary("tooltip.steveparty.podium.places")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.podium.register")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.podium.page")
+                        .use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.podium.reset")
+                        .note("tooltip.steveparty.podium.signal")
+                        .note("tooltip.steveparty.podium.comparator"));
     }
 
     // ---------------------------------------------------------------- redstone

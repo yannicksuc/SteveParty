@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
 import net.minecraft.block.Block;
@@ -66,7 +67,6 @@ public class TelescopeBlock extends BlockWithEntity {
     private static final VoxelShape TRIPOD = Block.createCuboidShape(1, 0, 1, 15, 33, 15);
     /** Its outline seen from the lower half, by rotation: the tripod and the tube at rest, the way it was placed. */
     private static final VoxelShape[] SHAPES = new VoxelShape[16];
-    public static final String[] TOOLTIP_LINES = {"what", "use", "wheel", "track", "guide", "take"};
 
     static {
         // The tube (TelescopeModel): 0.7 ahead of its pivot and 0.6 behind, tilted up by its rest pitch
@@ -243,8 +243,13 @@ public class TelescopeBlock extends BlockWithEntity {
 
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
-        for (String line : TOOLTIP_LINES) {
-            tooltip.add(Text.translatable("tooltip.steveparty.telescope." + line).formatted(Formatting.GRAY));
-        }
+        Tooltips.of(tooltip)
+                .summary("tooltip.steveparty.telescope.what")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.telescope.use")
+                        .use(Tooltips.Keys.scroll(), "tooltip.steveparty.telescope.wheel")
+                        .use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.telescope.take")
+                        .note("tooltip.steveparty.telescope.track")
+                        .note("tooltip.steveparty.telescope.guide"));
     }
 }

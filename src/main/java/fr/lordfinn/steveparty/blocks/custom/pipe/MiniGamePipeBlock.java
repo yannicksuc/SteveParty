@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.pipe;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
@@ -107,12 +108,15 @@ public class MiniGamePipeBlock extends PipeBlock {
 
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
-        for (String line : new String[]{"what", "program", "colours", "direct", "own", "take"}) {
-            tooltip.add(Text.translatable("tooltip.steveparty.minigame_pipe." + line)
-                    .formatted(line.equals("what") ? Formatting.GOLD : Formatting.GRAY));
-        }
-        tooltip.add(Text.translatable("tooltip.steveparty.minigame_pipe.reach." + reach().name().toLowerCase(Locale.ROOT))
-                .formatted(Formatting.YELLOW));
+        Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME)
+                .state("tooltip.steveparty.minigame_pipe.reach",
+                        Tooltips.value(Text.translatable("tooltip.steveparty.minigame_pipe.reach." + reach().name().toLowerCase(Locale.ROOT))))
+                .summary("tooltip.steveparty.minigame_pipe.what")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.minigame_pipe.program")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.minigame_pipe.take")
+                        .note("tooltip.steveparty.minigame_pipe.colours")
+                        .note("tooltip.steveparty.minigame_pipe.own"));
     }
 
     @Override

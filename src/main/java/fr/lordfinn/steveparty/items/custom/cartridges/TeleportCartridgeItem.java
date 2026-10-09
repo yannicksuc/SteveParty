@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.board.BoardLinks;
@@ -132,9 +133,12 @@ public class TeleportCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        super.appendTooltip(stack, context, tooltip, type);
-        for (Text line : describe(settings(stack))) tooltip.add(line.copy().formatted(Formatting.GRAY));
-        addWrapped(tooltip, Text.translatable("tooltip.steveparty.teleport_cartridge.controls"), Formatting.DARK_GRAY);
+    protected void appendState(ItemStack stack, Tooltips tips) {
+        for (Text line : describe(settings(stack))) tips.state(line);
+    }
+
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        more.use(Tooltips.Keys.of("tooltip.steveparty.key.dye"), "tooltip.steveparty.teleport_cartridge.controls");
     }
 }

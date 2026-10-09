@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.payloads.custom.SwitchableBlocksPayload;
@@ -13,7 +14,7 @@ import net.minecraft.util.Formatting;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-/** "Switchable" line in the tooltip of every block the hop switch can switch (tag or server config). */
+/** "Switchable" tag in the tooltip of every block the hop switch can switch (tag or server config). */
 public final class SwitchableClient {
     private SwitchableClient() {
     }
@@ -26,7 +27,7 @@ public final class SwitchableClient {
 
         ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipType, lines) -> {
             if (stack.getItem() instanceof BlockItem blockItem && Switchables.isSwitchable(blockItem.getBlock().getDefaultState())) {
-                lines.add(Text.translatable("tooltip.steveparty.switchable").formatted(Formatting.AQUA));
+                Tooltips.tag(lines, Tooltips.Tag.SWITCHABLE);
             }
         });
     }
