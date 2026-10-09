@@ -50,9 +50,9 @@ public class MulaModel extends DefaultedEntityGeoModel<MulaEntity> {
 
         float flutter = layer.handFlutter * MathHelper.RADIANS_PER_DEGREE;
         GeoBone hand = processor.getBone("left_hand2");
-        if (hand != null) hand.setRotZ(hand.getRotZ() + flutter);
+        GeoBones.addRotZ(hand, flutter);
         hand = processor.getBone("left_hand3");
-        if (hand != null) hand.setRotZ(hand.getRotZ() - flutter);
+        GeoBones.addRotZ(hand, -flutter);
 
         // eyelids follow the eyes: hidden while they are open, coming down from the top as they close, covering them
         // entirely once they are shut (sleeping, blinking) so no eye white shows
@@ -80,7 +80,6 @@ public class MulaModel extends DefaultedEntityGeoModel<MulaEntity> {
 
     private static void widen(GeoBone eye, float factor) {
         if (eye == null) return;
-        eye.setScaleX(eye.getScaleX() * factor);
-        eye.setScaleY(eye.getScaleY() * factor);
+        GeoBones.multiplyScaleXY(eye, factor);
     }
 }
