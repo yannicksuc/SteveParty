@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "pattern": [
-    "M T",
+    "MST",
     "GCG",
     "III"
   ],
@@ -21,6 +21,9 @@
     },
     "I": {
       "item": "minecraft:iron_ingot"
+    },
+    "S": {
+      "item": "minecraft:glass"
     }
   },
   "result": {
