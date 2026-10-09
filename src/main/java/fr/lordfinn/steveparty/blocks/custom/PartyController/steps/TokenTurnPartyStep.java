@@ -96,6 +96,18 @@ public class TokenTurnPartyStep extends PartyStep {
             }
             // A Padlock lasts until its player's next turn (a Replay tile's extra turn is still the same turn)
             if (!replay) PowerUpProtection.expire(partyControllerEntity, tokenUUID);
+            // A Trap took this turn: it is lost (a Replay tile's extra turn is still played)
+            if (!replay && partyControllerEntity.getPartyData().getSkippedTokens().remove(this.tokenUUID)) {
+                partyControllerEntity.markDirty();
+                MessageUtils.sendToPlayers(partyControllerEntity.getPartyAudience(), Text.translatable("message.steveparty.trap.turn_lost",
+                        getTokenDisplayName(serverWorld)).formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
+                cancelTaskId = UUID.randomUUID();
+                Steveparty.SCHEDULER.schedule(cancelTaskId, 20, () -> {
+                    cancelTaskId = null;
+                    if (isStillActive(partyControllerEntity)) partyControllerEntity.nextStep();
+                });
+                return;
+            }
             if (isTokenAvailable(serverWorld)) {
                 grantMove(serverWorld);
             } else {

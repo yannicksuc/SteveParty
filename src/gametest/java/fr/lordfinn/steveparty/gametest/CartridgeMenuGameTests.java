@@ -70,7 +70,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
             ModItems.ADVANCE_BACK_CARTRIDGE, ModItems.REPLAY_CARTRIDGE, ModItems.TELEPORT_CARTRIDGE, ModItems.STAR_CARTRIDGE,
             ModItems.GLANDOUILLE_CARTRIDGE, ModItems.FROUSSEUX_CARTRIDGE, ModItems.MISTIGRI_CARTRIDGE,
             ModItems.THRESHOLD_CARTRIDGE, ModItems.POT_CARTRIDGE,
-            ModItems.KEY_GATE_CARTRIDGE);
+            ModItems.KEY_GATE_CARTRIDGE, ModItems.TRAP_CARTRIDGE);
 
     private static BoardSpaceBlockEntity tile(TestContext context, net.minecraft.block.Block block, ItemStack cartridge) {
         context.setBlockState(TILE.down(), Blocks.STONE);

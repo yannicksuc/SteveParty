@@ -28,7 +28,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Pot commun »: passing tokens feed a pot, the token stopping on it wins it (see PotTileBehavior). */
     TILE_POT("tile_pot"),
     /** « Portail à clé »: gates on some exits, opened by a Gate Key (see KeyGateTileBehavior). */
-    TILE_KEY_GATE("tile_key_gate");
+    TILE_KEY_GATE("tile_key_gate"),
+    /** « Piège »: players set their Traps here, the next other player stopping here springs one (see TrapTileBehavior). */
+    TILE_TRAP("tile_trap");
 
     private final String name;
 

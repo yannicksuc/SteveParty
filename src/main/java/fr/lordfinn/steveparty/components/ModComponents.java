@@ -130,6 +130,9 @@ public class ModComponents {
     /** The items the Pie stole into a Common pot (kept in its cartridge, given to the pot's winner). */
     public static final ComponentType<java.util.List<ItemStack>> POT_ITEMS =
             registerComponent("pot-items", ItemStack.CODEC.listOf());
+    /** The trap set on a Trap cartridge's space (kept in the cartridge, so in its tile). */
+    public static final ComponentType<TrapSetComponent> TRAP_SET =
+            registerComponent("trap-set", TrapSetComponent.CODEC);
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =

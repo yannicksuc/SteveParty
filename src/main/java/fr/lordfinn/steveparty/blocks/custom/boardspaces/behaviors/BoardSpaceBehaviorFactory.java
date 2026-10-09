@@ -24,6 +24,7 @@ public class BoardSpaceBehaviorFactory {
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_THRESHOLD, new ThresholdTileBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_POT, new PotTileBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_KEY_GATE, new KeyGateTileBehavior());
+            BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_TRAP, new TrapTileBehavior());
         }
 
         public static ABoardSpaceBehavior get(BoardSpaceType type) {

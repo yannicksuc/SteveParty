@@ -153,6 +153,16 @@
           }
         ]
       }
+    },
+    "trap": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:trap_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -197,6 +207,9 @@
     ],
     [
       "key_gate"
+    ],
+    [
+      "trap"
     ]
   ],
   "rewards": {
