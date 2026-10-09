@@ -46,6 +46,7 @@
       "fr.lordfinn.steveparty.gametest.DiceGameTests",
       "fr.lordfinn.steveparty.gametest.DiceRollGameTests",
       "fr.lordfinn.steveparty.gametest.DiceRevealGameTests",
+      "fr.lordfinn.steveparty.gametest.SixSevenGameTests",
       "fr.lordfinn.steveparty.gametest.ThiefBellGameTests",
       "fr.lordfinn.steveparty.gametest.FrousseuxSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.MistigriSpaceGameTests",
