@@ -8,7 +8,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
@@ -125,10 +124,10 @@ public class KeyGateCartridgeItem extends BoardRuleCartridgeItem {
             sides.append(Text.translatable(K + "side." + side.asString() + ".tooltip"));
         }
         tooltip.add(Text.translatable("tooltip.steveparty.key_gate_cartridge.locked", sides)
-                .styled(style -> style.withColor(TextColor.fromRgb(0x6FD6C8))));
+                .styled(tint(0x6FD6C8)));
         int open = stayOpen(stack);
         if (open > 0) tooltip.add(Text.translatable(open >= FOREVER ? "tooltip.steveparty.key_gate_cartridge.forever"
-                : "tooltip.steveparty.key_gate_cartridge.rounds", open).styled(style -> style.withColor(TextColor.fromRgb(0x6FD6C8))));
+                : "tooltip.steveparty.key_gate_cartridge.rounds", open).styled(tint(0x6FD6C8)));
         super.appendTooltip(stack, context, tooltip, type);
     }
 }

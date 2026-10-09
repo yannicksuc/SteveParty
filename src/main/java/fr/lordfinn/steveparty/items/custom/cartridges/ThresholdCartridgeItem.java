@@ -8,7 +8,6 @@ import fr.lordfinn.steveparty.service.TurnMoves;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -144,7 +143,7 @@ public class ThresholdCartridgeItem extends BoardRuleCartridgeItem {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         tooltip.add(Text.translatable("tooltip.steveparty.threshold_cartridge.condition", label(stack))
-                .styled(style -> style.withColor(TextColor.fromRgb(0xA9C6E3))));
+                .styled(tint(0xA9C6E3)));
         super.appendTooltip(stack, context, tooltip, type);
     }
 }

@@ -8,7 +8,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.ArrayList;
@@ -121,7 +120,7 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         tooltip.add(Text.translatable("tooltip.steveparty.pot_cartridge.pot", coins(stack), stake(stack))
-                .styled(style -> style.withColor(TextColor.fromRgb(0xF2C230))));
+                .styled(tint(0xF2C230)));
         int stolen = items(stack).stream().mapToInt(ItemStack::getCount).sum();
         if (stolen > 0) tooltip.add(Text.translatable("tooltip.steveparty.pot_cartridge.items", stolen).formatted(Formatting.GRAY));
         super.appendTooltip(stack, context, tooltip, type);

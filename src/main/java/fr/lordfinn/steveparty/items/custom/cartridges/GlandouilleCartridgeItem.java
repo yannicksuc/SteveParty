@@ -9,7 +9,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.List;
@@ -85,7 +84,7 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
         tooltip.add((distance == 0 ? Text.translatable("tooltip.steveparty.glandouille_cartridge.none")
                 : distance < 0 ? Text.translatable("tooltip.steveparty.glandouille_cartridge.distance_back", -distance)
                 : Text.translatable("tooltip.steveparty.glandouille_cartridge.distance", distance))
-                .styled(style -> style.withColor(TextColor.fromRgb(0xD9A066)).withBold(true)));
+                .styled(headline(0xD9A066)));
         if (lone(stack)) tooltip.add(Text.translatable("tooltip.steveparty.glandouille_cartridge.lone").formatted(Formatting.GRAY));
         else if (distance > 0) tooltip.add(Text.translatable("tooltip.steveparty.glandouille_cartridge.tower", tower(stack)).formatted(Formatting.GRAY));
         super.appendTooltip(stack, context, tooltip, type);
