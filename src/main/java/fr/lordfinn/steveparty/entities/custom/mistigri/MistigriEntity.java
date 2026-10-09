@@ -7,6 +7,8 @@ import fr.lordfinn.steveparty.entities.PetTeleports;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.ChestBlock;
+import net.minecraft.block.enums.ChestType;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -38,9 +40,12 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -260,6 +265,31 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         this.dataTracker.set(ON_CHEST, pos != null);
     }
 
+    /**
+     * Falls asleep on the chest at {@code pos} ({@link #loafOn}), laid on its lid: centred on it (on both halves of a
+     * double chest), at the lid's height, lengthwise along its front, so no part of him is in the block.
+     */
+    public void napOn(BlockPos pos) {
+        loafOn(pos);
+        World world = getWorld();
+        BlockState state = world.getBlockState(pos);
+        VoxelShape shape = state.getCollisionShape(world, pos);
+        double top = pos.getY() + (shape.isEmpty() ? 1.0 : shape.getMax(Direction.Axis.Y));
+        double x = pos.getX() + 0.5, z = pos.getZ() + 0.5;
+        if (state.getBlock() instanceof ChestBlock && state.get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE) {
+            Direction other = ChestBlock.getFacing(state);
+            x += other.getOffsetX() * 0.5;
+            z += other.getOffsetZ() * 0.5;
+        }
+        Direction front = state.contains(Properties.HORIZONTAL_FACING) ? state.get(Properties.HORIZONTAL_FACING)
+                : Direction.fromRotation(getYaw());
+        float yaw = front.rotateYClockwise().asRotation();
+        setVelocity(Vec3d.ZERO);
+        refreshPositionAndAngles(x, top, z, yaw, 0);
+        setBodyYaw(yaw);
+        setHeadYaw(yaw);
+    }
+
     /** Asleep on a chest (both sides). */
     public boolean isAsleepOnChest() {
         return isLoafing() && this.dataTracker.get(ON_CHEST);
@@ -267,7 +297,12 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
 
     /** Whether he stands on the block at {@code pos} (a chest is lower than a block: his feet are in its cell). */
     public boolean standsOn(BlockPos pos) {
-        return BlockPos.ofFloored(getX(), getY() - 0.3, getZ()).equals(pos);
+        BlockPos under = BlockPos.ofFloored(getX(), getY() - 0.3, getZ());
+        if (under.equals(pos)) return true;
+        // laid in the middle of a double chest: his centre may be over the other half
+        BlockState state = getWorld().getBlockState(pos);
+        return state.getBlock() instanceof ChestBlock && state.get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE
+                && under.equals(pos.offset(ChestBlock.getFacing(state)));
     }
 
     /** The chest he sits on (null if none). */
@@ -343,6 +378,11 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         }
         // got off his chest (pushed, the chest broken): no longer sitting on it
         if (chest != null && !standsOn(chest)) chest = null;
+        // asleep, he doesn't turn to look around: he stays laid along his chest
+        if (chest != null && isLoafing()) {
+            setHeadYaw(getYaw());
+            setBodyYaw(getYaw());
+        }
         // asleep on his chest: a slow purr and a note now and then, his snore
         if (chest != null && age % 50 == 0) {
             playSound(ModSounds.MISTIGRI_PURR, 0.35f, 0.85f);
