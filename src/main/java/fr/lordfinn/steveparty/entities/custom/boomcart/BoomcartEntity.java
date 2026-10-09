@@ -127,10 +127,12 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     /** Client only: its lip's angle in the last frame drawn (BoomcartModel), whether its mouth is open. */
     public float clientLipAngle;
     /**
-     * Client only: how far its wheels have rolled (blocks, forward positive), now and a tick ago, kept within one
-     * block (a wheel's full turn) for BoomcartModel.
+     * Client only: how far its wheels have rolled (blocks, forward positive), now and a tick ago, kept within a
+     * wheel's full turn ({@link #WHEEL_TURN}) for BoomcartModel.
      */
     public float clientWheelTravel, clientWheelTravelLast;
+    /** How far a full turn of its square wheels takes it (blocks): their perimeter, four 6 px sides. */
+    public static final float WHEEL_TURN = 4 * 6 / 16f;
 
     public BoomcartEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -223,7 +225,7 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
             float yaw = bodyYaw * MathHelper.RADIANS_PER_DEGREE;
             travel = (float) (dz * MathHelper.cos(yaw) - dx * MathHelper.sin(yaw));
         }
-        float turns = MathHelper.floor(clientWheelTravel + travel);
+        float turns = MathHelper.floor((clientWheelTravel + travel) / WHEEL_TURN) * WHEEL_TURN;
         clientWheelTravelLast = clientWheelTravel - turns;
         clientWheelTravel = clientWheelTravel + travel - turns;
     }

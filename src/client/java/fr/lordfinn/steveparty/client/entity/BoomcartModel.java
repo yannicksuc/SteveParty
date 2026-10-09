@@ -19,9 +19,9 @@ import software.bernie.geckolib.model.DefaultedEntityGeoModel;
  * popping out a size bigger ({@link #eyes}). The mouth's state comes from its lip, as the last frame
  * left it, so the triggered animations (eat, roar) open its eyes too.
  * <p>
- * It stands on four square wheels ({@link #LIFT} px tall under its body), which roll as far as it travelled
- * ({@link BoomcartEntity#clientWheelTravel}): a full turn per block, a square's four sides. Square, they lift the
- * whole cart a little each time they roll over a corner ({@link #rollWheels}).
+ * It stands on four square cast-iron wheels (6 px, its floor {@link #LIFT} px up), which roll as far as it travelled
+ * ({@link BoomcartEntity#clientWheelTravel}): a full turn per {@link BoomcartEntity#WHEEL_TURN}, a square's four
+ * sides. Square, they lift the whole cart a little each time they roll over a corner ({@link #rollWheels}).
  */
 public class BoomcartModel extends DefaultedEntityGeoModel<BoomcartEntity> {
     public static final Identifier REST = Steveparty.id("textures/entity/boomcart.png");
@@ -36,6 +36,8 @@ public class BoomcartModel extends DefaultedEntityGeoModel<BoomcartEntity> {
     private static final float OPEN_LIP = 0.12f;
     /** The cart's floor this high above the ground (px): its wheels' axles, half a wheel. */
     public static final float LIFT = 2;
+    /** Half a wheel's side (px): its axle's height over the ground. */
+    private static final float WHEEL_HALF = 3;
     private static final String[] WHEELS = {"wheel_front_right", "wheel_front_left", "wheel_back_right", "wheel_back_left"};
 
     public BoomcartModel() {
@@ -83,7 +85,7 @@ public class BoomcartModel extends DefaultedEntityGeoModel<BoomcartEntity> {
      */
     private void rollWheels(BoomcartEntity boomcart, float partialTick) {
         float travel = MathHelper.lerp(partialTick, boomcart.clientWheelTravelLast, boomcart.clientWheelTravel);
-        float angle = -MathHelper.TAU * travel;
+        float angle = -MathHelper.TAU * travel / BoomcartEntity.WHEEL_TURN;
         for (String name : WHEELS) {
             GeoBone wheel = getAnimationProcessor().getBone(name);
             if (wheel != null) wheel.setRotX(wheel.getInitialSnapshot().getRotX() + angle);
@@ -91,8 +93,7 @@ public class BoomcartModel extends DefaultedEntityGeoModel<BoomcartEntity> {
         GeoBone root = getAnimationProcessor().getBone("root");
         if (root == null) return;
         float corner = Math.abs(angle) % MathHelper.HALF_PI;
-        // a wheel's half side is its axle's height, LIFT
         root.setPosY(root.getInitialSnapshot().getOffsetY()
-                + LIFT * (MathHelper.cos(corner) + MathHelper.sin(corner) - 1));
+                + WHEEL_HALF * (MathHelper.cos(corner) + MathHelper.sin(corner) - 1));
     }
 }
