@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import fr.lordfinn.steveparty.hud.StandingsLayout;
 import fr.lordfinn.steveparty.utils.Easing;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
@@ -30,7 +31,7 @@ import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
 final class StandingsHud {
     private static final float POP_TICKS = 8;
     private static final float GLIDE = 0.3f;
-    private static final HudPaint.Ramp[] RANKS = {HudPaint.GOLD, HudPaint.SILVER, HudPaint.BRONZE};
+    private static final Ramp[] RANKS = {HudPaint.GOLD, HudPaint.SILVER, HudPaint.BRONZE};
 
     private PartyHudModel model;
     private StandingsLayout.Layout layout;
@@ -137,7 +138,7 @@ final class StandingsHud {
         // The rank medallion, once someone is ranked
         int rank = entry.rank();
         if (layout.ranked() && rank > 0) {
-            HudPaint.Ramp rampRank = rank <= 3 ? RANKS[rank - 1] : HudPaint.NEUTRAL;
+            Ramp rampRank = rank <= 3 ? RANKS[rank - 1] : HudPaint.NEUTRAL;
             int d = StandingsLayout.BADGE;
             HudPaint.draw(context, HudPaint.shape(Form.PILL, d, d, rampRank, HudPaint.OUTLINE | HudPaint.BAND), rx - PAD, y + 1 - PAD, alpha);
             String r = Integer.toString(rank);

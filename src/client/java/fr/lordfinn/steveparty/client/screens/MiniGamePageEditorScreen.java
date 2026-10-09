@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.client.screens;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
-import fr.lordfinn.steveparty.client.gui.ConsolePaint.Ramp;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.gui.FormatChips;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.RichTextBox;

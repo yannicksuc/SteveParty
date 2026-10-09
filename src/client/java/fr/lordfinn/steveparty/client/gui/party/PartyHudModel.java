@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.item.ItemStack;
@@ -43,7 +44,7 @@ final class PartyHudModel {
         /** The bonuses it carries (the standings' « bonus » column), none yet in the mod. */
         List<ItemStack> bonuses = List.of();
         /** Its colours on the HUDs: its token's colour, the nearest of the players' palette. */
-        HudPaint.Ramp ramp = HudPaint.PLAYERS[0];
+        Ramp ramp = HudPaint.PLAYERS[0];
         int rank = 1;
         /** Its turn of the current round is over. */
         boolean played;

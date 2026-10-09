@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.gui;
 
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
@@ -20,9 +21,9 @@ public final class FormatChips {
     public static final int[] TEAM = {0xFF3A9BFF, 0xFFE8413C, 0xFFA35CFF, 0xFFF9901D};
     public static final int FREE_FOR_ALL = 0xFF4CC94A, ALL_TOGETHER = 0xFF00B3BD, BAR = 0xFF9AAAA8;
     private static final int INK = 0xFF1E3A40, INK3 = 0xFF8AA3A6, WHITE = 0xFFFFFFFF;
-    private static final ConsolePaint.Ramp PAPER = ConsolePaint.Ramp.of(0x7e9192, 0xffffff, 0xffffff, 0xc7dbdc);
-    private static final ConsolePaint.Ramp GOLD = ConsolePaint.Ramp.of(0x8a5a00, 0xfff2a8, 0xffffff, 0xe8e2c8);
-    private static final ConsolePaint.Ramp BADGE = ConsolePaint.Ramp.of(0x4a0808, 0xffb7ae, 0xe8413c, 0xb02e26);
+    private static final Ramp PAPER = Ramp.of(0x7e9192, 0xffffff, 0xffffff, 0xc7dbdc);
+    private static final Ramp GOLD = Ramp.of(0x8a5a00, 0xfff2a8, 0xffffff, 0xe8e2c8);
+    private static final Ramp BADGE = Ramp.of(0x4a0808, 0xffb7ae, 0xe8413c, 0xb02e26);
     private static final int[][] PAWN = {{1, 0}, {0, 1}, {1, 1}, {2, 1}, {1, 2}, {0, 3}, {1, 3}, {2, 3}, {0, 4}, {1, 4}, {2, 4}};
     private static final int[][] PLUS = {{1, 0}, {0, 1}, {1, 1}, {2, 1}, {1, 2}};
 
