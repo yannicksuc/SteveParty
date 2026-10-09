@@ -460,7 +460,7 @@ def plastic_station(x0=2010, z0=1995):
         cmds.append('setblock %d %d %d steveparty:%s_plastic_block' % (px0 + 1 + 2 * k, Y - 5, pz0 + 4, c))
     cmds += ['setblock %d %d %d steveparty:orange_plastic_block' % (px0 + 3, Y - 4, pz0 + 2),
              'setblock %d %d %d steveparty:plastic_road_sign[plate=star,mount=floor,waterlogged=true]'
-             '{PlateColor:"yellow",SymbolShape:%s,Color:"red"}' % (px0 + 6, Y - 1, pz0 + 1, shape_nbt('party_star')),
+             '{PlateColor:"yellow",SymbolShape:%s,Color:"red"}' % (px0 + 6, Y - 1, pz0 + 1, shape_nbt('star')),
              label((px0 + px1) / 2 + 0.5, Y + 2, pz1 + 1.5, 'Plastique qui flotte + colonne de bulles', 'white', 0.8, False)]
 
     # Hop switch: jumping on it switches the plastic wall off for a while
@@ -477,8 +477,8 @@ def plastic_station(x0=2010, z0=1995):
 
 def sign_station(x0=2035, z0=1995):
     cmds = ['# Sign station'] + plot_title(x0, z0, 'PANNEAUX')
-    pats = ['up_arrow', 'right_arrow', 'left_arrow', 'no_entry', 'warning', 'heart', 'star' if 'star' in PATTERNS else 'party_star',
-            'creeper_face', 'coin', 'question_block', 'mushroom', 'crown', 'key', 'flag', 'house', 'sun']
+    pats = ['up_arrow', 'right_arrow', 'left_arrow', 'no_entry', 'warning', 'heart', 'star',
+            'creeper_face', 'coin', 'question_mark', 'mushroom', 'crown', 'key', 'flag', 'house', 'sun']
     dyes = ['white', 'yellow', 'red', 'black', 'blue', 'lime', 'orange', 'magenta']
 
     def pattern(k):
@@ -523,7 +523,7 @@ def sign_station(x0=2035, z0=1995):
     # Row 5: stencil paint on the floor and on a wall, and the stencil maker
     z = z0 + 18
     for k, (pat, dye) in enumerate([('up_arrow', 'yellow'), ('heart', 'red'), ('creeper_face', 'lime'),
-                                    ('party_star', 'orange')]):
+                                    ('star', 'orange')]):
         cmds.append('setblock %d %d %d steveparty:stencil_paint[orientation=up_north]{SymbolShape:%s,Color:"%s"}'
                     % (x0 + 1 + 2 * k, Y, z, shape_nbt(pat), dye))
     cmds += ['fill %d %d %d %d %d %d minecraft:white_concrete' % (x0 + 9, Y, z + 1, x0 + 12, Y + 1, z + 1)]
@@ -689,7 +689,7 @@ def tile_sizes_station(x0=2035, z0=2045):
     showcase = [
         ('tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), '', 'Tuile tamponnée (sans cartouche)'),
         ('advanced_tile', 'size=standard', 'Stamp:' + stamp('heart', 'pink'), '', 'Tuile avancée tamponnée'),
-        ('tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), stamped_cartridge('party_star', 'yellow'),
+        ('tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), stamped_cartridge('star', 'yellow'),
          'Cartouche tamponnée : elle prime'),
         ('advanced_tile', 'size=standard', 'Stamp:' + stamp('skull', 'black'), '{Slot:0b,id:"steveparty:board_space_behavior",count:1}',
          'Tuile tamponnée + cartouche non tamponnée'),
