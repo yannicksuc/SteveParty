@@ -47,6 +47,7 @@ public class Steveparty implements ModInitializer {
         ModBlocks.initialize();
         // Former ids of renamed blocks, items and entities, so saved worlds keep them
         fr.lordfinn.steveparty.registry.LegacyIds.initialize();
+        fr.lordfinn.steveparty.registry.ModGameRules.initialize();
         ModItems.initialize();
         ModBlockEntities.initialize();
         // Before the party / movement listeners of TileReachedEvent (a movement going on stops the chain)

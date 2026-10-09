@@ -14,9 +14,6 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
-import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
-import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
-import net.minecraft.world.GameRules;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
@@ -34,6 +31,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.registry.ModGameRules;
 import net.minecraft.util.UseAction;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -384,17 +382,13 @@ public class TokenizerWandItem extends Item {
         }
     }
 
-    /** Lets the wand take the Wither too (off by default: shrinking or controlling it can be exploited). */
-    public static final GameRules.Key<GameRules.BooleanRule> TOKENIZE_BOSSES = GameRuleRegistry.register(
-            "stevepartyTokenizeBosses", GameRules.Category.MISC, GameRuleFactory.createBooleanRule(false));
-
     /**
      * @return whether {@code mob} is a boss the wand must refuse: the Wither unless the game rule allows it, and always
      * the Ender Dragon (a flying body made of parts, steered by its fight phases: it can't stand still on a board).
      */
     public static boolean isBoss(MobEntity mob) {
         return mob instanceof EnderDragonEntity
-                || (mob instanceof WitherEntity && !mob.getWorld().getGameRules().getBoolean(TOKENIZE_BOSSES));
+                || (mob instanceof WitherEntity && !mob.getWorld().getGameRules().getBoolean(ModGameRules.TOKENIZE_BOSSES));
     }
 
     /** Tells {@code user} (server side) why the boss {@code mob} can't become a pawn. */
