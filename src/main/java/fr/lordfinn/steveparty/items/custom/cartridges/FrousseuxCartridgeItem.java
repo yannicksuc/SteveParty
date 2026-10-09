@@ -58,8 +58,8 @@ public class FrousseuxCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 
     /** It steals stars rather than coins. */

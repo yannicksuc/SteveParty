@@ -60,8 +60,8 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 
     /** Spaces ahead its tower pushes the tokens, back if negative: {@link #MIN_DISTANCE} to {@link #MAX_DISTANCE}, 0 none. */

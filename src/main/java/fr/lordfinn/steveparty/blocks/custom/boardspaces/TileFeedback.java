@@ -5,6 +5,8 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
+import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
@@ -104,7 +106,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.55F, 1.498F, 9),
                 new Layer(SoundEvents.ENTITY_FIREWORK_ROCKET_TWINKLE_FAR, 0.3F, 1.2F, 9))),
         /** A stop tile: a firm two-tone halt, slate grey dust. */
-        STOP("stop", 0x454B5A, List.of(
+        STOP("stop", StopCartridgeItem.COLOR, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 0.749F, 4))),
@@ -123,7 +125,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 0.749F, 6))),
         /** A Replay tile giving another turn: a bright rising arpeggio, then an "en-core!" two-note call; a cyan swirl. */
-        REPLAY("replay", 0x1CC6D6, List.of(
+        REPLAY("replay", ReplayCartridgeItem.COLOR, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),

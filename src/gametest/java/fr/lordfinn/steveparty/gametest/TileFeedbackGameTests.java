@@ -11,8 +11,8 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Landing;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Played;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior;
+import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
@@ -112,7 +112,7 @@ public class TileFeedbackGameTests implements FabricGameTest {
     public void eachRoleHasItsOwnColour(TestContext context) {
         BoardSpaceBlockEntity tile = placeTile(context, new BlockPos(2, 1, 2));
         tile.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
-        context.assertEquals(TileFeedback.tileColor(tile), StopBoardSpaceBehavior.COLOR, "an anthracite Stop tile");
+        context.assertEquals(TileFeedback.tileColor(tile), StopCartridgeItem.COLOR, "an anthracite Stop tile");
         ItemStack dyed = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP);
         dyed.set(ModComponents.COLOR, 0xB02E26);
         tile.setStack(0, dyed);
@@ -121,8 +121,8 @@ public class TileFeedbackGameTests implements FabricGameTest {
         context.assertEquals(TileFeedback.tileColor(tile), InventoryInteractorTileBehavior.NEUTRAL_COLOR, "an orange item tile");
 
         List<Integer> colours = List.of(0xFFFFFF, InventoryInteractorTileBehavior.GOOD_COLOR, InventoryInteractorTileBehavior.BAD_COLOR,
-                InventoryInteractorTileBehavior.NEUTRAL_COLOR, ShopCartridgeItem.COLOR, StopBoardSpaceBehavior.COLOR,
-                AdvanceBackCartridgeItem.FORWARD_COLOR, AdvanceBackCartridgeItem.BACK_COLOR, ReplayBoardSpaceBehavior.COLOR,
+                InventoryInteractorTileBehavior.NEUTRAL_COLOR, ShopCartridgeItem.COLOR, StopCartridgeItem.COLOR,
+                AdvanceBackCartridgeItem.FORWARD_COLOR, AdvanceBackCartridgeItem.BACK_COLOR, ReplayCartridgeItem.COLOR,
                 TileTeleport.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR,
                 fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.COLOR,
                 fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.COLOR,
@@ -140,10 +140,10 @@ public class TileFeedbackGameTests implements FabricGameTest {
         // The landing particles and notices use the same colours as the faces
         context.assertEquals(Landing.BAD.accent(), InventoryInteractorTileBehavior.BAD_COLOR, "malus");
         context.assertEquals(Landing.ITEM.accent(), InventoryInteractorTileBehavior.NEUTRAL_COLOR, "item");
-        context.assertEquals(Landing.STOP.accent(), StopBoardSpaceBehavior.COLOR, "stop");
+        context.assertEquals(Landing.STOP.accent(), StopCartridgeItem.COLOR, "stop");
         context.assertEquals(Landing.ADVANCE.accent(), AdvanceBackCartridgeItem.FORWARD_COLOR, "advance");
         context.assertEquals(Landing.BACK.accent(), AdvanceBackCartridgeItem.BACK_COLOR, "back");
-        context.assertEquals(Landing.REPLAY.accent(), ReplayBoardSpaceBehavior.COLOR, "replay");
+        context.assertEquals(Landing.REPLAY.accent(), ReplayCartridgeItem.COLOR, "replay");
         context.assertEquals(Landing.SHOP.accent(), ShopCartridgeItem.COLOR, "shop");
         context.assertEquals(Landing.STAR.accent(), fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR, "star");
         context.assertEquals(Landing.GLANDOUILLE.accent(), fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.COLOR, "glandouille");

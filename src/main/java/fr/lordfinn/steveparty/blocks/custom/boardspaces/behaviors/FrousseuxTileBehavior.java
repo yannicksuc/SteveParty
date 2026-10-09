@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 public class FrousseuxTileBehavior extends MobTileBehavior {
 
     public FrousseuxTileBehavior() {
-        super(BoardSpaceType.TILE_FROUSSEUX, FrousseuxCartridgeItem.COLOR);
+        super(BoardSpaceType.TILE_FROUSSEUX);
     }
 
     @Override

@@ -32,7 +32,7 @@ import java.util.List;
 public class GlandouilleTileBehavior extends MobTileBehavior {
 
     public GlandouilleTileBehavior() {
-        super(BoardSpaceType.TILE_GLANDOUILLE, GlandouilleCartridgeItem.COLOR);
+        super(BoardSpaceType.TILE_GLANDOUILLE);
     }
 
     /** Free play: a token ending its move on a Glandouille tile outside a party is pushed too. */
