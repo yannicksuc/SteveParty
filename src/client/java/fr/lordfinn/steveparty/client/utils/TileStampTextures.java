@@ -61,6 +61,9 @@ public final class TileStampTextures {
     /** Value maps (darkness per pixel, NaN transparent) of the face textures, and their own base colour. */
     private static final Map<Identifier, Template> TEMPLATES = new HashMap<>();
 
+    /** Pictograms painted as PNG (textures/block/tile_face), by texture; empty when there is none. */
+    private static final Map<Identifier, Optional<float[]>> PAINTED = new HashMap<>();
+
     private record Template(float[] big, float[] small, float[] bigFrame, float[] smallFrame, int baseColor) {
     }
 
@@ -73,6 +76,7 @@ public final class TileStampTextures {
         DynamicTextureCache.onResourceReload("tile_face_textures", () -> {
             TEXTURES.clear();
             TEMPLATES.clear();
+            PAINTED.clear();
         });
     }
 
@@ -653,8 +657,41 @@ public final class TileStampTextures {
     public static @Nullable Identifier pictogramFace(BoardSpaceType type, int rgb, boolean small) {
         Pictogram pictogram = PICTOGRAMS.get(type);
         if (pictogram == null) return null;
-        return TEXTURES.get(new Key(pictogram.id(), rgb, small),
-                key -> register(glyphValues(small ? pictogram.small() : pictogram.big(), small, pictogram.shades()), rgb, small));
+        return TEXTURES.get(new Key(pictogram.id(), rgb, small), key -> {
+            float[] painted = painted(Steveparty.id("block/tile_face/" + pictogram.id() + (small ? "_small" : "")), small);
+            if (painted == null) return register(glyphValues(small ? pictogram.small() : pictogram.big(), small, pictogram.shades()), rgb, small);
+            float[] values = frame(small).clone();
+            for (int i = 0; i < values.length; i++) if (!Float.isNaN(painted[i])) values[i] = painted[i];
+            return register(values, rgb, small);
+        });
+    }
+
+    /**
+     * A pictogram painted as a grey PNG over the blank face (so it can be retouched in an image editor): grey 128 is
+     * the tile's colour, darker greys darker shades, lighter greys lighter ones; transparent pixels keep the face.
+     * Null when the texture is missing or not the face's size.
+     */
+    private static float @Nullable [] painted(Identifier texture, boolean small) {
+        return PAINTED.computeIfAbsent(texture, id -> {
+            int side = small ? SMALL_SIDE : SIDE;
+            Identifier file = id.withPath(path -> "textures/" + path + ".png");
+            Optional<Resource> resource = MinecraftClient.getInstance().getResourceManager().getResource(file);
+            if (resource.isEmpty()) return Optional.empty();
+            try (InputStream stream = resource.get().getInputStream(); NativeImage image = NativeImage.read(stream)) {
+                if (image.getWidth() != side || image.getHeight() != side) return Optional.empty();
+                float[] values = new float[side * side];
+                for (int x = 0; x < side; x++) {
+                    for (int y = 0; y < side; y++) {
+                        int argb = ColorHelper.Abgr.toAbgr(image.getColor(x, y));
+                        values[y * side + x] = ((argb >>> 24) & 0xFF) < 128 ? TRANSPARENT : (128 - luminance(argb)) / 128f;
+                    }
+                }
+                return Optional.of(values);
+            } catch (IOException e) {
+                Steveparty.LOGGER.error("Can't read tile pictogram {}", file, e);
+                return Optional.empty();
+            }
+        }).orElse(null);
     }
 
     // ---------------------------------------------------------------- the Teleport face
