@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -82,7 +83,7 @@ public class DiceForgeCoreLayer extends GeoRenderLayer<DiceForgeBlockEntity> {
         for (int i = 0; i < PUSH_TICKS.length - 1; i++) {
             if (elapsed >= PUSH_TICKS[i] && elapsed < PUSH_TICKS[i + 1]) {
                 float t = (elapsed - PUSH_TICKS[i]) / (PUSH_TICKS[i + 1] - PUSH_TICKS[i]);
-                t = t * t * (3 - 2 * t); // smoothstep
+                t = Easing.smoothstep(t);
                 return MathHelper.lerp(t, PUSH_PX[i], PUSH_PX[i + 1]) / 16f;
             }
         }

@@ -18,6 +18,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.util.List;
+import net.minecraft.util.math.MathHelper;
 
 /**
  * The Move Forward / Back cartridge: a token ending its move on its tile moves on {@link #steps} more spaces, forward
@@ -68,7 +69,7 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
     public static int steps(ItemStack stack) {
         int steps = stack == null ? 0 : stack.getOrDefault(ModComponents.ADVANCE_BACK_STEPS, 0);
         if (steps == 0) return DEFAULT_STEPS;
-        return Math.max(-MAX_STEPS, Math.min(MAX_STEPS, steps));
+        return MathHelper.clamp(steps, -MAX_STEPS, MAX_STEPS);
     }
 
     public static int color(int steps) {
@@ -91,7 +92,7 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
         if (direction == 0) return steps;
         int next = steps + Integer.signum(direction);
         if (next == 0) next += Integer.signum(direction);
-        return Math.max(-MAX_STEPS, Math.min(MAX_STEPS, next));
+        return MathHelper.clamp(next, -MAX_STEPS, MAX_STEPS);
     }
 
     /** Changes the setting of the cartridge by one notch of the wheel. Server side. */
