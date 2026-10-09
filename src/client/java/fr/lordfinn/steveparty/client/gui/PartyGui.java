@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import fr.lordfinn.steveparty.client.gui.paint.PixelArt;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -97,12 +98,7 @@ public final class PartyGui {
     public static void inset(DrawContext context, int x, int y, int w, int h, int body, boolean focused, boolean error) {
         int edge = error ? INSET_EDGE_ERROR : focused ? INSET_EDGE_FOCUS : INSET_EDGE;
         int low = focused ? INSET_EDGE_FOCUS : 0xFFFFFFFF;
-        context.fill(x + 1, y + 1, x + w, y + h, body);
-        context.fill(x + 2, y, x + w, y + 1, edge);
-        context.fill(x, y + 2, x + 1, y + h, edge);
-        pixel(context, x + 1, y + 1, edge);
-        context.fill(x + 1, y + h, x + w + 1, y + h + 1, low);
-        context.fill(x + w, y + 1, x + w + 1, y + h, low);
+        PixelArt.inset(context, x, y, w, h, body, edge, low);
         if (error && !focused) context.drawBorder(x + 1, y + 1, w - 1, h - 1, 0xFFE0707A);
     }
 
@@ -142,11 +138,21 @@ public final class PartyGui {
      * given) under the slot's grey, drawn above the GUI's items so that it veils them.
      */
     public static void ghostItem(DrawContext context, ItemStack stack, int x, int y, @Nullable TextRenderer overlay) {
+        ghostItem(context, stack, x, y, overlay, GHOST_VEIL);
+    }
+
+    /** {@link #ghostItem(DrawContext, ItemStack, int, int, TextRenderer)} under a veil of {@code veil} (ARGB). */
+    public static void ghostItem(DrawContext context, ItemStack stack, int x, int y, @Nullable TextRenderer overlay, int veil) {
         context.drawItem(stack, x, y);
         if (overlay != null) context.drawItemInSlot(overlay, stack, x, y);
+        veil(context, x, y, veil);
+    }
+
+    /** A 16 x 16 veil of {@code colour} (ARGB) over the item drawn at ({@code x}, {@code y}): above the GUI's items. */
+    public static void veil(DrawContext context, int x, int y, int colour) {
         context.getMatrices().push();
         context.getMatrices().translate(0, 0, 250);
-        context.fill(x, y, x + 16, y + 16, GHOST_VEIL);
+        context.fill(x, y, x + 16, y + 16, colour);
         context.getMatrices().pop();
     }
 
