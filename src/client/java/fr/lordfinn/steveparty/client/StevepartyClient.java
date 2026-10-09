@@ -53,6 +53,7 @@ import fr.lordfinn.steveparty.client.pipe.MiniGamePipeNotchRenderer;
 import fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer;
 import fr.lordfinn.steveparty.client.pipe.PipeModelPlugin;
 import fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer;
+import fr.lordfinn.steveparty.client.board.TileInfoClient;
 import fr.lordfinn.steveparty.client.screens.CartridgeScreen;
 import fr.lordfinn.steveparty.client.screens.TrichaudronScreen;
 import fr.lordfinn.steveparty.client.screens.MiniGameControllerScreen;
@@ -240,6 +241,7 @@ public class StevepartyClient implements ClientModInitializer {
         GlandouilleCarryClient.initialize();
         TrichaudronRiderClient.initialize();
         BrushClient.initialize();
+        TileInfoClient.initialize();
         TileOutline.initialize();
         DevClientCommands.initialize();
         StencilHammerStrikes.initialize();
@@ -509,6 +511,7 @@ public class StevepartyClient implements ClientModInitializer {
         MiniGamePageClient.clear();
         FloatingTextRenderer.clear();
         StarSpaceRenderer.clear();
+        TileInfoClient.clear();
         GoalPoleFlipTracker.clear();
         GoalPoleCameraRoll.clear();
         SquishAnimations.clear();

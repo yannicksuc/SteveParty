@@ -126,6 +126,11 @@ public final class StarSpaceRenderer {
         }
     }
 
+    /** The party star floats over this space (what is drawn above a space goes over it). */
+    public static boolean hasStar(BlockPos space) {
+        return stars.contains(space);
+    }
+
     /** A new connection: no star known. */
     public static void clear() {
         stars = List.of();
