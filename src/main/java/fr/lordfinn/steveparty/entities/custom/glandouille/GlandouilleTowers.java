@@ -23,6 +23,7 @@ import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
@@ -46,7 +47,7 @@ import java.util.List;
  *     way, a tower has no height limit but the server's safety one ({@link ServerConfig#glandouilleMaxStack}).</li>
  *     <li><b>Flick</b>: hitting one inside a tower (not the bottom one) shoots it out like a missile along the blow,
  *     alone: the ones above it hop straight up and come back down onto the one below ({@link #hopOff}). The bottom one
- *     hit goes alone too, its tower hopping off it and landing on the ground.</li>
+ *     hit takes the whole tower with it, pushed (or slid, the frosty one) still stacked, never up into a ceiling.</li>
  *     <li><b>Impacts</b>: a flicked one flying into another tower (or a lone one) lands on top of it; a sliding one
  *     carries what it slides into on top of itself and slides on, a little slower per acorn; a tower standing on the old
  *     mossy one is too heavy: the slider stops and climbs on it. Over the safety limit, they are shoved as before.</li>
@@ -132,6 +133,97 @@ public final class GlandouilleTowers {
         return other instanceof GlandouilleEntity otherOne && bottom(otherOne) == bottom(glandouille);
     }
 
+    // ---------------------------------------------------------------- its height: room under a ceiling
+
+    /**
+     * The height of the stack standing on {@code glandouille} (itself included), from its feet to the top one's cap:
+     * each one stands on the cap of the one below, sunk a little into it ({@link GlandouilleEntity}'s passenger
+     * attachment). Read through {@link GlandouilleEntity#towerHeight()}, cached until the tower changes.
+     */
+    static double stackHeight(GlandouilleEntity glandouille) {
+        double height = 0;
+        GlandouilleEntity at = glandouille;
+        for (int guard = 0; guard < 1024; guard++) {
+            GlandouilleEntity above = rider(at);
+            if (above == null) return height + at.getHeight();
+            height += at.getHeight() - 0.05 * at.getScaleFactor();
+            at = above;
+        }
+        return height;
+    }
+
+    /** The space the tower standing on {@code glandouille} takes with its feet at {@code at}. */
+    public static Box towerBox(GlandouilleEntity glandouille, Vec3d at) {
+        double half = glandouille.getWidth() * 0.5;
+        return new Box(at.x - half, at.y, at.z - half, at.x + half, at.y + glandouille.towerHeight() + GlandouilleEntity.CLEARANCE_MARGIN, at.z + half);
+    }
+
+    /** Whether the tower standing on {@code glandouille} fits with its feet at {@code at} (no block nor ceiling in it). */
+    public static boolean fitsAt(GlandouilleEntity glandouille, Vec3d at) {
+        return glandouille.getWorld().isSpaceEmpty(glandouille, towerBox(glandouille, at).contract(1.0E-3));
+    }
+
+    /**
+     * Checked now and then by a tower's bottom one: the lowest one of its tower whose cap is in a block (a ceiling built
+     * over it, a door, an overhang brushed past) steps off with the ones on it, beside the tower. One block query while
+     * the tower is clear.
+     */
+    public static void shedUnderCeiling(GlandouilleEntity bottom) {
+        if (bottom.isBoardActor() || bottom.getVehicle() != null) return;
+        World world = bottom.getWorld();
+        Box upper = towerBox(bottom, bottom.getPos()).withMinY(bottom.getY() + bottom.getHeight()).contract(1.0E-3);
+        if (world.isSpaceEmpty(bottom, upper)) return;
+        for (GlandouilleEntity one : members(bottom)) {
+            if (one == bottom) continue;
+            if (!world.isSpaceEmpty(one, one.getBoundingBox().contract(1.0E-3))) {
+                shed(one);
+                return;
+            }
+        }
+    }
+
+    /**
+     * {@code one} (up a tower, its cap in a block) hops down beside the tower, with the ones on it if they fit there,
+     * else each one on its own; never left in the block (smothered). False if it is not up a tower on the ground.
+     */
+    public static boolean shed(GlandouilleEntity one) {
+        if (!(one.getVehicle() instanceof GlandouilleEntity) || one.isBoardActor()) return false;
+        GlandouilleEntity bottom = bottom(one);
+        if (bottom.getVehicle() != null) return false;
+        one.stopRiding();
+        if (placeBeside(bottom, one)) return true;
+        // the stack on it doesn't fit anywhere around: each one alone
+        List<GlandouilleEntity> ones = members(one);
+        for (int i = ones.size() - 1; i > 0; i--) ones.get(i).stopRiding();
+        for (GlandouilleEntity alone : ones) {
+            if (!placeBeside(bottom, alone)) {
+                alone.refreshPositionAndAngles(bottom.getX(), bottom.getY(), bottom.getZ(), alone.getYaw(), 0);
+                alone.handled();
+            }
+        }
+        return true;
+    }
+
+    /** Puts {@code one} (and its stack) on the ground right beside {@code bottom}, where it fits, hopping out a little. */
+    private static boolean placeBeside(GlandouilleEntity bottom, GlandouilleEntity one) {
+        double reach = (bottom.getWidth() + one.getWidth()) * 0.5 + 0.1;
+        float start = one.getRandom().nextFloat() * 360f;
+        for (int dy = 0; dy >= -1; dy--) {
+            for (int i = 0; i < 8; i++) {
+                Vec3d dir = Vec3d.fromPolar(0, start + i * 45f);
+                Vec3d at = bottom.getPos().add(dir.x * reach, dy, dir.z * reach);
+                if (!fitsAt(one, at)) continue;
+                one.refreshPositionAndAngles(at.x, at.y, at.z, one.getYaw(), 0);
+                one.setVelocity(dir.x * 0.1, 0.15, dir.z * 0.1);
+                one.velocityModified = true;
+                for (GlandouilleEntity mate : members(one)) mate.handled();
+                one.playSound(ModSounds.GLANDOUILLE_CLIMB, 0.7f, 1.3f);
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ---------------------------------------------------------------- building
 
     /**
@@ -144,12 +236,21 @@ public final class GlandouilleTowers {
         if (spontaneous && (bottom.getVehicle() != null || hasRider(climber))) return false;
         int total = height(bottom) + height(climber);
         if (total > (spontaneous ? SPONTANEOUS_MAX : maxStack())) return false;
+        // never by themselves into a tower too high for where it stands (a low ceiling)
+        if (spontaneous && !fitsWith(bottom, climber)) return false;
         GlandouilleEntity top = top(target);
         if (!climber.startRiding(top, true)) return false;
         // climbed on: whoever was napping under it wakes up
         for (GlandouilleEntity one : members(bottom)) one.handled();
         climber.playSound(ModSounds.GLANDOUILLE_CLIMB, 1f, 1f + 0.05f * total);
         return true;
+    }
+
+    /** Whether {@code bottom}'s tower, {@code climber}'s stack on top of it, fits where {@code bottom} stands. */
+    private static boolean fitsWith(GlandouilleEntity bottom, GlandouilleEntity climber) {
+        Box box = towerBox(bottom, bottom.getPos());
+        box = box.withMaxY(box.maxY - 0.05 * top(bottom).getScaleFactor() + climber.towerHeight()).contract(1.0E-3);
+        return bottom.getWorld().isSpaceEmpty(bottom, box);
     }
 
     // ---------------------------------------------------------------- carried by a player
@@ -350,6 +451,8 @@ public final class GlandouilleTowers {
         GlandouilleEntity.Mood mood = bottom(hit).getMood();
         if (mood == GlandouilleEntity.Mood.STUNNED || mood == GlandouilleEntity.Mood.FLYING
                 || mood == GlandouilleEntity.Mood.SLIDING || mood == GlandouilleEntity.Mood.HOPPING) return false;
+        // no room on top (a low ceiling): it is shoved instead
+        if (!fitsWith(bottom(hit), shot)) return false;
         return climb(shot, hit, false);
     }
 
