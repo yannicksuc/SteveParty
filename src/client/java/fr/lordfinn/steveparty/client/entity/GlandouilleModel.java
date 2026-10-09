@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
 import net.minecraft.util.Identifier;
@@ -60,14 +61,9 @@ public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity>
             bone.setHidden(asleep);
             // the brows hang on the eyes: they stay (the pupils hide themselves), unsquashed by the sleep animation
             bone.setChildrenHidden(false);
-            if (asleep) {
-                bone.setScaleX(1);
-                bone.setScaleY(1);
-                bone.setScaleZ(1);
-            }
+            if (asleep) GeoBones.scale(bone, 1);
         }
-        GeoBone cap = processor.getBone("cap");
-        if (cap != null) cap.setHidden(!glandouille.hasHat());
+        GeoBones.hide(processor, "cap", !glandouille.hasHat());
     }
 
     private static final String[] EYES = {"left_eye", "right_eye", "left_pupil", "right_pupil"};

@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.render.geo.Blink;
+import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -39,7 +41,7 @@ public class MistigriModel extends DefaultedEntityGeoModel<MistigriEntity> {
     static boolean eyesClosed(MistigriEntity mistigri) {
         if (mistigri.isAngry()) return false;
         if (mistigri.isLoafing()) return true; // a nap, or asleep on a chest
-        return Math.floorMod(mistigri.age + mistigri.getId() * 53, BLINK_EVERY) < BLINK_TICKS;
+        return Blink.closed(mistigri.age, mistigri.getId(), 53, BLINK_EVERY, BLINK_TICKS);
     }
 
     @Override
@@ -52,15 +54,9 @@ public class MistigriModel extends DefaultedEntityGeoModel<MistigriEntity> {
         super.setCustomAnimations(mistigri, instanceId, state);
         AnimationProcessor<MistigriEntity> processor = getAnimationProcessor();
         boolean bristling = mistigri.isAngry() && !mistigri.isActing();
-        for (String name : BRISTLES) {
-            GeoBone bone = processor.getBone(name);
-            if (bone != null) bone.setHidden(!bristling);
-        }
+        GeoBones.hide(processor, BRISTLES, !bristling);
         // the whiskers are drawn see-through by their own layer (MistigriRenderer), not with the fur
-        for (String name : WHISKERS) {
-            GeoBone bone = processor.getBone(name);
-            if (bone != null) bone.setHidden(true);
-        }
+        GeoBones.hide(processor, WHISKERS, true);
         GeoBone head = processor.getBone("head");
         if (head != null && !mistigri.isActing() && !mistigri.isLoafing()) {
             EntityModelData data = state.getData(DataTickets.ENTITY_MODEL_DATA);

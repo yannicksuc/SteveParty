@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.render.geo.EmissiveLayer;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
 import net.minecraft.block.BarrelBlock;
 import net.minecraft.block.BlockState;
@@ -45,7 +46,6 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
     private static final Identifier[] GLOW = {Steveparty.id("textures/entity/boomcart_glow.png"),
             Steveparty.id("textures/entity/boomcart_open_glow.png"), Steveparty.id("textures/entity/boomcart_lit_glow.png"),
             Steveparty.id("textures/entity/boomcart_blow_glow.png")};
-    private static final int FULL_BRIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
     /** boomcart_load.png's size, and its fuse frames (7x9 each, side by side from this row). */
     private static final float LOAD_W = 64, LOAD_H = 32;
     private static final int FUSE_ROW = 10, FUSE_W = 7, FUSE_H = 9;
@@ -55,7 +55,8 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
     public BoomcartRenderer(EntityRendererFactory.Context context) {
         super(context, new BoomcartModel());
         this.shadowRadius = 0.5f;
-        addRenderLayer(new GlowLayer(this));
+        // its eyes' warm pixels, glowing in the dark mines
+        addRenderLayer(new EmissiveLayer<>(this, boomcart -> GLOW[BoomcartModel.eyes(boomcart)], boomcart -> boomcart.deathTime <= 0));
         addRenderLayer(new LoadLayer(this));
     }
 
@@ -77,23 +78,6 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
         int total = boomcart.getFuseTotal();
         if (!boomcart.isLit() || total <= 0) return 0;
         return Math.clamp(1 - (boomcart.getFuse() - partialTick) / total, 0f, 1f);
-    }
-
-    /** Its eyes' warm pixels, glowing in the dark mines. */
-    private static final class GlowLayer extends GeoRenderLayer<BoomcartEntity> {
-        GlowLayer(GeoRenderer<BoomcartEntity> renderer) {
-            super(renderer);
-        }
-
-        @Override
-        public void render(MatrixStack poseStack, BoomcartEntity boomcart, BakedGeoModel bakedModel, @Nullable RenderLayer renderType,
-                           VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
-                           int packedLight, int packedOverlay) {
-            if (boomcart.deathTime > 0) return;
-            RenderLayer layer = RenderLayer.getEyes(GLOW[BoomcartModel.eyes(boomcart)]);
-            getRenderer().reRender(bakedModel, poseStack, bufferSource, boomcart, layer, bufferSource.getBuffer(layer),
-                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, 0xFFFFFFFF);
-        }
     }
 
     private static final class LoadLayer extends GeoRenderLayer<BoomcartEntity> {
@@ -131,7 +115,7 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
             poseStack.push();
             toV13(poseStack);
             float burnt = burnt(boomcart, partialTick);
-            int fuseLight = boomcart.isLit() ? FULL_BRIGHT : packedLight;
+            int fuseLight = boomcart.isLit() ? LightmapTextureManager.MAX_LIGHT_COORDINATE : packedLight;
             VertexConsumer load;
             if (boomcart.carriesFirework()) {
                 block(poseStack, bufferSource, BARREL, packedLight, false);
