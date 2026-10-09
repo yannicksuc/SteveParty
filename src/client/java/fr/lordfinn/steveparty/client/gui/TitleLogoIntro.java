@@ -15,6 +15,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import org.joml.Matrix4f;
 
 import java.io.BufferedReader;
@@ -143,7 +144,7 @@ final class TitleLogoIntro {
 
     /** Draws a frame in box coordinates (the caller's matrices place the box); blending is the caller's. */
     void draw(DrawContext context, int frame) {
-        int[] cells = frames[Math.max(0, Math.min(frame, frames.length - 1))];
+        int[] cells = frames[MathHelper.clamp(frame, 0, frames.length - 1)];
         Matrix4f matrix = context.getMatrices().peek().getPositionMatrix();
         RenderSystem.setShader(GameRenderer::getPositionTexProgram);
         for (int a = 0; a < atlases.length; a++) {

@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.telescope;
 
+import net.minecraft.util.math.MathHelper;
+
 /**
  * The numbers of the Telescope and its game "Replay the night", shared by both sides and free of any game state: when
  * the sky can be watched, the way the replayed shooting stars cross the sky, the tracking gauge, and how a guide star
@@ -76,7 +78,7 @@ public final class TelescopeMath {
 
     /** Angle (degrees) between two unit vectors. */
     public static double angle(double ax, double ay, double az, double bx, double by, double bz) {
-        double dot = Math.max(-1, Math.min(1, ax * bx + ay * by + az * bz));
+        double dot = MathHelper.clamp(ax * bx + ay * by + az * bz, -1, 1);
         return Math.toDegrees(Math.acos(dot));
     }
 
@@ -113,7 +115,7 @@ public final class TelescopeMath {
 
     /** How much a player bends (0 standing .. 1 as low as sneaking) for his neck to be this high over his feet. */
     public static double bend(double neckHeight) {
-        return Math.max(0, Math.min(1, (NECK_HEIGHT - neckHeight) / BEND_DROP));
+        return MathHelper.clamp((NECK_HEIGHT - neckHeight) / BEND_DROP, 0, 1);
     }
 
     // ---------------------------------------------------------------- the tracking gauge
@@ -137,7 +139,7 @@ public final class TelescopeMath {
             double ticks = FILL_CENTRED_TICKS + (FILL_EDGE_TICKS - FILL_CENTRED_TICKS) * off;
             next = gauge + (float) (1 / ticks);
         }
-        return Math.max(0f, Math.min(1f, next));
+        return MathHelper.clamp(next, 0f, 1f);
     }
 
     public static boolean tracking(double error) {

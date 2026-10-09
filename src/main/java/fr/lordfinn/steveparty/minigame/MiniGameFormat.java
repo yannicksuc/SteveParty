@@ -6,6 +6,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -56,7 +57,7 @@ public record MiniGameFormat(Kind kind, List<Side> sides, boolean sameSize) {
         public static final int INFINITE = Integer.MAX_VALUE;
 
         public Side {
-            min = Math.max(1, Math.min(MAX_COUNT, min));
+            min = MathHelper.clamp(min, 1, MAX_COUNT);
             max = max == INFINITE || max > MAX_COUNT ? INFINITE : Math.max(min, max);
         }
 
