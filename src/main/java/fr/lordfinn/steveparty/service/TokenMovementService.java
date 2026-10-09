@@ -233,6 +233,7 @@ public class TokenMovementService {
         ((TokenizedEntityInterface) mob).steveparty$setNbSteps(rollNumber);
         if (rollNumber != 0) TurnMoves.release(mob); // it moves on: no halt holds it
         if (rollNumber == 0) {
+            if (mob.getWorld() instanceof ServerWorld world) TileInfos.arrived(world, mob);
             MessageUtils.sendToNearby((ServerWorld) mob.getWorld(), mob.getPos(), 100,
                     Text.translatable("message.steveparty.arrived_at_destination", mob.getCustomName() != null ? mob.getCustomName() : mob.getName()),
                     MessageUtils.MessageType.ACTION_BAR);
@@ -252,6 +253,7 @@ public class TokenMovementService {
                 , MessageUtils.MessageType.ACTION_BAR);
 
         if (AdvanceBackMoves.isRouted(mob)) {
+            TileInfos.arrived((ServerWorld) mob.getWorld(), mob);
             // Going back (Move Forward / Back tile): the way it came, not the destinations
             BlockPos previous = AdvanceBackMoves.nextRouted(mob);
             if (previous != null) moveEntity(mob, previous);
@@ -264,6 +266,8 @@ public class TokenMovementService {
                 .filter(BoardSpaceDestination::isTile)
                 .toList();
 
+        // Its player sees where each way ends (the info of the space it will stop on)
+        TileInfos.heading((ServerWorld) mob.getWorld(), mob, destinations, rollNumber);
         // A closed Key gate: an exit it locks is refused without a key (see KeyGates)
         if (KeyGates.holdsAtExit(mob, tileEntity, destinations)) return;
         List<BoardSpaceDestination> forks = KeyGates.homingChoices(mob, tileEntity, destinations);

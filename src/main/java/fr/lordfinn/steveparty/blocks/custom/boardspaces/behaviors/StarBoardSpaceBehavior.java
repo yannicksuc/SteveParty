@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.items.ModItems;
+import net.minecraft.server.world.ServerWorld;
+import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
@@ -42,5 +45,12 @@ public class StarBoardSpaceBehavior extends ABoardSpaceBehavior {
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
         setColor(boardSpaceBlockEntity, StarCartridgeItem.COLOR);
+    }
+
+    /** The price of the star. */
+    @Override
+    public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
+        if (stack.getItem() instanceof StarCartridgeItem)
+            info.line(new ItemStack(ModItems.PARTY_STAR), TileInfo.line("star", TileInfo.coins(StarCartridgeItem.settings(stack).price())));
     }
 }

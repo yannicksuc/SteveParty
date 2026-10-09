@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
@@ -43,5 +45,15 @@ public class FrousseuxTileBehavior extends MobTileBehavior {
     @Override
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return TileFeedback.Landing.FROUSSEUX;
+    }
+
+    /** What he steals from another player. */
+    @Override
+    public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
+        if (!(stack.getItem() instanceof FrousseuxCartridgeItem)) return;
+        boolean stars = FrousseuxCartridgeItem.stealsStars(stack);
+        int amount = FrousseuxCartridgeItem.amount(stack);
+        info.line(new ItemStack(stars ? ModItems.PARTY_STAR : ModItems.COIN),
+                TileInfo.line(stars ? "frousseux.stars" : "frousseux.coins", stars ? TileInfo.bad(amount) : TileInfo.coins(amount)));
     }
 }

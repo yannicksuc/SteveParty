@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
+import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -17,6 +18,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -203,6 +205,47 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         int inserted = initialCount - stack.getCount();
         if (inserted > 0) inventory.markDirty();
         return inserted;
+    }
+
+    /**
+     * How it plays (all its items, one at random, one after the other), how many of each item given are left in its
+     * chests; its items circle over it (a taken one: a loss).
+     */
+    @Override
+    public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
+        InventoryComponent content = stack.get(INVENTORY_COMPONENT);
+        if (content == null) return;
+        List<ItemStack> items = content.getItems().stream().filter(item -> !item.isEmpty()).toList();
+        if (items.isEmpty()) return;
+        String mode = switch (InventoryCartridgeItem.getSelectionState(stack)) {
+            case 1 -> "all";
+            case 2 -> "cycle";
+            default -> "random";
+        };
+        info.line(TileInfo.line("inventory." + mode));
+        Inventory linked = CartridgeTransfers.getLinkedInventory(world, stack);
+        boolean gives = false;
+        for (ItemStack item : items) {
+            info.item(item);
+            if (Boolean.TRUE.equals(item.get(IS_NEGATIVE))) continue;
+            gives = true;
+            if (linked == null) continue;
+            int left = countMatching(item, linked);
+            info.line(item, TileInfo.line("inventory.left", left >= item.getCount() ? TileInfo.value(left) : TileInfo.bad(left)));
+        }
+        if (gives && linked == null) info.line(TileInfo.bad(TileInfo.line("inventory.no_chest")));
+    }
+
+    /** How many items matching {@code template} (item and components, the cartridge's IS_NEGATIVE flag aside) {@code inventory} holds. */
+    private static int countMatching(ItemStack template, Inventory inventory) {
+        ItemStack pattern = template.copyWithCount(1);
+        pattern.remove(IS_NEGATIVE);
+        int count = 0;
+        for (int i = 0; i < inventory.size(); i++) {
+            ItemStack slot = inventory.getStack(i);
+            if (!slot.isEmpty() && ItemStack.areItemsAndComponentsEqual(slot, pattern)) count += slot.getCount();
+        }
+        return count;
     }
 
     @Override

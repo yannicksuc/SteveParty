@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -62,5 +64,14 @@ public class PotTileBehavior extends ABoardSpaceBehavior {
     @Override
     public Status getStatus(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
         return Status.GOOD;
+    }
+
+    /** What the pot holds (its coins, the items stolen into it) and what passing costs. */
+    @Override
+    public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
+        if (!(stack.getItem() instanceof PotCartridgeItem)) return;
+        info.line(new ItemStack(ModItems.COIN), TileInfo.line("pot", TileInfo.coins(PotCartridgeItem.coins(stack))));
+        info.line(TileInfo.line("pot.stake", TileInfo.coins(PotCartridgeItem.stake(stack))));
+        for (ItemStack item : PotCartridgeItem.items(stack)) info.item(item);
     }
 }
