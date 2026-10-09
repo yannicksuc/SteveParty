@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.payloads.custom.TelescopePayloads;
 import fr.lordfinn.steveparty.telescope.TelescopeMath;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -126,7 +127,7 @@ public final class TelescopeClient {
     /** x the field of view (1: not looking through a telescope). */
     public static float fovMultiplier(float tickDelta) {
         float z = MathHelper.lerp(tickDelta, prevZoom, zoom);
-        return z <= 0 ? 1f : MathHelper.lerp(z * z * (3 - 2 * z), 1f, ZOOM);
+        return z <= 0 ? 1f : MathHelper.lerp(Easing.smoothstep(z), 1f, ZOOM);
     }
 
     /** Looking through, the scope covers the whole HUD: InGameHudTelescopeMixin draws it instead of the HUD. */

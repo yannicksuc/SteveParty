@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
@@ -15,7 +16,7 @@ public final class PartyGui {
     /** Colours of a bevelled shape: outline, highlight (top-left), body, shadow (bottom-right). */
     public record Theme(int outline, int highlight, int body, int shadow) {
         public Theme brighter() {
-            return new Theme(outline, lighten(highlight, 0.35f), lighten(body, 0.18f), lighten(shadow, 0.12f));
+            return new Theme(outline, Argb.lighten(highlight, 0.35f), Argb.lighten(body, 0.18f), Argb.lighten(shadow, 0.12f));
         }
     }
 
@@ -151,13 +152,5 @@ public final class PartyGui {
 
     public static void pixel(DrawContext context, int x, int y, int color) {
         context.fill(x, y, x + 1, y + 1, color);
-    }
-
-    static int lighten(int argb, float amount) {
-        int a = argb >>> 24, r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
-        r += (int) ((255 - r) * amount);
-        g += (int) ((255 - g) * amount);
-        b += (int) ((255 - b) * amount);
-        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 }

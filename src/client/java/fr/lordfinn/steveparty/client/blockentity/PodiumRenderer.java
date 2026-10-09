@@ -22,6 +22,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import fr.lordfinn.steveparty.stencil.StencilShape;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.block.BlockState;
@@ -109,7 +110,7 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
         PodiumOccupant.Figure figure = occupant == null ? null : occupant.figure();
         if (figure != null) {
             float age = (float) (world.getTime() - occupant.since()) + tickDelta;
-            float pop = age < 0 || age >= POP_TICKS ? 1f : easeOutBack(age / POP_TICKS);
+            float pop = age < 0 || age >= POP_TICKS ? 1f : Easing.easeOutBack(age / POP_TICKS);
             float time = world.getTime() + tickDelta + (entity.getPos().getX() * 7 + entity.getPos().getZ() * 13) % 40;
             float bob = MathHelper.sin(time * 0.12f) * 0.025f;
             SkinTextures skin = SkinUtils.getSkinTextures(figure.player());
@@ -150,11 +151,6 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
                 PodiumBlock.bottomOf(world, entity.getPos()).getY(), entity.getPos().getY())) {
             WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5, master.getSignal().text(), 0xFFFFE08A, 0x60000000, 0, 1f / 80f);
         }
-    }
-
-    private static float easeOutBack(float t) {
-        float c1 = 1.70158f, c3 = c1 + 1, u = t - 1;
-        return 1 + c3 * u * u * u + c1 * u * u;
     }
 
     public static void registerReloadListener() {

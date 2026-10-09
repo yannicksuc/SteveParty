@@ -7,6 +7,8 @@ import fr.lordfinn.steveparty.hud.TurnStripLayout;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.El;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Kind;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Type;
+import fr.lordfinn.steveparty.utils.Argb;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.DefaultSkinHelper;
@@ -154,7 +156,7 @@ final class TurnBarHud {
         matrices.push();
         matrices.translate(-Math.round(shownLeft), -Math.round(shownTop), 0);
         boolean landed = t >= 0.6f;
-        float slide = smooth(MathHelper.clamp((t - 0.1f) / 0.5f, 0, 1));
+        float slide = Easing.smoothstep(MathHelper.clamp((t - 0.1f) / 0.5f, 0, 1));
         // The big chip last: over the others while it grows
         String top = after.elements().isEmpty() ? null : after.elements().getFirst().key;
         for (int pass = 0; pass < 2; pass++) {
@@ -171,7 +173,7 @@ final class TurnBarHud {
                     drawEl(context, a, Math.round(a.x - 12 * Math.min(1, t / 0.4f)), a.y, s, alpha, now);
                 } else if (key.equals(coming) && a != null && b != null) {
                     // The next step: slides into the first place and grows into the big chip
-                    float grow = t > 0.25f ? HudDraw.easeOutBack(MathHelper.clamp((t - 0.25f) / 0.45f, 0, 1)) : 0;
+                    float grow = t > 0.25f ? Easing.easeOutBack(MathHelper.clamp((t - 0.25f) / 0.45f, 0, 1)) : 0;
                     float scale = MathHelper.lerp(grow, a.h / (float) b.h, 1);
                     drawEl(context, b, Math.round(MathHelper.lerp(slide, a.x, b.x)), b.y, scale, alpha, now);
                 } else if (a != null && b != null) {
@@ -198,10 +200,6 @@ final class TurnBarHud {
             }
         }
         matrices.pop();
-    }
-
-    private static float smooth(float t) {
-        return t * t * (3 - 2 * t);
     }
 
     /** Heads and pictures that may not fade: they scale. */
@@ -281,11 +279,11 @@ final class TurnBarHud {
             });
             return;
         }
-        context.fill(x, y, x + 8, y + 8, HudDraw.fade(0xFF3F3F3F, alpha));
+        context.fill(x, y, x + 8, y + 8, Argb.fade(0xFF3F3F3F, alpha));
         String name = player == null || player.name.isEmpty() ? "?" : player.name;
         String initial = name.substring(0, name.offsetByCodePoints(0, 1)).toUpperCase(java.util.Locale.ROOT);
         TextRenderer font = HudDraw.font();
-        context.drawText(font, initial, x + (8 - font.getWidth(initial)) / 2 + 1, y, HudDraw.fade(0xFFFFFFFF, alpha), false);
+        context.drawText(font, initial, x + (8 - font.getWidth(initial)) / 2 + 1, y, Argb.fade(0xFFFFFFFF, alpha), false);
     }
 
     private static HudPaint.Ramp kindRamp(Kind kind) {

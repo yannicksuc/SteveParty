@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.client.gui.party;
 import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
+import fr.lordfinn.steveparty.utils.Argb;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -72,8 +74,8 @@ public final class MiniGameResultsHud {
         if (results == null) return;
         double now = PartyHud.now();
         float age = (float) (now - shownAt);
-        float in = HudDraw.easeOutCubic(age / IN_TICKS);
-        float out = age < STAY_TICKS ? 1 : 1 - HudDraw.clamp01((age - STAY_TICKS) / OUT_TICKS);
+        float in = Easing.easeOutCubic(age / IN_TICKS);
+        float out = age < STAY_TICKS ? 1 : 1 - Easing.clamp01((age - STAY_TICKS) / OUT_TICKS);
         if (out <= 0) {
             results = null;
             return;
@@ -133,8 +135,8 @@ public final class MiniGameResultsHud {
         int left = x;
         if (row.place() > 0) {
             int color = PLACE_COLORS[Math.min(row.place(), PLACE_COLORS.length) - 1];
-            context.fill(x, y, x + CHIP, y + ROW - 2, HudDraw.fade(HudDraw.OUTLINE, alpha));
-            context.fill(x + 1, y + 1, x + CHIP - 1, y + ROW - 3, HudDraw.fade(color, alpha));
+            context.fill(x, y, x + CHIP, y + ROW - 2, Argb.fade(HudDraw.OUTLINE, alpha));
+            context.fill(x + 1, y + 1, x + CHIP - 1, y + ROW - 3, Argb.fade(color, alpha));
             Text place = row.place() <= 9 ? Text.translatable("hud.steveparty.party.rank." + row.place()) : Text.literal(String.valueOf(row.place()));
             HudDraw.text(context, place, x + (CHIP - font.getWidth(place)) / 2, y + 2, HudDraw.TEXT, alpha);
             left += CHIP + 4;
@@ -149,7 +151,7 @@ public final class MiniGameResultsHud {
         if (row.team() >= 0) {
             MiniGamePipeRole role = MiniGamePipeRole.ofTeam(row.team());
             names.append(role.text().copy().styled(style -> style.withBold(true))).append(" ");
-            context.fill(left, y + 1, left + 3, y + ROW - 3, HudDraw.fade(0xFF000000 | role.color(), alpha));
+            context.fill(left, y + 1, left + 3, y + ROW - 3, Argb.fade(0xFF000000 | role.color(), alpha));
             left += 5;
         } else if (row.place() == 0) {
             names.append(Text.translatable("hud.steveparty.minigame.results.participant")).append(" ");
