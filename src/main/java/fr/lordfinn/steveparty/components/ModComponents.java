@@ -108,6 +108,13 @@ public class ModComponents {
     /** Frousseux Cartridge: how many stars its Frousseux steals (1 to 5). */
     public static final ComponentType<Integer> FROUSSEUX_STAR_COUNT =
             registerComponent("frousseux-star-count", Codec.intRange(1, 5));
+    /**
+     * Mistigri Cartridge: its settings by name, the weight of each sentence ({@code w_<sentence>}, 0 to 9: 0 never
+     * drawn) and the amounts ({@code coins_small}, {@code coins_big}, {@code everyone}, {@code back}); missing ones are
+     * the defaults (see MistigriCartridgeItem).
+     */
+    public static final ComponentType<java.util.Map<String, Integer>> MISTIGRI_SETTINGS =
+            registerComponent("mistigri-settings", Codec.unboundedMap(Codec.STRING, Codec.INT));
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =

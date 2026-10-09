@@ -131,10 +131,28 @@ public final class DiceRollSequence {
 
     // ------------------------------------------------------------------ the sequence
 
+    /** The roller's roll is cursed (CursedRolls): only the cursed 1, 2 and 3; read when the roll starts. */
+    private boolean cursed;
+
+    /** The faces a die of this throw may stop on: its own, or the cursed 1 to 3 of a cursed roll. */
+    private List<DiceFace> faces(DiceEntity die) {
+        return cursed ? CursedRolls.FACES : DiceFacesComponent.facesOf(die.getDieStack());
+    }
+
+    /** One face of a die of this throw, by weight (a cursed roll: 1, 2 or 3 as likely). */
+    private DiceFace roll(DiceEntity die) {
+        return cursed ? CursedRolls.FACES.get(lead.getRandom().nextInt(CursedRolls.FACES.size()))
+                : DiceFacesComponent.roll(die.getDieStack(), lead.getRandom());
+    }
+
     /** The dice were just thrown. */
     public void start() {
         if (started) return;
         started = true;
+        cursed = CursedRolls.isCursed(lead.getWorld().getServer(), lead.getOwner().orElse(null));
+        ServerPlayerEntity roller = cursed ? lead.getOnlineOwner() : null;
+        if (roller != null) MessageUtils.sendToPlayer(roller, Text.translatable("message.steveparty.dice.cursed")
+                .formatted(Formatting.DARK_PURPLE), MessageUtils.MessageType.ACTION_BAR);
         readModules();
         modules().forEach((module, count) -> module.onThrown(lead, count));
         begin();
@@ -153,7 +171,7 @@ public final class DiceRollSequence {
             die.setSpinning(true);
             die.setFaceShown(slow);
             if (slow) {
-                List<DiceFace> cycle = cycle(DiceFacesComponent.facesOf(die.getDieStack()));
+                List<DiceFace> cycle = cycle(faces(die));
                 int index = lead.getRandom().nextInt(cycle.size());
                 cycles.put(die.getUuid(), cycle);
                 cycleIndexes.put(die.getUuid(), index);
@@ -256,7 +274,7 @@ public final class DiceRollSequence {
         for (DiceEntity die : lead.group()) {
             List<DiceFace> cycle = slow ? cycles.get(die.getUuid()) : null;
             if (cycle != null) set.add(cycle.get(cycleIndexes.getOrDefault(die.getUuid(), 0) % cycle.size()));
-            else set.add(DiceFacesComponent.roll(die.getDieStack(), lead.getRandom()));
+            else set.add(roll(die));
         }
         return set;
     }
@@ -326,10 +344,10 @@ public final class DiceRollSequence {
             return;
         }
         DiceEntity die = group.get(dieIndex);
-        List<DiceFace> faces = DiceFacesComponent.facesOf(die.getDieStack());
+        List<DiceFace> faces = faces(die);
         List<DicePrompts.Option> options = new ArrayList<>();
         for (DiceFace face : faces) options.add(optionOf(List.of(face)));
-        int random = Math.max(0, faces.indexOf(DiceFacesComponent.roll(die.getDieStack(), lead.getRandom())));
+        int random = Math.max(0, faces.indexOf(roll(die)));
         // One prompt per die, shown as one section per die of the throw (the faces already picked above)
         Text title = Text.translatable(group.size() > 1 ? "gui.steveparty.dice_prompt.choice.dice" : "gui.steveparty.dice_prompt.choice");
         List<DicePrompts.Option> picked = new ArrayList<>();
@@ -359,6 +377,7 @@ public final class DiceRollSequence {
             die.setFaceShown(false);
         }
         showSet(set);
+        if (cursed) CursedRolls.lift(lead.getWorld().getServer(), lead.getOwner().orElse(null)); // spent
         lead.onRollFinished(set);
     }
 

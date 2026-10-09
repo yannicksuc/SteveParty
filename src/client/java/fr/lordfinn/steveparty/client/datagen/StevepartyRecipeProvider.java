@@ -353,6 +353,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.GLANDOUILLE_CARTRIDGE, ModItems.ACORN);
         // A candle: the Frousseux, a candle ghost that steals
         offerCartridge(ModItems.FROUSSEUX_CARTRIDGE, Items.CANDLE);
+        // The Loaded Die (the Mistigri's loot): the black cat of bad luck and his sentences
+        offerCartridge(ModItems.MISTIGRI_CARTRIDGE, ModItems.LOADED_DIE);
 
         // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
         // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)

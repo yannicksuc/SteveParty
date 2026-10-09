@@ -302,6 +302,10 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 : PowerUpService.onRollFinished(this.getOwner().orElse(null), result);
         result = powered.outcome();
         this.outcome = result;
+        // A die bound to a black cat by a witch hut, landing on a 1 or a 0: a Mistigri
+        if (this.getWorld() instanceof ServerWorld serverWorld) {
+            fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning.onRollFinished(serverWorld, this, faces);
+        }
         DiceOutcome announced = result;
         this.getOwner().ifPresent(owner -> {
             DiceRollEvent.EVENT.invoker().onRoll(this, owner, announced.steps());
