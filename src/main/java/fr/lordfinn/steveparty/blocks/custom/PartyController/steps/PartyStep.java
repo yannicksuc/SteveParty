@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
+import fr.lordfinn.steveparty.service.TokenMovementService;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.lordfinn.steveparty.Steveparty;
@@ -150,7 +151,7 @@ public class PartyStep {
         boardSpaceEntity.onTileReached(token, partyControllerEntity);
         if (boardSpaceEntity.getWorld() instanceof ServerWorld world && partyControllerEntity.getWorld() instanceof ServerWorld) {
             if ((ABoardSpaceBlock.countsAsStep(world.getBlockState(boardSpaceEntity.getPos()).getBlock())
-                    || fr.lordfinn.steveparty.service.TokenMovementService.isForcedStop(world, boardSpaceEntity))
+                    || TokenMovementService.isForcedStop(world, boardSpaceEntity))
                     && ((TokenizedEntityInterface) token).steveparty$isTokenized()
                     && ((TokenizedEntityInterface) token).steveparty$getNbSteps() == 0) {
                 boardSpaceEntity.onDestinationReached(token, partyControllerEntity);

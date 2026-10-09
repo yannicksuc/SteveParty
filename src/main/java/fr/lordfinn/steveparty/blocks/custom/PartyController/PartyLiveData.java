@@ -1,5 +1,11 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.dice.DiceOutcome;
+import fr.lordfinn.steveparty.items.custom.PowerUpItem;
+import fr.lordfinn.steveparty.powerups.effects.PowerUpProtection;
+import fr.lordfinn.steveparty.service.DiceRollEffects;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
@@ -121,14 +127,14 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
      */
     public static List<ItemStack> bonusesOf(PartyControllerEntity controller, ServerWorld world, UUID token) {
         List<ItemStack> bonuses = new ArrayList<>(1);
-        if (fr.lordfinn.steveparty.powerups.effects.PowerUpProtection.isProtected(controller, token))
-            bonuses.add(fr.lordfinn.steveparty.powerups.effects.PowerUpProtection.icon());
+        if (PowerUpProtection.isProtected(controller, token))
+            bonuses.add(PowerUpProtection.icon());
         return bonuses;
     }
 
     /** The roll of the current turn in words: "7", "0", "\u22123" (backward), "+5 coins", "Swap", "3, +2 coins"... */
     public Text rollText() {
-        return new fr.lordfinn.steveparty.dice.DiceOutcome(roll, effect.coins(), effect.coinFace(), effect.swap(), false).describe();
+        return new DiceOutcome(roll, effect.coins(), effect.coinFace(), effect.swap(), false).describe();
     }
 
     /** True if nothing shown changed (ItemStack has no value equality, so records can't just be compared). */
@@ -157,8 +163,8 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
             roll = turn.getRoll();
             if (world.getEntity(token) instanceof TokenizedEntityInterface tokenized) stepsLeft = tokenized.steveparty$getNbSteps();
             moving = stepsLeft != 0 || Steveparty.SCHEDULER.isScheduled(token)
-                    || fr.lordfinn.steveparty.service.DiceRollEffects.isResolving(token);
-            fr.lordfinn.steveparty.dice.DiceOutcome outcome = turn.getOutcome();
+                    || DiceRollEffects.isResolving(token);
+            DiceOutcome outcome = turn.getOutcome();
             effect = new RollEffect(turn.hasRolled(), outcome.coinFace(), turn.getRollCoins(), outcome.swap(), turn.getSwapWith());
             shopping = ShopStops.isShopping(token);
             if (turn.isWaitingForAbsentToken())
@@ -175,8 +181,8 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
     /** What the program will play, while the party's steps are not generated yet (see {@link #program}). */
     private static PartyDashboardData.Timeline programOf(PartyControllerEntity controller, PartyData data) {
         PartyStep current = data.getCurrentStep();
-        if (current == null || (current.getType() != fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType.START_ROLLS
-                && current.getType() != fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType.BASIC_GAME_GENERATOR))
+        if (current == null || (current.getType() != PartyStepType.START_ROLLS
+                && current.getType() != PartyStepType.BASIC_GAME_GENERATOR))
             return PartyDashboardData.Timeline.EMPTY;
         PartyDashboardData.Timeline program = PartyDashboardData.programTimeline(controller.getProgram().getHeldStacks(), data.getNbTurn());
         // Without its first step (the turn order rolls: the current step, or the one just played)
@@ -245,9 +251,9 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
      */
     public static boolean isPowerUp(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        return stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.PowerUpItem || stack.isIn(POWER_UPS)
+        return stack.getItem() instanceof PowerUpItem || stack.isIn(POWER_UPS)
                 || (stack.getItem() instanceof DefaultDiceItem
-                && (DiceFacesComponent.hasFaces(stack) || !fr.lordfinn.steveparty.dice.DiceModules.of(stack).isEmpty()));
+                && (DiceFacesComponent.hasFaces(stack) || !DiceModules.of(stack).isEmpty()));
     }
 
     /** The power-ups in an inventory: one stack per kind (same item and components), its count the number held. */
