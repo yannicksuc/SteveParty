@@ -1002,6 +1002,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     @Override
     protected void mobTick() {
         super.mobTick();
+        if (isSteered() && !getNavigation().isIdle()) getNavigation().stop(); // its riders lead, not its goals
         LivingEntity target = getTarget();
         if (target instanceof PlayerEntity player && isOwner(player)) setTarget(null);
         long now = getWorld().getTime();
@@ -1180,12 +1181,19 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
 
     // ---------------------------------------------------------------- client
 
+    /**
+     * Steered, its body and head face its yaw, nothing else: no body control easing them toward a looked-at point (on
+     * the client, between the server's yaw and its head yaw packets, that swung the tank to and fro every frame).
+     */
+    @Override
+    protected float turnHead(float bodyRotation, float headRotation) {
+        if (!isSteered()) return super.turnHead(bodyRotation, headRotation);
+        bodyYaw = getYaw();
+        headYaw = getYaw();
+        return headRotation;
+    }
+
     private void clientTick() {
-        if (isSteered()) { // ridden, it moves server side: its body faces where it goes
-            prevBodyYaw = bodyYaw;
-            bodyYaw = getYaw();
-            headYaw = getYaw();
-        }
         prevClientSink = clientSink;
         clientSink += MathHelper.clamp(sinkGoal() - clientSink, -0.05f, 0.05f);
         prevClientTankLevel = clientTankLevel < 0 ? getTank() : clientTankLevel;
@@ -1298,6 +1306,10 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
 
         @Override
         public void tick() {
+            if (entity instanceof TrichaudronEntity trichaudron && trichaudron.isSteered()) {
+                state = State.WAIT; // its riders steer: no wandering goal turns it under them
+                return;
+            }
             float before = entity.getYaw();
             super.tick();
             float wanted = MathHelper.wrapDegrees(entity.getYaw() - before);
