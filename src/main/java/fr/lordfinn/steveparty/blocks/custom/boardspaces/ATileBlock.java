@@ -70,39 +70,33 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.BOARD_SPACE);
-        TileStampComponent stamp = TileContents.ownStamp(stack);
-        if (stamp != null) tips.tags(Tooltips.Tag.STAMPED);
-        appendContentsTooltip(stack, tips);
-        if (stamp != null) tips.state("tooltip.steveparty.look", Tooltips.look(stamp.describe()));
-        tips.summary("tooltip.steveparty.tile." + tooltipKey());
-        tips.more(more -> more
-                .detail(Text.translatable("tooltip.steveparty.tile.size",
-                        Tooltips.value(Text.translatable("tooltip.steveparty.tile.size." + TileSize.of(stack).asString()))))
-                .use(Tooltips.Keys.use(), "tooltip.steveparty.tile.use.cartridge")
-                .use(Tooltips.Keys.of("tooltip.steveparty.key.stencil_dye"), "tooltip.steveparty.tile.stamp.hint")
-                .craft("tooltip.steveparty.tile." + tooltipKey() + ".crafting")
-                .craft("tooltip.steveparty.tile.size.hint")
-                .note("tooltip.steveparty.tile.contents.hint"));
-    }
-
-    /**
-     * What the tile item holds (see {@link TileContents}): its cartridge, or its cartridges (slot, name, main
-     * setting), the one its preview shows now highlighted.
-     */
-    private static void appendContentsTooltip(ItemStack stack, Tooltips tips) {
+        // The name says its size (unless standard), the tooltip component draws its stamped look
+        Tooltips tips = Tooltips.of(tooltip);
+        if (TileContents.ownStamp(stack) != null) tips.tags(Tooltips.Tag.STAMPED);
         List<TileContents.Slot> cartridges = TileContents.cartridges(stack);
         if (cartridges.size() == 1) {
             tips.state("tooltip.steveparty.tile.contents.one", describe(cartridges.get(0).cartridge()).formatted(Tooltips.VALUE));
-            return;
+        } else if (!cartridges.isEmpty()) {
+            tips.state("tooltip.steveparty.tile.contents", Tooltips.value(Text.translatable("tooltip.steveparty.tile.contents.count", cartridges.size())));
         }
-        if (cartridges.isEmpty()) return;
-        tips.state("tooltip.steveparty.tile.contents", Tooltips.value(Text.translatable("tooltip.steveparty.tile.contents.count", cartridges.size())));
+        if (this instanceof AdvancedTileBlock) tips.summary("tooltip.steveparty.tile.advanced");
+        tips.more(more -> {
+            if (cartridges.size() > 1) appendContentsTooltip(cartridges, more);
+            more.use(Tooltips.Keys.of("tooltip.steveparty.key.stencil_dye"), "tooltip.steveparty.tile.stamp.hint");
+            more.note("tooltip.steveparty.tile.contents.hint");
+        });
+    }
+
+    /**
+     * The cartridges of an Advanced Tile item, behind Shift (see {@link TileContents}): slot, name, main setting, the
+     * one its preview shows now highlighted.
+     */
+    private static void appendContentsTooltip(List<TileContents.Slot> cartridges, Tooltips.More more) {
         int shown = TileContents.previewedIndex(cartridges.size());
         for (int i = 0; i < cartridges.size(); i++) {
             TileContents.Slot slot = cartridges.get(i);
             boolean previewed = i == shown;
-            tips.state(Text.literal(previewed ? "▶ " : "  ")
+            more.detail(Text.literal(previewed ? "▶ " : "  ")
                     .append(Text.translatable("tooltip.steveparty.tile.contents.slot", slot.slot() + 1, describe(slot.cartridge())))
                     .formatted(previewed ? Formatting.YELLOW : Tooltips.TEXT));
         }

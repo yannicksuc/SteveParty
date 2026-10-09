@@ -121,7 +121,7 @@ public class BoxCostumeItem extends Item implements Equipment {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        Tooltips.of(tooltip).tags(Tooltips.Tag.COSTUME)
+        Tooltips.of(tooltip)
                 .summary("item.steveparty.box_costume.tooltip.wear")
                 .more(more -> more
                         .use(Tooltips.Keys.sneak(), "item.steveparty.box_costume.tooltip.hide")

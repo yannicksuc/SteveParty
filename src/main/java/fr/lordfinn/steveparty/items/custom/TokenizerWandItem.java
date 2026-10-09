@@ -517,7 +517,7 @@ public class TokenizerWandItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL)
+        Tooltips.of(tooltip)
                 .summary("tooltip.steveparty.tokenizer_wand.summary")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.tokenizer_wand.tokenize")

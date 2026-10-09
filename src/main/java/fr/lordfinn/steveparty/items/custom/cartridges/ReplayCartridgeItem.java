@@ -31,4 +31,10 @@ public class ReplayCartridgeItem extends CartridgeItem {
     public int tileColor() {
         return COLOR;
     }
+
+    /** Its name says what it does. */
+    @Override
+    protected boolean hasSummary() {
+        return false;
+    }
 }

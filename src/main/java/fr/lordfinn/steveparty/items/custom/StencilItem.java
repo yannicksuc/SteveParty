@@ -91,12 +91,11 @@ public class StencilItem extends Item {
         super.appendTooltip(stack, context, tooltip, type);
         byte[] shape = getShape(stack);
         StencilPatterns.Pattern pattern = StencilPatterns.byShape(shape);
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL);
+        Tooltips tips = Tooltips.of(tooltip);
         // The name of the pattern only: the stencil's icon already shows its shape
         if (pattern != null) tips.state("tooltip.steveparty.stencil.pattern", Tooltips.look(pattern.name()));
         else if (!StencilShape.isBlank(shape)) tips.state("tooltip.steveparty.stencil.pattern",
                 Tooltips.look(Text.translatable("tooltip.steveparty.stencil.custom")));
-        tips.summary("tooltip.steveparty.stencil.summary");
         tips.more(more -> more
                 .use(Tooltips.Keys.use(), "tooltip.steveparty.stencil.usage")
                 .use(Tooltips.Keys.use(), "tooltip.steveparty.stencil.usage_tools")

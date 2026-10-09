@@ -108,7 +108,7 @@ public class MiniGamePipeBlock extends PipeBlock {
 
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
-        Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME)
+        Tooltips.of(tooltip)
                 .state("tooltip.steveparty.minigame_pipe.reach",
                         Tooltips.value(Text.translatable("tooltip.steveparty.minigame_pipe.reach." + reach().name().toLowerCase(Locale.ROOT))))
                 .summary("tooltip.steveparty.minigame_pipe.what")

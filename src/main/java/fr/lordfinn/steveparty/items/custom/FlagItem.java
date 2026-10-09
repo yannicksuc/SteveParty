@@ -103,7 +103,7 @@ public class FlagItem extends Item {
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
         int color = getColor(stack);
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME);
+        Tooltips tips = Tooltips.of(tooltip);
         if (color != NO_COLOR) tips.state("tooltip.steveparty.colour", Tooltips.rgb(colorName(color), color));
         tips.more(more -> more.use(Tooltips.Keys.use(), "tooltip.steveparty.flag.use"));
     }

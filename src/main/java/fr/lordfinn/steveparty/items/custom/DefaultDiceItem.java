@@ -159,24 +159,20 @@ public class DefaultDiceItem extends Item {
     }
 
     /**
-     * Tagged [Die] (and [Power-up] [Consumed] with the Power-up module); its faces and modules; behind Shift how to
-     * throw and stop it, how to add modules.
+     * No tag (a Power-up module says so on its own line): its faces and modules; behind Shift how to throw and stop
+     * it (its modules are added in REI's recipes, not here).
      */
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         boolean powerUp = DiceModules.isPowerUp(stack);
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.DIE);
-        if (powerUp) tips.tags(Tooltips.Tag.POWER_UP, Tooltips.Tag.CONSUMED);
+        Tooltips tips = Tooltips.of(tooltip);
         DiceFacesComponent faces = stack.get(DiceFacesComponent.TYPE);
         if (faces != null && !faces.faces().isEmpty()) tips.state(faces.describe());
         for (Text line : DiceModules.tooltip(stack)) tips.state(line);
-        if (powerUp) tips.summary("tooltip.steveparty.powerup.die.effect");
         tips.more(more -> {
             more.use(Tooltips.Keys.use(), "tooltip.steveparty.dice.use.mob");
             more.use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.dice.use.player");
             more.use(Tooltips.Keys.attack(), "tooltip.steveparty.dice.use.stop");
-            if (powerUp) PowerUpItem.howToUse(more, PowerUp.Target.NONE);
-            more.craft("tooltip.steveparty.dice.craft.modules");
             more.note("tooltip.steveparty.dice.moves");
             if (powerUp) more.note("tooltip.steveparty.powerup.one_per_turn");
         });

@@ -276,7 +276,7 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME)
+        Tooltips.of(tooltip)
                 .summary("block.steveparty.goal_pole.tooltip.summary")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "block.steveparty.goal_pole.tooltip.goal")

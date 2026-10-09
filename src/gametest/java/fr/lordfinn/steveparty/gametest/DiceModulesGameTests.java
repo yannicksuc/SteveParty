@@ -110,20 +110,18 @@ public class DiceModulesGameTests implements FabricGameTest {
         context.assertEquals(DiceModules.count(capped, DiceModules.SLOW), 1, "Slow counts once");
         context.assertTrue(DiceModules.set(capped.copy(), Map.of()).get(DiceModulesComponent.TYPE) == null, "no module: no component");
 
-        // The tooltip: a Power-up die is tagged like the power-ups ([Die] [Power-up] [Consumed]), then its faces, one
-        // line per module (its count if several; a negative module in red), what it does and the Shift hint.
+        // The tooltip: no tag (its Power-up module line says it all), its faces, one line per module (its count if
+        // several; a negative module in red), then the Shift hint.
         Tooltips.forTests(false);
         List<Text> tooltip = new ArrayList<>();
         die.getItem().appendTooltip(die, Item.TooltipContext.DEFAULT, tooltip, TooltipType.BASIC);
-        context.assertEquals(tooltip.size(), 7, "the tags, the faces, three modules, the summary and the hint");
-        context.assertEquals(tagKeys(tooltip.getFirst()), List.of("tooltip.steveparty.tag.die", "tooltip.steveparty.tag.power_up",
-                "tooltip.steveparty.tag.consumed"), "tagged like the power-ups");
+        context.assertEquals(tooltip.size(), 5, "the faces, three modules and the hint");
+        context.assertTrue(tagKeys(tooltip.getFirst()).isEmpty(), "no tag: the Power-up module line says it");
         List<Text> plainTooltip = new ArrayList<>();
         ItemStack plain = with(die("dice_face_1", "dice_face_6"), DiceModules.LUCKY, 2);
         plain.getItem().appendTooltip(plain, Item.TooltipContext.DEFAULT, plainTooltip, TooltipType.BASIC);
         Tooltips.forTests(null);
-        context.assertEquals(plainTooltip.size(), 4, "a plain die: its tag, the faces, its module and the hint");
-        context.assertEquals(tagKeys(plainTooltip.getFirst()), List.of("tooltip.steveparty.tag.die"), "a plain die is only a die");
+        context.assertEquals(plainTooltip.size(), 3, "a plain die: the faces, its module and the hint");
         List<Text> lines = DiceModules.tooltip(die);
         Text lucky = lines.stream().filter(line -> line.getString().contains("×2")).findFirst().orElse(null);
         context.assertTrue(lucky != null, "Lucky shows its count");

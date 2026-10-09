@@ -33,7 +33,7 @@ public class ExplorerHelmetItem extends ArmorItem {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         boolean lit = ExplorerHelmet.lit(stack);
-        Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL)
+        Tooltips.of(tooltip)
                 .state("tooltip.steveparty.explorer_helmet.lamp", lit
                         ? Tooltips.good(Text.translatable("tooltip.steveparty.explorer_helmet.lit"))
                         : Tooltips.value(Text.translatable("tooltip.steveparty.explorer_helmet.unlit")))
