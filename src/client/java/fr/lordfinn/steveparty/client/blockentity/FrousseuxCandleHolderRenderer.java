@@ -1,14 +1,15 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
 import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlockEntity;
+import fr.lordfinn.steveparty.client.entity.FrousseuxRenderer;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -20,7 +21,6 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import org.joml.Matrix4f;
@@ -37,9 +37,6 @@ import software.bernie.geckolib.cache.texture.AnimatableTexture;
  * block model and this flame alike, from the colour, flame and saucer its item keeps.
  */
 public class FrousseuxCandleHolderRenderer implements BlockEntityRenderer<FrousseuxCandleHolderBlockEntity> {
-    private static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
-    private static final Identifier CORE = Steveparty.id("textures/entity/frousseux_flame_core.png");
-    private static final int FULL_BRIGHT = 0xF000F0;
 
     public FrousseuxCandleHolderRenderer(BlockEntityRendererFactory.Context context) {
     }
@@ -99,20 +96,16 @@ public class FrousseuxCandleHolderRenderer implements BlockEntityRenderer<Frouss
 
         float u0 = stage[0] / 64f, v0 = stage[1] / 64f, u1 = (stage[0] + stage[2]) / 64f, v1 = (stage[1] + stage[3]) / 64f;
         float half = stage[2] / 32f, height = stage[3] / 16f;
-        int argb = shade(color.flameEdge, flame.brightness), pale = shade(color.flameHeart, flame.brightness);
-        AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta)
-        VertexConsumer flameBuffer = vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(FLAME, true));
+        int argb = FrousseuxRenderer.shade(color.flameEdge, flame.brightness),
+                pale = FrousseuxRenderer.shade(color.flameHeart, flame.brightness);
+        AnimatableTexture.setAndUpdate(FrousseuxRenderer.FLAME); // its frames (frousseux_flame.png.mcmeta)
+        VertexConsumer flameBuffer = vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(FrousseuxRenderer.FLAME, true));
         for (float angle : new float[]{45, -45}) plane(matrices, flameBuffer, angle, half, 0, height, u0, v0, u1, v1, argb);
         // its heart and its wick, on the same faces (drawn over them, nothing fights)
-        AnimatableTexture.setAndUpdate(CORE);
-        VertexConsumer coreBuffer = vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(CORE, true));
+        AnimatableTexture.setAndUpdate(FrousseuxRenderer.CORE);
+        VertexConsumer coreBuffer = vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(FrousseuxRenderer.CORE, true));
         for (float angle : new float[]{45, -45}) plane(matrices, coreBuffer, angle, half, 0, height, u0, v0, u1, v1, pale);
         matrices.pop();
-    }
-
-    private static int shade(int rgb, float brightness) {
-        return 0xFF000000 | (int) (((rgb >> 16) & 0xFF) * brightness) << 16 | (int) (((rgb >> 8) & 0xFF) * brightness) << 8
-                | (int) ((rgb & 0xFF) * brightness);
     }
 
     /** A vertical plane turned {@code angle} degrees about the flame's axis, seen from both sides. */
@@ -135,7 +128,7 @@ public class FrousseuxCandleHolderRenderer implements BlockEntityRenderer<Frouss
 
     private static void vertex(VertexConsumer buffer, MatrixStack.Entry entry, Matrix4f m, float x, float y, float u, float v,
                                int argb) {
-        buffer.vertex(m, x, y, 0).color(argb).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(FULL_BRIGHT)
+        buffer.vertex(m, x, y, 0).color(argb).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE)
                 .normal(entry, 0, 1, 0);
     }
 
