@@ -112,6 +112,16 @@ public class MagpieNestGameTests implements FabricGameTest {
         context.assertEquals(again.getTreasures().getFirst().getCount(), 3, "its shiny things saved");
         context.assertEquals(again.getPileCount(), 15, "a pile of 15");
         context.assertEquals(again.getFacing(), Direction.EAST, "its facing");
+        // light as hay, an axe or a hoe, a hand slower
+        BlockState state = nest.getCachedState();
+        context.assertTrue(state.isIn(BlockTags.AXE_MINEABLE) && state.isIn(BlockTags.HOE_MINEABLE), "an axe or a hoe");
+        context.assertTrue(!state.isToolRequired() && state.getHardness(context.getWorld(), nest.getPos()) == 0.5F, "by hand too");
+        // broken: it and what it holds fall
+        context.getWorld().breakBlock(nest.getPos(), true);
+        java.util.List<ItemEntity> drops = context.getWorld().getEntitiesByClass(ItemEntity.class, new net.minecraft.util.math.Box(nest.getPos()).expand(2), e -> true);
+        context.assertTrue(drops.stream().anyMatch(e -> e.getStack().isOf(ModItems.MAGPIE_NEST)), "the nest drops");
+        context.assertEquals(drops.stream().filter(e -> e.getStack().isOf(ModItems.COIN)).mapToInt(e -> e.getStack().getCount()).sum(), 12, "its coins too");
+        drops.forEach(ItemEntity::discard);
         context.complete();
     }
 
