@@ -487,7 +487,7 @@ public class ModBlocks {
     /** The Pie's nest, woven twigs: a Common pot's nest when set near its space (MagpieNestBlock). */
     public static final Block MAGPIE_NEST = register(MagpieNestBlock::new,
             Block.Settings.create()
-                    .strength(0.4f)
+                    .strength(0.5f) // as light as hay: an axe or a hoe, a hand slower
                     .nonOpaque()
                     .sounds(BlockSoundGroup.AZALEA)
                     .burnable()
