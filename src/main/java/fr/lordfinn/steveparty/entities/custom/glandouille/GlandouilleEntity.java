@@ -777,6 +777,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         if (boardActor) return source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY) && super.damage(source, amount);
         if (squashKill) return super.damage(source, amount);
         if (source.isOf(DamageTypes.FALL)) return false; // a light acorn
+        // carried (in a player's hand, or in a tower in it): never smothered by the blocks around the carrier
+        if (source.isOf(DamageTypes.IN_WALL) && GlandouilleTowers.bottom(this).getVehicle() instanceof PlayerEntity) return false;
         Entity attacker = source.getAttacker();
         if (attacker instanceof LivingEntity living && !source.isIn(DamageTypeTags.IS_EXPLOSION)
                 && !source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
