@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import net.minecraft.item.Items;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -65,11 +66,11 @@ public class AdvanceBackTileBehavior extends ABoardSpaceBehavior {
         return AdvanceBackCartridgeItem.steps(stack) < 0 ? Landing.BACK : Landing.ADVANCE;
     }
 
-    /** How many spaces it moves the token, forward or back. */
+    /** In game: how many spaces it moves the token, forward or back. */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         int steps = AdvanceBackCartridgeItem.steps(stack);
         if (steps == 0) return;
-        info.line(steps > 0 ? TileInfo.line("advance", TileInfo.good(steps)) : TileInfo.line("back", TileInfo.bad(-steps)));
+        info.line(steps > 0 ? TileInfo.Glyph.FORWARD : TileInfo.Glyph.BACK, steps > 0 ? TileInfo.good(TileInfo.line("advance", steps)) : TileInfo.bad(TileInfo.line("back", -steps)));
     }
 }

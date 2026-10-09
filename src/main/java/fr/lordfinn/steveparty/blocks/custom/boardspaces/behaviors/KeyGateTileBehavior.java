@@ -29,19 +29,25 @@ public class KeyGateTileBehavior extends ABoardSpaceBehavior {
         return KeyGates.isOpen(boardSpaceEntity, null) ? 15 : BoardSpaceRedstoneRouterBlockEntity.LEVEL_STOP;
     }
 
-    /** Open or closed, and the ways it locks. */
+    /**
+     * In game: open or closed (the locked ways are the gates standing in the world). Building: the ways it locks,
+     * how long a key keeps it open.
+     */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof KeyGateCartridgeItem)) return;
         boolean open = BoardRuleCartridgeItem.state(stack, KeyGateCartridgeItem.OPENED, Integer.MIN_VALUE) != Integer.MIN_VALUE;
-        info.line(new ItemStack(ModItems.GATE_KEY), TileInfo.line("key_gate",
-                open ? TileInfo.good(TileInfo.line("key_gate.open")) : TileInfo.bad(TileInfo.line("key_gate.closed"))));
+        info.line(open ? TileInfo.Glyph.OPEN : TileInfo.Glyph.CLOSED,
+                open ? TileInfo.good(TileInfo.line("key_gate.open")) : TileInfo.bad(TileInfo.line("key_gate.closed")));
         MutableText sides = Text.empty();
         for (Direction side : KeyGateCartridgeItem.SIDES) {
             if (!KeyGateCartridgeItem.isLocked(stack, side)) continue;
             if (!sides.getSiblings().isEmpty()) sides.append(", ");
             sides.append(Text.translatable("gui.steveparty.cartridge_menu.key_gate.side." + side.asString() + ".tooltip"));
         }
-        if (!open && !sides.getSiblings().isEmpty()) info.line(TileInfo.line("key_gate.locks", TileInfo.value(sides)));
+        if (!sides.getSiblings().isEmpty()) info.build(TileInfo.line("key_gate.locks", TileInfo.value(sides)));
+        int stay = KeyGateCartridgeItem.stayOpen(stack);
+        info.build(stay >= KeyGateCartridgeItem.FOREVER ? TileInfo.line("key_gate.stay.forever")
+                : stay == 0 ? TileInfo.line("key_gate.stay.none") : TileInfo.line("key_gate.stay", TileInfo.value(stay)));
     }
 }

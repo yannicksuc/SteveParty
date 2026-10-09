@@ -1,5 +1,11 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import net.minecraft.item.Items;
+import fr.lordfinn.steveparty.powerups.PowerUp;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
@@ -82,7 +88,7 @@ public final class TileInfos {
         TileInfo.Builder info = TileInfo.builder();
         ItemStack cartridge = space.getActiveCartridgeItemStack();
         if (cartridge.getItem() instanceof CartridgeItem item) {
-            info.title(cartridge.getName(), item.menuColor(cartridge));
+            info.title(title(space, item.getBoardSpaceType()), item.menuColor(cartridge));
             space.getBoardSpaceBehavior(cartridge).describe(world, space, cartridge, info);
         }
         // A role with nothing to tell (a plain space): a trap set on it is what it is
@@ -91,21 +97,71 @@ public final class TileInfos {
         return info.build();
     }
 
-    /** A Trap set on the space: what it does, and who set it (in their colour). */
+    /**
+     * The name of the space's role (« Common Pot »), not its cartridge's; on a check point « Checkpoint Common Pot »:
+     * there the role plays when a token passes, never when one stops.
+     */
+    public static Text title(BoardSpaceBlockEntity space, BoardSpaceType type) {
+        Text role = TileInfo.line("role." + type.asString());
+        return space.getCachedState().getBlock() instanceof CheckPointBlock ? TileInfo.line("check_point", role) : role;
+    }
+
+    /** A Trap set on the space: what it does to whoever stops there, and who set it (their head, their colour). */
     private static void trap(ServerWorld world, BoardSpaceBlockEntity space, TileInfo.Builder info, boolean told) {
         if (space.getTrapMark() == null) return;
         for (PartyControllerEntity party : PartyControllerEntity.getActivePartyControllers()) {
             if (party.getWorld() != world) continue;
             TrapState.Trap trap = TrapEffect.trapAt(party, space.getPos());
             if (trap == null) continue;
-            Text setter = world.getServer().getUserCache() == null ? null : world.getServer().getUserCache().getByUuid(trap.placer())
-                    .map(GameProfile::getName).<Text>map(Text::literal).orElse(null);
-            // Titled « Trap » on a space with nothing else to tell: its effect alone, else « Trap: its effect »
-            if (!told) info.title(TileInfo.line("trap.title"), trap.color());
-            info.line(told ? TileInfo.line("trap", TileInfo.bad(trap.effect().describe())) : TileInfo.bad(trap.effect().describe()));
-            if (setter != null) info.line(TileInfo.line("trap.setter", TileInfo.rgb(setter, darker(trap.color()))));
+            if (!told) info.title(TileInfo.line("role.trap"), trap.color());
+            int amount = trap.effect().amount();
+            Text effect = switch (trap.effect().kind()) {
+                case COINS -> TileInfo.line("trap.coins", amount);
+                case BACK -> TileInfo.line("trap.back", amount);
+                case SKIP_TURN -> TileInfo.line("trap.skip_turn");
+                case STEAL_ITEM -> TileInfo.line("trap.steal_item");
+            };
+            // Under a title of its own role, the trap says it is one
+            info.line(TileInfo.Glyph.TRAP, TileInfo.bad(told ? TileInfo.line("trap", effect) : effect));
+            ServerPlayerEntity online = world.getServer().getPlayerManager().getPlayer(trap.placer());
+            Text setter = online != null ? online.getName() : world.getServer().getUserCache() == null ? null
+                    : world.getServer().getUserCache().getByUuid(trap.placer()).map(GameProfile::getName).<Text>map(Text::literal).orElse(null);
+            if (setter != null) info.line(online != null ? PowerUp.headOf(online) : new ItemStack(Items.PLAYER_HEAD),
+                    TileInfo.line("trap.setter", TileInfo.rgb(setter, darker(trap.color()))));
             return;
         }
+    }
+
+    // ---------------------------------------------------------------- the party's currencies
+
+    /** Farther than this from a running party's controller, a space is not on its board. */
+    private static final double PARTY_RADIUS_SQ = 160 * 160;
+
+    /** The coin of the party playing on {@code space}'s board (its controller's), the mod's coin outside a party. */
+    public static ItemStack coin(BoardSpaceBlockEntity space) {
+        ItemStack coin = currency(space, PartyCurrency.COIN);
+        return coin.isEmpty() ? new ItemStack(ModItems.COIN) : coin;
+    }
+
+    /** The star of the party playing on {@code space}'s board, the mod's Party Star outside a party. */
+    public static ItemStack star(BoardSpaceBlockEntity space) {
+        ItemStack star = currency(space, PartyCurrency.STAR);
+        return star.isEmpty() ? new ItemStack(ModItems.PARTY_STAR) : star;
+    }
+
+    /** {@code currency} of the nearest running party of the space's world, empty if none. */
+    private static ItemStack currency(BoardSpaceBlockEntity space, PartyCurrency currency) {
+        PartyControllerEntity nearest = null;
+        double best = PARTY_RADIUS_SQ;
+        for (PartyControllerEntity party : PartyControllerEntity.getActivePartyControllers()) {
+            if (party.getWorld() != space.getWorld() || party.isRemoved() || !party.getPartyData().isStarted()) continue;
+            double distance = party.getPos().getSquaredDistance(space.getPos());
+            if (distance <= best) {
+                best = distance;
+                nearest = party;
+            }
+        }
+        return nearest == null ? ItemStack.EMPTY : nearest.getCurrency(currency);
     }
 
     /** A player's colour made readable on the light plates. */
