@@ -87,6 +87,8 @@ public class RecipeGameTests implements FabricGameTest {
             Map.entry("frosty_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("boomcart_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("frousseux_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            Map.entry("mistigri_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            Map.entry("loaded_die", "the Mistigri's loot (loot table entities/mistigri)"),
             Map.entry("frousseux_candle_holder", "a tamed Frousseux put to sleep by its owner"),
             // The 10 fixed-wood easel signs are kept for the worlds that have them: the material easel sign replaced them
             Map.entry("oak_easel_sign", "legacy"), Map.entry("spruce_easel_sign", "legacy"),
@@ -213,6 +215,7 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.PARTY_STAR)).isOf(ModItems.STAR_CARTRIDGE), "star cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.ACORN)).isOf(ModItems.GLANDOUILLE_CARTRIDGE), "glandouille cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.CANDLE)).isOf(ModItems.FROUSSEUX_CARTRIDGE), "frousseux cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.LOADED_DIE)).isOf(ModItems.MISTIGRI_CARTRIDGE), "mistigri cartridge");
 
         // The Tile and the Advanced Tile (their cartridges loaded: TileCartridgeGameTests)
         ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[net.minecraft.util.DyeColor.WHITE.getId()]);

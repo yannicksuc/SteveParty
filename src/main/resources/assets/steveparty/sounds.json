@@ -974,5 +974,151 @@
         "pitch": 0.7
       }
     ]
+  },
+  "mistigri.ambient": {
+    "subtitle": "subtitles.steveparty.mistigri.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.stray_ambient",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.7
+      },
+      {
+        "name": "minecraft:entity.cat.ambient",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.68
+      }
+    ]
+  },
+  "mistigri.purr": {
+    "subtitle": "subtitles.steveparty.mistigri.purr",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.purr",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.7
+      },
+      {
+        "name": "minecraft:entity.cat.purreow",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.72
+      }
+    ]
+  },
+  "mistigri.meow": {
+    "subtitle": "subtitles.steveparty.mistigri.meow",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.beg_for_food",
+        "type": "event",
+        "volume": 0.9,
+        "pitch": 0.7
+      },
+      {
+        "name": "minecraft:entity.cat.stray_ambient",
+        "type": "event",
+        "volume": 0.9,
+        "pitch": 0.66
+      }
+    ]
+  },
+  "mistigri.hiss": {
+    "subtitle": "subtitles.steveparty.mistigri.hiss",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.hiss",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.62
+      }
+    ]
+  },
+  "mistigri.angry": {
+    "subtitle": "subtitles.steveparty.mistigri.angry",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.hiss",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:entity.ocelot.hurt",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.55
+      }
+    ]
+  },
+  "mistigri.eat": {
+    "subtitle": "subtitles.steveparty.mistigri.eat",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.eat",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.7
+      }
+    ]
+  },
+  "mistigri.hurt": {
+    "subtitle": "subtitles.steveparty.mistigri.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.hurt",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.68
+      }
+    ]
+  },
+  "mistigri.death": {
+    "subtitle": "subtitles.steveparty.mistigri.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.death",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.62
+      }
+    ]
+  },
+  "mistigri.transform": {
+    "subtitle": "subtitles.steveparty.mistigri.transform",
+    "sounds": [
+      {
+        "name": "minecraft:entity.witch.celebrate",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.8
+      },
+      {
+        "name": "minecraft:entity.cat.hiss",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.45
+      }
+    ]
+  },
+  "mistigri.bad_luck": {
+    "subtitle": "subtitles.steveparty.mistigri.bad_luck",
+    "sounds": [
+      {
+        "name": "minecraft:entity.witch.ambient",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.4
+      },
+      {
+        "name": "minecraft:entity.cat.hiss",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 0.8
+      }
+    ]
   }
 }

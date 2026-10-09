@@ -522,6 +522,42 @@ public final class TileStampTextures {
                 key -> register(glyphValues(small ? SMALL_FROUSSEUX : FROUSSEUX, small, FROUSSEUX_SHADES), rgb, small));
     }
 
+    /** The Mistigri: a cat's head, pointed ears (one notched), one slit eye open, the other shut, a nose, whiskers. */
+    private static final String[] MISTIGRI = {
+            "..o.......o.o.",
+            "..oo.....oooo.",
+            "..ooo...ooooo.",
+            "..oooooooooo..",
+            ".oooooooooooo.",
+            ".ooo#oooooooo.",
+            ".ooo#ooo---oo.",
+            "woooooooooooow",
+            ".oooooonooooo.",
+            "woooooooooooow",
+            "..oooooooooo..",
+            "...oooooooo...",
+            "....oooooo....",
+            ".............."};
+    private static final String[] SMALL_MISTIGRI = {
+            ".o......o.",
+            ".oo....oo.",
+            ".oooooooo.",
+            "oo#ooo--oo",
+            "oo#ooooooo",
+            "woooonooow",
+            ".oooooooo.",
+            "w.oooooo.w",
+            "..oooooo..",
+            "...oooo..."};
+    private static final Map<Character, Float> MISTIGRI_SHADES =
+            Map.of('#', FEATURE, '-', 0.3f, 'n', 0.1f, 'o', -0.7f, 'w', 0.2f);
+
+    /** The Mistigri space's face: the black cat's head on the blank tile face, in the ramp of {@code rgb} (witch plum). */
+    public static Identifier mistigriFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("mistigri", rgb, small),
+                key -> register(glyphValues(small ? SMALL_MISTIGRI : MISTIGRI, small, MISTIGRI_SHADES), rgb, small));
+    }
+
     // ---------------------------------------------------------------- the Teleport face
 
     /** Images of the portal's drift (its rings one pixel further in at each) and how long each one shows. */

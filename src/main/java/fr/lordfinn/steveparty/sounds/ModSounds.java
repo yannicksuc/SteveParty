@@ -139,6 +139,20 @@ public class ModSounds {
     public static final SoundEvent BOOMCART_REFUSE = register("boomcart.refuse");
     /** It blows (on top of the TNT's blast or the firework's sparks). */
     public static final SoundEvent BOOMCART_EXPLODE = register("boomcart.explode");
+    // Mistigri: vanilla cat sounds pitched lower and heavier for now (assets/steveparty/sounds.json)
+    public static final SoundEvent MISTIGRI_AMBIENT = register("mistigri.ambient");
+    public static final SoundEvent MISTIGRI_PURR = register("mistigri.purr");
+    public static final SoundEvent MISTIGRI_MEOW = register("mistigri.meow");
+    public static final SoundEvent MISTIGRI_HISS = register("mistigri.hiss");
+    /** Puffing up: a long angry yowl. */
+    public static final SoundEvent MISTIGRI_ANGRY = register("mistigri.angry");
+    public static final SoundEvent MISTIGRI_EAT = register("mistigri.eat");
+    public static final SoundEvent MISTIGRI_HURT = register("mistigri.hurt");
+    public static final SoundEvent MISTIGRI_DEATH = register("mistigri.death");
+    /** A black cat turning into a Mistigri. */
+    public static final SoundEvent MISTIGRI_TRANSFORM = register("mistigri.transform");
+    /** Bad luck strikes (crossing his path, a monster's blow missing). */
+    public static final SoundEvent MISTIGRI_BAD_LUCK = register("mistigri.bad_luck");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

@@ -92,6 +92,10 @@ public class ModItems {
     public static final Item FROUSSEUX_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.class, "frousseux_cartridge",
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.COLOR));
+    /** Its tile's face is witch plum until dyed; draws the Mistigri's sentences by their weights. */
+    public static final Item MISTIGRI_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.class, "mistigri_cartridge",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.COLOR));
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item MINI_GAME_REMOTE = registerUnstackable(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.class, "mini_game_remote");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
@@ -117,6 +121,13 @@ public class ModItems {
     public static final Item FROUSSEUX_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("frousseux_spawn_egg"),
             new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.FROUSSEUX, 0xFFF3D6, 0xFFAA3C,
                     new Item.Settings()));
+    /** The Mistigri's egg: drawn per mob (textures/item/mistigri_spawn_egg.png). */
+    public static final Item MISTIGRI_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("mistigri_spawn_egg"),
+            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.MISTIGRI, 0x14111A, 0x9BCB2C,
+                    new Item.Settings()));
+    /** The Loaded Die, the Mistigri's loot: curses the next roll of the player it is used on (1 to 3 only). */
+    public static final Item LOADED_DIE = register(fr.lordfinn.steveparty.items.custom.LoadedDieItem.class, "loaded_die",
+            new Item.Settings().maxCount(16));
     /** The Boomcart's egg: iron grey, TNT red. */
     public static final Item BOOMCART_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("boomcart_spawn_egg"),
             new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.BOOMCART, 0x8C8C90, 0xDB2F1F,
@@ -297,6 +308,7 @@ public class ModItems {
             itemGroup.add(STAR_CARTRIDGE);
             itemGroup.add(GLANDOUILLE_CARTRIDGE);
             itemGroup.add(FROUSSEUX_CARTRIDGE);
+            itemGroup.add(MISTIGRI_CARTRIDGE);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);
@@ -418,6 +430,8 @@ public class ModItems {
             for (Item egg : GLANDOUILLE_SPAWN_EGGS) itemGroup.add(egg);
             itemGroup.add(FROUSSEUX_SPAWN_EGG);
             itemGroup.add(BOOMCART_SPAWN_EGG);
+            itemGroup.add(MISTIGRI_SPAWN_EGG);
+            itemGroup.add(LOADED_DIE);
             itemGroup.add(CANDLE_SAUCER);
             itemGroup.add(ACORN);
             itemGroup.add(ACORN_HAT);
