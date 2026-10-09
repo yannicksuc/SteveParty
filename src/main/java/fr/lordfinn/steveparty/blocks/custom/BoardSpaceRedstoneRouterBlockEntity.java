@@ -147,6 +147,8 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
             case FROUSSEUX -> LEVEL_FROUSSEUX;
             // no level left: the Mistigri's space reads as the malus it is
             case MISTIGRI -> LEVEL_MALUS;
+            // nor for the Trichaudron's: a prize, a bonus space
+            case TRICHAUDRON -> LEVEL_BONUS;
             default -> LEVEL_DEFAULT;
         };
     }

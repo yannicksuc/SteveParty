@@ -73,6 +73,7 @@ import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.service.BoardActors;
 import fr.lordfinn.steveparty.service.FrousseuxThefts;
 import fr.lordfinn.steveparty.service.MistigriSentences;
+import fr.lordfinn.steveparty.service.TrichaudronPrizes;
 import fr.lordfinn.steveparty.service.TileInfos;
 import fr.lordfinn.steveparty.service.PartyStars;
 import fr.lordfinn.steveparty.service.ShopStops;
@@ -118,6 +119,7 @@ public class Steveparty implements ModInitializer {
         BoardActors.initialize();
         FrousseuxThefts.initialize();
         MistigriSentences.initialize();
+        TrichaudronPrizes.initialize();
         MistigriBadLuck.initialize();
         MistigriSummoning.initialize();
         SixSeven.initialize();

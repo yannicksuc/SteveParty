@@ -153,6 +153,16 @@
           }
         ]
       }
+    },
+    "trichaudron": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:trichaudron_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -197,6 +207,9 @@
     ],
     [
       "key_gate"
+    ],
+    [
+      "trichaudron"
     ]
   ],
   "rewards": {

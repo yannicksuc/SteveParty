@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
@@ -136,7 +137,8 @@ public class TileFeedbackGameTests implements FabricGameTest {
                 MistigriCartridgeItem.COLOR,
                 ThresholdCartridgeItem.COLOR,
                 PotCartridgeItem.COLOR,
-                KeyGateCartridgeItem.COLOR);
+                KeyGateCartridgeItem.COLOR,
+                TrichaudronCartridgeItem.COLOR);
         for (int i = 0; i < colours.size(); i++) {
             for (int j = i + 1; j < colours.size(); j++) {
                 context.assertTrue(distance(colours.get(i), colours.get(j)) > 40,

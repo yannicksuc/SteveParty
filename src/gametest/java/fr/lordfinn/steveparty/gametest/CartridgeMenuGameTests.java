@@ -79,7 +79,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
             ModItems.ADVANCE_BACK_CARTRIDGE, ModItems.REPLAY_CARTRIDGE, ModItems.TELEPORT_CARTRIDGE, ModItems.STAR_CARTRIDGE,
             ModItems.GLANDOUILLE_CARTRIDGE, ModItems.FROUSSEUX_CARTRIDGE, ModItems.MISTIGRI_CARTRIDGE,
             ModItems.THRESHOLD_CARTRIDGE, ModItems.POT_CARTRIDGE,
-            ModItems.KEY_GATE_CARTRIDGE);
+            ModItems.KEY_GATE_CARTRIDGE, ModItems.TRICHAUDRON_CARTRIDGE);
 
     private static BoardSpaceBlockEntity tile(TestContext context, Block block, ItemStack cartridge) {
         context.setBlockState(TILE.down(), Blocks.STONE);
@@ -177,7 +177,9 @@ public class CartridgeMenuGameTests implements FabricGameTest {
                 int rows = (ColorModule.DEFAULT + perRow) / perRow;
                 yield rows * ColorModule.SWATCH + (rows - 1) * ColorModule.GAP;
             }
-            case GhostSlotsModule ghosts -> Math.max(54, 26 + 10 * lines(lang.get(CartridgeItem.MENU_KEY + "inventory.wheel").getAsString(), columnW - 60));
+            case GhostSlotsModule ghosts -> ghosts.signed()
+                    ? Math.max(54, 26 + 10 * lines(lang.get(CartridgeItem.MENU_KEY + "inventory.wheel").getAsString(), columnW - 60))
+                    : Math.max(ghosts.rows() * GhostSlotsModule.SLOT, 2 + 10 * lines(lang.get(ghosts.helpKey()).getAsString(), columnW - 60));
             case InfoModule infoModule -> {
                 int width = columnW - (infoModule.hasIcon() ? InfoModule.ICON + 4 : 0), count = 0;
                 for (InfoModule.Line line : infoModule.content(info)) count += lines(resolve(line.text(), lang), width);

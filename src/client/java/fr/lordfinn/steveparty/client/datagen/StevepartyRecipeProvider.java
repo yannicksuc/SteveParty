@@ -378,6 +378,13 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.POT_CARTRIDGE, ModItems.MAGPIE_NEST);
         // A Gate Key: the Key gate
         offerCartridge(ModItems.KEY_GATE_CARTRIDGE, ModItems.GATE_KEY);
+        // An Inventory Cartridge (its prizes) and a lava bucket (its tank; the bucket comes back): the Trichaudron
+        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.TRICHAUDRON_CARTRIDGE)
+                .input(ModItems.INVENTORY_CARTRIDGE)
+                .input(Items.LAVA_BUCKET)
+                .group("cartridge")
+                .criterion(hasItem(ModItems.INVENTORY_CARTRIDGE), conditionsFromItem(ModItems.INVENTORY_CARTRIDGE))
+                .offerTo(exporter);
 
         // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
         // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)

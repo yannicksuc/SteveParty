@@ -16,6 +16,7 @@ import fr.lordfinn.steveparty.client.utils.TileColors;
 import fr.lordfinn.steveparty.client.utils.TileStampTextures;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.ResourceReloadListenerKeys;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
@@ -176,11 +177,23 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         // A shop, a star space, Glandouille, Frousseux, Mistigri, a Threshold obstacle, a Common pot, a Key gate:
         // its pictogram in the cartridge's colour
         else {
+            // A Trichaudron space out of prizes sleeps: its cauldron dimmed
+            if (tileType == BoardSpaceType.TILE_TRICHAUDRON && TrichaudronCartridgeItem.isEmpty(stack)) color = asleep(color);
             face = TileStampTextures.pictogramFace(tileType, color, small);
             // The neutral face in the cartridge's colour (dyes), white by default
             if (face == null) face = TileStampTextures.face(textureNeutral, color, small);
         }
         return face;
+    }
+
+    /** A sleeping space's colour: greyed and darkened. */
+    private static int asleep(int rgb) {
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+        int grey = (r * 3 + g * 6 + b) / 10;
+        r = (r + grey * 3) / 8 + 20;
+        g = (g + grey * 3) / 8 + 20;
+        b = (b + grey * 3) / 8 + 20;
+        return r << 16 | g << 8 | b;
     }
 
     /**
