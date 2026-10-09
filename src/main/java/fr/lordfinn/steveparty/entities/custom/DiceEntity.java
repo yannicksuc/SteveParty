@@ -5,13 +5,15 @@ import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
+import fr.lordfinn.steveparty.dice.DiceReveal;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
+import fr.lordfinn.steveparty.dice.DiceThrow;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
+import fr.lordfinn.steveparty.events.DiceThrowRevealed;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.mixin.FireworkRocketEntityAccessor;
 import fr.lordfinn.steveparty.data.handler.ListUuidTrackedDataHandler;
-import fr.lordfinn.steveparty.utils.MessageUtils;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.block.BlockState;
@@ -40,7 +42,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.text.MutableText;
 import net.minecraft.util.Arm;
 import net.minecraft.util.hit.BlockHitResult;
@@ -62,7 +63,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static fr.lordfinn.steveparty.Steveparty.LOGGER;
-import static fr.lordfinn.steveparty.utils.EntitiesUtils.getPlayerNameByUuid;
 import static net.minecraft.component.DataComponentTypes.FIREWORKS;
 
 /**
@@ -93,6 +93,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     /** What the last finished roll does (lead only). */
     private DiceOutcome outcome = DiceOutcome.NONE;
     private List<DiceFace> rolledFaces = List.of();
+    private @Nullable DiceThrow lastThrow;
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.dice.idle");
@@ -283,6 +284,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         secondsSinceRolled = 0;
         outcome = DiceOutcome.NONE;
         rolledFaces = List.of();
+        lastThrow = null;
         sequence.start();
     }
 
@@ -313,25 +315,27 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             MistigriSummoning.onRollFinished(serverWorld, this, faces);
         }
         DiceOutcome announced = result;
-        this.getOwner().ifPresent(owner -> {
-            DiceRollEvent.EVENT.invoker().onRoll(this, owner, announced.steps());
-            if (this.getWorld() instanceof ServerWorld world) {
-                String playerName = getPlayerNameByUuid(world.getServer(), owner);
-                // In the action bar: who rolled in aqua, the result in bold gold (coins and moves back keep their colour),
-                // then what a power-up added to it
-                MutableText who = playerName == null ? Text.translatable("message.steveparty.unknown_player") : Text.literal(playerName);
-                MutableText message = Text.translatable("message.steveparty.die_rolled", who.formatted(Formatting.AQUA),
-                        announced.describe().copy().formatted(Formatting.GOLD, Formatting.BOLD)).formatted(Formatting.GRAY);
-                if (powered.note() != null) message.append(" ").append(powered.note());
-                MessageUtils.sendToNearby(world, this.getPos(), 20, message, MessageUtils.MessageType.ACTION_BAR);
-            }
-        });
+        if (this.getWorld() instanceof ServerWorld) {
+            // The end of the reveal (at the action bar's place, to the dice's neighbours and the roller's party): the
+            // total (coins and moves back keep their colour), then what a power-up added to it
+            MutableText total = announced.describe().copy();
+            if (powered.note() != null) total.append(" ").append(powered.note());
+            DiceReveal.send(this, faces.size(), faces, total);
+            this.lastThrow = new DiceThrow(faces, announced);
+            DiceThrowRevealed.EVENT.invoker().onRevealed(this, this.getOwner().orElse(null), lastThrow);
+        }
+        this.getOwner().ifPresent(owner -> DiceRollEvent.EVENT.invoker().onRoll(this, owner, announced.steps()));
         modules.forEach((module, count) -> module.afterRoll(this, announced, count));
     }
 
     /** What the finished roll of this throw does ({@link DiceOutcome#NONE} until then). */
     public DiceOutcome getOutcome() {
         return lead().outcome;
+    }
+
+    /** The throw once all its dice are revealed (double, triple...: {@link DiceThrow}), null until then. */
+    public @Nullable DiceThrow getThrow() {
+        return lead().lastThrow;
     }
 
     /** The faces the dice of this throw stopped on (empty until the roll is final). */
