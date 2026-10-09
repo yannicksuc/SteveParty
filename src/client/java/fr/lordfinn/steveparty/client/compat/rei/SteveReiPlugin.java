@@ -175,7 +175,7 @@ public class SteveReiPlugin implements REIClientPlugin {
     /**
      * The Dice Forge (no recipe type REI could read): any die faces, their blank faces, 5 fragments of different colours
      * (each slot cycles through the colours, offset so that they never match), any module, the Gravity Core; out come
-     * forged dice, and the plain Default Die so that its recipe lookup lands here; each also with the Power-up module,
+     * forged dice, and the plain Simple Die so that its recipe lookup lands here; each also with the Power-up module,
      * so that a power-up die's lookup lands here too.
      */
     private static void registerDiceForgeDisplay(DisplayRegistry registry) {

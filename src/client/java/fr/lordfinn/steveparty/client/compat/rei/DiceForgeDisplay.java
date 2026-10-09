@@ -10,7 +10,7 @@ import java.util.Optional;
 
 /**
  * A die forged in the Dice Forge: inputs the die faces, the blank faces, the 5 star fragments, the optional modules and
- * the Gravity Core waking the forge; outputs forged dice (and the plain Default Die, so looking up a die's recipes
+ * the Gravity Core waking the forge; outputs forged dice (and the plain Simple Die, so looking up a die's recipes
  * finds the forge).
  */
 public class DiceForgeDisplay extends BasicDisplay {
