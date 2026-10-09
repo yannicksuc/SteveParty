@@ -1,10 +1,12 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.board.TileInfo;
+import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
@@ -21,47 +23,90 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The panel of a board space's game info ({@link TileInfo}): a plate cut like the mod's screens (as the board view's),
- * facing the camera, its title (a square in the role's colour, its name) over its lines, an item icon left of a line
- * when it has one. Everything measured once when the info arrives ({@link Layout}); a frame only draws.
+ * The panel of a board space ({@link TileInfo}), on a plate cut like the mod's screens (as the board view's), facing
+ * the camera: the role's name centred and bigger in its colour, a thin rule, then one line per info (an icon, the
+ * value). What a building tool adds comes last, under a second rule. Which lines are drawn is the {@link View}'s;
+ * everything is measured once when the info arrives ({@link Layout}), a frame only draws.
  */
 public final class TilePanel {
-    /** Text pixels: a row, the plate's padding, an icon. */
-    static final int ROW = 10, PAD = 5, ICON = 9, ICON_GAP = 2;
+    /** Text pixels: the padding all around, a line, an icon, the title's size, the space around a rule. */
+    static final int PAD = 7, ROW = 12, ICON = 9, ICON_GAP = 3, RULE_GAP = 4;
+    static final float TITLE_SCALE = 1.5f;
+    private static final int TITLE_HEIGHT = Math.round(8 * TITLE_SCALE);
+    /** The rules: the plate's dark text, faint. */
+    private static final int RULE = 0x553F3F3F;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
 
     private TilePanel() {
+    }
+
+    /** What a panel shows. */
+    enum View {
+        /** Its title and the first line it shows in game (the Explorer's Helmet's spaces around). */
+        COMPACT(false, false, true),
+        /** In game. */
+        PLAY(false, false, false),
+        /** In game and what the helmet adds. */
+        DETAIL(true, false, false),
+        /** In game and what a building tool adds. */
+        BUILD(false, true, false),
+        /** All of it (the helmet worn, a building tool in hand). */
+        ALL(true, true, false);
+
+        final boolean detail, build, compact;
+
+        View(boolean detail, boolean build, boolean compact) {
+            this.detail = detail;
+            this.build = build;
+            this.compact = compact;
+        }
+
+        static View of(boolean detail, boolean build) {
+            return detail ? build ? ALL : DETAIL : build ? BUILD : PLAY;
+        }
+
+        boolean shows(TileInfo.Layer layer) {
+            return switch (layer) {
+                case PLAY -> true;
+                case DETAIL -> detail;
+                case BUILD -> build;
+            };
+        }
     }
 
     /** A space's info measured for drawing, and its ring's labels (« +3 » given, « −3 » taken). */
     static final class Layout {
         final TileInfo info;
         final OrderedText title;
+        final int titleWidth, titleColor;
         final OrderedText[] lines;
         final ItemStack[] icons;
-        final int fullWidth, compactWidth;
+        final TileInfo.Glyph[] glyphs;
+        final TileInfo.Layer[] layers;
+        final int[] widths;
         final List<OrderedText> ringLabels;
 
         Layout(TileInfo info) {
             this.info = info;
             TextRenderer font = MinecraftClient.getInstance().textRenderer;
-            Text titleText = Text.empty().append(Text.literal("■ ").withColor(visible(info.accent()))).append(info.title());
-            title = titleText.asOrderedText();
-            int titleWidth = font.getWidth(titleText);
+            title = info.title().asOrderedText();
+            titleWidth = Math.round(font.getWidth(info.title()) * TITLE_SCALE);
+            titleColor = 0xFF000000 | readable(info.accent());
             int count = info.lines().size();
             lines = new OrderedText[count];
             icons = new ItemStack[count];
-            int widest = titleWidth, first = titleWidth;
+            glyphs = new TileInfo.Glyph[count];
+            layers = new TileInfo.Layer[count];
+            widths = new int[count];
             for (int i = 0; i < count; i++) {
                 TileInfo.Line line = info.lines().get(i);
                 lines[i] = line.text().asOrderedText();
                 icons[i] = line.icon();
-                int width = font.getWidth(line.text()) + (line.icon().isEmpty() ? 0 : ICON + ICON_GAP);
-                widest = Math.max(widest, width);
-                if (i == 0) first = Math.max(first, width);
+                glyphs[i] = line.glyph();
+                layers[i] = line.layer();
+                boolean iconed = !line.icon().isEmpty() || line.glyph() != TileInfo.Glyph.NONE;
+                widths[i] = font.getWidth(line.text()) + (iconed ? ICON + ICON_GAP : 0);
             }
-            fullWidth = widest + 2 * PAD;
-            compactWidth = first + 2 * PAD;
             List<OrderedText> labels = new ArrayList<>(info.ring().size());
             for (ItemStack stack : info.ring()) {
                 boolean taken = Boolean.TRUE.equals(stack.get(ModComponents.IS_NEGATIVE));
@@ -71,64 +116,156 @@ public final class TilePanel {
             ringLabels = List.copyOf(labels);
         }
 
-        int rows(boolean full) {
-            return 1 + (full ? lines.length : Math.min(1, lines.length));
+        /** Whether line {@code i} is drawn in {@code view}. */
+        boolean shown(int i, View view) {
+            if (view.compact) return i == firstPlay();
+            return view.shows(layers[i]);
         }
 
-        /** Height in text pixels. */
-        int height(boolean full) {
-            return rows(full) * ROW + 2 * PAD - 2;
+        private int firstPlay() {
+            for (int i = 0; i < layers.length; i++) if (layers[i] == TileInfo.Layer.PLAY) return i;
+            return -1;
         }
 
-        int width(boolean full) {
-            return full ? fullWidth : compactWidth;
+        /** Lines of the body (in game, the helmet's) and of the building part shown in {@code view}. */
+        int bodyRows(View view) {
+            int rows = 0;
+            for (int i = 0; i < layers.length; i++) if (shown(i, view) && layers[i] != TileInfo.Layer.BUILD) rows++;
+            return rows;
+        }
+
+        int buildRows(View view) {
+            int rows = 0;
+            for (int i = 0; i < layers.length; i++) if (shown(i, view) && layers[i] == TileInfo.Layer.BUILD) rows++;
+            return rows;
+        }
+
+        /** Something to show in {@code view}: a line, or (not reduced) items circling the space. */
+        boolean hasContent(View view) {
+            return bodyRows(view) + buildRows(view) > 0 || !view.compact && !info.ring().isEmpty();
+        }
+
+        int width(View view) {
+            int widest = titleWidth;
+            for (int i = 0; i < widths.length; i++) if (shown(i, view)) widest = Math.max(widest, widths[i]);
+            return widest + 2 * PAD;
+        }
+
+        /** Height in text pixels: the title, a rule, the body, then a rule and the building part if any. */
+        int height(View view) {
+            int body = bodyRows(view), build = buildRows(view);
+            int height = PAD + TITLE_HEIGHT + PAD;
+            if (body > 0) height += 2 * RULE_GAP + body * ROW;
+            if (build > 0) height += 2 * RULE_GAP + build * ROW;
+            return height;
         }
     }
 
-    /** A colour readable on the light plates: a light one (a white cartridge's) is drawn grey. */
-    static int visible(int rgb) {
-        return Argb.luminance(rgb) > 215 ? 0xA8A8A8 : rgb & 0xFFFFFF;
+    /** The role's colour, dark enough to read on the light plates. */
+    static int readable(int rgb) {
+        int r = (rgb >> 16) & 255, g = (rgb >> 8) & 255, b = rgb & 255;
+        float luminance = Argb.luminance(rgb) / 255f;
+        if (luminance <= 0.5f) return rgb & 0xFFFFFF;
+        float k = 0.5f / luminance;
+        return ((int) (r * k) << 16) | ((int) (g * k) << 8) | (int) (b * k);
     }
+
+    // ---------------------------------------------------------------- in the world
 
     /**
      * Draws {@code layout} with its bottom edge's middle at (x, bottom, z) (world coordinates).
      *
-     * @param full  all its lines (else its title and first line)
      * @param scale block per text pixel
      */
     static void draw(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, Camera camera, World world, double x,
-                     double bottom, double z, Layout layout, boolean full, WorldDraw.Plate plate, float scale) {
+                     double bottom, double z, Layout layout, View view, WorldDraw.Plate plate, float scale) {
         MinecraftClient client = MinecraftClient.getInstance();
         TextRenderer font = client.textRenderer;
-        int width = layout.width(full), height = layout.height(full);
+        int width = layout.width(view), height = layout.height(view);
         matrices.push();
         matrices.translate(x - camera.getPos().x, bottom + height * scale / 2 - camera.getPos().y, z - camera.getPos().z);
         matrices.multiply(camera.getRotation());
         matrices.scale(scale, -scale, scale);
         float left = -width / 2f, top = -height / 2f;
         WorldDraw.plate(matrices, consumers, plate, left, top, -left, -top);
-        Matrix4f matrix = matrices.peek().getPositionMatrix();
-        float y = top + PAD;
-        font.draw(layout.title, left + PAD, y, WorldDraw.PLATE_TEXT, false, matrix, consumers,
+        // The title, centred and bigger
+        matrices.push();
+        matrices.translate(-layout.titleWidth / 2f, top + PAD, 0);
+        matrices.scale(TITLE_SCALE, TITLE_SCALE, 1);
+        font.draw(layout.title, 0, 0, layout.titleColor, false, matrices.peek().getPositionMatrix(), consumers,
                 TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
-        int shown = layout.rows(full) - 1;
-        for (int i = 0; i < shown; i++) {
-            y += ROW;
-            float textX = left + PAD;
-            ItemStack icon = layout.icons[i];
-            if (!icon.isEmpty()) {
-                matrices.push();
-                matrices.translate(textX + ICON / 2f, y + 3.5f, 0.5f);
-                matrices.scale(ICON, -ICON, 0.5f);
-                client.getItemRenderer().renderItem(icon, ModelTransformationMode.GUI, LIGHT, OverlayTexture.DEFAULT_UV,
-                        matrices, consumers, world, 0);
-                matrices.pop();
-                textX += ICON + ICON_GAP;
+        matrices.pop();
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+        float y = top + PAD + TITLE_HEIGHT + PAD / 2f;
+        for (int part = 0; part < 2; part++) {
+            boolean build = part == 1;
+            if ((build ? layout.buildRows(view) : layout.bodyRows(view)) == 0) continue;
+            WorldDraw.rule(matrices, consumers, left + PAD, -left - PAD, y, RULE);
+            y += RULE_GAP + 1;
+            for (int i = 0; i < layout.lines.length; i++) {
+                if (!layout.shown(i, view) || (layout.layers[i] == TileInfo.Layer.BUILD) != build) continue;
+                float textX = left + PAD;
+                ItemStack icon = layout.icons[i];
+                if (!icon.isEmpty()) {
+                    matrices.push();
+                    matrices.translate(textX + ICON / 2f, y + 3.5f, 0.5f);
+                    matrices.scale(ICON, -ICON, 0.5f);
+                    client.getItemRenderer().renderItem(icon, ModelTransformationMode.GUI, LIGHT, OverlayTexture.DEFAULT_UV,
+                            matrices, consumers, world, 0);
+                    matrices.pop();
+                    textX += ICON + ICON_GAP;
+                } else if (layout.glyphs[i] != TileInfo.Glyph.NONE) {
+                    TileGlyphs.draw(matrices, consumers, layout.glyphs[i], textX, y - 0.5f, ICON);
+                    textX += ICON + ICON_GAP;
+                }
+                font.draw(layout.lines[i], textX, y, WorldDraw.PLATE_TEXT, false, matrix, consumers,
+                        TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
+                y += ROW;
             }
-            font.draw(layout.lines[i], textX, y, WorldDraw.PLATE_TEXT, false, matrix, consumers,
-                    TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
+            y += RULE_GAP - 1;
         }
         consumers.draw();
         matrices.pop();
+    }
+
+    // ---------------------------------------------------------------- on the HUD
+
+    /** The same panel on the HUD, its top edge's middle at (centreX, top). */
+    static void drawHud(DrawContext context, Layout layout, View view, int centreX, int top) {
+        TextRenderer font = MinecraftClient.getInstance().textRenderer;
+        int width = layout.width(view), height = layout.height(view);
+        int left = centreX - width / 2;
+        ToolHud.plate(context, left, top, width, height, ToolHud.Plate.TEAL);
+        context.getMatrices().push();
+        context.getMatrices().translate(centreX - layout.titleWidth / 2f, top + PAD, 0);
+        context.getMatrices().scale(TITLE_SCALE, TITLE_SCALE, 1);
+        context.drawText(font, layout.title, 0, 0, layout.titleColor, false);
+        context.getMatrices().pop();
+        int y = top + PAD + TITLE_HEIGHT + PAD / 2;
+        for (int part = 0; part < 2; part++) {
+            boolean build = part == 1;
+            if ((build ? layout.buildRows(view) : layout.bodyRows(view)) == 0) continue;
+            context.fill(left + PAD, y, left + width - PAD, y + 1, RULE);
+            y += RULE_GAP + 1;
+            for (int i = 0; i < layout.lines.length; i++) {
+                if (!layout.shown(i, view) || (layout.layers[i] == TileInfo.Layer.BUILD) != build) continue;
+                int textX = left + PAD;
+                ItemStack icon = layout.icons[i];
+                if (!icon.isEmpty()) {
+                    context.getMatrices().push();
+                    context.getMatrices().translate(textX, y - 1, 0);
+                    context.getMatrices().scale(ICON / 16f, ICON / 16f, 1);
+                    context.drawItem(icon, 0, 0);
+                    context.getMatrices().pop();
+                    textX += ICON + ICON_GAP;
+                } else if (layout.glyphs[i] != TileInfo.Glyph.NONE) {
+                    TileGlyphs.drawHud(context, layout.glyphs[i], textX, y);
+                    textX += ICON + ICON_GAP;
+                }
+                context.drawText(font, layout.lines[i], textX, y, ToolHud.TEXT, false);
+                y += ROW;
+            }
+            y += RULE_GAP - 1;
+        }
     }
 }

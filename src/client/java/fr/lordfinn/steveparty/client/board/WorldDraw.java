@@ -257,6 +257,19 @@ public final class WorldDraw {
         if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
     }
 
+    /** A horizontal rule one text pixel thick from x0 to x1 at y, in label space, on a plate (drawn right away). */
+    public static void rule(MatrixStack matrices, VertexConsumerProvider consumers, float x0, float x1, float y, int argb) {
+        RenderLayer layer = RenderLayer.getTextBackground();
+        VertexConsumer consumer = consumers.getBuffer(layer);
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+        float z = BEHIND / 2;
+        consumer.vertex(matrix, x0, y, z).color(argb).light(LIGHT);
+        consumer.vertex(matrix, x0, y + 1, z).color(argb).light(LIGHT);
+        consumer.vertex(matrix, x1, y + 1, z).color(argb).light(LIGHT);
+        consumer.vertex(matrix, x1, y, z).color(argb).light(LIGHT);
+        if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
+    }
+
     /** The plate stretched over (x0, y0)-(x1, y1), its 4 pixel border kept. */
     private static void nineSlice(VertexConsumer consumer, Matrix4f matrix, float x0, float y0, float x1, float y1) {
         float b = PLATE_BORDER;
