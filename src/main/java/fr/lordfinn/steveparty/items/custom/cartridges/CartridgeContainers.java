@@ -66,6 +66,11 @@ public final class CartridgeContainers {
         return positions;
     }
 
+    /** Whether {@code stack} is a cartridge linked to containers (Inventory, Trichaudron: {@link ContainerCartridge}). */
+    public static boolean linksContainers(ItemStack stack) {
+        return stack != null && stack.getItem() instanceof ContainerCartridge;
+    }
+
     public static boolean isEmpty(ItemStack stack) {
         return !stack.contains(INVENTORY_CONTAINERS) && !stack.contains(INVENTORY_POS);
     }

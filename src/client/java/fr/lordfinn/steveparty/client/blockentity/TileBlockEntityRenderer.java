@@ -178,7 +178,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         // its pictogram in the cartridge's colour
         else {
             // A Trichaudron space out of prizes sleeps: its cauldron dimmed
-            if (tileType == BoardSpaceType.TILE_TRICHAUDRON && TrichaudronCartridgeItem.isEmpty(stack)) color = asleep(color);
+            if (tileType == BoardSpaceType.TILE_TRICHAUDRON && TrichaudronCartridgeItem.isAsleep(stack)) color = asleep(color);
             face = TileStampTextures.pictogramFace(tileType, color, small);
             // The neutral face in the cartridge's colour (dyes), white by default
             if (face == null) face = TileStampTextures.face(textureNeutral, color, small);

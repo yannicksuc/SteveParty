@@ -108,6 +108,12 @@ public class ModComponents {
     /** Glandouille Cartridge: a lone Glandouille that tries to push and can't, instead of a tower. */
     public static final ComponentType<Boolean> GLANDOUILLE_LONE =
             registerComponent("glandouille-lone", Codec.BOOL);
+    /**
+     * Trichaudron Cartridge: its space sleeps, nothing to give in its chests (or none linked); set by the server for
+     * the tile's face (the client doesn't see chests' contents). Absent: awake.
+     */
+    public static final ComponentType<Boolean> TRICHAUDRON_ASLEEP =
+            registerComponent("trichaudron-asleep", Codec.BOOL);
     /** Frousseux Cartridge: its Frousseux steals stars rather than coins. */
     public static final ComponentType<Boolean> FROUSSEUX_STARS =
             registerComponent("frousseux-stars", Codec.BOOL);

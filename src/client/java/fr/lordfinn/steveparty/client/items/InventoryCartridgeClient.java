@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.client.board.WorldDraw;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.client.minigame.PageZoneClient;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -48,7 +47,7 @@ public final class InventoryCartridgeClient {
     private static @Nullable ItemStack held(MinecraftClient client) {
         if (client.player == null) return null;
         ItemStack main = client.player.getMainHandStack(), off = client.player.getOffHandStack();
-        return main.getItem() instanceof InventoryCartridgeItem ? main : off.getItem() instanceof InventoryCartridgeItem ? off : null;
+        return CartridgeContainers.linksContainers(main) ? main : CartridgeContainers.linksContainers(off) ? off : null;
     }
 
     private static void render(WorldRenderContext context) {
