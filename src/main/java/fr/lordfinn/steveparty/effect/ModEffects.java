@@ -17,6 +17,8 @@ public class ModEffects {
     public static final RegistryEntry<StatusEffect> SQUISHED = register("squished", new SquishEffect());
     /** Rooted to the spot by a Glandouille running, sliding or flying into you (see DazedEffect). */
     public static final RegistryEntry<StatusEffect> DAZED = register("dazed", new DazedEffect());
+    /** A Mistigri's Bad Luck (vanilla's, with a black cat for an icon; see BadLuckEffect). */
+    public static final RegistryEntry<StatusEffect> BAD_LUCK = register("bad_luck", new BadLuckEffect());
 
     public static void initialize() {
         // Recipes must be added to the registry being built by the game, not to a throwaway builder
