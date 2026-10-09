@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
@@ -368,7 +367,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public ABoardSpaceBehavior getBoardSpaceBehavior(ItemStack stack) {
-        return BoardSpaceBehaviorFactory.get(determineBoardSpaceType(stack));
+        return determineBoardSpaceType(stack).behavior();
     }
 
     /** Only ticks for board spaces whose role needs it (see ABoardSpaceBlock#getTicker). */
