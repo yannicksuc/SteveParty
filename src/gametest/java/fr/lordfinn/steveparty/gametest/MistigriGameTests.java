@@ -11,7 +11,10 @@ import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.ChestBlock;
+import net.minecraft.block.enums.ChestType;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
@@ -322,6 +325,49 @@ public class MistigriGameTests implements FabricGameTest {
         context.assertFalse(mistigri.isAsleepOnChest(), "a raw fish wakes him");
         context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), context.getAbsolutePos(chest)) == null, "the chest opens again");
         context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void heLiesOnTheLidCentredAlongTheChest(TestContext context) {
+        TestBoards.floor(context, 8);
+        // a single chest, he landed off-centre
+        BlockPos single = context.getAbsolutePos(new BlockPos(2, 1, 2));
+        context.setBlockState(new BlockPos(2, 1, 2), Blocks.CHEST.getDefaultState().with(ChestBlock.FACING, Direction.SOUTH));
+        MistigriEntity onSingle = mistigri(context, new BlockPos(2, 2, 2));
+        onSingle.setPosition(onSingle.getX() + 0.3, single.getY() + 0.875, onSingle.getZ() - 0.2);
+        onSingle.napOn(single);
+        context.assertTrue(near(onSingle.getX(), single.getX() + 0.5) && near(onSingle.getZ(), single.getZ() + 0.5), "centred on the chest");
+        context.assertTrue(near(onSingle.getY(), single.getY() + 14 / 16.0), "on its lid");
+        context.assertTrue(Direction.fromRotation(onSingle.getYaw()).getAxis() == Direction.Axis.X, "lengthwise along its front");
+        // a double chest: in the middle of both halves
+        BlockPos half = new BlockPos(5, 1, 2);
+        BlockState left = Blocks.CHEST.getDefaultState().with(ChestBlock.FACING, Direction.NORTH).with(ChestBlock.CHEST_TYPE, ChestType.LEFT);
+        BlockPos otherHalf = half.offset(ChestBlock.getFacing(left));
+        context.setBlockState(half, left);
+        context.setBlockState(otherHalf, left.with(ChestBlock.CHEST_TYPE, ChestType.RIGHT));
+        BlockPos a = context.getAbsolutePos(half), b = context.getAbsolutePos(otherHalf);
+        MistigriEntity onDouble = mistigri(context, half.up());
+        onDouble.napOn(a);
+        context.assertTrue(near(onDouble.getX(), (a.getX() + b.getX()) / 2.0 + 0.5) && near(onDouble.getZ(), a.getZ() + 0.5), "in the middle of the double chest");
+        context.assertTrue(Direction.fromRotation(onDouble.getYaw()).getAxis() == Direction.Axis.X, "along both halves");
+        // a barrel: a full block
+        BlockPos barrel = context.getAbsolutePos(new BlockPos(2, 1, 5));
+        context.setBlockState(new BlockPos(2, 1, 5), Blocks.BARREL);
+        MistigriEntity onBarrel = mistigri(context, new BlockPos(2, 2, 5));
+        onBarrel.napOn(barrel);
+        context.assertTrue(near(onBarrel.getY(), barrel.getY() + 1.0), "on the barrel's top");
+        context.waitAndRun(10, () -> {
+            context.assertTrue(onSingle.chest() != null && onDouble.chest() != null && onBarrel.chest() != null, "still asleep there");
+            context.assertTrue(near(onSingle.getY(), single.getY() + 14 / 16.0), "still on the lid");
+            context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), single) == onSingle, "the chest won't open");
+            context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), a) == onDouble
+                    && MistigriBadLuck.sitter(context.getWorld(), b) == onDouble, "neither half of the double chest opens");
+            context.complete();
+        });
+    }
+
+    private static boolean near(double a, double b) {
+        return Math.abs(a - b) < 1e-4;
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
