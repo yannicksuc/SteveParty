@@ -27,6 +27,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
@@ -322,6 +323,63 @@ public class MistigriGameTests implements FabricGameTest {
         context.assertFalse(mistigri.isAsleepOnChest(), "a raw fish wakes him");
         context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), context.getAbsolutePos(chest)) == null, "the chest opens again");
         context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heKnocksOffAFrameOnTheFloor(TestContext context) {
+        knocksOff(context, new BlockPos(3, 1, 6), Direction.UP);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heKnocksOffAFrameLowOnAWall(TestContext context) {
+        wall(context, 3, 6, 2);
+        knocksOff(context, new BlockPos(3, 1, 5), Direction.NORTH);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heKnocksOffAFrameHighOnAWall(TestContext context) {
+        wall(context, 3, 6, 4);
+        knocksOff(context, new BlockPos(3, 3, 5), Direction.NORTH);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heKnocksOffAFrameOnALowCeiling(TestContext context) {
+        context.setBlockState(new BlockPos(3, 4, 5), Blocks.STONE);
+        knocksOff(context, new BlockPos(3, 3, 5), Direction.DOWN);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heHopsOnABlockForAFrameOnAHigherCeiling(TestContext context) {
+        context.setBlockState(new BlockPos(3, 5, 5), Blocks.STONE);
+        context.setBlockState(new BlockPos(4, 1, 5), Blocks.STONE); // the block he hops on
+        knocksOff(context, new BlockPos(3, 4, 5), Direction.DOWN);
+    }
+
+    /** A stone wall column at ({@code x}, 1..{@code height}, {@code z}). */
+    private static void wall(TestContext context, int x, int z, int height) {
+        for (int y = 1; y <= height; y++) context.setBlockState(new BlockPos(x, y, z), Blocks.STONE);
+    }
+
+    /** A frame holding a diamond in {@code cell}, facing {@code facing}: a wild Mistigri knocks it off, frame unbroken. */
+    private static void knocksOff(TestContext context, BlockPos cell, Direction facing) {
+        TestBoards.floor(context, 8);
+        ServerWorld world = context.getWorld();
+        ItemFrameEntity frame = new ItemFrameEntity(world, context.getAbsolutePos(cell), facing);
+        frame.setHeldItemStack(new ItemStack(Items.DIAMOND));
+        world.spawnEntity(frame);
+        MistigriEntity mistigri = context.spawnEntity(ModEntities.MISTIGRI, new BlockPos(3, 1, 2));
+        context.assertTrue(MistigriGoals.standSpot(world, frame) != null, "somewhere he reaches it from");
+        context.assertTrue(MistigriGoals.findFrame(world, mistigri) == frame, "he spots it");
+        boolean[] done = {false};
+        context.runAtEveryTick(() -> {
+            if (done[0] || !frame.getHeldItemStack().isEmpty()) return;
+            done[0] = true;
+            context.assertTrue(frame.isAlive(), "the frame is never broken");
+            context.assertTrue(!world.getEntitiesByClass(ItemEntity.class, frame.getBoundingBox().expand(4),
+                    item -> item.getStack().isOf(Items.DIAMOND)).isEmpty(), "the diamond fell");
+            frame.discard();
+            context.complete();
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
