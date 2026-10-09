@@ -103,7 +103,7 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        Tooltips.of(tooltip).tags(Tooltips.Tag.SHOP)
+        Tooltips.of(tooltip)
                 .summary("tooltip.steveparty.trading_stall.offers")
                 .more(more -> more
                         .note("tooltip.steveparty.trading_stall.models")

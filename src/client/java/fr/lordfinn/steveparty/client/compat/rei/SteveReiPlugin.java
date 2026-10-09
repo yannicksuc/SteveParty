@@ -2,6 +2,11 @@ package fr.lordfinn.steveparty.client.compat.rei;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.TrapSetupComponent;
+import fr.lordfinn.steveparty.powerups.PowerUps;
+import fr.lordfinn.steveparty.powerups.effects.TrapKind;
 import fr.lordfinn.steveparty.compat.CartridgeApplications;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.DiceModule;
@@ -37,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Optional REI plugin (entrypoint {@code rei_client}, only loaded by REI): every tile in each size and with each role in
@@ -73,6 +79,36 @@ public class SteveReiPlugin implements REIClientPlugin {
         registerDiceForgeDisplay(registry);
         registerTileCartridgeDisplays(registry);
         registerTileRecipeDisplays(registry);
+        registerSpecialCraftDisplays(registry);
+    }
+
+    /**
+     * The other special crafts the tooltips don't spell out: a tile emptied alone (its cartridge back in the grid), the
+     * tile sizes (4 tiles: a large one, a large one: 4 tiles, 2 small ones: a tile; the stonecutter shows by itself)
+     * and the copies of a signed Trap.
+     */
+    private static void registerSpecialCraftDisplays(DisplayRegistry registry) {
+        List<ItemStack> held = new ArrayList<>();
+        for (ItemStack cartridge : CartridgeApplications.cartridges()) held.add(CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), cartridge));
+        registry.add(DefaultCustomShapelessDisplay.simple(List.of(EntryIngredients.ofItemStacks(held)),
+                List.of(EntryIngredients.of(ModBlocks.TILE)), Optional.of(Steveparty.id("tile_cartridge/empty"))));
+
+        EntryIngredient tile = EntryIngredients.of(ModBlocks.TILE);
+        ItemStack large = TileSize.with(new ItemStack(ModBlocks.TILE), TileSize.LARGE);
+        registry.add(DefaultCustomShapedDisplay.simple(List.of(tile, tile, tile, tile),
+                List.of(EntryIngredients.of(large)), 2, 2, Optional.of(Steveparty.id("tile_size/large"))));
+        registry.add(DefaultCustomShapelessDisplay.simple(List.of(EntryIngredients.of(large)),
+                List.of(EntryIngredients.of(new ItemStack(ModBlocks.TILE, 4))), Optional.of(Steveparty.id("tile_size/split"))));
+        EntryIngredient small = EntryIngredients.of(TileSize.with(new ItemStack(ModBlocks.TILE), TileSize.SMALL));
+        registry.add(DefaultCustomShapelessDisplay.simple(List.of(small, small),
+                List.of(tile), Optional.of(Steveparty.id("tile_size/merge"))));
+
+        Item trap = PowerUps.TRAP.item();
+        ItemStack signed = new ItemStack(trap);
+        signed.set(ModComponents.TRAP_SETUP, new TrapSetupComponent(TrapKind.COINS, TrapKind.COINS.defaultAmount, "Steve", new UUID(0, 0)));
+        registry.add(DefaultCustomShapelessDisplay.simple(
+                List.of(EntryIngredients.of(signed), EntryIngredients.of(trap), EntryIngredients.of(trap)),
+                List.of(EntryIngredients.of(signed.copyWithCount(2))), Optional.of(Steveparty.id("trap_copy"))));
     }
 
     /**

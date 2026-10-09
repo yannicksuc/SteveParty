@@ -73,9 +73,6 @@ public class StarCartridgeItem extends CartridgeItem {
     protected void appendState(ItemStack stack, Tooltips tips) {
         StarSettingsComponent settings = settings(stack);
         tips.state("tooltip.steveparty.star_cartridge.price", Tooltips.coins(Text.translatable("tooltip.steveparty.coins", settings.price())));
-        tips.state(Text.translatable(settings.onPass() ? "tooltip.steveparty.star_cartridge.on_pass"
-                : "tooltip.steveparty.star_cartridge.on_stop"));
-        tips.state(Text.translatable(settings.relocate() ? "tooltip.steveparty.star_cartridge.relocate"
-                : "tooltip.steveparty.star_cartridge.stays"));
+
     }
 }

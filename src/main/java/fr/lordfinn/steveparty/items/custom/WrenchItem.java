@@ -75,7 +75,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL)
+        Tooltips.of(tooltip)
                 .summary("tooltip.steveparty.wrench")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.wrench.controls.open")

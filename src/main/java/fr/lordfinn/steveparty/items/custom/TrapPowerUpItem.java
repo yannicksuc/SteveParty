@@ -46,13 +46,13 @@ public class TrapPowerUpItem extends PowerUpItem {
     @Override
     protected void appendState(ItemStack stack, Tooltips tips) {
         TrapSetupComponent setup = stack.get(ModComponents.TRAP_SETUP);
-        tips.state("tooltip.steveparty.trap.effect", Tooltips.bad(TrapSetupComponent.effectOf(stack).describe()));
-        if (setup != null) tips.state("tooltip.steveparty.trap.signed", Tooltips.value(setup.signer()));
+        // An unsigned Trap does the default (it steals coins): only a signed one says what it does, and who signed it
+        if (setup != null) tips.state(Text.translatable("tooltip.steveparty.trap.signed", Tooltips.value(setup.signer()),
+                Tooltips.bad(TrapSetupComponent.effectOf(stack).describe())));
     }
 
     @Override
     protected void appendMore(ItemStack stack, Tooltips.More more) {
-        if (TrapSetupComponent.isSigned(stack)) more.craft("tooltip.steveparty.trap.copy");
-        else more.use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.trap.unsigned");
+        if (!TrapSetupComponent.isSigned(stack)) more.use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.trap.unsigned");
     }
 }
