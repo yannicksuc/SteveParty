@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -350,7 +351,7 @@ public class DiceRollGameTests implements FabricGameTest {
         doubleDie.set(DiceFacesComponent.TYPE, die("coin_dice_face_4").get(DiceFacesComponent.TYPE));
         context.waitAndRun(2, () -> {
             DiceEntity lead = thrown(context, player, doubleDie, PATH.get(1));
-            DiceEntity second = context.spawnEntity(fr.lordfinn.steveparty.entities.ModEntities.DICE_ENTITY, PATH.get(1).up(3));
+            DiceEntity second = context.spawnEntity(ModEntities.DICE_ENTITY, PATH.get(1).up(3));
             second.setNoGravity(true);
             second.age = DiceEntity.THROW_GRACE_TICKS;
             second.setOwner(player.getUuid());

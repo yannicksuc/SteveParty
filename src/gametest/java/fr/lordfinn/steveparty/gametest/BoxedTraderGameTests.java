@@ -1,6 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
+import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderBoxes;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
@@ -694,9 +697,9 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aBoxKeepsTheStateOfTheBlockItemAndRefusesTinyBlocks(TestContext context) {
-        var tiles = (fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock) fr.lordfinn.steveparty.blocks.ModBlocks.POLISHED_CONCRETE_TILES;
-        var red = fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor.RED;
-        var blue = fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor.BLUE;
+        var tiles = (PolishedTilesBlock) ModBlocks.POLISHED_CONCRETE_TILES;
+        var red = PolishedTilesColor.RED;
+        var blue = PolishedTilesColor.BLUE;
         BlockState box = BoxedTraderEntity.boxBlockOf(tiles.stack(red, blue, 1));
         context.assertTrue(box != null && box.equals(tiles.with(red, blue)), "the tiles' colours are kept: " + box);
         context.assertTrue(BoxedTraderEntity.boxBlockOf(new ItemStack(Items.DRAGON_EGG)) != null, "a dragon egg can be a box");

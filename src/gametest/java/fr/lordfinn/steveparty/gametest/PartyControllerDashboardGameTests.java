@@ -1,6 +1,10 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.items.custom.PartyCardItem;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
@@ -372,7 +376,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                     "the program: 2 rows of 12 cards, the bank after them");
             // The client's handler: the page shown decides which slots are there
             PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(),
-                    new fr.lordfinn.steveparty.payloads.custom.BlockPosPayload(BlockPos.ORIGIN));
+                    new BlockPosPayload(BlockPos.ORIGIN));
             for (Page page : Page.values()) {
                 handler.setPage(page);
                 boolean program = page == Page.PROGRAM, gains = page == Page.GAINS;
@@ -424,8 +428,8 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                     rounds + " rounds: the ghost cards are what an empty program plays");
         }
         context.assertEquals(BasicGameGeneratorStep.defaultProgram(10).stream().map(BasicGameGeneratorStep.ExpandedCard::type).toList(),
-                List.of(fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.TURNS, fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.MINIGAME,
-                        fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.REPEAT), "the players' turn, a mini-game, repeated");
+                List.of(PartyCardItem.CardType.TURNS, PartyCardItem.CardType.MINIGAME,
+                        PartyCardItem.CardType.REPEAT), "the players' turn, a mini-game, repeated");
         context.complete();
     }
 
@@ -478,11 +482,11 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             UUID a = UUID.randomUUID(), b = UUID.randomUUID();
             List<UUID> tokens = List.of(a, b);
             List<PartyStep> steps = new ArrayList<>();
-            steps.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep());
+            steps.add(new StartRollsStep());
             steps.add(new BasicGameGeneratorStep());
             for (int round = 0; round < 2; round++) {
-                steps.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(a, null));
-                steps.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(b, null));
+                steps.add(new TokenTurnPartyStep(a, null));
+                steps.add(new TokenTurnPartyStep(b, null));
                 steps.add(new MiniGamePartyStep(new ArrayList<>(tokens)));
             }
             steps.add(new EndPartyStep(new ArrayList<>(tokens)));
@@ -497,7 +501,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
 
             // A long party: a window around the current step
             List<PartyStep> many = new ArrayList<>();
-            for (int i = 0; i < 200; i++) many.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(a, null));
+            for (int i = 0; i < 200; i++) many.add(new TokenTurnPartyStep(a, null));
             PartyDashboardData.Timeline window = PartyDashboardData.timelineOf(many, 100, tokens);
             context.assertEquals(window.offset(), 100 - PartyDashboardData.TIMELINE_PAST_STEPS, "a few steps before the current one");
             context.assertEquals(window.current(), PartyDashboardData.TIMELINE_PAST_STEPS, "the current step in the window");

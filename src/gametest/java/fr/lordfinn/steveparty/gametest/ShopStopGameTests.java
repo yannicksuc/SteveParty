@@ -1,6 +1,13 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -142,7 +149,7 @@ public class ShopStopGameTests implements FabricGameTest {
             try {
                 step.run();
             } catch (RuntimeException e) {
-                fr.lordfinn.steveparty.Steveparty.LOGGER.error("Shop stop test failed: {}", e.getMessage());
+                Steveparty.LOGGER.error("Shop stop test failed: {}", e.getMessage());
                 throw e;
             }
         });
@@ -223,12 +230,12 @@ public class ShopStopGameTests implements FabricGameTest {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
             BlockPos controllerPos = new BlockPos(8, 1, 8);
             context.setBlockState(controllerPos, ModBlocks.PARTY_CONTROLLER);
-            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller = context.getBlockEntity(controllerPos);
-            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData data = new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData();
+            PartyControllerEntity controller = context.getBlockEntity(controllerPos);
+            PartyData data = new PartyData();
             data.addToken(board.token().getUuid());
-            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep());
-            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(board.token().getUuid(), owner.getUuid()));
-            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep(new ArrayList<>(List.of(board.token().getUuid()))));
+            data.addStep(new PartyStep());
+            data.addStep(new TokenTurnPartyStep(board.token().getUuid(), owner.getUuid()));
+            data.addStep(new EndPartyStep(new ArrayList<>(List.of(board.token().getUuid()))));
             controller.setPartyData(data);
             controller.nextStep();
             controller.nextStep();
@@ -236,11 +243,11 @@ public class ShopStopGameTests implements FabricGameTest {
                 TokenMovementService.moveEntityOnBoard(board.token(), 2);
                 later(context, 40, () -> {
                     ShopStopScreenHandler handler = assertShopping(context, board, owner, 2);
-                    var live = fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData.capture(controller, context.getWorld());
+                    var live = PartyLiveData.capture(controller, context.getWorld());
                     context.assertTrue(live.shopping(), "the HUD shows the shopping");
                     context.assertEquals(live.stepsLeft(), 2, "and the steps left");
                     handler.onButtonClick(owner, ShopStopScreenHandler.BUY_NOTHING_BUTTON_ID);
-                    context.assertFalse(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData.capture(controller, context.getWorld()).shopping(),
+                    context.assertFalse(PartyLiveData.capture(controller, context.getWorld()).shopping(),
                             "the stop is over");
                     context.setBlockState(controllerPos, Blocks.AIR);
                     later(context, 50, () -> finish(context, board, owner));

@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.minigame.PageZone;
 import java.util.Map;
 import java.util.HashMap;
 import fr.lordfinn.steveparty.minigame.MiniGameNameColors;
@@ -153,7 +154,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         MiniGameControllerBlockEntity controller = context.getBlockEntity(HOME);
         controller.setPage(pageItem(id));
         if (zoned) MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(
-                new fr.lordfinn.steveparty.minigame.PageZone(context.getWorld().getRegistryKey(), zone(context).box())).withRestore(true));
+                new PageZone(context.getWorld().getRegistryKey(), zone(context).box())).withRestore(true));
         return id;
     }
 
@@ -365,7 +366,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             MiniGamePageData page = MiniGamePages.get(server, id);
             context.assertTrue(!page.withZone(null).restores() && !page.withZone(null).withRestore(true).restore(), "no zone, no restore");
             context.assertTrue(!page.withZone(null).withZone(page.zone()).restore(), "a new zone starts without restore");
-            context.assertTrue(page.withZone(new fr.lordfinn.steveparty.minigame.PageZone(page.zone().dimension(), page.zone().box().expand(1))).restore(),
+            context.assertTrue(page.withZone(new PageZone(page.zone().dimension(), page.zone().box().expand(1))).restore(),
                     "a zone moved keeps it");
             ServerPlayerEntity editor = p2;
             editor.changeGameMode(GameMode.CREATIVE);

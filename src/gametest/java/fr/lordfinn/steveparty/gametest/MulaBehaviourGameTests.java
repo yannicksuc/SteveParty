@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
+import fr.lordfinn.steveparty.entities.custom.goals.MulaGoals;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EntityType;
@@ -113,7 +114,7 @@ public class MulaBehaviourGameTests implements FabricGameTest {
         BlockPos.Mutable probe = new BlockPos.Mutable();
         BlockPos found = null;
         for (int attempt = 0; attempt < 40 && found == null; attempt++) {
-            found = fr.lordfinn.steveparty.entities.custom.goals.MulaGoals.Sky.findPerch(world, high, random, probe);
+            found = MulaGoals.Sky.findPerch(world, high, random, probe);
         }
         boolean flower = found != null && world.getBlockState(found).isOf(net.minecraft.block.Blocks.POPPY);
         for (BlockPos p : placed) {

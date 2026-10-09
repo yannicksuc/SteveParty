@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -226,7 +227,7 @@ public class RecipeGameTests implements FabricGameTest {
         ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[net.minecraft.util.DyeColor.WHITE.getId()]);
         ItemStack tile = result(context, 3, 2, white, new ItemStack(Items.HEAVY_WEIGHTED_PRESSURE_PLATE), white, white, cartridge, white);
         context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 1
-                && fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents.cartridges(tile).size() == 1, "an equipped tile, got " + tile);
+                && TileContents.cartridges(tile).size() == 1, "an equipped tile, got " + tile);
         ItemStack yellow = new ItemStack(ModBlocks.PLASTIC_SLABS[net.minecraft.util.DyeColor.YELLOW.getId()]);
         ItemStack advanced = result(context, 3, 2, yellow, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), yellow,
                 cartridge, new ItemStack(Items.TRAPPED_CHEST), cartridge);

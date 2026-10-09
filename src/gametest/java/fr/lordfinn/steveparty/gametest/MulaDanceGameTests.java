@@ -1,9 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaDances;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.utils.GravityPull;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -255,7 +257,7 @@ public class MulaDanceGameTests implements FabricGameTest {
                     // no blend going on: exactly the shared figure round the core
                     MulaDances.offset(MulaDances.danceAt(time, forge), mula.danceSlot(), mula.danceCount(),
                             (time - MulaDances.danceStart(time)) / 20.0, expected);
-                    double cy = Math.max(forge.getY() + 2.4, context.<fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity>getBlockEntity(FORGE_POS).getCoreCenter().y);
+                    double cy = Math.max(forge.getY() + 2.4, context.<DiceForgeBlockEntity>getBlockEntity(FORGE_POS).getCoreCenter().y);
                     double dy = cy - mula.getHeight() * MulaEntity.CENTER;
                     context.assertTrue(Math.abs(out[0] - forge.getX() - 0.5 - expected[0]) < 1e-9
                                     && Math.abs(out[1] - dy - expected[1]) < 1e-9 && Math.abs(out[2] - forge.getZ() - 0.5 - expected[2]) < 1e-9,
@@ -319,8 +321,8 @@ public class MulaDanceGameTests implements FabricGameTest {
     private static void placeForge(TestContext context) {
         context.setBlockState(FORGE_POS, ModBlocks.DICE_FORGE.getDefaultState());
         // a forge holds Mulas only with its core in
-        fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
-        forge.setStack(fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.CENTER_SLOT,
+        DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
+        forge.setStack(DiceForgeBlockEntity.CENTER_SLOT,
                 new net.minecraft.item.ItemStack(ModBlocks.GRAVITY_CORE));
     }
 
@@ -331,7 +333,7 @@ public class MulaDanceGameTests implements FabricGameTest {
         mula.setAiDisabled(true);
         mula.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
         net.minecraft.util.math.Vec3d core = mula.getPos().add(3, 1, 0);
-        fr.lordfinn.steveparty.utils.GravityPull.pullAround(context.getWorld(), core, 10, 1, false, 0);
+        GravityPull.pullAround(context.getWorld(), core, 10, 1, false, 0);
         context.assertTrue(mula.getVelocity().lengthSquared() == 0, "not pulled: " + mula.getVelocity());
         context.complete();
     }

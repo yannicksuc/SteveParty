@@ -13,6 +13,8 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
 import fr.lordfinn.steveparty.persistent_state.ShopProtection;
+import fr.lordfinn.steveparty.screen_handlers.custom.CashRegisterScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.enums.ChestType;
@@ -359,7 +361,7 @@ public class ShopGameTests implements FabricGameTest {
         stall.read(saved, context.getWorld().getRegistryManager());
         context.assertTrue(stall.getStack(0).isOf(Items.GOLD_BLOCK) && stall.size() == 27, "old save loaded, 28th slot ignored");
         // A merchant in a gold box right next to it stays free: only a Shopkeeper Key ties him to a shop
-        fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity trader = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(2, 1, 2));
+        BoxedTraderEntity trader = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(2, 1, 2));
         stall.markDirty();
         context.waitAndRun(45, () -> {
             context.assertFalse(trader.isAssigned(), "not attached by the stall");
@@ -745,8 +747,8 @@ public class ShopGameTests implements FabricGameTest {
         PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
         BlockPos stallPos = context.getAbsolutePos(stallRelative);
         player.refreshPositionAndAngles(stallPos.getX() + 1.5, stallPos.getY(), stallPos.getZ() + 0.5, 0, 0);
-        var stallScreen = new fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler(1, player.getInventory(), stall);
-        var registerScreen = new fr.lordfinn.steveparty.screen_handlers.custom.CashRegisterScreenHandler(2, player.getInventory(), register);
+        var stallScreen = new TradingStallScreenHandler(1, player.getInventory(), stall);
+        var registerScreen = new CashRegisterScreenHandler(2, player.getInventory(), register);
         context.assertTrue(stallScreen.canUse(player) && registerScreen.canUse(player), "next to them: open");
         player.refreshPositionAndAngles(stallPos.getX() + 30, stallPos.getY(), stallPos.getZ(), 0, 0);
         context.assertTrue(!stallScreen.canUse(player) && !registerScreen.canUse(player), "far away: closed");

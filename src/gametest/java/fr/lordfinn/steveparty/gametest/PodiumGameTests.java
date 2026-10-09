@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.minigame.PartyMiniGameSession;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
@@ -443,7 +444,7 @@ public class PodiumGameTests implements FabricGameTest {
             Played played = played(context, page(context, first), new TeamDisposition(set(a1, a2), set(b1)), MiniGamePartyStep.Phase.PLAYING, a1, a2, b1);
             ServerWorld world = context.getWorld();
             PodiumGroup group = group(context, first);
-            context.assertTrue(Podiums.played(group) instanceof fr.lordfinn.steveparty.minigame.PartyMiniGameSession session && session.miniGame() == played.step(), "the group knows its mini-game");
+            context.assertTrue(Podiums.played(group) instanceof PartyMiniGameSession session && session.miniGame() == played.step(), "the group knows its mini-game");
             context.assertTrue(!Podiums.toggle(watcher, world, context.getAbsolutePos(first)), "not a player of the mini-game");
             context.assertTrue(occupant(context, first) == null, "refused");
             context.assertTrue(Podiums.register(group, group.columnAt(world, context.getAbsolutePos(second)), a1), "team A on the second place");

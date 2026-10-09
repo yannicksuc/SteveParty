@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaRebirths;
 import fr.lordfinn.steveparty.entities.custom.MulaStarEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
@@ -179,8 +180,8 @@ public class MulaRebirthGameTests implements FabricGameTest {
         context.runAtTick(60, () -> {
             int blackCount = 0, blueCount = 0;
             for (var item : world.getEntitiesByClass(net.minecraft.entity.ItemEntity.class, new Box(context.getAbsolutePos(new BlockPos(3, 3, 3))).expand(12), e -> true)) {
-                if (item.getStack().isOf(fr.lordfinn.steveparty.items.ModItems.BLACK_STAR_FRAGMENT)) blackCount += item.getStack().getCount();
-                if (item.getStack().isOf(fr.lordfinn.steveparty.items.ModItems.BLUE_STAR_FRAGMENT)) blueCount += item.getStack().getCount();
+                if (item.getStack().isOf(ModItems.BLACK_STAR_FRAGMENT)) blackCount += item.getStack().getCount();
+                if (item.getStack().isOf(ModItems.BLUE_STAR_FRAGMENT)) blueCount += item.getStack().getCount();
                 item.discard();
             }
             context.assertTrue(blackCount == 1, "a black burst drops exactly 1 fragment: " + blackCount);

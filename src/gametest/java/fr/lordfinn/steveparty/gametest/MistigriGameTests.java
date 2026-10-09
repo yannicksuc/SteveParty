@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -162,13 +163,13 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void unluckyFaces(TestContext context) {
-        context.assertTrue(MistigriSummoning.unlucky(List.of(new fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace(
-                fr.lordfinn.steveparty.components.DiceFacesComponent.Kind.NORMAL, 0), new fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace(
-                fr.lordfinn.steveparty.components.DiceFacesComponent.Kind.CURSED, 1))), "a double die: 0 and 1");
-        context.assertFalse(MistigriSummoning.unlucky(List.of(new fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace(
-                fr.lordfinn.steveparty.components.DiceFacesComponent.Kind.COIN, 1))), "a coin face is no 1");
-        context.assertFalse(MistigriSummoning.unlucky(List.of(new fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace(
-                fr.lordfinn.steveparty.components.DiceFacesComponent.Kind.BLANK, 0))), "a blank side is no 0");
+        context.assertTrue(MistigriSummoning.unlucky(List.of(new DiceFacesComponent.DiceFace(
+                DiceFacesComponent.Kind.NORMAL, 0), new DiceFacesComponent.DiceFace(
+                DiceFacesComponent.Kind.CURSED, 1))), "a double die: 0 and 1");
+        context.assertFalse(MistigriSummoning.unlucky(List.of(new DiceFacesComponent.DiceFace(
+                DiceFacesComponent.Kind.COIN, 1))), "a coin face is no 1");
+        context.assertFalse(MistigriSummoning.unlucky(List.of(new DiceFacesComponent.DiceFace(
+                DiceFacesComponent.Kind.BLANK, 0))), "a blank side is no 0");
         context.complete();
     }
 

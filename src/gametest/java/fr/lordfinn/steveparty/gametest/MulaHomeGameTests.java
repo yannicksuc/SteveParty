@@ -6,6 +6,8 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaHome;
 import fr.lordfinn.steveparty.entities.custom.MulaRebirths;
+import fr.lordfinn.steveparty.entities.custom.MulaStarEntity;
+import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
 import fr.lordfinn.steveparty.entities.custom.goals.SimpleFlyingMoveControl;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -171,7 +173,7 @@ public class MulaHomeGameTests implements FabricGameTest {
         rebirths.tick(world);
         context.assertTrue(world.getEntity(id) instanceof MulaEntity m && home.equals(m.homeForge())
                 && m.squaredDistanceTo(home.getX() + 0.5, m.getY(), home.getZ() + 0.5) <= 36, "reborn by its forge, at home");
-        world.getEntitiesByClass(fr.lordfinn.steveparty.entities.custom.MulaStarEntity.class,
+        world.getEntitiesByClass(MulaStarEntity.class,
                 new Box(home).expand(20), e -> true).forEach(net.minecraft.entity.Entity::discard);
         if (world.getEntity(id) != null) world.getEntity(id).discard();
         context.complete();
@@ -213,10 +215,10 @@ public class MulaHomeGameTests implements FabricGameTest {
                 }
             }
             long fragments = world.getEntitiesByClass(ItemEntity.class, new Box(home).expand(24),
-                    e -> fr.lordfinn.steveparty.entities.custom.goals.MulaBrain.isStarFragment(e.getStack().getItem())).size();
+                    e -> MulaBrain.isStarFragment(e.getStack().getItem())).size();
             context.assertTrue(fragments == 0, "no fragments dropped: " + fragments);
             entries.forEach(e -> rebirths.remove(e.id()));
-            world.getEntitiesByClass(fr.lordfinn.steveparty.entities.custom.MulaStarEntity.class,
+            world.getEntitiesByClass(MulaStarEntity.class,
                     new Box(home).expand(40), e -> true).forEach(net.minecraft.entity.Entity::discard);
             context.complete();
         });

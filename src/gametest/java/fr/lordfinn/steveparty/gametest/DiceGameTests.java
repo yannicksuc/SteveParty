@@ -1,8 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.dice.DicePrompts;
+import fr.lordfinn.steveparty.dice.DiceRollSequence;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -126,14 +130,14 @@ public class DiceGameTests implements FabricGameTest {
     /** A plain die thrown with the item keeps rolling, nothing asked, until a player hits it. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "dice_throws")
     public void aThrownPlainDieRollsUntilItIsHit(TestContext context) {
-        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), -20, false);
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(ModItems.DEFAULT_DICE), -20, false);
         player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
         context.assertEquals(diceOf(context, player).size(), 1, "one die thrown");
         DiceEntity dice = diceOf(context, player).getFirst();
         context.waitAndRun(120, () -> {
             context.assertTrue(!dice.isRemoved() && dice.isRolling() && !dice.isRollFinished(), "still rolling 6 seconds later, without a hit");
-            context.assertEquals(dice.sequence().phase(), fr.lordfinn.steveparty.dice.DiceRollSequence.Phase.ROLLING, "its roll goes on");
-            context.assertTrue(fr.lordfinn.steveparty.dice.DicePrompts.pending(player) == null, "nothing is asked for a plain die");
+            context.assertEquals(dice.sequence().phase(), DiceRollSequence.Phase.ROLLING, "its roll goes on");
+            context.assertTrue(DicePrompts.pending(player) == null, "nothing is asked for a plain die");
             dice.damage(context.getWorld().getDamageSources().playerAttack(player), 1F);
             context.assertTrue(!dice.isRolling() && dice.isRollFinished(), "a hit stops it");
             context.complete();
@@ -146,7 +150,7 @@ public class DiceGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "dice_throws")
     public void aDieFallingBackOnItsSneakingThrowerKeepsRolling(TestContext context) {
-        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), -90, true);
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(ModItems.DEFAULT_DICE), -90, true);
         player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
         DiceEntity dice = diceOf(context, player).getFirst();
         context.assertTrue(dice.getTarget().map(target -> target.equals(player.getUuid())).orElse(false), "a sneaking throw aims at its thrower");
@@ -165,7 +169,7 @@ public class DiceGameTests implements FabricGameTest {
     /** The click of the throw is not a hit: the thrower's hits are ignored for a moment after the throw. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
     public void theThrowersClickAtThrowTimeDoesNotStopTheDie(TestContext context) {
-        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DOUBLE_DICE), -90, true);
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(ModItems.DOUBLE_DICE), -90, true);
         player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
         java.util.List<DiceEntity> thrown = diceOf(context, player);
         context.assertEquals(thrown.size(), 2, "the two dice of a Double Dice");
@@ -200,7 +204,7 @@ public class DiceGameTests implements FabricGameTest {
     /** Thrown at the floor, the die does not dig into it: it starts in the air and is tossed upward. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
     public void aDieThrownAtTheFloorGoesUpInsteadOfIntoIt(TestContext context) {
-        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), 90, false);
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(ModItems.DEFAULT_DICE), 90, false);
         player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
         DiceEntity dice = diceOf(context, player).getFirst();
         context.assertTrue(context.getWorld().isSpaceEmpty(dice), "the die appears in the air, not in the floor");
@@ -218,7 +222,7 @@ public class DiceGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
     public void aDieThrownAtTheFloorBouncesSoftly(TestContext context) {
-        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), 60, true);
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(ModItems.DEFAULT_DICE), 60, true);
         player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
         DiceEntity dice = diceOf(context, player).getFirst();
         context.assertTrue(dice.getVelocity().y > 0 && dice.getVelocity().y < 0.3, "a soft upward bounce, not a strong one");
@@ -239,7 +243,7 @@ public class DiceGameTests implements FabricGameTest {
     /** With no one to float to, a die thrown straight up rises a few blocks only, then comes back down a little. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140, batchId = "dice_throws")
     public void anUntargetedDieThrownUpComesBackDown(TestContext context) {
-        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), -90, false);
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(ModItems.DEFAULT_DICE), -90, false);
         player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
         DiceEntity dice = diceOf(context, player).getFirst();
         context.assertTrue(dice.getTarget().isEmpty(), "no mob around: no target");
@@ -279,8 +283,8 @@ public class DiceGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aFirecrackerDieBurstHurtsAndKnocksBack(TestContext context) {
         DiceEntity dice = spawnDice(context);
-        net.minecraft.item.ItemStack die = new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE);
-        fr.lordfinn.steveparty.dice.DiceModules.set(die, java.util.Map.of(fr.lordfinn.steveparty.dice.DiceModules.FIRECRACKER, 1));
+        net.minecraft.item.ItemStack die = new net.minecraft.item.ItemStack(ModItems.DEFAULT_DICE);
+        DiceModules.set(die, java.util.Map.of(DiceModules.FIRECRACKER, 1));
         dice.setItemReference(die);
         net.minecraft.entity.passive.PigEntity pig = pigNextTo(context, dice);
         double before = pig.getX();
@@ -298,19 +302,19 @@ public class DiceGameTests implements FabricGameTest {
     public void aCraftedFirecrackerDieThrownInSurvivalBlastsWhenItGoesAway(TestContext context) {
         ServerWorld world = context.getWorld();
         var recipes = world.getServer().getRecipeManager();
-        net.minecraft.item.ItemStack f = new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.PINK_STAR_FRAGMENT);
+        net.minecraft.item.ItemStack f = new net.minecraft.item.ItemStack(ModItems.PINK_STAR_FRAGMENT);
         net.minecraft.recipe.input.CraftingRecipeInput moduleGrid = net.minecraft.recipe.input.CraftingRecipeInput.create(3, 3, java.util.List.of(
                 f, new net.minecraft.item.ItemStack(net.minecraft.item.Items.TNT), f,
-                f, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.BLANK_DICE_MODULE), f,
+                f, new net.minecraft.item.ItemStack(ModItems.BLANK_DICE_MODULE), f,
                 f, f, f));
         net.minecraft.item.ItemStack module = recipes.getFirstMatch(net.minecraft.recipe.RecipeType.CRAFTING, moduleGrid, world)
                 .map(e -> e.value().craft(moduleGrid, world.getRegistryManager())).orElseThrow();
-        context.assertTrue(module.isOf(fr.lordfinn.steveparty.dice.DiceModules.FIRECRACKER.item()), "the Firecracker module is crafted, got " + module);
+        context.assertTrue(module.isOf(DiceModules.FIRECRACKER.item()), "the Firecracker module is crafted, got " + module);
         net.minecraft.recipe.input.CraftingRecipeInput dieGrid = net.minecraft.recipe.input.CraftingRecipeInput.create(2, 1, java.util.List.of(
-                new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), module));
+                new net.minecraft.item.ItemStack(ModItems.DEFAULT_DICE), module));
         net.minecraft.item.ItemStack die = recipes.getFirstMatch(net.minecraft.recipe.RecipeType.CRAFTING, dieGrid, world)
                 .map(e -> e.value().craft(dieGrid, world.getRegistryManager())).orElseThrow();
-        context.assertTrue(fr.lordfinn.steveparty.dice.DiceModules.has(die, fr.lordfinn.steveparty.dice.DiceModules.FIRECRACKER), "and set on a die");
+        context.assertTrue(DiceModules.has(die, DiceModules.FIRECRACKER), "and set on a die");
 
         ServerPlayerEntity player = thrower(context, die, 0, false);
         player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
@@ -330,8 +334,8 @@ public class DiceGameTests implements FabricGameTest {
             boolean back = false;
             for (int slot = 0; slot < player.getInventory().size(); slot++) {
                 net.minecraft.item.ItemStack stack = player.getInventory().getStack(slot);
-                back |= stack.isOf(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE)
-                        && fr.lordfinn.steveparty.dice.DiceModules.has(stack, fr.lordfinn.steveparty.dice.DiceModules.FIRECRACKER);
+                back |= stack.isOf(ModItems.DEFAULT_DICE)
+                        && DiceModules.has(stack, DiceModules.FIRECRACKER);
             }
             context.assertTrue(back, "the die, still a Firecracker, is back with its thrower");
             pig.discard();

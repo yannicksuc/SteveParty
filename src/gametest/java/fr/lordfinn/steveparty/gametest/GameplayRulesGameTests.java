@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaFood;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
@@ -222,7 +223,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
             context.assertTrue(!mula.isSitting(), "a stranger can't make it sit");
 
             // Food keeps feeding it, even for the owner
-            Item food = fr.lordfinn.steveparty.entities.custom.MulaFood.foodsOf(mula.getVariant()).iterator().next();
+            Item food = MulaFood.foodsOf(mula.getVariant()).iterator().next();
             context.assertTrue(mula.isMulaFood(new ItemStack(food)), food + " is food for " + mula.getVariant());
             owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(food, 4));
             int hunger = mula.getHunger();

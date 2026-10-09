@@ -3,7 +3,10 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PlasticBlock;
 import fr.lordfinn.steveparty.blocks.custom.PlotBlock;
+import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
+import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -91,7 +94,7 @@ public class PlasticGameTests implements FabricGameTest {
     public void plasticSlabsStairsAndWalls(TestContext context) {
         for (int i = 0; i < ModBlocks.COLORS.length; i++) {
             for (Block shape : new Block[]{ModBlocks.PLASTIC_SLABS[i], ModBlocks.PLASTIC_STAIRS[i], ModBlocks.PLASTIC_WALLS[i]}) {
-                context.assertTrue(shape.getDefaultState().isIn(fr.lordfinn.steveparty.blocks.switchable.Switchables.PLASTIC),
+                context.assertTrue(shape.getDefaultState().isIn(Switchables.PLASTIC),
                         "plastic: " + shape);
             }
         }
@@ -623,19 +626,19 @@ public class PlasticGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void everyPlasticPieceIsInThePlasticTag(TestContext context) {
-        var wrench = new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.WRENCH);
+        var wrench = new net.minecraft.item.ItemStack(ModItems.WRENCH);
         for (int i = 0; i < ModBlocks.COLORS.length; i++) {
             for (Block piece : new Block[]{ModBlocks.PLASTIC_BLOCKS[i], ModBlocks.PLASTIC_STUDS[i], ModBlocks.PLASTIC_FENCES[i]}) {
                 var state = piece.getDefaultState();
                 context.assertTrue(PlasticBlock.isPlasticPiece(state) && PlasticBlock.isPlastic(state), "a plastic piece: " + piece);
                 context.assertTrue(wrench.getMiningSpeedMultiplier(state) > 100, "the wrench takes it apart at once: " + piece);
             }
-            context.assertTrue(fr.lordfinn.steveparty.blocks.switchable.Switchables.isSwitchable(ModBlocks.PLASTIC_FENCES[i].getDefaultState()),
+            context.assertTrue(Switchables.isSwitchable(ModBlocks.PLASTIC_FENCES[i].getDefaultState()),
                     "the hop switch switches plastic fences");
         }
         var sign = ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState();
         context.assertTrue(PlasticBlock.isPlasticPiece(sign) && PlasticBlock.isPlastic(sign), "the road sign is plastic");
-        context.assertTrue(!fr.lordfinn.steveparty.blocks.switchable.Switchables.isSwitchable(sign), "but not switchable (block entity)");
+        context.assertTrue(!Switchables.isSwitchable(sign), "but not switchable (block entity)");
         context.complete();
     }
 
@@ -647,9 +650,9 @@ public class PlasticGameTests implements FabricGameTest {
         context.setBlockState(fence, ModBlocks.PLASTIC_FENCES[1].getDefaultState().with(net.minecraft.block.FenceBlock.WATERLOGGED, true));
         // In the tube's glass wall, on the east side of the fence, facing east
         context.setBlockState(sign, ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState()
-                .with(fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock.MOUNT,
-                        fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock.Mount.HUNG)
-                .with(fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock.ROTATION,
+                .with(AbstractStencilSignBlock.MOUNT,
+                        AbstractStencilSignBlock.Mount.HUNG)
+                .with(AbstractStencilSignBlock.ROTATION,
                         net.minecraft.util.math.RotationPropertyHelper.fromDirection(Direction.EAST)));
         context.waitAndRun(risingTicks(TOP - BOTTOM), () -> {
             context.expectBlock(ModBlocks.PLASTIC_FENCES[1], fence);

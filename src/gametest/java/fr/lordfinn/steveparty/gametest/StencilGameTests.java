@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PlasticBlock;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.EaselSignBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
@@ -235,7 +237,7 @@ public class StencilGameTests implements FabricGameTest {
         Identifier old = Identifier.of("steveparty", "traffic_sign");
         context.assertTrue(Registries.BLOCK.get(old) == ModBlocks.EASEL_SIGN, "old block id");
         context.assertTrue(Registries.ITEM.get(old) == ModBlocks.EASEL_SIGN.asItem(), "old item id");
-        context.assertTrue(Registries.BLOCK_ENTITY_TYPE.get(old) == fr.lordfinn.steveparty.blocks.ModBlockEntities.EASEL_SIGN_ENTITY, "old block entity id");
+        context.assertTrue(Registries.BLOCK_ENTITY_TYPE.get(old) == ModBlockEntities.EASEL_SIGN_ENTITY, "old block entity id");
         context.assertTrue(Registries.BLOCK.get(Identifier.of("steveparty", "cherry_traffic_sign")) == ModBlocks.CHERRY_EASEL_SIGN, "old wood block id");
         context.assertTrue(Registries.ITEM.get(Identifier.of("steveparty", "warped_traffic_sign")) == ModBlocks.WARPED_EASEL_SIGN.asItem(), "old wood item id");
         // A chunk palette entry
@@ -505,7 +507,7 @@ public class StencilGameTests implements FabricGameTest {
     }
 
     private static int risingTicks(int blocks) {
-        return blocks * fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RISE_DELAY + 10;
+        return blocks * PlasticBlock.RISE_DELAY + 10;
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
@@ -539,11 +541,11 @@ public class StencilGameTests implements FabricGameTest {
         ServerPlayerEntity player = TestPlayers.mock(context);
         Vec3d feet = Vec3d.ofBottomCenter(context.getAbsolutePos(start.up()));
         player.refreshPositionAndAngles(feet.x, feet.y, feet.z, 0, 0);
-        context.runAtTick(fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RISE_DELAY + 3, () -> {
+        context.runAtTick(PlasticBlock.RISE_DELAY + 3, () -> {
             try {
                 context.expectBlock(ModBlocks.PLASTIC_BLOCKS[0], start.up());
                 // A block per RISE_DELAY ticks through the water's drag (about 0.35), far from the column's 1.4
-                context.assertTrue(player.getVelocity().y <= fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RIDE_STILL_SPEED + 1e-3,
+                context.assertTrue(player.getVelocity().y <= PlasticBlock.RIDE_STILL_SPEED + 1e-3,
                         "carried gently, not flung: " + player.getVelocity().y);
             } finally {
                 TestPlayers.remove(context, player);
@@ -578,8 +580,8 @@ public class StencilGameTests implements FabricGameTest {
     public void plasticFencesFloatButSignsOnPostsStay(TestContext context) {
         waterTube(context);
         context.setBlockState(new BlockPos(TUBE_X, TUBE_BOTTOM, TUBE_Z), ModBlocks.PLASTIC_FENCES[4].getDefaultState().with(net.minecraft.block.FenceBlock.WATERLOGGED, true));
-        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.PlasticBlock.isPlastic(ModBlocks.PLASTIC_FENCES[4].getDefaultState())
-                && fr.lordfinn.steveparty.blocks.custom.PlasticBlock.isPlastic(ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState()), "made of plastic");
+        context.assertTrue(PlasticBlock.isPlastic(ModBlocks.PLASTIC_FENCES[4].getDefaultState())
+                && PlasticBlock.isPlastic(ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState()), "made of plastic");
         // A sign standing on a (stone) wall under water: on its post, it stays
         BlockPos post = new BlockPos(1, 1, 1);
         context.setBlockState(post, Blocks.COBBLESTONE_WALL.getDefaultState().with(net.minecraft.block.WallBlock.WATERLOGGED, true));
@@ -1188,11 +1190,11 @@ public class StencilGameTests implements FabricGameTest {
     /** Stencil paint can't be broken by hitting it outside creative (brush or water remove it). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilPaintOnlyBreaksInCreative(TestContext context) {
-        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreak(
+        context.assertTrue(StencilPaintBlock.canBreak(
                 context.createMockPlayer(net.minecraft.world.GameMode.CREATIVE)), "creative can break it");
         net.minecraft.entity.player.PlayerEntity survival = context.createMockPlayer(net.minecraft.world.GameMode.SURVIVAL);
         survival.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.DIAMOND_PICKAXE));
-        context.assertFalse(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreak(survival), "survival can't, even with a pickaxe");
+        context.assertFalse(StencilPaintBlock.canBreak(survival), "survival can't, even with a pickaxe");
         context.complete();
     }
 }

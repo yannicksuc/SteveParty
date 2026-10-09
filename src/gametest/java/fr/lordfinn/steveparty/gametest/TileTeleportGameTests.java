@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -31,6 +32,7 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -112,9 +114,9 @@ public class TileTeleportGameTests implements FabricGameTest {
      * @return true if every change was accepted
      */
     private static boolean menu(ServerPlayerEntity player, BlockPos pos, TeleportSettingsComponent settings) {
-        fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef ref = pos == null
-                ? fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef.hand(Hand.MAIN_HAND)
-                : fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef.slot(pos, 0);
+        CartridgeRef ref = pos == null
+                ? CartridgeRef.hand(Hand.MAIN_HAND)
+                : CartridgeRef.slot(pos, 0);
         boolean ok = CartridgeMenus.apply(player, ref, "network", settings.network().ordinal());
         ok &= CartridgeMenus.apply(player, ref, "arrival", settings.push() ? 1 : 0);
         if (settings.push()) ok &= CartridgeMenus.apply(player, ref, "triggers", settings.pushTriggers() ? 0 : 1);
@@ -281,7 +283,7 @@ public class TileTeleportGameTests implements FabricGameTest {
         context.waitAndRun(WAIT, () -> {
             assertStandsOn(context, pig, to, "stays on the other tile");
             context.assertTrue(!TileTeleport.isTeleporting(pig), "done");
-            context.assertTrue(pig.getAttributeInstance(EntityAttributes.GENERIC_SCALE).getModifier(fr.lordfinn.steveparty.Steveparty.id("teleport_shrink")) == null,
+            context.assertTrue(pig.getAttributeInstance(EntityAttributes.GENERIC_SCALE).getModifier(Steveparty.id("teleport_shrink")) == null,
                     "back to its size");
             context.assertEquals(teleports.size(), 1, "one teleport, no chain");
             context.assertEquals(teleports.getFirst().to(), to, "to the other violet tile");

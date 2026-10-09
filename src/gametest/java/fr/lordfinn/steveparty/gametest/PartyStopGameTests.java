@@ -14,6 +14,7 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -164,8 +165,8 @@ public class PartyStopGameTests implements FabricGameTest {
     public void stopButtonNeedsTheRightToEdit(TestContext context) {
         Board board = startedParty(context);
         net.minecraft.server.network.ServerPlayerEntity player = TestPlayers.mock(context);
-        var handler = new fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler(1, player.getInventory(), board.controller());
-        context.assertTrue(!handler.onButtonClick(player, fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.BUTTON_STOP),
+        var handler = new PartyControllerScreenHandler(1, player.getInventory(), board.controller());
+        context.assertTrue(!handler.onButtonClick(player, PartyControllerScreenHandler.BUTTON_STOP),
                 "refused");
         context.assertTrue(board.controller().getPartyData().isStarted(), "the party goes on");
         board.controller().stopParty(Text.literal("Tester"));

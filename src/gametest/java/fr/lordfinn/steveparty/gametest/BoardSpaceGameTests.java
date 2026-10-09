@@ -1,9 +1,13 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -75,7 +79,7 @@ public class BoardSpaceGameTests implements FabricGameTest {
         context.setBlockState(source, ModBlocks.ADVANCED_TILE);
         BoardSpaceBlockEntity sourceTile = context.getBlockEntity(source);
         sourceTile.setStack(0, new ItemStack(ModItems.TILE_BEHAVIOR_START));
-        ItemStack item = fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents.copyOf(
+        ItemStack item = TileContents.copyOf(
                 new ItemStack(ModBlocks.ADVANCED_TILE), sourceTile, context.getWorld());
 
         context.setBlockState(TILE.down(), Blocks.STONE);
@@ -91,14 +95,14 @@ public class BoardSpaceGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void tilesSavedUnderTheirOldNamesLoad(TestContext context) {
         var registries = context.getWorld().getRegistryManager();
-        context.assertTrue(net.minecraft.registry.Registries.BLOCK.get(fr.lordfinn.steveparty.Steveparty.id("simple_tile")) == ModBlocks.TILE,
+        context.assertTrue(net.minecraft.registry.Registries.BLOCK.get(Steveparty.id("simple_tile")) == ModBlocks.TILE,
                 "the old Tile's block id is the Tile's");
-        context.assertTrue(net.minecraft.registry.Registries.ITEM.get(fr.lordfinn.steveparty.Steveparty.id("simple_tile")) == ModBlocks.TILE.asItem(),
+        context.assertTrue(net.minecraft.registry.Registries.ITEM.get(Steveparty.id("simple_tile")) == ModBlocks.TILE.asItem(),
                 "the old Tile's item id is the Tile's");
         // An old Advanced Tile: its block id ("tile") is now the Tile's, its block entity ("tile_entity") says what it was
         BlockPos source = new BlockPos(5, 1, 5);
         context.setBlockState(source, ModBlocks.ADVANCED_TILE);
-        fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlockEntity advanced = context.getBlockEntity(source);
+        AdvancedTileBlockEntity advanced = context.getBlockEntity(source);
         advanced.setStack(7, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
         NbtCompound saved = advanced.createNbtWithIdentifyingData(registries);
         saved.putString("id", "steveparty:tile_entity");
@@ -106,10 +110,10 @@ public class BoardSpaceGameTests implements FabricGameTest {
         context.setBlockState(TILE, ModBlocks.TILE);
         BlockPos abs = context.getAbsolutePos(TILE);
         net.minecraft.block.entity.BlockEntity loaded = net.minecraft.block.entity.BlockEntity.createFromNbt(abs, context.getBlockState(TILE), saved, registries);
-        context.assertTrue(loaded instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlockEntity,
+        context.assertTrue(loaded instanceof AdvancedTileBlockEntity,
                 "its block entity loads as an Advanced Tile's: " + loaded);
         context.getWorld().addBlockEntity(loaded);
-        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration.migrate(context.getWorld(), abs), "migrated: "
+        context.assertTrue(TileMigration.migrate(context.getWorld(), abs), "migrated: "
                 + context.getWorld().getBlockEntity(abs) + " / " + context.getWorld().getBlockState(abs));
         context.expectBlock(ModBlocks.ADVANCED_TILE, TILE);
         BoardSpaceBlockEntity restored = context.getBlockEntity(TILE);
