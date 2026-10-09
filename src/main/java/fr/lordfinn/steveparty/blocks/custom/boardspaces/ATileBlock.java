@@ -97,7 +97,7 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
             return;
         }
         if (cartridges.isEmpty()) return;
-        tips.state("tooltip.steveparty.tile.contents", Tooltips.value(cartridges.size()));
+        tips.state("tooltip.steveparty.tile.contents", Tooltips.value(Text.translatable("tooltip.steveparty.tile.contents.count", cartridges.size())));
         int shown = TileContents.previewedIndex(cartridges.size());
         for (int i = 0; i < cartridges.size(); i++) {
             TileContents.Slot slot = cartridges.get(i);
