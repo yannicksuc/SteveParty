@@ -31,6 +31,7 @@ import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.StencilGunHud;
 import fr.lordfinn.steveparty.client.gui.TileStampTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.TitleScreenBackground;
+import fr.lordfinn.steveparty.client.gui.party.DiceRevealHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud;
@@ -258,6 +259,7 @@ public class StevepartyClient implements ClientModInitializer {
         initKeybinds();
 
         PartyHud.initialize();
+        DiceRevealHud.initialize();
         MiniGamePageClient.initialize();
         MiniGameCardHud.initialize();
         MiniGameResultsHud.initialize();
@@ -508,6 +510,7 @@ public class StevepartyClient implements ClientModInitializer {
     /** Client caches are per server connection: drop them on disconnect. */
     private static void resetClientState() {
         PartyHud.clear();
+        DiceRevealHud.clear();
         MiniGamePageClient.clear();
         FloatingTextRenderer.clear();
         StarSpaceRenderer.clear();
