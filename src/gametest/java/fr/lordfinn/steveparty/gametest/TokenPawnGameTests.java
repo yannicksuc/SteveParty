@@ -3,10 +3,10 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.mob.MobEntity;
@@ -33,12 +33,6 @@ public class TokenPawnGameTests implements FabricGameTest {
 
     private static TokenizedEntityInterface token(MobEntity mob) {
         return (TokenizedEntityInterface) mob;
-    }
-
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 6; x++)
-            for (int z = 0; z < 6; z++)
-                context.setBlockState(new BlockPos(x, 1, z), Blocks.STONE.getDefaultState());
     }
 
     private static void assertYaw(TestContext context, float actual, float expected, String message) {
@@ -88,19 +82,19 @@ public class TokenPawnGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = STILL_TICKS + 40)
     public void cowTokenStaysStill(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 6, 6, 1);
         assertStaysStill(context, context.spawnEntity(EntityType.COW, new BlockPos(2, 2, 2)), 37f);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = STILL_TICKS + 40)
     public void villagerTokenStaysStill(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 6, 6, 1);
         assertStaysStill(context, context.spawnEntity(EntityType.VILLAGER, new BlockPos(2, 2, 2)), -120f);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = STILL_TICKS + 80)
     public void mulaTokenStaysStill(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 6, 6, 1);
         // a flying Mula: as a token it comes down onto the board (the tokens' gravity), then stays still
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(2, 3, 2));
         assertStaysStill(context, mula, 75f, 40);
@@ -114,7 +108,7 @@ public class TokenPawnGameTests implements FabricGameTest {
     /** Along a little L-shaped path: it slides to each place and faces where it goes, head and body together. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
     public void tokenFacesWhereTheBoardMovesIt(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 6, 6, 1);
         CowEntity cow = context.spawnEntity(EntityType.COW, new BlockPos(1, 2, 1));
         token(cow).steveparty$setTokenized(true);
         BlockPos east = context.getAbsolutePos(new BlockPos(4, 2, 1));
@@ -143,7 +137,7 @@ public class TokenPawnGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void tokenDoesNotEatNorFallInLove(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 6, 6, 1);
         CowEntity cow = context.spawnEntity(EntityType.COW, new BlockPos(2, 2, 2));
         token(cow).steveparty$setTokenized(true);
         ServerPlayerEntity player = TestPlayers.mock(context);
@@ -164,7 +158,7 @@ public class TokenPawnGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void untokenizedMobGetsItsLifeBack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 6, 6, 1);
         CowEntity cow = context.spawnEntity(EntityType.COW, new BlockPos(1, 2, 1));
         CowEntity quiet = context.spawnEntity(EntityType.COW, new BlockPos(3, 2, 1));
         quiet.setSilent(true);

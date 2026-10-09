@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
+import fr.lordfinn.steveparty.gametest.kit.TestAsserts;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
@@ -61,15 +62,8 @@ public class MiniGamePipeBuildOrderGameTests implements FabricGameTest {
     private static ServerPlayerEntity player(TestContext context, double x, double y, double z) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
+        TestPlayers.place(context, player, x, y, z);
         return player;
-    }
-
-    private static boolean near(TestContext context, ServerPlayerEntity player, BlockPos mouth) {
-        Vec3d at = context.getRelative(player.getPos());
-        return !player.hasVehicle() && Math.abs(at.x - (mouth.getX() + 0.5)) < 1.2 && Math.abs(at.z - (mouth.getZ() + 0.5)) < 1.2
-                && at.y >= mouth.getY() + 0.9;
     }
 
     /** How a run {wall, x=1, x=2, x=3 (its mouth east)} along row {@code z} is built. */
@@ -160,7 +154,7 @@ public class MiniGamePipeBuildOrderGameTests implements FabricGameTest {
             context.throwGameTestException(orders.get(i) + ": could not go in");
             return;
         }
-        when(context, () -> near(context, player, arrival), 80, orders.get(i) + ": never came out of the mini-game's pipe", () -> {
+        when(context, () -> TestAsserts.cameOutAt(context, player, arrival), 80, orders.get(i) + ": never came out of the mini-game's pipe", () -> {
             boolean alive = player.isAlive() && !player.isInsideWall();
             TestPlayers.leaveMiniGames(context, player);
             context.assertTrue(alive, orders.get(i) + ": came out hurt or in a wall");

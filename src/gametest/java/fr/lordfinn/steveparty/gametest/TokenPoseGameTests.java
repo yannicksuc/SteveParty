@@ -18,7 +18,6 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 
 /**
  * Mob pawn poses, server side: a right click with an empty hand gives the pawn its next pose number (saved, synced);
@@ -29,8 +28,7 @@ public class TokenPoseGameTests implements FabricGameTest {
 
     private static ServerPlayerEntity player(TestContext context) {
         ServerPlayerEntity player = TestPlayers.mock(context);
-        Vec3d pos = context.getAbsolute(new Vec3d(MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() - 1.0));
-        player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
+        TestPlayers.place(context, player, MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() - 1.0);
         return player;
     }
 

@@ -10,6 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 /** Checks and counts shared by the tests. */
 public final class TestAsserts {
@@ -21,6 +22,13 @@ public final class TestAsserts {
         BoardSpaceBlockEntity on = BoardSpaces.boardSpaceOf(token);
         context.assertTrue(on != null && on.getPos().equals(context.getAbsolutePos(at)),
                 what + ": on " + (on == null ? "nothing" : on.getPos()) + ", expected " + context.getAbsolutePos(at));
+    }
+
+    /** The player came out of the pipe whose mouth is the relative block {@code mouth}: off it, standing on top of it. */
+    public static boolean cameOutAt(TestContext context, ServerPlayerEntity player, BlockPos mouth) {
+        Vec3d at = context.getRelative(player.getPos());
+        return !player.hasVehicle() && Math.abs(at.x - (mouth.getX() + 0.5)) < 1.2 && Math.abs(at.z - (mouth.getZ() + 0.5)) < 1.2
+                && at.y >= mouth.getY() + 0.9;
     }
 
     /** How many items of exactly that kind (item and components) are in an inventory. */

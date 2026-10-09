@@ -23,8 +23,7 @@ public class DiceGameTests implements FabricGameTest {
 
     private static ServerPlayerEntity playerNextTo(TestContext context, boolean sneaking) {
         ServerPlayerEntity player = TestPlayers.mock(context);
-        Vec3d pos = context.getAbsolute(new Vec3d(DICE_POS.getX() + 0.5, DICE_POS.getY(), DICE_POS.getZ() - 1.5));
-        player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
+        TestPlayers.place(context, player, new Vec3d(DICE_POS.getX() + 0.5, DICE_POS.getY(), DICE_POS.getZ() - 1.5), 0, 0);
         player.setSneaking(sneaking);
         return player;
     }

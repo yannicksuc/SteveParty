@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
+import fr.lordfinn.steveparty.gametest.kit.TestAsserts;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
@@ -94,8 +95,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
     private static ServerPlayerEntity player(TestContext context, GameMode mode, double x, double y, double z) {
         ServerPlayerEntity player = TestPlayers.mock(context, mode);
         player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
+        TestPlayers.place(context, player, x, y, z);
         return player;
     }
 
@@ -107,12 +107,6 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             MiniGamePages.toggleLink(server, id, global(context, mouth), Direction.UP, MiniGamePipeRole.ofPipe(context.getBlockState(mouth)));
         }
         return id;
-    }
-
-    private static boolean near(TestContext context, ServerPlayerEntity player, BlockPos mouth) {
-        Vec3d at = context.getRelative(player.getPos());
-        return !player.hasVehicle() && Math.abs(at.x - (mouth.getX() + 0.5)) < 1.2 && Math.abs(at.z - (mouth.getZ() + 0.5)) < 1.2
-                && at.y >= mouth.getY() + 0.9;
     }
 
     // ------------------------------------------------------------------ roles
@@ -432,8 +426,8 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             context.assertTrue(PipeTravel.isTravelling(good) && PipeTravel.isTravelling(bad1) && PipeTravel.isTravelling(bad2), "they ride out of the pipes");
             context.assertTrue(!PipeTravel.isTravelling(bad3), "the second player of a pipe waits for the first to be out");
 
-            when(context, () -> near(context, good, blue) && near(context, bad1, red1) && near(context, bad2, red2) && near(context, bad3, red1)
-                    && near(context, watcher, white), 60, "they never all came out of their pipes", () -> {
+            when(context, () -> TestAsserts.cameOutAt(context, good, blue) && TestAsserts.cameOutAt(context, bad1, red1) && TestAsserts.cameOutAt(context, bad2, red2) && TestAsserts.cameOutAt(context, bad3, red1)
+                    && TestAsserts.cameOutAt(context, watcher, white), 60, "they never all came out of their pipes", () -> {
                 // The exit pipe and the others linked to the page: closed during the round, to a player and to a spectator
                 context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> {
                     Vec3d before = bad2.getPos(), watcherBefore = watcher.getPos();
@@ -508,11 +502,11 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         Runnable cleanup = () -> TestPlayers.leaveMiniGames(context, player);
         // By the blue mouth: a team A pipe
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(blueIn), Direction.WEST, player, 0), "in by the blue mouth");
-        when(context, () -> near(context, player, teamA), 60, "never came out of the team A pipe", () -> guarded(context, cleanup, () ->
+        when(context, () -> TestAsserts.cameOutAt(context, player, teamA), 60, "never came out of the team A pipe", () -> guarded(context, cleanup, () ->
                 context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> guarded(context, cleanup, () -> {
                     // By the green mouth: the players pipes, each in turn
                     context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(greenIn), Direction.EAST, player, 0), "in by the green mouth");
-                    when(context, () -> near(context, player, players1), 60, "never came out of the first players pipe", () -> guarded(context, cleanup, () ->
+                    when(context, () -> TestAsserts.cameOutAt(context, player, players1), 60, "never came out of the first players pipe", () -> guarded(context, cleanup, () ->
                             context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> guarded(context, cleanup, () -> {
                                 // The exit pipe: back out of the mouth it went in by
                                 context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(yellow), Direction.UP, player, 0), "into the exit pipe");
@@ -522,7 +516,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
                                 }, 60, "the exit pipe never brought back to the green mouth", () -> guarded(context, cleanup, () ->
                                         context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> guarded(context, cleanup, () -> {
                                             context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(greenIn), Direction.EAST, player, 0), "in by the green mouth again");
-                                            when(context, () -> near(context, player, players2), 60, "never came out of the second players pipe", () -> {
+                                            when(context, () -> TestAsserts.cameOutAt(context, player, players2), 60, "never came out of the second players pipe", () -> {
                                                 try {
                                                     // A linked copy edited elsewhere: the pipe follows (the content is the page's, not the item's)
                                                     UUID id = MiniGamePages.idOf(page);
@@ -572,7 +566,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         BlockPos pipePos = miniGamePipe(context, ModBlocks.COPPER_MINIGAME_PIPE, 1, 1, stack);
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
-        when(context, () -> near(context, player, black), 40, "never came out of the entry pipe", () -> {
+        when(context, () -> TestAsserts.cameOutAt(context, player, black), 40, "never came out of the entry pipe", () -> {
             TestPlayers.leaveMiniGames(context, player);
             context.complete();
         });
@@ -595,7 +589,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(programmed), Direction.UP, pig, 0), "the pig into the programmed one");
         context.waitAndRun(60, () -> {
             try {
-                context.assertTrue(!PipeTravel.isTravelling(player) && !near(context, player, green), "the player was sent nowhere special: " + context.getRelative(player.getPos()));
+                context.assertTrue(!PipeTravel.isTravelling(player) && !TestAsserts.cameOutAt(context, player, green), "the player was sent nowhere special: " + context.getRelative(player.getPos()));
                 Vec3d at = context.getRelative(pig.getPos());
                 context.assertTrue(!pig.hasVehicle() && !(Math.abs(at.x - 5.5) < 1.2 && Math.abs(at.z - 5.5) < 1.2), "the pig was not sent to the mini-game: " + at);
             } finally {
@@ -639,7 +633,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
         context.waitAndRun(40, () -> {
             try {
-                context.assertTrue(!PipeTravel.isTravelling(player) && near(context, player, pipePos), "too far: back out of the mini-game pipe: " + context.getRelative(player.getPos()));
+                context.assertTrue(!PipeTravel.isTravelling(player) && TestAsserts.cameOutAt(context, player, pipePos), "too far: back out of the mini-game pipe: " + context.getRelative(player.getPos()));
             } finally {
                 TestPlayers.leaveMiniGames(context, player);
             }
@@ -833,7 +827,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             TestPlayers.leaveMiniGames(context, player);
         };
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
-        when(context, () -> near(context, player, black), 40, "never came out of the entry pipe", () -> guarded(context, cleanup, () -> {
+        when(context, () -> TestAsserts.cameOutAt(context, player, black), 40, "never came out of the entry pipe", () -> guarded(context, cleanup, () -> {
             context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) == null
                     && fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.all().isEmpty(), "in the arena out of a round: no bubble");
             context.assertTrue(player.getInventory().count(Items.DIAMOND) == 3, "it keeps what it owns");

@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
@@ -82,10 +83,6 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
         return MiniGameZone.of(context.getWorld().getRegistryKey(), context.getAbsolutePos(at(1, 1, 1)), context.getAbsolutePos(at(4, 5, 4)));
     }
 
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(at(x, 0, z), Blocks.STONE);
-    }
-
     private static ZoneBubble begin(TestContext context, ServerPlayerEntity... participants) {
         return ZoneBubbles.begin(context.getWorld().getServer(), UUID.randomUUID(), zone(context), List.of(participants), List.of(), ZoneBubble.Options.DEFAULT);
     }
@@ -125,7 +122,7 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_forbidden_blocks")
     public void forbiddenBlocks(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         context.assertTrue(Blocks.LODESTONE.getDefaultState().isIn(ZoneForbidden.BLOCKS), "the tests' data put the lodestone in the tag");
         expectRefused(context, Blocks.LODESTONE, at(2, 3, 2), "tag");
@@ -219,7 +216,7 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
     /** A member of a session gets no forbidden item: not picked up, not used, not taken from a container. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_forbidden_items")
     public void forbiddenItems(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         ServerPlayerEntity member = player(context, "in", 2.5, 1, 2.5), outsider = player(context, "out", 6.5, 1, 6.5);
         try {
@@ -272,7 +269,7 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
     /** A forbidden entity in the zone: no session, and the refusal names it; during a session none spawns in the zone. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_forbidden_entities")
     public void forbiddenEntities(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         context.assertTrue(EntityType.ALLAY.isIn(ZoneForbidden.ENTITIES), "the tests' data put the allay in the tag");
         forbid(List.of(), List.of(), List.of("minecraft:bat"));

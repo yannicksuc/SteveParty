@@ -3,16 +3,13 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
@@ -33,7 +30,6 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.BiConsumer;
 
 /**
@@ -93,8 +89,8 @@ public class PowerupTrapGameTests implements FabricGameTest {
             CowEntity tokenA = token(context, T0, a);
             CowEntity tokenB = token(context, bAt, b);
             PartyControllerEntity controller = "a".equals(first)
-                    ? startParty(context, tokenA.getUuid(), tokenB.getUuid())
-                    : startParty(context, tokenB.getUuid(), tokenA.getUuid());
+                    ? TestBoards.party(context, CONTROLLER, 2, tokenA.getUuid(), tokenB.getUuid())
+                    : TestBoards.party(context, CONTROLLER, 2, tokenB.getUuid(), tokenA.getUuid());
             Game game = new Game(controller, a, b, tokenA, tokenB, controller.getCurrency(PartyCurrency.COIN));
             test.accept(game, () -> {
                 ((TokenizedEntityInterface) tokenA).steveparty$setTokenized(false);
@@ -124,26 +120,6 @@ public class PowerupTrapGameTests implements FabricGameTest {
         token.steveparty$setTokenOwner(owner.getUuid());
         token.steveparty$setStatus(TokenStatus.IN_GAME);
         return cow;
-    }
-
-    /** A party of two tokens (two rounds), started up to the first turn of {@code first}. */
-    private static PartyControllerEntity startParty(TestContext context, UUID first, UUID second) {
-        context.setBlockState(CONTROLLER.down(), Blocks.STONE);
-        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
-        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
-        PartyData data = new PartyData();
-        data.addToken(first);
-        data.addToken(second);
-        data.addStep(new PartyStep());
-        for (int round = 0; round < 2; round++) {
-            data.addStep(new TokenTurnPartyStep(first, null));
-            data.addStep(new TokenTurnPartyStep(second, null));
-        }
-        data.addStep(new EndPartyStep(new ArrayList<>(List.of(first, second))));
-        controller.setPartyData(data);
-        controller.nextStep();
-        controller.nextStep();
-        return controller;
     }
 
     /** Runs {@code step} in {@code ticks}, logging a failure (the gametest log does not show the assertion messages). */

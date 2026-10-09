@@ -24,7 +24,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.PigEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -42,6 +41,7 @@ import java.util.UUID;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
 import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
 import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
@@ -74,10 +74,6 @@ public class PowerUpWiringGameTests implements FabricGameTest {
 
     private static TokenTurnPartyStep turn(PartyControllerEntity controller) {
         return (TokenTurnPartyStep) controller.getPartyData().getCurrentStep();
-    }
-
-    private static int count(ServerPlayerEntity player, Item item) {
-        return InventoryUtils.count(player.getInventory(), new ItemStack(item));
     }
 
     /** A party of the given players, one token each on {@link DiceTestKit#PATH}, at the first one's turn; gold ingots are coins, emeralds stars. */

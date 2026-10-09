@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.config.ServerConfig;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
@@ -111,10 +112,6 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
         return MiniGameZone.of(context.getWorld().getRegistryKey(), context.getAbsolutePos(at(1, 1, 1)), context.getAbsolutePos(at(4, 5, 4)));
     }
 
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(at(x, 0, z), Blocks.STONE);
-    }
-
     private static ZoneBubble begin(TestContext context, MiniGameZone zone, ServerPlayerEntity... participants) {
         endLeftSession(context);
         return ZoneBubbles.begin(context.getWorld().getServer(), UUID.randomUUID(), zone, List.of(participants), List.of(), ZoneBubble.Options.DEFAULT);
@@ -204,7 +201,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_fidelity")
     public void everyKindComesBackAsItWas(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         MiniGameZone zone = MiniGameZone.of(world.getRegistryKey(), context.getAbsolutePos(at(1, 1, 1)), context.getAbsolutePos(at(6, 4, 6)));
         Map<BlockPos, BlockState> states = new HashMap<>();
@@ -370,7 +367,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 80)
     public void ticksTheZoneWaitedForAreAskedAgain(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         BlockPos button = context.getAbsolutePos(at(2, 1, 2));
         world.setBlockState(button, Blocks.STONE_BUTTON.getDefaultState().with(Properties.BLOCK_FACE, BlockFace.FLOOR).with(Properties.POWERED, true), Block.NOTIFY_ALL);
@@ -392,7 +389,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
     /** A bed slept in during the round does not move the spawn point: the one the player had is given back. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void spawnPointIsGivenBack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         ServerPlayerEntity player = player(context, "spawn", 2.5, 1, 2.5);
         BlockPos home = context.getAbsolutePos(at(7, 1, 7));
@@ -408,7 +405,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
     /** Effects stay on their side: one had before the round is paused in it, one got in the round does not follow out. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void effectsStayOnTheirSide(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerPlayerEntity player = player(context, "fx", 2.5, 1, 2.5);
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 2400, 1));
         ZoneBubble bubble = begin(context, zone(context), player);
@@ -427,7 +424,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
     /** A crash while the zone is put back over several ticks: what changed meanwhile is put back too when the server starts. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_crash")
     public void crashDuringTheRestorationIsRecovered(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MinecraftServer server = context.getWorld().getServer();
         ServerConfig config = ServerConfig.get();
         int perTick = config.miniGameBubbleRestorePerTick;

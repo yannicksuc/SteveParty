@@ -64,7 +64,7 @@ final class DiceTestKit {
     @SuppressWarnings("removal")
     static ServerPlayerEntity player(TestContext context) {
         ServerPlayerEntity player = TestPlayers.mock(context);
-        atEnd(context, () -> TestPlayers.remove(context, player));
+        TestPlayers.removeAtEnd(context, player);
         return player;
     }
 

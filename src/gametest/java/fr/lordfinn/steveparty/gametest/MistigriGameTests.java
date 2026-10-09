@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriGoals;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -44,10 +45,6 @@ import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 public class MistigriGameTests implements FabricGameTest {
     private static final String HUT = "mistigri_hut", NO_HUT = "mistigri_no_hut";
     private static final BlockPos CAT = new BlockPos(3, 1, 3);
-
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
-    }
 
     /** The test's area counts as a witch hut. */
     private static void hut(TestContext context) {
@@ -105,55 +102,55 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = HUT)
     public void aOneSummonsHim(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         hut(context);
         rollAtCat(context, cat(context, CatVariant.ALL_BLACK), "dice_face_1", true);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = HUT)
     public void aPremiumOneSummonsHim(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         hut(context);
         rollAtCat(context, cat(context, CatVariant.ALL_BLACK), "premium_dice_face_1", true);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = HUT)
     public void aCursedOneSummonsHim(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         hut(context);
         rollAtCat(context, cat(context, CatVariant.ALL_BLACK), "cursed_dice_face_1", true);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = HUT)
     public void aZeroSummonsHim(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         hut(context);
         rollAtCat(context, cat(context, CatVariant.ALL_BLACK), "dice_face_0", true);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = HUT)
     public void aFiveDoesNot(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         hut(context);
         rollAtCat(context, cat(context, CatVariant.ALL_BLACK), "dice_face_5", false);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = HUT)
     public void onlyABlackCat(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         hut(context);
         rollAtCat(context, cat(context, CatVariant.TABBY), "dice_face_1", false);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = NO_HUT)
     public void onlyByAWitchHut(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         rollAtCat(context, cat(context, CatVariant.ALL_BLACK), "dice_face_1", false);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = HUT)
     public void aTamedBlackCatStaysItsOwners(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         hut(context);
         CatEntity cat = cat(context, CatVariant.ALL_BLACK);
         ServerPlayerEntity owner = player(context);
@@ -179,7 +176,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void crossingHisPathGivesBadLuck(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MistigriEntity mistigri = mistigri(context, new BlockPos(3, 1, 1));
         mistigri.setYaw(0);
         mistigri.setBodyYaw(0); // facing +z
@@ -196,7 +193,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void passingBehindHimIsFine(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MistigriEntity mistigri = mistigri(context, new BlockPos(3, 1, 6));
         mistigri.setYaw(0);
         mistigri.setBodyYaw(0);
@@ -211,7 +208,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void hisOwnerNeverCrossesHim(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MistigriEntity mistigri = mistigri(context, new BlockPos(3, 1, 1));
         mistigri.setYaw(0);
         mistigri.setBodyYaw(0);
@@ -227,7 +224,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void hittingHimMakesHimAngryAndUnlucky(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MistigriEntity mistigri = mistigri(context, CAT);
         ServerPlayerEntity player = survival(context);
         moveTo(context, player, new Vec3d(3.5, 1, 5.5));
@@ -246,7 +243,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void lotsOfFishTameHim(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MistigriEntity mistigri = mistigri(context, CAT);
         ServerPlayerEntity player = survival(context);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SALMON, 64));
@@ -263,7 +260,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void heGivesHisOwnerLuck(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MistigriEntity mistigri = mistigri(context, CAT);
         ServerPlayerEntity owner = survival(context), other = survival(context);
         moveTo(context, owner, new Vec3d(3.5, 1, 5.5));
@@ -279,7 +276,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void monstersNearATamedOneMissSometimes(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MistigriEntity mistigri = mistigri(context, CAT);
         Vec3d near = context.getAbsolute(new Vec3d(5, 1, 5));
         context.assertFalse(MistigriBadLuck.nearTamed(context.getWorld(), near), "a wild one brings no monster bad luck");
@@ -306,7 +303,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aChestHeSleepsOnWontOpen(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BlockPos chest = new BlockPos(3, 1, 3);
         context.setBlockState(chest, Blocks.CHEST);
         MistigriEntity mistigri = mistigri(context, chest.up());
@@ -323,7 +320,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void heKnocksItemsOffFrames(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         context.setBlockState(new BlockPos(3, 1, 5), Blocks.STONE);
         context.setBlockState(new BlockPos(3, 2, 5), Blocks.STONE);
         BlockPos at = context.getAbsolutePos(new BlockPos(3, 2, 4));
@@ -344,7 +341,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theLoadedDieCursesTheNextRoll(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerPlayerEntity user = survival(context), victim = survival(context);
         atEnd(context, () -> victim.removeCommandTag(CursedRolls.TAG));
         ItemStack loaded = new ItemStack(ModItems.LOADED_DIE, 2);
@@ -366,7 +363,7 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void heIsSavedAndLoaded(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MistigriEntity mistigri = mistigri(context, CAT);
         ServerPlayerEntity owner = player(context);
         mistigri.fishToTame();

@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileStampComponent;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.recipes.TileSizeRecipe;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -50,10 +51,6 @@ public class TileContentsGameTests implements FabricGameTest {
     private static final BlockPos TILE = new BlockPos(2, 2, 2);
     /** Where the dropped item is placed again: its ground block. */
     private static final BlockPos ELSEWHERE = new BlockPos(6, 1, 2);
-
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 9; x++) for (int z = 0; z < 6; z++) context.setBlockState(new BlockPos(x, 1, z), Blocks.STONE);
-    }
 
     private static TileStampComponent stamp() {
         byte[] shape = new byte[16 * 16];
@@ -114,7 +111,7 @@ public class TileContentsGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void silkTouchKeepsCartridgesLookAndSize(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 9, 6, 1);
         context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, TileLayout.SMALL));
         BoardSpaceBlockEntity tile = context.getBlockEntity(TILE);
         tile.setStamp(stamp());
@@ -152,7 +149,7 @@ public class TileContentsGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void withoutSilkTouchTheCartridgeStaysWithoutItsLinks(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 9, 6, 1);
         BlockPos second = TILE.east(2);
         for (BlockPos pos : List.of(TILE, second)) {
             context.setBlockState(pos, ModBlocks.TILE);
@@ -190,7 +187,7 @@ public class TileContentsGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void anAdvancedTileKeepsEverySlot(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 9, 6, 1);
         context.setBlockState(TILE, ModBlocks.ADVANCED_TILE);
         BoardSpaceBlockEntity tile = context.getBlockEntity(TILE);
         tile.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
@@ -225,7 +222,7 @@ public class TileContentsGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aLargeTileIsOneItem(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 9, 6, 1);
         context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(SIZE, TileLayout.LARGE_SOUTH_EAST));
         BoardSpaceBlockEntity tile = context.getBlockEntity(TILE);
         tile.setStack(0, linkedStop(context));

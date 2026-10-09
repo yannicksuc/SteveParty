@@ -22,7 +22,6 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
 
 import java.util.List;
@@ -43,8 +42,7 @@ public class PlayerPawnGameTests implements FabricGameTest {
 
     private static ServerPlayerEntity playerAt(TestContext context, double x, double z) {
         ServerPlayerEntity player = TestPlayers.mock(context);
-        Vec3d pos = context.getAbsolute(new Vec3d(x, TARGET_POS.getY(), z));
-        player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
+        TestPlayers.place(context, player, x, TARGET_POS.getY(), z);
         return player;
     }
 

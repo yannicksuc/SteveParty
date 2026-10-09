@@ -103,8 +103,7 @@ public class PipeGameTests implements FabricGameTest {
 
     private static ServerPlayerEntity player(TestContext context, Vec3d relativeFeet, float yaw) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
-        Vec3d abs = context.getAbsolute(relativeFeet);
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, yaw, 0);
+        TestPlayers.place(context, player, relativeFeet, yaw, 0);
         return player;
     }
 

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
@@ -39,10 +40,6 @@ public class FrousseuxSpaceGameTests implements FabricGameTest {
     private static final BlockPos TILE = new BlockPos(3, 1, 3);
     /** Appearing, flying, the defence, flying back, giving: well under this. */
     private static final int WHOLE_THEFT = 500;
-
-    private static int count(ServerPlayerEntity player, Item item) {
-        return InventoryUtils.count(player.getInventory(), new ItemStack(item));
-    }
 
     private static void give(ServerPlayerEntity player, Item item, int count) {
         InventoryUtils.giveOrDrop(player, new ItemStack(item), count);

@@ -28,6 +28,7 @@ import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
 import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
@@ -36,10 +37,6 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  */
 public class DiceRollGameTests implements FabricGameTest {
     private static final String BATCH = "dice_rolls";
-
-    private static int count(ServerPlayerEntity player, Item item) {
-        return InventoryUtils.count(player.getInventory(), new ItemStack(item));
-    }
 
     // ---------------------------------------------------------------- the faces themselves
 
