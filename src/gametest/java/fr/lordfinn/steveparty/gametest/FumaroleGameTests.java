@@ -645,4 +645,72 @@ public class FumaroleGameTests implements FabricGameTest {
             context.complete();
         });
     }
+
+    // ---------------------------------------------------------------- the charged, locked shot
+
+    /** A wild one, its AI on, facing east, aiming at a still pig 10 blocks east of its shell. */
+    private static PigEntity sittingDuck(TestContext context, FumaroleEntity fumarole) {
+        fumarole.setAiDisabled(false);
+        fumarole.setTank(10);
+        PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(1, 1, 8));
+        pig.setAiDisabled(true);
+        pig.refreshPositionAndAngles(fumarole.getBoundingBox().maxX + 10 + pig.getWidth() / 2, fumarole.getY(), fumarole.getZ(), 0, 0);
+        fumarole.setTarget(pig);
+        return pig;
+    }
+
+    /** The head whose aim has frozen (its vent charging, its target let go), or -1. */
+    private static int lockedHead(FumaroleEntity fumarole) {
+        for (int head = 0; head < FumaroleEntity.HEADS.length; head++) {
+            if (fumarole.getVent(head) == FumaroleEntity.VENT_CHARGING && fumarole.getHeadTarget(head) == null) return head;
+        }
+        return -1;
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_shot_still", tickLimit = 160)
+    public void theLockedShotHitsAStillTarget(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        PigEntity pig = sittingDuck(context, fumarole);
+        float health = pig.getHealth();
+        boolean[] done = {false};
+        context.runAtEveryTick(() -> {
+            if (done[0] || pig.getHealth() >= health) return;
+            done[0] = true;
+            pig.discard();
+            fumarole.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_shot_dodged", tickLimit = 160)
+    public void aStepAsideOnceItsAimFreezesDodgesTheShot(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        PigEntity pig = sittingDuck(context, fumarole);
+        float health = pig.getHealth();
+        boolean[] stepped = {false}, fired = {false};
+        int[] firedAt = {-1};
+        context.runAtEveryTick(() -> {
+            if (!stepped[0] && lockedHead(fumarole) >= 0) { // its aim froze: three blocks aside
+                stepped[0] = true;
+                pig.refreshPositionAndAngles(pig.getX(), pig.getY(), pig.getZ() + 3, 0, 0);
+            }
+            for (int head = 0; head < FumaroleEntity.HEADS.length; head++) {
+                if (!fired[0] && fumarole.getVent(head) == FumaroleEntity.VENT_SPITTING) {
+                    fired[0] = true;
+                    firedAt[0] = fumarole.age;
+                }
+            }
+            if (fired[0] && fumarole.age >= firedAt[0] + 5) {
+                context.assertTrue(stepped[0], "it locked its aim before firing");
+                context.assertTrue(pig.getHealth() >= health && !pig.isOnFire(), "the shot went where the pig was: missed");
+                pig.discard();
+                fumarole.discard();
+                fired[0] = false;
+                firedAt[0] = Integer.MAX_VALUE;
+                context.complete();
+            }
+        });
+    }
 }

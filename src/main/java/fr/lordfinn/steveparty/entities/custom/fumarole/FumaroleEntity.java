@@ -133,6 +133,8 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
      * thrusters), and only {@link #HEAD_EASE} a tick otherwise (moods, a rider's look, back to rest): a heavy beast.
      */
     public static final float HEAD_YAW_MAX = 75, HEAD_TURN = 15, HEAD_EASE = 3;
+    /** A wild head's neck turning to lock on its blast's target (degrees a tick): slow, readable. */
+    public static final float BLAST_TURN = 6;
     /** Its body turns at most this fast (degrees a tick) walking, and its look (so its idle body) {@link #LOOK_TURN}. */
     public static final float BODY_TURN = 3, LOOK_TURN = 4;
 
@@ -653,12 +655,16 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     /** Server: turns a head toward a point (at most {@link #HEAD_TURN} a tick unless {@code instant}). */
     public void aimHeadAt(int head, Vec3d point, boolean instant) {
+        aimHeadAt(head, point, instant ? 360 : HEAD_TURN);
+    }
+
+    /** Server: turns a head toward a point, at most {@code step} degrees a tick. */
+    public void aimHeadAt(int head, Vec3d point, float step) {
         Vec3d to = point.subtract(nozzle(HEADS[head], bodyYaw, aimYaw[head]));
         float yaw = (float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90;
         float rest = HEADS[head].restYaw();
         float rel = rest + MathHelper.clamp(MathHelper.wrapDegrees(yaw - bodyYaw - rest), -HEAD_YAW_MAX, HEAD_YAW_MAX);
         float current = MathHelper.wrapDegrees(aimYaw[head] - bodyYaw);
-        float step = instant ? 360 : HEAD_TURN;
         aimYaw[head] = bodyYaw + current + MathHelper.clamp(MathHelper.wrapDegrees(rel - current), -step, step);
     }
 
@@ -685,8 +691,12 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     }
 
     public boolean inRange(int head, Entity target) {
+        return inRange(head, aimPoint(target));
+    }
+
+    public boolean inRange(int head, Vec3d point) {
         double range = getTank() > 0 ? FumaroleBlast.RANGE : FumaroleBlast.PUFF_RANGE;
-        return blastOrigin(head).squaredDistanceTo(aimPoint(target)) <= range * range;
+        return blastOrigin(head).squaredDistanceTo(point) <= range * range;
     }
 
     public boolean inRange(Entity target) {
@@ -701,7 +711,12 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     /** One head fires at a target (wild): see {@link FumaroleBlast}. */
     public List<LivingEntity> blast(int head, Entity target) {
-        return FumaroleBlast.fire(this, head, blastOrigin(head), aimPoint(target));
+        return blastAt(head, aimPoint(target));
+    }
+
+    /** One head fires straight at a point (wild: the aim it locked, no homing). */
+    public List<LivingEntity> blastAt(int head, Vec3d point) {
+        return FumaroleBlast.fire(this, head, blastOrigin(head), point);
     }
 
     /** A rider's click on his head: fires where he looks; in the air after a leap, grabs the wall instead. */
@@ -1020,10 +1035,13 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         float yaw = rest.restYaw(), pitch = rest.restPitch(), turn = HEAD_TURN;
         Entity target = getHeadTarget(head);
         Entity rider = head < getPassengerList().size() ? getPassengerList().get(head) : null;
+        // wild, its vent charging or spitting but no target any more: its aim is locked (FumaroleGoals.Blast), it holds
+        if (target == null && getVent(head) != VENT_IDLE && !isSteered()) return;
         if (target != null && !hasPassenger(target)) {
             Vec3d to = aimPoint(target).subtract(nozzle(rest, bodyYaw, bodyYaw + clientYaw[head]));
             yaw = MathHelper.wrapDegrees((float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90 - bodyYaw);
             pitch = (float) -(MathHelper.atan2(to.y, to.horizontalLength()) * MathHelper.DEGREES_PER_RADIAN);
+            turn = BLAST_TURN;
         } else if (target != null) { // its own rider: turns back to look at him
             yaw = rest.restYaw() + (head == 1 ? -70 : 70);
             pitch = -40;
