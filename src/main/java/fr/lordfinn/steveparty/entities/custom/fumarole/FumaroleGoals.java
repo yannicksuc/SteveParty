@@ -138,7 +138,8 @@ public final class FumaroleGoals {
                 int head = (nextHead + k) % fireAt.length;
                 for (int j = 0; j < enemies.size(); j++) {
                     LivingEntity enemy = enemies.get((head + j) % enemies.size());
-                    if (fumarole.mayShoot(head, enemy) && fumarole.getVisibilityCache().canSee(enemy) && fumarole.inRange(head, enemy)) {
+                    if (fumarole.mayShoot(head, enemy) && fumarole.faces(head, enemy) && fumarole.getVisibilityCache().canSee(enemy)
+                            && fumarole.inRange(head, enemy)) {
                         targets[head] = enemy;
                         fireAt[head] = 1 + TURN_TICKS + CHARGE_TICKS; // tick() counts from 1: its turn starts there
                         end = fireAt[head] + SPIT_TICKS;
@@ -365,7 +366,10 @@ public final class FumaroleGoals {
         }
     }
 
-    /** With a target out of reach or out of sight, it trudges toward them. */
+    /**
+     * With a target out of reach or out of sight, it trudges toward them; within reach but out of its necks' arc (behind
+     * or beside it), it slowly turns on the spot to face them.
+     */
     static final class Approach extends Goal {
         private final FumaroleEntity fumarole;
         private int repath;
@@ -378,7 +382,11 @@ public final class FumaroleGoals {
         private boolean needed() {
             LivingEntity target = fumarole.getTarget();
             return target != null && target.isAlive() && !fumarole.hasPassengers()
-                    && (!fumarole.inRange(target) || !fumarole.getVisibilityCache().canSee(target));
+                    && (!reachable(target) || !fumarole.faces(target));
+        }
+
+        private boolean reachable(LivingEntity target) {
+            return fumarole.inRange(target) && fumarole.getVisibilityCache().canSee(target);
         }
 
         @Override
@@ -402,7 +410,9 @@ public final class FumaroleGoals {
             if (target == null) return;
             aim(fumarole, target);
             fumarole.setHeadTarget(0, target);
-            if (--repath <= 0) {
+            if (reachable(target)) {
+                fumarole.getNavigation().stop();
+            } else if (--repath <= 0) {
                 repath = 20;
                 fumarole.getNavigation().startMovingTo(target, 1.0);
             }
