@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -68,18 +69,22 @@ import java.util.List;
  *     <li><b>Its tank</b> ({@link #getTank()}): 0 to {@link #TANK_MAX} buckets, synced, saved. Wild ones are born
  *     nearly empty (0 to {@link #SPAWN_TANK_MAX}).</li>
  *     <li><b>Pumping</b> ({@link FumaroleGoals.Pump}, {@link FumarolePumping}): below a full tank it looks for lava
- *     sources around it, walks to the shore, dips its nozzle (the pump animation) and drinks one: the source block
+ *     sources around it, walks to the shore, dips one head's nozzle ({@link #PUMP_HEAD}, the pump animation) and drinks one: the source block
  *     disappears, the tank gains a bucket. Its rules keep it from draining a pool (see FumarolePumping).</li>
  *     <li><b>Buckets</b>: a player takes a bucket of lava from it with an empty bucket, or pours one in with a lava
  *     bucket.</li>
  *     <li><b>Neutral, territorial</b>: it fights back whoever hurts it (players and mobs alike), and a player coming
  *     within {@link #TERRITORY} blocks makes it angry for {@link #ANGER_TICKS} ticks; then it calms down if they keep
  *     away.</li>
- *     <li><b>The thermal blast</b> ({@link FumaroleGoals.Blast}): its neck aims like a turret at a target up to
- *     {@link #BLAST_RANGE} blocks it can see; a second of warning (its vent turns to {@link #VENT_CHARGING}, a hiss),
- *     then a thick line of scalding steam ({@link #blast}): {@link #BLAST_DAMAGE} damage, set on fire
- *     {@link #BLAST_FIRE_SECONDS} s, a strong shove; it stops at the first solid block and costs a bucket.
- *     With an empty tank it can only puff: a short weak cloud ({@link #PUFF_RANGE} blocks, {@link #PUFF_DAMAGE}
+ *     <li><b>Its heads</b> ({@link #HEADS}): several necks, like a hydra, each a turret of its own: its own aim
+ *     (the target it watches, synced: {@link #getHeadTarget}) and its own vent ({@link #getVent}).</li>
+ *     <li><b>The thermal blast</b> ({@link FumaroleGoals.Blast}): one head at a time, the heads taking turns, at a
+ *     target up to {@link #BLAST_RANGE} blocks it can see (each head its own if several enemies are about, else they
+ *     focus one): a second of warning (the head's vent turns to {@link #VENT_CHARGING}, a hiss), then a thick line of
+ *     scalding steam ({@link #blast}): {@link #BLAST_DAMAGE} damage, set on fire {@link #BLAST_FIRE_SECONDS} s, a
+ *     strong shove; it stops at the first solid block and costs a bucket. Balance: the heads share one rest between
+ *     blasts (4 to 6 s) and the one tank, so three heads shoot no more than one would; they only spread the threat.
+ *     With an empty tank a head can only puff: a short weak cloud ({@link #PUFF_RANGE} blocks, {@link #PUFF_DAMAGE}
  *     damage, no fire, a small shove), so it goes back to pump first when there is lava around.</li>
  *     <li><b>Its death</b>: its lava spills. With mobGriefing on, min(buckets / 9, {@link #SPILL_MAX}) lava sources
  *     are poured where it dies (only into air or replaceable blocks); always a burst of lava and smoke. It drops
@@ -89,15 +94,24 @@ import java.util.List;
  * </ul>
  */
 public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
-    /** Its shell and legs: 52 px wide, the tank's rim 52 px high. The neck reaches far beyond (not in the box). */
-    public static final float WIDTH = 3.2f, HEIGHT = 3.25f, EYE_HEIGHT = 2.2f;
+    /** Its shell and legs: 52 px wide, the tank's rim 58 px high. The necks reach far beyond (not in the box). */
+    public static final float WIDTH = 3.2f, HEIGHT = 3.625f, EYE_HEIGHT = 2.575f;
     public static final int TANK_MAX = 27, SPAWN_TANK_MAX = 3;
     public static final double MAX_HEALTH = 80, ARMOR = 10, SPEED = 0.12;
 
-    /** Where its nozzle is in its S rest pose (export's pose_s): this far ahead and up from its feet, in blocks. */
-    public static final double NOZZLE_FORWARD = 9.4, NOZZLE_UP = 2.2;
-    /** The neck turns as a turret from about this far ahead (neck_06). */
-    public static final double TURRET_PIVOT = 5.0;
+    /**
+     * Its heads, centre first, and where each nozzle rests: measured on the v12 export (pose_s): the centre neck 11
+     * segments long, the side ones 8, splayed 30 degrees out from 13 px either side.
+     */
+    public static final FumaroleHead[] HEADS = {
+            new FumaroleHead(0, "_c", 0.0, 1.125, 8.31, 2.57, 0, 20),
+            new FumaroleHead(1, "_l", -0.8125, 1.125, 7.38, 1.94, -30, 20),
+            new FumaroleHead(2, "_r", 0.8125, 1.125, 7.76, 2.7, 30, 5),
+    };
+    /** The head that dips into the lava to pump. */
+    public static final int PUMP_HEAD = 0;
+    /** A head turns at most this far (degrees) from its rest, this fast (degrees a tick). */
+    public static final float HEAD_YAW_MAX = 75, HEAD_TURN = 25;
     /** Pumping: the nozzle dips about 6.5 blocks ahead, 3.5 down; a source this far (horizontally) can be reached. */
     public static final double PUMP_MIN = 2.0, PUMP_MAX = 9.0, PUMP_DOWN = 6.0, PUMP_UP = 1.0;
 
@@ -112,14 +126,23 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     /** Lava sources spilt on death: one per this many buckets, at most {@link #SPILL_MAX}. */
     public static final int SPILL_PER = 9, SPILL_MAX = 3;
 
-    /** Its vent's state ({@link #getVent()}), synced for the renderer: resting, the warning second, blasting. */
+    /** A head's vent state ({@link #getVent}), synced for the renderer: resting, the warning second, blasting. */
     public static final byte VENT_IDLE = 0, VENT_CHARGING = 1, VENT_SPITTING = 2;
 
     /** The scalding steam's damage type (data/steveparty/damage_type/thermal_steam.json). */
     public static final RegistryKey<DamageType> THERMAL_STEAM = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Steveparty.id("thermal_steam"));
 
     private static final TrackedData<Integer> TANK = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER);
-    private static final TrackedData<Byte> VENT = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.BYTE);
+    /** Every head's vent state, 2 bits a head. */
+    private static final TrackedData<Integer> VENTS = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** Each head's target (an entity id, -1: none): the clients aim the head at it. */
+    private static final List<TrackedData<Integer>> HEAD_TARGETS = new ArrayList<>();
+
+    static {
+        for (FumaroleHead ignored : HEADS) {
+            HEAD_TARGETS.add(DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER));
+        }
+    }
     private static final TrackedData<Boolean> PUMPING = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
     public static final String ANIM_IDLE = "animation.nether_turtle.idle", ANIM_WALK = "animation.nether_turtle.walk",
@@ -127,7 +150,6 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop(ANIM_IDLE);
     private static final RawAnimation WALK = RawAnimation.begin().thenLoop(ANIM_WALK);
     private static final RawAnimation PUMP = RawAnimation.begin().thenLoop(ANIM_PUMP);
-    private static final RawAnimation SPIT = RawAnimation.begin().thenPlay(ANIM_SPIT);
     public static final String MAIN_CONTROLLER = "main", ACTION_CONTROLLER = "action";
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
@@ -136,6 +158,11 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     private int angryUntil;
     /** Client only: the tank's drawn level, easing toward the synced one (buckets). */
     public float clientTankLevel = -1, prevClientTankLevel = -1;
+    /** Server: each head's aim (world yaw; degrees), turning toward its target. */
+    private final float[] aimYaw = new float[HEADS.length];
+    /** Client only: each head's drawn aim relative to its rest (yaw from the body, pitch), eased; and last tick's. */
+    public final float[] clientYaw = new float[HEADS.length], clientPitch = new float[HEADS.length];
+    public final float[] prevClientYaw = new float[HEADS.length], prevClientPitch = new float[HEADS.length];
 
     public FumaroleEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -172,7 +199,8 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
         builder.add(TANK, 0);
-        builder.add(VENT, VENT_IDLE);
+        builder.add(VENTS, 0);
+        for (TrackedData<Integer> target : HEAD_TARGETS) builder.add(target, -1);
         builder.add(PUMPING, false);
     }
 
@@ -193,12 +221,23 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         dataTracker.set(TANK, MathHelper.clamp(buckets, 0, TANK_MAX));
     }
 
-    public byte getVent() {
-        return dataTracker.get(VENT);
+    public byte getVent(int head) {
+        return (byte) ((dataTracker.get(VENTS) >> (2 * head)) & 3);
     }
 
-    public void setVent(byte vent) {
-        dataTracker.set(VENT, vent);
+    public void setVent(int head, byte vent) {
+        int all = dataTracker.get(VENTS) & ~(3 << (2 * head));
+        dataTracker.set(VENTS, all | (vent & 3) << (2 * head));
+    }
+
+    /** The entity this head aims at, or null. */
+    public @Nullable Entity getHeadTarget(int head) {
+        int id = dataTracker.get(HEAD_TARGETS.get(head));
+        return id < 0 ? null : getWorld().getEntityById(id);
+    }
+
+    public void setHeadTarget(int head, @Nullable Entity target) {
+        dataTracker.set(HEAD_TARGETS.get(head), target == null ? -1 : target.getId());
     }
 
     public boolean isPumping() {
@@ -277,52 +316,77 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- the blast
 
-    /** Its nozzle in the world, its neck in the S pose turned toward {@code headYaw} from {@code bodyYaw}. */
-    public Vec3d nozzle(float bodyYaw, float headYaw) {
-        return getPos().add(Vec3d.fromPolar(0, bodyYaw).multiply(TURRET_PIVOT))
-                .add(Vec3d.fromPolar(0, headYaw).multiply(NOZZLE_FORWARD - TURRET_PIVOT))
-                .add(0, NOZZLE_UP, 0);
+    /** A head's nozzle in the world, its neck in the S pose turned to world yaw {@code yaw}. */
+    public Vec3d nozzle(FumaroleHead head, float bodyYaw, float yaw) {
+        return getPos().add(Vec3d.fromPolar(0, bodyYaw).multiply(head.base()))
+                .add(Vec3d.fromPolar(0, bodyYaw + 90).multiply(head.side()))
+                .add(Vec3d.fromPolar(0, yaw).multiply(head.reach()))
+                .add(0, head.up(), 0);
     }
 
-    public Vec3d nozzle() {
-        return nozzle(bodyYaw, headYaw);
+    /** A head's nozzle as it aims now (server: its aim; client: its drawn aim). */
+    public Vec3d nozzle(int head) {
+        float yaw = getWorld().isClient ? bodyYaw + clientYaw[head] : aimYaw[head];
+        return nozzle(HEADS[head], bodyYaw, yaw);
     }
 
     /** Where it aims on a target: the middle of its body. */
-    public static Vec3d aimPoint(LivingEntity target) {
+    public static Vec3d aimPoint(Entity target) {
         return target.getPos().add(0, target.getHeight() * 0.5, 0);
     }
 
     /**
-     * Where the steam leaves from: its nozzle, unless a block stands between its neck's base and the nozzle (the
-     * nozzle in a wall): then just before that block.
+     * Where a head's steam leaves from: its nozzle, unless a block stands between the neck's base and the nozzle
+     * (the nozzle in a wall): then just before that block.
      */
-    public Vec3d blastOrigin() {
-        Vec3d nozzle = nozzle();
-        Vec3d base = getPos().add(0, NOZZLE_UP, 0);
+    public Vec3d blastOrigin(int head) {
+        Vec3d nozzle = nozzle(head);
+        Vec3d base = getPos().add(0, HEADS[head].up(), 0);
         BlockHitResult hit = getWorld().raycast(new RaycastContext(base, nozzle, RaycastContext.ShapeType.COLLIDER,
                 RaycastContext.FluidHandling.NONE, this));
         if (hit.getType() == HitResult.Type.MISS) return nozzle;
         return hit.getPos().add(base.subtract(hit.getPos()).normalize().multiply(0.3));
     }
 
-    /** Whether it can blast now: its target in range (a full blast, or a puff with an empty tank). */
-    public boolean inRange(LivingEntity target) {
+    /** Server: turns a head toward {@code target} (at most {@link #HEAD_TURN} a tick unless {@code instant}, within reach of the body). */
+    public void aimHead(int head, Entity target, boolean instant) {
+        Vec3d to = aimPoint(target).subtract(nozzle(HEADS[head], bodyYaw, aimYaw[head]));
+        float yaw = (float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90;
+        float rest = HEADS[head].restYaw();
+        float rel = rest + MathHelper.clamp(MathHelper.wrapDegrees(yaw - bodyYaw - rest), -HEAD_YAW_MAX, HEAD_YAW_MAX);
+        float current = MathHelper.wrapDegrees(aimYaw[head] - bodyYaw);
+        float step = instant ? 360 : HEAD_TURN;
+        aimYaw[head] = bodyYaw + current + MathHelper.clamp(MathHelper.wrapDegrees(rel - current), -step, step);
+    }
+
+    /** Server: a head back to rest. */
+    public void restHead(int head) {
+        aimYaw[head] = bodyYaw + HEADS[head].restYaw();
+    }
+
+    /** Whether a head can reach this target now (a full blast's range, or a puff's with an empty tank). */
+    public boolean inRange(int head, Entity target) {
         double range = getTank() > 0 ? BLAST_RANGE : PUFF_RANGE;
-        return blastOrigin().squaredDistanceTo(aimPoint(target)) <= range * range;
+        return blastOrigin(head).squaredDistanceTo(aimPoint(target)) <= range * range;
+    }
+
+    /** Whether any head can reach this target now. */
+    public boolean inRange(Entity target) {
+        for (int head = 0; head < HEADS.length; head++) if (inRange(head, target)) return true;
+        return false;
     }
 
     /**
-     * Fires at {@code target}: with lava in its tank, the thermal blast (costs a bucket), else the weak puff. Hits
+     * One head fires at {@code target}: with lava in the tank, the thermal blast (costs a bucket), else the weak puff. Hits
      * every living thing (but other Fumaroles) within the jet's radius along the line, up to the first solid block.
      * Returns the entities it hurt.
      */
-    public List<LivingEntity> blast(LivingEntity target) {
+    public List<LivingEntity> blast(int head, Entity target) {
         List<LivingEntity> hurt = new ArrayList<>();
         if (!(getWorld() instanceof ServerWorld world)) return hurt;
         boolean full = getTank() > 0;
         double range = full ? BLAST_RANGE : PUFF_RANGE, radius = full ? BLAST_RADIUS : PUFF_RADIUS;
-        Vec3d from = blastOrigin();
+        Vec3d from = blastOrigin(head);
         Vec3d dir = aimPoint(target).subtract(from);
         if (dir.lengthSquared() < 1.0e-6) dir = getRotationVector();
         dir = dir.normalize();
@@ -428,17 +492,20 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         prevClientTankLevel = clientTankLevel < 0 ? getTank() : clientTankLevel;
         float goal = getTank();
         clientTankLevel = clientTankLevel < 0 ? goal : clientTankLevel + MathHelper.clamp(goal - clientTankLevel, -0.15f, 0.15f);
-        if (deathTime > 0 || isPumping()) return;
-        byte vent = getVent();
-        Vec3d at = nozzle();
-        Vec3d ahead = Vec3d.fromPolar(0, headYaw);
-        if (vent == VENT_IDLE && random.nextInt(6) == 0) {
-            getWorld().addParticle(ModParticles.THERMAL_BASE, at.x + ahead.x * 0.3, at.y, at.z + ahead.z * 0.3,
-                    ahead.x * 0.01, 0.03, ahead.z * 0.01);
-        } else if (vent == VENT_CHARGING) {
-            getWorld().addParticle(ParticleTypes.SMALL_FLAME, at.x + random.nextGaussian() * 0.2, at.y + random.nextGaussian() * 0.2,
-                    at.z + random.nextGaussian() * 0.2, 0, 0.01, 0);
-            if (random.nextInt(2) == 0) getWorld().addParticle(ModParticles.THERMAL_BASE, at.x, at.y, at.z, 0, 0.05, 0);
+        if (deathTime > 0) return;
+        for (int head = 0; head < HEADS.length; head++) {
+            easeHead(head);
+            byte vent = getVent(head);
+            Vec3d at = nozzle(head);
+            Vec3d ahead = Vec3d.fromPolar(0, bodyYaw + clientYaw[head]);
+            if (vent == VENT_IDLE && random.nextInt(6 * HEADS.length) == 0) {
+                getWorld().addParticle(ModParticles.THERMAL_BASE, at.x + ahead.x * 0.3, at.y, at.z + ahead.z * 0.3,
+                        ahead.x * 0.01, 0.03, ahead.z * 0.01);
+            } else if (vent == VENT_CHARGING) {
+                getWorld().addParticle(ParticleTypes.SMALL_FLAME, at.x + random.nextGaussian() * 0.2, at.y + random.nextGaussian() * 0.2,
+                        at.z + random.nextGaussian() * 0.2, 0, 0.01, 0);
+                if (random.nextInt(2) == 0) getWorld().addParticle(ModParticles.THERMAL_BASE, at.x, at.y, at.z, 0, 0.05, 0);
+            }
         }
         if (random.nextInt(20) == 0) { // the tank's cracks smoke, and ash drifts about it
             getWorld().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX() + random.nextGaussian() * 0.8,
@@ -448,6 +515,26 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
             getWorld().addParticle(random.nextBoolean() ? ParticleTypes.ASH : ParticleTypes.WHITE_ASH,
                     getX() + random.nextGaussian() * 1.5, getY() + random.nextDouble() * HEIGHT, getZ() + random.nextGaussian() * 1.5, 0, 0, 0);
         }
+    }
+
+    /** Client: eases a head's drawn aim toward its target (or, without one, the centre head toward where it looks). */
+    private void easeHead(int head) {
+        prevClientYaw[head] = clientYaw[head];
+        prevClientPitch[head] = clientPitch[head];
+        FumaroleHead rest = HEADS[head];
+        float yaw = rest.restYaw(), pitch = rest.restPitch();
+        Entity target = getHeadTarget(head);
+        if (target != null) {
+            Vec3d to = aimPoint(target).subtract(nozzle(HEADS[head], bodyYaw, bodyYaw + clientYaw[head]));
+            yaw = MathHelper.wrapDegrees((float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90 - bodyYaw);
+            pitch = (float) -(MathHelper.atan2(to.y, to.horizontalLength()) * MathHelper.DEGREES_PER_RADIAN);
+        } else if (head == 0 && !isPumping()) {
+            yaw = MathHelper.wrapDegrees(headYaw - bodyYaw);
+            pitch = rest.restPitch() + getPitch() * 0.5f; // a glance from its resting pose
+        }
+        yaw = rest.restYaw() + MathHelper.clamp(MathHelper.wrapDegrees(yaw - rest.restYaw()), -HEAD_YAW_MAX, HEAD_YAW_MAX);
+        clientYaw[head] += MathHelper.clamp(MathHelper.wrapDegrees(yaw - clientYaw[head]), -HEAD_TURN, HEAD_TURN);
+        clientPitch[head] += MathHelper.clamp(pitch - clientPitch[head], -HEAD_TURN, HEAD_TURN);
     }
 
     // ---------------------------------------------------------------- death: the tank spills
@@ -494,6 +581,12 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     public int getMaxLookYawChange() {
         return 25; // its neck turns fast, a turret
+    }
+
+    /** Drawn while any of it shows: its necks reach some 10 blocks out of its box. */
+    @Override
+    public Box getVisibilityBoundingBox() {
+        return getBoundingBox().expand(10, 3, 10);
     }
 
     @Override
@@ -551,16 +644,18 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- animations
 
-    /** Plays the spit animation (the warning second, then the whip as the steam leaves) on every client. */
-    void playSpit() {
-        triggerAnim(ACTION_CONTROLLER, "spit");
+    /** Plays a head's spit animation (the warning second, then the whip as the steam leaves) on every client. */
+    void playSpit(int head) {
+        triggerAnim(HEADS[head].name(ACTION_CONTROLLER), "spit");
     }
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, MAIN_CONTROLLER, 6, this::animate));
-        controllers.add(new AnimationController<>(this, ACTION_CONTROLLER, 4, state -> PlayState.STOP)
-                .triggerableAnim("spit", SPIT));
+        for (FumaroleHead head : HEADS) {
+            controllers.add(new AnimationController<>(this, head.name(ACTION_CONTROLLER), 4, state -> PlayState.STOP)
+                    .triggerableAnim("spit", RawAnimation.begin().thenPlay(head.name(ANIM_SPIT))));
+        }
     }
 
     private PlayState animate(AnimationState<FumaroleEntity> state) {

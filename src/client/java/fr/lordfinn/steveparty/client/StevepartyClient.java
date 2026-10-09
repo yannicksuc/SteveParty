@@ -341,6 +341,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.client.entity.GlandouilleRenderer::new);
         EntityRendererRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.client.entity.FrousseuxRenderer::new);
+        EntityRendererRegistry.register(ModEntities.FUMAROLE, fr.lordfinn.steveparty.client.entity.FumaroleRenderer::new);
         EntityRendererRegistry.register(ModEntities.BOOMCART, fr.lordfinn.steveparty.client.entity.BoomcartRenderer::new);
         EntityRendererRegistry.register(ModEntities.PLAYER_PAWN, fr.lordfinn.steveparty.client.pawn.PlayerPawnRenderer::new);
         fr.lordfinn.steveparty.client.pawn.PawnPossessionClient.initialize();
