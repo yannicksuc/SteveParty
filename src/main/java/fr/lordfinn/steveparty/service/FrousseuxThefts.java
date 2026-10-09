@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.powerups.effects.ThiefBellEffect;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.Easing;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
@@ -269,7 +270,7 @@ public final class FrousseuxThefts {
         /** It rises beside the tile, its flame flaring up, then bobs there until the victim is picked. */
         void tickAppear() {
             float rise = Math.min(1f, phaseTick / 14f);
-            double eased = rise * rise * (3 - 2 * rise);
+            double eased = Easing.smoothstep(rise);
             double bob = Math.sin(tick * 0.2) * 0.06;
             place(appearAt.add(0, -0.5 + eased * 1.4 + (rise >= 1 ? bob : 0), 0), actor.getYaw());
             if (phaseTick == 8) {

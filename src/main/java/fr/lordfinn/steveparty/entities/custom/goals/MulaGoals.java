@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.entities.custom.goals;
 import fr.lordfinn.steveparty.entities.custom.MulaDances;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaHome;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.Goal;
@@ -113,7 +114,7 @@ public final class MulaGoals {
                 mula.followDance();
                 return;
             }
-            double e = u * u * (3 - 2 * u);
+            double e = Easing.smoothstep(u);
             double x = MathHelper.lerp(e, joinX, out[0]), z = MathHelper.lerp(e, joinZ, out[2]);
             // a little arc up on the way, like a leap into the dance
             double y = MathHelper.lerp(e, joinY, out[1]) + 0.8 * Math.sin(Math.PI * u);

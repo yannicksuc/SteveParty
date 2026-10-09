@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
@@ -726,7 +727,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         Vec3d me = getLerpedPos(partialTick);
         Vec3d them = who.getLerpedPos(partialTick).add(0, who.getHeight() * 0.55, 0).subtract(me);
         float t = MathHelper.clamp(progress, 0, 1);
-        t = t * t * (3 - 2 * t);
+        t = Easing.smoothstep(t);
         if (flight < 0) t = 1 - t; // given back: from it to them
         Vec3d at = them.lerp(UNDER_BODY, t);
         return at.add(0, MathHelper.sin(t * MathHelper.PI) * 0.6, 0);
