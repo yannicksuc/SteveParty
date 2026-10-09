@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.entities.custom.mistigri;
 
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
 import fr.lordfinn.steveparty.entities.PetTeleports;
-import fr.lordfinn.steveparty.service.BoardActors;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
@@ -76,7 +76,7 @@ import java.util.UUID;
  * may ask for one ({@code Action:"groom"} in his data: groom, stretch, yawn, swat, eat, leap, summon), as it may set
  * {@code Angry} (ticks), {@code Loafing} or {@code Sitting}: building blocks for players' mini-games.
  */
-public class MistigriEntity extends TameableEntity implements GeoEntity, FollowsOwnerAnywhere {
+public class MistigriEntity extends TameableEntity implements GeoEntity, FollowsOwnerAnywhere, BoardActor {
     public static final float WIDTH = 1.2f, HEIGHT = 1.5f;
     public static final double MAX_HEALTH = 30.0;
     /** How long he stays angry (ticks), and the Bad Luck given to whoever hit him. */
@@ -297,15 +297,15 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
 
     // ---------------------------------------------------------------- board actor
 
+    /** A Mistigri of a board space: invulnerable, no will of his own, never saved. */
+    @Override
     public boolean isBoardActor() {
         return boardActor;
     }
 
-    /** A Mistigri of a board space: invulnerable, no will of his own, never saved. */
-    public void makeBoardActor() {
+    @Override
+    public void setBoardActor() {
         this.boardActor = true;
-        setAiDisabled(true);
-        if (!getWorld().isClient) BoardActors.mark(this);
     }
 
     @Override

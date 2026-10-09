@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
 import fr.lordfinn.steveparty.entities.PetTeleports;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -84,7 +85,7 @@ import java.util.UUID;
  * The board's Frousseux ({@link #isBoardActor()}) do none of the above: invulnerable, moved by the board, never
  * saved, no light.
  */
-public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, FollowsOwnerAnywhere {
+public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, FollowsOwnerAnywhere, BoardActor {
     /** Its body: 8x8 pixels, 10 high. */
     public static final float WIDTH = 0.5f, HEIGHT = 0.625f;
     public static final double MAX_HEALTH = 8.0;
@@ -344,17 +345,19 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     // ---------------------------------------------------------------- board actors
 
     /** A Frousseux of a board space: invulnerable, no will of its own, never saved, no light. */
+    @Override
     public boolean isBoardActor() {
         return boardActor;
     }
 
-    public void makeBoardActor() {
+    @Override
+    public void setBoardActor() {
         this.boardActor = true;
-        setAiDisabled(true);
-        if (!getWorld().isClient) {
-            fr.lordfinn.steveparty.service.BoardActors.mark(this); // invulnerable, never kept
-            light.clear(getWorld());
-        }
+    }
+
+    @Override
+    public void onBoardActor() {
+        if (!getWorld().isClient) light.clear(getWorld());
     }
 
     /** A board actor: shows {@code carried} under itself (empty: nothing), once any item flight is over. */
