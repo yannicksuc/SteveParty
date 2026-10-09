@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.render.geo.EmissiveLayer;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleHead;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -38,7 +39,7 @@ import software.bernie.geckolib.util.RenderUtil;
 /**
  * Draws a Fumarole: its shell and skin (FumaroleModel), then
  * <ul>
- *     <li><b>its veins</b> ({@link VeinsLayer}): the animated glow layer (fumarole_veins.png) drawn emissive, brighter
+ *     <li><b>its veins</b> ({@link #veinsTint}): the animated glow layer (fumarole_veins.png) drawn emissive, brighter
  *     the fuller its tank, dying out as it dies;</li>
  *     <li><b>its tank's lava</b> and <b>its vents</b> ({@link TankAndVentLayer}): on the hidden {@code tank_lava} and
  *     {@code vent<suffix>} bones, their own planes (as authored: the cubes' faces) drawn again with our own animated
@@ -51,7 +52,6 @@ public class FumaroleRenderer extends GeoEntityRenderer<FumaroleEntity> {
     private static final Identifier LAVA = Steveparty.id("textures/entity/fumarole_lava.png");
     private static final Identifier[] VENT = {Steveparty.id("textures/entity/fumarole_vent_idle.png"),
             Steveparty.id("textures/entity/fumarole_vent_charging.png"), Steveparty.id("textures/entity/fumarole_vent_spitting.png")};
-    private static final int FULL_BRIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
     /** The lava texture's frames are 34 px; the tank's plane shows 26 x 28 of them. */
     private static final float LAVA_U = 26 / 34f, LAVA_V = 28 / 34f;
 
@@ -67,7 +67,7 @@ public class FumaroleRenderer extends GeoEntityRenderer<FumaroleEntity> {
         super(context, new FumaroleModel());
         this.itemRenderer = context.getItemRenderer();
         this.shadowRadius = 1.6f;
-        addRenderLayer(new VeinsLayer(this));
+        addRenderLayer(new EmissiveLayer<>(this, fumarole -> VEINS, fumarole -> true, FumaroleRenderer::veinsTint).animated());
         addRenderLayer(new TankAndVentLayer(this));
     }
 
@@ -151,23 +151,12 @@ public class FumaroleRenderer extends GeoEntityRenderer<FumaroleEntity> {
         return glow;
     }
 
-    private static final class VeinsLayer extends GeoRenderLayer<FumaroleEntity> {
-        VeinsLayer(GeoRenderer<FumaroleEntity> renderer) {
-            super(renderer);
-        }
-
-        @Override
-        public void render(MatrixStack poseStack, FumaroleEntity fumarole, BakedGeoModel bakedModel, @Nullable RenderLayer renderType,
-                           VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
-                           int packedLight, int packedOverlay) {
-            float glow = glow(fumarole, partialTick);
-            if (glow <= 0.01f) return;
-            int c = MathHelper.clamp(Math.round(glow * 255), 0, 255);
-            AnimatableTexture.setAndUpdate(VEINS);
-            RenderLayer layer = RenderLayer.getEyes(VEINS);
-            getRenderer().reRender(bakedModel, poseStack, bufferSource, fumarole, layer, bufferSource.getBuffer(layer),
-                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, 0xFF000000 | c << 16 | c << 8 | c);
-        }
+    /** The veins' tint: grey by {@link #glow}, none (0) once too faint to see. */
+    private static int veinsTint(FumaroleEntity fumarole, float partialTick) {
+        float glow = glow(fumarole, partialTick);
+        if (glow <= 0.01f) return 0;
+        int c = MathHelper.clamp(Math.round(glow * 255), 0, 255);
+        return 0xFF000000 | c << 16 | c << 8 | c;
     }
 
     private static final class TankAndVentLayer extends GeoRenderLayer<FumaroleEntity> {
@@ -228,7 +217,7 @@ public class FumaroleRenderer extends GeoEntityRenderer<FumaroleEntity> {
                         Vector3f at = vertex.position();
                         consumer.vertex(entry, at.x(), at.y(), at.z()).color(0xFFFFFFFF)
                                 .texture((vertex.texU() - u0) / (u1 - u0) * uMax, (vertex.texV() - v0) / (v1 - v0) * vMax)
-                                .overlay(OverlayTexture.DEFAULT_UV).light(FULL_BRIGHT)
+                                .overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE)
                                 .normal(entry, normal.x(), normal.y(), normal.z());
                     }
                 }
