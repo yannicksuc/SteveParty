@@ -187,8 +187,9 @@ public class TileInfoGameTests implements FabricGameTest {
             context.assertTrue(TileInfos.of(trapped).isEmpty(), "nothing before the trap");
             TrapEffect.place(party, context.getAbsolutePos(t1), player.getUuid(), token.getUuid());
             TileInfo info = TileInfos.of(trapped);
-            context.assertTrue(line(info, "trap") != null, "the trap is told");
-            context.assertTrue(!info.title().getString().isEmpty(), "titled");
+            context.assertTrue(info.title().getContent() instanceof TranslatableTextContent title && title.getKey().equals(KEY + "trap.title"),
+                    "a plain space with a trap: titled Trap");
+            context.assertTrue(!info.lines().isEmpty() && line(info, "trap") == null, "its effect alone (the title says Trap)");
             TrapEffect.clearAll(party);
             context.assertTrue(TileInfos.of(trapped).isEmpty(), "nothing once the trap is gone");
             context.removeBlock(new BlockPos(1, 1, 4));

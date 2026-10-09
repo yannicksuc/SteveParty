@@ -134,10 +134,6 @@ public record TileInfo(Text title, int accent, List<Line> lines, List<ItemStack>
             return this;
         }
 
-        public boolean hasTitle() {
-            return !title.getString().isEmpty();
-        }
-
         public Builder line(Text text) {
             return line(ItemStack.EMPTY, text);
         }
