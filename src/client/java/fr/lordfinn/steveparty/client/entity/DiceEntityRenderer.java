@@ -44,7 +44,7 @@ public class DiceEntityRenderer extends GeoEntityRenderer<DiceEntity> {
     }
 
     /** One texture per face: textures/entity/dice/&lt;kind&gt;_dice&lt;value&gt;.png (the swap and blank faces have no value). */
-    private static Identifier getTexture(Kind kind, int value) {
+    public static Identifier getTexture(Kind kind, int value) {
         String name = switch (kind) {
             case NORMAL -> "default_dice" + value;
             case PREMIUM -> "custom_dice" + value;
