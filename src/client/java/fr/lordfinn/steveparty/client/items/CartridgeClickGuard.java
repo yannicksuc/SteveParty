@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -48,6 +48,6 @@ public final class CartridgeClickGuard {
     private static boolean usesCartridge(PlayerEntity player, Hand hand) {
         if (player.getStackInHand(hand).getItem() instanceof CartridgeItem) return true;
         return hand == Hand.MAIN_HAND && player.getMainHandStack().isEmpty()
-                && player.getOffHandStack().getItem() instanceof InventoryCartridgeItem;
+                && CartridgeContainers.linksContainers(player.getOffHandStack());
     }
 }

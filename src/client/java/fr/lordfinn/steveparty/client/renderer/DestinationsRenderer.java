@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.client.renderer;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
@@ -115,7 +115,7 @@ public class DestinationsRenderer {
     private static void handleHeldStackChange(ItemStack heldStack, Hand hand) {
         setLastHeldItemStack(heldStack, hand);
         // The Inventory Cartridge selects its destinations in either hand: shown in either hand
-        if ((hand == Hand.MAIN_HAND || heldStack.getItem() instanceof InventoryCartridgeItem)
+        if ((hand == Hand.MAIN_HAND || CartridgeContainers.linksContainers(heldStack))
                 && heldStack.getItem() instanceof AbstractDestinationsSelectorItem) {
             DestinationsComponent component = heldStack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DEFAULT);
             List<BlockPos> destinations = component.destinations();
