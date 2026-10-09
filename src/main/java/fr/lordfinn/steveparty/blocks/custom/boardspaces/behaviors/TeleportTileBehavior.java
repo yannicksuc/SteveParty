@@ -122,10 +122,10 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
         return ActionResult.SUCCESS;
     }
 
-    /** Its network (the tiles it may send to). */
+    /** Building: its network (the tiles it may send to are drawn by the board view). */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (stack.getItem() instanceof TeleportCartridgeItem)
-            info.line(TileInfo.line("teleport", TeleportCartridgeItem.settings(stack).network().displayName()));
+            info.build(TileInfo.line("teleport", TeleportCartridgeItem.settings(stack).network().displayName()));
     }
 }

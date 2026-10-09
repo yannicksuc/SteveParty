@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import net.minecraft.item.Items;
 import net.minecraft.server.world.ServerWorld;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -48,10 +49,10 @@ public class ShopBoardSpaceBehavior extends ABoardSpaceBehavior {
         setColor(boardSpaceBlockEntity, ShopCartridgeItem.COLOR);
     }
 
-    /** How many things its stop lets buy. */
+    /** In game: how many things its stop lets buy. */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (stack.getItem() instanceof ShopCartridgeItem)
-            info.line(TileInfo.line("shop", TileInfo.value(ShopCartridgeItem.purchases(stack))));
+            info.line(TileInfo.Glyph.SHOP, TileInfo.value(TileInfo.line("shop", ShopCartridgeItem.purchases(stack))));
     }
 }

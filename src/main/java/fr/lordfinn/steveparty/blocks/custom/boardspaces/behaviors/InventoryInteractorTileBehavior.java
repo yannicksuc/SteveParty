@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.items.ModItems;
+import net.minecraft.item.Items;
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
@@ -208,8 +210,9 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
     }
 
     /**
-     * How it plays (all its items, one at random, one after the other), how many of each item given are left in its
-     * chests; its items circle over it (a taken one: a loss).
+     * In game, each item as what it does: « +3 » given (« +0, empty » once its chests ran out), « -4 » taken; past
+     * {@link #LISTED} items they circle the space instead. How it picks only when that changes something (several
+     * items). Helmet: how many of each item given its chests hold.
      */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
@@ -217,24 +220,35 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         if (content == null) return;
         List<ItemStack> items = content.getItems().stream().filter(item -> !item.isEmpty()).toList();
         if (items.isEmpty()) return;
-        String mode = switch (InventoryCartridgeItem.getSelectionState(stack)) {
-            case 1 -> "all";
-            case 2 -> "cycle";
-            default -> "random";
-        };
-        info.line(TileInfo.line("inventory." + mode));
-        Inventory linked = CartridgeTransfers.getLinkedInventory(world, stack);
-        boolean gives = false;
-        for (ItemStack item : items) {
-            info.item(item);
-            if (Boolean.TRUE.equals(item.get(IS_NEGATIVE))) continue;
-            gives = true;
-            if (linked == null) continue;
-            int left = countMatching(item, linked);
-            info.line(item, TileInfo.line("inventory.left", left >= item.getCount() ? TileInfo.value(left) : TileInfo.bad(left)));
+        if (items.size() > 1) {
+            int mode = InventoryCartridgeItem.getSelectionState(stack);
+            info.line(mode == 1 ? TileInfo.Glyph.ALL : mode == 2 ? TileInfo.Glyph.CYCLE : TileInfo.Glyph.DICE,
+                    TileInfo.value(TileInfo.line(mode == 1 ? "inventory.all" : mode == 2 ? "inventory.cycle" : "inventory.random")));
         }
-        if (gives && linked == null) info.line(TileInfo.bad(TileInfo.line("inventory.no_chest")));
+        Inventory linked = CartridgeTransfers.getLinkedInventory(world, stack);
+        boolean listed = items.size() <= LISTED, gives = false;
+        for (ItemStack item : items) {
+            boolean taken = Boolean.TRUE.equals(item.get(IS_NEGATIVE));
+            int left = taken || linked == null ? 0 : countMatching(item, linked);
+            if (!taken) gives = true;
+            if (!listed) {
+                info.item(item);
+            } else if (taken) {
+                info.line(item, TileInfo.bad("−" + item.getCount()));
+            } else if (linked != null && left >= item.getCount()) {
+                info.line(item, TileInfo.good("+" + item.getCount()));
+            } else {
+                info.line(item, TileInfo.bad(TileInfo.line("inventory.empty")));
+            }
+            // The stock, for the helmet; an item run out already says so
+            if (!taken && linked != null && left >= item.getCount())
+                info.detail(item, TileInfo.line("inventory.left", TileInfo.value(left)));
+        }
+        if (gives && linked == null) info.line(new ItemStack(Items.CHEST), TileInfo.bad(TileInfo.line("inventory.no_chest")));
     }
+
+    /** Up to this many items, each is a line; more circle the space. */
+    private static final int LISTED = 4;
 
     /** How many items matching {@code template} (item and components, the cartridge's IS_NEGATIVE flag aside) {@code inventory} holds. */
     private static int countMatching(ItemStack template, Inventory inventory) {
