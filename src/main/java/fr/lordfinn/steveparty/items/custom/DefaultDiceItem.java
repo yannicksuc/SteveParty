@@ -1,8 +1,10 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import net.minecraft.entity.LivingEntity;
@@ -157,21 +159,26 @@ public class DefaultDiceItem extends Item {
     }
 
     /**
-     * A die carrying the Power-up module first shows what a power-up shows (its tags, what it does, when); then the
-     * faces of a forged die, then one line per module.
+     * Tagged [Die] (and [Power-up] [Consumed] with the Power-up module); its faces and modules; behind Shift how to
+     * throw and stop it, how to add modules.
      */
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        if (DiceModules.isPowerUp(stack)) {
-            tooltip.add(PowerUpItem.tags());
-            tooltip.add(PowerUpItem.point(Text.translatable("tooltip.steveparty.powerup.die.effect")
-                    .formatted(Formatting.GRAY), Formatting.LIGHT_PURPLE));
-            tooltip.add(PowerUpItem.point(PowerUpItem.when(), Formatting.LIGHT_PURPLE));
-            tooltip.add(PowerUpItem.point(PowerUpItem.onePerTurn(), Formatting.LIGHT_PURPLE));
-        }
+        boolean powerUp = DiceModules.isPowerUp(stack);
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.DIE);
+        if (powerUp) tips.tags(Tooltips.Tag.POWER_UP, Tooltips.Tag.CONSUMED);
         DiceFacesComponent faces = stack.get(DiceFacesComponent.TYPE);
-        if (faces != null && !faces.faces().isEmpty()) tooltip.add(faces.describe());
-        tooltip.addAll(DiceModules.tooltip(stack));
-        super.appendTooltip(stack, context, tooltip, type);
+        if (faces != null && !faces.faces().isEmpty()) tips.state(faces.describe());
+        for (Text line : DiceModules.tooltip(stack)) tips.state(line);
+        if (powerUp) tips.summary("tooltip.steveparty.powerup.die.effect");
+        tips.more(more -> {
+            more.use(Tooltips.Keys.use(), "tooltip.steveparty.dice.use.mob");
+            more.use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.dice.use.player");
+            more.use(Tooltips.Keys.attack(), "tooltip.steveparty.dice.use.stop");
+            if (powerUp) PowerUpItem.howToUse(more, PowerUp.Target.NONE);
+            more.craft("tooltip.steveparty.dice.craft.modules");
+            more.note("tooltip.steveparty.dice.moves");
+            if (powerUp) more.note("tooltip.steveparty.powerup.one_per_turn");
+        });
     }
 }

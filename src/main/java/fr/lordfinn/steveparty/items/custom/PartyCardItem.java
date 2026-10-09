@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -57,9 +58,8 @@ public class PartyCardItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        // Long descriptions are split on "\n" in the translation, so the tooltip stays narrow
-        String description = Text.translatable("item.steveparty.party_card_" + cardType.getName() + ".tooltip", stack.getCount()).getString();
-        for (String line : description.split("\n"))
-            tooltip.add(Text.literal(line).formatted(Formatting.GRAY));
+        Tooltips.of(tooltip).tags(Tooltips.Tag.PARTY)
+                .summary("item.steveparty.party_card_" + cardType.getName() + ".tooltip", Tooltips.value(stack.getCount()))
+                .more(more -> more.use("tooltip.steveparty.party_card.use"));
     }
 }

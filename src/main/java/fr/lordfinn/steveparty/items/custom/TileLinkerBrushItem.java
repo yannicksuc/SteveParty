@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.entity.LivingEntity;
@@ -28,7 +29,6 @@ import java.util.List;
  * {@link TileLinkerBrush}.
  */
 public class TileLinkerBrushItem extends Item {
-    private static final int CONTROLS_COLOR = 0xfcb017;
 
     public TileLinkerBrushItem(Settings settings) {
         super(settings);
@@ -99,16 +99,19 @@ public class TileLinkerBrushItem extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        CartridgeItem.addWrapped(tooltip,
-                Text.translatable("tooltip.steveparty.tile_linker_brush"), Formatting.GRAY);
-        tooltip.add(Text.translatable("tooltip.steveparty.tile_linker_brush.level",
-                TileLinkerBrush.levelText(TileLinkerBrush.level(stack))).formatted(Formatting.WHITE));
         Item cartridge = TileLinkerBrush.cartridge(stack);
-        tooltip.add((cartridge == null ? Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge.keep")
-                : Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge", new ItemStack(cartridge).getName())).formatted(Formatting.WHITE));
-        tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));
-        for (String control : List.of("paint", "erase", "wheel", "chest", "shop", "offhand")) {
-            tooltip.add(Text.translatable("tooltip.steveparty.tile_linker_brush.controls." + control).formatted(Formatting.GRAY));
-        }
+        Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL)
+                .state("tooltip.steveparty.tile_linker_brush.level", Tooltips.value(TileLinkerBrush.levelText(TileLinkerBrush.level(stack))))
+                .state("tooltip.steveparty.tile_linker_brush.cartridge", cartridge == null
+                        ? Tooltips.value(Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge.keep"))
+                        : Tooltips.value(new ItemStack(cartridge).getName()))
+                .summary("tooltip.steveparty.tile_linker_brush")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.tile_linker_brush.controls.paint")
+                        .use(Tooltips.Keys.attack(), "tooltip.steveparty.tile_linker_brush.controls.wheel")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.tile_linker_brush.controls.chest")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.tile_linker_brush.controls.shop")
+                        .use(Tooltips.Keys.of("tooltip.steveparty.key.offhand"), "tooltip.steveparty.tile_linker_brush.controls.offhand")
+                        .note("tooltip.steveparty.tile_linker_brush.controls.erase"));
     }
 }

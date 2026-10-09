@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StarSettingsComponent;
@@ -69,13 +70,12 @@ public class StarCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        super.appendTooltip(stack, context, tooltip, type);
+    protected void appendState(ItemStack stack, Tooltips tips) {
         StarSettingsComponent settings = settings(stack);
-        tooltip.add(Text.translatable("tooltip.steveparty.star_cartridge.price", settings.price()).formatted(Formatting.GOLD));
-        tooltip.add(Text.translatable(settings.onPass() ? "tooltip.steveparty.star_cartridge.on_pass"
-                : "tooltip.steveparty.star_cartridge.on_stop").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable(settings.relocate() ? "tooltip.steveparty.star_cartridge.relocate"
-                : "tooltip.steveparty.star_cartridge.stays").formatted(Formatting.GRAY));
+        tips.state("tooltip.steveparty.star_cartridge.price", Tooltips.coins(Text.translatable("tooltip.steveparty.coins", settings.price())));
+        tips.state(Text.translatable(settings.onPass() ? "tooltip.steveparty.star_cartridge.on_pass"
+                : "tooltip.steveparty.star_cartridge.on_stop"));
+        tips.state(Text.translatable(settings.relocate() ? "tooltip.steveparty.star_cartridge.relocate"
+                : "tooltip.steveparty.star_cartridge.stays"));
     }
 }

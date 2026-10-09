@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.DyedColorComponent;
 import net.minecraft.item.DyeItem;
@@ -102,10 +103,8 @@ public class FlagItem extends Item {
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
         int color = getColor(stack);
-        if (color != NO_COLOR) {
-            tooltip.add(Text.translatable("tooltip.steveparty.flag.color", colorName(color).copy().withColor(color))
-                    .formatted(Formatting.GRAY));
-        }
-        tooltip.add(Text.translatable("tooltip.steveparty.flag.use").formatted(Formatting.GRAY));
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME);
+        if (color != NO_COLOR) tips.state("tooltip.steveparty.colour", Tooltips.rgb(colorName(color), color));
+        tips.more(more -> more.use(Tooltips.Keys.use(), "tooltip.steveparty.flag.use"));
     }
 }

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -100,13 +101,17 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem 
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("tooltip.steveparty.shop_cartridge.purchases", purchases(stack)).formatted(Formatting.GOLD));
+    protected void appendState(ItemStack stack, Tooltips tips) {
+        tips.state("tooltip.steveparty.shop_cartridge.purchases", Tooltips.value(purchases(stack)));
         ShopLinkComponent link = stack.get(ModComponents.SHOP_LINK);
-        tooltip.add((link != null
-                ? Text.translatable("tooltip.steveparty.shop_cartridge.shop", BoardText.pos(link.anchor()))
-                : Text.translatable("tooltip.steveparty.shop_cartridge.nearest")).formatted(Formatting.GRAY));
-        addWrapped(tooltip, Text.translatable("tooltip.steveparty.shop_cartridge.scroll"), Formatting.DARK_GRAY);
+        tips.state("tooltip.steveparty.shop_cartridge.shop", link != null
+                ? Tooltips.setting(BoardText.pos(link.anchor()))
+                : Tooltips.value(Text.translatable("tooltip.steveparty.shop_cartridge.nearest")));
+    }
+
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        more.use(Tooltips.Keys.sneakScroll(), "tooltip.steveparty.shop_cartridge.scroll");
+        more.note("tooltip.steveparty.shop_cartridge.brush");
     }
 }

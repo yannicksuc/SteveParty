@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
@@ -118,11 +119,14 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("tooltip.steveparty.pot_cartridge.pot", coins(stack), stake(stack))
-                .styled(tint(0xF2C230)));
+    protected void appendState(ItemStack stack, Tooltips tips) {
+        tips.state(Text.translatable("tooltip.steveparty.pot_cartridge.pot", Tooltips.coins(coins(stack)), Tooltips.coins(stake(stack))));
         int stolen = items(stack).stream().mapToInt(ItemStack::getCount).sum();
-        if (stolen > 0) tooltip.add(Text.translatable("tooltip.steveparty.pot_cartridge.items", stolen).formatted(Formatting.GRAY));
-        super.appendTooltip(stack, context, tooltip, type);
+        if (stolen > 0) tips.state(Text.translatable("tooltip.steveparty.pot_cartridge.items", Tooltips.value(stolen)));
+    }
+
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        more.note("tooltip.steveparty.cartridge.pot_cartridge.rules");
     }
 }

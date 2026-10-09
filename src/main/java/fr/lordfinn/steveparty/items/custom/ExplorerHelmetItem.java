@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.board.ExplorerHelmet;
 import fr.lordfinn.steveparty.items.ModArmorMaterials;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -18,7 +19,6 @@ import java.util.List;
  * {@link ExplorerHelmet}). A key switches the lamp, and the view with it.
  */
 public class ExplorerHelmetItem extends ArmorItem {
-    private static final int CONTROLS_COLOR = 0xfcb017;
 
     public ExplorerHelmetItem(Settings settings) {
         super(ModArmorMaterials.EXPLORER_HELMET, Type.HELMET, settings);
@@ -32,12 +32,14 @@ public class ExplorerHelmetItem extends ArmorItem {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        CartridgeItem.addWrapped(tooltip, Text.translatable("tooltip.steveparty.explorer_helmet"), Formatting.GRAY);
-        tooltip.add(Text.translatable(ExplorerHelmet.lit(stack) ? "tooltip.steveparty.explorer_helmet.lit" : "tooltip.steveparty.explorer_helmet.unlit")
-                .formatted(ExplorerHelmet.lit(stack) ? Formatting.YELLOW : Formatting.DARK_GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));
-        tooltip.add(Text.translatable("tooltip.steveparty.explorer_helmet.controls.wear").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.explorer_helmet.controls.lamp",
-                Text.keybind("key.steveparty.explorer_helmet_lamp")).formatted(Formatting.GRAY));
+        boolean lit = ExplorerHelmet.lit(stack);
+        Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL)
+                .state("tooltip.steveparty.explorer_helmet.lamp", lit
+                        ? Tooltips.good(Text.translatable("tooltip.steveparty.explorer_helmet.lit"))
+                        : Tooltips.value(Text.translatable("tooltip.steveparty.explorer_helmet.unlit")))
+                .summary("tooltip.steveparty.explorer_helmet")
+                .more(more -> more
+                        .use("tooltip.steveparty.explorer_helmet.controls.wear")
+                        .use(Text.keybind("key.steveparty.explorer_helmet_lamp"), "tooltip.steveparty.explorer_helmet.controls.lamp"));
     }
 }

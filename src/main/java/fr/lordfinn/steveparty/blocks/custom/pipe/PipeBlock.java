@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.pipe;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
@@ -115,9 +116,13 @@ public class PipeBlock extends Block implements BlockEntityProvider {
 
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
-        for (String line : new String[]{"enter", "way", "wrench"}) {
-            tooltip.add(Text.translatable("tooltip.steveparty.pipe." + line).formatted(Formatting.GRAY));
-        }
+        Tooltips.of(tooltip)
+                .summary("tooltip.steveparty.pipe.summary")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.pipe.enter")
+                        .use(Tooltips.Keys.sneak(), "tooltip.steveparty.pipe.enter.sneak")
+                        .note("tooltip.steveparty.pipe.way")
+                        .note("tooltip.steveparty.pipe.wrench"));
     }
 
     // ---------------------------------------------------------------- placing and connections

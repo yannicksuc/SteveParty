@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
 import net.minecraft.block.Block;
@@ -66,10 +67,14 @@ public class BoardSpaceRedstoneRouterBlock extends CartridgeContainer {
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        tooltip.add(Text.translatable("tooltip.steveparty.router.input").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.router.output").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.router.levels").formatted(Formatting.DARK_GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.router.loop").formatted(Formatting.DARK_GRAY));
+        Tooltips.of(tooltip)
+                .summary("tooltip.steveparty.router.summary")
+                .more(more -> more
+                        .detail("tooltip.steveparty.router.input")
+                        .detail("tooltip.steveparty.router.output")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.router.wrench")
+                        .note("tooltip.steveparty.router.levels")
+                        .note("tooltip.steveparty.router.loop"));
     }
 
     @Override

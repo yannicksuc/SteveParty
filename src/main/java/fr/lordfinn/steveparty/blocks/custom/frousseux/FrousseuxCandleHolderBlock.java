@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.frousseux;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
@@ -317,7 +318,6 @@ public class FrousseuxCandleHolderBlock extends BlockWithEntity {
         return super.onBreak(world, pos, state, player);
     }
 
-    /** Which Frousseux it keeps: its candle's colour and its name. */
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
@@ -332,9 +332,10 @@ public class FrousseuxCandleHolderBlock extends BlockWithEntity {
                 // an unreadable name: the candle alone
             }
         }
-        tooltip.add((name != null ? Text.translatable("tooltip.steveparty.frousseux_candle_holder.named", name, candle)
-                : Text.translatable("tooltip.steveparty.frousseux_candle_holder.kept", candle)).formatted(Formatting.GRAY));
-        if (isOnSaucer(stack)) tooltip.add(Text.translatable("tooltip.steveparty.frousseux_candle_holder.saucer").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.frousseux_candle_holder.wake").formatted(Formatting.DARK_GRAY));
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.CREATURE);
+        tips.state(name != null ? Text.translatable("tooltip.steveparty.frousseux_candle_holder.named", Tooltips.value(name), Tooltips.value(candle))
+                : Text.translatable("tooltip.steveparty.frousseux_candle_holder.kept", Tooltips.value(candle)));
+        if (isOnSaucer(stack)) tips.state(Text.translatable("tooltip.steveparty.frousseux_candle_holder.saucer"));
+        tips.more(more -> more.use(Tooltips.Keys.use(), "tooltip.steveparty.frousseux_candle_holder.wake"));
     }
 }

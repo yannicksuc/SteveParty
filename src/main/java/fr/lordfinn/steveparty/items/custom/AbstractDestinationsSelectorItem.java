@@ -4,7 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
-import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -132,57 +132,38 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
         player.getWorld().playSound(null, clickedPos, category, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
-    @Environment(EnvType.CLIENT)
-    @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        DestinationsComponent component = getBoardSpaceBehaviorComponent(stack);
-        Entity holder = stack.getHolder();
-        List<BoardSpaceDestination> tileDestinations =
-                getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
-
-        if (!tileDestinations.isEmpty()) {
-            addTooltipHeading(tooltip, component);
-            addDestinationsToTooltip(tooltip, tileDestinations, component, holder == null ? null : holder.getWorld());
-        } else {
-            addNoDestinationsMessage(tooltip);
-        }
-    }
-
-    protected void addTooltipHeading(List<Text> tooltip, DestinationsComponent component) {
-        tooltip.add(Text.translatable("tooltip.steveparty.bound_to")
-                .setStyle(Style.EMPTY.withColor(0xb91e8c).withBold(true))
-                .append(Text.literal(component.world())
-                        .setStyle(Style.EMPTY.withColor(Formatting.WHITE))));
-        tooltip.add(Text.translatable("tooltip.steveparty.destinations")
-                .setStyle(Style.EMPTY.withColor(0xEA528E).withBold(true)));
-    }
+    /** At most this many destinations are listed, the others counted. */
+    private static final int LISTED_DESTINATIONS = 4;
 
     /**
-     * The destinations, one per line; one where no board space is any more (for {@link #showsMissingDestinations()}) in
-     * red, followed by how to fix it.
+     * Its destinations, as state lines of its tooltip: their count (and their dimension, if not the viewer's), then
+     * each one; one where no board space is any more (for {@link #showsMissingDestinations()}) in red, then how to fix it.
      */
-    protected void addDestinationsToTooltip(List<Text> tooltip, List<BoardSpaceDestination> tileDestinations,
-                                            DestinationsComponent component, @Nullable World world) {
+    protected void appendDestinations(ItemStack stack, Tooltips tips) {
+        DestinationsComponent component = getBoardSpaceBehaviorComponent(stack);
+        Entity holder = stack.getHolder();
+        World world = holder == null ? null : holder.getWorld();
+        List<BoardSpaceDestination> destinations = getDestinationsStatus(component.destinations(), world);
+        if (destinations.isEmpty()) return;
+        boolean elsewhere = world != null && !getWorldName(world).equals(component.world());
+        tips.state("tooltip.steveparty.destinations", Tooltips.value(destinations.size()));
+        if (elsewhere) tips.state("tooltip.steveparty.bound_to", Tooltips.setting(component.world()));
         boolean missing = false;
-        for (BoardSpaceDestination destination : tileDestinations) {
-            BlockPos pos = destination.position();
+        for (int i = 0; i < destinations.size(); i++) {
+            BlockPos pos = destinations.get(i).position();
             // Only where the client knows the world (same dimension, chunk loaded): never a false alarm
-            boolean gone = showsMissingDestinations() && !destination.isTile() && world != null
-                    && getWorldName(world).equals(component.world()) && world.isChunkLoaded(pos);
-            MutableText entry = Text.translatable("tooltip.steveparty.destination_entry", pos.getX(), pos.getY(), pos.getZ())
-                    .setStyle(Style.EMPTY.withColor(gone ? Formatting.RED : Formatting.WHITE));
-            if (gone) entry.append(Text.translatable("tooltip.steveparty.destination_missing").formatted(Formatting.RED));
-            tooltip.add(entry);
+            boolean gone = showsMissingDestinations() && !destinations.get(i).isTile() && world != null
+                    && !elsewhere && world.isChunkLoaded(pos);
             missing |= gone;
+            if (i >= LISTED_DESTINATIONS) continue;
+            MutableText entry = Text.translatable("tooltip.steveparty.destination_entry", pos.getX(), pos.getY(), pos.getZ());
+            if (gone) entry.append(Text.translatable("tooltip.steveparty.destination_missing"));
+            tips.state(entry.formatted(gone ? Tooltips.BAD : Tooltips.DIM));
         }
-        if (missing) {
-            CartridgeItem.addWrapped(tooltip,
-                    Text.translatable("tooltip.steveparty.destination_missing.hint"), Formatting.GOLD);
+        if (destinations.size() > LISTED_DESTINATIONS) {
+            tips.state(Text.translatable("tooltip.steveparty.destination_more", destinations.size() - LISTED_DESTINATIONS)
+                    .formatted(Tooltips.DIM));
         }
-    }
-
-    protected void addNoDestinationsMessage(List<Text> tooltip) {
-        tooltip.add(Text.translatable("tooltip.steveparty.no_destinations")
-                .setStyle(Style.EMPTY.withColor(Formatting.RED).withItalic(true)));
+        if (missing) tips.warn(Text.translatable("tooltip.steveparty.destination_missing.hint"));
     }
 }

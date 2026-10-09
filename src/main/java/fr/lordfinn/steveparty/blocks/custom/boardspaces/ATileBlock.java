@@ -35,6 +35,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import net.minecraft.text.MutableText;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,41 +70,50 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        tooltip.add(Text.translatable("tooltip.steveparty.tile." + tooltipKey()).formatted(Formatting.GRAY));
-        appendContentsTooltip(stack, tooltip);
-        tooltip.add(Text.translatable("tooltip.steveparty.tile.size",
-                Text.translatable("tooltip.steveparty.tile.size." + TileSize.of(stack).asString())).formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.tile.size.hint").formatted(Formatting.DARK_GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.tile.stamp.hint").formatted(Formatting.DARK_GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.tile.contents.hint").formatted(Formatting.DARK_GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.tile." + tooltipKey() + ".crafting").formatted(Formatting.DARK_GRAY));
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.BOARD_SPACE);
+        TileStampComponent stamp = TileContents.ownStamp(stack);
+        if (stamp != null) tips.tags(Tooltips.Tag.STAMPED);
+        appendContentsTooltip(stack, tips);
+        if (stamp != null) tips.state("tooltip.steveparty.look", Tooltips.look(stamp.describe()));
+        tips.summary("tooltip.steveparty.tile." + tooltipKey());
+        tips.more(more -> more
+                .detail(Text.translatable("tooltip.steveparty.tile.size",
+                        Tooltips.value(Text.translatable("tooltip.steveparty.tile.size." + TileSize.of(stack).asString()))))
+                .use(Tooltips.Keys.use(), "tooltip.steveparty.tile.use.cartridge")
+                .use(Tooltips.Keys.of("tooltip.steveparty.key.stencil_dye"), "tooltip.steveparty.tile.stamp.hint")
+                .craft("tooltip.steveparty.tile." + tooltipKey() + ".crafting")
+                .craft("tooltip.steveparty.tile.size.hint")
+                .note("tooltip.steveparty.tile.contents.hint"));
     }
 
     /**
-     * What the tile item holds (see {@link TileContents}): its cartridges (slot, name, main setting), the one its
-     * preview shows now highlighted, and its own stamped look.
+     * What the tile item holds (see {@link TileContents}): its cartridge, or its cartridges (slot, name, main
+     * setting), the one its preview shows now highlighted.
      */
-    private static void appendContentsTooltip(ItemStack stack, List<Text> tooltip) {
+    private static void appendContentsTooltip(ItemStack stack, Tooltips tips) {
         List<TileContents.Slot> cartridges = TileContents.cartridges(stack);
-        if (!cartridges.isEmpty()) {
-            tooltip.add(Text.translatable(cartridges.size() == 1 ? "tooltip.steveparty.tile.contents.one" : "tooltip.steveparty.tile.contents",
-                    cartridges.size()).formatted(Formatting.GOLD));
-            int shown = TileContents.previewedIndex(cartridges.size());
-            for (int i = 0; i < cartridges.size(); i++) {
-                TileContents.Slot slot = cartridges.get(i);
-                boolean previewed = cartridges.size() > 1 && i == shown;
-                MutableText line = Text.literal(previewed ? "\u25B6 " : "  ")
-                        .append(Text.translatable("tooltip.steveparty.tile.contents.slot", slot.slot() + 1, slot.cartridge().getName()));
-                Text setting = mainSetting(slot.cartridge());
-                if (setting != null) line.append(Text.literal(" \u00B7 ")).append(setting);
-                tooltip.add(line.formatted(previewed ? Formatting.YELLOW : Formatting.GRAY));
-            }
+        if (cartridges.size() == 1) {
+            tips.state("tooltip.steveparty.tile.contents.one", describe(cartridges.get(0).cartridge()).formatted(Tooltips.VALUE));
+            return;
         }
-        TileStampComponent stamp = TileContents.ownStamp(stack);
-        if (stamp != null) {
-            tooltip.add(Text.translatable("tooltip.steveparty.stamped").formatted(Formatting.LIGHT_PURPLE));
-            tooltip.add(stamp.describe().copy().formatted(Formatting.GRAY));
+        if (cartridges.isEmpty()) return;
+        tips.state("tooltip.steveparty.tile.contents", Tooltips.value(Text.translatable("tooltip.steveparty.tile.contents.count", cartridges.size())));
+        int shown = TileContents.previewedIndex(cartridges.size());
+        for (int i = 0; i < cartridges.size(); i++) {
+            TileContents.Slot slot = cartridges.get(i);
+            boolean previewed = i == shown;
+            tips.state(Text.literal(previewed ? "▶ " : "  ")
+                    .append(Text.translatable("tooltip.steveparty.tile.contents.slot", slot.slot() + 1, describe(slot.cartridge())))
+                    .formatted(previewed ? Formatting.YELLOW : Tooltips.TEXT));
         }
+    }
+
+    /** A cartridge's name, then the setting that tells it apart. */
+    private static MutableText describe(ItemStack cartridge) {
+        MutableText text = cartridge.getName().copy();
+        Text setting = mainSetting(cartridge);
+        if (setting != null) text.append(Text.literal(" · ")).append(setting);
+        return text;
     }
 
     /** The setting that tells a cartridge apart: its number of spaces, its links, its stamped look. */

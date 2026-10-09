@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
@@ -152,55 +153,26 @@ public class InventoryCartridgeItem extends CartridgeItem {
     // ========================
     //   TOOLTIP / LORE
     // ========================
-    @Environment(EnvType.CLIENT)
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        super.appendTooltip(stack, context, tooltip, type); // the stamp, if any
-        // --- Controls ---
-        tooltip.add(Text.translatable("tooltip.steveparty.controls")
-                .setStyle(Style.EMPTY.withBold(true).withColor(0xfcb017)));
-
-        tooltip.add(Text.translatable("tooltip.steveparty.controls.select_container",
-                Text.translatable("tooltip.steveparty.controls.container_click")
-                        .setStyle(Style.EMPTY.withColor(0xfcb017))));
-
-        tooltip.add(Text.translatable("tooltip.steveparty.controls.select_destination",
-                Text.translatable("tooltip.steveparty.controls.board_space_click")
-                        .setStyle(Style.EMPTY.withColor(0xfcb017))));
-
-        tooltip.add(Text.translatable("tooltip.steveparty.controls.open_config",
-                Text.translatable("tooltip.steveparty.controls.right_air")
-                        .setStyle(Style.EMPTY.withColor(0xfcb017))));
-        tooltip.add(Text.empty());
-
-        // --- Container info ---
+    protected void appendState(ItemStack stack, Tooltips tips) {
         Entity viewer = stack.getHolder();
         List<GlobalPos> containers = CartridgeContainers.of(stack, viewer == null ? World.OVERWORLD : viewer.getWorld().getRegistryKey());
-        if (!containers.isEmpty()) {
-            tooltip.add(Text.translatable("tooltip.steveparty.linked_containers", containers.size(), CartridgeContainers.MAX)
-                    .setStyle(Style.EMPTY.withColor(0x167abf).withBold(true))); // Aqua
-            for (int i = 0; i < containers.size(); i++) {
-                BlockPos pos = containers.get(i).pos();
-                tooltip.add(Text.translatable("tooltip.steveparty.container_entry_indexed", i + 1, pos.getX(), pos.getY(), pos.getZ())
-                        .setStyle(Style.EMPTY.withColor(0xFFFFFF))); // White
-            }
-            tooltip.add(Text.translatable("tooltip.steveparty.containers_order").formatted(Formatting.DARK_GRAY));
-        } else {
-            tooltip.add(Text.translatable("tooltip.steveparty.no_container")
-                    .setStyle(Style.EMPTY.withColor(Formatting.RED).withItalic(true)));
+        if (containers.isEmpty()) {
+            tips.warn(Text.translatable("tooltip.steveparty.no_container"));
+            return;
         }
-
-        // --- Destinations info (reuse AbstractDestinationsSelectorItem methods) ---
-        DestinationsComponent component = stack.getOrDefault(DESTINATIONS_COMPONENT, DEFAULT);
-        Entity holder = stack.getHolder();
-        List<BoardSpaceDestination> tileDestinations =
-                getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
-
-        if (!tileDestinations.isEmpty()) {
-            this.addTooltipHeading(tooltip, component);
-            this.addDestinationsToTooltip(tooltip, tileDestinations, component, holder == null ? null : holder.getWorld());
-        } else {
-            this.addNoDestinationsMessage(tooltip);
+        tips.state("tooltip.steveparty.linked_containers",
+                Tooltips.value(Text.translatable("tooltip.steveparty.count_of", containers.size(), CartridgeContainers.MAX)));
+        for (int i = 0; i < containers.size(); i++) {
+            BlockPos pos = containers.get(i).pos();
+            tips.state(Text.translatable("tooltip.steveparty.container_entry_indexed", i + 1, pos.getX(), pos.getY(), pos.getZ())
+                    .formatted(Tooltips.DIM));
         }
+    }
+
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        more.use(Tooltips.Keys.use(), "tooltip.steveparty.controls.container_click");
+        more.note("tooltip.steveparty.containers_order");
     }
 }

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.dice.DiceModule;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -27,11 +28,12 @@ public class DiceModuleItem extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(module.itemDescription().copy().formatted(module.negative() ? Formatting.RED : Formatting.GRAY));
-        if (module.stacks()) {
-            tooltip.add(Text.translatable("tooltip.steveparty.dice_module.stacks", module.maxCount()).formatted(Formatting.DARK_GRAY));
-        }
-        tooltip.add(Text.translatable("tooltip.steveparty.dice_module.usage").formatted(Formatting.DARK_GRAY));
-        super.appendTooltip(stack, context, tooltip, type);
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.DICE_MODULE);
+        if (module.negative()) tips.tags(Tooltips.Tag.NEGATIVE);
+        tips.summary(module.itemDescription());
+        tips.more(more -> {
+            if (module.stacks()) more.note("tooltip.steveparty.dice_module.stacks", Tooltips.value("×" + module.maxCount()));
+            more.craft("tooltip.steveparty.dice_module.usage");
+        });
     }
 }
