@@ -14,7 +14,8 @@ ext.devServer = [
         port        : devPort,
         rconPort    : devPort + 10,
         rconPassword: 'steveparty-dev', // loopback-only dev server, not a secret
-        player      : 'LordFinn',
+        // Another name with -PdevPlayer=... (or ORG_GRADLE_PROJECT_devPlayer): a long one to check how the HUDs fit it
+        player      : (project.findProperty('devPlayer') ?: 'LordFinn') as String,
         // A second dev player (offline account) to watch the first one: ./gradlew runClientJoin2 (run2/)
         player2     : 'Steve2',
         runDir      : 'run-server',
