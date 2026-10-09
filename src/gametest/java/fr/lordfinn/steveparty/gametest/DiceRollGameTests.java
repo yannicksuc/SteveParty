@@ -363,13 +363,17 @@ public class DiceRollGameTests implements FabricGameTest {
             second.setLinkedDice(List.of(lead.getUuid(), second.getUuid()));
             context.assertTrue(second.lead() == lead && lead.group().size() == 2, "the second die follows the first");
             hit(context, second, player); // hitting any of them stops them all
-            context.assertTrue(!lead.isRolling() && !second.isRolling(), "both stopped");
-            context.assertEquals(lead.getRolledFaces().size(), 2, "one face per die");
-            context.assertEquals(second.getOutcome().coins(), 8, "+4 and +4");
-            when(context, () -> count(player, ModItems.COIN) == 8, 100, "the coins of both dice", () -> {
-                assertOn(context, pig, PATH.get(1), "the token did not move");
-                if (!second.isRemoved()) second.discard();
-                context.complete();
+            context.assertTrue(!lead.isRolling(), "the first one stopped");
+            // Then the second one, and the total
+            when(context, lead::isRollFinished, 40, "both revealed", () -> {
+                context.assertTrue(!lead.isRolling() && !second.isRolling(), "both stopped");
+                context.assertEquals(lead.getRolledFaces().size(), 2, "one face per die");
+                context.assertEquals(second.getOutcome().coins(), 8, "+4 and +4");
+                when(context, () -> count(player, ModItems.COIN) == 8, 100, "the coins of both dice", () -> {
+                    assertOn(context, pig, PATH.get(1), "the token did not move");
+                    if (!second.isRemoved()) second.discard();
+                    context.complete();
+                });
             });
         });
     }

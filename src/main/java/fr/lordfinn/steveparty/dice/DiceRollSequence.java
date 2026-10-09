@@ -30,12 +30,16 @@ import java.util.UUID;
  *     <li>Lucky ×N: N more rolls are made (Slow: each one stopped by hand), and the roller keeps one of the results
  *     (no answer: the highest number);</li>
  *     <li>Reroll ×N: the roller keeps the result or rolls everything again, up to N times (no answer: kept);</li>
- *     <li>the result is final: the dice show it and {@link DiceEntity#onRollFinished} announces it.</li>
+ *     <li>the result is final: it is revealed ({@link #REVEAL_STEP_TICKS}): the dice stop one after the other, a
+ *     double / triple shows as soon as they make it, then the total ({@link DiceReveal});</li>
+ *     <li>then {@link DiceEntity#onRollFinished} announces it ({@link fr.lordfinn.steveparty.events.DiceThrowRevealed},
+ *     then the move).</li>
  * </ol>
- * Choice replaces all of it: the roller picks the face of each die, one after the other (no answer: a face at random).
+ * Choice replaces the rolls: the roller picks the face of each die, one after the other (no answer: a face at random);
+ * the faces picked are then revealed all at once (they were chosen: no suspense). A single die is revealed at once too.
  */
 public final class DiceRollSequence {
-    public enum Phase { ROLLING, PICKING, DECIDING, DONE }
+    public enum Phase { ROLLING, PICKING, DECIDING, REVEALING, DONE }
 
     /** Slow: ticks each face is shown. */
     public static final int SLOW_FACE_TICKS = 8;
@@ -45,6 +49,10 @@ public final class DiceRollSequence {
     public static final int REROLL_SPIN_TICKS = 20;
     /** Slow: the longest cycle of faces (heavier dice are scaled down to it). */
     public static final int MAX_CYCLE = 48;
+    /** The reveal: ticks between two dice stopping (the first one stops at once). */
+    public static final int REVEAL_STEP_TICKS = 14;
+    /** The reveal: ticks between the last die stopping and the total. */
+    public static final int REVEAL_TOTAL_TICKS = 16;
 
     private final DiceEntity lead;
     private Phase phase = Phase.ROLLING;
@@ -61,6 +69,11 @@ public final class DiceRollSequence {
     /** Slow: the faces each die goes through, and where it is. */
     private final Map<UUID, List<DiceFace>> cycles = new HashMap<>();
     private final Map<UUID, Integer> cycleIndexes = new HashMap<>();
+    /** The reveal: the faces of the throw, how many are shown, ticks since it began, the double / triple shown. */
+    private List<DiceFace> revealing = List.of();
+    private int revealed, revealAge, comboShown;
+    /** The reveal is all at once (one die, Choice): only its end is shown. */
+    private boolean instant;
 
     public DiceRollSequence(DiceEntity lead) {
         this.lead = lead;
@@ -169,6 +182,7 @@ public final class DiceRollSequence {
         boolean slow = byHand();
         for (DiceEntity die : lead.group()) {
             die.setSpinning(true);
+            die.setGlowing(false); // the double of an earlier roll
             die.setFaceShown(slow);
             if (slow) {
                 List<DiceFace> cycle = cycle(faces(die));
@@ -183,6 +197,10 @@ public final class DiceRollSequence {
 
     public void tick() {
         if (!started) start();
+        if (phase == Phase.REVEALING) {
+            tickReveal();
+            return;
+        }
         if (phase != Phase.ROLLING) return;
         age++;
         if (chooses()) {
@@ -232,7 +250,7 @@ public final class DiceRollSequence {
             case PICKING, DECIDING -> {
                 if (isRoller(player)) DicePrompts.resend(player);
             }
-            case DONE -> {
+            case REVEALING, DONE -> {
             }
         }
     }
@@ -260,13 +278,20 @@ public final class DiceRollSequence {
             }
             while (results.size() < needed) results.add(rollSet(false));
         }
+        if (needed > 1) {
+            stopAll();
+            showSet(results.getLast());
+            askLucky();
+        } else {
+            picked(results.getFirst()); // nothing asked: the dice go on turning into the reveal
+        }
+    }
+
+    private void stopAll() {
         for (DiceEntity die : lead.group()) {
             die.setSpinning(false);
             die.setFaceShown(false);
         }
-        showSet(results.getLast());
-        if (needed > 1) askLucky();
-        else picked(results.getFirst());
     }
 
     private List<DiceFace> rollSet(boolean slow) {
@@ -310,12 +335,13 @@ public final class DiceRollSequence {
 
     /** A result is held: Reroll lets the roller throw it away (no answer: kept). */
     private void picked(List<DiceFace> set) {
-        showSet(set);
         int left = rerollsLeft();
         if (left <= 0) {
             finish(set);
             return;
         }
+        stopAll();
+        showSet(set);
         phase = Phase.DECIDING;
         List<DicePrompts.Option> options = List.of(
                 new DicePrompts.Option(optionOf(set).icon(), Text.translatable("gui.steveparty.dice_prompt.reroll.keep",
@@ -370,15 +396,84 @@ public final class DiceRollSequence {
         return new DicePrompts.Option(icon, label);
     }
 
+    /** The result is final: it is revealed, die after die (see {@link #REVEAL_STEP_TICKS}). */
     private void finish(List<DiceFace> set) {
-        phase = Phase.DONE;
+        phase = Phase.REVEALING;
+        revealing = List.copyOf(set);
+        revealed = 0;
+        revealAge = 0;
+        comboShown = 0;
+        instant = revealing.size() <= 1 || chooses();
+        // Dice stopped for a prompt (Lucky, Reroll) turn again to land one by one; a Slow die keeps the face it was stopped on
         for (DiceEntity die : lead.group()) {
+            if (!die.isRolling()) {
+                die.setSpinning(true);
+                die.setFaceShown(false);
+            }
+        }
+        if (instant) {
+            // One die, or faces the roller picked: all at once
+            while (revealed < revealing.size()) revealNext();
+            complete();
+            return;
+        }
+        revealNext(); // the first die lands at once
+    }
+
+    private void tickReveal() {
+        revealAge++;
+        if (revealed < revealing.size()) {
+            if (revealAge >= revealed * REVEAL_STEP_TICKS) revealNext();
+        } else if (revealAge >= (revealing.size() - 1) * REVEAL_STEP_TICKS + REVEAL_TOTAL_TICKS) {
+            complete();
+        }
+    }
+
+    /** The next die lands on its face; a double / triple shows as soon as the dice make it. */
+    private void revealNext() {
+        List<DiceEntity> group = lead.group();
+        int index = revealed++;
+        DiceFace face = revealing.get(index);
+        if (index < group.size()) {
+            DiceEntity die = group.get(index);
             die.setSpinning(false);
             die.setFaceShown(false);
+            die.showFace(face);
+            DiceReveal.dieLands(die, index, revealing.size());
         }
-        showSet(set);
+        List<DiceFace> shown = revealing.subList(0, revealed);
+        List<Integer> numbers = DiceThrow.numbers(shown);
+        int same = DiceThrow.sameCount(numbers);
+        if (same >= 2 && same > comboShown) {
+            comboShown = Math.min(3, same);
+            int number = DiceThrow.sameNumber(numbers);
+            List<DiceEntity> matching = new ArrayList<>();
+            for (int i = 0; i < shown.size() && i < group.size(); i++) {
+                if (shown.get(i).steps() == number) matching.add(group.get(i));
+            }
+            DiceReveal.combo(matching, same);
+        }
+        if (!instant) DiceReveal.send(lead, revealing.size(), shown, null); // the last die too: the total comes after a pause
+    }
+
+    /** All revealed: the total, then the roll is announced (and the token moves). */
+    private void complete() {
+        phase = Phase.DONE;
+        stopAll();
+        showSet(revealing);
+        DiceReveal.total(lead, revealing.size());
         if (cursed) CursedRolls.lift(lead.getWorld().getServer(), lead.getOwner().orElse(null)); // spent
-        lead.onRollFinished(set);
+        lead.onRollFinished(revealing);
+    }
+
+    /** The reveal: the dice stopped so far (all of them once the roll is final). */
+    public int revealed() {
+        return phase == Phase.DONE ? revealing.size() : phase == Phase.REVEALING ? revealed : 0;
+    }
+
+    /** The reveal: the double (2) or triple (3) shown so far, 0 if none. */
+    public int comboShown() {
+        return comboShown;
     }
 
     /** The dice are gone: nothing is asked any more. */
