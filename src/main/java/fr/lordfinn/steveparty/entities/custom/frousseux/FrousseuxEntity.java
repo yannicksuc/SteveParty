@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -39,6 +40,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypeFilter;
@@ -83,7 +85,8 @@ import java.util.function.ToIntFunction;
  *     <li><b>Flint and steel</b>: relights its flame, giving back health; on a wild one, a try at taming it.</li>
  *     <li><b>Loot</b>: sometimes its candle, always with Looting (loot table entities/frousseux); and what it stole.</li>
  *     <li><b>A thief</b>: a wild one steals one shiny thing ({@link #SHINY}) off a player coming within
- *     {@link #STEAL_RANGE} blocks; the item flies to it, it carries it under itself and flees laughing. Killed, it
+ *     {@link #STEAL_RANGE} blocks; the item flies to it, it carries it under itself and flees laughing. Another
+ *     player near ({@link FrousseuxCourier}): it flies off to them instead and drops it at their feet. Killed, it
  *     drops it; tamed, it gives it back.</li>
  *     <li><b>Tamed</b> ({@link #getOwner()}): it follows its owner about, lighting the way, out of their sight line
  *     and their crosshair ({@link FrousseuxCompanion}); never steals; sits and stays on its owner's word.</li>
@@ -195,6 +198,13 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     private int itemFlightStart = Integer.MIN_VALUE;
     /** The players it robbed and until when it leaves them be (world time), each: {@link #VICTIM_COOLDOWN}. */
     private final Map<UUID, Long> robbed = new HashMap<>();
+    /** Carrying what it stole to another player (FrousseuxCourier): them, whom it robbed, and the time left to reach them. */
+    private @Nullable UUID courierTo;
+    private @Nullable UUID courierFrom;
+    private int courierTicks;
+    /** Given away and still flying to its receiver: it lands at their feet when the flight ends. */
+    private ItemStack gift = ItemStack.EMPTY;
+    private @Nullable Entity giftTo;
 
     public FrousseuxEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -215,6 +225,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     @Override
     protected void initGoals() {
         this.goalSelector.add(1, new FrousseuxFlight.Flee(this));
+        this.goalSelector.add(1, new FrousseuxFlight.Deliver(this));
         this.goalSelector.add(2, new FrousseuxCompanion.Follow(this));
         this.goalSelector.add(5, new FrousseuxFlight.Wander(this));
         // where it looks, wild or tamed (still or following): at a player close by (its owner, mostly), else about it
@@ -286,12 +297,12 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
 
     /** Free to look about: alive, not hiding its eyes, not fleeing, not the board's. */
     private boolean looksAbout() {
-        return isAlive() && !isShy() && !boardActor && fleeTicks <= 0;
+        return isAlive() && !isShy() && !boardActor && fleeTicks <= 0 && courierTo == null;
     }
 
     /** Free to wander: alive, wild, not hiding its eyes, not fleeing. */
     public boolean isFree() {
-        return isAlive() && !isShy() && !boardActor && !isTamed() && fleeTicks <= 0;
+        return isAlive() && !isShy() && !boardActor && !isTamed() && fleeTicks <= 0 && courierTo == null;
     }
 
     FrousseuxFlight.Control flight() {
@@ -346,6 +357,16 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
 
     @Nullable PlayerEntity fleeFrom() {
         return fleeFrom;
+    }
+
+    /** On its way to give what it stole to another player ({@link FrousseuxCourier}). */
+    public boolean isDelivering() {
+        return courierTo != null;
+    }
+
+    /** Whom it is carrying what it stole to (in its world), or null. */
+    public @Nullable PlayerEntity courierReceiver() {
+        return courierTo == null ? null : getWorld().getPlayerByUuid(courierTo);
     }
 
     // ---------------------------------------------------------------- board actors
@@ -500,6 +521,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (dodgeCooldown > 0) dodgeCooldown--;
         if (stealCooldown > 0) stealCooldown--;
         tickItemFlight();
+        if (courierTo != null) tickCourier(world);
         if (fleeTicks > 0) {
             fleeTicks--;
             if (fleeFrom != null && (!fleeFrom.isAlive() || fleeFrom.getWorld() != world)) fleeFrom = null;
@@ -680,9 +702,83 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
             Vec3d at = player.getPos().add(0, player.getHeight() * 0.55, 0);
             world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y, at.z, 8, 0.2, 0.2, 0.2, 0.05);
             world.spawnParticles(ParticleTypes.WAX_ON, at.x, at.y, at.z, 4, 0.2, 0.2, 0.2, 0.5);
+            ServerPlayerEntity receiver = FrousseuxCourier.receiver(world, this, player.getUuid());
+            if (receiver != null) startCourier(player, receiver, taken);
         }
         laugh();
         return true;
+    }
+
+    // ---------------------------------------------------------------- what it stole, given to someone else
+
+    /** Off to {@code receiver} with what it took from {@code victim} instead of fleeing; both told on their action bar. */
+    private void startCourier(PlayerEntity victim, ServerPlayerEntity receiver, ItemStack taken) {
+        courierTo = receiver.getUuid();
+        courierFrom = victim.getUuid();
+        courierTicks = FrousseuxCourier.GIVE_UP_TICKS;
+        fleeTicks = 0;
+        fleeFrom = null;
+        victim.sendMessage(Text.translatable("message.steveparty.frousseux.off_to", receiver.getDisplayName(), taken.getName()), true);
+        receiver.sendMessage(Text.translatable("message.steveparty.frousseux.gift_coming"), true);
+    }
+
+    /** On its way: still someone to give to (the nearest one again if they left), there yet, or given up (it flees). */
+    private void tickCourier(ServerWorld world) {
+        if (stolen.isEmpty() || --courierTicks <= 0) {
+            endCourier(world);
+            return;
+        }
+        PlayerEntity receiver = courierReceiver();
+        if (age % 10 == 0 && !(receiver instanceof ServerPlayerEntity player
+                && FrousseuxCourier.canReceive(world, this, player, courierFrom, FrousseuxCourier.KEEP_RANGE))) {
+            receiver = FrousseuxCourier.receiver(world, this, courierFrom);
+            if (receiver == null) {
+                endCourier(world);
+                return;
+            }
+            courierTo = receiver.getUuid();
+        }
+        if (receiver == null) return;
+        double reach = FrousseuxCourier.GIVE_RANGE;
+        if (receiver.getBoundingBox().squaredMagnitude(getBoundingBox().getCenter()) <= reach * reach) give(receiver);
+    }
+
+    /** Nobody to give it to after all: it keeps it and flees whom it robbed, as when alone. */
+    private void endCourier(ServerWorld world) {
+        PlayerEntity victim = courierFrom == null ? null : world.getPlayerByUuid(courierFrom);
+        courierTo = null;
+        courierFrom = null;
+        courierTicks = 0;
+        if (stolen.isEmpty()) return;
+        fleeTicks = FLEE_TICKS;
+        fleeFrom = victim;
+    }
+
+    /** There: what it stole flies down to {@code receiver}'s feet ({@link #landGift}), a giggle, and it goes its way. */
+    private void give(PlayerEntity receiver) {
+        gift = stolen;
+        giftTo = receiver;
+        stolen = ItemStack.EMPTY;
+        courierTo = null;
+        courierFrom = null;
+        courierTicks = 0;
+        this.dataTracker.set(SHOWN_ITEM, gift.copy());
+        startItemFlight(receiver, false);
+        robbed.put(receiver.getUuid(), getWorld().getTime() + VICTIM_COOLDOWN); // it never robs back whom it gave to
+        flight.stop();
+        laugh();
+    }
+
+    /** The gift's flight over: it lies at its receiver's feet (or under it, they gone), sparkling. */
+    private void landGift(ServerWorld world) {
+        Entity to = giftTo != null && giftTo.isAlive() && giftTo.getWorld() == world ? giftTo : this;
+        ItemEntity item = new ItemEntity(world, to.getX(), to.getY() + 0.1, to.getZ(), gift, 0, 0.12, 0);
+        item.setPickupDelay(FrousseuxCourier.GIFT_PICKUP_DELAY);
+        world.spawnEntity(item);
+        world.spawnParticles(ParticleTypes.WAX_ON, to.getX(), to.getY() + 0.3, to.getZ(), 6, 0.25, 0.15, 0.25, 0.5);
+        world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, to.getX(), to.getY() + 0.3, to.getZ(), 6, 0.25, 0.15, 0.25, 0.05);
+        gift = ItemStack.EMPTY;
+        giftTo = null;
     }
 
     /** It robbed {@code player} less than {@link #VICTIM_COOLDOWN} ago: it leaves them be. */
@@ -701,6 +797,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         player.getInventory().offerOrDrop(back);
         fleeTicks = 0;
         fleeFrom = null;
+        courierTo = null;
+        courierFrom = null;
         playSound(SoundEvents.ENTITY_ITEM_PICKUP, 0.6f, 1.4f);
     }
 
@@ -712,6 +810,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     private void tickItemFlight() {
         if (itemFlightTicks <= 0 || --itemFlightTicks > 0) return;
         this.dataTracker.set(ITEM_FLIGHT, 0);
+        if (!gift.isEmpty() && getWorld() instanceof ServerWorld world) landGift(world);
         // given back: nothing left under it (a board actor: what it still carries)
         this.dataTracker.set(SHOWN_ITEM, (boardActor ? boardCarried : stolen).copy());
     }
@@ -849,6 +948,10 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
             dropStack(stolen); // what it stole falls with it
             stolen = ItemStack.EMPTY;
             this.dataTracker.set(SHOWN_ITEM, ItemStack.EMPTY);
+        }
+        if (!gift.isEmpty()) {
+            dropStack(gift); // a gift still on its way falls too
+            gift = ItemStack.EMPTY;
         }
     }
 
@@ -988,7 +1091,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         UUID owner = getOwner();
         if (owner != null) nbt.putUuid("Owner", owner);
         if (isSitting()) nbt.putBoolean("Sitting", true);
-        if (!stolen.isEmpty()) nbt.put("Stolen", stolen.encode(getRegistryManager()));
+        ItemStack carried = stolen.isEmpty() ? gift : stolen; // a gift still flying is saved as still carried
+        if (!carried.isEmpty()) nbt.put("Stolen", carried.encode(getRegistryManager()));
         if (stealCooldown > 0) nbt.putInt("StealCooldown", stealCooldown);
         if (!robbed.isEmpty()) {
             NbtList list = new NbtList();
