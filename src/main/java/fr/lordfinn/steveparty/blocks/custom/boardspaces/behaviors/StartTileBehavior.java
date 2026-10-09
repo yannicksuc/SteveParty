@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.minecraft.block.BlockState;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
@@ -39,7 +40,7 @@ import static net.minecraft.util.ActionResult.SUCCESS;
 public class StartTileBehavior extends ABoardSpaceBehavior {
     private static final double AMPLITUDE = 0.2;
     private static final double SPEED = 0.05f;
-    private static final Set<UUID> recentlyUnboundEntities = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashSet<>());
+    private static final Set<UUID> recentlyUnboundEntities = ServerMemory.forgetOnStop(new HashSet<>());
 
     public StartTileBehavior() {
         super(BoardSpaceType.TILE_START);

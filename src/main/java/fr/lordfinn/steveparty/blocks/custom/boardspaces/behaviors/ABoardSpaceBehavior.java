@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
@@ -141,7 +142,7 @@ public abstract class ABoardSpaceBehavior {
      * landing kind. A new role overrides it with a level of its own (2 to 15; 1 is a token passing; 0 or less: no pulse).
      */
     public int comparatorLevel(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
-        return fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity.landingSignal(landing(boardSpaceEntity, stack));
+        return BoardSpaceRedstoneRouterBlockEntity.landingSignal(landing(boardSpaceEntity, stack));
     }
 
     public static void setColor(BoardSpaceBlockEntity tileEntity, int color) {

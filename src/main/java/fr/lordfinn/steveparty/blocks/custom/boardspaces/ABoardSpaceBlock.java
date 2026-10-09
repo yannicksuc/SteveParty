@@ -21,6 +21,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemActionResult;
 import fr.lordfinn.steveparty.blocks.ItemResults;
+import fr.lordfinn.steveparty.board.WrenchActions;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -86,7 +87,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity) {
             tileEntity.onPlaced();
             // Placed with the Tile Linker Brush in the off hand: linked from its anchor
-            fr.lordfinn.steveparty.board.WrenchActions.onBoardSpacePlaced(world, pos, placer, itemStack);
+            WrenchActions.onBoardSpacePlaced(world, pos, placer, itemStack);
         }
     }
 
@@ -138,7 +139,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     }
 
     @Override
-    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {
+    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         return new SimpleNamedScreenHandlerFactory((syncId, inventory, player) ->
                 new BoardSpaceScreenHandler(syncId, inventory, (BoardSpaceBlockEntity) blockEntity), Text.empty());

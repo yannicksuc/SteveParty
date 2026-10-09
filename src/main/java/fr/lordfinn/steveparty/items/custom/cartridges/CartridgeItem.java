@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.board.DestinationSwap;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.items.custom.CartridgeContainerOpener;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -19,8 +20,11 @@ import net.minecraft.world.World;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.registry.Registries;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
+import net.minecraft.util.ClickType;
 import net.minecraft.util.Formatting;
 
 import java.util.List;
@@ -118,8 +122,8 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
 
     /** Clicked on another cartridge or a tile item: their destinations swap too (see DestinationSwap). */
     @Override
-    public boolean onStackClicked(ItemStack stack, net.minecraft.screen.slot.Slot slot, net.minecraft.util.ClickType clickType, PlayerEntity player) {
-        return fr.lordfinn.steveparty.board.DestinationSwap.onCartridgeClicked(stack, slot, clickType, player)
+    public boolean onStackClicked(ItemStack stack, Slot slot, ClickType clickType, PlayerEntity player) {
+        return DestinationSwap.onCartridgeClicked(stack, slot, clickType, player)
                 || super.onStackClicked(stack, slot, clickType, player);
     }
 
@@ -161,7 +165,7 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         // What a cartridge is, what this one does, how to use it
-        String id = net.minecraft.registry.Registries.ITEM.getId(this).getPath();
+        String id = Registries.ITEM.getId(this).getPath();
         addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge.what"), Formatting.GRAY);
         addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge." + id), Formatting.GRAY);
         // A tag: it has settings, and where to find them

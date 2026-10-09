@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -8,7 +9,11 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.powerups.PowerUpLimit;
+import fr.lordfinn.steveparty.powerups.PowerUpService;
+import fr.lordfinn.steveparty.utils.InventoryChain;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
@@ -39,7 +44,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         if (AdvancedTileBlock.getBoardSpaceEntity(world, pos) instanceof BoardSpaceBlockEntity tileEntity &&
                 tileEntity.getActiveCartridgeItemStack() instanceof ItemStack itemStack &&
                 itemStack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory &&
-                fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers.getLinkedInventory(world, itemStack) instanceof Inventory connectedInventory) {
+                CartridgeTransfers.getLinkedInventory(world, itemStack) instanceof Inventory connectedInventory) {
 
             int selectionState = InventoryCartridgeItem.getSelectionState(itemStack);
             switch (selectionState) {
@@ -107,12 +112,12 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             // The party's coins gained during a turn may be doubled (Double Coins power-up): taken from the same inventory
             ItemStack given = stack.copy();
             given.remove(IS_NEGATIVE);
-            int gained = fr.lordfinn.steveparty.powerups.PowerUpService.itemsGained(player, given, stack.getCount());
+            int gained = PowerUpService.itemsGained(player, given, stack.getCount());
             if (gained != stack.getCount()) stack = stack.copyWithCount(gained);
             // Power-ups past what the player may carry in the party stay in the chest
-            int allowed = fr.lordfinn.steveparty.powerups.PowerUpLimit.allowed(player, given.copyWithCount(stack.getCount()));
+            int allowed = PowerUpLimit.allowed(player, given.copyWithCount(stack.getCount()));
             if (allowed < stack.getCount()) {
-                fr.lordfinn.steveparty.powerups.PowerUpLimit.tellFull(player);
+                PowerUpLimit.tellFull(player);
                 if (allowed <= 0) return;
                 stack = stack.copyWithCount(allowed);
             }
@@ -162,8 +167,8 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
      * @return the number of items inserted
      */
     public static int insertLinked(ItemStack stack, Inventory linked) {
-        if (linked instanceof fr.lordfinn.steveparty.utils.InventoryChain chain) {
-            return fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.insertInOrder(stack, chain.inventories());
+        if (linked instanceof InventoryChain chain) {
+            return CartridgeContainers.insertInOrder(stack, chain.inventories());
         }
         return insertIntoInventory(stack, linked);
     }

@@ -5,12 +5,14 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.service.TurnMoves;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * The Threshold obstacle Cartridge: a wall on the path. A token reaching its board space during a move goes on only if
@@ -39,7 +41,7 @@ public class ThresholdCartridgeItem extends BoardRuleCartridgeItem {
         }
 
         public String id() {
-            return name().toLowerCase(java.util.Locale.ROOT);
+            return name().toLowerCase(Locale.ROOT);
         }
 
         /** Needs a value (not Double / Triple). */
@@ -132,7 +134,7 @@ public class ThresholdCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     /** A cartridge with this condition (tests, commands). */
-    public static ItemStack with(net.minecraft.item.Item item, Operator operator, int value) {
+    public static ItemStack with(Item item, Operator operator, int value) {
         ItemStack stack = new ItemStack(item);
         putSetting(stack, KIND, operator == Operator.DOUBLE ? 1 : operator == Operator.TRIPLE ? 2 : 0);
         if (operator.hasValue()) putSetting(stack, SIGN, operator.ordinal());

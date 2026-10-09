@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
@@ -23,6 +24,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -82,8 +84,8 @@ public class ThresholdTileBehavior extends ABoardSpaceBehavior {
 
     /** Stopped by the obstacle: a « Stop » landing that says why; else a plain one. */
     @Override
-    public void onDestinationReached(net.minecraft.world.World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity,
-                                     fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity partyController) {
+    public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity,
+                                     PartyControllerEntity partyController) {
         if (!(world instanceof ServerWorld serverWorld) || boardSpaceEntity == null) return;
         if (TurnMoves.isHaltedOn(token, pos)) {
             TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.STOP,

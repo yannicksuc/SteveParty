@@ -3,18 +3,27 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
+import fr.lordfinn.steveparty.board.BoardPerf;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
+import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
+import fr.lordfinn.steveparty.service.PartyStars;
+import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.component.ComponentMap;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -53,7 +62,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private static final String STAMP_KEY = "Stamp";
 
     /** The look stamped on the tile itself (shown while it holds no cartridge: see TileStamping). */
-    private @Nullable fr.lordfinn.steveparty.components.TileStampComponent stamp;
+    private @Nullable TileStampComponent stamp;
 
     private int ticks = 0;
     private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
@@ -91,7 +100,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     private void syncToClients() {
         if (world != null && !world.isClient) {
-            fr.lordfinn.steveparty.board.BoardPerf.boardSpaceSyncs++;
+            BoardPerf.boardSpaceSyncs++;
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
         }
     }
@@ -124,7 +133,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     private @Nullable BlockPos routerOf(ServerWorld serverWorld) {
         if (!routerKnown) {
-            fr.lordfinn.steveparty.board.BoardPerf.routerStateLookups++;
+            BoardPerf.routerStateLookups++;
             router = BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos);
             routerKnown = true;
         }
@@ -132,7 +141,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     private static int powerAt(ServerWorld serverWorld, BlockPos powerPos) {
-        fr.lordfinn.steveparty.board.BoardPerf.boardSpacePowerReads++;
+        BoardPerf.boardSpacePowerReads++;
         return serverWorld.getReceivedRedstonePower(powerPos);
     }
 
@@ -262,7 +271,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
         // A star space switched on or off: the party stars follow
         if (previousType != type && (previousType == BoardSpaceType.TILE_STAR || type == BoardSpaceType.TILE_STAR))
-            fr.lordfinn.steveparty.service.PartyStars.onRoleChanged(serverWorld, pos, previousType, type);
+            PartyStars.onRoleChanged(serverWorld, pos, previousType, type);
         return true;
     }
 
@@ -395,10 +404,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     /** The item of this tile carries its cartridges (every slot, with their components) and its own stamped look. */
     @Override
-    protected void addComponents(net.minecraft.component.ComponentMap.Builder builder) {
+    protected void addComponents(ComponentMap.Builder builder) {
         super.addComponents(builder);
-        if (!isEmpty()) builder.add(net.minecraft.component.DataComponentTypes.CONTAINER,
-                net.minecraft.component.type.ContainerComponent.fromStacks(getHeldStacks()));
+        if (!isEmpty()) builder.add(DataComponentTypes.CONTAINER,
+                ContainerComponent.fromStacks(getHeldStacks()));
         if (stamp != null) builder.add(ModComponents.TILE_STAMP, stamp);
     }
 
@@ -406,9 +415,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     @Override
     protected void readComponents(ComponentsAccess components) {
         super.readComponents(components);
-        net.minecraft.component.type.ContainerComponent container = components.get(net.minecraft.component.DataComponentTypes.CONTAINER);
+        ContainerComponent container = components.get(DataComponentTypes.CONTAINER);
         if (container != null) container.copyTo(getHeldStacks());
-        fr.lordfinn.steveparty.components.TileStampComponent own = components.get(ModComponents.TILE_STAMP);
+        TileStampComponent own = components.get(ModComponents.TILE_STAMP);
         if (own != null) stamp = own;
         components.get(ModComponents.TILE_SIZE); // read from the block state: not kept by the block entity
     }
@@ -421,12 +430,12 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         nbt.remove(STAMP_KEY);
     }
 
-    public @Nullable fr.lordfinn.steveparty.components.TileStampComponent getStamp() {
+    public @Nullable TileStampComponent getStamp() {
         return stamp;
     }
 
     /** Stamps (or, with null, clears) the tile's own look; saved and sent to the clients. */
-    public void setStamp(@Nullable fr.lordfinn.steveparty.components.TileStampComponent stamp) {
+    public void setStamp(@Nullable TileStampComponent stamp) {
         this.stamp = stamp;
         super.markDirty();
         syncToClients();
@@ -437,7 +446,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         super.writeNbt(nbt, wrapper);
         nbt.putInt(ACTIVE_SLOT_KEY, activeSlot);
         if (stamp != null) {
-            fr.lordfinn.steveparty.components.TileStampComponent.CODEC.encodeStart(NbtOps.INSTANCE, stamp)
+            TileStampComponent.CODEC.encodeStart(NbtOps.INSTANCE, stamp)
                     .ifSuccess(element -> nbt.put(STAMP_KEY, element));
         }
         if (!cycleIndexes.isEmpty()) {
@@ -452,7 +461,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         super.readNbt(nbt, wrapper);
         activeSlot = nbt.getInt(ACTIVE_SLOT_KEY);
         stamp = nbt.contains(STAMP_KEY)
-                ? fr.lordfinn.steveparty.components.TileStampComponent.CODEC.parse(NbtOps.INSTANCE, nbt.get(STAMP_KEY)).result().orElse(null)
+                ? TileStampComponent.CODEC.parse(NbtOps.INSTANCE, nbt.get(STAMP_KEY)).result().orElse(null)
                 : null;
         activeSlotNeedsCheck = true;
         routerKnown = false;
@@ -508,7 +517,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
         // A hidden trap (Trap power-up) springs on the tokens that stop here, before the space's own role
-        fr.lordfinn.steveparty.powerups.effects.TrapEffect.onTokenStopped(partyController, this, token);
+        TrapEffect.onTokenStopped(partyController, this, token);
         // A board space without cartridge acts as a default one: the game must go on
         ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
         // Pushed here after a teleport: an ordinary space if the Teleport Cartridge says so, or if it is a teleport tile
@@ -530,12 +539,12 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         if (!(this.world instanceof ServerWorld serverWorld)) return;
         Vec3d at = BoardSpaces.standPos(serverWorld, this.pos);
         // A few twinkles in the colour of the tile's face (its cartridge's colour)
-        serverWorld.spawnParticles(new fr.lordfinn.steveparty.particles.MulaSparkleEffect(TileFeedback.tileColor(this), 0.8F,
-                fr.lordfinn.steveparty.particles.MulaSparkleEffect.TWINKLE), at.x, at.y + 0.15, at.z, 5, 0.3, 0.05, 0.3, 0.0);
+        serverWorld.spawnParticles(new MulaSparkleEffect(TileFeedback.tileColor(this), 0.8F,
+                MulaSparkleEffect.TWINKLE), at.x, at.y + 0.15, at.z, 5, 0.3, 0.05, 0.3, 0.0);
         int steps = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
         // Lands (onDestinationReached): its move ends here, or a Stop space ended it (forced arrival)
         if (steps == 0 && (ABoardSpaceBlock.countsAsStep(getCachedState().getBlock())
-                || fr.lordfinn.steveparty.service.TokenMovementService.isForcedStop(serverWorld, this, token))) return;
+                || TokenMovementService.isForcedStop(serverWorld, this, token))) return;
         TileFeedback.pass(serverWorld, this.pos);
     }
 
