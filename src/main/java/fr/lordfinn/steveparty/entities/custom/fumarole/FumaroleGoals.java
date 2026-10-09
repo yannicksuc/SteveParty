@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.entities.custom.fumarole;
 
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,33 +20,14 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 
-/** The Fumarole's AI: its territory, its revenge, the turret blast, pumping lava, walking to its target. */
+/** The Fumarole's AI: its revenge, the turret blast, pumping lava, walking to its target. */
 public final class FumaroleGoals {
     private FumaroleGoals() {
     }
 
-    /** Whether it has calmed down about {@code target}: no longer angry, they keep out of its territory. */
+    /** Whether it has calmed down about {@code target} (FumaroleEntity#calmAbout). */
     static boolean calm(FumaroleEntity fumarole, @Nullable LivingEntity target) {
-        return target != null && !fumarole.isAngry()
-                && !fumarole.inTerritory(target);
-    }
-
-    /** A player coming within {@link FumaroleEntity#TERRITORY} blocks of its shell becomes its target, until it calms down. */
-    static final class Territory extends ActiveTargetGoal<PlayerEntity> {
-        private final FumaroleEntity fumarole;
-
-        Territory(FumaroleEntity fumarole) {
-            super(fumarole, PlayerEntity.class, 10, true, false,
-                    player -> !fumarole.isTamed() && !fumarole.hasPassenger(player)
-                            && !(player instanceof PlayerEntity p && fumarole.trustedByAll(p))
-                            && fumarole.inTerritory(player));
-            this.fumarole = fumarole;
-        }
-
-        @Override
-        public boolean shouldContinue() {
-            return !calm(fumarole, fumarole.getTarget()) && super.shouldContinue();
-        }
+        return target != null && fumarole.calmAbout(target);
     }
 
     /** Whoever hurts it (a player or a mob) becomes its target, until it calms down. */
@@ -79,7 +59,7 @@ public final class FumaroleGoals {
      * its spit animation drawing the neck back); {@link #LOCK_TICKS} before the shot its aim freezes on where the
      * enemy stood, and the steam leaves straight there as the neck whips forward (FumaroleEntity#blastAt, a bucket):
      * a step aside in that last half second dodges it. The heads share out the enemies about (its target first,
-     * whoever last hurt it, players in its territory: head n prefers the n-th), with one enemy they all focus it. Then
+     * whoever last hurt it, the players who provoked it: head n prefers the n-th), with one enemy they all focus it. Then
      * one shared rest of {@link #COOLDOWN_MIN} to {@link #COOLDOWN_MIN} + {@link #COOLDOWN_SPREAD} ticks: three heads
      * shoot no more often than one would.
      */
@@ -119,8 +99,8 @@ public final class FumaroleGoals {
             }
             for (PlayerEntity player : fumarole.getWorld().getPlayers()) {
                 if (enemies.size() >= FumaroleEntity.HEADS.length) break;
-                if (!fumarole.isTamed() && !enemies.contains(player) && player.isAlive() && !player.isSpectator() && !player.isCreative()
-                        && fumarole.inTerritory(player)) {
+                if (!enemies.contains(player) && player.isAlive() && !player.isSpectator() && !player.getAbilities().creativeMode
+                        && fumarole.hasGrudge(player) && !fumarole.hasPassenger(player)) {
                     enemies.add(player);
                 }
             }

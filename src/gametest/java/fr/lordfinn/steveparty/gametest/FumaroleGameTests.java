@@ -577,69 +577,110 @@ public class FumaroleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    // ---------------------------------------------------------------- territory
+    // ---------------------------------------------------------------- neutral until provoked
 
     /**
      * A wild one, its AI on, facing east, its tank part full, and a survival player standing {@code fromShell} blocks
-     * east of its shell (its hitbox's edge).
+     * east of its shell (its hitbox's edge), {@code dz} blocks aside.
      */
-    private static ServerPlayerEntity standOff(TestContext context, FumaroleEntity fumarole, double fromShell) {
+    private static ServerPlayerEntity standOff(TestContext context, FumaroleEntity fumarole, double fromShell, double dz) {
         fumarole.setAiDisabled(false);
         fumarole.setTank(10);
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         double edge = fumarole.getBoundingBox().maxX;
-        Vec3d at = new Vec3d(edge + fromShell + player.getWidth() / 2, fumarole.getY(), fumarole.getZ());
-        player.refreshPositionAndAngles(at.x, at.y, at.z, 90, 0);
+        player.refreshPositionAndAngles(edge + fromShell + player.getWidth() / 2, fumarole.getY(), fumarole.getZ() + dz, 90, 0);
         return player;
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_territory_in", tickLimit = 240)
-    public void aPlayerTenBlocksFromItsShellGetsBlasted(TestContext context) {
+    /** Never targeted, never blasted (on fire: a mock player is never ticked, still join-invulnerable). */
+    private static void leftAlone(TestContext context, FumaroleEntity fumarole, ServerPlayerEntity player) {
+        context.assertFalse(fumarole.getTarget() == player, "never targeted");
+        context.assertFalse(player.isOnFire(), "never blasted");
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_neutral", tickLimit = 140)
+    public void aPlayerCloseByIsLeftAlone(TestContext context) {
         strip(context, 22);
         FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
-        ServerPlayerEntity player = standOff(context, fumarole, 10);
-        context.assertTrue(fumarole.inTerritory(player), "10 blocks from its shell: in its territory");
-        context.assertFalse(fumarole.squaredDistanceTo(player) <= 8 * 8, "and well beyond 8 blocks of its centre");
-        float health = player.getHealth();
+        ServerPlayerEntity player = standOff(context, fumarole, 4, 0);
+        context.runAtTick(120, () -> {
+            leftAlone(context, fumarole, player);
+            context.assertFalse(fumarole.hasGrudge(player), "no grudge");
+            TestPlayers.remove(context, player);
+            fumarole.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_provoked_hit", tickLimit = 240)
+    public void hittingItMakesItFightThatPlayerOnly(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        ServerPlayerEntity hitter = standOff(context, fumarole, 10, 0);
+        ServerPlayerEntity bystander = standOff(context, fumarole, 8, 3);
+        fumarole.damage(fumarole.getDamageSources().playerAttack(hitter), 1);
+        context.assertTrue(fumarole.hasGrudge(hitter), "a grudge against the hitter");
+        context.assertFalse(fumarole.hasGrudge(bystander), "none against the one beside him");
         boolean[] done = {false};
         context.runAtEveryTick(() -> {
-            // the steam sets him on fire (a mock player is never ticked: still join-invulnerable, no damage to count on)
-            if (done[0] || fumarole.getTarget() != player || !(player.isOnFire() || player.getHealth() < health)) return;
+            if (done[0] || fumarole.getTarget() != hitter || !hitter.isOnFire()) return;
             done[0] = true;
-            TestPlayers.remove(context, player);
+            leftAlone(context, fumarole, bystander);
+            TestPlayers.remove(context, hitter, bystander);
             fumarole.discard();
             context.complete();
         });
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_territory_out", tickLimit = 140)
-    public void aPlayerBeyondItsTerritoryIsLeftAlone(TestContext context) {
-        strip(context, 22);
-        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
-        ServerPlayerEntity player = standOff(context, fumarole, FumaroleEntity.TERRITORY + 3);
-        context.assertFalse(fumarole.inTerritory(player), "beyond its territory");
-        float health = player.getHealth();
-        context.runAtTick(120, () -> {
-            context.assertFalse(fumarole.getTarget() == player, "never targeted");
-            context.assertTrue(player.getHealth() >= health && !player.isOnFire(), "never blasted");
-            TestPlayers.remove(context, player);
-            fumarole.discard();
-            context.complete();
-        });
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_provoked")
+    public void takingItsLavaOrClimbingOnAWildOneProvokesIt(TestContext context) {
+        TestBoards.floor(context, 8);
+        FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
+        fumarole.setTank(10);
+        ServerPlayerEntity thief = player(context, new ItemStack(Items.BUCKET));
+        thief.interact(fumarole, Hand.MAIN_HAND);
+        context.assertTrue(fumarole.getTank() == 9 && fumarole.hasGrudge(thief), "a bucket of its lava taken: a grudge");
+        context.assertTrue(fumarole.getTarget() == thief, "and the thief its target");
+        ServerPlayerEntity rider = player(context, ItemStack.EMPTY);
+        rider.interact(fumarole, Hand.MAIN_HAND);
+        context.assertTrue(rider.getVehicle() == fumarole && fumarole.hasGrudge(rider), "climbing on a wild one: a grudge");
+        ServerPlayerEntity feeder = player(context, ItemStack.EMPTY);
+        fumarole.feedHead(feeder, 0, new ItemStack(Items.MAGMA_CREAM, 4));
+        context.assertFalse(fumarole.hasGrudge(feeder), "feeding it a cream: none");
+        TestPlayers.remove(context, thief, rider, feeder);
+        fumarole.discard();
+        context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_territory_trusted", tickLimit = 140)
-    public void aPlayerAllItsHeadsTrustIsNeverBlasted(TestContext context) {
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_provoked_trusted", tickLimit = 140)
+    public void aPlayerAllItsHeadsTrustNeverProvokesIt(TestContext context) {
         strip(context, 22);
         FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
-        ServerPlayerEntity player = standOff(context, fumarole, 10);
+        ServerPlayerEntity player = standOff(context, fumarole, 10, 0);
         ItemStack cream = new ItemStack(Items.MAGMA_CREAM, 8);
         for (int head = 0; head < FumaroleEntity.HEADS.length; head++) fumarole.feedHead(player, head, cream);
         context.assertTrue(fumarole.trustedByAll(player), "all its heads trust him");
-        float health = player.getHealth();
+        fumarole.damage(fumarole.getDamageSources().playerAttack(player), 1);
+        context.assertFalse(fumarole.hasGrudge(player), "hitting it: no grudge");
         context.runAtTick(120, () -> {
-            context.assertFalse(fumarole.getTarget() == player, "never targeted");
-            context.assertTrue(player.getHealth() >= health && !player.isOnFire(), "never blasted");
+            leftAlone(context, fumarole, player);
+            TestPlayers.remove(context, player);
+            fumarole.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_calms", tickLimit = 100)
+    public void itCalmsDownOnceTheAngerIsOverAndThePlayerAway(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        ServerPlayerEntity player = standOff(context, fumarole, FumaroleEntity.CALM_DISTANCE + 2, 0);
+        fumarole.setTank(0); // a weak puff out of reach: it only frets
+        fumarole.provoke(player, 20);
+        context.assertTrue(fumarole.hasGrudge(player) && fumarole.getTarget() == player, "provoked: his target");
+        context.runAtTick(60, () -> {
+            context.assertFalse(fumarole.hasGrudge(player), "the anger over, him away: no grudge");
+            context.assertFalse(fumarole.getTarget() == player, "and no target");
             TestPlayers.remove(context, player);
             fumarole.discard();
             context.complete();

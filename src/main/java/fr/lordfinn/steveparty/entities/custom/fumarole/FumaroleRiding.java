@@ -49,8 +49,13 @@ public final class FumaroleRiding {
     public static final int CLIMB_MAX = 10;
     public static final double CLIMB_SPEED = 0.35, CLIMB_OVER_SPEED = 0.25;
     public static final int CLIMB_TIMEOUT = 100;
-    /** In lava it floats this deep (blocks of lava over its feet), slower by this much. */
-    public static final double SWIM_DEPTH = 1.5, SWIM_MIN_DEPTH = 0.6;
+    /**
+     * In lava it floats this deep (blocks of lava over its feet: the surface clear of its shell's underside, its legs'
+     * tops and its knees, no face of its model flush with it), slower by this much.
+     */
+    public static final double SWIM_DEPTH = 2.0, SWIM_MIN_DEPTH = 0.6;
+    /** Standing on the bottom of shallow lava, it is drawn (and its riders sat) this much lower: no knee flush with it. */
+    public static final float SHALLOW_SINK = 0.5f;
     public static final float SWIM_FACTOR = 0.8f;
 
     private FumaroleRiding() {
