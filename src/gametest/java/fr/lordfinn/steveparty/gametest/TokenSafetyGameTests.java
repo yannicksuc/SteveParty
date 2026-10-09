@@ -53,10 +53,6 @@ public class TokenSafetyGameTests implements FabricGameTest {
         return mob;
     }
 
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
-    }
-
     /** Lit before the spell (already hissing) or after: a creeper token never explodes. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
     public void creeperTokenNeverExplodes(TestContext context) {
@@ -142,7 +138,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
             horse.interact(player, Hand.MAIN_HAND);
             context.assertTrue(player.getVehicle() == horse, "a player can ride a tiny horse token, with an empty hand");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -174,7 +170,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
             context.assertTrue(trader.isRemoved(), "the trader token left the board");
             context.assertTrue(player.getMainHandStack().get(ModComponents.ENTITY_DATA_COMPONENT) != null, "the Token holds it");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -197,7 +193,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
                 double distance = first.distanceTo(second);
                 context.assertTrue(distance > 1.0, "the two Mulas moved apart: " + distance + " blocks");
             } finally {
-                disconnect(context, owner);
+                TestPlayers.remove(context, owner);
             }
             context.complete();
         });

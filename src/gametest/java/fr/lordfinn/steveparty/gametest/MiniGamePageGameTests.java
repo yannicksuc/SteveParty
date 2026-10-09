@@ -69,10 +69,6 @@ public class MiniGamePageGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void remove(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
-    }
-
     /** A page in the player's main hand, opened once: it has its id. */
     private static ItemStack openedPage(ServerPlayerEntity player) {
         ItemStack page = new ItemStack(ModItems.MINI_GAME_PAGE);
@@ -233,7 +229,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertEquals(pages, 2, "the page and its copy");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -302,7 +298,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertTrue(MiniGamePages.imageBytes(server, hash) == null, "no page shows it any more: gone");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -338,7 +334,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertEquals(linked, 2, "the page and its linked copy");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -386,7 +382,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertEquals(MiniGamePages.get(server, id).title(), "Écrit", "still as written");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -469,7 +465,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertTrue(!MiniGamePages.clearImage(server, held), "nothing left to clear");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 

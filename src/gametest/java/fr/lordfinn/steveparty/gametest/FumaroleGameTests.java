@@ -77,10 +77,6 @@ public class FumaroleGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) TestPlayers.remove(context, player);
-    }
-
     /** Facing +x (yaw -90), its centre head at rest. */
     private static FumaroleEntity facingEast(TestContext context, BlockPos at) {
         FumaroleEntity fumarole = spawn(context, at);
@@ -148,7 +144,7 @@ public class FumaroleGameTests implements FabricGameTest {
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LAVA_BUCKET));
         player.interact(fumarole, Hand.MAIN_HAND);
         context.assertTrue(player.getMainHandStack().isOf(Items.LAVA_BUCKET), "a full tank takes no more");
-        remove(context, player);
+        TestPlayers.remove(context, player);
         fumarole.discard();
         context.complete();
     }
@@ -190,7 +186,7 @@ public class FumaroleGameTests implements FabricGameTest {
         context.assertEquals(fumarole.getTank(), 0, "emptied");
         context.assertTrue(fumarole.isTamable(), "emptied: tamable");
         context.assertFalse(fumarole.isTamed(), "not tamed yet");
-        remove(context, player);
+        TestPlayers.remove(context, player);
         fumarole.discard();
         context.complete();
     }
@@ -220,7 +216,7 @@ public class FumaroleGameTests implements FabricGameTest {
         other.feedHead(a, 2, cream);
         context.assertTrue(other.isTamed() && other.isOwner(a), "the three by A: tamed, A its owner");
         context.assertEquals(cream.getCount(), 16 - 7, "a cream a feed");
-        remove(context, a, b);
+        TestPlayers.remove(context, a, b);
         fumarole.discard();
         other.discard();
         context.complete();
@@ -245,7 +241,7 @@ public class FumaroleGameTests implements FabricGameTest {
         context.assertTrue(friend.getVehicle() == fumarole, "a second rider");
         context.assertTrue(fumarole.riderOf(0) == owner && fumarole.riderOf(1) == friend, "the centre head, then the left");
         context.assertTrue(fumarole.isSteered(), "steered");
-        remove(context, owner, friend);
+        TestPlayers.remove(context, owner, friend);
         fumarole.discard();
         context.complete();
     }
@@ -274,7 +270,7 @@ public class FumaroleGameTests implements FabricGameTest {
         context.waitAndRun(FumaroleEntity.THROW_MIN + FumaroleEntity.THROW_SPREAD + 5, () -> {
             context.assertFalse(player.hasVehicle(), "thrown off within a few seconds");
             context.assertFalse(fumarole.isTamed(), "and still wild");
-            remove(context, player);
+            TestPlayers.remove(context, player);
             fumarole.discard();
             context.complete();
         });
@@ -322,7 +318,7 @@ public class FumaroleGameTests implements FabricGameTest {
         owner.forwardSpeed = 1;
         for (int tick = 0; tick < 30; tick++) fumarole.travel(Vec3d.ZERO);
         context.assertTrue(fumarole.getX() - startX > 3, "driven forward: " + (fumarole.getX() - startX));
-        remove(context, owner);
+        TestPlayers.remove(context, owner);
         fumarole.discard();
         context.complete();
     }
@@ -454,7 +450,7 @@ public class FumaroleGameTests implements FabricGameTest {
         context.assertFalse(player.isOnFire(), "no fire");
         context.assertTrue(player.getVelocity().horizontalLength() < 0.2, "no shove: " + player.getVelocity());
         context.assertEquals(behind.getHealth(), pigHealth, "the steam stops on the shield");
-        remove(context, player);
+        TestPlayers.remove(context, player);
         behind.discard();
         fumarole.discard();
         context.complete();
@@ -501,7 +497,7 @@ public class FumaroleGameTests implements FabricGameTest {
             context.assertEquals(d3.getHealth(), health, "unhurt");
             context.assertTrue(d3.getVelocity().x > 1.0, "but shoved: " + d3.getVelocity());
             context.assertEquals(FumaroleBlast.damageOn(i4), FumaroleBlast.FIRE_DAMAGE + FumaroleBlast.PHYSICAL_DAMAGE, "iron: all of it");
-            remove(context, d3, d2, n4, i4);
+            TestPlayers.remove(context, d3, d2, n4, i4);
             fumarole.discard();
             context.complete();
         });
@@ -579,7 +575,7 @@ public class FumaroleGameTests implements FabricGameTest {
         context.assertTrue(copy.isTamed() && copy.isOwner(owner), "tamed, its owner back");
         context.assertTrue(copy.isSaddled(), "its saddle back");
         context.assertTrue(copy.trusts(2, friend) && !copy.trusts(0, friend), "its heads' trust back");
-        remove(context, owner, friend);
+        TestPlayers.remove(context, owner, friend);
         fumarole.discard();
         context.complete();
     }

@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -109,7 +110,7 @@ public class PartyStopGameTests implements FabricGameTest {
     private static void cleanUp(TestContext context, Board board) {
         ((TokenizedEntityInterface) board.a()).steveparty$setTokenized(false);
         ((TokenizedEntityInterface) board.b()).steveparty$setTokenized(false);
-        if (context.getBlockState(CONTROLLER).isOf(ModBlocks.PARTY_CONTROLLER)) context.removeBlock(CONTROLLER);
+        TestCleanup.removeIf(context, CONTROLLER, ModBlocks.PARTY_CONTROLLER);
     }
 
     /** Stopped: no winner, the pawns home and out of the game, the controller as before, and a new party can start. */

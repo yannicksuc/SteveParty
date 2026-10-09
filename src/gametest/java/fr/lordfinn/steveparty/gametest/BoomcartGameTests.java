@@ -55,10 +55,6 @@ public class BoomcartGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) TestPlayers.remove(context, player);
-    }
-
     // ---------------------------------------------------------------- the hot potato
 
     /** The rules alone: 8 s, then +3 s, +2 s, +1 s, then nothing; never twice in a row; it always blows. */
@@ -106,7 +102,7 @@ public class BoomcartGameTests implements FabricGameTest {
         context.assertEquals(boomcart.getFuse(), fuse + 60, "+3 s");
         context.assertEquals(boomcart.panicTargetId(), a.getUuid(), "now goes for A");
         boomcart.discard();
-        remove(context, a, b);
+        TestPlayers.remove(context, a, b);
         context.complete();
     }
 
@@ -214,7 +210,7 @@ public class BoomcartGameTests implements FabricGameTest {
             for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) {
                 context.assertTrue(context.getBlockState(new BlockPos(x, 0, z)).isOf(Blocks.STONE), "floor intact");
             }
-            remove(context, player);
+            TestPlayers.remove(context, player);
             context.complete();
         });
     }

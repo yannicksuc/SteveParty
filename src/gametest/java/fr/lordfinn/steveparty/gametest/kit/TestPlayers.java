@@ -142,11 +142,25 @@ public final class TestPlayers {
         TestCleanup.atEnd(context, () -> remove(context, player));
     }
 
-    /** Gets the players off what they ride and out of the mini-game pipes' party. */
-    public static void quitMiniGames(ServerPlayerEntity... players) {
+    /** Gets the player off what it rides and out of the mini-game pipes' party. */
+    public static void quitMiniGames(ServerPlayerEntity player) {
+        if (player.hasVehicle()) player.stopRiding();
+        MiniGamePipes.leaveParty(player.getUuid());
+    }
+
+    /** One player after the other: {@link #quitMiniGames}, then removed from the server. */
+    public static void leaveMiniGames(TestContext context, ServerPlayerEntity... players) {
         for (ServerPlayerEntity player : players) {
-            if (player.hasVehicle()) player.stopRiding();
-            MiniGamePipes.leaveParty(player.getUuid());
+            quitMiniGames(player);
+            remove(context, player);
+        }
+    }
+
+    /** One player after the other: {@link #quitMiniGames}, then removed from the server if still on it. */
+    public static void leaveMiniGamesIfOnline(TestContext context, ServerPlayerEntity... players) {
+        for (ServerPlayerEntity player : players) {
+            quitMiniGames(player);
+            removeIfOnline(context, player);
         }
     }
 

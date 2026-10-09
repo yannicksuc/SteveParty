@@ -99,14 +99,6 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) {
-            if (player.hasVehicle()) player.stopRiding();
-            MiniGamePipes.leaveParty(player.getUuid());
-            TestPlayers.remove(context, player);
-        }
-    }
-
     /** A page with an id, the pipes linked to it in the order given, each with the role of its colour. */
     private static UUID page(TestContext context, ItemStack stack, BlockPos... mouths) {
         MinecraftServer server = context.getWorld().getServer();
@@ -211,7 +203,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             context.assertTrue(!MiniGamePipes.click(player, Hand.MAIN_HAND, world, context.getAbsolutePos(new BlockPos(2, 1, 2))), "stone: nothing");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
         }
     }
 
@@ -461,7 +453,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
                                 context.assertTrue(!MiniGamePipes.isInParty(all[i].getUuid()) && !step.isAway(all[i].getUuid()), "player " + i + " left the mini-game");
                             }
                         } finally {
-                            remove(context, all);
+                            TestPlayers.leaveMiniGames(context, all);
                             context.removeBlock(controllerPos);
                         }
                         context.complete();
@@ -469,7 +461,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
                 });
             });
         } catch (RuntimeException e) {
-            remove(context, all);
+            TestPlayers.leaveMiniGames(context, all);
             context.removeBlock(controllerPos);
             throw e;
         }
@@ -513,7 +505,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
                 && PipeShape.mouth(context.getBlockState(blueIn), Direction.WEST) != null, "the ways in are mouths");
 
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 4.5, 3, 3.5);
-        Runnable cleanup = () -> remove(context, player);
+        Runnable cleanup = () -> TestPlayers.leaveMiniGames(context, player);
         // By the blue mouth: a team A pipe
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(blueIn), Direction.WEST, player, 0), "in by the blue mouth");
         when(context, () -> near(context, player, teamA), 60, "never came out of the team A pipe", () -> guarded(context, cleanup, () ->
@@ -581,7 +573,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
         when(context, () -> near(context, player, black), 40, "never came out of the entry pipe", () -> {
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
             context.complete();
         });
     }
@@ -607,7 +599,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
                 Vec3d at = context.getRelative(pig.getPos());
                 context.assertTrue(!pig.hasVehicle() && !(Math.abs(at.x - 5.5) < 1.2 && Math.abs(at.z - 5.5) < 1.2), "the pig was not sent to the mini-game: " + at);
             } finally {
-                remove(context, player);
+                TestPlayers.leaveMiniGames(context, player);
             }
             context.complete();
         });
@@ -649,7 +641,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             try {
                 context.assertTrue(!PipeTravel.isTravelling(player) && near(context, player, pipePos), "too far: back out of the mini-game pipe: " + context.getRelative(player.getPos()));
             } finally {
-                remove(context, player);
+                TestPlayers.leaveMiniGames(context, player);
             }
             context.complete();
         });
@@ -713,7 +705,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
                     "copper, iron, golden: the order they are listed in");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
         }
     }
 
@@ -750,7 +742,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
         player.getInventory().insertStack(new ItemStack(Items.ENDER_PEARL));
         Runnable cleanup = () -> {
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
             world.setChunkForced(far.getX() >> 4, far.getZ() >> 4, false);
             world.setBlockState(far, Blocks.AIR.getDefaultState());
             world.setBlockState(far.down(), Blocks.AIR.getDefaultState());
@@ -809,7 +801,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             old.getItem().inventoryTick(old, context.getWorld(), player, (int) (20 - time % 20) % 20, false);
             context.assertTrue(!old.contains(fr.lordfinn.steveparty.components.ModComponents.DESTINATIONS_COMPONENT), "the old pad positions are dropped");
         } finally {
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
         }
         context.complete();
     }
@@ -838,7 +830,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         Runnable cleanup = () -> {
             arena.end();
             for (fr.lordfinn.steveparty.minigame.zone.ZoneBubble left : fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.all()) left.endNow();
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
         };
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
         when(context, () -> near(context, player, black), 40, "never came out of the entry pipe", () -> guarded(context, cleanup, () -> {

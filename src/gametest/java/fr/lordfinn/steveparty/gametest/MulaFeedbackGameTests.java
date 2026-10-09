@@ -39,10 +39,6 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         return MulaFood.foodsOf(mula.getVariant()).iterator().next();
     }
 
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
-    }
-
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void mulaRemembersWhatItAteAndCountsItsMeals(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
@@ -60,7 +56,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             context.assertEquals(mula.getFeedCount(), 1, "one meal");
             context.assertEquals(player.getMainHandStack().getCount(), 3, "still eats one item");
         } catch (RuntimeException e) {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
             throw e;
         }
         // after the 1 s cooldown: something it doesn't eat is refused and doesn't change its belly
@@ -72,7 +68,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
                 context.assertEquals(mula.getFeedCount(), 1, "a refusal is not a meal");
                 context.assertEquals(player.getMainHandStack().getCount(), 1, "refused item kept");
             } finally {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
             }
             context.complete();
         });
@@ -90,7 +86,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             context.assertEquals(mula.getHunger(), 0, "burst: hunger reset");
             context.assertTrue(!mula.getLastFood().isEmpty(), "the food stays until the pop");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.waitAndRun(30, () -> {
             context.assertTrue(mula.getLastFood().isEmpty(), "belly empty after the pop");
@@ -110,7 +106,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(foodOf(mula), 1));
             mula.interactMob(player, Hand.MAIN_HAND);
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         NbtCompound nbt = new NbtCompound();
         mula.writeNbt(nbt);
@@ -146,7 +142,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             mula.tameAttempt(player, true);
             context.assertTrue(mula.isTamed() && mula.isOwner(player), "a successful attempt tames");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -182,7 +178,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             context.assertEquals(player.getMainHandStack().getCount(), 4, "kept");
             context.assertTrue(!mula.isMulaFood(new ItemStack(Items.APPLE)), "an apple is not blue");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -230,8 +226,8 @@ public class MulaFeedbackGameTests implements FabricGameTest {
                 mula.interactMob(player, Hand.MAIN_HAND);
                 context.assertEquals(mula.refusals(), 3, "a second later: a new no");
             } finally {
-                disconnect(context, player);
-                disconnect(context, other);
+                TestPlayers.remove(context, player);
+                TestPlayers.remove(context, other);
             }
             context.complete();
         });
@@ -252,7 +248,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             context.assertEquals(mula.refusals(), 1, "refused");
             context.assertEquals(owner.getMainHandStack().getCount(), 2, "kept");
         } finally {
-            disconnect(context, owner);
+            TestPlayers.remove(context, owner);
         }
         context.complete();
     }
@@ -270,7 +266,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             int nutrition = new ItemStack(Items.COOKED_COD).get(DataComponentTypes.FOOD).nutrition();
             context.assertEquals(mula.getHunger(), nutrition, "cooked cod gives its nutrition");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -306,7 +302,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             context.assertTrue(!blue.isMulaFood(PotionContentsComponent.createStack(Items.POTION, Potions.STRENGTH)),
                     "a yellow potion is not for a blue Mula");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -339,7 +335,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             context.assertTrue(MulaFood.value(MulaEntity.MulaVariant.BLACK, new ItemStack(Items.DRIED_KELP)) > 0
                     && MulaFood.value(MulaEntity.MulaVariant.GREEN, new ItemStack(Items.DRIED_KELP)) == 0, "dried kelp is black");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
             mula.discard();
         }
         context.complete();
@@ -356,11 +352,11 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             try {
                 check.run();
             } catch (RuntimeException e) {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
                 throw e;
             }
             if (last) {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
                 context.complete();
             }
         });
@@ -381,7 +377,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         int value = MulaFood.value(mula.getVariant(), new ItemStack(food));
         int nearlyFull = MulaEntity.MAX_HUNGER - 1 - value;
         if (value <= 0 || (float) (nearlyFull - value) / MulaEntity.MAX_HUNGER <= MulaMotion.TREMBLE_FROM) {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
             throw new AssertionError("unexpected seed value: " + value);
         }
         mula.setHunger(nearlyFull);

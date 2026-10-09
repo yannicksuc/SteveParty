@@ -62,12 +62,6 @@ public class LinkedPipeGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void remove(TestContext context, ServerPlayerEntity player) {
-        if (player.hasVehicle()) player.stopRiding();
-        MiniGamePipes.leaveParty(player.getUuid());
-        TestPlayers.remove(context, player);
-    }
-
     /** True once the player stands out of the mouth at {@code mouth} opening on {@code side}. */
     private static boolean outOf(TestContext context, ServerPlayerEntity player, BlockPos mouth, Direction side) {
         Vec3d at = context.getRelative(player.getPos());
@@ -124,7 +118,7 @@ public class LinkedPipeGameTests implements FabricGameTest {
                 player.refreshPositionAndAngles(at.x, at.y, at.z, 0, 0);
                 context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(blue), Direction.UP, player, 0), "into the blue linked pipe");
                 when(context, () -> outOf(context, player, blueMouth, Direction.WEST), 60, "never came out of the blue mouth", () -> {
-                    remove(context, player);
+                    TestPlayers.leaveMiniGames(context, player);
                     context.complete();
                 });
             });
@@ -171,7 +165,7 @@ public class LinkedPipeGameTests implements FabricGameTest {
             context.assertTrue(MiniGamePipes.wayOutPipe(server, player.getUuid(), page, here) == null, "none in range: the linked pipe is a pipe like any other");
         } finally {
             MiniGamePipeIndex.remove(server, farCopper);
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
         }
         context.complete();
     }
@@ -191,7 +185,7 @@ public class LinkedPipeGameTests implements FabricGameTest {
         context.waitAndRun(5, () -> {
             context.assertTrue(!PipeTravel.isTravelling(player) && player.getPos().distanceTo(before) < 0.01, "nothing happens");
             context.assertTrue(MiniGamePipes.isInParty(player.getUuid()), "still in the round");
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
             context.complete();
         });
     }

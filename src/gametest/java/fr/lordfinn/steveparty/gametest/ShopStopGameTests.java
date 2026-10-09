@@ -131,7 +131,7 @@ public class ShopStopGameTests implements FabricGameTest {
         try {
             test.accept(player);
         } catch (RuntimeException e) {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
             throw e;
         }
     }
@@ -146,10 +146,6 @@ public class ShopStopGameTests implements FabricGameTest {
                 throw e;
             }
         });
-    }
-
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
     }
 
     private static BlockPos spaceOf(CowEntity cow) {
@@ -183,7 +179,7 @@ public class ShopStopGameTests implements FabricGameTest {
 
     private static void finish(TestContext context, Board board, ServerPlayerEntity owner) {
         board.tokenized().steveparty$setTokenized(false);
-        disconnect(context, owner);
+        TestPlayers.remove(context, owner);
         context.complete();
     }
 
@@ -327,7 +323,7 @@ public class ShopStopGameTests implements FabricGameTest {
                     board.trader().interact(stranger, Hand.MAIN_HAND);
                     context.assertFalse(stranger.currentScreenHandler instanceof MerchantScreenHandler, "the merchant is busy with the shopper");
                     context.assertTrue(owner.currentScreenHandler == handler, "the shopper keeps the screen");
-                    disconnect(context, stranger);
+                    TestPlayers.remove(context, stranger);
                     handler.onButtonClick(owner, ShopStopScreenHandler.BUY_NOTHING_BUTTON_ID);
                     assertWentOn(context, board, owner, END, () -> finish(context, board, owner));
                 });
@@ -363,7 +359,7 @@ public class ShopStopGameTests implements FabricGameTest {
                 TokenMovementService.moveEntityOnBoard(board.token(), 2);
                 later(context, 40, () -> {
                     assertShopping(context, board, owner, 2);
-                    disconnect(context, owner);
+                    TestPlayers.remove(context, owner);
                     later(context, 3, () -> {
                         context.assertFalse(ShopStops.isShopping(board.token().getUuid()), "the stop is over");
                         later(context, 50, () -> {
