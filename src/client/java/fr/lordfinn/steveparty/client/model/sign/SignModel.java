@@ -35,6 +35,7 @@ import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 import org.jetbrains.annotations.Nullable;
@@ -196,8 +197,8 @@ public abstract class SignModel implements BakedModel {
                     emitter.pos(i, Float.intBitsToFloat(data[at]), Float.intBitsToFloat(data[at + 1]), Float.intBitsToFloat(data[at + 2]));
                     float u = Float.intBitsToFloat(data[at + 4]), v = Float.intBitsToFloat(data[at + 5]);
                     if (swap) {
-                        u = remap(u, from.getMinU(), from.getMaxU(), to.getMinU(), to.getMaxU());
-                        v = remap(v, from.getMinV(), from.getMaxV(), to.getMinV(), to.getMaxV());
+                        u = MathHelper.map(u, from.getMinU(), from.getMaxU(), to.getMinU(), to.getMaxU());
+                        v = MathHelper.map(v, from.getMinV(), from.getMaxV(), to.getMinV(), to.getMaxV());
                     }
                     emitter.uv(i, u, v);
                     emitter.color(i, tint != 0 && quad.hasColor() ? tint : -1);
@@ -258,10 +259,6 @@ public abstract class SignModel implements BakedModel {
                 }
             }
             emitter.emit();
-        }
-
-        private static float remap(float value, float fromMin, float fromMax, float toMin, float toMax) {
-            return toMin + (value - fromMin) / (fromMax - fromMin) * (toMax - toMin);
         }
     }
 
