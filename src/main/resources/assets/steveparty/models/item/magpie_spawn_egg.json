@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "steveparty:item/magpie_spawn_egg"
+  }
+}

@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity;
+import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
@@ -217,11 +218,24 @@ public class ModEntities {
                     .build(MAGPIE_KEY.getValue().toString())
     );
 
+    /** A wild Pie of the woods, flying from tree to tree (see WildMagpieEntity, WildMagpieSpawns). */
+    public static final RegistryKey<EntityType<?>> WILD_MAGPIE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("wild_magpie"));
+    public static final EntityType<WildMagpieEntity> WILD_MAGPIE = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("wild_magpie"),
+            EntityType.Builder
+                    .<WildMagpieEntity>create(WildMagpieEntity::new, SpawnGroup.CREATURE)
+                    .dimensions(0.5f, 0.6f)
+                    .maxTrackingRange(8)
+                    .trackingTickInterval(2)
+                    .build(WILD_MAGPIE_KEY.getValue().toString())
+    );
+
     public static void initialize() {
         FabricDefaultAttributeRegistry.register(ModEntities.DICE_ENTITY, DiceEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.MULA_ENTITY, MulaEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.GLANDOUILLE, GlandouilleEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.WILD_MAGPIE, WildMagpieEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.PLAYER_PAWN, PlayerPawnEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.FROUSSEUX, FrousseuxEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOOMCART, BoomcartEntity.setAttributes());
