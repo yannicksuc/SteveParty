@@ -25,9 +25,9 @@ import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
 /**
  * The reveal of a throw, at the action bar's place, in the party HUD's look: the roller on a white plate (gold: my own
  * throw), then a pill per die, « ? » while it turns, popping in with its face as it stops (« 3 + 5 + ? »), then « = »
- * and the total in a gold pill; a double / triple flashes in a green / gold pill and tints the matching faces. A single
- * die shows its result only. Sent by the server ({@link DiceRevealPayload}) to the players near the dice and to the
- * roller's party; it stays a few seconds after the total, then fades. The vanilla action bar goes above it.
+ * and the total in a gold pill; a double / triple flashes in a green / orange pill and tints the matching faces
+ * (green / gold). A single die shows its result only. Sent by the server ({@link DiceRevealPayload}) to the players
+ * near the dice and to the roller's party; it stays a few seconds after the total, then fades. The vanilla action bar goes above it.
  */
 public final class DiceRevealHud {
     private static final int H = 15;
@@ -168,7 +168,7 @@ public final class DiceRevealHud {
         }
         if (reveal.combo() >= 2) {
             Text flash = Text.translatable(reveal.combo() >= 3 ? "hud.steveparty.dice_reveal.triple" : "hud.steveparty.dice_reveal.double");
-            pieces.add(new Pill(flash.getString(), reveal.combo() >= 3 ? HudPaint.GOLD : GREEN, comboAt, comboAt));
+            pieces.add(new Pill(flash.getString(), reveal.combo() >= 3 ? HudPaint.MINI_GAME : GREEN, comboAt, comboAt));
         }
         return pieces;
     }
@@ -248,11 +248,10 @@ public final class DiceRevealHud {
         void draw(DrawContext context, int x, int y, float alpha, double now) {
             int w = width;
             float pop = (float) ((now - popAt) / POP_TICKS);
-            float scale = pop < 1 ? 1 + 0.5f * (1 - Easing.easeOutBack(Easing.clamp01(pop))) : 1;
-            if (pop < 0.15f) scale = Math.max(scale, 1.6f - 4 * pop);
+            float scale = pop < 1 ? 1 + 0.3f * (1 - Easing.easeOutBack(Easing.clamp01(pop))) : 1;
             // A double / triple: a beat, three times
             double pulse = now - pulseAt;
-            if (pulse >= 0 && pulse < 30) scale += 0.18f * (float) Math.abs(Math.sin(pulse * Math.PI / 10));
+            if (pulse >= 0 && pulse < 30) scale += 0.1f * (float) Math.abs(Math.sin(pulse * Math.PI / 10));
             boolean waiting = "?".equals(text);
             int dy = waiting ? Math.round((float) Math.sin(now * 1.3 + x) * 1.2f) : 0;
             MatrixStack matrices = context.getMatrices();
