@@ -144,6 +144,12 @@ public class ModItems {
     /** The Gate Key: opens a Key gate on the board, used up (KeyGates). */
     public static final Item GATE_KEY = register("gate_key", fr.lordfinn.steveparty.items.custom.GateKeyItem::new,
             new Item.Settings().maxCount(16));
+    /** Its tile's face is moss green until dyed; players set their Traps there. */
+    public static final Item TRAP_CARTRIDGE = register("trap_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem.COLOR));
+    /** The Trap: set on a Trap space where its player's token stopped (BoardTraps). */
+    public static final Item BOARD_TRAP = register("board_trap", fr.lordfinn.steveparty.items.custom.BoardTrapItem::new,
+            new Item.Settings().maxCount(16));
     public static final Item MINI_GAME_PAGE = register("mini_game_page", MiniGamePageItem::new);
     public static final Item MINI_GAME_REMOTE = registerUnstackable("mini_game_remote", MiniGameRemoteItem::new);
     public static final Item SHOPKEEPER_KEY = registerUnstackable("shopkeeper_key", ShopkeeperKeyItem::new);
@@ -370,6 +376,8 @@ public class ModItems {
             itemGroup.add(MAGPIE_NEST);
             itemGroup.add(KEY_GATE_CARTRIDGE);
             itemGroup.add(GATE_KEY);
+            itemGroup.add(TRAP_CARTRIDGE);
+            itemGroup.add(BOARD_TRAP);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);

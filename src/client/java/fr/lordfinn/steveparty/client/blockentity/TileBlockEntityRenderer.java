@@ -174,6 +174,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         else if (tileType == BoardSpaceType.TILE_POT) face = TileStampTextures.potFace(color, small);
         // A Key gate: a gate with a keyhole in the cartridge's teal
         else if (tileType == BoardSpaceType.TILE_KEY_GATE) face = TileStampTextures.keyGateFace(color, small);
+        // A Trap space: open jaws in the cartridge's moss green
+        else if (tileType == BoardSpaceType.TILE_TRAP) face = TileStampTextures.trapFace(color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
         return face;

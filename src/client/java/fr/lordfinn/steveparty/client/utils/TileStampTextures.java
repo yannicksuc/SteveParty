@@ -627,6 +627,41 @@ public final class TileStampTextures {
                 key -> register(glyphValues(small ? SMALL_KEY_GATE : KEY_GATE, small, KEY_GATE_SHADES), rgb, small));
     }
 
+    /** The Trap: open jaws seen from above, their teeth inward, a trigger plate in the middle. */
+    private static final String[] TRAP = {
+            "..............",
+            ".############.",
+            ".#.#.#.#.#.##.",
+            ".#..........#.",
+            ".#..........#.",
+            ".#...oooo...#.",
+            ".#...oooo...#.",
+            ".#...oooo...#.",
+            ".#...oooo...#.",
+            ".#..........#.",
+            ".#..........#.",
+            ".##.#.#.#.#.#.",
+            ".############.",
+            ".............."};
+    private static final String[] SMALL_TRAP = {
+            "..........",
+            ".########.",
+            ".#.#.#.##.",
+            ".#......#.",
+            ".#..oo..#.",
+            ".#..oo..#.",
+            ".#......#.",
+            ".##.#.#.#.",
+            ".########.",
+            ".........."};
+    private static final Map<Character, Float> TRAP_SHADES = Map.of('#', FEATURE, 'o', -0.7f);
+
+    /** The Trap's face: open jaws on the blank tile face, in the ramp of {@code rgb} (moss green). */
+    public static Identifier trapFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("trap", rgb, small),
+                key -> register(glyphValues(small ? SMALL_TRAP : TRAP, small, TRAP_SHADES), rgb, small));
+    }
+
     /** The Mistigri: a cat's head, pointed ears (one notched), one slit eye open, the other shut, a nose, whiskers. */
     private static final String[] MISTIGRI = {
             "..o.......o.o.",
