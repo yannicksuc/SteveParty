@@ -1,4 +1,59 @@
 {
+  "jump_shoes.hop": {
+    "subtitle": "subtitles.steveparty.jump_shoes.hop",
+    "sounds": [
+      {
+        "name": "minecraft:entity.breeze.jump",
+        "type": "event",
+        "volume": 0.3,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "jump_shoes.leap": {
+    "subtitle": "subtitles.steveparty.jump_shoes.leap",
+    "sounds": [
+      {
+        "name": "minecraft:entity.wind_charge.wind_burst",
+        "type": "event",
+        "volume": 0.15,
+        "pitch": 1.3
+      }
+    ]
+  },
+  "jump_shoes.double_jump": {
+    "subtitle": "subtitles.steveparty.jump_shoes.double_jump",
+    "sounds": [
+      {
+        "name": "minecraft:entity.phantom.flap",
+        "type": "event",
+        "volume": 0.3,
+        "pitch": 1.7
+      }
+    ]
+  },
+  "jump_shoes.slide": {
+    "subtitle": "subtitles.steveparty.jump_shoes.slide",
+    "sounds": [
+      {
+        "name": "minecraft:block.sand.hit",
+        "type": "event",
+        "volume": 0.12,
+        "pitch": 1.3
+      }
+    ]
+  },
+  "jump_shoes.wall_kick": {
+    "subtitle": "subtitles.steveparty.jump_shoes.wall_kick",
+    "sounds": [
+      {
+        "name": "minecraft:block.wool.fall",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 0.9
+      }
+    ]
+  },
   "close_tile_gui": {
     "sounds": [
       "steveparty:close_tile_gui"

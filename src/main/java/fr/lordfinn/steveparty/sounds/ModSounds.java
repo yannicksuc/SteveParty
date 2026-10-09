@@ -19,6 +19,18 @@ public class ModSounds {
     public static final SoundEvent PLUNGER_SUCK_OUT_SOUND_EVENT = register("plunger_suck_out");
     public static final SoundEvent GOAL_POLE_REACH = register("goal_pole_reach");
 
+    // Triple Jump Shoes: soft, quiet vanilla sounds re-pitched (assets/steveparty/sounds.json), played by the clients
+    /** The 2nd jump of the chain: a light hop. */
+    public static final SoundEvent JUMP_SHOES_HOP = register("jump_shoes.hop");
+    /** The 3rd jump: a soft whoosh. */
+    public static final SoundEvent JUMP_SHOES_LEAP = register("jump_shoes.leap");
+    /** The double jump: a little flap. */
+    public static final SoundEvent JUMP_SHOES_DOUBLE_JUMP = register("jump_shoes.double_jump");
+    /** Sliding down a wall: a very quiet scrape, repeated. */
+    public static final SoundEvent JUMP_SHOES_SLIDE = register("jump_shoes.slide");
+    /** Kicking off a wall: a soft thump. */
+    public static final SoundEvent JUMP_SHOES_WALL_KICK = register("jump_shoes.wall_kick");
+
     // Tokenizer Wand spell: whimsical, sparkly, bubbly. Only vanilla sounds, layered and re-pitched
     // (assets/steveparty/sounds.json).
     /** Charging: a rising amethyst shimmer, with an enchanting sweep. */

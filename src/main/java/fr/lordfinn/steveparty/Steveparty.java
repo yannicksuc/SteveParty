@@ -81,6 +81,7 @@ import fr.lordfinn.steveparty.telescope.TelescopeService;
 import fr.lordfinn.steveparty.utils.TaskScheduler;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import fr.lordfinn.steveparty.items.custom.jumpshoes.JumpShoesServer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.minecraft.server.MinecraftServer;
@@ -181,6 +182,7 @@ public class Steveparty implements ModInitializer {
         TrichaudronEvents.initialize();
         BoomcartSpawns.initialize();
         PetTeleports.initialize();
+        JumpShoesServer.initialize();
         // the Frousseux candle holder burns as planks do: fire catches it and burns it away, the Frousseux gone with it
         FlammableBlockRegistry.getDefaultInstance().add(
                 ModBlocks.FROUSSEUX_CANDLE_HOLDER, 5, 20);
