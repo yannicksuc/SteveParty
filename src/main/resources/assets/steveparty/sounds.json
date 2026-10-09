@@ -34,6 +34,15 @@
       "steveparty:pop"
     ]
   },
+  "magpie.chirp": {
+    "subtitle": "subtitles.steveparty.magpie.chirp",
+    "sounds": [
+      "steveparty:magpie/chirp1",
+      "steveparty:magpie/chirp2",
+      "steveparty:magpie/chirp3",
+      "steveparty:magpie/chirp4"
+    ]
+  },
   "goal_pole_reach": {
     "sounds": [
       "steveparty:goal_pole_reach"

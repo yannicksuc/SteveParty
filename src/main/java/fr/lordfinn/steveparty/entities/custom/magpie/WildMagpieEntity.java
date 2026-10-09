@@ -1,0 +1,505 @@
+package fr.lordfinn.steveparty.entities.custom.magpie;
+
+import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
+import net.minecraft.predicate.entity.EntityPredicates;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.PlayState;
+import software.bernie.geckolib.animation.RawAnimation;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * A wild Pie (a magpie) of the woods (see {@link WildMagpieSpawns}): it flies from tree to tree, rests a while on a
+ * perch (looks around, preens, hops round, flicks its tail, calls "piou piou piou"), sleeps on it at night and flies
+ * off from players who come too close (sneaking, one gets closer) or hit it. It loves fences, walls, logs and chains
+ * ({@link MagpiePerches#FAVOURITES}), the tops of the trees next.
+ * <p>
+ * Cheap on the server: no goals, no pathfinding. It is moved by hand (no gravity, no collisions): perched, it stands
+ * still exactly on its perch's visual top ({@link MagpiePerches#perchOn}, its hitbox there too); a flight is one
+ * curve (a quadratic Bézier from where it is, up over the way, down to the perch), checked once for obstacles with a
+ * few raycasts when it is chosen, followed tick by tick (flapping up, gliding down). A perch is looked for by a few
+ * dozen random samples around it (the top block of a column, or a favourite block a little lower), not a scan.
+ * <p>
+ * Not the Common pot's Pie ({@link MagpieEntity}, bound to its nest, scripted): a separate kind sharing its model.
+ */
+public class WildMagpieEntity extends MobEntity implements GeoEntity {
+    private static final TrackedData<Integer> VARIANT = DataTracker.registerData(WildMagpieEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Byte> STATE = DataTracker.registerData(WildMagpieEntity.class, TrackedDataHandlerRegistry.BYTE);
+    public static final byte PERCHED = 0, FLYING = 1, GLIDING = 2, ASLEEP = 3;
+
+    private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.magpie.idle");
+    private static final RawAnimation FLY = RawAnimation.begin().thenLoop("animation.magpie.fly");
+    private static final RawAnimation GLIDE = RawAnimation.begin().thenLoop("animation.magpie.glide");
+    private static final RawAnimation SLEEP = RawAnimation.begin().thenLoop("animation.magpie.sleep");
+    private static final RawAnimation PREEN = RawAnimation.begin().thenPlay("animation.magpie.preen");
+    private static final RawAnimation HOP = RawAnimation.begin().thenPlay("animation.magpie.hop");
+
+    /** How far it looks for its next perch (blocks, horizontally). */
+    public static final int SEARCH_RADIUS = 16;
+    /** Blocks per tick in flight (on average). */
+    private static final double FLIGHT_SPEED = 0.42;
+    /** A player this close makes it fly off (sneaking: {@link #FLEE_RANGE_SNEAKING}). */
+    public static final double FLEE_RANGE = 6, FLEE_RANGE_SNEAKING = 2.5;
+    private static final int FLEE_CHECK_INTERVAL = 5, PERCH_CHECK_INTERVAL = 10;
+
+    private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
+    /** The block it stands on (null: in flight, or not settled yet). */
+    private @Nullable BlockPos perch;
+    private @Nullable Flight flight;
+    private int flightTick;
+    /** Ticks until it flies off to another perch (day time only). */
+    private int restTicks = 60;
+    private int actionCooldown;
+
+    /** A flight: its curve, how long, the perch at its end. */
+    record Flight(Vec3d from, Vec3d control, Vec3d to, BlockPos target, int ticks) {
+        Vec3d at(double s) {
+            double u = 1 - s;
+            return from.multiply(u * u).add(control.multiply(2 * u * s)).add(to.multiply(s * s));
+        }
+    }
+
+    public WildMagpieEntity(EntityType<? extends MobEntity> type, World world) {
+        super(type, world);
+        this.noClip = true;
+        setNoGravity(true);
+    }
+
+    public static DefaultAttributeContainer.Builder setAttributes() {
+        return MobEntity.createMobAttributes()
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 4.0)
+                .add(EntityAttributes.GENERIC_FLYING_SPEED, 0.4)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.2);
+    }
+
+    @Override
+    protected void initDataTracker(DataTracker.Builder builder) {
+        super.initDataTracker(builder);
+        builder.add(VARIANT, MagpieVariant.CLASSIC.ordinal());
+        builder.add(STATE, PERCHED);
+    }
+
+    public MagpieVariant getVariant() {
+        return MagpieVariant.byId(dataTracker.get(VARIANT));
+    }
+
+    public void setVariant(MagpieVariant variant) {
+        dataTracker.set(VARIANT, variant.ordinal());
+    }
+
+    public byte getFlightState() {
+        return dataTracker.get(STATE);
+    }
+
+    private void setFlightState(byte state) {
+        if (dataTracker.get(STATE) != state) dataTracker.set(STATE, state);
+    }
+
+    public @Nullable BlockPos getPerch() {
+        return perch;
+    }
+
+    public boolean isInFlight() {
+        return flight != null;
+    }
+
+    // ---------------------------------------------------------------- spawn, save
+
+    @Override
+    public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason,
+                                 @Nullable EntityData entityData) {
+        setVariant(spawnReason == SpawnReason.NATURAL || spawnReason == SpawnReason.CHUNK_GENERATION
+                ? WildMagpieSpawns.variantFor(world, getBlockPos(), random)
+                : WildMagpieSpawns.randomVariant(random, true));
+        setYaw(random.nextFloat() * 360);
+        restTicks = 20 + random.nextInt(60);
+        return super.initialize(world, difficulty, spawnReason, entityData);
+    }
+
+    @Override
+    public void writeCustomDataToNbt(NbtCompound nbt) {
+        super.writeCustomDataToNbt(nbt);
+        nbt.putInt("Variant", getVariant().ordinal());
+        if (perch != null && flight == null) nbt.put("Perch", NbtHelper.fromBlockPos(perch));
+    }
+
+    @Override
+    public void readCustomDataFromNbt(NbtCompound nbt) {
+        super.readCustomDataFromNbt(nbt);
+        setVariant(MagpieVariant.byId(nbt.getInt("Variant")));
+        perch = NbtHelper.toBlockPos(nbt, "Perch").orElse(null);
+    }
+
+    /** Far from every player (beyond 64 blocks) a wild one may go away, as monsters do; a named one stays. */
+    @Override
+    public boolean canImmediatelyDespawn(double distanceSquared) {
+        return distanceSquared > 64 * 64;
+    }
+
+    // ---------------------------------------------------------------- tick
+
+    @Override
+    public void tick() {
+        setVelocity(Vec3d.ZERO);
+        super.tick();
+        setVelocity(Vec3d.ZERO);
+        if (!(getWorld() instanceof ServerWorld world) || isAiDisabled() || isDead()) return;
+        if (flight != null) tickFlight(world);
+        else if (perch == null) settle(world);
+        else tickPerched(world);
+    }
+
+    /** Perched: it stays, does a little something now and then, flies off when rested, scared or its perch is gone. */
+    private void tickPerched(ServerWorld world) {
+        if (age % PERCH_CHECK_INTERVAL == 0) {
+            Vec3d at = MagpiePerches.perchOn(world, perch);
+            if (at == null || !MagpiePerches.hasRoom(world, perch, at)) {
+                perch = null;
+                if (!takeOff(world, null)) settle(world);
+                return;
+            }
+            if (at.squaredDistanceTo(getPos()) > 1.0E-4) setPosition(at); // its shape changed: on its new top
+        }
+        if (age % FLEE_CHECK_INTERVAL == 0) {
+            PlayerEntity threat = closeThreat(world);
+            if (threat != null && takeOff(world, threat.getPos())) return;
+        }
+        boolean day = world.isDay();
+        if (!day) {
+            if (getFlightState() != ASLEEP && random.nextInt(200) == 0) setFlightState(ASLEEP);
+            return;
+        }
+        if (getFlightState() != PERCHED) setFlightState(PERCHED);
+        if (--restTicks <= 0) {
+            if (!takeOff(world, null)) restTicks = 40 + random.nextInt(40);
+            return;
+        }
+        if (--actionCooldown <= 0) {
+            actionCooldown = 60 + random.nextInt(140);
+            float roll = random.nextFloat();
+            if (roll < 0.35f) {
+                triggerAnim("action", "preen");
+            } else if (roll < 0.8f) {
+                turn(getYaw() + (random.nextBoolean() ? 1 : -1) * (30 + random.nextInt(70)));
+                triggerAnim("action", "hop");
+            } else {
+                turn(getYaw() + (random.nextFloat() - 0.5f) * 80);
+            }
+        }
+    }
+
+    private @Nullable PlayerEntity closeThreat(ServerWorld world) {
+        double range = getFlightState() == ASLEEP ? FLEE_RANGE / 2 : FLEE_RANGE;
+        PlayerEntity player = world.getClosestPlayer(getX(), getY(), getZ(), range, EntityPredicates.EXCEPT_SPECTATOR);
+        if (player == null) return null;
+        if (player.isSneaking() && player.squaredDistanceTo(this) > FLEE_RANGE_SNEAKING * FLEE_RANGE_SNEAKING) return null;
+        return player;
+    }
+
+    /** Not perched and not flying (just born, loaded mid-flight, its perch gone): onto the block under it, or off. */
+    private void settle(ServerWorld world) {
+        BlockPos.Mutable below = BlockPos.ofFloored(getX(), getY() - 1.0E-3, getZ()).mutableCopy();
+        for (int i = 0; i < 2; i++, below.move(0, -1, 0)) {
+            Vec3d at = MagpiePerches.freePerchOn(world, below);
+            if (at != null && at.y <= getY() + 1.0E-3 && getY() - at.y < 1.0) {
+                land(below.toImmutable(), at);
+                return;
+            }
+        }
+        if (age % 20 != 0) return;
+        if (takeOff(world, null)) return;
+        // nothing around: down to the ground under it
+        int x = MathHelper.floor(getX()), z = MathHelper.floor(getZ());
+        BlockPos ground = new BlockPos(x, world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z) - 1, z);
+        Vec3d at = ground.getY() < getY() ? MagpiePerches.freePerchOn(world, ground) : null;
+        if (at != null) startFlight(new Flight(getPos(), getPos().lerp(at, 0.5).add(0, 0.5, 0), at, ground, ticksFor(getPos().distanceTo(at))));
+    }
+
+    private void land(BlockPos on, Vec3d at) {
+        flight = null;
+        perch = on;
+        setPosition(at);
+        setFlightState(PERCHED);
+        BlockState state = getWorld().getBlockState(on);
+        boolean liked = MagpiePerches.isFavourite(state) || state.isIn(BlockTags.LEAVES);
+        restTicks = liked ? 160 + random.nextInt(340) : 50 + random.nextInt(90);
+        actionCooldown = 20 + random.nextInt(60);
+    }
+
+    private void turn(float yaw) {
+        setYaw(yaw);
+        setBodyYaw(yaw);
+        setHeadYaw(yaw);
+    }
+
+    // ---------------------------------------------------------------- flights
+
+    /** Off to another perch (away from {@code threat} if there is one): false if it found none worth the flight. */
+    public boolean takeOff(ServerWorld world, @Nullable Vec3d threat) {
+        Flight next = planFlight(world, threat);
+        if (next == null) return false;
+        startFlight(next);
+        return true;
+    }
+
+    private void startFlight(Flight next) {
+        flight = next;
+        flightTick = 0;
+        perch = null;
+        setFlightState(FLYING);
+        getWorld().playSound(null, getX(), getY(), getZ(), SoundEvents.ENTITY_PARROT_FLY, SoundCategory.NEUTRAL, 0.5F, 1.4F);
+    }
+
+    private void tickFlight(ServerWorld world) {
+        Flight current = flight;
+        flightTick++;
+        double p = Math.min(1, flightTick / (double) current.ticks);
+        double s = p * p * (3 - 2 * p);
+        Vec3d at = current.at(s);
+        Vec3d delta = at.subtract(getPos());
+        if (delta.horizontalLengthSquared() > 1.0E-5) {
+            turn((float) (MathHelper.atan2(delta.z, delta.x) * (180 / Math.PI)) - 90);
+        }
+        setPosition(at);
+        boolean gliding = p > 0.2 && p < 0.85 && delta.y < -0.06;
+        setFlightState(gliding ? GLIDING : FLYING);
+        if (!gliding && flightTick % 7 == 0) {
+            world.playSound(null, getX(), getY(), getZ(), SoundEvents.ENTITY_PARROT_FLY, SoundCategory.NEUTRAL, 0.2F, 1.5F);
+        }
+        if (p >= 1) {
+            Vec3d top = MagpiePerches.perchOn(world, current.target);
+            if (top != null && top.squaredDistanceTo(current.to) < 1.0E-4 && MagpiePerches.hasRoom(world, current.target, top)) {
+                land(current.target, top);
+            } else {
+                flight = null; // its perch went meanwhile: it looks again
+                perch = null;
+            }
+            return;
+        }
+        if (flightTick % PERCH_CHECK_INTERVAL == 0 && p < 0.8) {
+            Vec3d top = MagpiePerches.perchOn(world, current.target);
+            if (top == null || top.squaredDistanceTo(current.to) > 1.0E-4 || !MagpiePerches.hasRoom(world, current.target, top)) {
+                Flight other = planFlight(world, null);
+                if (other != null) startFlight(other);
+            }
+        }
+    }
+
+    /** A perch to fly to and the way there, or null. */
+    @Nullable Flight planFlight(ServerWorld world, @Nullable Vec3d threat) {
+        List<Candidate> candidates = new ArrayList<>();
+        Random r = getRandom();
+        Vec3d here = getPos();
+        // the tops of the columns around: tree tops, posts, the ground
+        for (int i = 0; i < 20; i++) {
+            double angle = r.nextDouble() * Math.PI * 2, distance = 3 + r.nextDouble() * (SEARCH_RADIUS - 3);
+            int x = MathHelper.floor(here.x + Math.cos(angle) * distance), z = MathHelper.floor(here.z + Math.sin(angle) * distance);
+            if (!world.isChunkLoaded(ChunkSectionPos.getSectionCoord(x), ChunkSectionPos.getSectionCoord(z))) continue;
+            int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z) - 1;
+            if (Math.abs(top - here.y) > 14) continue;
+            consider(world, new BlockPos(x, top, z), threat, candidates);
+        }
+        // its favourites a little lower: fences, walls, logs, chains under the leaves or a roof
+        BlockPos.Mutable at = new BlockPos.Mutable();
+        for (int i = 0; i < 12; i++) {
+            int x = MathHelper.floor(here.x) + r.nextBetween(-10, 10), z = MathHelper.floor(here.z) + r.nextBetween(-10, 10);
+            if (!world.isChunkLoaded(ChunkSectionPos.getSectionCoord(x), ChunkSectionPos.getSectionCoord(z))) continue;
+            at.set(x, MathHelper.floor(here.y) + r.nextBetween(-4, 6), z);
+            for (int d = 0; d < 8 && at.getY() > world.getBottomY(); d++, at.move(0, -1, 0)) {
+                BlockState state = world.getBlockState(at);
+                if (state.isAir()) continue;
+                if (MagpiePerches.isFavourite(state)) consider(world, at.toImmutable(), threat, candidates);
+                break;
+            }
+        }
+        for (int tries = 0; tries < 4 && !candidates.isEmpty(); tries++) {
+            Candidate pick = pick(candidates, r);
+            candidates.remove(pick);
+            Flight way = wayTo(world, pick);
+            if (way != null) return way;
+        }
+        return null;
+    }
+
+    private record Candidate(BlockPos pos, Vec3d at, double weight) {
+    }
+
+    private void consider(ServerWorld world, BlockPos pos, @Nullable Vec3d threat, List<Candidate> into) {
+        if (pos.equals(perch)) return;
+        Vec3d at = MagpiePerches.freePerchOn(world, pos);
+        if (at == null || at.squaredDistanceTo(getPos()) < 4) return;
+        BlockState state = world.getBlockState(pos);
+        double weight = MagpiePerches.isFavourite(state) ? 8 : state.isIn(BlockTags.LEAVES) ? 3 : 1;
+        if (threat != null) {
+            if (at.squaredDistanceTo(threat) < (FLEE_RANGE + 3) * (FLEE_RANGE + 3)) return;
+            Vec3d away = getPos().subtract(threat), go = at.subtract(getPos());
+            if (away.x * go.x + away.z * go.z < 0) return;
+        }
+        into.add(new Candidate(pos, at, weight));
+    }
+
+    private static Candidate pick(List<Candidate> candidates, Random r) {
+        double total = 0;
+        for (Candidate c : candidates) total += c.weight;
+        double roll = r.nextDouble() * total;
+        for (Candidate c : candidates) {
+            roll -= c.weight;
+            if (roll <= 0) return c;
+        }
+        return candidates.getLast();
+    }
+
+    /** The curve to {@code to}: up over the way, higher if the first one hits something; null if all three do. */
+    private @Nullable Flight wayTo(ServerWorld world, Candidate to) {
+        Vec3d from = getPos();
+        double horizontal = Math.sqrt(to.at.subtract(from).horizontalLengthSquared());
+        for (double extra : new double[]{0, 2.5, 5}) {
+            Vec3d mid = from.lerp(to.at, 0.5);
+            Vec3d control = new Vec3d(mid.x, Math.max(from.y, to.at.y) + 1.0 + horizontal * 0.2 + extra, mid.z);
+            Flight way = new Flight(from, control, to.at, to.pos, ticksFor(from.distanceTo(control) + control.distanceTo(to.at)));
+            if (isClear(world, way)) return way;
+        }
+        return null;
+    }
+
+    private static int ticksFor(double length) {
+        return MathHelper.clamp((int) Math.ceil(length * 0.85 / FLIGHT_SPEED), 10, 200);
+    }
+
+    /** Eight raycasts along the curve: nothing in the way but near its start and its end (the perches themselves). */
+    private boolean isClear(ServerWorld world, Flight way) {
+        Vec3d lift = new Vec3d(0, MagpiePerches.HEIGHT / 2, 0);
+        Vec3d previous = way.from.add(lift);
+        for (int i = 1; i <= 8; i++) {
+            Vec3d next = way.at(i / 8.0).add(lift);
+            BlockHitResult hit = world.raycast(new RaycastContext(previous, next, RaycastContext.ShapeType.COLLIDER,
+                    RaycastContext.FluidHandling.ANY, this));
+            if (hit.getType() == HitResult.Type.BLOCK) {
+                Vec3d p = hit.getPos();
+                if (p.squaredDistanceTo(way.to) > 1.5 * 1.5 && p.squaredDistanceTo(way.from) > 1.2 * 1.2) return false;
+            }
+            previous = next;
+        }
+        return true;
+    }
+
+    // ---------------------------------------------------------------- a bird
+
+    @Override
+    public boolean damage(DamageSource source, float amount) {
+        boolean hurt = super.damage(source, amount);
+        if (hurt && isAlive() && getWorld() instanceof ServerWorld world && flight == null) {
+            Entity attacker = source.getAttacker();
+            takeOff(world, attacker != null ? attacker.getPos() : null);
+        }
+        return hurt;
+    }
+
+    @Override
+    public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
+        return false;
+    }
+
+    @Override
+    public boolean isInsideWall() {
+        return false;
+    }
+
+    @Override
+    public boolean isPushable() {
+        return false;
+    }
+
+    @Override
+    protected void pushAway(Entity entity) {
+    }
+
+    @Override
+    public boolean canBeLeashed() {
+        return false;
+    }
+
+    @Override
+    protected @Nullable SoundEvent getAmbientSound() {
+        return getFlightState() == ASLEEP ? null : ModSounds.MAGPIE_CHIRP;
+    }
+
+    /** At least 15 s between two calls of the same bird. */
+    @Override
+    public int getMinAmbientSoundDelay() {
+        return 300;
+    }
+
+    @Override
+    protected SoundEvent getHurtSound(DamageSource source) {
+        return SoundEvents.ENTITY_PARROT_HURT;
+    }
+
+    @Override
+    protected SoundEvent getDeathSound() {
+        return SoundEvents.ENTITY_PARROT_DEATH;
+    }
+
+    @Override
+    public float getSoundPitch() {
+        return 0.95F + random.nextFloat() * 0.15F;
+    }
+
+    // ---------------------------------------------------------------- GeckoLib
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "main", 4, state -> state.setAndContinue(switch (getFlightState()) {
+            case FLYING -> FLY;
+            case GLIDING -> GLIDE;
+            case ASLEEP -> SLEEP;
+            default -> IDLE;
+        })));
+        controllers.add(new AnimationController<>(this, "action", 2, state -> PlayState.STOP)
+                .triggerableAnim("preen", PREEN)
+                .triggerableAnim("hop", HOP));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return cache;
+    }
+}

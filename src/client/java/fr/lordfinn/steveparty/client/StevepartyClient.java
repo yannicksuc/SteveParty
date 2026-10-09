@@ -22,6 +22,7 @@ import fr.lordfinn.steveparty.client.entity.SixSevenClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleRenderer;
 import fr.lordfinn.steveparty.client.entity.MagpieRenderer;
+import fr.lordfinn.steveparty.client.entity.WildMagpieRenderer;
 import fr.lordfinn.steveparty.client.entity.MistigriDieRenderer;
 import fr.lordfinn.steveparty.client.entity.MistigriRenderer;
 import fr.lordfinn.steveparty.client.entity.MulaFoodTooltip;
@@ -430,6 +431,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MISTIGRI, MistigriRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI_DIE, MistigriDieRenderer::new);
         EntityRendererRegistry.register(ModEntities.MAGPIE, MagpieRenderer::new);
+        EntityRendererRegistry.register(ModEntities.WILD_MAGPIE, WildMagpieRenderer::new);
         EntityRendererRegistry.register(ModEntities.PLAYER_PAWN, PlayerPawnRenderer::new);
         PawnPossessionClient.initialize();
         PawnPoseFeedback.initialize();

@@ -90,6 +90,7 @@ public class RecipeGameTests implements FabricGameTest {
             Map.entry("mossy_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("frosty_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("boomcart_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            Map.entry("magpie_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("trichaudron_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("frousseux_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("mistigri_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),

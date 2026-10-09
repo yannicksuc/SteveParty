@@ -38,6 +38,7 @@ import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEvents;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleCarrySave;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
+import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
@@ -182,6 +183,7 @@ public class Steveparty implements ModInitializer {
         TrichaudronSpawns.initialize();
         TrichaudronEvents.initialize();
         BoomcartSpawns.initialize();
+        WildMagpieSpawns.initialize();
         PetTeleports.initialize();
         // the Frousseux candle holder burns as planks do: fire catches it and burns it away, the Frousseux gone with it
         FlammableBlockRegistry.getDefaultInstance().add(
