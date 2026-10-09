@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.glandouille;
 
 import fr.lordfinn.steveparty.effect.DazedEffect;
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
@@ -80,7 +81,7 @@ import java.util.UUID;
  * The Glandouilles of a board space ({@link #isBoardActor()}) do none of that: invulnerable, moved by the board, never
  * saved.
  */
-public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
+public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, BoardActor {
     /** Every Glandouille's size relative to its model (hitbox and drawing): a little thing. */
     public static final float SIZE = 0.6f;
     /** The classic one's hitbox (its model's 12 px wide cap, 15 px up to the top of the cap, at {@link #SIZE}); each variant has its own. */
@@ -325,6 +326,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     // ---------------------------------------------------------------- board actors
 
     /** A Glandouille of a board space: invulnerable, no will of its own, never saved. */
+    @Override
     public boolean isBoardActor() {
         return boardActor;
     }
@@ -334,11 +336,14 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         return !boardActor && super.shouldDropLoot(); // a board actor killed by a command leaves nothing
     }
 
-    public void makeBoardActor() {
+    @Override
+    public void setBoardActor() {
         this.boardActor = true;
-        setAiDisabled(true);
+    }
+
+    @Override
+    public void onBoardActor() {
         setNoGravity(true);
-        if (!getWorld().isClient) fr.lordfinn.steveparty.service.BoardActors.mark(this); // invulnerable, never kept
     }
 
     /** Board actors: what they act out (the charge of a tower walking the path, the lone one's failed push). */
