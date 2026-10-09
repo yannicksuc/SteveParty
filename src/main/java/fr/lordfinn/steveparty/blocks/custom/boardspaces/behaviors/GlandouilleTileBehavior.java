@@ -1,7 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
@@ -17,7 +16,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -31,10 +29,10 @@ import java.util.List;
  * happens (a plain landing). The lone Glandouille setting: it tries, fails, sulks; nobody moves. Going over the tile
  * does nothing. Outside a party it plays too, when a token's move ends here.
  */
-public class GlandouilleTileBehavior extends ABoardSpaceBehavior {
+public class GlandouilleTileBehavior extends MobTileBehavior {
 
     public GlandouilleTileBehavior() {
-        super(BoardSpaceType.TILE_GLANDOUILLE);
+        super(BoardSpaceType.TILE_GLANDOUILLE, GlandouilleCartridgeItem.COLOR);
     }
 
     /** Free play: a token ending its move on a Glandouille tile outside a party is pushed too. */
@@ -72,23 +70,20 @@ public class GlandouilleTileBehavior extends ABoardSpaceBehavior {
         return GlandouillePushes.isRunning(token);
     }
 
+    /** It plays outside a party too (see {@link #initialize}). */
     @Override
-    public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity,
-                                     @Nullable PartyControllerEntity partyController) {
-        if (!(world instanceof ServerWorld serverWorld) || boardSpaceEntity == null) return;
-        PartyStep step = partyController == null ? null : partyController.getPartyData().getCurrentStep();
-        ItemStack cartridge = boardSpaceEntity.getActiveCartridgeItemStack();
+    protected boolean partyOnly() {
+        return false;
+    }
+
+    @Override
+    protected void startShow(ServerWorld world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity tile,
+                             @Nullable PartyControllerEntity party, Runnable onDone) {
+        ItemStack cartridge = tile.getActiveCartridgeItemStack();
         boolean lone = GlandouilleCartridgeItem.lone(cartridge);
         int distance = GlandouilleCartridgeItem.distance(cartridge);
-        boolean played = play(serverWorld, boardSpaceEntity, token, () -> {
-            if (partyController != null && !partyController.isRemoved() && step != null
-                    && partyController.getPartyData().getCurrentStep() == step) {
-                partyController.nextStep();
-            }
-        });
-        if (!played) {
-            TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.DEFAULT,
-                    TileFeedback.Landing.DEFAULT.noticeKey());
+        if (!play(world, tile, token, onDone)) {
+            landPlain(world, tile, token, party);
             return;
         }
         // No second move during the push (a dice rolled meanwhile would move it again)
@@ -96,18 +91,13 @@ public class GlandouilleTileBehavior extends ABoardSpaceBehavior {
             tokenized.steveparty$setStatus(TokenStatus.clearStatus(tokenized.steveparty$getStatus(), TokenStatus.CAN_MOVE));
         }
         TileFeedback.Landing landing = TileFeedback.Landing.GLANDOUILLE;
-        if (lone) TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing, landing.noticeKey() + ".lone");
-        else if (distance < 0) TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing, landing.noticeKey() + ".back", -distance);
-        else TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing, landing.noticeKey(), distance);
+        if (lone) TileFeedback.land(world, tile, token, party, landing, landing.noticeKey() + ".lone");
+        else if (distance < 0) TileFeedback.land(world, tile, token, party, landing, landing.noticeKey() + ".back", -distance);
+        else TileFeedback.land(world, tile, token, party, landing, landing.noticeKey(), distance);
     }
 
     @Override
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return GlandouilleCartridgeItem.distance(stack) == 0 ? TileFeedback.Landing.DEFAULT : TileFeedback.Landing.GLANDOUILLE;
-    }
-
-    @Override
-    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
-        if (!stack.contains(fr.lordfinn.steveparty.components.ModComponents.COLOR)) setColor(boardSpaceBlockEntity, GlandouilleCartridgeItem.COLOR);
     }
 }
