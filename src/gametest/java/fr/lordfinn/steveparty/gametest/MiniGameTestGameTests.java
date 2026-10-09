@@ -42,7 +42,6 @@ import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
 import fr.lordfinn.steveparty.podium.Podiums;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
-import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -63,7 +62,6 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

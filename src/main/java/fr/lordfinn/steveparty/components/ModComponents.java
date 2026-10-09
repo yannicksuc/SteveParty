@@ -19,7 +19,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
 
-import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

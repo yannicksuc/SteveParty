@@ -58,7 +58,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.WeakHashMap;
-import java.util.function.BooleanSupplier;
 
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 

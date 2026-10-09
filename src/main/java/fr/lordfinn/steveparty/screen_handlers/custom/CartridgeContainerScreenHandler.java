@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
-import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;

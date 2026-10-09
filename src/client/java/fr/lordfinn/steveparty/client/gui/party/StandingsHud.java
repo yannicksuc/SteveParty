@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
-import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import fr.lordfinn.steveparty.hud.StandingsLayout;
 import fr.lordfinn.steveparty.utils.Easing;
@@ -18,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.hud.HudShapes.GAP;
 import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
 
 /**

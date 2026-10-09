@@ -1,15 +1,12 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.podium.Podiums;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;

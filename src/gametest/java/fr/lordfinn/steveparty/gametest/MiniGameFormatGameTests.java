@@ -2,22 +2,16 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
-import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
-import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
-import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
-import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat.Side;
 import fr.lordfinn.steveparty.minigame.MiniGameNameColors;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
-import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
-import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
@@ -43,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BooleanSupplier;
 
 /**
  * The formats of the mini-game pages ({@link MiniGameFormat}): the old ways to play migrated, the generated names,

@@ -112,7 +112,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.*;
@@ -145,7 +144,6 @@ import org.slf4j.LoggerFactory;
 import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 
 import java.util.List;
-import java.util.Map;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 import fr.lordfinn.steveparty.client.utils.TileColors;

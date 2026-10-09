@@ -43,7 +43,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.text.MutableText;
 import net.minecraft.util.Arm;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -62,7 +61,6 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE;
 import static fr.lordfinn.steveparty.utils.EntitiesUtils.getPlayerNameByUuid;
 import static net.minecraft.component.DataComponentTypes.FIREWORKS;
 
