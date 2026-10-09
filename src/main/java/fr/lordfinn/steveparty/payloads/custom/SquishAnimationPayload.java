@@ -19,7 +19,7 @@ import net.minecraft.network.packet.CustomPayload;
  */
 public record SquishAnimationPayload(int entityId, float startScale, float targetScale, int duration, int amplifier, boolean quiet)
         implements CustomPayload {
-    public static final CustomPayload.Id<SquishAnimationPayload> ID = new CustomPayload.Id<>(Steveparty.id("squish-animation"));
+    public static final CustomPayload.Id<SquishAnimationPayload> ID = new CustomPayload.Id<>(Steveparty.id("squish_animation"));
     public static final PacketCodec<RegistryByteBuf, SquishAnimationPayload> CODEC =
             PacketCodec.tuple(
                     PacketCodecs.VAR_INT, SquishAnimationPayload::entityId,

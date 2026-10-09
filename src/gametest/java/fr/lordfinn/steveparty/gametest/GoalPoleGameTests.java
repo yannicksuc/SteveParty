@@ -12,7 +12,6 @@ import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.payloads.ModPayloads;
 import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
 import fr.lordfinn.steveparty.payloads.custom.GoalPolePayload;
 import net.minecraft.nbt.NbtCompound;
@@ -1245,20 +1244,20 @@ public class GoalPoleGameTests implements FabricGameTest {
 
             player.changeGameMode(GameMode.ADVENTURE);
             base.openScreen(player);
-            ModPayloads.applyGoalPoleBase(player, new GoalPoleBasePayload(basePos, settings));
+            new GoalPoleBasePayload(basePos, settings).handle(player);
             context.assertTrue(base.getSelector().equals("@p") && base.getPoints("Alex") == 3,
                     "adventure: the base keeps its selector and its points");
             pole.openScreen(player);
-            ModPayloads.applyGoalPole(player, goal);
+            goal.handle(player);
             context.assertTrue(pole.getValue() != 7, "adventure: the pole keeps its goal");
 
             player.changeGameMode(GameMode.SURVIVAL);
             base.openScreen(player);
-            ModPayloads.applyGoalPoleBase(player, new GoalPoleBasePayload(basePos, settings));
+            new GoalPoleBasePayload(basePos, settings).handle(player);
             context.assertTrue(base.getSelector().equals("Someone") && base.getPoints("Alex") == 0,
                     "survival: the settings are applied");
             pole.openScreen(player);
-            ModPayloads.applyGoalPole(player, goal);
+            goal.handle(player);
             context.assertTrue(pole.getValue() == 7, "survival: the goal is applied");
         } finally {
             player.closeHandledScreen();

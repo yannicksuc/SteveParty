@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.payloads.custom.TelescopePayloads;
 import fr.lordfinn.steveparty.telescope.TelescopeMath;
@@ -98,10 +99,8 @@ public final class TelescopeClient {
             icon.render(matrices, vertexConsumers, light, overlay, 0f, 0f, TelescopeModel.REST_PITCH, true);
             matrices.pop();
         });
-        ClientPlayNetworking.registerGlobalReceiver(TelescopePayloads.Open.ID,
-                (payload, context) -> context.client().execute(() -> open(payload)));
-        ClientPlayNetworking.registerGlobalReceiver(TelescopePayloads.Guides.ID,
-                (payload, context) -> context.client().execute(() -> guides = List.copyOf(payload.guides())));
+        ClientPayloads.receive(TelescopePayloads.Open.ID, (payload, context) -> open(payload));
+        ClientPayloads.receive(TelescopePayloads.Guides.ID, (payload, context) -> guides = List.copyOf(payload.guides()));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             close(false);
             guides = List.of();

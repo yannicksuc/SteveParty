@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.client.hammer;
 
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlockEntity;
+import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.items.custom.StencilHammerStrike;
 import fr.lordfinn.steveparty.payloads.custom.StencilHammerStrikePayload;
 import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -98,8 +98,7 @@ public final class StencilHammerStrikes {
 
     public static void initialize() {
         StencilHammerStrike.localStrike = StencilHammerStrikes::start;
-        ClientPlayNetworking.registerGlobalReceiver(StencilHammerStrikePayload.ID,
-                (payload, context) -> context.client().execute(() -> start(payload)));
+        ClientPayloads.receive(StencilHammerStrikePayload.ID, (payload, context) -> start(payload));
         ClientTickEvents.END_CLIENT_TICK.register(StencilHammerStrikes::tick);
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(() -> {
             STRIKES.clear();

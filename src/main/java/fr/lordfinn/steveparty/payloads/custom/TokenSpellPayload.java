@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.payloads.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
+import fr.lordfinn.steveparty.payloads.ServerboundPayload;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
@@ -16,8 +17,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
  * @param size     chosen size of the token's biggest dimension, in blocks (clamped by the server)
  * @param color    token colour computed from the mob texture (0xRRGGBB), or -1 if the client could not compute it
  */
-public record TokenSpellPayload(int entityId, float size, int color) implements CustomPayload {
-    public static final CustomPayload.Id<TokenSpellPayload> ID = new CustomPayload.Id<>(Steveparty.id("token-spell"));
+public record TokenSpellPayload(int entityId, float size, int color) implements ServerboundPayload {
+    public static final CustomPayload.Id<TokenSpellPayload> ID = new CustomPayload.Id<>(Steveparty.id("token_spell"));
     public static final PacketCodec<RegistryByteBuf, TokenSpellPayload> CODEC =
             PacketCodec.tuple(
                     PacketCodecs.VAR_INT, TokenSpellPayload::entityId,
@@ -34,6 +35,7 @@ public record TokenSpellPayload(int entityId, float size, int color) implements 
     }
 
     /** Server-side handler (must run on the server thread). */
+    @Override
     public void handle(ServerPlayerEntity player) {
         if (entityId == CLOSED) {
             TokenizerWandItem.spellClosed(player.getUuid());

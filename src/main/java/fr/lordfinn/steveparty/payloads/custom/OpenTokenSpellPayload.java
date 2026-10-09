@@ -16,7 +16,7 @@ import net.minecraft.network.packet.CustomPayload;
  * @param currentColor colour already set on the token (0xRRGGBB, kept on resize), or -1
  */
 public record OpenTokenSpellPayload(int entityId, float currentSize, boolean resize, int currentColor) implements CustomPayload {
-    public static final CustomPayload.Id<OpenTokenSpellPayload> ID = new CustomPayload.Id<>(Steveparty.id("open-token-spell"));
+    public static final CustomPayload.Id<OpenTokenSpellPayload> ID = new CustomPayload.Id<>(Steveparty.id("open_token_spell"));
     public static final PacketCodec<RegistryByteBuf, OpenTokenSpellPayload> CODEC =
             PacketCodec.tuple(
                     PacketCodecs.VAR_INT, OpenTokenSpellPayload::entityId,

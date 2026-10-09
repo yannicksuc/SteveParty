@@ -1,7 +1,8 @@
 package fr.lordfinn.steveparty.telescope;
 
+import fr.lordfinn.steveparty.blocks.custom.TelescopeBlockEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
-import fr.lordfinn.steveparty.payloads.ModPayloads;
+import fr.lordfinn.steveparty.payloads.Payloads;
 import fr.lordfinn.steveparty.payloads.custom.TelescopePayloads;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
@@ -11,7 +12,6 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import fr.lordfinn.steveparty.blocks.custom.TelescopeBlockEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.GlobalPos;
@@ -62,14 +62,8 @@ public final class TelescopeService {
 
     public static void initialize() {
         TelescopePayloads.register();
-        ServerPlayNetworking.registerGlobalReceiver(TelescopePayloads.Found.ID, (payload, context) -> {
-            ServerPlayerEntity player = context.player();
-            ModPayloads.runInPacketOrder(player, () -> found(player, payload.site()));
-        });
-        ServerPlayNetworking.registerGlobalReceiver(TelescopePayloads.Leave.ID, (payload, context) -> {
-            ServerPlayerEntity player = context.player();
-            ModPayloads.runInPacketOrder(player, () -> leave(player));
-        });
+        Payloads.c2s(TelescopePayloads.Found.ID, TelescopePayloads.Found.CODEC, (player, payload) -> found(player, payload.site()));
+        Payloads.c2s(TelescopePayloads.Leave.ID, TelescopePayloads.Leave.CODEC, (player, payload) -> leave(player));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> syncGuides(handler.getPlayer()));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             leave(handler.getPlayer());
