@@ -12,7 +12,6 @@ import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlock;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
 import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
 import fr.lordfinn.steveparty.items.custom.PolishedTilesItem;
-import fr.lordfinn.steveparty.registry.RegistryAliases;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.NoteBlockInstrument;
 import net.minecraft.block.piston.PistonBehavior;
@@ -65,8 +64,6 @@ public class ModBlocks {
                     color + "_plastic_block",
                     true
             );
-            // Saves from before the rename still know them as "<color>_switcher_block" (blocks and items)
-            RegistryAliases.add(Steveparty.id(color + "_switcher_block"), Steveparty.id(color + "_plastic_block"));
         }
     }
 
@@ -699,15 +696,6 @@ public class ModBlocks {
     public static final Block EASEL_SIGN = register(MaterialEaselSignBlock::new,
             AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
             "easel_sign", true, StencilSignItem::new);
-
-    static {
-        // Saves from before the rename still know the easel signs as "traffic_sign" and "<wood>_traffic_sign" (blocks,
-        // items, and the block entity, which had the block's id)
-        RegistryAliases.add(Steveparty.id("traffic_sign"), Steveparty.id("easel_sign"));
-        for (String wood : new String[]{"oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "crimson", "warped"}) {
-            RegistryAliases.add(Steveparty.id(wood + "_traffic_sign"), Steveparty.id(wood + "_easel_sign"));
-        }
-    }
 
     public static final Block WOODEN_PANEL = register(WoodenPanelBlock::new,
             AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().dynamicBounds().nonOpaque().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),

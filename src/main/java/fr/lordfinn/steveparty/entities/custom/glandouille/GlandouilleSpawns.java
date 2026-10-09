@@ -1,21 +1,21 @@
 package fr.lordfinn.steveparty.entities.custom.glandouille;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.entities.MobSpawns;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.SpawnLocationTypes;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
-import net.minecraft.world.Heightmap;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.biome.Biome;
@@ -41,15 +41,14 @@ public final class GlandouilleSpawns {
     }
 
     public static void initialize() {
-        SpawnRestriction.register(ModEntities.GLANDOUILLE, SpawnLocationTypes.ON_GROUND,
-                Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, GlandouilleSpawns::canSpawn);
-        BiomeModifications.addSpawn(BiomeSelectors.tag(OAK_BIOMES), SpawnGroup.CREATURE, ModEntities.GLANDOUILLE, 6, 2, 4);
+        MobSpawns.register(ModEntities.GLANDOUILLE, SpawnLocationTypes.ON_GROUND, GlandouilleSpawns::canSpawn,
+                BiomeSelectors.tag(OAK_BIOMES), SpawnGroup.CREATURE, 6, 2, 4);
         BiomeModifications.addSpawn(BiomeSelectors.tag(OLD_GROWTH_BIOMES), SpawnGroup.CREATURE, ModEntities.GLANDOUILLE, 5, 2, 3);
         BiomeModifications.addSpawn(BiomeSelectors.tag(SNOWY_BIOMES), SpawnGroup.CREATURE, ModEntities.GLANDOUILLE, 5, 2, 4);
     }
 
     /** On soil or snow, in daylight-ish, under leaves (a tree's canopy). */
-    private static boolean canSpawn(net.minecraft.entity.EntityType<GlandouilleEntity> type, ServerWorldAccess world,
+    private static boolean canSpawn(EntityType<GlandouilleEntity> type, ServerWorldAccess world,
                                     SpawnReason reason, BlockPos pos, Random random) {
         BlockState ground = world.getBlockState(pos.down());
         boolean soil = ground.isIn(BlockTags.DIRT) || ground.isIn(BlockTags.SNOW) || ground.isIn(BlockTags.ANIMALS_SPAWNABLE_ON);

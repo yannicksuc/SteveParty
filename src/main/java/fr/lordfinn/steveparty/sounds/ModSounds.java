@@ -3,8 +3,11 @@ package fr.lordfinn.steveparty.sounds;
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 public class ModSounds {
     public static final SoundEvent CLOSE_TILE_GUI_SOUND_EVENT = register("close_tile_gui");
@@ -153,6 +156,25 @@ public class ModSounds {
     public static final SoundEvent MISTIGRI_TRANSFORM = register("mistigri.transform");
     /** Bad luck strikes (crossing his path, a monster's blow missing). */
     public static final SoundEvent MISTIGRI_BAD_LUCK = register("mistigri.bad_luck");
+    // Fumarole (Fumerolle): vanilla sounds for now (assets/steveparty/sounds.json)
+    /** Its low rumble and the crackle of its tank. */
+    public static final SoundEvent FUMAROLE_AMBIENT = register("fumarole.ambient");
+    public static final SoundEvent FUMAROLE_HURT = register("fumarole.hurt");
+    public static final SoundEvent FUMAROLE_DEATH = register("fumarole.death");
+    /** Its heavy steps. */
+    public static final SoundEvent FUMAROLE_STEP = register("fumarole.step");
+    /** A gulp of lava pumped from a source. */
+    public static final SoundEvent FUMAROLE_PUMP = register("fumarole.pump");
+    /** Its tank gurgles (a bucket taken or poured). */
+    public static final SoundEvent FUMAROLE_GURGLE = register("fumarole.gurgle");
+    /** The warning second before a blast: steam hisses in its vent. */
+    public static final SoundEvent FUMAROLE_CHARGE = register("fumarole.charge");
+    /** The thermal blast. */
+    public static final SoundEvent FUMAROLE_BLAST = register("fumarole.blast");
+    /** The weak puff of an empty tank. */
+    public static final SoundEvent FUMAROLE_PUFF = register("fumarole.puff");
+    /** Its tank spilling as it dies. */
+    public static final SoundEvent FUMAROLE_SPILL = register("fumarole.spill");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }
@@ -163,12 +185,12 @@ public class ModSounds {
     }
 
     /** The "linked" click of a block (a page, a pipe, a podium, a destination), heard by everyone around. */
-    public static void playSelect(net.minecraft.world.World world, net.minecraft.util.math.BlockPos pos) {
-        world.playSound(null, pos, SELECT_SOUND_EVENT, net.minecraft.sound.SoundCategory.BLOCKS, 1.0F, 1.0F);
+    public static void playSelect(World world, BlockPos pos) {
+        world.playSound(null, pos, SELECT_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
     /** The "unlinked" click of a block, heard by everyone around. */
-    public static void playCancel(net.minecraft.world.World world, net.minecraft.util.math.BlockPos pos) {
-        world.playSound(null, pos, CANCEL_SOUND_EVENT, net.minecraft.sound.SoundCategory.BLOCKS, 1.0F, 1.0F);
+    public static void playCancel(World world, BlockPos pos) {
+        world.playSound(null, pos, CANCEL_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 }
