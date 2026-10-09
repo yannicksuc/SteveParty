@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.datagen;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -12,6 +13,8 @@ import fr.lordfinn.steveparty.recipes.TileShapedRecipe;
 import fr.lordfinn.steveparty.recipes.UnmirroredShapedRecipe;
 import java.util.ArrayList;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.DefaultCustomIngredients;
+import net.minecraft.component.ComponentChanges;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor;
@@ -372,8 +375,9 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.GLANDOUILLE_CARTRIDGE, ModItems.ACORN);
         // A candle: the Frousseux, a candle ghost that steals
         offerCartridge(ModItems.FROUSSEUX_CARTRIDGE, Items.CANDLE);
-        // The Loaded Die (the Mistigri's loot): the black cat of bad luck and his sentences
-        offerCartridge(ModItems.MISTIGRI_CARTRIDGE, ModItems.LOADED_DIE);
+        // The Mistigri's Die (his loot, a classic die with only the cursed 1, 2 and 3): the black cat of bad luck
+        offerCartridge(ModItems.MISTIGRI_CARTRIDGE, DefaultCustomIngredients.components(Ingredient.ofItems(ModItems.DEFAULT_DICE),
+                ComponentChanges.builder().add(DiceFacesComponent.TYPE, CursedRolls.MISTIGRI_DIE_FACES).build()));
         // Iron bars: the Threshold obstacle, a wall on the path
         offerCartridge(ModItems.THRESHOLD_CARTRIDGE, Items.IRON_BARS);
         // The Pie's nest: the Common pot, kept by the Pie
@@ -433,6 +437,10 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
     }
 
     private void offerCartridge(Item cartridge, Item role) {
+        offerCartridge(cartridge, Ingredient.ofItems(role));
+    }
+
+    private void offerCartridge(Item cartridge, Ingredient role) {
         ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, cartridge)
                 .input(ModItems.BOARD_SPACE_BEHAVIOR)
                 .input(role)

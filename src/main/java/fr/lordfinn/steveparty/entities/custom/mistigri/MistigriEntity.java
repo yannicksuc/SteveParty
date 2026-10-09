@@ -72,7 +72,7 @@ import java.util.UUID;
  *     <li><b>Tamed</b>: follows his owner like the mod's other pets (through teleports, each its own place:
  *     FollowsOwnerAnywhere, PetSlots), sits on their word, gives them Luck nearby and makes the monsters around him
  *     miss now and then ({@link MistigriBadLuck}). Crossing him never brings his owner bad luck.</li>
- *     <li><b>Loot</b>: the Loaded Die (loot table entities/mistigri).</li>
+ *     <li><b>Loot</b>: the Mistigri's Die, a classic die whose faces are the cursed 1, 2 and 3 (loot table entities/mistigri).</li>
  * </ul>
  * A board space's Mistigri ({@link #isBoardActor}) does none of that: invulnerable, moved by the board, never saved.
  * His acts (grooming, a swat...) are a tracked {@link Action} played by the client's animation controller; a command

@@ -7,7 +7,29 @@
       "item": "steveparty:board_space_behavior"
     },
     {
-      "item": "steveparty:loaded_die"
+      "base": {
+        "item": "steveparty:default_dice"
+      },
+      "components": {
+        "steveparty:dice-faces": [
+          {
+            "kind": "cursed",
+            "value": 1,
+            "weight": 2
+          },
+          {
+            "kind": "cursed",
+            "value": 2,
+            "weight": 2
+          },
+          {
+            "kind": "cursed",
+            "value": 3,
+            "weight": 2
+          }
+        ]
+      },
+      "fabric:type": "fabric:components"
     }
   ],
   "result": {
