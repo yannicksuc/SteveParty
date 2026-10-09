@@ -126,6 +126,11 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     private int railPushSign = 1;
     /** Client only: its lip's angle in the last frame drawn (BoomcartModel), whether its mouth is open. */
     public float clientLipAngle;
+    /**
+     * Client only: how far its wheels have rolled (blocks, forward positive), now and a tick ago, kept within one
+     * block (a wheel's full turn) for BoomcartModel.
+     */
+    public float clientWheelTravel, clientWheelTravelLast;
 
     public BoomcartEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -207,6 +212,20 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     public void tick() {
         super.tick();
         if (getWorld() instanceof ServerWorld world && isAlive()) tickServer(world);
+        else if (getWorld().isClient) tickWheels();
+    }
+
+    /** Its wheels roll the way it moved this tick, along its body (a teleport doesn't spin them). */
+    private void tickWheels() {
+        double dx = getX() - prevX, dz = getZ() - prevZ;
+        float travel = 0;
+        if (dx * dx + dz * dz < 4) {
+            float yaw = bodyYaw * MathHelper.RADIANS_PER_DEGREE;
+            travel = (float) (dz * MathHelper.cos(yaw) - dx * MathHelper.sin(yaw));
+        }
+        float turns = MathHelper.floor(clientWheelTravel + travel);
+        clientWheelTravelLast = clientWheelTravel - turns;
+        clientWheelTravel = clientWheelTravel + travel - turns;
     }
 
     private void tickServer(ServerWorld world) {
