@@ -52,6 +52,7 @@
       "fr.lordfinn.steveparty.gametest.FrousseuxSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.MistigriSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.MistigriGameTests",
+      "fr.lordfinn.steveparty.gametest.JumpShoesGameTests",
       "fr.lordfinn.steveparty.gametest.ThresholdGameTests",
       "fr.lordfinn.steveparty.gametest.PotGameTests",
       "fr.lordfinn.steveparty.gametest.KeyGateGameTests",

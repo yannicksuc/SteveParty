@@ -272,6 +272,7 @@ public class StevepartyClient implements ClientModInitializer {
         CartridgeClickGuard.initialize();
         BandanaArmorRenderer.register();
         ExplorerHelmetRenderer.register();
+        fr.lordfinn.steveparty.client.jumpshoes.JumpShoesClient.initialize();
         MiniGamePageTooltipComponent.register();
         Tooltips.setShiftProbe(net.minecraft.client.gui.screen.Screen::hasShiftDown);
         net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register((stack, context, type, lines) ->
@@ -522,6 +523,7 @@ public class StevepartyClient implements ClientModInitializer {
         GoalPoleFlipTracker.clear();
         GoalPoleCameraRoll.clear();
         SquishAnimations.clear();
+        fr.lordfinn.steveparty.client.jumpshoes.JumpShoesClient.clear();
         DestinationsRenderer.clear();
         // The carriers of the last world, else kept (with their world) until a world renders again
         PipeCarrierEntity.CLIENT_CARRIERS.clear();

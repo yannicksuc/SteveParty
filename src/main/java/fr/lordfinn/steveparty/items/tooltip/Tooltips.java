@@ -295,6 +295,10 @@ public final class Tooltips {
             return Text.keybind("key.sneak");
         }
 
+        public static Text jump() {
+            return Text.keybind("key.jump");
+        }
+
         public static Text scroll() {
             return Text.translatable(KEY + "key.scroll");
         }
