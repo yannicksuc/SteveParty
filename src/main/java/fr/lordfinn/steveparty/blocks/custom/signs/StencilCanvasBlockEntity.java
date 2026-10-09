@@ -163,11 +163,6 @@ public class StencilCanvasBlockEntity extends SyncedBlockEntity implements Rende
         return plateColor;
     }
 
-    public void setPlateColor(@Nullable DyeColor plateColor) {
-        this.plateColor = plateColor;
-        onChanged();
-    }
-
     // ---------------------------------------------------------------- sync
 
     private void onChanged() {

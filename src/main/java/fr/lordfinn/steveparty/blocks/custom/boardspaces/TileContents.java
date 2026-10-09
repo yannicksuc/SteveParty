@@ -90,12 +90,6 @@ public final class TileContents {
         return tile.get(ModComponents.TILE_STAMP);
     }
 
-    /** Whether a tile item carries anything of a placed tile (cartridges, a stamped look). */
-    public static boolean holdsContents(ItemStack tile) {
-        ContainerComponent container = tile.get(DataComponentTypes.CONTAINER);
-        return (container != null && container.iterateNonEmpty().iterator().hasNext()) || tile.contains(ModComponents.TILE_STAMP);
-    }
-
     /** Whether {@code tool} has Silk Touch. */
     public static boolean hasSilkTouch(WorldView world, ItemStack tool) {
         if (tool.isEmpty()) return false;

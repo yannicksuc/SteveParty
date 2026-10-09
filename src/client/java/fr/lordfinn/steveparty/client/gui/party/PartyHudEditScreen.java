@@ -9,12 +9,10 @@ import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -30,7 +28,6 @@ public class PartyHudEditScreen extends Screen {
     private boolean resizing;
     private float grabX, grabY;
     private float resizeStartDistance, resizeStartScale;
-    private boolean snappedX, snappedY;
     private float snapLineX = -1, snapLineY = -1;
     private ButtonWidget turnBarToggle, standingsToggle, noticeToggle;
     private PartyHudModel sample;

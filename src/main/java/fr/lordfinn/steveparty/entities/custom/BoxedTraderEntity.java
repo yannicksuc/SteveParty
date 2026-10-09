@@ -23,7 +23,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.BlockStateComponent;
-import net.minecraft.component.type.LoreComponent;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.pathing.PathNodeType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -53,9 +52,7 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -711,14 +708,6 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
         }
         nbt.putBoolean(BOX_GLITCHED_NBT, isBoxGlitched());
         return super.writeNbt(nbt);
-    }
-
-    private void disableAllTrades() {
-        tradeOffers.forEach(TradeOffer::disable);
-    }
-
-    private void enableAllTrades() {
-        tradeOffers.forEach(TradeOffer::resetUses);
     }
 
     @Override

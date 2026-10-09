@@ -13,7 +13,6 @@ import fr.lordfinn.steveparty.podium.PodiumGroup;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.command.EntitySelector;
 import net.minecraft.command.argument.EntityArgumentType;
@@ -518,13 +517,6 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         if (reached) Podiums.onGoalReached(this, holder);
     }
 
-    /** The most points a single holder has. */
-    public int getBestPoints() {
-        int best = 0;
-        for (int value : points.values()) best = Math.max(best, value);
-        return best;
-    }
-
     // ------------------------------------------------------------------ sides: a player, or a team
 
     /** What the side of a team is called in the goals reached ({@code #team:0} for team A...). */
@@ -824,7 +816,6 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     /** Points per player (read only; synced to clients for the wrench details). */
     public Map<String, Integer> getPointsView() { return Collections.unmodifiableMap(points); }
     public boolean isSourceInvalid() { return sourceInvalid; }
-    @Nullable public ScoreboardObjective getMirror() { return mirror; }
 
 
     public void setPlayers(Players players, int radius) {

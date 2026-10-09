@@ -247,11 +247,6 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         return SUCCESS;
     }
 
-       @SuppressWarnings("SameParameterValue")
-    private List<Entity> getAroundEntities(Entity entity, int radius) {
-        return entity.getWorld().getOtherEntities(entity, entity.getBoundingBox().expand(radius));
-    }
-
     @Override
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return TileFeedback.Landing.START;

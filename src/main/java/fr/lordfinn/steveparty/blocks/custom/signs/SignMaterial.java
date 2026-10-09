@@ -7,14 +7,11 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * What a material sign can be made of. Any block of the kind's tag works, modded ones included: mods add their
@@ -67,12 +64,5 @@ public enum SignMaterial {
 
     public Block resolveBlock(@Nullable Identifier id) {
         return Registries.BLOCK.get(resolve(id));
-    }
-
-    /** @return every block of this kind, in registry order (for the creative inventory). */
-    public List<Block> allBlocks() {
-        List<Block> blocks = new ArrayList<>();
-        for (RegistryEntry<Block> entry : Registries.BLOCK.iterateEntries(tag)) blocks.add(entry.value());
-        return blocks;
     }
 }

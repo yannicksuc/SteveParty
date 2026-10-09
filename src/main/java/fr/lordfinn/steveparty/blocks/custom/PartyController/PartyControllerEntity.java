@@ -952,10 +952,6 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         return audience.lastLiveData();
     }
 
-    public void sendClearPacketToPlayer(ServerPlayerEntity player) {
-        audience.sendClear(player);
-    }
-
     public void sendPacketToInterestedPlayer(ServerPlayerEntity player, PartyData partyData) {
         PartyAudience.send(player, partyData);
     }

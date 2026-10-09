@@ -733,11 +733,6 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		return (Math.max(0, this.dataTracker.get(DANCE)) >> DANCE_COUNT_SHIFT) & DANCE_SLOT;
 	}
 
-	/** Server: dancing round another forge than this one (counted by it less than 2 s ago). */
-	public boolean dancesElsewhere(BlockPos forge) {
-		return isDancing() && !forge.equals(danceForge()) && this.getWorld().getTime() - danceAssignedTick < 40;
-	}
-
 	/** The dance its forge plays now (index in {@link MulaDances}), -1 if not dancing. */
 	public int currentDance() {
 		return isDancing() ? MulaDances.danceAt(this.getWorld().getTime(), this.dataTracker.get(DANCE_FORGE).get()) : -1;
