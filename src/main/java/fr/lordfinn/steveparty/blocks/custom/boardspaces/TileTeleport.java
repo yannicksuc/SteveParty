@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.TokenMovementService;
+import fr.lordfinn.steveparty.utils.Argb;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
@@ -248,7 +249,7 @@ public final class TileTeleport {
             double radius = 0.2 + 0.6 * (1 - p);
             double y = at.y + 0.15 + 0.9 * (1 - p);
             int color = arm == 0 ? tileColor : ACCENT;
-            world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(color, 0.25F), 0.9F, MulaSparkleEffect.TWINKLE),
+            world.spawnParticles(new MulaSparkleEffect(Argb.lighten(color, 0.25F) & 0xFFFFFF, 0.9F, MulaSparkleEffect.TWINKLE),
                     at.x + Math.cos(angle) * radius, y, at.z + Math.sin(angle) * radius, 1, 0, 0, 0, 0);
             world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(color).toVector3f(), 0.9F),
                     at.x + Math.cos(angle + 0.5) * radius * 1.2, y - 0.1, at.z + Math.sin(angle + 0.5) * radius * 1.2, 1, 0, 0, 0, 0);
@@ -271,7 +272,7 @@ public final class TileTeleport {
         int points = 10;
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2 * i / points + t * 0.4;
-            world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(i % 2 == 0 ? ACCENT : color, 0.3F), 0.8F, MulaSparkleEffect.TWINKLE),
+            world.spawnParticles(new MulaSparkleEffect(Argb.lighten(i % 2 == 0 ? ACCENT : color, 0.3F) & 0xFFFFFF, 0.8F, MulaSparkleEffect.TWINKLE),
                     end.x + Math.cos(angle) * radius, end.y + 0.12, end.z + Math.sin(angle) * radius, 1, 0, 0, 0, 0);
         }
     }
@@ -287,8 +288,8 @@ public final class TileTeleport {
             world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, SoundCategory.BLOCKS, 0.6F, 1.2F);
             world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.BLOCKS, 0.4F, 2.0F);
             world.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.BLOCKS, 0.25F, 1.7F);
-            world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(ACCENT, 0.2F), 1.3F, MulaSparkleEffect.STAR_BIT), at.x, at.y + 0.4, at.z, 8, 0.3, 0.3, 0.3, 0.0);
-            world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(color, 0.35F), 1.1F, MulaSparkleEffect.TWINKLE), at.x, at.y + 0.3, at.z, 10, 0.4, 0.25, 0.4, 0.0);
+            world.spawnParticles(new MulaSparkleEffect(Argb.lighten(ACCENT, 0.2F) & 0xFFFFFF, 1.3F, MulaSparkleEffect.STAR_BIT), at.x, at.y + 0.4, at.z, 8, 0.3, 0.3, 0.3, 0.0);
+            world.spawnParticles(new MulaSparkleEffect(Argb.lighten(color, 0.35F) & 0xFFFFFF, 1.1F, MulaSparkleEffect.TWINKLE), at.x, at.y + 0.3, at.z, 10, 0.4, 0.25, 0.4, 0.0);
             world.spawnParticles(ParticleTypes.END_ROD, at.x, at.y + 0.3, at.z, 5, 0.1, 0.1, 0.1, 0.08);
         }
     }

@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
+import fr.lordfinn.steveparty.utils.Argb;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
@@ -341,7 +342,7 @@ public final class TileFeedback {
         int tileColor = tileColor(tile);
         int color = tileColor == 0xFFFFFF ? landing.accent() : tileColor;
         // Lighter than the face, so the ring and the sparkles read over it
-        int light = lighten(color, 0.45F);
+        int light = Argb.lighten(color, 0.45F) & 0xFFFFFF;
         double radius = ringRadius(world, pos);
         burst(world, landing, at, color, light);
         ring(world, at, light, radius);
@@ -385,16 +386,7 @@ public final class TileFeedback {
     public static int noticeColor(int color) {
         int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
         boolean dark = 0.299F * r + 0.587F * g + 0.114F * b < 100;
-        return lighten(color, dark ? 0.6F : 0.2F);
-    }
-
-    /** {@code color} moved toward white by {@code amount} (0..1). */
-    public static int lighten(int color, float amount) {
-        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
-        r += (int) ((255 - r) * amount);
-        g += (int) ((255 - g) * amount);
-        b += (int) ((255 - b) * amount);
-        return (r << 16) | (g << 8) | b;
+        return Argb.lighten(color, dark ? 0.6F : 0.2F) & 0xFFFFFF;
     }
 
     /** A thin ring of dust just around the tile's edge: the tile "pulses". */
@@ -417,7 +409,7 @@ public final class TileFeedback {
                 world.spawnParticles(ParticleTypes.WAX_OFF, at.x, y + 0.3, at.z, 5, 0.3, 0.3, 0.3, 0.3);
             }
             case BAD -> {
-                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(lighten(landing.accent(), 0.25F)).toVector3f(), 1.8F), at.x, y + 0.2, at.z, 14, 0.35, 0.2, 0.35, 0.0);
+                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(Argb.lighten(landing.accent(), 0.25F) & 0xFFFFFF).toVector3f(), 1.8F), at.x, y + 0.2, at.z, 14, 0.35, 0.2, 0.35, 0.0);
                 world.spawnParticles(ParticleTypes.SMOKE, at.x, y, at.z, 5, 0.3, 0.05, 0.3, 0.01);
                 world.spawnParticles(ParticleTypes.ANGRY_VILLAGER, at.x, y + 0.6, at.z, 1, 0.1, 0.1, 0.1, 0.0);
             }
