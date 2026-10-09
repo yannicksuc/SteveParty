@@ -7,7 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.block.Block;
@@ -179,8 +179,9 @@ public final class BrushLinks {
         return stack.getItem() instanceof CartridgeItem;
     }
 
+    /** A cartridge linked to containers (Inventory, Trichaudron). */
     static boolean isInventoryCartridge(ItemStack stack) {
-        return stack.getItem() instanceof InventoryCartridgeItem;
+        return CartridgeContainers.linksContainers(stack);
     }
 
     static boolean isShopCartridge(ItemStack stack) {

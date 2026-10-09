@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.board;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.block.entity.BlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -215,7 +214,7 @@ public final class BoardLinks {
     public static void linkNearestChest(PlayerEntity player, CartridgeContainerBlockEntity container, int slot) {
         World world = container.getWorld();
         ItemStack cartridge = container.getStack(slot);
-        if (world == null || !(cartridge.getItem() instanceof InventoryCartridgeItem)
+        if (world == null || !CartridgeContainers.linksContainers(cartridge)
                 || !CartridgeContainers.isEmpty(cartridge)) return;
         BlockPos center = container.getPos();
         BlockPos nearest = null;

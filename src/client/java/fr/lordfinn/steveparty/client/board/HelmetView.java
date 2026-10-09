@@ -11,7 +11,6 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -202,7 +201,7 @@ public final class HelmetView {
                 Text.literal(Long.toString(out)).withColor(0x1D7A1D), Text.literal(Integer.toString(in)).withColor(0x1C4FA8)), WorldDraw.Plate.TEAL));
         if (full) {
             if (!node.step()) lines.add(new Line(Text.translatable("hud.steveparty.explorer_helmet.checkpoint"), WorldDraw.Plate.GREEN));
-            if (cartridge.getItem() instanceof InventoryCartridgeItem) {
+            if (CartridgeContainers.linksContainers(cartridge)) {
                 if (node.inventoryIssue() == BoardGraph.InventoryIssue.NO_CHEST) {
                     lines.add(new Line(Text.translatable("hud.steveparty.explorer_helmet.no_chest"), WorldDraw.Plate.RED));
                 } else {
@@ -251,7 +250,7 @@ public final class HelmetView {
             }
         }
         if (world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space
-                && space.getActiveCartridgeItemStack().getItem() instanceof InventoryCartridgeItem) {
+                && CartridgeContainers.linksContainers(space.getActiveCartridgeItemStack())) {
             for (BlockPos chest : CartridgeContainers.in(space.getActiveCartridgeItemStack(), world)) {
                 if (budget-- <= 0) break;
                 chests.add(chest);

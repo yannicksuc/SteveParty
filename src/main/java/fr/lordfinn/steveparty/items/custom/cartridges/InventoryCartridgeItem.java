@@ -36,7 +36,7 @@ import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEn
 import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
-public class InventoryCartridgeItem extends CartridgeItem {
+public class InventoryCartridgeItem extends CartridgeItem implements ContainerCartridge {
 
     public InventoryCartridgeItem(Settings settings) {
         super(settings);
@@ -62,10 +62,10 @@ public class InventoryCartridgeItem extends CartridgeItem {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             ItemStack stack = player.getStackInHand(hand);
             // The off hand's cartridge with nothing in the main hand: the main hand's turn would open the container
-            if (hand == Hand.MAIN_HAND && stack.isEmpty() && player.getOffHandStack().getItem() instanceof InventoryCartridgeItem) {
+            if (hand == Hand.MAIN_HAND && stack.isEmpty() && CartridgeContainers.linksContainers(player.getOffHandStack())) {
                 stack = player.getOffHandStack();
             }
-            if (!(stack.getItem() instanceof InventoryCartridgeItem) || player.isSpectator()) return ActionResult.PASS;
+            if (!CartridgeContainers.linksContainers(stack) || player.isSpectator()) return ActionResult.PASS;
             BlockPos pos = hit.getBlockPos().toImmutable();
             if (!CartridgeContainers.accepts(world, pos)) return ActionResult.PASS;
             if (world.isClient) return ActionResult.SUCCESS;
