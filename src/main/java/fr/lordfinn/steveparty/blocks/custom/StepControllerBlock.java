@@ -1,13 +1,19 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
+import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
@@ -64,12 +70,12 @@ public class StepControllerBlock extends BlockWithEntity {
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         // A mini-game page: the controller is linked to it (or unlinked), like a podium
-        boolean page = player.getMainHandStack().getItem() instanceof fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+        boolean page = player.getMainHandStack().getItem() instanceof MiniGamePageItem;
         if (world.isClient) return page ? ActionResult.SUCCESS : ActionResult.PASS;
         StepControllerBlockEntity blockEntity = (StepControllerBlockEntity) world.getBlockEntity(pos);
         if (page) {
-            fr.lordfinn.steveparty.podium.Podiums.clickLink((net.minecraft.server.network.ServerPlayerEntity) player, net.minecraft.util.Hand.MAIN_HAND,
-                    (net.minecraft.server.world.ServerWorld) world, pos, fr.lordfinn.steveparty.minigame.MiniGamePodiumLink.Kind.STEP_CONTROLLER);
+            Podiums.clickLink((ServerPlayerEntity) player, Hand.MAIN_HAND,
+                    (ServerWorld) world, pos, MiniGamePodiumLink.Kind.STEP_CONTROLLER);
             if (blockEntity != null) blockEntity.refreshLinkedPages();
             return ActionResult.SUCCESS;
         }

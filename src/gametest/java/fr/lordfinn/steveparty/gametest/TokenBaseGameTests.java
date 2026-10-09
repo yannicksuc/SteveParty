@@ -4,8 +4,8 @@ import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EntityAttachmentType;
+import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -128,7 +128,7 @@ public class TokenBaseGameTests implements FabricGameTest {
             // The square's corner (half, half) against the octagon's diagonal side: (x + z) / sqrt(2) <= apothem
             context.assertTrue((half + half) / Math.sqrt(2) <= apothem + EPSILON, "corner inside, width " + width);
             context.assertTrue(half <= apothem, "side inside, width " + width);
-            float height = TokenBase.baseHeight(net.minecraft.entity.EntityDimensions.fixed(width, 1.0F));
+            float height = TokenBase.baseHeight(EntityDimensions.fixed(width, 1.0F));
             assertClose(context, height / apothem, 3.0 / 8.0, "same proportions, width " + width);
         }
         context.complete();

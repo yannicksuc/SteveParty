@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -220,7 +221,7 @@ public final class CommonPots {
 
     private static void later(int ticks, Runnable task) {
         if (ticks <= 0) task.run();
-        else fr.lordfinn.steveparty.Steveparty.SCHEDULER.schedule(UUID.randomUUID(), ticks, task);
+        else Steveparty.SCHEDULER.schedule(UUID.randomUUID(), ticks, task);
     }
 
     // ---------------------------------------------------------------- the nest and the Pie

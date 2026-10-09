@@ -6,6 +6,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -55,7 +56,7 @@ public class MistigriDieEntity extends Entity implements GeoEntity {
     }
 
     public void setFace(int face) {
-        this.dataTracker.set(FACE, Math.max(1, Math.min(3, face)));
+        this.dataTracker.set(FACE, MathHelper.clamp(face, 1, 3));
     }
 
     @Override

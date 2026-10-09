@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.mixin;
 
 import fr.lordfinn.steveparty.entities.TokenBase;
+import fr.lordfinn.steveparty.entities.TokenPoses;
 import net.minecraft.entity.Bucketable;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -37,7 +38,7 @@ public abstract class TokenVanillaActionsMixin {
         MobEntity mob = (MobEntity) (Object) this;
         if (!TokenBase.isToken(mob)) return;
         // An empty hand poses it (TokenPoseInteractMixin), even a pet's
-        if (fr.lordfinn.steveparty.entities.TokenPoses.posesOnClick(mob, player, hand)) return;
+        if (TokenPoses.posesOnClick(mob, player, hand)) return;
         if (steveparty$breaksPawn(mob, player.getStackInHand(hand))) cir.setReturnValue(ActionResult.PASS);
     }
 

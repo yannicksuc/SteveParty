@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.particles.MagicShapeEffect;
+import fr.lordfinn.steveparty.particles.SpellPalette;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -256,7 +257,7 @@ public final class PawnPossessions {
         EntityAttributeInstance scale = pawn.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
         if (scale != null) scale.setBaseValue(SquishEffect.scaleForSize(pawn, spell.size));
         if (!world.spawnEntity(pawn)) return null;
-        world.spawnParticles(MagicShapeEffect.sparkle(1.3F, 0.9F, 0, fr.lordfinn.steveparty.particles.SpellPalette.LILAC),
+        world.spawnParticles(MagicShapeEffect.sparkle(1.3F, 0.9F, 0, SpellPalette.LILAC),
                 pawn.getX(), pawn.getY() + pawn.getHeight() / 2, pawn.getZ(), 14, 0.3, 0.4, 0.3, 0.02);
         return pawn;
     }

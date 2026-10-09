@@ -297,7 +297,7 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     }
 
     @Override
-    public void onEntityLand(BlockView view, net.minecraft.entity.Entity entity) {
+    public void onEntityLand(BlockView view, Entity entity) {
         super.onEntityLand(view, entity);
 
         if (!entity.getWorld().isClient && entity instanceof ServerPlayerEntity player) {

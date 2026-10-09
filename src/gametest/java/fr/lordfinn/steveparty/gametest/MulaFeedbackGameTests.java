@@ -22,6 +22,8 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -183,19 +185,19 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         context.complete();
     }
 
-    private static String key(net.minecraft.text.Text text) {
-        return text != null && text.getContent() instanceof net.minecraft.text.TranslatableTextContent t ? t.getKey() : null;
+    private static String key(Text text) {
+        return text != null && text.getContent() instanceof TranslatableTextContent t ? t.getKey() : null;
     }
 
     /** What it refuses, it says why (action bar): another colour's food and whose it is, or something no Mula eats. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void refusalSaysWhy(TestContext context) {
         MulaEntity.MulaVariant blue = MulaEntity.MulaVariant.BLUE;
-        net.minecraft.text.Text colour = MulaEntity.refusalReason(blue, new ItemStack(Items.APPLE));
+        Text colour = MulaEntity.refusalReason(blue, new ItemStack(Items.APPLE));
         context.assertEquals(key(colour), "message.steveparty.mula.refuse.colour", "an apple: another colour's food");
-        Object[] args = ((net.minecraft.text.TranslatableTextContent) colour.getContent()).getArgs();
-        context.assertEquals(key((net.minecraft.text.Text) args[0]), "mula.steveparty.colour.blue", "its own colour");
-        context.assertEquals(key((net.minecraft.text.Text) args[2]), "mula.steveparty.colour.red", "the colour that eats it");
+        Object[] args = ((TranslatableTextContent) colour.getContent()).getArgs();
+        context.assertEquals(key((Text) args[0]), "mula.steveparty.colour.blue", "its own colour");
+        context.assertEquals(key((Text) args[2]), "mula.steveparty.colour.red", "the colour that eats it");
         context.assertEquals(key(MulaEntity.refusalReason(blue, new ItemStack(Items.STICK))),
                 "message.steveparty.mula.refuse.inedible", "a stick is not food");
         context.assertEquals(key(MulaEntity.refusalReason(blue, new ItemStack(Items.COOKED_CHICKEN))),
@@ -313,7 +315,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         mula.setVariant(MulaEntity.MulaVariant.GREEN);
         mula.setAiDisabled(true);
-        int melon = Items.MELON_SLICE.getComponents().get(net.minecraft.component.DataComponentTypes.FOOD).nutrition();
+        int melon = Items.MELON_SLICE.getComponents().get(DataComponentTypes.FOOD).nutrition();
         context.assertEquals(MulaFood.seedValue(), melon, "a seed is worth a melon slice");
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         try {

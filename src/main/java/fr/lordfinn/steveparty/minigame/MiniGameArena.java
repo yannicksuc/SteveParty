@@ -20,8 +20,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -64,7 +66,7 @@ public final class MiniGameArena {
 
     private @Nullable ZoneBubble bubble;
     /** The participants of a round played without bubble put in adventure mode by the page's option. */
-    private final java.util.Set<UUID> adventurers = new java.util.HashSet<>();
+    private final Set<UUID> adventurers = new HashSet<>();
     private @Nullable MinecraftServer server;
     private BooleanSupplier stillOn = () -> true;
     private @Nullable UUID waitTask;

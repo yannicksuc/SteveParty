@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.particles.ParticleUtils;
 import fr.lordfinn.steveparty.payloads.custom.ArrowParticlesPayload;
 import fr.lordfinn.steveparty.service.TokenMovementService;
@@ -16,7 +18,6 @@ import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
@@ -60,8 +61,8 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         this.tileOrigin = origin;
         this.tileDestination = destination;
         // From where the tiles are seen (lowered, sloped, a large tile's middle), not their blocks
-        Vec3d from = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(world, origin);
-        Vec3d distance = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(world, destination.position()).subtract(from);
+        Vec3d from = BoardSpaces.standPos(world, origin);
+        Vec3d distance = BoardSpaces.standPos(world, destination.position()).subtract(from);
         Color color = destination.isTile() ? Color.WHITE : Color.RED;
         encodedVelocity = ParticleUtils.encodeVelocity(
                 color,
@@ -76,7 +77,7 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         // Board spaces use an 8-direction rotation (0 = the former HORIZONTAL_FACING=SOUTH orientation)
         if (blockState != null && blockState.contains(AdvancedTileBlock.ROTATION_8)) {
             // Drawn as a small level tile, whatever it lies on (its sloped/lowered look is drawn by its renderer)
-            blockState = fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.levelState(blockState.with(AdvancedTileBlock.ROTATION_8, 0));
+            blockState = ATileBlock.levelState(blockState.with(AdvancedTileBlock.ROTATION_8, 0));
         }
         this.setBlockState(blockState);
         Quaternionf rot = new Quaternionf();

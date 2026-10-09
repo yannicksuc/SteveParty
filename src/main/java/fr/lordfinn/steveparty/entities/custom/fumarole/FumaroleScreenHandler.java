@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.fumarole;
 
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -42,10 +43,7 @@ public class FumaroleScreenHandler extends ScreenHandler {
                 return 1;
             }
         });
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
-        }
-        for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col, 8 + col * 18, 142));
+        PlayerSlots.add(this::addSlot, playerInventory, 8, 84);
     }
 
     public @Nullable FumaroleEntity fumarole() {

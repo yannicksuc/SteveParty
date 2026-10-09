@@ -1,9 +1,7 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BrushLinkable;
@@ -37,7 +35,11 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * The paint the Tile Linker Brush leaves, seen by its holder (all client side): under the crosshair, every frame, a
@@ -96,12 +98,12 @@ final class BrushTrail {
     private static final double WIDTH = 0.36, DAB_SPACING = 0.04, MAX_JOIN = 1.2;
     /** Blocks of stroke per repeat of the streak texture. */
     private static final double STREAK_LENGTH = 0.6;
-    private static final java.util.Random SPLASH = new java.util.Random();
+    private static final Random SPLASH = new Random();
     /** How wide a blob's splat is. */
     private static final double BLOB_WIDTH = 1.1;
     private static final BrushAim.Blob BLOB = new BrushAim.Blob();
     /** The cells blobbed or whose ghost was erased in the held stroke: neither again before it ends (as on the server). */
-    private static final java.util.Set<BlockPos> CELLS = new java.util.HashSet<>();
+    private static final Set<BlockPos> CELLS = new HashSet<>();
 
     private static final List<Mark> MARKS = new ArrayList<>();
     private static @Nullable Dab lastDab;
@@ -189,7 +191,7 @@ final class BrushTrail {
     }
 
     /** What the held stroke aims at besides holders and ghosts: what its last holder links (as the server finds it). */
-    static java.util.function.Predicate<BlockPos> targets(ClientWorld world, ItemStack brush) {
+    static Predicate<BlockPos> targets(ClientWorld world, ItemStack brush) {
         int level = TileLinkerBrush.level(brush);
         return target -> BrushLinks.aims(world, last, level, target);
     }

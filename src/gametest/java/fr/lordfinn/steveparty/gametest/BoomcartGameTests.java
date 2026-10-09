@@ -110,7 +110,7 @@ public class BoomcartGameTests implements FabricGameTest {
         TestBoards.floor(context, 8);
         BoomcartEntity boomcart = context.spawnEntity(ModEntities.BOOMCART, new BlockPos(3, 1, 3));
         context.assertTrue(boomcart.getLoad().isOf(Items.TNT), "TNT by default");
-        PlayerEntity player = context.createMockPlayer(net.minecraft.world.GameMode.SURVIVAL);
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.FIREWORK_ROCKET, 2));
         boomcart.interact(player, Hand.MAIN_HAND);
         context.assertTrue(boomcart.carriesFirework(), "loaded with a rocket");

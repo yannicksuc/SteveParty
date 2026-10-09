@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.BrushLinkable;
 import fr.lordfinn.steveparty.board.BrushLinks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
+import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -20,9 +21,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * What the Tile Linker Brush shows its holder (and only them: everything is drawn client side): the tile aimed at,
@@ -79,12 +82,12 @@ final class BrushOverlay {
 
     /** The links of the holders around (Hop Switches, inventory tiles, Piggy Banks...) the board view does not draw. */
     private static List<HolderLinks> holders(ClientWorld world, ClientPlayerEntity player, int level) {
-        List<HolderLinks> found = new java.util.ArrayList<>();
+        List<HolderLinks> found = new ArrayList<>();
         for (BrushLinkable kind : BrushLinks.around(world, player.getEyePos(), BoardView.RADIUS, level)) {
             if (kind.drawnByBoardView()) continue;
             List<BlockPos> targets = kind.targets(world);
             if (targets.isEmpty()) continue;
-            List<Vec3d> to = new java.util.ArrayList<>(targets.size());
+            List<Vec3d> to = new ArrayList<>(targets.size());
             for (BlockPos target : targets) to.add(anchor(world, target));
             found.add(new HolderLinks(anchor(world, kind.holder()), to, kind.color()));
         }
@@ -92,7 +95,7 @@ final class BrushOverlay {
     }
 
     /** What the brush aims at besides holders and ghosts: what the stroke's last holder links, else its anchor's. */
-    static java.util.function.Predicate<BlockPos> targets(ClientWorld world, ItemStack brush) {
+    static Predicate<BlockPos> targets(ClientWorld world, ItemStack brush) {
         BlockPos from = BrushTrail.lastTile() != null ? BrushTrail.lastTile() : TileLinkerBrush.anchor(brush, world);
         int level = TileLinkerBrush.level(brush);
         return target -> BrushLinks.aims(world, from, level, target);
@@ -110,7 +113,7 @@ final class BrushOverlay {
         MatrixStack matrices = context.matrixStack();
         if (player == null || world == null || matrices == null) return;
         ItemStack brush = player.getMainHandStack();
-        if (!TileLinkerBrush.isBrush(brush) || fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.isOpen()) return;
+        if (!TileLinkerBrush.isBrush(brush) || ToolWheel.isOpen()) return;
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
         Camera camera = context.camera();
         ghosts(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));

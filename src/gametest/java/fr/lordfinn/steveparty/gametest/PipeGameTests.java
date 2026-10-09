@@ -35,6 +35,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -46,11 +47,17 @@ import org.joml.Quaternionf;
 import org.joml.Vector3d;
 import org.joml.Vector3f;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.BooleanSupplier;
+import java.util.WeakHashMap;
 
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
@@ -417,7 +424,7 @@ public class PipeGameTests implements FabricGameTest {
         token.steveparty$setTokenized(true);
         UUID owner = UUID.randomUUID();
         token.steveparty$setTokenOwner(owner);
-        pig.setCustomName(net.minecraft.text.Text.literal("Pawn"));
+        pig.setCustomName(Text.literal("Pawn"));
         UUID id = pig.getUuid();
         double scale = pig.getAttributeValue(EntityAttributes.GENERIC_SCALE);
         context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 2, 1)), Direction.UP, pig, 0), "in");
@@ -523,11 +530,11 @@ public class PipeGameTests implements FabricGameTest {
                             hi[i] = Math.max(hi[i], corner[i]);
                         }
                     }
-                    context.assertTrue(inside(outline, center), shape + ": a quad out of the tube at " + java.util.Arrays.toString(center));
+                    context.assertTrue(inside(outline, center), shape + ": a quad out of the tube at " + Arrays.toString(center));
                     for (float[] corner : corners) {
                         float[] in = new float[3];
                         for (int i = 0; i < 3; i++) in[i] = corner[i] + (center[i] - corner[i]) * 0.02f;
-                        context.assertTrue(inside(outline, in), shape + ": a quad out of the tube at " + java.util.Arrays.toString(in));
+                        context.assertTrue(inside(outline, in), shape + ": a quad out of the tube at " + Arrays.toString(in));
                     }
                     for (float[] uv : uvs) {
                         context.assertTrue(uv[0] >= 0 && uv[0] <= 16 && uv[1] >= 0 && uv[1] <= 16, shape + ": texture coordinates out of the texture");
@@ -594,9 +601,9 @@ public class PipeGameTests implements FabricGameTest {
         for (PipeKind kind : new PipeKind[]{PipeKind.OPAQUE, PipeKind.WINDOWED}) {
             for (String part : new String[]{"outer", "inner"}) {
                 String path = "/assets/steveparty/textures/block/pipe/" + kind.folder + "/red_" + part + ".png";
-                try (java.io.InputStream in = PipeGameTests.class.getResourceAsStream(path)) {
+                try (InputStream in = PipeGameTests.class.getResourceAsStream(path)) {
                     context.assertTrue(in != null, path + " found");
-                    java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(in);
+                    BufferedImage image = javax.imageio.ImageIO.read(in);
                     context.assertTrue(image.getWidth() == 16 * PipeGeometry.TILES && image.getHeight() == 16 * PipeGeometry.TILES, path + ": 4 x 4 tiles");
                     for (int open = 0; open < 16; open++) {
                         for (int side : new int[]{PipeGeometry.LEFT, PipeGeometry.RIGHT, PipeGeometry.TOP, PipeGeometry.BOTTOM}) {
@@ -618,7 +625,7 @@ public class PipeGameTests implements FabricGameTest {
                             context.assertTrue((image.getRGB(straight % 4 * 16 + 8, straight / 4 * 16 + t) >>> 24) == 0, "the window goes on to the block's end");
                         }
                     }
-                } catch (java.io.IOException e) {
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -938,7 +945,7 @@ public class PipeGameTests implements FabricGameTest {
     }
 
     /** The mouth each traveller last came out of. */
-    private static final java.util.Map<Entity, BlockPos> ARRIVALS = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    private static final Map<Entity, BlockPos> ARRIVALS = Collections.synchronizedMap(new WeakHashMap<>());
 
     static {
         PipeTravel.ARRIVED.register((world, entity, mouth, opening) -> ARRIVALS.put(entity, mouth.toImmutable()));

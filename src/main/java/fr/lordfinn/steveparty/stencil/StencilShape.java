@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.stencil;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -50,7 +51,7 @@ public final class StencilShape {
 
     public static byte[] filled(boolean on) {
         byte[] shape = new byte[SIZE];
-        if (on) java.util.Arrays.fill(shape, (byte) 1);
+        if (on) Arrays.fill(shape, (byte) 1);
         return shape;
     }
 

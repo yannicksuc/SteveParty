@@ -390,7 +390,7 @@ public class TokenSpellScreen extends Screen {
         double radius = body.width() * ratio / 2 + 0.25;
         // Lightened: dark token colours (a cow's brown) would read as black specks
         MagicShapeEffect sparkle = MagicShapeEffect.sparkle(1.0F, 0F, 5,
-                SpellPalette.lerp(color == NO_COLOR ? HEIGHT_MARK_COLOR : color, SpellPalette.LILAC, 0.45F));
+                Argb.lerp(color == NO_COLOR ? HEIGHT_MARK_COLOR : color, SpellPalette.LILAC, 0.45F) & 0xFFFFFF);
         for (int i = 0; i < 4; i++) {
             double angle = -ticks * 0.15 + i * Math.PI / 2;
             client.world.addParticle(sparkle, mob.getX() + Math.cos(angle) * radius, mob.getY() + height + 0.05,
@@ -869,7 +869,7 @@ public class TokenSpellScreen extends Screen {
             float angle = i * MathHelper.TAU / points;
             int x = Math.round(cx + MathHelper.cos(angle) * radius);
             int y = Math.round(cy + MathHelper.sin(angle) * radius);
-            int rgb = SpellPalette.lerp(SpellPalette.flow(angle / MathHelper.TAU * LOOP), SpellPalette.LILAC, 0.2F);
+            int rgb = Argb.lerp(SpellPalette.flow(angle / MathHelper.TAU * LOOP), SpellPalette.LILAC, 0.2F);
             context.fill(x + 1, y + 1, x + 3, y + 3, (alpha / 3 << 24));
             context.fill(x, y, x + 2, y + 2, (alpha << 24) | rgb);
         }
@@ -897,7 +897,7 @@ public class TokenSpellScreen extends Screen {
             int x = Math.round(cx + MathHelper.cos(angle) * r);
             int y = Math.round(cy + MathHelper.sin(angle) * r);
             int rgb = SpellPalette.flow(angle / MathHelper.TAU * LOOP + time * 0.06F);
-            if (flash > 0) rgb = SpellPalette.lerp(rgb, SpellPalette.LILAC, flash);
+            if (flash > 0) rgb = Argb.lerp(rgb, SpellPalette.LILAC, flash);
             context.fill(x - 1 - thickness / 2, y - 1 - thickness / 2, x + 1 + thickness, y + 1 + thickness, 0x26000000 | rgb);
             context.fill(x, y, x + thickness, y + thickness, 0xF0000000 | rgb);
         }
@@ -1012,7 +1012,7 @@ public class TokenSpellScreen extends Screen {
             // Pure spell colours, one per letter, shifting along slowly (blends between them look muddy on letters)
             int rgb = colors[Math.floorMod(i + (int) (time / 10), colors.length)];
             float shimmer = (float) Math.pow(Math.max(0, MathHelper.sin(time * 0.12F - i * 0.45F)), 12);
-            rgb = SpellPalette.lerp(rgb, SpellPalette.LILAC, shimmer * 0.8F);
+            rgb = Argb.lerp(rgb, SpellPalette.LILAC, shimmer * 0.8F);
             float wave = MathHelper.sin(time * 0.2F + i * 0.7F) * 1.5F;
             matrices.push();
             matrices.translate(x, y0 + wave, 0);
@@ -1069,7 +1069,7 @@ public class TokenSpellScreen extends Screen {
                 float angle = (float) Math.atan2(row - center, column - center) + MathHelper.PI;
                 int rgb = SpellPalette.flow(angle / MathHelper.TAU * LOOP + time * 0.06F);
                 float distance = Math.abs(MathHelper.wrapDegrees((angle - shimmerAngle) * MathHelper.DEGREES_PER_RADIAN));
-                if (distance < 25) rgb = SpellPalette.lerp(rgb, SpellPalette.LILAC, 1 - distance / 25);
+                if (distance < 25) rgb = Argb.lerp(rgb, SpellPalette.LILAC, 1 - distance / 25);
                 int x = x0 + column * scale, y = y0 + row * scale;
                 // Thick pixels with a soft shadow, like the letters
                 context.fill(x + 1, y + 1, x + scale + 1, y + scale + 1, 0x60000000);

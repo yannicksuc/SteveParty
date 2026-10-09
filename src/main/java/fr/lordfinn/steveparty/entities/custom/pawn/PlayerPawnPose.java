@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.pawn;
 
+import java.util.Arrays;
 import net.minecraft.text.Text;
 
 /**
@@ -108,7 +109,7 @@ public enum PlayerPawnPose {
 
     /** One of the {@link #podium} poses, picked by {@code seed} (any int). */
     public static PlayerPawnPose podiumPose(int seed) {
-        PlayerPawnPose[] podium = java.util.Arrays.stream(VALUES).filter(PlayerPawnPose::podium).toArray(PlayerPawnPose[]::new);
+        PlayerPawnPose[] podium = Arrays.stream(VALUES).filter(PlayerPawnPose::podium).toArray(PlayerPawnPose[]::new);
         return podium[Math.floorMod(seed, podium.length)];
     }
 

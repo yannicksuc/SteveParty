@@ -9,7 +9,6 @@ import net.minecraft.nbt.NbtHelper;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.util.math.BlockPos;
-import org.jetbrains.annotations.Nullable;
 
 /** Remembers the exact state of a switched off block, to restore it when it is switched back on. */
 public class SwitchedOffBlockEntity extends SyncedBlockEntity {

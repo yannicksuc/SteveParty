@@ -3,15 +3,24 @@ package fr.lordfinn.steveparty.components;
 import com.mojang.serialization.Codec;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
+import fr.lordfinn.steveparty.dice.DiceModulesComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
+import net.minecraft.block.BlockState;
 import net.minecraft.component.ComponentType;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
+import net.minecraft.world.World;
 
-import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class ModComponents {
@@ -41,14 +50,14 @@ public class ModComponents {
      * written; kept registered so wrenches saved with it still load (an unknown component would drop the item), and
      * stripped from them by {@code WrenchItem#inventoryTick}.
      */
-    public static final ComponentType<net.minecraft.nbt.NbtCompound> WRENCH_STATE =
-            registerComponent("wrench-state", net.minecraft.nbt.NbtCompound.CODEC);
+    public static final ComponentType<NbtCompound> WRENCH_STATE =
+            registerComponent("wrench-state", NbtCompound.CODEC);
     /** The level (0-15) of a Tile Linker Brush: the slot its links go in; absent: the powered one (see TileLinkerBrush). */
     public static final ComponentType<Integer> LINK_LEVEL =
             registerComponent("link-level", Codec.INT);
     /** The kind of Cartridge a Tile Linker Brush puts in the tiles it links; absent: the plain Cartridge. */
-    public static final ComponentType<net.minecraft.item.Item> LINK_CARTRIDGE =
-            registerComponent("link-cartridge", net.minecraft.registry.Registries.ITEM.getCodec());
+    public static final ComponentType<Item> LINK_CARTRIDGE =
+            registerComponent("link-cartridge", Registries.ITEM.getCodec());
     /**
      * Legacy: token selected by the Tokenizer Wand when it could move tokens. No longer written; kept registered so
      * wands saved by older versions still load (an unknown component would drop the item), and stripped from them
@@ -113,22 +122,22 @@ public class ModComponents {
      * drawn) and the amounts ({@code coins_small}, {@code coins_big}, {@code everyone}, {@code back}); missing ones are
      * the defaults (see MistigriCartridgeItem).
      */
-    public static final ComponentType<java.util.Map<String, Integer>> MISTIGRI_SETTINGS =
+    public static final ComponentType<Map<String, Integer>> MISTIGRI_SETTINGS =
             registerComponent("mistigri-settings", Codec.unboundedMap(Codec.STRING, Codec.INT));
     /**
      * The settings of the Threshold obstacle, Common pot, Key gate and Trap cartridges, by name (a missing one is its
      * default; see each cartridge).
      */
-    public static final ComponentType<java.util.Map<String, Integer>> BOARD_CARTRIDGE_SETTINGS =
+    public static final ComponentType<Map<String, Integer>> BOARD_CARTRIDGE_SETTINGS =
             registerComponent("board-cartridge-settings", Codec.unboundedMap(Codec.STRING, Codec.INT));
     /**
      * What a Common pot or a Key gate cartridge remembers in its board space (the coins in the pot, until when the gate
      * stays open...): saved with the tile that holds it.
      */
-    public static final ComponentType<java.util.Map<String, Integer>> BOARD_CARTRIDGE_STATE =
+    public static final ComponentType<Map<String, Integer>> BOARD_CARTRIDGE_STATE =
             registerComponent("board-cartridge-state", Codec.unboundedMap(Codec.STRING, Codec.INT));
     /** The items the Pie stole into a Common pot (kept in its cartridge, given to the pot's winner). */
-    public static final ComponentType<java.util.List<ItemStack>> POT_ITEMS =
+    public static final ComponentType<List<ItemStack>> POT_ITEMS =
             registerComponent("pot-items", ItemStack.CODEC.listOf());
     /** The trap set on a Trap cartridge's space (kept in the cartridge, so in its tile). */
     public static final ComponentType<TrapSetComponent> TRAP_SET =
@@ -167,12 +176,12 @@ public class ModComponents {
             registerComponent("tile-stamp", TileStampComponent.CODEC);
 
     /** The size a tile item places (none: the standard size). */
-    public static final ComponentType<fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize> TILE_SIZE =
-            registerComponent("tile-size", fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.CODEC);
+    public static final ComponentType<TileSize> TILE_SIZE =
+            registerComponent("tile-size", TileSize.CODEC);
 
     /** How many items a player may buy during a stop at a Shop Cartridge's space (1 by default). */
     public static final ComponentType<Integer> SHOP_PURCHASES =
-            registerComponent("shop-purchases", Codec.intRange(1, fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.MAX_PURCHASES));
+            registerComponent("shop-purchases", Codec.intRange(1, ShopCartridgeItem.MAX_PURCHASES));
     /** Price and options of a Star Cartridge (see StarSettingsComponent). */
     public static final ComponentType<StarSettingsComponent> STAR_SETTINGS =
             registerComponent("star-settings", StarSettingsComponent.CODEC);
@@ -181,28 +190,28 @@ public class ModComponents {
             registerComponent("shop-link", ShopLinkComponent.CODEC);
 
     /** The Mini-game Controller a Mini-game Remote is linked to (see MiniGameRemoteItem). */
-    public static final ComponentType<net.minecraft.util.math.GlobalPos> MINI_GAME_REMOTE_LINK =
-            registerComponent("mini-game-remote-link", net.minecraft.util.math.GlobalPos.CODEC);
+    public static final ComponentType<GlobalPos> MINI_GAME_REMOTE_LINK =
+            registerComponent("mini-game-remote-link", GlobalPos.CODEC);
     /** A Mini-game Page in zone mode: its clicks draw the zone of its page (see PageZoneTool). */
     public static final ComponentType<PageZoneMode> PAGE_ZONE_MODE =
             registerComponent("page-zone-mode", PageZoneMode.CODEC);
     /** Legacy: the dimension of {@link #INVENTORY_POS}. */
-    public static final ComponentType<net.minecraft.registry.RegistryKey<net.minecraft.world.World>> INVENTORY_DIMENSION =
-            registerComponent("inventory-dimension", net.minecraft.world.World.CODEC);
+    public static final ComponentType<RegistryKey<World>> INVENTORY_DIMENSION =
+            registerComponent("inventory-dimension", World.CODEC);
     /**
      * The containers of an Inventory Cartridge, in order (at most CartridgeContainers.MAX): a board space takes from
      * and gives to them in this order, a Party Controller pays its gains from them in this order.
      */
-    public static final ComponentType<java.util.List<net.minecraft.util.math.GlobalPos>> INVENTORY_CONTAINERS =
-            registerComponent("inventory-containers", net.minecraft.util.math.GlobalPos.CODEC.listOf());
+    public static final ComponentType<List<GlobalPos>> INVENTORY_CONTAINERS =
+            registerComponent("inventory-containers", GlobalPos.CODEC.listOf());
 
     /** Block a Box Costume looks like: the one the Boxed Trader's box looked like when it was taken from him. */
-    public static final ComponentType<net.minecraft.block.BlockState> BOX_BLOCK =
-            registerComponent("box-block", net.minecraft.block.BlockState.CODEC);
+    public static final ComponentType<BlockState> BOX_BLOCK =
+            registerComponent("box-block", BlockState.CODEC);
 
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();
-        fr.lordfinn.steveparty.dice.DiceModulesComponent.initialize();
+        DiceModulesComponent.initialize();
     }
 }

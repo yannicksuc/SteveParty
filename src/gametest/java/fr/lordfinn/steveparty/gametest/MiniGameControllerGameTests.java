@@ -22,6 +22,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem;
 import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.ZoneFaces;
 import fr.lordfinn.steveparty.minigame.PageZoneTool;
@@ -29,7 +30,13 @@ import fr.lordfinn.steveparty.minigame.MiniGameArena;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.block.entity.ComparatorBlockEntity;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.world.World;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
@@ -51,7 +58,6 @@ import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandle
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
@@ -72,6 +78,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -331,17 +338,17 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             alone(context, p1, p2, host);
             home(context, HOME, id);
             ItemStack remote = new ItemStack(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(!fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
                     "not linked: nothing");
             remote.set(ModComponents.MINI_GAME_REMOTE_LINK, global(context, HOME));
-            context.assertTrue(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) != null,
+            context.assertTrue(MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) != null,
                     "linked: Play, from 30 blocks away");
-            context.assertTrue(!fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host), "a second at most between two presses");
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host), "a second at most between two presses");
             host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null, "Stop");
+            context.assertTrue(MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null, "Stop");
             ((MiniGameControllerBlockEntity) context.getBlockEntity(HOME)).setPage(ItemStack.EMPTY);
             host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(!fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
                     "no page in the controller: nothing to play");
         } finally {
             cleanUp(context, id, p1, p2, host);
@@ -686,7 +693,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             context.assertTrue(MiniGameArena.zoneOf(server, id) != null && MiniGameArena.zoneOf(server, id).box().equals(box), "restored: the bubble's zone");
             // Saved and sent with the page
             context.assertEquals(MiniGamePageData.fromNbt(MiniGamePages.get(server, id).toNbt()).zone(), zone, "saved with the page");
-            net.minecraft.network.PacketByteBuf buf = new net.minecraft.network.PacketByteBuf(io.netty.buffer.Unpooled.buffer());
+            PacketByteBuf buf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
             MiniGamePageData.PACKET_CODEC.encode(buf, MiniGamePages.get(server, id));
             context.assertEquals(MiniGamePageData.PACKET_CODEC.decode(buf).zone(), zone, "sent with the page");
 
@@ -695,7 +702,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             MiniGameControllerScreenHandler screen = new MiniGameControllerScreenHandler(1, player.getInventory(), controller);
             context.assertTrue(MiniGameControllerScreenHandler.PLAYER_SLOTS == 1 && screen.slots.size() == 1 + 36, "one slot of its own, then the inventory");
             context.assertTrue(!screen.getSlot(MiniGameControllerScreenHandler.SLOT_PAGE).canInsert(new ItemStack(Items.STONE)), "its slot only takes pages");
-            context.assertTrue(java.util.Arrays.equals(screen.zoneSize(), new int[]{21, 11, 31}), "its screen shows the size of the page's zone");
+            context.assertTrue(Arrays.equals(screen.zoneSize(), new int[]{21, 11, 31}), "its screen shows the size of the page's zone");
             context.assertEquals(controller.getZone(), Optional.of(zone), "the controller's zone is its page's");
             ItemStack stone = new ItemStack(Items.STONE, 3);
             player.getInventory().setStack(9, stone);
@@ -726,7 +733,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
     public void aCartridgeZoneMovesIntoItsPage(TestContext context) {
         MinecraftServer server = context.getWorld().getServer();
         ServerWorld world = context.getWorld();
-        net.minecraft.registry.RegistryWrapper.WrapperLookup registries = world.getRegistryManager();
+        RegistryWrapper.WrapperLookup registries = world.getRegistryManager();
         UUID id = page(context), other = page(context), kept = page(context);
         try {
             BlockBox box = new BlockBox(10, 60, 10, 30, 70, 40), own = new BlockBox(0, 60, 0, 3, 63, 3);
@@ -739,7 +746,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             cartridge.putInt("count", 1);
             NbtCompound selection = new NbtCompound();
             selection.putString("dimension", world.getRegistryKey().getValue().toString());
-            selection.put("box", BlockBox.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, box).getOrThrow());
+            selection.put("box", BlockBox.CODEC.encodeStart(NbtOps.INSTANCE, box).getOrThrow());
             NbtCompound components = new NbtCompound();
             components.put("steveparty:zone-selection", selection);
             cartridge.put("components", components);
@@ -757,13 +764,13 @@ public class MiniGameControllerGameTests implements FabricGameTest {
 
             // With the controllers' homes, as saved before
             NbtCompound homes = new NbtCompound();
-            net.minecraft.nbt.NbtList list = new net.minecraft.nbt.NbtList();
+            NbtList list = new NbtList();
             for (UUID page : List.of(other, kept)) {
                 NbtCompound home = new NbtCompound();
                 home.putUuid("Page", page);
                 home.putString("Dimension", world.getRegistryKey().getValue().toString());
                 home.putLong("Pos", context.getAbsolutePos(HOME).asLong());
-                home.put("Zone", PageZone.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, zone).getOrThrow());
+                home.put("Zone", PageZone.CODEC.encodeStart(NbtOps.INSTANCE, zone).getOrThrow());
                 list.add(home);
             }
             homes.put("Homes", list);
@@ -802,7 +809,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             BlockPos first = podium(context, id, 4, 3, 2), second = podium(context, id, 5, 3, 1);
             MiniGameControllerBlockEntity home = home(context, HOME, null);
             context.assertTrue(!showsPage(context) && lamp(context) == MiniGameControllerBlock.Signal.RED, "no page: no page shown, the lamp red");
-            context.assertEquals(context.getBlockState(HOME).rotate(net.minecraft.util.BlockRotation.CLOCKWISE_90).get(MiniGameControllerBlock.FACING),
+            context.assertEquals(context.getBlockState(HOME).rotate(BlockRotation.CLOCKWISE_90).get(MiniGameControllerBlock.FACING),
                     Direction.EAST, "it turns with what it stands on");
             home.setPage(pageItem(id));
             context.assertTrue(showsPage(context) && lamp(context) == MiniGameControllerBlock.Signal.RED, "the page is shown at once; nobody plays: red");
@@ -882,11 +889,11 @@ public class MiniGameControllerGameTests implements FabricGameTest {
     /** A comparator reading the controller, on its north side. */
     private static void comparator(TestContext context) {
         context.setBlockState(COMPARATOR.down(), Blocks.STONE);
-        context.setBlockState(COMPARATOR, Blocks.COMPARATOR.getDefaultState().with(net.minecraft.state.property.Properties.HORIZONTAL_FACING, Direction.SOUTH));
+        context.setBlockState(COMPARATOR, Blocks.COMPARATOR.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
     }
 
     private static int comparatorSignal(TestContext context) {
-        return ((net.minecraft.block.entity.ComparatorBlockEntity) context.getBlockEntity(COMPARATOR)).getOutputSignal();
+        return ((ComparatorBlockEntity) context.getBlockEntity(COMPARATOR)).getOutputSignal();
     }
 
     /**

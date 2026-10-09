@@ -195,10 +195,4 @@ public final class PetTeleports {
         }
         return at;
     }
-
-    /** Whether a pull for this pet is waiting (for the tests). */
-    public static boolean isPulling(UUID pet) {
-        for (Pull pull : PULLS) if (pull.pet.equals(pet)) return true;
-        return false;
-    }
 }

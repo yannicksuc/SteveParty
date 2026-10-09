@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
@@ -75,7 +76,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
     @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem.addWrapped(tooltip,
+        CartridgeItem.addWrapped(tooltip,
                 Text.translatable("tooltip.steveparty.wrench"), Formatting.GRAY);
         tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));
         for (String control : List.of("open", "offhand", "controller", "podium", "plastic")) {

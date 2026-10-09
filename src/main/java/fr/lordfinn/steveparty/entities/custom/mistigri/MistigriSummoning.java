@@ -28,7 +28,9 @@ import net.minecraft.world.gen.structure.StructureKeys;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * How a Mistigri comes about: by a stroke of bad luck.
@@ -49,7 +51,7 @@ public final class MistigriSummoning {
 
     /** For the GameTests (no witch hut in a test structure): boxes counting as witch huts, none in game. */
     @VisibleForTesting
-    public static final java.util.Set<Box> TEST_HUTS = new java.util.HashSet<>();
+    public static final Set<Box> TEST_HUTS = new HashSet<>();
 
     private MistigriSummoning() {
     }

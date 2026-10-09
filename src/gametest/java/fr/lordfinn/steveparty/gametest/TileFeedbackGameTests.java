@@ -1,6 +1,14 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -123,14 +131,14 @@ public class TileFeedbackGameTests implements FabricGameTest {
         List<Integer> colours = List.of(0xFFFFFF, InventoryInteractorTileBehavior.GOOD_COLOR, InventoryInteractorTileBehavior.BAD_COLOR,
                 InventoryInteractorTileBehavior.NEUTRAL_COLOR, ShopCartridgeItem.COLOR, StopCartridgeItem.COLOR,
                 AdvanceBackCartridgeItem.FORWARD_COLOR, AdvanceBackCartridgeItem.BACK_COLOR, ReplayCartridgeItem.COLOR,
-                TileTeleport.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR,
-                fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.COLOR,
-                fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.COLOR,
-                fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.COLOR,
-                fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.COLOR,
-                fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem.COLOR,
-                fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem.COLOR,
-                fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem.COLOR);
+                TileTeleport.COLOR, StarCartridgeItem.COLOR,
+                GlandouilleCartridgeItem.COLOR,
+                FrousseuxCartridgeItem.COLOR,
+                MistigriCartridgeItem.COLOR,
+                ThresholdCartridgeItem.COLOR,
+                PotCartridgeItem.COLOR,
+                KeyGateCartridgeItem.COLOR,
+                TrapCartridgeItem.COLOR);
         for (int i = 0; i < colours.size(); i++) {
             for (int j = i + 1; j < colours.size(); j++) {
                 context.assertTrue(distance(colours.get(i), colours.get(j)) > 40,
@@ -145,8 +153,8 @@ public class TileFeedbackGameTests implements FabricGameTest {
         context.assertEquals(Landing.BACK.accent(), AdvanceBackCartridgeItem.BACK_COLOR, "back");
         context.assertEquals(Landing.REPLAY.accent(), ReplayCartridgeItem.COLOR, "replay");
         context.assertEquals(Landing.SHOP.accent(), ShopCartridgeItem.COLOR, "shop");
-        context.assertEquals(Landing.STAR.accent(), fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR, "star");
-        context.assertEquals(Landing.GLANDOUILLE.accent(), fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.COLOR, "glandouille");
+        context.assertEquals(Landing.STAR.accent(), StarCartridgeItem.COLOR, "star");
+        context.assertEquals(Landing.GLANDOUILLE.accent(), GlandouilleCartridgeItem.COLOR, "glandouille");
         context.complete();
     }
 

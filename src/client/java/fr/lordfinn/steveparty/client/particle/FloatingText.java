@@ -4,6 +4,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.MathHelper;
 import org.joml.Quaternionf;
 
 public class FloatingText {
@@ -36,7 +37,7 @@ public class FloatingText {
         this.maxAge = Math.max(1, (int) duration);
         this.scale = scale;
         this.color = color & 0xFFFFFF; // ignore alpha pour maintenant
-        this.fadeStart = Math.max(0f, Math.min(1f, fadeStart));
+        this.fadeStart = MathHelper.clamp(fadeStart, 0f, 1f);
     }
 
     public boolean tick() {
@@ -67,7 +68,7 @@ public class FloatingText {
 
     public void render(MatrixStack matrices, double camX, double camY, double camZ, Quaternionf cameraRotation,
                        TextRenderer textRenderer, VertexConsumerProvider vertexConsumers, float tickDelta) {
-        int alphaInt = Math.min(255, Math.max(0, (int)(alpha(tickDelta) * 255)));
+        int alphaInt = MathHelper.clamp((int) (alpha(tickDelta) * 255), 0, 255);
         // TextRenderer treats an alpha below 4 as fully opaque: skip the fully faded frames instead
         if (alphaInt < 4) return;
 

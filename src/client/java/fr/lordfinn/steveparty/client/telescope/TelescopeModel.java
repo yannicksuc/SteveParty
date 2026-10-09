@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.client.telescope;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.telescope.TelescopeMath;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPart;
@@ -70,7 +72,7 @@ public final class TelescopeModel {
         low = Float.MAX_VALUE;
         high = -Float.MAX_VALUE;
         Random random = Random.create(42);
-        java.util.List<float[]> points = new java.util.ArrayList<>();
+        List<float[]> points = new ArrayList<>();
         for (int d = -1; d < Direction.values().length; d++) {
             for (BakedQuad quad : model.getQuads(null, d < 0 ? null : Direction.values()[d], random)) {
                 int[] data = quad.getVertexData();

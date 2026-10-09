@@ -19,8 +19,11 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
@@ -76,7 +79,7 @@ final class TurnBarHud {
         boolean newModel = model != this.model;
         this.model = model;
         this.roomWidth = room;
-        java.util.Set<Integer> mine = new java.util.HashSet<>();
+        Set<Integer> mine = new HashSet<>();
         for (int i = 0; i < model.players.size(); i++) if (model.players.get(i).mine) mine.add(i);
         TurnStripLayout.Result result = TurnStripLayout.layout(new TurnStripLayout.Input(steps(model), model.rounds, mine,
                 names(model), Math.max(80, room - 12)), ClientHudTexts.INSTANCE);
@@ -283,7 +286,7 @@ final class TurnBarHud {
         }
         context.fill(x, y, x + 8, y + 8, Argb.fade(0xFF3F3F3F, alpha));
         String name = player == null || player.name.isEmpty() ? "?" : player.name;
-        String initial = name.substring(0, name.offsetByCodePoints(0, 1)).toUpperCase(java.util.Locale.ROOT);
+        String initial = name.substring(0, name.offsetByCodePoints(0, 1)).toUpperCase(Locale.ROOT);
         TextRenderer font = HudDraw.font();
         context.drawText(font, initial, x + (8 - font.getWidth(initial)) / 2 + 1, y, Argb.fade(0xFFFFFFFF, alpha), false);
     }

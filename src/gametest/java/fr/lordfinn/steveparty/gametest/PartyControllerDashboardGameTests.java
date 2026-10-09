@@ -1,6 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
+import com.mojang.serialization.JsonOps;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.items.custom.PartyCardItem;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
@@ -24,19 +29,27 @@ import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandle
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.GameMode;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,7 +80,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
         data.setStepIndex(0);
     }
 
-    private static boolean isOf(ItemStack stack, net.minecraft.item.Item item) {
+    private static boolean isOf(ItemStack stack, Item item) {
         return stack.isOf(item) && stack.getCount() == 1;
     }
 
@@ -119,8 +132,8 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                 coins[row] = gains.amount(PartyCurrency.COIN, row);
                 stars[row] = gains.amount(PartyCurrency.STAR, row);
             }
-            context.assertTrue(java.util.Arrays.equals(coins, new int[]{10, 5, 3, 1, 0}), "10, 5, 3, 1 coins; nothing for the participants");
-            context.assertTrue(java.util.Arrays.equals(stars, new int[]{0, 0, 0, 0, 0}), "no star");
+            context.assertTrue(Arrays.equals(coins, new int[]{10, 5, 3, 1, 0}), "10, 5, 3, 1 coins; nothing for the participants");
+            context.assertTrue(Arrays.equals(stars, new int[]{0, 0, 0, 0, 0}), "no star");
             context.assertEquals(MiniGameGains.rowOf(0), MiniGameGains.PARTICIPANTS, "no place: a participant");
             context.assertEquals(MiniGameGains.rowOf(7), MiniGameGains.PARTICIPANTS, "beyond the 4th place: a participant");
 
@@ -145,7 +158,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             context.assertEquals(MiniGameGains.DEFAULT.with(PartyCurrency.COIN, 0, 500).amount(PartyCurrency.COIN, 0), MiniGameGains.MAX, "capped");
 
             // Paid as items of the party's currencies, taken from the bank
-            net.minecraft.inventory.SimpleInventory bank = new net.minecraft.inventory.SimpleInventory(
+            SimpleInventory bank = new SimpleInventory(
                     controller.getCurrency(PartyCurrency.COIN).copyWithCount(20), controller.getCurrency(PartyCurrency.STAR).copyWithCount(3));
             PartyControllerEntity.Paid paid = controller.payGains(player, 1, bank);
             context.assertTrue(paid.coins() == 11 && paid.stars() == 1 && paid.full(), "the whole gain paid");
@@ -159,7 +172,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             Board board = new Board(0, 0, List.of(), List.of());
             PartyDashboardData data = PartyDashboardData.capture(controller, context.getWorld(), player, board);
             context.assertEquals(data.gains(), set, "captured by the dashboard");
-            net.minecraft.network.RegistryByteBuf buf = new net.minecraft.network.RegistryByteBuf(io.netty.buffer.Unpooled.buffer(), context.getWorld().getRegistryManager());
+            RegistryByteBuf buf = new RegistryByteBuf(io.netty.buffer.Unpooled.buffer(), context.getWorld().getRegistryManager());
             PartyDashboardData.PACKET_CODEC.encode(buf, data);
             context.assertEquals(PartyDashboardData.PACKET_CODEC.decode(buf).gains(), set, "sent and read back");
             buf.release();
@@ -372,7 +385,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                     "the program: 2 rows of 12 cards, the bank after them");
             // The client's handler: the page shown decides which slots are there
             PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(),
-                    new fr.lordfinn.steveparty.payloads.custom.BlockPosPayload(BlockPos.ORIGIN));
+                    new BlockPosPayload(BlockPos.ORIGIN));
             for (Page page : Page.values()) {
                 handler.setPage(page);
                 boolean program = page == Page.PROGRAM, gains = page == Page.GAINS;
@@ -381,8 +394,8 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                         page + ": the Star and Coin items are on the Gains tab");
                 context.assertTrue(handler.getSlot(PROGRAM_FIRST_SLOT).isEnabled() == program, page + ": the cards are on the Program tab");
                 context.assertTrue(handler.getSlot(PLAYER_SLOTS).isEnabled(), page + ": the inventory, on every tab");
-                List<net.minecraft.screen.slot.Slot> shown = handler.slots.stream().filter(net.minecraft.screen.slot.Slot::isEnabled).toList();
-                for (net.minecraft.screen.slot.Slot slot : shown) {
+                List<Slot> shown = handler.slots.stream().filter(Slot::isEnabled).toList();
+                for (Slot slot : shown) {
                     boolean inventory = slot.inventory == player.getInventory();
                     // The player's inventory is centred in its panel: as much room on its left as on its right
                     if (inventory) context.assertTrue(slot.x - 1 >= (WIDTH - 9 * 18) / 2 && slot.x - 1 + 18 <= WIDTH - (WIDTH - 9 * 18) / 2,
@@ -390,7 +403,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                     int top = inventory ? INVENTORY_Y : 0, bottom = inventory ? INVENTORY_Y + INVENTORY_PANEL_HEIGHT : PANEL_HEIGHT;
                     context.assertTrue(slot.x >= 4 && slot.x + 16 <= WIDTH - 4 && slot.y >= top + 4 && slot.y + 16 <= bottom - 4,
                             page + ": slot " + slot.id + " is inside its panel");
-                    for (net.minecraft.screen.slot.Slot other : shown) {
+                    for (Slot other : shown) {
                         context.assertTrue(other == slot || Math.abs(other.x - slot.x) >= 18 || Math.abs(other.y - slot.y) >= 18,
                                 page + ": slots " + slot.id + " and " + other.id + " don't overlap");
                     }
@@ -424,8 +437,8 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                     rounds + " rounds: the ghost cards are what an empty program plays");
         }
         context.assertEquals(BasicGameGeneratorStep.defaultProgram(10).stream().map(BasicGameGeneratorStep.ExpandedCard::type).toList(),
-                List.of(fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.TURNS, fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.MINIGAME,
-                        fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.REPEAT), "the players' turn, a mini-game, repeated");
+                List.of(PartyCardItem.CardType.TURNS, PartyCardItem.CardType.MINIGAME,
+                        PartyCardItem.CardType.REPEAT), "the players' turn, a mini-game, repeated");
         context.complete();
     }
 
@@ -478,11 +491,11 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             UUID a = UUID.randomUUID(), b = UUID.randomUUID();
             List<UUID> tokens = List.of(a, b);
             List<PartyStep> steps = new ArrayList<>();
-            steps.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep());
+            steps.add(new StartRollsStep());
             steps.add(new BasicGameGeneratorStep());
             for (int round = 0; round < 2; round++) {
-                steps.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(a, null));
-                steps.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(b, null));
+                steps.add(new TokenTurnPartyStep(a, null));
+                steps.add(new TokenTurnPartyStep(b, null));
                 steps.add(new MiniGamePartyStep(new ArrayList<>(tokens)));
             }
             steps.add(new EndPartyStep(new ArrayList<>(tokens)));
@@ -497,7 +510,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
 
             // A long party: a window around the current step
             List<PartyStep> many = new ArrayList<>();
-            for (int i = 0; i < 200; i++) many.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(a, null));
+            for (int i = 0; i < 200; i++) many.add(new TokenTurnPartyStep(a, null));
             PartyDashboardData.Timeline window = PartyDashboardData.timelineOf(many, 100, tokens);
             context.assertEquals(window.offset(), 100 - PartyDashboardData.TIMELINE_PAST_STEPS, "a few steps before the current one");
             context.assertEquals(window.current(), PartyDashboardData.TIMELINE_PAST_STEPS, "the current step in the window");
@@ -520,7 +533,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             context.assertEquals(kinds(sent.program()), List.of(PartyDashboardData.StepKind.START_ROLLS, PartyDashboardData.StepKind.TURNS,
                     PartyDashboardData.StepKind.END), "and the program of the next one");
             // It travels whole
-            net.minecraft.network.RegistryByteBuf buf = new net.minecraft.network.RegistryByteBuf(io.netty.buffer.Unpooled.buffer(), context.getWorld().getRegistryManager());
+            RegistryByteBuf buf = new RegistryByteBuf(io.netty.buffer.Unpooled.buffer(), context.getWorld().getRegistryManager());
             PartyDashboardData.PACKET_CODEC.encode(buf, sent);
             PartyDashboardData received = PartyDashboardData.PACKET_CODEC.decode(buf);
             buf.release();
@@ -538,7 +551,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aCopiedControllerIsAValidItem(TestContext context) {
         PartyControllerEntity controller = place(context);
-        var ops = context.getWorld().getRegistryManager().getOps(com.mojang.serialization.JsonOps.INSTANCE);
+        var ops = context.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE);
         ItemStack empty = new ItemStack(ModBlocks.PARTY_CONTROLLER);
         empty.applyComponentsFrom(controller.createComponentMap());
         context.assertTrue(ItemStack.CODEC.encodeStart(ops, empty).isSuccess(), "empty controller: a valid item");
@@ -563,8 +576,8 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             ItemStack first = new ItemStack(ModItems.MINI_GAMES_CATALOGUE);
             first.set(DataComponentTypes.CUSTOM_NAME, Text.literal("first"));
             controller.putCatalogue(first);
-            var hit = new net.minecraft.util.hit.BlockHitResult(pos.toCenterPos(), net.minecraft.util.math.Direction.UP, pos, false);
-            var hand = net.minecraft.util.Hand.MAIN_HAND;
+            var hit = new BlockHitResult(pos.toCenterPos(), Direction.UP, pos, false);
+            var hand = Hand.MAIN_HAND;
 
             // Powered: a second catalogue does not replace the first
             context.setBlockState(CONTROLLER.east(), Blocks.REDSTONE_BLOCK);

@@ -17,10 +17,14 @@ import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.glandouille.AcornHatItem;
 import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.powerups.PowerUps;
@@ -129,24 +133,24 @@ public class ModItems {
             new Item.Settings().component(ModComponents.COLOR,
                     MistigriCartridgeItem.COLOR));
     /** Its tile's face is steel blue until dyed; a token reaching it goes on only if its roll meets the condition. */
-    public static final Item THRESHOLD_CARTRIDGE = register("threshold_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem::new,
-            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.COLOR));
+    public static final Item THRESHOLD_CARTRIDGE = register("threshold_cartridge", ThresholdCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, ThresholdCartridgeItem.COLOR));
     /** Its tile's face is straw until dyed; passing tokens feed its pot, the token stopping on it wins it. */
-    public static final Item POT_CARTRIDGE = register("pot_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem::new,
-            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem.COLOR));
+    public static final Item POT_CARTRIDGE = register("pot_cartridge", PotCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, PotCartridgeItem.COLOR));
     /** The Magpie's nest (ModBlocks.MAGPIE_NEST): a decorative block, a Common pot's nest when set near its space. */
-    public static final Item MAGPIE_NEST = fr.lordfinn.steveparty.blocks.ModBlocks.MAGPIE_NEST.asItem();
+    public static final Item MAGPIE_NEST = ModBlocks.MAGPIE_NEST.asItem();
     /** Its tile's face and its gates are teal until dyed; a token leaving it by a locked exit needs a Gate Key. */
-    public static final Item KEY_GATE_CARTRIDGE = register("key_gate_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem::new,
-            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem.COLOR));
+    public static final Item KEY_GATE_CARTRIDGE = register("key_gate_cartridge", KeyGateCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, KeyGateCartridgeItem.COLOR));
     /** The Gate Key: opens a Key gate on the board, used up (KeyGates). */
-    public static final Item GATE_KEY = register("gate_key", fr.lordfinn.steveparty.items.custom.GateKeyItem::new,
+    public static final Item GATE_KEY = register("gate_key", GateKeyItem::new,
             new Item.Settings().maxCount(16));
     /** Its tile's face is moss green until dyed; players set their Traps there. */
-    public static final Item TRAP_CARTRIDGE = register("trap_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem::new,
-            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem.COLOR));
+    public static final Item TRAP_CARTRIDGE = register("trap_cartridge", TrapCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, TrapCartridgeItem.COLOR));
     /** The Trap: set on a Trap space where its player's token stopped (BoardTraps). */
-    public static final Item BOARD_TRAP = register("board_trap", fr.lordfinn.steveparty.items.custom.BoardTrapItem::new,
+    public static final Item BOARD_TRAP = register("board_trap", BoardTrapItem::new,
             new Item.Settings().maxCount(16));
     public static final Item MINI_GAME_PAGE = register("mini_game_page", MiniGamePageItem::new);
     public static final Item MINI_GAME_REMOTE = registerUnstackable("mini_game_remote", MiniGameRemoteItem::new);

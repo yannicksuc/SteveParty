@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.board.BrushAim;
@@ -15,6 +16,7 @@ import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Vector3f;
 
 
 /**
@@ -44,7 +46,7 @@ public final class BrushClient {
         Vec3d at = BrushOverlay.anchor(client.world, aimed);
         var random = client.world.getRandom();
         int rgb = BrushTrail.color(client.player.getActiveItem());
-        var color = new org.joml.Vector3f(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
+        var color = new Vector3f(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
         for (int i = 0; i < 2; i++) {
             client.world.addParticle(new DustParticleEffect(color, 1.2f),
                     at.x + (random.nextDouble() - 0.5) * 0.6, at.y - 0.1, at.z + (random.nextDouble() - 0.5) * 0.6, 0, 0.02, 0);
@@ -85,7 +87,7 @@ public final class BrushClient {
         BlockPos aimed = BrushAim.aimed(client.player, client.world, 1f);
         if (aimed == null) return false;
         var container = BoardLinks.container(client.world, aimed);
-        return container instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity
+        return container instanceof BoardSpaceBlockEntity
                 && container.getStack(BoardLinks.slotOf(container, TileLinkerBrush.level(brush))).isEmpty();
     }
 }

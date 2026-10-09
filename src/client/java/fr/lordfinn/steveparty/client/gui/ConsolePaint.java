@@ -28,7 +28,7 @@ public final class ConsolePaint {
 
     /** A kit shape exactly {@code w} x {@code h}, its outline included (PartyGui.button: bevel 1, cut 1; panels: 2, 2). */
     public static void box(DrawContext context, int x, int y, int w, int h, Ramp ramp, int bevel, int cut) {
-        draw(context, texture("b" + w + "x" + h + ramp + bevel + "/" + cut, () -> PixelArt.margin(PixelArt.cut(w - 2, h - 2, cut), w, h), ramp, bevel, false), x, y);
+        draw(context, texture("b" + w + "x" + h + ramp + bevel + "/" + cut, () -> PixelArt.margin(HudShapes.cut(w - 2, h - 2, cut), w, h), ramp, bevel, false), x, y);
     }
 
     /** A pill exactly {@code w} x {@code h}, its outline included, with or without its glossy band. */
@@ -100,7 +100,7 @@ public final class ConsolePaint {
      */
     public static void highlight(DrawContext context, int x, int y, int w, int h, int cut, int ring, int fill) {
         draw(context, TEXTURES.get("h" + w + "x" + h + "/" + cut + "/" + ring + "/" + fill, () -> {
-            boolean[][] m = cut < 0 ? PixelArt.margin(HudShapes.mask(HudShapes.Form.PILL, w - 2, h - 2), w, h) : PixelArt.margin(PixelArt.cut(w - 2, h - 2, cut), w, h);
+            boolean[][] m = cut < 0 ? PixelArt.margin(HudShapes.mask(HudShapes.Form.PILL, w - 2, h - 2), w, h) : PixelArt.margin(HudShapes.cut(w - 2, h - 2, cut), w, h);
             return PixelArt.paint(m, new Ramp(ring, fill, fill, fill), 0, PixelArt.OUTLINE);
         }), x, y);
     }

@@ -38,7 +38,6 @@ public final class PartyGui {
     public static final int TEXT_DARK = 0xFF404040;
     public static final int TEXT_SOFT = 0xFF6B6B6B;
     public static final int TEXT_ERROR = 0xFFB3202A;
-    public static final int TEXT_OK = 0xFF2E7D1F;
     /** The slot's grey, see-through, over a faded item (see {@link #ghostItem}). */
     public static final int GHOST_VEIL = 0x998B8B8B;
     /** Inset (fields, boxes): dark top-left edge like the slots of the mod's textures. */

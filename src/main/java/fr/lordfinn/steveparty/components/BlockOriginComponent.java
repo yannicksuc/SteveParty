@@ -10,10 +10,5 @@ public record BlockOriginComponent(BlockPos origin, String world) {
             BlockPos.CODEC.fieldOf("origin").forGetter(BlockOriginComponent::origin),
             Codec.STRING.optionalFieldOf("world", "").forGetter(BlockOriginComponent::world)
     ).apply(builder, BlockOriginComponent::new));
-
-    public static final BlockOriginComponent DEFAULT_ORIGIN_COMPONENT = new BlockOriginComponent(
-            DEFAULT_ORIGIN,
-            ""
-    );
 }
 

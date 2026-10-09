@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
+import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.MinecraftClient;
@@ -20,7 +21,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.IntUnaryOperator;
 
 /**
  * What the party HUDs show, worked out once each time the party data changes (never per frame): the players in the
@@ -156,7 +160,7 @@ final class PartyHudModel {
             List<PartyLiveData.Standing> standings = new ArrayList<>();
             for (Player player : model.players) {
                 PartyLiveData.Standing standing = standing(live, player.token);
-                standings.add(standing != null ? standing : new PartyLiveData.Standing(player.token, "", java.util.Optional.empty(), "", -1, true, player.stars, player.coins, List.of()));
+                standings.add(standing != null ? standing : new PartyLiveData.Standing(player.token, "", Optional.empty(), "", -1, true, player.stars, player.coins, List.of()));
             }
             int[] ranks = PartyLiveData.ranks(standings);
             for (int i = 0; i < ranks.length; i++) model.players.get(i).rank = ranks[i];
@@ -212,7 +216,7 @@ final class PartyHudModel {
         } else if (currentStep != null) {
             model.set(Action.OTHER, HudDraw.ICON_PREPARING, Text.translatable(currentStep.getName()));
         }
-        model.actionKey = java.util.Objects.hash(stepIndex, model.action, model.current, model.yourTurn);
+        model.actionKey = Objects.hash(stepIndex, model.action, model.current, model.yourTurn);
         model.stepIndex = stepIndex;
 
         // The strip: the step being played and the ones to come (the same steps and rounds as the dashboard's timeline)
@@ -243,7 +247,7 @@ final class PartyHudModel {
      * @param key the key of a step, from its index in {@code steps}
      * @return how many of them were left out
      */
-    private int addSteps(List<PartyDashboardData.TimelineStep> steps, int from, java.util.function.IntUnaryOperator key) {
+    private int addSteps(List<PartyDashboardData.TimelineStep> steps, int from, IntUnaryOperator key) {
         int i = from;
         for (; i < steps.size() && strip.size() < MAX_STRIP; i++) {
             PartyDashboardData.TimelineStep step = steps.get(i);
@@ -318,7 +322,7 @@ final class PartyHudModel {
     /** "+5 coins", "−3 coins", "+1 coin". */
     private static String coinsBadge(int coins) {
         return Text.translatable(Math.abs(coins) == 1 ? "hud.steveparty.party.coins.one" : "hud.steveparty.party.coins",
-                fr.lordfinn.steveparty.dice.DiceOutcome.signed(coins)).getString();
+                DiceOutcome.signed(coins)).getString();
     }
 
     private void set(Action action, Identifier icon, Text text) {
@@ -394,7 +398,7 @@ final class PartyHudModel {
         model.players.get(2).bonuses = List.of(new ItemStack(ModItems.DOUBLE_DICE));
         List<PartyLiveData.Standing> standings = new ArrayList<>();
         for (Player player : model.players)
-            standings.add(new PartyLiveData.Standing(player.token, "", java.util.Optional.empty(), "", -1, true, player.stars, player.coins, List.of()));
+            standings.add(new PartyLiveData.Standing(player.token, "", Optional.empty(), "", -1, true, player.stars, player.coins, List.of()));
         int[] ranks = PartyLiveData.ranks(standings);
         for (int i = 0; i < ranks.length; i++) model.players.get(i).rank = ranks[i];
         model.hasStandings = true;

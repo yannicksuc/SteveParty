@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.tokenspell;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.particles.SpellPalette;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -38,7 +39,6 @@ public final class WandOrbit {
     private static final float JEWEL_X = 0.5F, JEWEL_Y = 29F / 16F, JEWEL_Z = 0.5F;
     /** Orbit radius and shape half-size, in model space (the jewel is 6 pixels wide). */
     private static final float RADIUS = 7F / 16F, HALF_SIZE = 1.3F / 16F;
-    private static final int FULL_BRIGHT = 0xF000F0;
 
     private static final Vector3f CENTER = new Vector3f(), POINT = new Vector3f(), RIGHT = new Vector3f(), UP = new Vector3f();
     private static final Quaternionf BILLBOARD = new Quaternionf();
@@ -103,6 +103,6 @@ public final class WandOrbit {
     private static void corner(VertexConsumer buffer, Vector3f center, float sx, float sy, int r, int g, int b, float u, float v) {
         buffer.vertex(center.x() + RIGHT.x() * sx + UP.x() * sy, center.y() + RIGHT.y() * sx + UP.y() * sy,
                         center.z() + RIGHT.z() * sx + UP.z() * sy)
-                .color(r, g, b, 255).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(FULL_BRIGHT).normal(0, 1, 0);
+                .color(r, g, b, 255).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(0, 1, 0);
     }
 }

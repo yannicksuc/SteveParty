@@ -16,6 +16,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.EmptyBlockView;
 import net.minecraft.world.GameMode;
 import net.minecraft.nbt.NbtCompound;
@@ -381,10 +382,10 @@ public class TelescopeGameTests implements FabricGameTest {
         placeTelescope(context, pos);
         BlockState upper = context.getBlockState(pos.up());
         context.assertTrue(upper.isOf(ModBlocks.TELESCOPE) && upper.get(TelescopeBlock.HALF) == DoubleBlockHalf.UPPER, "an upper half");
-        context.assertTrue(upper.getOutlineShape(EmptyBlockView.INSTANCE, BlockPos.ORIGIN).getMax(net.minecraft.util.math.Direction.Axis.Y) > 1.3,
+        context.assertTrue(upper.getOutlineShape(EmptyBlockView.INSTANCE, BlockPos.ORIGIN).getMax(Direction.Axis.Y) > 1.3,
                 "the upper half outlines the tube, up to its lens");
         context.assertTrue(context.getBlockState(pos).getOutlineShape(EmptyBlockView.INSTANCE, BlockPos.ORIGIN)
-                .getMax(net.minecraft.util.math.Direction.Axis.Y) > 2.3, "the lower half outlines the whole telescope too");
+                .getMax(Direction.Axis.Y) > 2.3, "the lower half outlines the whole telescope too");
         context.getWorld().breakBlock(context.getAbsolutePos(pos.up()), true);
         context.waitAndRun(2, () -> {
             context.assertTrue(context.getBlockState(pos).isAir() && context.getBlockState(pos.up()).isAir(), "both halves gone");

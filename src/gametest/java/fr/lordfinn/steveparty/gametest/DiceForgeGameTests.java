@@ -35,6 +35,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.util.math.random.Random;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
@@ -181,7 +182,7 @@ public class DiceForgeGameTests implements FabricGameTest {
             context.assertTrue(forge.canExtract(slot, new ItemStack(face(2)), Direction.DOWN) == (slot == OUTPUT_SLOT),
                     "only the output can be emptied, slot " + slot);
         }
-        context.assertTrue(java.util.Arrays.equals(forge.getAvailableSlots(Direction.DOWN), new int[]{OUTPUT_SLOT}),
+        context.assertTrue(Arrays.equals(forge.getAvailableSlots(Direction.DOWN), new int[]{OUTPUT_SLOT}),
                 "a hopper below only sees the output");
         context.complete();
     }

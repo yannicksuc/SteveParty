@@ -53,11 +53,6 @@ public final class MiniGameResultsHud {
         testTitle = title;
     }
 
-    /** @return true while the label of a test is on screen. */
-    public static boolean isTesting() {
-        return testTitle != null;
-    }
-
     public static void clear() {
         results = null;
         testTitle = null;

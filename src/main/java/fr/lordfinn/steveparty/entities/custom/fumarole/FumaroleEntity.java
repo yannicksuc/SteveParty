@@ -44,6 +44,7 @@ import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -592,7 +593,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         world.sendEntityStatus(this, (byte) (STATUS_SULK + head));
         if (rider instanceof LivingEntity living) {
             if (FumaroleBlast.shields(living, rider.getPos().subtract(from).normalize())) {
-                world.playSound(null, rider.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, net.minecraft.sound.SoundCategory.PLAYERS, 1.0f, 0.8f);
+                world.playSound(null, rider.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 0.8f);
                 return;
             }
             if (!FumaroleBlast.fireProof(living)) living.setOnFireFor(THROW_FIRE_SECONDS);

@@ -34,6 +34,7 @@ import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.entity.vehicle.HopperMinecartEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.MinecraftServer;
@@ -149,7 +150,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         return context.getWorld().getEntitiesByClass(ItemEntity.class, zone.bounds().expand(2), Entity::isAlive);
     }
 
-    private static int count(ServerPlayerEntity player, net.minecraft.item.Item item) {
+    private static int count(ServerPlayerEntity player, Item item) {
         return player.getInventory().count(item);
     }
 

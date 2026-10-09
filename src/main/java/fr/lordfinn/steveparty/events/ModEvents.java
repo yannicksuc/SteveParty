@@ -3,21 +3,20 @@ package fr.lordfinn.steveparty.events;
 import fr.lordfinn.steveparty.blocks.custom.HopSwitchBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehavior;
+import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
 import fr.lordfinn.steveparty.persistent_state.ShopProtection;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -50,7 +49,7 @@ public class ModEvents {
 
         HopSwitchBlock.registerUseBlockCallback();
         ShopProtection.register();
-        fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.registerBreakRule();
+        StencilPaintBlock.registerBreakRule();
     }
 
     /**
@@ -76,7 +75,7 @@ public class ModEvents {
         // Set the entity's custom name
         livingEntity.setCustomName(newName);
 
-        BoardSpaceBlockEntity tileEntity = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(livingEntity);
+        BoardSpaceBlockEntity tileEntity = BoardSpaces.boardSpaceOf(livingEntity);
         if (tileEntity != null && tileEntity.getBoardSpaceBehavior() instanceof StartTileBehavior) {
             ABoardSpaceBehavior.setColor(tileEntity, colorRgb);
         }

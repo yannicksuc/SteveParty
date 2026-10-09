@@ -4,21 +4,36 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
 import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlockEntity;
 import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.entities.PetTeleports;
+import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxCompanion;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.recipes.CandleSaucerRecipe;
+import java.util.List;
+import java.util.UUID;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.minecraft.block.Blocks;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.recipe.book.CraftingRecipeCategory;
+import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
@@ -43,7 +58,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void itsShinyThingsAreTagged(TestContext context) {
-        for (var item : new net.minecraft.item.Item[]{Items.IRON_INGOT, Items.GOLD_NUGGET, Items.RAW_COPPER, Items.DIAMOND,
+        for (var item : new Item[]{Items.IRON_INGOT, Items.GOLD_NUGGET, Items.RAW_COPPER, Items.DIAMOND,
                 Items.EMERALD, Items.LAPIS_LAZULI, Items.REDSTONE, Items.AMETHYST_SHARD}) {
             context.assertTrue(new ItemStack(item).isIn(FrousseuxEntity.SHINY), item + " is shiny");
         }
@@ -136,8 +151,8 @@ public class FrousseuxGameTests implements FabricGameTest {
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
         player.getInventory().setStack(2, new ItemStack(Items.EMERALD, 1));
         frousseux.stealFrom(player);
-        player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new ItemStack(Items.FLINT_AND_STEEL));
-        player.interact(frousseux, net.minecraft.util.Hand.MAIN_HAND);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.FLINT_AND_STEEL));
+        player.interact(frousseux, Hand.MAIN_HAND);
         context.assertTrue(player.getInventory().count(Items.EMERALD) == 1, "the emerald back");
         context.assertFalse(frousseux.isTamed(), "not tamed by that strike");
         context.assertTrue(player.getMainHandStack().getDamage() == 1, "the flint and steel wears");
@@ -184,9 +199,9 @@ public class FrousseuxGameTests implements FabricGameTest {
         ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
         frousseux.tame(owner);
         frousseux.setHealth(3f);
-        frousseux.setCustomName(net.minecraft.text.Text.literal("Mèche"));
-        frousseux.setColor(fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor.PURPLE);
-        java.util.UUID uuid = frousseux.getUuid();
+        frousseux.setCustomName(Text.literal("Mèche"));
+        frousseux.setColor(FrousseuxColor.PURPLE);
+        UUID uuid = frousseux.getUuid();
         BlockPos at = BlockPos.ofFloored(frousseux.getPos().add(0, 0.1, 0));
         context.assertTrue(FrousseuxCandleHolderBlock.fallAsleep(frousseux, context.getWorld(), owner), "it falls asleep");
         context.assertTrue(frousseux.isRemoved(), "the ghost is gone");
@@ -194,11 +209,11 @@ public class FrousseuxGameTests implements FabricGameTest {
         context.assertTrue(state.isOf(ModBlocks.FROUSSEUX_CANDLE_HOLDER), "a candle holder where it floated");
         context.assertTrue(FrousseuxCandleHolderBlock.lightOf(state) == FrousseuxEntity.Flame.LOW.light,
                 "its light is its weak flame's: " + FrousseuxCandleHolderBlock.lightOf(state));
-        context.assertTrue(state.get(FrousseuxCandleHolderBlock.COLOR) == fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor.PURPLE,
+        context.assertTrue(state.get(FrousseuxCandleHolderBlock.COLOR) == FrousseuxColor.PURPLE,
                 "its colour, a block state");
         var holder = (FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(at);
         ItemStack item = FrousseuxCandleHolderBlock.itemOf(holder);
-        context.assertTrue(item.contains(net.minecraft.component.DataComponentTypes.BLOCK_ENTITY_DATA), "its item keeps it");
+        context.assertTrue(item.contains(DataComponentTypes.BLOCK_ENTITY_DATA), "its item keeps it");
         context.assertTrue(FrousseuxCandleHolderBlock.keptIn(item).getUuid("UUID").equals(uuid), "the same one in the item");
         FrousseuxEntity awake = FrousseuxCandleHolderBlock.wakeUp(context.getWorld(), at);
         context.assertTrue(awake != null && awake.getUuid().equals(uuid), "it wakes up, the same one");
@@ -206,7 +221,7 @@ public class FrousseuxGameTests implements FabricGameTest {
         context.assertTrue(awake.getHealth() == 3f, "the same health");
         context.assertTrue(awake.isOwner(owner) && !awake.isSitting(), "its owner's, following");
         context.assertTrue("Mèche".equals(awake.getCustomName().getString()), "its name");
-        context.assertTrue(awake.getColor() == fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor.PURPLE, "its colour");
+        context.assertTrue(awake.getColor() == FrousseuxColor.PURPLE, "its colour");
         context.complete();
     }
 
@@ -235,7 +250,7 @@ public class FrousseuxGameTests implements FabricGameTest {
         context.assertFalse(frousseux.goesWithOwner(owner), "sitting: it stays");
         frousseux.setSitting(false);
         Vec3d spot = frousseux.arrivalSpot(owner);
-        net.minecraft.entity.Entity moved = fr.lordfinn.steveparty.entities.PetTeleports.bring(frousseux, context.getWorld(), spot, 0);
+        Entity moved = PetTeleports.bring(frousseux, context.getWorld(), spot, 0);
         context.assertTrue(moved == frousseux && frousseux.getPos().distanceTo(spot) < 1.0E-3, "brought to its spot, the same one");
         context.complete();
     }
@@ -255,7 +270,7 @@ public class FrousseuxGameTests implements FabricGameTest {
         // someone else: only as an operator (the test server's mock players may be ones)
         context.assertTrue(FrousseuxCandleHolderBlock.mayWake(holder, other) == (other.isCreative() || other.hasPermissionLevel(2)),
                 "someone else only as an operator or in creative");
-        other.changeGameMode(net.minecraft.world.GameMode.CREATIVE);
+        other.changeGameMode(GameMode.CREATIVE);
         context.assertTrue(FrousseuxCandleHolderBlock.mayWake(holder, other), "a player in creative does");
         context.complete();
     }
@@ -269,20 +284,20 @@ public class FrousseuxGameTests implements FabricGameTest {
         BlockPos at = BlockPos.ofFloored(frousseux.getPos().add(0, 0.1, 0));
         FrousseuxCandleHolderBlock.fallAsleep(frousseux, context.getWorld(), owner);
         ItemStack candle = FrousseuxCandleHolderBlock.itemOf((FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(at));
-        var recipe = new fr.lordfinn.steveparty.recipes.CandleSaucerRecipe(net.minecraft.recipe.book.CraftingRecipeCategory.MISC);
-        var on = net.minecraft.recipe.input.CraftingRecipeInput.create(2, 1,
-                java.util.List.of(candle, new ItemStack(fr.lordfinn.steveparty.items.ModItems.CANDLE_SAUCER)));
+        var recipe = new CandleSaucerRecipe(CraftingRecipeCategory.MISC);
+        var on = CraftingRecipeInput.create(2, 1,
+                List.of(candle, new ItemStack(ModItems.CANDLE_SAUCER)));
         context.assertTrue(recipe.matches(on, context.getWorld()), "candle + saucer");
         ItemStack onSaucer = recipe.craft(on, context.getWorld().getRegistryManager());
         context.assertTrue(FrousseuxCandleHolderBlock.isOnSaucer(onSaucer), "on its saucer");
         context.assertTrue(FrousseuxCandleHolderBlock.keptIn(onSaucer).getUuid("UUID").equals(FrousseuxCandleHolderBlock.keptIn(candle).getUuid("UUID")),
                 "the same Frousseux kept");
-        var off = net.minecraft.recipe.input.CraftingRecipeInput.create(1, 1, java.util.List.of(onSaucer));
+        var off = CraftingRecipeInput.create(1, 1, List.of(onSaucer));
         context.assertTrue(recipe.matches(off, context.getWorld()), "on its saucer alone: off it");
         context.assertFalse(FrousseuxCandleHolderBlock.isOnSaucer(recipe.craft(off, context.getWorld().getRegistryManager())), "off its saucer");
-        context.assertTrue(recipe.getRemainder(off).get(0).isOf(fr.lordfinn.steveparty.items.ModItems.CANDLE_SAUCER), "the saucer given back");
-        var twice = net.minecraft.recipe.input.CraftingRecipeInput.create(2, 1,
-                java.util.List.of(onSaucer, new ItemStack(fr.lordfinn.steveparty.items.ModItems.CANDLE_SAUCER)));
+        context.assertTrue(recipe.getRemainder(off).get(0).isOf(ModItems.CANDLE_SAUCER), "the saucer given back");
+        var twice = CraftingRecipeInput.create(2, 1,
+                List.of(onSaucer, new ItemStack(ModItems.CANDLE_SAUCER)));
         context.assertFalse(recipe.matches(twice, context.getWorld()), "never two saucers");
         context.complete();
     }
@@ -296,13 +311,13 @@ public class FrousseuxGameTests implements FabricGameTest {
         BlockPos at = BlockPos.ofFloored(frousseux.getPos().add(0, 0.1, 0));
         FrousseuxCandleHolderBlock.fallAsleep(frousseux, context.getWorld(), owner);
         ItemStack candle = FrousseuxCandleHolderBlock.itemOf((FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(at));
-        java.util.UUID uuid = FrousseuxCandleHolderBlock.keptIn(candle).getUuid("UUID");
-        context.getWorld().setBlockState(at, net.minecraft.block.Blocks.AIR.getDefaultState());
+        UUID uuid = FrousseuxCandleHolderBlock.keptIn(candle).getUuid("UUID");
+        context.getWorld().setBlockState(at, Blocks.AIR.getDefaultState());
         BlockPos tray = context.getAbsolutePos(new BlockPos(5, 1, 3));
         context.getWorld().setBlockState(tray, ModBlocks.CANDLE_SAUCER.getDefaultState());
-        owner.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, candle);
-        var hit = new net.minecraft.util.hit.BlockHitResult(Vec3d.ofCenter(tray), net.minecraft.util.math.Direction.UP, tray, false);
-        context.getWorld().getBlockState(tray).onUseWithItem(candle, context.getWorld(), owner, net.minecraft.util.Hand.MAIN_HAND, hit);
+        owner.setStackInHand(Hand.MAIN_HAND, candle);
+        var hit = new BlockHitResult(Vec3d.ofCenter(tray), Direction.UP, tray, false);
+        context.getWorld().getBlockState(tray).onUseWithItem(candle, context.getWorld(), owner, Hand.MAIN_HAND, hit);
         var state = context.getWorld().getBlockState(tray);
         context.assertTrue(state.isOf(ModBlocks.FROUSSEUX_CANDLE_HOLDER) && state.get(FrousseuxCandleHolderBlock.SAUCER), "on its saucer");
         var holder = (FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(tray);
@@ -346,7 +361,7 @@ public class FrousseuxGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theCandleHolderBurns(TestContext context) {
-        var fire = net.fabricmc.fabric.api.registry.FlammableBlockRegistry.getDefaultInstance().get(ModBlocks.FROUSSEUX_CANDLE_HOLDER);
+        var fire = FlammableBlockRegistry.getDefaultInstance().get(ModBlocks.FROUSSEUX_CANDLE_HOLDER);
         context.assertTrue(fire != null && fire.getBurnChance() > 0 && fire.getSpreadChance() > 0, "it catches fire and burns");
         context.assertTrue(ModBlocks.FROUSSEUX_CANDLE_HOLDER.getDefaultState().isBurnable(), "lava sets it alight");
         context.complete();

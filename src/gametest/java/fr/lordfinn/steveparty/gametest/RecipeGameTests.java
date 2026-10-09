@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -11,7 +12,6 @@ import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.CraftingRecipe;
-import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.RecipeManager;
@@ -21,13 +21,16 @@ import net.minecraft.item.Item;
 import net.minecraft.loot.LootTable;
 import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.registry.Registries;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -146,7 +149,7 @@ public class RecipeGameTests implements FabricGameTest {
     public void plasticBlocksAreMouldedFromPelletsAndADye(TestContext context) {
         ItemStack pellets = new ItemStack(ModItems.PLASTIC_PELLETS);
         ItemStack blocks = result(context, 3, 2, pellets, pellets, pellets, pellets, new ItemStack(Items.RED_DYE), ItemStack.EMPTY);
-        context.assertTrue(blocks.isOf(ModBlocks.PLASTIC_BLOCKS[java.util.Arrays.asList(ModBlocks.COLORS).indexOf("red")].asItem())
+        context.assertTrue(blocks.isOf(ModBlocks.PLASTIC_BLOCKS[Arrays.asList(ModBlocks.COLORS).indexOf("red")].asItem())
                 && blocks.getCount() == 4, "4 red plastic blocks, got " + blocks);
         context.complete();
     }
@@ -223,11 +226,11 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.BOARD_TRAP)).isOf(ModItems.TRAP_CARTRIDGE), "trap cartridge");
 
         // The Tile and the Advanced Tile (their cartridges loaded: TileCartridgeGameTests)
-        ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[net.minecraft.util.DyeColor.WHITE.getId()]);
+        ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[DyeColor.WHITE.getId()]);
         ItemStack tile = result(context, 3, 2, white, new ItemStack(Items.HEAVY_WEIGHTED_PRESSURE_PLATE), white, white, cartridge, white);
         context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 1
-                && fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents.cartridges(tile).size() == 1, "an equipped tile, got " + tile);
-        ItemStack yellow = new ItemStack(ModBlocks.PLASTIC_SLABS[net.minecraft.util.DyeColor.YELLOW.getId()]);
+                && TileContents.cartridges(tile).size() == 1, "an equipped tile, got " + tile);
+        ItemStack yellow = new ItemStack(ModBlocks.PLASTIC_SLABS[DyeColor.YELLOW.getId()]);
         ItemStack advanced = result(context, 3, 2, yellow, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), yellow,
                 cartridge, new ItemStack(Items.TRAPPED_CHEST), cartridge);
         context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()), "advanced tile, got " + advanced);
@@ -273,19 +276,19 @@ public class RecipeGameTests implements FabricGameTest {
     /** A party card: the Plastic Stud of its colour, paper and redstone, in any order; four cards a craft. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void partyCardsAreMadeOfAStudOfTheirColour(TestContext context) {
-        java.util.Map<String, net.minecraft.item.Item> cards = new java.util.LinkedHashMap<>();
+        Map<String, Item> cards = new LinkedHashMap<>();
         cards.put("blue", ModItems.PARTY_CARD_TURNS);
         cards.put("lime", ModItems.PARTY_CARD_MINIGAME);
         cards.put("orange", ModItems.PARTY_CARD_EVENT);
         cards.put("purple", ModItems.PARTY_CARD_REPEAT);
         cards.put("pink", ModItems.PARTY_CARD_SEQUENCE_START);
         cards.forEach((colour, card) -> {
-            ItemStack stud = new ItemStack(net.minecraft.registry.Registries.ITEM.get(Steveparty.id(colour + "_plastic_stud")));
+            ItemStack stud = new ItemStack(Registries.ITEM.get(Steveparty.id(colour + "_plastic_stud")));
             context.assertTrue(!stud.isEmpty(), "there is a " + colour + " plastic stud");
             ItemStack made = result(context, 3, 1, new ItemStack(Items.REDSTONE), stud, new ItemStack(Items.PAPER));
             context.assertTrue(made.isOf(card) && made.getCount() == 4, colour + " stud + paper + redstone: four cards");
         });
-        ItemStack red = new ItemStack(net.minecraft.registry.Registries.ITEM.get(Steveparty.id("red_plastic_stud")));
+        ItemStack red = new ItemStack(Registries.ITEM.get(Steveparty.id("red_plastic_stud")));
         context.assertTrue(result(context, 3, 1, red, new ItemStack(Items.PAPER), new ItemStack(Items.REDSTONE)).isEmpty(), "a stud of another colour makes no card");
         context.assertTrue(result(context, 3, 1, new ItemStack(Items.PAPER), new ItemStack(Items.PAPER), new ItemStack(Items.CLOCK)).isEmpty(),
                 "the old recipes are gone");

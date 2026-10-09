@@ -1,12 +1,19 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.telescope.TelescopeService;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.PersistentState;
@@ -15,12 +22,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Where Mulas came to the world after an ephemeride (MulaEphemeride), one list per dimension, saved with the world:
@@ -64,16 +73,16 @@ public class MulaSpawnSites extends PersistentState {
 
     /** The most sites a dimension keeps (the config's {@code mulaMaxSites}). */
     public static int maxSites() {
-        return Math.max(1, fr.lordfinn.steveparty.config.ServerConfig.get().mulaMaxSites);
+        return Math.max(1, ServerConfig.get().mulaMaxSites);
     }
 
     /**
      * Was that site retired? True when its dimension's list no longer has it (ids are never used twice). An unknown
      * dimension, or one that has no list at all, says nothing: false.
      */
-    public static boolean isRetired(net.minecraft.server.MinecraftServer server, @Nullable net.minecraft.util.Identifier dimension, int id) {
+    public static boolean isRetired(MinecraftServer server, @Nullable Identifier dimension, int id) {
         if (dimension == null || id == 0) return false;
-        ServerWorld world = server.getWorld(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.WORLD, dimension));
+        ServerWorld world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, dimension));
         MulaSpawnSites sites = world == null ? null : peek(world);
         return sites != null && sites.byId(id) == null;
     }
@@ -110,7 +119,7 @@ public class MulaSpawnSites extends PersistentState {
     private final Map<UUID, Knowledge> players = new HashMap<>();
     private int nextId = 1;
     /** Told of each retirement (the dimension's list: the telescopes and guide stars of its players follow). */
-    private @Nullable java.util.function.Consumer<Retired> onRetired;
+    private @Nullable Consumer<Retired> onRetired;
 
     public static MulaSpawnSites get(ServerWorld world) {
         return listened(world, world.getPersistentStateManager().getOrCreate(TYPE, ID));
@@ -123,7 +132,7 @@ public class MulaSpawnSites extends PersistentState {
 
     private static MulaSpawnSites listened(ServerWorld world, MulaSpawnSites sites) {
         if (sites.onRetired == null) {
-            sites.onRetired = retired -> fr.lordfinn.steveparty.telescope.TelescopeService.siteRetired(world, retired);
+            sites.onRetired = retired -> TelescopeService.siteRetired(world, retired);
             // a save read with more sites than the cap was trimmed: its Mulas must look
             epoch++;
         }
@@ -170,7 +179,7 @@ public class MulaSpawnSites extends PersistentState {
     public boolean retire(int id) {
         Site site = byId(id);
         if (site == null) return false;
-        Set<UUID> guided = new java.util.HashSet<>();
+        Set<UUID> guided = new HashSet<>();
         for (Map.Entry<UUID, Knowledge> e : players.entrySet()) if (e.getValue().found.contains(id)) guided.add(e.getKey());
         remove(id);
         if (onRetired != null) onRetired.accept(new Retired(site, guided));
@@ -322,7 +331,7 @@ public class MulaSpawnSites extends PersistentState {
             }
             world.spawnEntity(mula);
         }
-        fr.lordfinn.steveparty.Steveparty.LOGGER.info("{} Mulas came down from the ephemeride at {} {} {}",
+        Steveparty.LOGGER.info("{} Mulas came down from the ephemeride at {} {} {}",
                 site.colours.length, site.pos.getX(), (int) y, site.pos.getZ());
     }
 

@@ -13,7 +13,6 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.block.enums.ChestType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.nbt.NbtCompound;
@@ -260,11 +259,6 @@ public final class ZoneBubble {
     /** A player joins the session as a participant: it leaves what it owns at the door. */
     public void addParticipant(ServerPlayerEntity player) {
         add(player, true);
-    }
-
-    /** A player joins the session to watch: it leaves what it owns at the door, and can touch nothing. */
-    public void addSpectator(ServerPlayerEntity player) {
-        add(player, false);
     }
 
     /** A player leaves the session: its session inventory is destroyed, what it owns given back. */

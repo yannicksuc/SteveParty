@@ -34,7 +34,6 @@ import net.minecraft.world.GameMode;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.function.BooleanSupplier;
 
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 

@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
-import fr.lordfinn.steveparty.blocks.custom.LootingBoxBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import net.minecraft.entity.player.PlayerInventory;

@@ -15,6 +15,8 @@ import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
+import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -34,6 +36,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.SpawnEggItem;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.Registries;
 import net.minecraft.stat.StatType;
 import net.minecraft.stat.Stats;
@@ -43,7 +46,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static fr.lordfinn.steveparty.sounds.ModSounds.CLOSE_TILE_GUI_SOUND_EVENT;
 import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
@@ -124,13 +133,13 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private Item goalIcon;
     private boolean openSoundPlayed = false;
     /** The objectives of the server (name, criterion, display name), for the goal's completion. */
-    private final java.util.List<String[]> objectives = new java.util.ArrayList<>();
+    private final List<String[]> objectives = new ArrayList<>();
     /** Every goal that can be searched: objectives, common goals, criteria, statistics (in that order). */
-    private final java.util.List<GoalPoleSearch.Entry<Goal>> goals = new java.util.ArrayList<>();
+    private final List<GoalPoleSearch.Entry<Goal>> goals = new ArrayList<>();
     /** The goal last taken from the list: the field shows its label, its value is saved. */
     private GoalPoleSearch.Entry<Goal> picked;
     /** What the goal typed so far may be completed with, and the one picked (Up / Down; Tab, Enter or a click takes it). */
-    private java.util.List<GoalPoleSearch.Entry<Goal>> completions = java.util.List.of();
+    private List<GoalPoleSearch.Entry<Goal>> completions = List.of();
     private int completion = 0;
     /** Whether the goal field was focused when the completions were last computed. */
     private boolean completionsFocused;
@@ -147,7 +156,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         this.partyNear = settings.getBoolean("PartyNear");
         this.pageLinked = settings.getBoolean("PageLinked");
 
-        for (net.minecraft.nbt.NbtElement element : settings.getList("Objectives", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) {
+        for (NbtElement element : settings.getList("Objectives", NbtElement.COMPOUND_TYPE)) {
             NbtCompound objective = (NbtCompound) element;
             objectives.add(new String[]{objective.getString("Name"), objective.getString("Criterion"), objective.getString("Display")});
         }
@@ -158,8 +167,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     // ------------------------------------------------------------------ the goals to search
 
     private void buildGoals() {
-        java.util.List<GoalPoleSearch.Entry<Goal>> others = new java.util.ArrayList<>();
-        java.util.Set<String> added = new java.util.HashSet<>();
+        List<GoalPoleSearch.Entry<Goal>> others = new ArrayList<>();
+        Set<String> added = new HashSet<>();
         Text perIncrease = Text.translatable(KEY + "goal.stat.meaning");
         for (Object[] preset : PRESETS) {
             String value = (String) preset[0];
@@ -196,8 +205,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     }
 
     /** The statistics of a type, named as {@code Stat.getName} does ({@code minecraft.mined:minecraft.stone}). */
-    private static <T> void addStats(StatType<T> type, java.util.List<GoalPoleSearch.Entry<Goal>> into,
-                                     java.util.Set<String> added, Text perIncrease) {
+    private static <T> void addStats(StatType<T> type, List<GoalPoleSearch.Entry<Goal>> into,
+                                     Set<String> added, Text perIncrease) {
         Identifier typeId = Registries.STAT_TYPE.getId(type);
         if (typeId == null) return;
         String typeName = typeId.toString().replace(':', '.');
@@ -225,8 +234,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             } else if (value instanceof EntityType<?> entity) {
                 name = entity.getName();
                 // the classic Glandouille's egg, not the last one registered for its type
-                SpawnEggItem egg = entity == fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE
-                        ? (SpawnEggItem) fr.lordfinn.steveparty.items.ModItems.GLANDOUILLE_SPAWN_EGG : SpawnEggItem.forEntity(entity);
+                SpawnEggItem egg = entity == ModEntities.GLANDOUILLE
+                        ? (SpawnEggItem) ModItems.GLANDOUILLE_SPAWN_EGG : SpawnEggItem.forEntity(entity);
                 icon = egg != null ? egg : Items.PAPER;
             } else {
                 continue;
@@ -318,7 +327,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
 
     /** A button that cycles through the values of a setting (Shift: backwards), its tooltip explaining the value. */
     private <E extends Enum<E>> PartyButton cycle(int x, int y, int width, String name, E[] values,
-                                                  java.util.function.Supplier<E> getter, java.util.function.Consumer<E> setter) {
+                                                  Supplier<E> getter, Consumer<E> setter) {
         PartyButton button = new PartyButton(x, y, width, FIELD_HEIGHT, Text.empty(), b -> {
             int step = Screen.hasShiftDown() ? values.length - 1 : 1;
             setter.accept(values[(getter.get().ordinal() + step) % values.length]);
@@ -348,9 +357,9 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         return GuiText.cut(textRenderer, text, width);
     }
 
-    private record CycleButton(PartyButton button, String name, java.util.function.Supplier<Enum<?>> value) {}
+    private record CycleButton(PartyButton button, String name, Supplier<Enum<?>> value) {}
 
-    private final java.util.List<CycleButton> cycleButtons = new java.util.ArrayList<>();
+    private final List<CycleButton> cycleButtons = new ArrayList<>();
 
     private static String key(Enum<?> value) {
         return value.name().toLowerCase(Locale.ROOT);
@@ -466,9 +475,9 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         completionsFocused = goalField.isFocused();
         String typed = goalField.getText();
         GoalPoleSearch.Entry<Goal> current = currentGoal();
-        java.util.List<GoalPoleSearch.Entry<Goal>> found = source == Source.CRITERION && completionsFocused
+        List<GoalPoleSearch.Entry<Goal>> found = source == Source.CRITERION && completionsFocused
                 && (current == null || !GoalPoleSearch.normalize(typed).equals(current.normalizedLabel()))
-                ? GoalPoleSearch.search(typed, goals) : java.util.List.of();
+                ? GoalPoleSearch.search(typed, goals) : List.of();
         if (!found.equals(completions)) {
             completions = found;
             completion = 0;
@@ -489,7 +498,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         picked = with;
         goalField.setText(with.label());
         goalField.setCursorToEnd(false);
-        completions = java.util.List.of();
+        completions = List.of();
         refresh();
     }
 
@@ -686,15 +695,15 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             drawCompletions(context, mouseX, mouseY);
             int row = completionAt(mouseX, mouseY);
             if (row >= 0) {
-                context.drawTooltip(textRenderer, java.util.List.of(
+                context.drawTooltip(textRenderer, List.of(
                         Text.translatable(KEY + "goal.completion.hint").formatted(Formatting.GRAY), idLine(completions.get(row))), mouseX, mouseY);
             }
             return;
         }
         if (source == Source.CRITERION && isOverStatus(mouseX, mouseY, x + MARGIN + COLUMN - PRESET_SIZE - 4 - 11, y + TOP + ROW + 6)) {
             GoalPoleSearch.Entry<Goal> goal = currentGoal();
-            context.drawTooltip(textRenderer, goal != null ? java.util.List.of(goalCheck.meaning(), idLine(goal))
-                    : java.util.List.of(goalCheck.meaning()), mouseX, mouseY);
+            context.drawTooltip(textRenderer, goal != null ? List.of(goalCheck.meaning(), idLine(goal))
+                    : List.of(goalCheck.meaning()), mouseX, mouseY);
         } else if (playersHasField() && isOverStatus(mouseX, mouseY, x + MARGIN + COLUMN - 11, y + playersFieldY() + 6)) {
             context.drawTooltip(textRenderer, playersCheck.meaning(), mouseX, mouseY);
         } else if (legendRowAt(mouseX, mouseY) >= 0) {

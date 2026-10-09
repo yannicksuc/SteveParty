@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
@@ -108,7 +109,7 @@ public class TokenPoseGameTests implements FabricGameTest {
         try {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TOKEN));
             context.assertTrue(player.interact(zombie, Hand.MAIN_HAND).isAccepted(), "stored");
-            NbtCompound stored = player.getMainHandStack().get(fr.lordfinn.steveparty.components.ModComponents.ENTITY_DATA_COMPONENT).entityData();
+            NbtCompound stored = player.getMainHandStack().get(ModComponents.ENTITY_DATA_COMPONENT).entityData();
             context.assertEquals(stored.getInt("TokenPose"), 5, "pose kept in the Token");
         } finally {
             TestPlayers.remove(context, player);

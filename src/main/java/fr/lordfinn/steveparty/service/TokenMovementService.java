@@ -1,10 +1,12 @@
 package fr.lordfinn.steveparty.service;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -15,8 +17,6 @@ import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.events.TileUpdatedEvent;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -27,7 +27,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.*;
-import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
@@ -62,9 +62,9 @@ public class TokenMovementService {
         BoardSpaceBlockEntity rolledFrom = BoardSpaces.boardSpaceOf(chosenToken);
         TurnMoves.record(chosenToken, rollValue, numberFaces(dice), rolledFrom == null ? null : rolledFrom.getPos());
         AdvanceBackMoves.cancel(chosenToken); // a new move: nothing left of an extra move
-        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport.cancelPush(chosenToken);
+        TileTeleport.cancelPush(chosenToken);
         // The modules of the die that change the move itself (Skeleton Key, Homing)
-        DiceRollEffects.setMoveModules(chosenToken, fr.lordfinn.steveparty.dice.DiceModules.of(dice.lead().getDieStack()));
+        DiceRollEffects.setMoveModules(chosenToken, DiceModules.of(dice.lead().getDieStack()));
         DiceOutcome outcome = dice.getOutcome();
         if (outcome.steps() != rollValue) outcome = DiceOutcome.ofSteps(rollValue); // a roll announced by hand (tests, add-ons)
         if (outcome.steps() > 0 && !outcome.isSpecial()) {
@@ -80,7 +80,7 @@ public class TokenMovementService {
     /** The numbers shown by the dice of the throw (the faces that walk steps), one per die. */
     private static List<Integer> numberFaces(DiceEntity dice) {
         List<Integer> faces = new ArrayList<>();
-        for (fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace face : dice.getRolledFaces()) {
+        for (DiceFacesComponent.DiceFace face : dice.getRolledFaces()) {
             if (face.steps() > 0) faces.add(face.steps());
         }
         return faces;
@@ -191,7 +191,7 @@ public class TokenMovementService {
     }
 
     /** True if a token reaching this board space must end its move there (a Stop space), steps left or not. */
-    public static boolean isForcedStop(net.minecraft.world.World world, BoardSpaceBlockEntity boardSpace) {
+    public static boolean isForcedStop(World world, BoardSpaceBlockEntity boardSpace) {
         ABoardSpaceBehavior behavior = boardSpace.getBoardSpaceBehavior();
         return behavior != null && behavior.needToStop(world, boardSpace.getPos());
     }
@@ -200,7 +200,7 @@ public class TokenMovementService {
      * Same for this token: also true where its move was ended early ({@link #halt}: a Threshold obstacle, waiting at a
      * Key gate), a check point included.
      */
-    public static boolean isForcedStop(net.minecraft.world.World world, BoardSpaceBlockEntity boardSpace, @Nullable MobEntity token) {
+    public static boolean isForcedStop(World world, BoardSpaceBlockEntity boardSpace, @Nullable MobEntity token) {
         return isForcedStop(world, boardSpace) || token != null && TurnMoves.isHaltedOn(token, boardSpace.getPos());
     }
 

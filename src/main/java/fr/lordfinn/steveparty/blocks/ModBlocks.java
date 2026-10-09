@@ -2,6 +2,13 @@ package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.*;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock;
+import fr.lordfinn.steveparty.blocks.custom.frousseux.CandleSaucerBlock;
+import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
+import fr.lordfinn.steveparty.blocks.custom.glandouille.AcornCropBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.signs.*;
 import fr.lordfinn.steveparty.items.custom.StencilSignItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
@@ -12,6 +19,7 @@ import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlock;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
 import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
 import fr.lordfinn.steveparty.items.custom.PolishedTilesItem;
+import fr.lordfinn.steveparty.items.custom.TileBlockItem;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.NoteBlockInstrument;
 import net.minecraft.block.piston.PistonBehavior;
@@ -137,20 +145,20 @@ public class ModBlocks {
     }
 
     /**
-     * Travel pipes, by kind ({@link fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind#ordinal()}) then colour (the plain
+     * Travel pipes, by kind ({@link PipeKind#ordinal()}) then colour (the plain
      * glass pipe: one block): never suffocating whoever travels inside.
      */
-    public static final Block[][] PIPES = new Block[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values().length][];
+    public static final Block[][] PIPES = new Block[PipeKind.values().length][];
 
     static {
-        for (fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind kind : fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values()) {
+        for (PipeKind kind : PipeKind.values()) {
             PIPES[kind.ordinal()] = new Block[kind.count()];
             for (int i = 0; i < kind.count(); i++) {
                 final int color = i;
                 final boolean miniGame = kind.isMiniGame();
                 PIPES[kind.ordinal()][i] = register(
-                        settings -> miniGame ? new fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock(kind, settings)
-                                : new fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock(kind, color, settings),
+                        settings -> miniGame ? new MiniGamePipeBlock(kind, settings)
+                                : new PipeBlock(kind, color, settings),
                         Block.Settings.create()
                                 .mapColor(miniGame ? MapColor.GOLD : kind.colored ? DyeColor.byName(COLORS[i], DyeColor.WHITE).getMapColor() : MapColor.CLEAR)
                                 .strength(miniGame ? 1.5f : kind.isPlastic() ? 1.0f : 0.3f, miniGame ? BOARD_RESISTANCE : 1.0f)
@@ -168,12 +176,12 @@ public class ModBlocks {
     }
 
     /** The mini-game pipes: copper reaches 100 blocks, iron its whole dimension, gold every dimension. */
-    public static final Block COPPER_MINIGAME_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.COPPER.ordinal()][0];
-    public static final Block IRON_MINIGAME_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.IRON.ordinal()][0];
-    public static final Block GOLDEN_MINIGAME_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.GOLDEN.ordinal()][0];
+    public static final Block COPPER_MINIGAME_PIPE = PIPES[PipeKind.COPPER.ordinal()][0];
+    public static final Block IRON_MINIGAME_PIPE = PIPES[PipeKind.IRON.ordinal()][0];
+    public static final Block GOLDEN_MINIGAME_PIPE = PIPES[PipeKind.GOLDEN.ordinal()][0];
 
     /** The plain glass pipe. */
-    public static final Block GLASS_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.GLASS.ordinal()][0];
+    public static final Block GLASS_PIPE = PIPES[PipeKind.GLASS.ordinal()][0];
 
     public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
 
@@ -403,24 +411,24 @@ public class ModBlocks {
                     .strength(2f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
-            "advanced_tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
+            "advanced_tile", true, TileBlockItem::new);
 
     public static final Block TILE = register(TileBlock::new,
             Block.Settings.create()
                     .strength(2f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
-            "tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
+            "tile", true, TileBlockItem::new);
 
     /** The 3 other blocks of a large (2x2) tile (no item: placed and removed with the tile). */
     public static final Block TILE_PART = Blocks.register(RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("tile_part")),
-            new fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock(Block.Settings.create()
+            new TilePartBlock(Block.Settings.create()
                     .strength(2f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .nonOpaque()
                     .dynamicBounds()
                     .dropsNothing()
-                    .pistonBehavior(net.minecraft.block.piston.PistonBehavior.BLOCK)));
+                    .pistonBehavior(PistonBehavior.BLOCK)));
 
     public static final Block CHECK_POINT = register(CheckPointBlock::new,
             Block.Settings.create()
@@ -457,18 +465,18 @@ public class ModBlocks {
 
     /** A tamed Frousseux asleep as a candle holder (FrousseuxCandleHolderBlock): its light is its flame's. */
     public static final Block FROUSSEUX_CANDLE_HOLDER = register(
-            fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock::new,
+            FrousseuxCandleHolderBlock::new,
             Block.Settings.create()
                     .strength(0.3f)
                     .nonOpaque()
                     .sounds(BlockSoundGroup.CANDLE)
                     .burnable() // wax: lava sets it alight, fire burns it away (the Frousseux with it)
-                    .luminance(fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock::lightOf)
+                    .luminance(FrousseuxCandleHolderBlock::lightOf)
                     .pistonBehavior(PistonBehavior.DESTROY),
             "frousseux_candle_holder", true);
 
     /** The Candle Saucer, a little gold tray: placed on its own, or under a candle holder (CandleSaucerBlock). */
-    public static final Block CANDLE_SAUCER = register(fr.lordfinn.steveparty.blocks.custom.frousseux.CandleSaucerBlock::new,
+    public static final Block CANDLE_SAUCER = register(CandleSaucerBlock::new,
             Block.Settings.create()
                     .strength(0.5f)
                     .nonOpaque()
@@ -477,7 +485,7 @@ public class ModBlocks {
             "candle_saucer", true);
 
     /** The Pie's nest, woven twigs: a Common pot's nest when set near its space (MagpieNestBlock). */
-    public static final Block MAGPIE_NEST = register(fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock::new,
+    public static final Block MAGPIE_NEST = register(MagpieNestBlock::new,
             Block.Settings.create()
                     .strength(0.4f)
                     .nonOpaque()
@@ -740,7 +748,7 @@ public class ModBlocks {
 
     /** A planted Acorn: grows like a crop on farmland, hatches into a young Glandouille when ripe (no block item). */
     public static final Block ACORN_CROP = Blocks.register(RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("acorn_crop")),
-            new fr.lordfinn.steveparty.blocks.custom.glandouille.AcornCropBlock(AbstractBlock.Settings.create()
+            new AcornCropBlock(AbstractBlock.Settings.create()
                     .mapColor(MapColor.BROWN)
                     .noCollision()
                     .offset(AbstractBlock.OffsetType.XZ)

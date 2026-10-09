@@ -16,6 +16,7 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 import org.jetbrains.annotations.Nullable;
@@ -76,8 +77,8 @@ public class ConnectedPlasticFenceModel implements BakedModel {
                 Sprite to = sprites[masks[quad.getFace().ordinal()]];
                 if (to != null && to != from) {
                     for (int i = 0; i < 4; i++) {
-                        emitter.uv(i, remap(emitter.u(i), from.getMinU(), from.getMaxU(), to.getMinU(), to.getMaxU()),
-                                remap(emitter.v(i), from.getMinV(), from.getMaxV(), to.getMinV(), to.getMaxV()));
+                        emitter.uv(i, MathHelper.map(emitter.u(i), from.getMinU(), from.getMaxU(), to.getMinU(), to.getMaxU()),
+                                MathHelper.map(emitter.v(i), from.getMinV(), from.getMaxV(), to.getMinV(), to.getMaxV()));
                     }
                 }
                 emitter.emit();
@@ -134,10 +135,6 @@ public class ConnectedPlasticFenceModel implements BakedModel {
             case WEST -> FenceBlock.WEST;
             default -> FenceBlock.EAST;
         };
-    }
-
-    private static float remap(float value, float fromMin, float fromMax, float toMin, float toMax) {
-        return toMin + (value - fromMin) / (fromMax - fromMin) * (toMax - toMin);
     }
 
     // Everything else (items, particles, fallback) uses the standalone texture

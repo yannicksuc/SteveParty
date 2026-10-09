@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.Action;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChiseledBookshelfBlock;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChiseledBookshelfBlockEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.ai.goal.Goal;
@@ -15,6 +14,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -249,7 +249,7 @@ public final class MistigriGoals {
         if (slot < 0) return;
         ItemStack book = shelf.removeStack(slot, 1);
         BlockState state = world.getBlockState(pos);
-        Direction facing = state.contains(net.minecraft.state.property.Properties.HORIZONTAL_FACING) ? state.get(net.minecraft.state.property.Properties.HORIZONTAL_FACING) : Direction.NORTH;
+        Direction facing = state.contains(Properties.HORIZONTAL_FACING) ? state.get(Properties.HORIZONTAL_FACING) : Direction.NORTH;
         drop(world, Vec3d.ofCenter(pos).add(Vec3d.of(facing.getVector()).multiply(0.7)), book);
         world.playSound(null, pos, SoundEvents.BLOCK_CHISELED_BOOKSHELF_PICKUP, SoundCategory.BLOCKS, 1.0f, 1.0f);
     }

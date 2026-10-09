@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileStamping;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileStampComponent;
@@ -14,14 +14,15 @@ import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.tooltip.TooltipData;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
@@ -55,7 +56,7 @@ public class TileStampGameTests implements FabricGameTest {
         return context.getBlockState(pos).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit);
     }
 
-    private static PlayerEntity stencilAndDye(TestContext context, String patternId, net.minecraft.item.Item dye, int dyes) {
+    private static PlayerEntity stencilAndDye(TestContext context, String patternId, Item dye, int dyes) {
         PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
         player.setStackInHand(Hand.MAIN_HAND, StencilItem.of(StencilPatterns.byId(patternId)));
         player.setStackInHand(Hand.OFF_HAND, new ItemStack(dye, dyes));
@@ -76,7 +77,7 @@ public class TileStampGameTests implements FabricGameTest {
         // Kept when saved and loaded (and sent to the clients the same way)
         var registries = context.getWorld().getRegistryManager();
         NbtCompound nbt = tile.createNbtWithIdentifyingData(registries);
-        BoardSpaceBlockEntity copy = (BoardSpaceBlockEntity) net.minecraft.block.entity.BlockEntity.createFromNbt(tile.getPos(), tile.getCachedState(), nbt, registries);
+        BoardSpaceBlockEntity copy = (BoardSpaceBlockEntity) BlockEntity.createFromNbt(tile.getPos(), tile.getCachedState(), nbt, registries);
         context.assertTrue(copy != null && stamp.equals(copy.getStamp()), "saved with the tile");
         context.complete();
     }
@@ -137,8 +138,8 @@ public class TileStampGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aLargeTileIsStampedFromAnyOfItsBlocks(TestContext context) {
         context.setBlockState(TILE.down(), Blocks.STONE);
-        context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE,
-                fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout.LARGE_SOUTH_EAST));
+        context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(ATileBlock.SIZE,
+                TileLayout.LARGE_SOUTH_EAST));
         BoardSpaceBlockEntity tile = context.getBlockEntity(TILE);
         use(context, stencilAndDye(context, "coin", Items.ORANGE_DYE, 1), TILE.add(1, 0, 1));
         context.assertTrue(tile.getStamp() != null && tile.getStamp().sameAs(pattern("coin"), DyeColor.ORANGE), "stamped through a part");

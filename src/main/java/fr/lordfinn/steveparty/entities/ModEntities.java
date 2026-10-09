@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
+import fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
@@ -21,7 +22,6 @@ import net.minecraft.entity.SpawnGroup;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.Identifier;
 
 public class ModEntities {
     public static final RegistryKey<EntityType<?>> DICE_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("dice"));
@@ -206,10 +206,10 @@ public class ModEntities {
 
     /** The Pie, the keeper of a Common pot, living on its nest by the space (see MagpieEntity). */
     public static final RegistryKey<EntityType<?>> MAGPIE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("magpie"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity> MAGPIE = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<MagpieEntity> MAGPIE = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("magpie"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity>create(fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity::new, SpawnGroup.MISC)
+                    .<MagpieEntity>create(MagpieEntity::new, SpawnGroup.MISC)
                     .dimensions(0.5f, 0.6f)
                     .makeFireImmune()
                     .maxTrackingRange(8)

@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
 import fr.lordfinn.steveparty.entities.PetTeleports;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -18,6 +19,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
@@ -50,6 +52,7 @@ import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -136,12 +139,12 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     /** The next time he may knock something off (world time): not every minute. */
     long nextSwatTime;
     /** What his swat in progress knocks off, and in how many ticks (the paw landing). */
-    private @Nullable net.minecraft.entity.decoration.ItemFrameEntity swatFrame;
+    private @Nullable ItemFrameEntity swatFrame;
     private @Nullable BlockPos swatShelf;
     private int swatIn;
 
     /** His swat knocks {@code frame}'s item (or a book out of {@code shelf}) off in {@code ticks}. */
-    void swatAt(@Nullable net.minecraft.entity.decoration.ItemFrameEntity frame, @Nullable BlockPos shelf, int ticks) {
+    void swatAt(@Nullable ItemFrameEntity frame, @Nullable BlockPos shelf, int ticks) {
         swatFrame = frame;
         swatShelf = shelf;
         swatIn = ticks;
@@ -445,7 +448,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
             world.spawnParticles(ParticleTypes.HEART, getX(), getBodyY(0.9), getZ(), 9, 0.4, 0.3, 0.4, 0.02);
             world.sendEntityStatus(this, (byte) 7);
             if (player instanceof ServerPlayerEntity serverPlayer) {
-                net.minecraft.advancement.criterion.Criteria.TAME_ANIMAL.trigger(serverPlayer, this);
+                Criteria.TAME_ANIMAL.trigger(serverPlayer, this);
             }
         }
         playSound(ModSounds.MISTIGRI_PURR, 1.0f, 1.0f);
@@ -556,7 +559,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     private static final RawAnimation SLEEP = RawAnimation.begin().thenLoop("sleep");
     private static final RawAnimation STARE = RawAnimation.begin().thenLoop("stare");
     private static final RawAnimation ANGRY_ANIM = RawAnimation.begin().thenPlay("angry_in").thenLoop("angry");
-    private static final Map<Action, RawAnimation> ACTS = new java.util.EnumMap<>(Action.class);
+    private static final Map<Action, RawAnimation> ACTS = new EnumMap<>(Action.class);
 
     static {
         for (Action action : Action.values()) {

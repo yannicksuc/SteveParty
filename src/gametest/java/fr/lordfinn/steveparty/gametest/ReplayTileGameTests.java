@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
@@ -26,19 +27,21 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.SpawnReason;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -191,9 +194,9 @@ public class ReplayTileGameTests implements FabricGameTest {
         PartyData data = controller.getPartyData();
 
         // The player threw a (named, like a forged one) Power-up die: it was spent
-        ItemStack die = fr.lordfinn.steveparty.dice.DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE),
-                java.util.Map.of(fr.lordfinn.steveparty.dice.DiceModules.POWER_UP, 1));
-        die.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, net.minecraft.text.Text.literal("Lucky"));
+        ItemStack die = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE),
+                Map.of(DiceModules.POWER_UP, 1));
+        die.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Lucky"));
         DiceEntity dice = ModEntities.DICE_ENTITY.create(context.getWorld());
         context.assertTrue(dice != null, "dice created");
         dice.setItemReference(die.copy());

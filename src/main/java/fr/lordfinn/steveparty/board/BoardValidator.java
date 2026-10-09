@@ -1,5 +1,9 @@
 package fr.lordfinn.steveparty.board;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.service.ShopStops;
+import fr.lordfinn.steveparty.utils.MessageUtils;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.ClickEvent;
@@ -50,9 +54,9 @@ public final class BoardValidator {
         // Shop spaces without a merchant around (or whose chosen merchant is away): nothing happens there
         List<BlockPos> noShop = new ArrayList<>();
         for (BoardGraph.Node node : graph.nodes()) {
-            if (!(world.getBlockEntity(node.pos()) instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity space)) continue;
-            net.minecraft.item.ItemStack cartridge = fr.lordfinn.steveparty.service.ShopStops.shopCartridge(space);
-            if (cartridge != null && fr.lordfinn.steveparty.service.ShopStops.findShop(world, node.pos(), cartridge) == null) noShop.add(node.pos());
+            if (!(world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space)) continue;
+            ItemStack cartridge = ShopStops.shopCartridge(space);
+            if (cartridge != null && ShopStops.findShop(world, node.pos(), cartridge) == null) noShop.add(node.pos());
         }
         if (noShop.isEmpty()) return report;
         List<Issue> issues = new ArrayList<>(report.issues());
@@ -138,8 +142,8 @@ public final class BoardValidator {
     public static void warnAtStart(ServerWorld world, BlockPos controller) {
         Report report = check(world, controller);
         if (report.ok()) return;
-        fr.lordfinn.steveparty.utils.MessageUtils.sendToNearby(world, controller.toCenterPos(), RADIUS, summary(report),
-                fr.lordfinn.steveparty.utils.MessageUtils.MessageType.CHAT);
+        MessageUtils.sendToNearby(world, controller.toCenterPos(), RADIUS, summary(report),
+                MessageUtils.MessageType.CHAT);
     }
 
     /** One line for everyone around when a party starts, only if something is wrong. */

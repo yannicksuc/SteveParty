@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import fr.lordfinn.steveparty.entities.custom.pawn.PawnPossessions;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -39,7 +40,7 @@ public final class PlayerPawnCommand {
                                 .executes(context -> run(context, FloatArgumentType.getFloat(context, "size"))))));
     }
 
-    private static int run(CommandContext<ServerCommandSource> context, float size) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+    private static int run(CommandContext<ServerCommandSource> context, float size) throws CommandSyntaxException {
         Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(context, "players");
         ServerPlayerEntity source = context.getSource().getPlayer();
         int count = 0;

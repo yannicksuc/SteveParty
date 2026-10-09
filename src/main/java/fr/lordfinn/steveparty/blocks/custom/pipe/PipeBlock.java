@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.blocks.custom.pipe;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -10,8 +12,11 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -20,6 +25,7 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
@@ -28,17 +34,16 @@ import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
-import net.minecraft.world.WorldView;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 /**
  * A travel pipe (« tuyau »), see {@link PipeShape} for its shape.
@@ -109,9 +114,9 @@ public class PipeBlock extends Block implements BlockEntityProvider {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, net.minecraft.item.Item.TooltipContext context, List<Text> tooltip, net.minecraft.item.tooltip.TooltipType options) {
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         for (String line : new String[]{"enter", "way", "wrench"}) {
-            tooltip.add(Text.translatable("tooltip.steveparty.pipe." + line).formatted(net.minecraft.util.Formatting.GRAY));
+            tooltip.add(Text.translatable("tooltip.steveparty.pipe." + line).formatted(Formatting.GRAY));
         }
     }
 
@@ -229,9 +234,9 @@ public class PipeBlock extends Block implements BlockEntityProvider {
             return ItemActionResult.SUCCESS;
         }
         // A mini-game page: the pipe is linked to it (or unlinked)
-        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.MiniGamePageItem) {
-            if (world instanceof ServerWorld serverWorld && player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
-                fr.lordfinn.steveparty.minigame.MiniGamePipes.click(serverPlayer, hand, serverWorld, pos);
+        if (stack.getItem() instanceof MiniGamePageItem) {
+            if (world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer) {
+                MiniGamePipes.click(serverPlayer, hand, serverWorld, pos);
             }
             return ItemActionResult.SUCCESS;
         }
@@ -302,7 +307,7 @@ public class PipeBlock extends Block implements BlockEntityProvider {
         return transform(state, mirror::apply);
     }
 
-    private BlockState transform(BlockState state, java.util.function.UnaryOperator<Direction> turn) {
+    private BlockState transform(BlockState state, UnaryOperator<Direction> turn) {
         BlockState turned = state;
         for (Direction dir : Direction.values()) turned = turned.with(PipeShape.connection(turn.apply(dir)), state.get(PipeShape.connection(dir)));
         Direction solid = state.get(SOLID).direction();

@@ -14,8 +14,10 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -198,7 +200,7 @@ public class PartyHudLayoutGameTests implements FabricGameTest {
         TurnStripLayout.Result aloneMini = layout(solo.subList(1, solo.size()), 10, 0, NAMES.subList(0, 1), 120);
         context.assertTrue(aloneMini.elements().stream().noneMatch(el -> el.type == Type.BUBBLE), "the mini-game being played: no bubble at all");
         // Playing all the tokens of the party
-        TurnStripLayout.Result all = TurnStripLayout.layout(new TurnStripLayout.Input(two.subList(1, two.size()), 6, java.util.Set.of(0, 1),
+        TurnStripLayout.Result all = TurnStripLayout.layout(new TurnStripLayout.Input(two.subList(1, two.size()), 6, Set.of(0, 1),
                 NAMES.subList(0, 2), 600), TEXTS);
         context.assertTrue(all.elements().stream().noneMatch(el -> el.type == Type.BUBBLE && !el.key.equals("toi_now")), "all mine: « à toi ! » only");
         context.complete();
@@ -293,7 +295,7 @@ public class PartyHudLayoutGameTests implements FabricGameTest {
         List<PartyLiveData.Standing> tie = new ArrayList<>();
         int[][] values = {{3, 42}, {3, 25}, {3, 42}, {0, 31}};
         for (int[] v : values) tie.add(new PartyLiveData.Standing(UUID.randomUUID(), "", Optional.empty(), "", -1, true, v[0], v[1], List.of()));
-        context.assertTrue(java.util.Arrays.equals(PartyLiveData.ranks(tie), new int[]{1, 3, 1, 4}), "1, 1, 3: the coins break the stars' ties");
+        context.assertTrue(Arrays.equals(PartyLiveData.ranks(tie), new int[]{1, 3, 1, 4}), "1, 1, 3: the coins break the stars' ties");
         context.complete();
     }
 }

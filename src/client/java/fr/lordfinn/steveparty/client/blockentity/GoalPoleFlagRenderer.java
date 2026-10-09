@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.client.flag.FlagPalettes;
 import fr.lordfinn.steveparty.client.flag.FlagWind;
 import fr.lordfinn.steveparty.client.flag.ShaderPacks;
 import fr.lordfinn.steveparty.items.custom.FlagItem;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
@@ -307,8 +308,7 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
     }
 
     private static int shaded(int rgb, float shade) {
-        int r = (int) ((rgb >> 16 & 0xFF) * shade), g = (int) ((rgb >> 8 & 0xFF) * shade), b = (int) ((rgb & 0xFF) * shade);
-        return 0xFF000000 | r << 16 | g << 8 | b;
+        return Argb.opaque(Argb.scale(rgb, shade));
     }
 
     private static void vertex(VertexConsumer buffer, MatrixStack.Entry entry, int column, float y, float u, float v,

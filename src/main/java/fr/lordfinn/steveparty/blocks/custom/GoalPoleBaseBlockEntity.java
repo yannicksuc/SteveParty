@@ -1,14 +1,18 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
+import fr.lordfinn.steveparty.podium.PodiumGroup;
+import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.command.EntitySelector;
 import net.minecraft.command.argument.EntityArgumentType;
@@ -45,11 +49,15 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock.POWERED;
@@ -345,7 +353,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         NbtList list = new NbtList();
         server.getScoreboard().getObjectives().stream()
                 .filter(objective -> !objective.getName().startsWith("steveparty_"))
-                .sorted(java.util.Comparator.comparing(ScoreboardObjective::getName))
+                .sorted(Comparator.comparing(ScoreboardObjective::getName))
                 .limit(MAX_LISTED_OBJECTIVES)
                 .forEach(objective -> {
                     NbtCompound entry = new NbtCompound();
@@ -506,14 +514,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
             }
             cursor.move(Direction.UP);
         }
-        if (reached) fr.lordfinn.steveparty.podium.Podiums.onGoalReached(this, holder);
-    }
-
-    /** The most points a single holder has. */
-    public int getBestPoints() {
-        int best = 0;
-        for (int value : points.values()) best = Math.max(best, value);
-        return best;
+        if (reached) Podiums.onGoalReached(this, holder);
     }
 
     // ------------------------------------------------------------------ sides: a player, or a team
@@ -535,7 +536,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         long now = world.getTime();
         if (now != teamsSeenTick) {
             teamsSeenTick = now;
-            fr.lordfinn.steveparty.minigame.MiniGameSession session = countedSession();
+            MiniGameSession session = countedSession();
             TeamDisposition teams = session == null ? null : session.teams();
             teamsSeen = teams == null || teams.isFreeForAll() ? null : teams;
         }
@@ -553,7 +554,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         MinecraftServer server = world.getServer();
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(holder);
         UUID uuid = player != null ? player.getUuid()
-                : server.getUserCache() == null ? null : server.getUserCache().findByName(holder).map(com.mojang.authlib.GameProfile::getId).orElse(null);
+                : server.getUserCache() == null ? null : server.getUserCache().findByName(holder).map(GameProfile::getId).orElse(null);
         return uuid == null ? -1 : teams.teamOf(uuid);
     }
 
@@ -604,7 +605,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
             cursor.move(Direction.UP);
         }
         pushTotal();
-        fr.lordfinn.steveparty.podium.Podiums.onBaseReset(this);
+        Podiums.onBaseReset(this);
         world.playSound(null, pos, SoundEvents.BLOCK_COMPARATOR_CLICK, SoundCategory.BLOCKS, 0.8f, 0.6f);
         world.playSound(null, pos, SoundEvents.BLOCK_COPPER_BULB_TURN_OFF, SoundCategory.BLOCKS, 0.7f, 0.8f);
     }
@@ -715,7 +716,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
             case PARTY -> {
                 // Linked to a page: the players of its mini-game (a party's or a test's; not those who only watch)
                 if (!linkedPages().isEmpty()) {
-                    fr.lordfinn.steveparty.minigame.MiniGameSession session = countedSession();
+                    MiniGameSession session = countedSession();
                     yield session != null && session.isParticipant(player.getUuid());
                 }
                 PartyControllerEntity party = runningParty();
@@ -746,18 +747,18 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
      * The mini-game pages this base is linked to: those it was clicked with, and those of the podiums it touches
      * (itself or its pole). Worked out when something happens.
      */
-    public java.util.Set<UUID> linkedPages() {
-        java.util.Set<UUID> pages = new java.util.LinkedHashSet<>();
+    public Set<UUID> linkedPages() {
+        Set<UUID> pages = new LinkedHashSet<>();
         if (!(world instanceof ServerWorld serverWorld)) return pages;
-        pages.addAll(fr.lordfinn.steveparty.minigame.MiniGamePages.pageIdsAt(serverWorld, pos));
-        for (fr.lordfinn.steveparty.podium.PodiumGroup group : fr.lordfinn.steveparty.podium.Podiums.groupsOf(this)) pages.addAll(group.pages());
+        pages.addAll(MiniGamePages.pageIdsAt(serverWorld, pos));
+        for (PodiumGroup group : Podiums.groupsOf(this)) pages.addAll(group.pages());
         return pages;
     }
 
     /** The mini-game being played on a page this base is linked to (a party's, or a test), null for none. */
     @Nullable
-    public fr.lordfinn.steveparty.minigame.MiniGameSession countedSession() {
-        return fr.lordfinn.steveparty.minigame.MiniGameSession.playing(linkedPages());
+    public MiniGameSession countedSession() {
+        return MiniGameSession.playing(linkedPages());
     }
 
     /**
@@ -767,7 +768,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
      */
     @Nullable
     public PartyControllerEntity countedParty() {
-        java.util.Set<UUID> pages = linkedPages();
+        Set<UUID> pages = linkedPages();
         if (!pages.isEmpty()) return PartyControllerEntity.getPartyPlayingPage(pages).orElse(null);
         return runningParty();
     }
@@ -813,9 +814,8 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     public long getTotal() { return total; }
     public int getPoints(String holder) { return points.getOrDefault(holder, 0); }
     /** Points per player (read only; synced to clients for the wrench details). */
-    public Map<String, Integer> getPointsView() { return java.util.Collections.unmodifiableMap(points); }
+    public Map<String, Integer> getPointsView() { return Collections.unmodifiableMap(points); }
     public boolean isSourceInvalid() { return sourceInvalid; }
-    @Nullable public ScoreboardObjective getMirror() { return mirror; }
 
 
     public void setPlayers(Players players, int radius) {

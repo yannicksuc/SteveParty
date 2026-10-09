@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.minigame;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeDestinationProvider;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
@@ -21,8 +22,10 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
+import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -112,7 +115,7 @@ public final class MiniGamePipes {
     // ------------------------------------------------------------------ linking
 
     /** The mouth of the pipe at {@code pos} a player looking from {@code eye} means: the one facing it, else its first one. */
-    public static @Nullable Direction mouthOf(BlockState state, BlockPos pos, net.minecraft.util.math.Vec3d eye) {
+    public static @Nullable Direction mouthOf(BlockState state, BlockPos pos, Vec3d eye) {
         Direction facing = PipeTravel.mouthFacing(state, pos, eye);
         if (facing != null) return facing;
         for (PipeShape.End end : PipeShape.ends(state)) if (!end.capped()) return end.dir();
@@ -274,7 +277,7 @@ public final class MiniGamePipes {
         }
         Direction free = freeMouth(world, pos, state);
         if (free != null) return free;
-        return PipeShape.mouth(state, link.opening()) != null ? link.opening() : mouthOf(state, pos, net.minecraft.util.math.Vec3d.ofCenter(pos));
+        return PipeShape.mouth(state, link.opening()) != null ? link.opening() : mouthOf(state, pos, Vec3d.ofCenter(pos));
     }
 
     /** The sides a player is best brought out of a pipe by: up, then the sides, down last. */
@@ -454,7 +457,7 @@ public final class MiniGamePipes {
         // happened to be found in
         List<PipeNetworks.End> mouths = network.ends().stream()
                 .filter(end -> !end.capped() && PipeShape.mouth(world.getBlockState(end.pos()), end.dir()) != null && !PipeTravel.blocked(world, end))
-                .sorted(java.util.Comparator.comparing(PipeNetworks.End::pos).thenComparingInt(end -> safeRank(end.dir())))
+                .sorted(Comparator.comparing(PipeNetworks.End::pos).thenComparingInt(end -> safeRank(end.dir())))
                 .toList();
         if (mouths.isEmpty()) return false;
         PipeNetworks.End chosen = null;
@@ -481,8 +484,8 @@ public final class MiniGamePipes {
 
     /** @return true if two pipes are of the same colour: the same dye (plastic and stained glass alike), else the same kind. */
     public static boolean sameColour(BlockState a, BlockState b) {
-        if (!(a.getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock first)
-                || !(b.getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock second)) return false;
+        if (!(a.getBlock() instanceof PipeBlock first)
+                || !(b.getBlock() instanceof PipeBlock second)) return false;
         if (first.kind().colored && second.kind().colored) return first.color() == second.color();
         return first.kind() == second.kind();
     }

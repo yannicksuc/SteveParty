@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.pipe;
 
+import java.util.Locale;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +26,6 @@ public enum PipeSolid implements StringIdentifiable {
 
     @Override
     public String asString() {
-        return name().toLowerCase(java.util.Locale.ROOT);
+        return name().toLowerCase(Locale.ROOT);
     }
 }

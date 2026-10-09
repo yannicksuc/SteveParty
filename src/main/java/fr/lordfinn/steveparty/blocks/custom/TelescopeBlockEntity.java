@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -38,7 +39,7 @@ public class TelescopeBlockEntity extends SyncedBlockEntity {
 
     /** Server: who looks through it now (null: nobody), told to the clients that see the block. */
     public void setWatcher(@Nullable UUID watcher) {
-        if (java.util.Objects.equals(this.watcher, watcher)) return;
+        if (Objects.equals(this.watcher, watcher)) return;
         this.watcher = watcher;
         syncToClients();
     }

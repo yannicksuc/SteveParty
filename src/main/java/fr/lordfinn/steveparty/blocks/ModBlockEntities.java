@@ -1,15 +1,19 @@
 package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.blocks.custom.*;
+import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlockEntity;
+import java.util.Arrays;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -76,17 +80,17 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(PartyBellBlockEntity::new, ModBlocks.PARTY_BELL).build(null)
     );
     /** Every travel pipe's (the cartridge slot of its mouths). */
-    public static final BlockEntityType<fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity> PIPE_ENTITY = Registry.register(
+    public static final BlockEntityType<PipeBlockEntity> PIPE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "pipe"),
-            FabricBlockEntityTypeBuilder.create(fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity::new,
-                    java.util.Arrays.stream(ModBlocks.PIPES).flatMap(java.util.Arrays::stream).toArray(net.minecraft.block.Block[]::new)).build(null)
+            FabricBlockEntityTypeBuilder.create(PipeBlockEntity::new,
+                    Arrays.stream(ModBlocks.PIPES).flatMap(Arrays::stream).toArray(Block[]::new)).build(null)
     );
     /** The mini-game pipe's: it shows the page it holds. */
-    public static final BlockEntityType<fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity> MINIGAME_PIPE_ENTITY = Registry.register(
+    public static final BlockEntityType<MiniGamePipeBlockEntity> MINIGAME_PIPE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "minigame_pipe"),
-            FabricBlockEntityTypeBuilder.create(fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity::new,
+            FabricBlockEntityTypeBuilder.create(MiniGamePipeBlockEntity::new,
                     ModBlocks.COPPER_MINIGAME_PIPE, ModBlocks.IRON_MINIGAME_PIPE, ModBlocks.GOLDEN_MINIGAME_PIPE).build(null)
     );
     public static final BlockEntityType<PodiumBlockEntity> PODIUM_ENTITY = Registry.register(
@@ -152,10 +156,10 @@ public class ModBlockEntities {
             Identifier.of(MOD_ID, "villager_block"),
             FabricBlockEntityTypeBuilder.create(VillagerBlockEntity::new, ModBlocks.VILLAGER_BLOCK).build(null)
     );
-    public static final BlockEntityType<fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlockEntity> FROUSSEUX_CANDLE_HOLDER = Registry.register(
+    public static final BlockEntityType<FrousseuxCandleHolderBlockEntity> FROUSSEUX_CANDLE_HOLDER = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "frousseux_candle_holder"),
-            FabricBlockEntityTypeBuilder.create(fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlockEntity::new,
+            FabricBlockEntityTypeBuilder.create(FrousseuxCandleHolderBlockEntity::new,
                     ModBlocks.FROUSSEUX_CANDLE_HOLDER).build(null)
     );
     public static final BlockEntityType<GravityCoreBlockEntity> GRAVITY_CORE_ENTITY = Registry.register(

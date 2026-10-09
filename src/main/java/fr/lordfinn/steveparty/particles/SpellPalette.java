@@ -42,10 +42,6 @@ public final class SpellPalette {
         if (p > steps) p = 2 * steps - p;
         int index = Math.min(steps - 1, (int) p);
         float blend = p - index;
-        return lerp(GRADIENT[index], GRADIENT[index + 1], Easing.smoothstep(blend));
-    }
-
-    public static int lerp(int from, int to, float t) {
-        return Argb.lerp(from, to, t) & 0xFFFFFF;
+        return Argb.lerp(GRADIENT[index], GRADIENT[index + 1], Easing.smoothstep(blend));
     }
 }

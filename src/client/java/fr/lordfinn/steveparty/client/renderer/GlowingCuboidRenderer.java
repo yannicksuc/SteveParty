@@ -1,11 +1,15 @@
 package fr.lordfinn.steveparty.client.renderer;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix4f;
 
 import java.awt.*;
 import java.util.List;
@@ -56,11 +60,11 @@ public class GlowingCuboidRenderer {
 
     public static void drawBlockBox(MatrixStack matrices, VertexConsumerProvider vertexConsumers, BlockPos pos, float red, float green, float blue, float alpha) {
         // A tile is highlighted where it is seen: hugging its surface (lowered, sloped, all 4 blocks of a large tile)
-        net.minecraft.client.world.ClientWorld world = MinecraftClient.getInstance().world;
+        ClientWorld world = MinecraftClient.getInstance().world;
         Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
         if (world != null && camera.isReady()) {
-            BlockPos tile = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.resolve(world, pos);
-            var shape = fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape.of(world, tile);
+            BlockPos tile = BoardSpaces.resolve(world, pos);
+            var shape = TileShape.of(world, tile);
             if (shape != null) {
                 drawTile(matrices, vertexConsumers, shape, camera.getPos(), red, green, blue, alpha);
                 return;
@@ -78,22 +82,22 @@ public class GlowingCuboidRenderer {
      * pulsing gently; bright where seen, and dimmed through what hides it (found behind the terrain).
      */
     public static void drawEdges(MatrixStack matrices, VertexConsumerProvider vertexConsumers, Box box, float red, float green, float blue) {
-        net.minecraft.client.world.ClientWorld world = MinecraftClient.getInstance().world;
+        ClientWorld world = MinecraftClient.getInstance().world;
         float time = world == null ? 0 : (world.getTime() % 400 + MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(true)) / 20f;
         float pulse = 0.5f + 0.5f * (float) Math.sin(time * Math.PI * 1.2);
         double thick = Math.min(0.045 + 0.015 * pulse, Math.min(box.getLengthX(), Math.min(box.getLengthY(), box.getLengthZ())) / 3);
         float r = red + (1 - red) * 0.35f, g = green + (1 - green) * 0.35f, b = blue + (1 - blue) * 0.35f;
-        org.joml.Matrix4f matrix = matrices.peek().getPositionMatrix();
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
         edges(vertexConsumers.getBuffer(HighlightLayers.SEEN), matrix, box, thick, r, g, b, 0.85f + 0.15f * pulse);
         edges(vertexConsumers.getBuffer(HighlightLayers.HIDDEN), matrix, box, thick * 0.7, r, g, b, 0.3f);
     }
 
     /**
-     * A tile highlighted where it is drawn ({@link fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape}): its
+     * A tile highlighted where it is drawn ({@link TileShape}): its
      * slab, turned and tilted as it is, filled see-through and its 12 edges glowing like {@link #drawEdges}.
      */
     public static void drawTile(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
-                                fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape shape, Vec3d cam,
+                                TileShape shape, Vec3d cam,
                                 float red, float green, float blue, float alpha) {
         Vec3d[] c = shape.corners();
         Vec3d centre = Vec3d.ZERO;
@@ -102,13 +106,13 @@ public class GlowingCuboidRenderer {
             // A hair outside the slab, so that the highlight is not hidden in it
             c[i] = c[i].add(c[i].subtract(centre).normalize().multiply(0.012)).subtract(cam);
         }
-        org.joml.Matrix4f matrix = matrices.peek().getPositionMatrix();
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
         VertexConsumer fill = vertexConsumers.getBuffer(HighlightLayers.SEEN);
         int[][] faces = {{0, 1, 2, 3}, {4, 7, 6, 5}, {0, 4, 5, 1}, {1, 5, 6, 2}, {2, 6, 7, 3}, {3, 7, 4, 0}};
         for (int[] f : faces) {
             quad(fill, matrix, c[f[0]], c[f[1]], c[f[2]], c[f[3]], red, green, blue, alpha);
         }
-        net.minecraft.client.world.ClientWorld world = MinecraftClient.getInstance().world;
+        ClientWorld world = MinecraftClient.getInstance().world;
         float time = world == null ? 0 : (world.getTime() % 400 + MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(true)) / 20f;
         float pulse = 0.5f + 0.5f * (float) Math.sin(time * Math.PI * 1.2);
         double thick = 0.045 + 0.015 * pulse;
@@ -122,7 +126,7 @@ public class GlowingCuboidRenderer {
     }
 
     /** A bar of square section {@code t} from {@code from} to {@code to}, in any direction (its 4 long sides). */
-    private static void segment(VertexConsumer consumer, org.joml.Matrix4f matrix, Vec3d from, Vec3d to, double t,
+    private static void segment(VertexConsumer consumer, Matrix4f matrix, Vec3d from, Vec3d to, double t,
                                 float r, float g, float b, float a) {
         Vec3d d = to.subtract(from).normalize();
         Vec3d u = d.crossProduct(Math.abs(d.y) > 0.9 ? new Vec3d(1, 0, 0) : new Vec3d(0, 1, 0)).normalize().multiply(t / 2);
@@ -135,13 +139,13 @@ public class GlowingCuboidRenderer {
         }
     }
 
-    private static void quad(VertexConsumer c, org.joml.Matrix4f m, Vec3d p0, Vec3d p1, Vec3d p2, Vec3d p3,
+    private static void quad(VertexConsumer c, Matrix4f m, Vec3d p0, Vec3d p1, Vec3d p2, Vec3d p3,
                              float r, float g, float b, float a) {
         quad(c, m, (float) p0.x, (float) p0.y, (float) p0.z, (float) p1.x, (float) p1.y, (float) p1.z,
                 (float) p2.x, (float) p2.y, (float) p2.z, (float) p3.x, (float) p3.y, (float) p3.z, r, g, b, a);
     }
 
-    private static void edges(VertexConsumer consumer, org.joml.Matrix4f matrix, Box box, double t, float r, float g, float b, float a) {
+    private static void edges(VertexConsumer consumer, Matrix4f matrix, Box box, double t, float r, float g, float b, float a) {
         double[] xs = {box.minX, box.maxX}, ys = {box.minY, box.maxY}, zs = {box.minZ, box.maxZ};
         double h = t / 2;
         for (double y : ys) for (double z : zs) bar(consumer, matrix, box.minX - h, y - h, z - h, box.maxX + h, y + h, z + h, r, g, b, a);
@@ -150,7 +154,7 @@ public class GlowingCuboidRenderer {
     }
 
     /** A thin box, its 6 faces. */
-    private static void bar(VertexConsumer c, org.joml.Matrix4f m, double x0, double y0, double z0, double x1, double y1, double z1,
+    private static void bar(VertexConsumer c, Matrix4f m, double x0, double y0, double z0, double x1, double y1, double z1,
                             float r, float g, float b, float a) {
         float ax = (float) x0, ay = (float) y0, az = (float) z0, bx = (float) x1, by = (float) y1, bz = (float) z1;
         quad(c, m, ax, ay, az, bx, ay, az, bx, ay, bz, ax, ay, bz, r, g, b, a);
@@ -161,7 +165,7 @@ public class GlowingCuboidRenderer {
         quad(c, m, bx, ay, az, bx, by, az, bx, by, bz, bx, ay, bz, r, g, b, a);
     }
 
-    private static void quad(VertexConsumer c, org.joml.Matrix4f m, float x0, float y0, float z0, float x1, float y1, float z1,
+    private static void quad(VertexConsumer c, Matrix4f m, float x0, float y0, float z0, float x1, float y1, float z1,
                              float x2, float y2, float z2, float x3, float y3, float z3, float r, float g, float b, float a) {
         c.vertex(m, x0, y0, z0).color(r, g, b, a);
         c.vertex(m, x1, y1, z1).color(r, g, b, a);

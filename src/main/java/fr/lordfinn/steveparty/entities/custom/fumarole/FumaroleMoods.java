@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.fumarole;
 
+import java.util.Arrays;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Random;
 
@@ -35,7 +36,7 @@ public final class FumaroleMoods {
     public boolean burp;
 
     public FumaroleMoods() {
-        java.util.Arrays.fill(mood, Mood.NONE);
+        Arrays.fill(mood, Mood.NONE);
     }
 
     public Mood mood(int head) {
@@ -60,7 +61,7 @@ public final class FumaroleMoods {
 
     /** One client tick: picks new moods when it is idle ({@code bored}), runs the current ones. */
     public void tick(Random random, int age, boolean bored, boolean ridden, int tank) {
-        java.util.Arrays.fill(puff, false);
+        Arrays.fill(puff, false);
         burp = false;
         for (int h = 0; h < HEADS; h++) {
             if (left[h] > 0 && --left[h] == 0) mood[h] = Mood.NONE;

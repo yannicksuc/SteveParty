@@ -1,9 +1,11 @@
 package fr.lordfinn.steveparty.minigame;
 
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper;
@@ -14,6 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.PersistentState;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
@@ -44,7 +47,7 @@ public final class MiniGameControllers extends PersistentState {
     private final Set<UUID> oldAdventure = new LinkedHashSet<>();
 
     public static void initialize() {
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(server -> get(server).adoptOldZones(server));
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> get(server).adoptOldZones(server));
     }
 
     /**
@@ -161,9 +164,9 @@ public final class MiniGameControllers extends PersistentState {
             NbtCompound home = (NbtCompound) element;
             Identifier dimension = Identifier.tryParse(home.getString("Dimension"));
             if (dimension == null || !home.containsUuid("Page")) continue;
-            RegistryKey<net.minecraft.world.World> world = RegistryKey.of(RegistryKeys.WORLD, dimension);
+            RegistryKey<World> world = RegistryKey.of(RegistryKeys.WORLD, dimension);
             controllers.homes.put(home.getUuid("Page"), GlobalPos.create(world, BlockPos.fromLong(home.getLong("Pos"))));
-            if (home.contains("Zone")) PageZone.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, home.get("Zone")).result()
+            if (home.contains("Zone")) PageZone.CODEC.parse(NbtOps.INSTANCE, home.get("Zone")).result()
                     .ifPresent(zone -> controllers.oldZones.put(home.getUuid("Page"), zone));
             if (home.getBoolean("Adventure")) controllers.oldAdventure.add(home.getUuid("Page"));
         }

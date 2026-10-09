@@ -4,6 +4,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaEphemeride;
+import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
@@ -11,6 +13,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.Collection;
 
@@ -41,13 +44,13 @@ public final class MulaCommand {
                 // /mula ephemeride start: a night of shooting stars now; nearest: the nearest Mula spawn site
                 .then(literal("ephemeride")
                         .then(literal("start").executes(context -> {
-                            fr.lordfinn.steveparty.entities.custom.MulaEphemeride.start(context.getSource().getWorld());
+                            MulaEphemeride.start(context.getSource().getWorld());
                             context.getSource().sendFeedback(() -> Text.translatable("command.steveparty.mula.ephemeride_started"), true);
                             return 1;
                         }))
                         .then(literal("nearest").executes(context -> {
-                            var site = fr.lordfinn.steveparty.entities.custom.MulaSpawnSites.get(context.getSource().getWorld())
-                                    .nearest(net.minecraft.util.math.BlockPos.ofFloored(context.getSource().getPosition()), true);
+                            var site = MulaSpawnSites.get(context.getSource().getWorld())
+                                    .nearest(BlockPos.ofFloored(context.getSource().getPosition()), true);
                             if (site.isEmpty()) {
                                 context.getSource().sendError(Text.translatable("command.steveparty.mula.no_spawn_site"));
                                 return 0;

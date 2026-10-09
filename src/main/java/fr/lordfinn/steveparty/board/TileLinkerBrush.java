@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -73,7 +74,7 @@ public final class TileLinkerBrush {
         Set<BlockPos> ghosts = Set.of();
     }
 
-    private static final Map<UUID, Stroke> STROKES = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<UUID, Stroke> STROKES = ServerMemory.forgetOnStop(new HashMap<>());
 
     private TileLinkerBrush() {
     }

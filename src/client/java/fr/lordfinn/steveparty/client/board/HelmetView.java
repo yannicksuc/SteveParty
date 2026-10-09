@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -36,10 +37,12 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -116,7 +119,7 @@ public final class HelmetView {
         if (aim != null && graph.node(aim) == null) aim = null;
         BlockPos at = client.player.getBlockPos();
         boolean moved = builtAt == null || !builtAt.equals(at);
-        if (age++ >= REBUILD_TICKS || moved || !java.util.Objects.equals(aim, aimed)) {
+        if (age++ >= REBUILD_TICKS || moved || !Objects.equals(aim, aimed)) {
             aimed = aim;
             build(client.world, graph, client.player.getEyePos());
             builtAt = at.toImmutable();
@@ -160,7 +163,7 @@ public final class HelmetView {
             if (node.pos().equals(aimed)) continue;
             if (Vec3d.ofCenter(node.pos()).squaredDistanceTo(eye) <= DETAIL_RADIUS_SQ) near.add(node);
         }
-        near.sort(java.util.Comparator.comparingDouble(node -> Vec3d.ofCenter(node.pos()).squaredDistanceTo(eye)));
+        near.sort(Comparator.comparingDouble(node -> Vec3d.ofCenter(node.pos()).squaredDistanceTo(eye)));
         List<Detail> built = new ArrayList<>();
         BoardGraph.Node aimedNode = aimed != null ? graph.node(aimed) : null;
         if (aimedNode != null) built.add(detail(world, graph, aimedNode, true));
@@ -222,8 +225,7 @@ public final class HelmetView {
 
     /** A colour readable on the light plates: a white cartridge's square is drawn light grey. */
     private static int visible(int rgb) {
-        int luminance = (((rgb >> 16) & 0xFF) * 299 + ((rgb >> 8) & 0xFF) * 587 + (rgb & 0xFF) * 114) / 1000;
-        return luminance > 215 ? 0xA8A8A8 : rgb & 0xFFFFFF;
+        return Argb.luminance(rgb) > 215 ? 0xA8A8A8 : rgb & 0xFFFFFF;
     }
 
     /** The aimed space's destinations, the spaces leading to it and its chests. */

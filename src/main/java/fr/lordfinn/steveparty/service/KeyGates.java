@@ -31,15 +31,18 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * The Key gates ({@link KeyGateCartridgeItem}). A token leaving a gate's board space by a locked exit, the gate
@@ -148,7 +151,7 @@ public final class KeyGates {
         USE_KEY, KEEP_KEY, OTHER_WAY, WAIT, CANCEL, START;
 
         public String key() {
-            return "gui.steveparty.key_gate." + name().toLowerCase(java.util.Locale.ROOT);
+            return "gui.steveparty.key_gate." + name().toLowerCase(Locale.ROOT);
         }
     }
 
@@ -197,7 +200,7 @@ public final class KeyGates {
     }
 
     private static void prompt(ServerPlayerEntity player, MobEntity token, List<Choice> choices, int fallback,
-                               java.util.function.Consumer<Choice> then) {
+                               Consumer<Choice> then) {
         List<DicePrompts.Option> options = new ArrayList<>();
         for (Choice choice : choices) options.add(new DicePrompts.Option(icon(choice), Text.translatable(choice.key()).formatted(Formatting.WHITE)));
         DicePrompts.Prompt prompt = DicePrompts.ask(player, Text.translatable("gui.steveparty.key_gate.title", token.getDisplayName()),
@@ -329,7 +332,7 @@ public final class KeyGates {
     /** Where the gate of {@code gate} toward {@code exit} stands: on the edge of its space, that side. */
     public static Vec3d gateCentre(ServerWorld world, BlockPos gate, BlockPos exit) {
         Vec3d from = BoardSpaces.standPos(world, gate);
-        net.minecraft.util.math.Direction side = KeyGateCartridgeItem.sideOf(gate, exit);
+        Direction side = KeyGateCartridgeItem.sideOf(gate, exit);
         return from.add(side.getOffsetX() * 0.9, 0, side.getOffsetZ() * 0.9);
     }
 

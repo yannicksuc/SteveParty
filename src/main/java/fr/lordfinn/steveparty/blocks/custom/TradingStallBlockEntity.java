@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.PowerUpItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
@@ -16,7 +18,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.predicate.ComponentPredicate;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
@@ -125,8 +126,8 @@ public class TradingStallBlockEntity extends SyncedBlockEntity implements NamedS
                 secondBuyItem = ItemStack.EMPTY;
             }
             // A power-up without a price sells at its default price, in the mod's coins
-            if (firstBuyItem.isEmpty() && sellItem.getItem() instanceof fr.lordfinn.steveparty.items.custom.PowerUpItem powerUp) {
-                firstBuyItem = new ItemStack(fr.lordfinn.steveparty.items.ModItems.COIN, powerUp.powerUp().defaultPrice());
+            if (firstBuyItem.isEmpty() && sellItem.getItem() instanceof PowerUpItem powerUp) {
+                firstBuyItem = new ItemStack(ModItems.COIN, powerUp.powerUp().defaultPrice());
             }
 
             if (!firstBuyItem.isEmpty() && !sellItem.isEmpty() &&

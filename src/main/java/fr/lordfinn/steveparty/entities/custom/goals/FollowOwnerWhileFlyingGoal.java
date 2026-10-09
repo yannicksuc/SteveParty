@@ -1,12 +1,19 @@
 package fr.lordfinn.steveparty.entities.custom.goals;
 
+import fr.lordfinn.steveparty.entities.PetSlots;
+import fr.lordfinn.steveparty.entities.custom.MulaEscorts;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import net.minecraft.entity.ai.goal.Goal;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 
 import java.util.EnumSet;
+import java.util.UUID;
 
 /**
  * A tamed Mula floats after its owner, 2 blocks above them, like a little star trailing behind its owner: gently when close,
@@ -56,11 +63,11 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
     private static final double STUCK = 0.5;
     private int escortRetryTicks;
     /** Its mates: its owner's other Mulas following them, each its own place on a ring above them (PetSlots). */
-    private final fr.lordfinn.steveparty.entities.PetSlots.Group mates;
+    private final PetSlots.Group mates;
 
     public FollowOwnerWhileFlyingGoal(MulaEntity entity, double speed, float minDistance, float maxDistance) {
         this.entity = entity;
-        this.mates = new fr.lordfinn.steveparty.entities.PetSlots.Group(entity);
+        this.mates = new PetSlots.Group(entity);
         this.speed = speed;
         this.minDistance = minDistance;
         this.maxDistance = maxDistance;
@@ -79,8 +86,8 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
             escortRetryTicks--;
             return false;
         }
-        if (entity.getWorld() instanceof net.minecraft.server.world.ServerWorld world
-                && !fr.lordfinn.steveparty.entities.custom.MulaEscorts.join(world, player.getUuid(), entity)) {
+        if (entity.getWorld() instanceof ServerWorld world
+                && !MulaEscorts.join(world, player.getUuid(), entity)) {
             escortRetryTicks = ESCORT_RETRY_TICKS;
             return false;
         }
@@ -135,9 +142,9 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
      */
     private double[] place() {
         PlayerEntity owner = this.owner;
-        java.util.UUID id = owner.getUuid();
+        UUID id = owner.getUuid();
         mates.refresh(24, 20, other -> other instanceof MulaEntity mula && mula.isTamed() && id.equals(mula.getOwnerUuid())
-                && !mula.isSitting() && fr.lordfinn.steveparty.entities.custom.MulaEscorts.isFollower(id, mula));
+                && !mula.isSitting() && MulaEscorts.isFollower(id, mula));
         double[] place = {owner.getX(), owner.getY() + 2.0, owner.getZ()};
         int count = mates.count();
         if (count > 1) {
@@ -235,7 +242,7 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
             pos.move(0, -1, 0);
         }
         double groundY = pos.getY() + 1.0;
-        targetY = Math.max(groundY + 1.0, Math.min(targetY, groundY + 5.0));
+        targetY = MathHelper.clamp(targetY, groundY + 1.0, groundY + 5.0);
 
         // the same goal as the path it follows: no new search
         if (!entity.getNavigation().isIdle() && !Double.isNaN(pathX)
@@ -252,10 +259,10 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
 
     /** Nothing solid between its body and that place (one ray). */
     private boolean inSight(double x, double y, double z) {
-        net.minecraft.util.math.Vec3d from = entity.getPos().add(0, entity.getHeight() * 0.5, 0);
-        return entity.getWorld().raycast(new net.minecraft.world.RaycastContext(from, new net.minecraft.util.math.Vec3d(x, y, z),
-                net.minecraft.world.RaycastContext.ShapeType.COLLIDER, net.minecraft.world.RaycastContext.FluidHandling.NONE,
-                entity)).getType() == net.minecraft.util.hit.HitResult.Type.MISS;
+        Vec3d from = entity.getPos().add(0, entity.getHeight() * 0.5, 0);
+        return entity.getWorld().raycast(new RaycastContext(from, new Vec3d(x, y, z),
+                RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE,
+                entity)).getType() == HitResult.Type.MISS;
     }
 
     private static double sq(double v) {

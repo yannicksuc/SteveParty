@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -13,8 +14,11 @@ import net.minecraft.block.WallMountedBlock;
 import net.minecraft.block.enums.BlockFace;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
@@ -26,6 +30,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -190,7 +198,7 @@ public class SwitchableGameTests implements FabricGameTest {
         NbtCompound itemNbt = new NbtCompound();
         itemNbt.putString("id", "steveparty:red_switcher_block");
         itemNbt.putInt("count", 3);
-        RegistryOps<net.minecraft.nbt.NbtElement> ops = context.getWorld().getRegistryManager().getOps(NbtOps.INSTANCE);
+        RegistryOps<NbtElement> ops = context.getWorld().getRegistryManager().getOps(NbtOps.INSTANCE);
         DataResult<ItemStack> stack = ItemStack.CODEC.parse(ops, itemNbt);
         context.assertTrue(stack.result().map(s -> s.isOf(redPlastic().asItem()) && s.getCount() == 3).orElse(false),
                 "inventory item migrated");
@@ -207,9 +215,9 @@ public class SwitchableGameTests implements FabricGameTest {
         context.setBlockState(POS, ModBlocks.HOP_SWITCH);
         BlockPos abs = context.getAbsolutePos(POS);
         ServerWorld world = context.getWorld();
-        ((net.minecraft.inventory.Inventory) world.getBlockEntity(abs)).setStack(0, new ItemStack(net.minecraft.item.Items.PAPER));
+        ((Inventory) world.getBlockEntity(abs)).setStack(0, new ItemStack(Items.PAPER));
         context.setBlockState(POS, Blocks.AIR);
-        int count = itemsAround(world, abs).stream().filter(e -> e.getStack().isOf(net.minecraft.item.Items.PAPER))
+        int count = itemsAround(world, abs).stream().filter(e -> e.getStack().isOf(Items.PAPER))
                 .mapToInt(e -> e.getStack().getCount()).sum();
         context.assertTrue(count == 1, "the cartridge dropped once, got " + count);
         context.complete();
@@ -221,30 +229,30 @@ public class SwitchableGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theOldSwitchableFileIsMigratedOnce(TestContext context) {
-        java.nio.file.Path dir = null;
+        Path dir = null;
         try {
-            dir = java.nio.file.Files.createTempDirectory("steveparty-config");
-            java.nio.file.Path old = dir.resolve("steveparty").resolve("server.json");
-            java.nio.file.Files.createDirectories(old.getParent());
-            java.nio.file.Files.writeString(old, "{\"_comment\": \"old\", \"switchable_blocks\": [\"minecraft:stone\", \"#minecraft:wool\"]}");
+            dir = Files.createTempDirectory("steveparty-config");
+            Path old = dir.resolve("steveparty").resolve("server.json");
+            Files.createDirectories(old.getParent());
+            Files.writeString(old, "{\"_comment\": \"old\", \"switchable_blocks\": [\"minecraft:stone\", \"#minecraft:wool\"]}");
 
-            var config = fr.lordfinn.steveparty.config.ServerConfig.loadFrom(dir);
+            var config = ServerConfig.loadFrom(dir);
             context.assertTrue(config.switchableBlocks.equals(List.of("minecraft:stone", "#minecraft:wool")), "the old list is taken");
-            String merged = java.nio.file.Files.readString(dir.resolve("steveparty.json"));
+            String merged = Files.readString(dir.resolve("steveparty.json"));
             context.assertTrue(merged.contains("\"switchableBlocks\"") && merged.contains("#minecraft:wool") && merged.contains("\"miniGameBubble\""),
                     "one file holds every setting");
-            context.assertTrue(!java.nio.file.Files.exists(old) && java.nio.file.Files.exists(old.resolveSibling("server.json.migrated")),
+            context.assertTrue(!Files.exists(old) && Files.exists(old.resolveSibling("server.json.migrated")),
                     "the old file is renamed");
 
-            var again = fr.lordfinn.steveparty.config.ServerConfig.loadFrom(dir);
+            var again = ServerConfig.loadFrom(dir);
             context.assertTrue(again.switchableBlocks.equals(config.switchableBlocks) && again.mulaMaxSites == 10, "read back the same next time");
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
             if (dir != null) {
-                try (var files = java.nio.file.Files.walk(dir)) {
-                    files.sorted(java.util.Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
-                } catch (java.io.IOException ignored) {
+                try (var files = Files.walk(dir)) {
+                    files.sorted(Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
+                } catch (IOException ignored) {
                 }
             }
         }

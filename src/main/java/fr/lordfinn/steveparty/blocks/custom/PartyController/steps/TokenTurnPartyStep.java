@@ -28,6 +28,7 @@ import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -252,7 +253,7 @@ public class TokenTurnPartyStep extends PartyStep {
      * the Power-up module goes back to its owner by itself.
      */
     private static ItemStack spentDie(DiceEntity dice) {
-        List<DiceEntity> group = new java.util.ArrayList<>(List.of(dice));
+        List<DiceEntity> group = new ArrayList<>(List.of(dice));
         if (dice.getWorld() instanceof ServerWorld world)
             for (UUID linked : dice.getLinkedDice())
                 if (world.getEntity(linked) instanceof DiceEntity other) group.add(other);

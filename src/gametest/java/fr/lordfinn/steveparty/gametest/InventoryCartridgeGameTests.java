@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ContainersModule;
+import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -114,7 +115,7 @@ public class InventoryCartridgeGameTests implements FabricGameTest {
             context.assertEquals(CartridgeContainers.in(cartridge, context.getWorld()).size(), 2, "the board space is no container of it");
 
             click(context, player, Hand.MAIN_HAND, tile);
-            context.assertTrue(player.currentScreenHandler instanceof fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler,
+            context.assertTrue(player.currentScreenHandler instanceof BoardSpaceScreenHandler,
                     "a plain click on a board space: its interface, where cartridges are put in");
             player.closeHandledScreen();
             context.assertTrue(cartridge.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations().size() == 1,

@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.items.custom.PartyCardItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.PartyDashboardPayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
@@ -309,7 +310,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
 
         @Override
         public boolean canInsert(ItemStack stack) {
-            return stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem && mayEditProgram();
+            return stack.getItem() instanceof InventoryCartridgeItem && mayEditProgram();
         }
 
         @Override
@@ -469,7 +470,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         ItemStack original = stack.copy();
         if (index == SLOT_CATALOGUE || isProgramSlot(index) || index == SLOT_BANK) {
             if (!slot.canTakeItems(player) || !insertItem(stack, PLAYER_SLOTS, PROGRAM_FIRST_SLOT, true)) return ItemStack.EMPTY;
-        } else if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem) {
+        } else if (stack.getItem() instanceof InventoryCartridgeItem) {
             Slot bank = slots.get(SLOT_BANK);
             if (!bank.canInsert(stack) || bank.hasStack() || !insertItem(stack, SLOT_BANK, SLOT_BANK + 1, false)) return ItemStack.EMPTY;
         } else if (stack.getItem() instanceof PartyCardItem) {

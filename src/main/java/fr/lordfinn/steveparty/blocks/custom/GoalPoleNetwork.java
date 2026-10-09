@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -93,7 +95,7 @@ public final class GoalPoleNetwork {
         for (BlockEntity entity : TO_SYNC) {
             if (entity.isRemoved() || entity.getWorld() == null) continue;
             var state = entity.getCachedState();
-            entity.getWorld().updateListeners(entity.getPos(), state, state, net.minecraft.block.Block.NOTIFY_LISTENERS);
+            entity.getWorld().updateListeners(entity.getPos(), state, state, Block.NOTIFY_LISTENERS);
         }
         TO_SYNC.clear();
     }
@@ -135,7 +137,7 @@ public final class GoalPoleNetwork {
     }
 
     /** A party started: the bases linked to it (following its players) go back to 0. */
-    public static void onPartyStarted(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller) {
+    public static void onPartyStarted(PartyControllerEntity controller) {
         for (GoalPoleBaseBlockEntity base : bases()) {
             if (!base.isRemoved() && base.getWorld() == controller.getWorld()) base.onPartyStarted(controller);
         }

@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -100,7 +102,7 @@ public class DiceForgeScreenHandler extends ScreenHandler {
 
         // --- Player inventory ---
         // Matches the slot cells painted in the texture (rows at y = 237, 255, 273, hotbar at 295)
-        addPlayerSlots(playerInventory, INVENTORY_X + 8, INVENTORY_Y + 7);
+        PlayerSlots.add(this::addSlot, playerInventory, INVENTORY_X + 8, INVENTORY_Y + 7);
         addProperties(properties);
     }
 
@@ -167,22 +169,6 @@ public class DiceForgeScreenHandler extends ScreenHandler {
         }
     }
 
-    private void addPlayerSlots(PlayerInventory playerInventory, int left, int top) {
-        // Player inventory (3 rows)
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9,
-                        left + col * 18, top + row * 18));
-            }
-        }
-
-        // Hotbar
-        for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col,
-                    left + col * 18, top + 58));
-        }
-    }
-
     @Override
     public boolean canUse(PlayerEntity player) {
         return ScreenHandlerChecks.canUseInventory(this.inventory, player);
@@ -221,7 +207,7 @@ public class DiceForgeScreenHandler extends ScreenHandler {
                 if (!insertPreferringGhosts(stackInSlot, BLANK_SLOT, BLANK_SLOT + 1)) return ItemStack.EMPTY;
             } else if (DiceFace.isFace(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, 0, FACE_SLOTS)) return ItemStack.EMPTY;
-            } else if (fr.lordfinn.steveparty.dice.DiceModules.isModuleItem(stackInSlot)) {
+            } else if (DiceModules.isModuleItem(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, FIRST_MODULE_SLOT, FIRST_MODULE_SLOT + MODULE_SLOTS)) return ItemStack.EMPTY;
             } else if (isStarFragment(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, FIRST_FRAGMENT_SLOT, FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS)) return ItemStack.EMPTY;

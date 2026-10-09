@@ -12,8 +12,10 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 /**
  * Drawing helpers for the Wrench overlays, in world coordinates (the camera offset is applied here): board paths made
@@ -108,7 +110,7 @@ public final class WorldDraw {
     static final class Arc {
         final double[] x, y, z, along;
         final double total;
-        final net.minecraft.util.math.Box bounds;
+        final Box bounds;
 
         Arc(Vec3d a, Vec3d b, double height) {
             int segments = Math.clamp((int) (a.distanceTo(b) * 8), 16, 240);
@@ -129,12 +131,12 @@ public final class WorldDraw {
                 along[i] = sum;
             }
             total = sum;
-            bounds = new net.minecraft.util.math.Box(a.x, Math.min(a.y, b.y), a.z, b.x, Math.max(a.y, b.y) + height, b.z).expand(0.5);
+            bounds = new Box(a.x, Math.min(a.y, b.y), a.z, b.x, Math.max(a.y, b.y) + height, b.z).expand(0.5);
         }
     }
 
     /** Camera axes of the frame (render thread only), for the sparkles. */
-    private static final org.joml.Vector3f RIGHT = new org.joml.Vector3f(), UP = new org.joml.Vector3f();
+    private static final Vector3f RIGHT = new Vector3f(), UP = new Vector3f();
 
     /** A teleport link drawn once (the Wrench's ghost of a click): {@link #arc} on a new {@link Arc}. */
     static void arc(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d a, Vec3d b, double height,

@@ -105,7 +105,7 @@ public final class GoldenPipeEffect {
         }
         Optional<BlockPos> star = starLocator.currentStarSpace(party);
         if (star.isEmpty() || !(world.getBlockEntity(BoardSpaces.resolve(world, star.get())) instanceof BoardSpaceBlockEntity)) {
-            tell(party, user, Text.translatable(NO_STAR_KEY).formatted(Formatting.RED));
+            PowerUpStar.tell(party, user, Text.translatable(NO_STAR_KEY).formatted(Formatting.RED));
             return new Result(Outcome.NO_STAR, null);
         }
         BlockPos starPos = BoardSpaces.resolve(world, star.get()).toImmutable();
@@ -114,7 +114,7 @@ public final class GoldenPipeEffect {
         BoardSpaceBlockEntity on = BoardSpaces.boardSpaceOf(token);
         BlockPos from = on != null ? on.getPos().toImmutable() : token.getBlockPos().toImmutable();
         if (on != null && before.contains(from) || before.isEmpty() && from.equals(starPos)) {
-            tell(party, user, Text.translatable(ALREADY_THERE_KEY).formatted(Formatting.YELLOW));
+            PowerUpStar.tell(party, user, Text.translatable(ALREADY_THERE_KEY).formatted(Formatting.YELLOW));
             return new Result(Outcome.ALREADY_THERE, from);
         }
         BlockPos destination = pick(graph, before, world.getRandom()).orElse(starPos);
@@ -198,10 +198,5 @@ public final class GoldenPipeEffect {
             if (d == best) closest.add(pos);
         }
         return closest.isEmpty() ? Optional.empty() : Optional.of(closest.get(random.nextInt(closest.size())));
-    }
-
-    private static void tell(PartyControllerEntity party, @Nullable ServerPlayerEntity user, Text message) {
-        if (user != null) MessageUtils.sendToPlayer(user, message, MessageUtils.MessageType.CHAT);
-        else MessageUtils.sendToPlayers(party.getPartyAudience(), message, MessageUtils.MessageType.CHAT);
     }
 }
