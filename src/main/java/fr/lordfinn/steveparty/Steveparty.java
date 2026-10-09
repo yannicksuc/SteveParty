@@ -45,6 +45,8 @@ public class Steveparty implements ModInitializer {
         ModSounds.initialize();
         ModParticles.initialize();
         ModBlocks.initialize();
+        // Former ids of renamed blocks, items and entities, so saved worlds keep them
+        fr.lordfinn.steveparty.registry.LegacyIds.initialize();
         ModItems.initialize();
         ModBlockEntities.initialize();
         // Before the party / movement listeners of TileReachedEvent (a movement going on stops the chain)
@@ -86,10 +88,6 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.minigame.MiniGameControllers.initialize();
         fr.lordfinn.steveparty.minigame.MiniGameAdventure.initialize();
         fr.lordfinn.steveparty.minigame.PageZoneTool.initialize();
-        // The names the iron and golden mini-game pipes (and their block entity) had
-        fr.lordfinn.steveparty.registry.RegistryAliases.add(id("super_golden_minigame_pipe"), id("iron_minigame_pipe"));
-        fr.lordfinn.steveparty.registry.RegistryAliases.add(id("mega_golden_minigame_pipe"), id("golden_minigame_pipe"));
-        fr.lordfinn.steveparty.registry.RegistryAliases.add(id("golden_pipe"), id("minigame_pipe"));
         fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks.initialize();
         fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel.initialize();
         fr.lordfinn.steveparty.items.custom.BoxCostumeItem.initialize();

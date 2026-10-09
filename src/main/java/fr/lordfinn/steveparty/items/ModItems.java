@@ -274,9 +274,6 @@ public class ModItems {
     }
 
     public static void initialize() {
-        // Former ids of renamed items, so the ones already in saved worlds keep loading
-        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("power_star"), Steveparty.id("party_star"));
-        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("garnet_crystal_ball"), Steveparty.id("lapis_crystal_ball"));
         // Register the group.
         Registry.register(Registries.ITEM_GROUP, CUSTOM_ITEM_GROUP_KEY, CUSTOM_ITEM_GROUP);
 
