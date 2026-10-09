@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.components;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Uuids;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -18,7 +19,7 @@ public record TrapSetComponent(UUID owner, UUID token, int color) {
     ).apply(instance, TrapSetComponent::new));
 
     /** Set by this player, or by this token (a player's own trap never springs on them). */
-    public boolean isOwnedBy(@org.jetbrains.annotations.Nullable UUID player, UUID token) {
+    public boolean isOwnedBy(@Nullable UUID player, UUID token) {
         return owner.equals(player) || this.token.equals(token);
     }
 }

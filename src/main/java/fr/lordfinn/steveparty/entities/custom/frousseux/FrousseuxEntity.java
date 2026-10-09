@@ -28,6 +28,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.DamageTypeTags;
@@ -58,8 +60,12 @@ import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 /**
  * The Frousseux (Wickling): a little candle ghost of the caves, one per candle colour ({@link FrousseuxColor}).
@@ -175,7 +181,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     private boolean boardActor;
     /** A board actor: what it carries under itself (coins, stars), and who may hit it (the board's say). */
     private ItemStack boardCarried = ItemStack.EMPTY;
-    private @Nullable java.util.function.Predicate<Entity> boardHit;
+    private @Nullable Predicate<Entity> boardHit;
     private int shyTicks;
     private int dodgeCooldown;
     /** What it stole (one item), or empty. */
@@ -188,7 +194,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     private int itemFlightTicks;
     private int itemFlightStart = Integer.MIN_VALUE;
     /** The players it robbed and until when it leaves them be (world time), each: {@link #VICTIM_COOLDOWN}. */
-    private final java.util.Map<UUID, Long> robbed = new java.util.HashMap<>();
+    private final Map<UUID, Long> robbed = new HashMap<>();
 
     public FrousseuxEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -379,7 +385,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
      * A board actor: a blow at it (melee, nothing else) is handed to {@code onHit} (the attacker), and never hurts it.
      * Null: blows do nothing.
      */
-    public void onBoardHit(@Nullable java.util.function.Predicate<Entity> onHit) {
+    public void onBoardHit(@Nullable Predicate<Entity> onHit) {
         this.boardHit = onHit;
     }
 
@@ -449,7 +455,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     }
 
     /** Set by the client: whether the local player is this one's owner, not reaching for it. */
-    public static java.util.function.Predicate<FrousseuxEntity> CLIENT_PASS_THROUGH = frousseux -> false;
+    public static Predicate<FrousseuxEntity> CLIENT_PASS_THROUGH = frousseux -> false;
 
     // ---------------------------------------------------------------- a ghost: no gravity, no walls, no pushes
 
@@ -532,7 +538,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** How near its owner's camera (FADE_NEAR: faded; FADE_ON: gone), from the client ({@link #CLIENT_FADE}). */
     public static final int FADE_NONE = 0, FADE_NEAR = 1, FADE_ON = 2;
     /** Set by the client: how much it fades for the local player (FrousseuxCompanion#fadeFor). */
-    public static java.util.function.ToIntFunction<FrousseuxEntity> CLIENT_FADE = frousseux -> FADE_NONE;
+    public static ToIntFunction<FrousseuxEntity> CLIENT_FADE = frousseux -> FADE_NONE;
     /** Its body's and its flame's opacity for the local player: eased, a quarter of the way a tick. */
     private float bodyAlpha = 1, flameAlpha = 1, prevBodyAlpha = 1, prevFlameAlpha = 1;
 
@@ -980,7 +986,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (!stolen.isEmpty()) nbt.put("Stolen", stolen.encode(getRegistryManager()));
         if (stealCooldown > 0) nbt.putInt("StealCooldown", stealCooldown);
         if (!robbed.isEmpty()) {
-            net.minecraft.nbt.NbtList list = new net.minecraft.nbt.NbtList();
+            NbtList list = new NbtList();
             long now = getWorld().getTime();
             robbed.forEach((who, until) -> {
                 if (until <= now) return;
@@ -1008,7 +1014,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         this.dataTracker.set(SHOWN_ITEM, stolen.copy());
         stealCooldown = nbt.getInt("StealCooldown");
         robbed.clear();
-        for (net.minecraft.nbt.NbtElement element : nbt.getList("Robbed", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) {
+        for (NbtElement element : nbt.getList("Robbed", NbtElement.COMPOUND_TYPE)) {
             NbtCompound entry = (NbtCompound) element;
             if (entry.containsUuid("Player")) robbed.put(entry.getUuid("Player"), entry.getLong("Until"));
         }

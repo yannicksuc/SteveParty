@@ -6,6 +6,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.util.math.GlobalPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -175,7 +176,7 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
     }
 
     /** The index of the link to the pipe at {@code mouth}, -1 if it is not linked. */
-    public int linkIndex(net.minecraft.util.math.GlobalPos mouth) {
+    public int linkIndex(GlobalPos mouth) {
         for (int i = 0; i < pipeLinks.size(); i++) if (pipeLinks.get(i).isAt(mouth)) return i;
         return -1;
     }
@@ -244,7 +245,7 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
     }
 
     /** The index of the link to the block at {@code pos}, -1 if it is not linked. */
-    public int podiumLinkIndex(net.minecraft.util.math.GlobalPos pos) {
+    public int podiumLinkIndex(GlobalPos pos) {
         for (int i = 0; i < podiumLinks.size(); i++) if (podiumLinks.get(i).pos().equals(pos)) return i;
         return -1;
     }

@@ -11,6 +11,7 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.sound.SoundCategory;
 
 public class MiniGamesCatalogueScreenHandler extends ScreenHandler {
@@ -46,7 +47,7 @@ public class MiniGamesCatalogueScreenHandler extends ScreenHandler {
     }
 
     @Override
-    public void onSlotClick(int slotIndex, int button, net.minecraft.screen.slot.SlotActionType actionType, PlayerEntity player) {
+    public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
         if (!this.canUse(player)) return;
         super.onSlotClick(slotIndex, button, actionType, player);
     }

@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -92,7 +93,7 @@ public final class BoardCommands {
                         .then(templateNode("line", BoardBlueprint.Template.LINE, 1)))));
     }
 
-    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<ServerCommandSource> templateNode(String name, BoardBlueprint.Template template, int min) {
+    private static LiteralArgumentBuilder<ServerCommandSource> templateNode(String name, BoardBlueprint.Template template, int min) {
         return CommandManager.literal(name).then(argument("count", IntegerArgumentType.integer(min, 128))
                 .executes(context -> template(context, template, 3))
                 .then(argument("spacing", IntegerArgumentType.integer(1, 16))

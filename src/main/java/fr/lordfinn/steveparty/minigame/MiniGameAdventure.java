@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.minigame;
 
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.GameMode;
@@ -22,7 +23,7 @@ public final class MiniGameAdventure {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> restore(handler.getPlayer()));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> restore(handler.getPlayer()));
         // A death during the round: the player he respawns as remembers his own mode too
-        net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents.COPY_FROM.register((oldPlayer, newPlayer, alive) -> {
+        ServerPlayerEvents.COPY_FROM.register((oldPlayer, newPlayer, alive) -> {
             for (String tag : oldPlayer.getCommandTags()) if (tag.startsWith(TAG)) newPlayer.addCommandTag(tag);
         });
     }

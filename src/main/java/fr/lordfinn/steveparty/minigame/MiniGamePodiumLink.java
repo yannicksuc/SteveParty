@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.minigame;
 
+import java.util.Locale;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.RegistryKey;
@@ -29,7 +30,7 @@ public record MiniGamePodiumLink(GlobalPos pos, Kind kind) {
 
         /** Its name in the translation keys. */
         public String key() {
-            return name().toLowerCase(java.util.Locale.ROOT);
+            return name().toLowerCase(Locale.ROOT);
         }
     }
 

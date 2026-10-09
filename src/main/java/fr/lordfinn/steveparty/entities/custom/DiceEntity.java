@@ -14,6 +14,7 @@ import fr.lordfinn.steveparty.data.handler.ListUuidTrackedDataHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import net.minecraft.block.BlockState;
 import net.minecraft.component.type.FireworkExplosionComponent;
 import net.minecraft.component.type.FireworksComponent;
 import net.minecraft.entity.*;
@@ -25,15 +26,18 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.projectile.*;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.*;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -42,6 +46,7 @@ import net.minecraft.util.Arm;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
@@ -54,6 +59,7 @@ import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.animation.AnimationState;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE;
@@ -405,7 +411,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     /** A die is not a falling body: landing makes no fall sound, no crash particles, no fall damage. */
     @Override
-    protected void fall(double heightDifference, boolean onGround, net.minecraft.block.BlockState state, net.minecraft.util.math.BlockPos landedPosition) {
+    protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
         this.fallDistance = 0;
     }
 
@@ -421,7 +427,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     @Override
-    protected @Nullable net.minecraft.sound.SoundEvent getHurtSound(DamageSource source) {
+    protected @Nullable SoundEvent getHurtSound(DamageSource source) {
         return null;
     }
 
@@ -803,7 +809,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             entity.addVelocity(flat.x * push, BLAST_LIFT * near, flat.z * push);
             entity.velocityModified = true;
         }
-        world.spawnParticles(net.minecraft.particle.ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0, 0, 0, 0);
+        world.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0, 0, 0, 0);
         world.playSound(null, center.x, center.y, center.z, SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 1.0F, 1.4F);
     }
 
@@ -821,7 +827,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     private ItemStack createStopFireworkItem() {
-        ItemStack fireworkStack = new ItemStack(net.minecraft.item.Items.FIREWORK_ROCKET);
+        ItemStack fireworkStack = new ItemStack(Items.FIREWORK_ROCKET);
         List<FireworkExplosionComponent> components = new ArrayList<>();
         IntList colors = new IntArrayList(2);
         colors.add(0x569DCD);
@@ -877,7 +883,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.dataTracker.set(LINKED_DICE, linkedDice.stream().filter(uuid -> !uuid.equals(this.getUuid())).toList());
     }
 
-    private void propagateStateChange(java.util.function.Consumer<DiceEntity> stateChange) {
+    private void propagateStateChange(Consumer<DiceEntity> stateChange) {
         if (!(this.getWorld() instanceof ServerWorld world)) return;
         for (UUID uuid : this.getLinkedDice()) {
             if (uuid.equals(this.getUuid())) continue;

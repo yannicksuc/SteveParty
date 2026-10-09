@@ -18,6 +18,9 @@ import fr.lordfinn.steveparty.items.custom.TokenItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import fr.lordfinn.steveparty.utils.Argb;
+import net.minecraft.block.BlockState;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.control.BodyControl;
 import net.minecraft.entity.ai.pathing.BirdNavigation;
@@ -25,6 +28,8 @@ import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageType;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -33,19 +38,29 @@ import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
@@ -200,7 +215,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	 */
 	private static final TrackedData<Integer> DANCE =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private static final TrackedData<java.util.Optional<net.minecraft.util.math.BlockPos>> DANCE_FORGE =
+	private static final TrackedData<Optional<BlockPos>> DANCE_FORGE =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
 	private static final TrackedData<Boolean> RESTING =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -237,7 +252,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	// ------------------------------------------------------------------------------------------ home (MulaHome)
 
 	/** The Dice Forge it lives at, or null; saved with it. */
-	private @Nullable net.minecraft.util.math.BlockPos homeForge;
+	private @Nullable BlockPos homeForge;
 	/** Server: its owner is leading it (following them): the only thing that may take it out of its forge's area. */
 	private boolean ledByOwner;
 	/**
@@ -250,12 +265,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	/** The retirements it has taken into account (MulaSpawnSites#epoch): -1 just loaded, not checked yet. */
 	private int spawnSiteEpoch = -1;
 
-	public @Nullable net.minecraft.util.math.BlockPos homeForge() {
+	public @Nullable BlockPos homeForge() {
 		return homeForge;
 	}
 
 	/** Server, from the forge conducting (once a second): it lives there now. */
-	public void setHomeForge(net.minecraft.util.math.BlockPos forge) {
+	public void setHomeForge(BlockPos forge) {
 		this.homeForge = forge.toImmutable();
 	}
 
@@ -274,12 +289,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	}
 
 	/** A point brought back inside its forge's area (the point itself when it has no home). */
-	public net.minecraft.util.math.Vec3d keepHome(net.minecraft.util.math.Vec3d v) {
+	public Vec3d keepHome(Vec3d v) {
 		return homeForge == null ? v : MulaHome.clamp(homeForge, v);
 	}
 
 	/** Inside its forge's area (anywhere when it has no home). */
-	public boolean isInHome(net.minecraft.util.math.Vec3d v) {
+	public boolean isInHome(Vec3d v) {
 		return homeForge == null || MulaHome.contains(homeForge, v.x, v.y, v.z);
 	}
 
@@ -373,8 +388,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		MulaStarEntity star = new MulaStarEntity(ModEntities.MULA_STAR, world);
 		star.launch(this.getX(), startY, this.getZ(), this.getVariant(), dirX, dirZ, distance, apex, endY - startY);
 		world.spawnEntity(star);
-		world.playSound(null, this.getX(), startY, this.getZ(), net.minecraft.sound.SoundEvents.ENTITY_ALLAY_ITEM_THROWN,
-				net.minecraft.sound.SoundCategory.NEUTRAL, 0.6f, 1.5f * voice());
+		world.playSound(null, this.getX(), startY, this.getZ(), SoundEvents.ENTITY_ALLAY_ITEM_THROWN,
+				SoundCategory.NEUTRAL, 0.6f, 1.5f * voice());
 		Steveparty.LOGGER.info("A {} Mula burst into a shooting star: reborn at {} {} in {} s{}",
 				getVariant().name().toLowerCase(Locale.ROOT), x, z, flight / 20, atForge ? " (at its forge)" : "");
 		this.discard();
@@ -436,7 +451,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	}
 
 	/** Server, when it comes down at a site (MulaSpawnSites#spawn). */
-	public void setSpawnSite(net.minecraft.registry.RegistryKey<World> world, int id, int x, int z) {
+	public void setSpawnSite(RegistryKey<World> world, int id, int x, int z) {
 		this.spawnSite = id;
 		this.spawnSiteWorld = world.getValue();
 		this.spawnSiteX = x;
@@ -487,7 +502,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	}
 
 	@Override
-	public void setCustomName(@Nullable net.minecraft.text.Text name) {
+	public void setCustomName(@Nullable Text name) {
 		super.setCustomName(name);
 		if (name != null) leaveSpawnSite();
 	}
@@ -518,7 +533,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	 * lead holder up, not bursting into a star.
 	 */
 	@Override
-	public boolean goesWithOwner(net.minecraft.server.network.ServerPlayerEntity owner) {
+	public boolean goesWithOwner(ServerPlayerEntity owner) {
 		return isAlive() && isTamed() && owner.getUuid().equals(getOwnerUuid()) && !cannotFollowOwner() && !isToken()
 				&& homeForge == null && !isDancing() && !isSpectating() && !isCarrying() && !isBursting()
 				&& MulaEscorts.isFollower(owner.getUuid(), this);
@@ -637,7 +652,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	private int lockBlendTicks;
 
 	/** Server, from the Dice Forge conducting (once a second): its place in the dance. */
-	public void assignDance(net.minecraft.util.math.BlockPos forge, int slot, int count) {
+	public void assignDance(BlockPos forge, int slot, int count) {
 		if (isToken()) return; // a board pawn does not dance
 		int current = this.dataTracker.get(DANCE);
 		boolean sameForge = forge.equals(this.dataTracker.get(DANCE_FORGE).orElse(null));
@@ -645,18 +660,18 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		int value = slot | count << DANCE_COUNT_SHIFT | (wasDancing ? current & DANCE_LOCKED : 0);
 		if (!wasDancing || (current & DANCE_PLACE) != (value & DANCE_PLACE)) {
 			noteDanceChange(wasDancing ? current : -1);
-			this.dataTracker.set(DANCE_FORGE, java.util.Optional.of(forge));
+			this.dataTracker.set(DANCE_FORGE, Optional.of(forge));
 			this.dataTracker.set(DANCE, value);
 		}
 		danceAssignedTick = this.getWorld().getTime();
 	}
 
 	/** Server, from the Dice Forge conducting: not its turn to dance, it watches from spectator spot index of count. */
-	public void assignSpectator(net.minecraft.util.math.BlockPos forge, int index, int count) {
+	public void assignSpectator(BlockPos forge, int index, int count) {
 		if (isToken()) return;
 		int value = Math.min(index, DANCE_SLOT) | Math.min(count, DANCE_SLOT) << DANCE_COUNT_SHIFT | DANCE_SPECTATOR;
 		if (this.dataTracker.get(DANCE) != value || !forge.equals(this.dataTracker.get(DANCE_FORGE).orElse(null))) {
-			this.dataTracker.set(DANCE_FORGE, java.util.Optional.of(forge));
+			this.dataTracker.set(DANCE_FORGE, Optional.of(forge));
 			this.dataTracker.set(DANCE, value);
 		}
 		danceAssignedTick = this.getWorld().getTime();
@@ -671,7 +686,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 
 	public void stopDancing() {
 		this.dataTracker.set(DANCE, -1);
-		this.dataTracker.set(DANCE_FORGE, java.util.Optional.empty());
+		this.dataTracker.set(DANCE_FORGE, Optional.empty());
 	}
 
 	/** Server: reached its place in the figure: from now on it is moved by the formula (on every side). */
@@ -705,7 +720,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	}
 
 	/** The forge it dances around (or watches), or null. */
-	public @Nullable net.minecraft.util.math.BlockPos danceForge() {
+	public @Nullable BlockPos danceForge() {
 		return this.dataTracker.get(DANCE_FORGE).orElse(null);
 	}
 
@@ -719,7 +734,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	}
 
 	/** Server: dancing round another forge than this one (counted by it less than 2 s ago). */
-	public boolean dancesElsewhere(net.minecraft.util.math.BlockPos forge) {
+	public boolean dancesElsewhere(BlockPos forge) {
 		return isDancing() && !forge.equals(danceForge()) && this.getWorld().getTime() - danceAssignedTick < 40;
 	}
 
@@ -733,7 +748,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	 * the same on the server and every client (the forge, the slot, the count and the world time).
 	 */
 	public void dancePosition(float partialTick, double[] out) {
-		net.minecraft.util.math.BlockPos forge = this.dataTracker.get(DANCE_FORGE).orElse(this.getBlockPos());
+		BlockPos forge = this.dataTracker.get(DANCE_FORGE).orElse(this.getBlockPos());
 		MulaDances.position(forge, danceSlot(), danceCount(), prevDanceSlot, prevDanceCount, danceChangeTick,
 				this.getWorld().getTime(), partialTick, out, danceTmp);
 		double cx = forge.getX() + 0.5, cy = forge.getY() + 2.4, cz = forge.getZ() + 0.5;
@@ -770,7 +785,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 			}
 		}
 		this.setPosition(danceOut[0], danceOut[1], danceOut[2]);
-		this.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
+		this.setVelocity(Vec3d.ZERO);
 		float yaw = !Double.isNaN(danceOut[3]) ? (float) danceOut[3]
 				: dx * dx + dz * dz > 1.0E-5 ? (float) (MathHelper.atan2(dz, dx) * MathHelper.DEGREES_PER_RADIAN) - 90f
 				: this.getYaw();
@@ -778,7 +793,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	}
 
 	private boolean fitsAt(double x, double y, double z) {
-		net.minecraft.util.math.Box box = this.getBoundingBox().offset(x - this.getX(), y - this.getY(), z - this.getZ());
+		Box box = this.getBoundingBox().offset(x - this.getX(), y - this.getY(), z - this.getZ());
 		return this.getWorld().isSpaceEmpty(this, box);
 	}
 
@@ -823,18 +838,18 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	@Override
 	public boolean isInvulnerableTo(DamageSource source) {
 		if (source.getAttacker() instanceof MulaEntity || source.getSource() instanceof MulaEntity) return true;
-		for (net.minecraft.registry.RegistryKey<net.minecraft.entity.damage.DamageType> type : IMMUNE_TO) {
+		for (RegistryKey<DamageType> type : IMMUNE_TO) {
 			if (source.isOf(type)) return true;
 		}
 		return super.isInvulnerableTo(source);
 	}
 
-	private static final List<net.minecraft.registry.RegistryKey<net.minecraft.entity.damage.DamageType>> IMMUNE_TO = List.of(
-			net.minecraft.entity.damage.DamageTypes.FALL, net.minecraft.entity.damage.DamageTypes.FLY_INTO_WALL,
-			net.minecraft.entity.damage.DamageTypes.IN_WALL, net.minecraft.entity.damage.DamageTypes.CRAMMING,
-			net.minecraft.entity.damage.DamageTypes.DROWN, net.minecraft.entity.damage.DamageTypes.IN_FIRE,
-			net.minecraft.entity.damage.DamageTypes.ON_FIRE, net.minecraft.entity.damage.DamageTypes.LAVA,
-			net.minecraft.entity.damage.DamageTypes.HOT_FLOOR, net.minecraft.entity.damage.DamageTypes.CAMPFIRE);
+	private static final List<RegistryKey<DamageType>> IMMUNE_TO = List.of(
+			DamageTypes.FALL, DamageTypes.FLY_INTO_WALL,
+			DamageTypes.IN_WALL, DamageTypes.CRAMMING,
+			DamageTypes.DROWN, DamageTypes.IN_FIRE,
+			DamageTypes.ON_FIRE, DamageTypes.LAVA,
+			DamageTypes.HOT_FLOOR, DamageTypes.CAMPFIRE);
 
 	/** It flies: landing is never a fall. */
 	@Override
@@ -843,7 +858,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	}
 
 	@Override
-	protected void fall(double heightDifference, boolean onGround, net.minecraft.block.BlockState state, net.minecraft.util.math.BlockPos landedPosition) {
+	protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
 		this.fallDistance = 0;
 	}
 
@@ -880,12 +895,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	 * The vanilla query looked through every entity around its path at each move, the other Mulas of a crowd included
 	 * (it passes through them anyway); a boat or a shulker no longer stops it.
 	 */
-	public static List<net.minecraft.util.shape.VoxelShape> entityCollisions(World world, Entity mula, net.minecraft.util.math.Box box) {
-		List<net.minecraft.util.shape.VoxelShape> shapes = null;
+	public static List<VoxelShape> entityCollisions(World world, Entity mula, Box box) {
+		List<VoxelShape> shapes = null;
 		for (PlayerEntity player : world.getPlayers()) {
 			if (player.isCollidable() && mula.collidesWith(player) && box.intersects(player.getBoundingBox())) {
 				if (shapes == null) shapes = new ArrayList<>(1);
-				shapes.add(net.minecraft.util.shape.VoxelShapes.cuboid(player.getBoundingBox()));
+				shapes.add(VoxelShapes.cuboid(player.getBoundingBox()));
 			}
 		}
 		return shapes == null ? List.of() : shapes;
@@ -902,10 +917,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		double length = Math.max(1.0E-3, Math.sqrt(dx * dx + dy * dy + dz * dz));
 		double pull = Math.min(LEASH_PULL_MAX, (distance - LEASH_SLACK) * LEASH_PULL);
 		if (pull <= 0) return;
-		net.minecraft.util.math.Vec3d v = this.getVelocity().add(dx / length * pull, dy / length * pull, dz / length * pull);
+		Vec3d v = this.getVelocity().add(dx / length * pull, dy / length * pull, dz / length * pull);
 		double speed = v.length();
 		if (speed > LEASH_SPEED_MAX) v = v.multiply(LEASH_SPEED_MAX / speed);
-		if (v.y < -LEASH_DOWN_MAX) v = new net.minecraft.util.math.Vec3d(v.x, -LEASH_DOWN_MAX, v.z);
+		if (v.y < -LEASH_DOWN_MAX) v = new Vec3d(v.x, -LEASH_DOWN_MAX, v.z);
 		this.setVelocity(v);
 		this.velocityModified = true;
 	}
@@ -951,7 +966,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		builder.add(RESTING, false);
 		builder.add(DANCE, -1);
 		builder.add(CARRYING, false);
-		builder.add(DANCE_FORGE, java.util.Optional.empty());
+		builder.add(DANCE_FORGE, Optional.empty());
 	}
 
 	@Override
@@ -976,7 +991,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		this.setVariant(MulaVariant.byId(nbt.getInt("Variant")));
 		this.setHunger(nbt.getInt("Hunger"));
 		int[] home = nbt.getIntArray("HomeForge");
-		this.homeForge = home.length == 3 ? new net.minecraft.util.math.BlockPos(home[0], home[1], home[2]) : null;
+		this.homeForge = home.length == 3 ? new BlockPos(home[0], home[1], home[2]) : null;
 		int[] sitePos = nbt.getIntArray("SpawnSitePos");
 		this.spawnSiteWorld = nbt.contains("SpawnSiteWorld") ? Identifier.tryParse(nbt.getString("SpawnSiteWorld")) : null;
 		this.spawnSite = spawnSiteWorld != null && sitePos.length == 2 ? nbt.getInt("SpawnSite") : 0;
@@ -1114,8 +1129,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 			Text message = potion
 					? Text.translatable("message.steveparty.mula.feed.potion", getHunger(), MAX_HUNGER, stack.getName(),
 							hungerValue, MulaFood.potionFormula(stack.getOrDefault(
-									net.minecraft.component.DataComponentTypes.POTION_CONTENTS,
-									net.minecraft.component.type.PotionContentsComponent.DEFAULT).getEffects()))
+									DataComponentTypes.POTION_CONTENTS,
+									PotionContentsComponent.DEFAULT).getEffects()))
 					: Text.translatable("message.steveparty.mula.feed", getHunger(), MAX_HUNGER, stack.getName(), hungerValue);
 			message = message.copy().styled(style -> style.withColor(this.getVariant().getColor()));
 			player.sendMessage(message, true);
@@ -1127,7 +1142,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 			shakeTicks = SHAKE_AFTER_MEAL_TICKS;
 			if (potion) {
 				// like drinking it: the empty bottle goes back to the player
-				player.setStackInHand(hand, net.minecraft.item.ItemUsage.exchangeStack(stack, player,
+				player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player,
 						new ItemStack(Items.GLASS_BOTTLE)));
 			} else {
 				stack.decrementUnlessCreative(1, player);
@@ -1189,7 +1204,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		Text message = eater != null
 				? Text.translatable("message.steveparty.mula.refuse.colour", colourName(variant), stack.getName(), colourName(eater))
 				: Text.translatable("message.steveparty.mula.refuse.inedible", stack.getName());
-		return message.copy().formatted(net.minecraft.util.Formatting.GRAY);
+		return message.copy().formatted(Formatting.GRAY);
 	}
 
 	/** A Mula colour's name, in that colour (lightened: the black one stays readable). */
@@ -1239,13 +1254,13 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 	}
 
 	@Override
-	protected @Nullable net.minecraft.sound.SoundEvent getHurtSound(DamageSource source) {
-		return net.minecraft.sound.SoundEvents.ENTITY_ALLAY_HURT;
+	protected @Nullable SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_ALLAY_HURT;
 	}
 
 	@Override
-	protected @Nullable net.minecraft.sound.SoundEvent getDeathSound() {
-		return net.minecraft.sound.SoundEvents.ENTITY_ALLAY_DEATH;
+	protected @Nullable SoundEvent getDeathSound() {
+		return SoundEvents.ENTITY_ALLAY_DEATH;
 	}
 
 	@Override
@@ -1267,7 +1282,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		stopEmote();
 		// an "okay" nod settling into its rest, or a stretch and a hop back up, with a soft Allay voice
 		this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(),
-				net.minecraft.sound.SoundEvents.ENTITY_ALLAY_AMBIENT_WITH_ITEM, net.minecraft.sound.SoundCategory.NEUTRAL,
+				SoundEvents.ENTITY_ALLAY_AMBIENT_WITH_ITEM, SoundCategory.NEUTRAL,
 				0.3f, (this.isSitting() ? 0.85f : 1.25f) * voice());
 		if (this.isSitting()) {
 			playSpecial("sit_down", SIT_DOWN_TICKS);
@@ -1289,7 +1304,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 			// as many Mulas follow them as they may: this one will wait where it is
 			if (this.getWorld() instanceof ServerWorld world && MulaEscorts.isFull(world, player.getUuid())) {
 				player.sendMessage(Text.translatable("message.steveparty.mula.escort_full", MulaEscorts.max())
-						.formatted(net.minecraft.util.Formatting.GRAY), true);
+						.formatted(Formatting.GRAY), true);
 			}
 			this.navigation.stop();
 			this.getWorld().sendEntityStatus(this, EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES);

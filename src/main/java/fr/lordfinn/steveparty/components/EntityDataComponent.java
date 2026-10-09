@@ -6,6 +6,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public record EntityDataComponent(NbtList attributesData, NbtCompound entityData) {
@@ -17,7 +18,7 @@ public record EntityDataComponent(NbtList attributesData, NbtCompound entityData
                 return nbtList;
             }, nbtList -> {
                 // Convert NbtList to List<NbtCompound>
-                List<NbtCompound> list = new java.util.ArrayList<>();
+                List<NbtCompound> list = new ArrayList<>();
                 for (NbtElement element : nbtList) {
                     if (element instanceof NbtCompound compound) {
                         list.add(compound); // Add only NbtCompound elements

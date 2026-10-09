@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.BlockStateComponent;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
@@ -19,7 +20,7 @@ public class PolishedTilesItem extends BlockItem {
         super(block, settings.component(DataComponentTypes.BLOCK_STATE, defaultColors((PolishedTilesBlock) block)));
     }
 
-    private static net.minecraft.component.type.BlockStateComponent defaultColors(PolishedTilesBlock tiles) {
+    private static BlockStateComponent defaultColors(PolishedTilesBlock tiles) {
         return tiles.component(tiles.colors().getFirst(), tiles.colors().getFirst());
     }
 

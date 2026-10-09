@@ -13,15 +13,19 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.scoreboard.ScoreHolder;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -31,9 +35,12 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.criteria.ModScoreboardCriteria.LANDED_ON_POLE;
@@ -139,7 +146,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
      */
     private Count count = Count.SIDES;
     /** The holders who reached this segment's per-player goal since the last reset. */
-    private final java.util.Set<String> reached = new java.util.LinkedHashSet<>();
+    private final Set<String> reached = new LinkedHashSet<>();
     /** Loaded from before the column setting: its column decides once whether its goals were all the same. */
     private boolean legacyGoal = false;
     /** Placed, not loaded: takes the settings of the column it joins. */
@@ -337,13 +344,13 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         }
         if (!reached.add(holder)) return false;
         markDirty();
-        world.playSound(null, pos, net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.BLOCKS, 1f, 1.19f);
+        world.playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.BLOCKS, 1f, 1.19f);
         return true;
     }
 
     /** The holders who reached the per-player goal of this segment since the last reset. */
-    public java.util.Set<String> getReached() {
-        return java.util.Collections.unmodifiableSet(reached);
+    public Set<String> getReached() {
+        return Collections.unmodifiableSet(reached);
     }
 
     /** The base was reset: the per-player goal can be reached again by everyone. */
@@ -501,8 +508,8 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         nbt.putBoolean("FlagSteps", flagSteps);
         nbt.putString("Count", count.name());
         if (!reached.isEmpty()) {
-            net.minecraft.nbt.NbtList list = new net.minecraft.nbt.NbtList();
-            reached.forEach(holder -> list.add(net.minecraft.nbt.NbtString.of(holder)));
+            NbtList list = new NbtList();
+            reached.forEach(holder -> list.add(NbtString.of(holder)));
             nbt.put("Reached", list);
         }
         if (legacyGoal) nbt.putBoolean("LegacyGoal", true);
@@ -521,7 +528,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         flagSteps = nbt.getBoolean("FlagSteps");
         count = GoalPoleBaseBlockEntity.readEnum(nbt, "Count", Count.values(), Count.SIDES);
         reached.clear();
-        net.minecraft.nbt.NbtList reachedNbt = nbt.getList("Reached", NbtElement.STRING_TYPE);
+        NbtList reachedNbt = nbt.getList("Reached", NbtElement.STRING_TYPE);
         for (int i = 0; i < reachedNbt.size(); i++) reached.add(reachedNbt.getString(i));
         // Saved before the column setting (or not consolidated yet): its column decides when it loads
         legacyGoal = nbt.getInt("Version") < VERSION || nbt.getBoolean("LegacyGoal");
@@ -612,7 +619,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
 
     @Nullable
     @Override
-    public ScreenHandler createMenu(int syncId, net.minecraft.entity.player.PlayerInventory playerInventory, net.minecraft.entity.player.PlayerEntity player) {
+    public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
         return new GoalPoleScreenHandler(syncId, playerInventory, this);
     }
 

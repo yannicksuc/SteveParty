@@ -46,10 +46,12 @@ import net.minecraft.world.event.PositionSource;
 import net.minecraft.world.event.listener.GameEventListener;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.ToIntFunction;
 
 /**
  * The villager block's brain (server) and animation state (clients).
@@ -131,7 +133,7 @@ public class VillagerBlockEntity extends SyncedBlockEntity implements GameEventL
      * The client's breaking progress of a block (0..9, -1 when nobody breaks it), set by the client (the world
      * renderer knows every player's breaking progress); nothing on a server.
      */
-    public static java.util.function.ToIntFunction<BlockPos> miningStageProbe = pos -> -1;
+    public static ToIntFunction<BlockPos> miningStageProbe = pos -> -1;
     private int miningStage = -1;
     private int clientAge;
     private int modeAge;
@@ -142,8 +144,8 @@ public class VillagerBlockEntity extends SyncedBlockEntity implements GameEventL
         super(ModBlockEntities.VILLAGER_BLOCK_ENTITY, pos, state);
         this.listener = new Listener(this);
         // clicks/punches "long ago"
-        java.util.Arrays.fill(clicks, Long.MIN_VALUE / 2);
-        java.util.Arrays.fill(punches, Long.MIN_VALUE / 2);
+        Arrays.fill(clicks, Long.MIN_VALUE / 2);
+        Arrays.fill(punches, Long.MIN_VALUE / 2);
     }
 
     // =============================================================================================================
@@ -245,7 +247,7 @@ public class VillagerBlockEntity extends SyncedBlockEntity implements GameEventL
         if (watcher != null) watcher.interacted = true;
         if (totalPokes % POKES_PER_STACK == 0 && react(VillagerReaction.STACK_OF_POKES, player)) return;
         if (countSince(clicks, now - DIZZY_WINDOW) >= DIZZY_CLICKS) {
-            if (react(VillagerReaction.DIZZY, player)) java.util.Arrays.fill(clicks, Long.MIN_VALUE / 2);
+            if (react(VillagerReaction.DIZZY, player)) Arrays.fill(clicks, Long.MIN_VALUE / 2);
             return;
         }
         if (countSince(clicks, now - ANNOYED_WINDOW) >= ANNOYED_CLICKS && react(VillagerReaction.ANNOYED, player)) return;
@@ -264,7 +266,7 @@ public class VillagerBlockEntity extends SyncedBlockEntity implements GameEventL
         Watcher watcher = watchers.get(player.getUuid());
         if (watcher != null) watcher.interacted = true;
         if (countSince(punches, now - FAINT_WINDOW) >= FAINT_PUNCHES) {
-            if (react(VillagerReaction.FAINT, player)) java.util.Arrays.fill(punches, Long.MIN_VALUE / 2);
+            if (react(VillagerReaction.FAINT, player)) Arrays.fill(punches, Long.MIN_VALUE / 2);
             return;
         }
         if (countSince(punches, now - GRUMPY_WINDOW) >= GRUMPY_PUNCHES && react(VillagerReaction.GRUMPY, player)) return;
@@ -387,7 +389,7 @@ public class VillagerBlockEntity extends SyncedBlockEntity implements GameEventL
             w.jumps[w.jumpIndex] = now;
             w.jumpIndex = (w.jumpIndex + 1) % w.jumps.length;
             if (countSince(w.jumps, now - 60) >= 3) {
-                if (react(VillagerReaction.JUMP_PARTY, player)) java.util.Arrays.fill(w.jumps, Long.MIN_VALUE / 2);
+                if (react(VillagerReaction.JUMP_PARTY, player)) Arrays.fill(w.jumps, Long.MIN_VALUE / 2);
             } else {
                 react(VillagerReaction.JUMP_ALONG, player);
             }
@@ -401,7 +403,7 @@ public class VillagerBlockEntity extends SyncedBlockEntity implements GameEventL
             w.sneaks[w.sneakIndex] = now;
             w.sneakIndex = (w.sneakIndex + 1) % w.sneaks.length;
             if (countSince(w.sneaks, now - 40) >= 4 && react(VillagerReaction.BOW, player)) {
-                java.util.Arrays.fill(w.sneaks, Long.MIN_VALUE / 2);
+                Arrays.fill(w.sneaks, Long.MIN_VALUE / 2);
             }
         }
         w.wasSneaking = sneaking;
@@ -847,8 +849,8 @@ public class VillagerBlockEntity extends SyncedBlockEntity implements GameEventL
         int chatCount;
 
         Watcher(PlayerEntity player) {
-            java.util.Arrays.fill(sneaks, Long.MIN_VALUE / 2);
-            java.util.Arrays.fill(jumps, Long.MIN_VALUE / 2);
+            Arrays.fill(sneaks, Long.MIN_VALUE / 2);
+            Arrays.fill(jumps, Long.MIN_VALUE / 2);
             resetFrom(player);
             chatCount = VillagerBlockEvents.chatCount(player);
         }

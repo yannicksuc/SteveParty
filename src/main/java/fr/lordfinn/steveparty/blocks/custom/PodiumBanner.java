@@ -11,6 +11,7 @@ import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
@@ -89,7 +90,7 @@ public final class PodiumBanner {
         return null;
     }
 
-    private static void play(World world, Vec3d at, net.minecraft.sound.SoundEvent sound) {
+    private static void play(World world, Vec3d at, SoundEvent sound) {
         world.playSound(null, at.x, at.y, at.z, sound, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 }

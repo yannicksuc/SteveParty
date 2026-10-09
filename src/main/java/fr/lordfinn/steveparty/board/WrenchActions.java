@@ -19,7 +19,14 @@ import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.ServerMemory;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.block.BlockState;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -28,10 +35,15 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Util;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,6 +51,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -127,15 +140,15 @@ public final class WrenchActions {
      * one not again within a few seconds (a stroke meets it at every tile).
      */
     public static void warn(ServerPlayerEntity player, Text text) {
-        long now = net.minecraft.util.Util.getMeasuringTimeMs();
+        long now = Util.getMeasuringTimeMs();
         if (text.equals(LAST_WARNINGS.get(player.getUuid())) && now - LAST_WARNING_AT.getOrDefault(player.getUuid(), 0L) < WARNING_REPEAT_MS) return;
         LAST_WARNINGS.put(player.getUuid(), text);
         LAST_WARNING_AT.put(player.getUuid(), now);
-        player.sendMessage(text.copy().formatted(net.minecraft.util.Formatting.RED), false);
+        player.sendMessage(text.copy().formatted(Formatting.RED), false);
     }
 
     /** The board space (or router) the player aims at, up to {@link #LONG_REACH} blocks away, or null (see {@link BrushAim}). */
-    public static @Nullable BlockPos aimedBoardSpace(net.minecraft.entity.player.PlayerEntity player, World world) {
+    public static @Nullable BlockPos aimedBoardSpace(PlayerEntity player, World world) {
         return BrushAim.aimed(player, world, 1f);
     }
 
@@ -171,7 +184,7 @@ public final class WrenchActions {
                                         CartridgeContainerBlockEntity container, int slot, boolean tellMissing) {
         ItemStack current = container.getStack(slot);
         if (current.isEmpty()) return false;
-        net.minecraft.item.Item kind = player.getOffHandStack().getItem() instanceof CartridgeItem
+        Item kind = player.getOffHandStack().getItem() instanceof CartridgeItem
                 ? player.getOffHandStack().getItem() : BoardLinks.cartridgeKind(player);
         if (current.getItem() == kind) return false;
         ItemStack source = BoardLinks.cartridgeSource(player);
@@ -249,7 +262,7 @@ public final class WrenchActions {
      * brush's anchor (the last board space it painted or placed), the anchor turns toward it and it becomes the new
      * anchor; without anchor yet, it becomes the anchor. So a path is built by placing its tiles only.
      */
-    public static void onBoardSpacePlaced(World world, BlockPos pos, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack placedFrom) {
+    public static void onBoardSpacePlaced(World world, BlockPos pos, @Nullable LivingEntity placer, ItemStack placedFrom) {
         if (!(world instanceof ServerWorld serverWorld)) return;
         dropCopiedLinks(serverWorld, pos, placer, placedFrom);
         if (!(placer instanceof ServerPlayerEntity player)) return;
@@ -284,7 +297,7 @@ public final class WrenchActions {
      * links (a chest for an Inventory Cartridge, a switchable block for a Hop Switch...) is linked from it, as a click
      * with that cartridge would, if it is near enough (see {@link BrushLinks}).
      */
-    public static void onBlockPlaced(World world, BlockPos pos, @Nullable net.minecraft.entity.player.PlayerEntity placer) {
+    public static void onBlockPlaced(World world, BlockPos pos, @Nullable PlayerEntity placer) {
         if (!(world instanceof ServerWorld serverWorld) || !(placer instanceof ServerPlayerEntity player)) return;
         ItemStack brush = player.getOffHandStack();
         if (!TileLinkerBrush.isBrush(brush)) return;
@@ -313,8 +326,8 @@ public final class WrenchActions {
      * A board space placed from an item holding its data (creative pick block with Ctrl, a copied item...): its
      * cartridges come without their links, which pointed at the neighbours of the original.
      */
-    private static void dropCopiedLinks(ServerWorld world, BlockPos pos, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack placedFrom) {
-        if (!placedFrom.contains(net.minecraft.component.DataComponentTypes.BLOCK_ENTITY_DATA)) return;
+    private static void dropCopiedLinks(ServerWorld world, BlockPos pos, @Nullable LivingEntity placer, ItemStack placedFrom) {
+        if (!placedFrom.contains(DataComponentTypes.BLOCK_ENTITY_DATA)) return;
         if (!(world.getBlockEntity(pos) instanceof CartridgeContainerBlockEntity container)) return;
         int dropped = 0;
         for (int slot = 0; slot < container.size(); slot++) {
@@ -334,15 +347,15 @@ public final class WrenchActions {
         // A click with the Tile Linker Brush on something its anchor's cartridge links (a chest for an Inventory
         // Cartridge, a trading stall or cash register for a Shop Cartridge, a switchable block for a Hop Switch...):
         // added, or removed if it is one, as a click with that cartridge would (see BrushLinks). A holder is painted.
-        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
+        UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (hand != Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
             ItemStack brush = player.getMainHandStack();
             if (!TileLinkerBrush.isBrush(brush)) return ActionResult.PASS;
             BlockPos clicked = hit.getBlockPos().toImmutable();
             if (BrushLinks.isHolder(world, clicked)) return ActionResult.PASS;
             BlockPos anchor = TileLinkerBrush.anchor(brush, world);
             if (anchor == null) return ActionResult.PASS;
-            java.util.List<BrushLinkable> kinds = BrushLinks.of(world, anchor, TileLinkerBrush.level(brush));
+            List<BrushLinkable> kinds = BrushLinks.of(world, anchor, TileLinkerBrush.level(brush));
             BrushLinkable kind = BrushLinks.kindFor(kinds, world, clicked);
             if (kind == null) return ActionResult.PASS;
             if (world.isClient) return ActionResult.SUCCESS;
@@ -353,8 +366,8 @@ public final class WrenchActions {
             return ActionResult.SUCCESS;
         });
         // A click on a Boxed Trader with the brush whose anchor holds a Shop Cartridge: that trader is the cartridge's shop
-        net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (hand != Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
             ItemStack wrench = player.getMainHandStack();
             if (!TileLinkerBrush.isBrush(wrench) || !(entity instanceof BoxedTraderEntity trader)) return ActionResult.PASS;
             ShopOrigin shop = shopOrigin(wrench, world);
@@ -394,8 +407,8 @@ public final class WrenchActions {
     /** A trading stall or cash register clicked: the Boxed Trader it belongs to (Shopkeeper Key links) becomes the shop. */
     static void linkShopFromBlock(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin, BlockPos clicked) {
         VendorLinkPersistentState links = VendorLinkPersistentState.get(world.getServer());
-        java.util.Set<UUID> traders = links == null ? java.util.Set.of()
-                : links.getVendorsLinkedTo(net.minecraft.util.math.GlobalPos.create(world.getRegistryKey(), clicked));
+        Set<UUID> traders = links == null ? Set.of()
+                : links.getVendorsLinkedTo(GlobalPos.create(world.getRegistryKey(), clicked));
         if (traders.isEmpty()) {
             say(player, Text.translatable("message.steveparty.wrench.shop.no_trader", BoardText.pos(clicked)));
             playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 0.7f);
@@ -422,7 +435,7 @@ public final class WrenchActions {
         BoardLinks.sync(origin.container());
         LinkHistory.record(player, new LinkHistory.ShopChange(pos, origin.slot(), before, shop));
         BoardLinks.trail(world, pos, shop.anchor(), SHOP_COLOR);
-        net.minecraft.entity.Entity trader = world.getEntity(shop.trader());
+        Entity trader = world.getEntity(shop.trader());
         say(player, Text.translatable("message.steveparty.wrench.shop.linked", BoardText.pos(pos),
                 trader != null ? trader.getDisplayName() : Text.translatable("entity.steveparty.boxed_trader")));
         world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_VILLAGER_TRADE, SoundCategory.PLAYERS, 0.6f, 1.2f);
@@ -460,7 +473,7 @@ public final class WrenchActions {
 
     /** A new link: a small star pop on the linked space (few particles, short). */
     private static void starPop(ServerWorld world, BlockPos target) {
-        net.minecraft.util.math.Vec3d at = BoardSpaces.standPos(world, target).add(0, 0.35, 0);
+        Vec3d at = BoardSpaces.standPos(world, target).add(0, 0.35, 0);
         world.spawnParticles(MagicShapeEffect.sparkle(2.4F, 0.8F, 9, 0xF7D038),
                 at.x, at.y, at.z, 3, 0.15, 0.1, 0.15, 0.02);
     }

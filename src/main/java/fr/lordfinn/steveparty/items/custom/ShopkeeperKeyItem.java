@@ -12,6 +12,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
@@ -26,6 +27,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -44,13 +46,13 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
     }
 
     @Override
-    public ActionResult useOnEntity(ItemStack stack, net.minecraft.entity.player.PlayerEntity user, LivingEntity entity, Hand hand) {
+    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         if (user.getWorld().isClient) return ActionResult.SUCCESS;
         ItemStack realStack = user.getStackInHand(hand);
         return useKey(realStack, user, entity, hand);
     }
 
-    private ActionResult useKey(ItemStack stack, net.minecraft.entity.player.PlayerEntity user, LivingEntity entity, Hand hand) {
+    private ActionResult useKey(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         UUID uuid = entity.getUuid();
         if (stack.contains(ModComponents.SHOPKEEPER_UUID)) {
             UUID storedUuid = stack.get(ModComponents.SHOPKEEPER_UUID);
@@ -143,10 +145,10 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
             this.key = key;
         }
 
-        static ShopRole of(@org.jetbrains.annotations.Nullable BlockEntity blockEntity) {
+        static ShopRole of(@Nullable BlockEntity blockEntity) {
             if (blockEntity instanceof TradingStallBlockEntity) return STALL;
             if (blockEntity instanceof CashRegisterBlockEntity) return REGISTER;
-            if (blockEntity instanceof net.minecraft.inventory.Inventory) return STOCK;
+            if (blockEntity instanceof Inventory) return STOCK;
             return NONE;
         }
     }

@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.entities.custom.MulaEscorts;
 import fr.lordfinn.steveparty.entities.custom.MulaHome;
 import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.player.PlayerEntity;
@@ -13,6 +14,7 @@ import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 
 import java.util.EnumSet;
@@ -628,14 +630,14 @@ public final class MulaGoals {
             return findPerch(world, from, mula.getRandom(), probe);
         }
 
-        public static BlockPos findPerch(World world, BlockPos from, net.minecraft.util.math.random.Random random,
+        public static BlockPos findPerch(World world, BlockPos from, Random random,
                                          BlockPos.Mutable probe) {
             for (int i = 0; i < 8; i++) {
                 probe.set(from.getX() + random.nextBetween(-8, 8), from.getY(), from.getZ() + random.nextBetween(-8, 8));
                 if (!world.isChunkLoaded(probe)) continue;
                 for (int dy = 0; dy < PERCH_SCAN; dy++) {
                     BlockState state = world.getBlockState(probe);
-                    if (state.isIn(BlockTags.FLOWERS) || state.isOf(net.minecraft.block.Blocks.SHORT_GRASS)) {
+                    if (state.isIn(BlockTags.FLOWERS) || state.isOf(Blocks.SHORT_GRASS)) {
                         return probe.toImmutable();
                     }
                     if (!state.isAir()) break;

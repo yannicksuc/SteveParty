@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.glandouille;
 
+import net.minecraft.entity.EntityDimensions;
+
 /**
  * The four Glandouilles: a model and a texture each (geo/entity/glandouille[_variant].geo.json: the classic one is
  * the dev's model, the others are made by the art sources, with the same bones so they
@@ -71,8 +73,8 @@ public enum GlandouilleVariant {
     }
 
     /** Its hitbox (blocks), before its scale. */
-    public net.minecraft.entity.EntityDimensions dimensions() {
-        return net.minecraft.entity.EntityDimensions.changing(widthPx / 16f, heightPx / 16f).withEyeHeight(eyePx / 16f);
+    public EntityDimensions dimensions() {
+        return EntityDimensions.changing(widthPx / 16f, heightPx / 16f).withEyeHeight(eyePx / 16f);
     }
 
     /** Its model's and texture's name: glandouille, glandouille_young... */

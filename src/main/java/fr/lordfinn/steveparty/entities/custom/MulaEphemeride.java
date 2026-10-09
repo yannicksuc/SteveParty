@@ -15,8 +15,11 @@ import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * The ephemeride: a night of shooting stars. Rolled once per night per dimension (with a sky, no ceiling) at dusk: the
@@ -53,7 +56,7 @@ public final class MulaEphemeride {
         long day;
         int waves;
         long nextWave;
-        final java.util.Set<java.util.UUID> sited = new java.util.HashSet<>();
+        final Set<UUID> sited = new HashSet<>();
     }
 
     private static final Map<RegistryKey<World>, Long> ROLLED = ServerMemory.forgetOnStop(new HashMap<>());

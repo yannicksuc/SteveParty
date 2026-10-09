@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.math.BlockPos;
 
@@ -93,7 +94,7 @@ public class GoalPoleScreenHandler extends ScreenHandler {
     }
 
     @Override
-    public net.minecraft.item.ItemStack quickMove(PlayerEntity player, int invSlot) {
-        return net.minecraft.item.ItemStack.EMPTY;
+    public ItemStack quickMove(PlayerEntity player, int invSlot) {
+        return ItemStack.EMPTY;
     }
 }

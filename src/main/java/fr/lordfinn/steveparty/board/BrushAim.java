@@ -17,6 +17,8 @@ import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -85,7 +87,7 @@ public final class BrushAim {
     }
 
     /** The ghosts of the brush held by {@code entity} at {@code level}: its dangling links within reach, see {@link BoardLinks#dangling}. */
-    public static java.util.Map<BlockPos, java.util.List<BlockPos>> ghosts(Entity entity, World world, int level) {
+    public static Map<BlockPos, List<BlockPos>> ghosts(Entity entity, World world, int level) {
         return BoardLinks.dangling(world, entity.getEyePos(), REACH, level);
     }
 

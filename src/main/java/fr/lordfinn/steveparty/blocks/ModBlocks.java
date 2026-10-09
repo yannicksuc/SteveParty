@@ -428,7 +428,7 @@ public class ModBlocks {
                     .nonOpaque()
                     .dynamicBounds()
                     .dropsNothing()
-                    .pistonBehavior(net.minecraft.block.piston.PistonBehavior.BLOCK)));
+                    .pistonBehavior(PistonBehavior.BLOCK)));
 
     public static final Block CHECK_POINT = register(CheckPointBlock::new,
             Block.Settings.create()

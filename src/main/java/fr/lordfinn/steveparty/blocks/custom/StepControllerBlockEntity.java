@@ -6,9 +6,15 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtHelper;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -42,7 +48,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     public int mode = 0;
     public boolean wasPowered = false;
     /** The pages it is linked to, as the pages say (checked again every second): what the clients show. */
-    private java.util.List<java.util.UUID> linkedPages = java.util.List.of();
+    private List<UUID> linkedPages = List.of();
     private static final int LINK_CHECK_TICKS = 20;
 
 
@@ -55,8 +61,8 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         nbt.putInt("mode", this.mode);
         nbt.putBoolean("wasPowered", this.wasPowered);
         if (!linkedPages.isEmpty()) {
-            net.minecraft.nbt.NbtList pages = new net.minecraft.nbt.NbtList();
-            linkedPages.forEach(page -> pages.add(net.minecraft.nbt.NbtHelper.fromUuid(page)));
+            NbtList pages = new NbtList();
+            linkedPages.forEach(page -> pages.add(NbtHelper.fromUuid(page)));
             nbt.put("LinkedPages", pages);
         }
         super.writeNbt(nbt, wrapper);
@@ -71,9 +77,9 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         if (nbt.contains("wasPowered")) {
             this.wasPowered = nbt.getBoolean("wasPowered");
         }
-        java.util.List<java.util.UUID> pages = new java.util.ArrayList<>();
-        for (NbtElement element : nbt.getList("LinkedPages", NbtElement.INT_ARRAY_TYPE)) pages.add(net.minecraft.nbt.NbtHelper.toUuid(element));
-        this.linkedPages = java.util.List.copyOf(pages);
+        List<UUID> pages = new ArrayList<>();
+        for (NbtElement element : nbt.getList("LinkedPages", NbtElement.INT_ARRAY_TYPE)) pages.add(NbtHelper.toUuid(element));
+        this.linkedPages = List.copyOf(pages);
     }
 
     @Override
@@ -125,7 +131,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     }
 
     /** The pages this controller is linked to (server: as the pages say now; client: as last told). */
-    public java.util.List<java.util.UUID> getLinkedPages() {
+    public List<UUID> getLinkedPages() {
         if (this.world instanceof ServerWorld serverWorld) {
             return MiniGamePages.pageIdsAt(serverWorld, this.pos);
         }
@@ -135,17 +141,17 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     /** Tells the clients the pages it is linked to, if they changed (a link made or removed, here or in a page's editor). */
     public void refreshLinkedPages() {
         if (!(this.world instanceof ServerWorld)) return;
-        java.util.List<java.util.UUID> pages = getLinkedPages();
+        List<UUID> pages = getLinkedPages();
         if (pages.equals(linkedPages)) return;
-        linkedPages = java.util.List.copyOf(pages);
+        linkedPages = List.copyOf(pages);
         this.markDirty();
         this.sync();
     }
 
     /** The party a pulse acts on now: the one playing a linked page's mini-game, or (not linked) the nearest one. */
-    public java.util.Optional<PartyControllerEntity> target() {
-        if (!(this.world instanceof ServerWorld)) return java.util.Optional.empty();
-        java.util.List<java.util.UUID> pages = getLinkedPages();
+    public Optional<PartyControllerEntity> target() {
+        if (!(this.world instanceof ServerWorld)) return Optional.empty();
+        List<UUID> pages = getLinkedPages();
         if (!pages.isEmpty()) return PartyControllerEntity.getPartyPlayingPage(pages);
         // "previous" may also bring back a party that reached its END step
         return PartyControllerEntity.getClosestSteppablePartyControllerEntity(this.world, this.pos, RANGE, this.mode == 2);
@@ -157,7 +163,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
      */
     public void trigger() {
         if (this.world != null && this.world instanceof ServerWorld) {
-            java.util.List<java.util.UUID> pages = getLinkedPages();
+            List<UUID> pages = getLinkedPages();
             if (!pages.isEmpty()) {
                 MiniGameSession session = MiniGameSession.playing(pages);
                 world.playSound(null, this.pos, session != null ? SoundEvents.BLOCK_TRIAL_SPAWNER_OPEN_SHUTTER : SoundEvents.EVENT_MOB_EFFECT_TRIAL_OMEN,

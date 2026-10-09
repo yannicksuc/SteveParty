@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
+import java.util.UUID;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
@@ -36,7 +37,7 @@ public class FrousseuxCandleHolderBlockEntity extends SyncedBlockEntity {
     }
 
     /** Its owner (who may wake it), or null for one that never had one. */
-    public @Nullable java.util.UUID getOwner() {
+    public @Nullable UUID getOwner() {
         return frousseux.containsUuid("Owner") ? frousseux.getUuid("Owner") : null;
     }
 

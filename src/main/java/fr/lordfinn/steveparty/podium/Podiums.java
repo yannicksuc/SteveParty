@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.podium;
 
+import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -257,7 +258,7 @@ public final class Podiums {
         ServerPlayerEntity online = server.getPlayerManager().getPlayer(uuid);
         if (online != null) return online.getGameProfile().getName();
         return server.getUserCache() == null ? uuid.toString().substring(0, 8)
-                : server.getUserCache().getByUuid(uuid).map(com.mojang.authlib.GameProfile::getName).orElse(uuid.toString().substring(0, 8));
+                : server.getUserCache().getByUuid(uuid).map(GameProfile::getName).orElse(uuid.toString().substring(0, 8));
     }
 
     /** Empties a column, its whole place during a mini-game. @return true if something was emptied */

@@ -10,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -63,7 +64,7 @@ public class MiniGamesCatalogueItem extends Item {
     }
 
     /** Brings the titles kept on the catalogue's pages up to date with what the pages say now. */
-    public static void refreshPages(net.minecraft.server.MinecraftServer server, ItemStack catalogue) {
+    public static void refreshPages(MinecraftServer server, ItemStack catalogue) {
         InventoryComponent inventory = catalogue.get(ModComponents.INVENTORY_COMPONENT);
         if (inventory == null || server == null) return;
         List<ItemStack> pages = inventory.getItems();

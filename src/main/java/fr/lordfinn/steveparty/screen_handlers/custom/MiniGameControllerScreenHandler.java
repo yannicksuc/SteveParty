@@ -14,11 +14,13 @@ import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
+import net.minecraft.block.Block;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.screen.ArrayPropertyDelegate;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
@@ -28,6 +30,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
@@ -189,7 +192,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
             if (state == State.ZONE_FORBIDDEN) {
                 ZoneForbidden.FoundBlock found = MiniGameArena.forbiddenBlock(server, page);
                 if (found != null) {
-                    setWide(P_FORBIDDEN_BLOCK, net.minecraft.registry.Registries.BLOCK.getRawId(found.block()));
+                    setWide(P_FORBIDDEN_BLOCK, Registries.BLOCK.getRawId(found.block()));
                     setWide(P_FORBIDDEN_X, found.pos().getX());
                     setWide(P_FORBIDDEN_Y, found.pos().getY());
                     setWide(P_FORBIDDEN_Z, found.pos().getZ());
@@ -211,7 +214,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         properties.set(P_READY, ready);
         properties.set(P_VOTERS, voters);
         properties.set(P_FLAGS, flags);
-        net.minecraft.util.math.BlockBox box = controller.getZone().map(PageZone::box).orElse(null);
+        BlockBox box = controller.getZone().map(PageZone::box).orElse(null);
         properties.set(P_ZONE_X, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountX()));
         properties.set(P_ZONE_Y, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountY()));
         properties.set(P_ZONE_Z, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountZ()));
@@ -242,7 +245,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
      * When nobody fits ({@link State#NOT_ENOUGH}): the closest format, the role whose players don't fit (-1: the teams
      * are not of the same size), how many there are, how many it wants (at most 255: no limit); null otherwise.
      */
-    public int @org.jetbrains.annotations.Nullable [] shortfall() {
+    public int @Nullable [] shortfall() {
         if (properties.get(P_SHORTFALL) < 0 || state() != State.NOT_ENOUGH) return null;
         return new int[]{properties.get(P_SHORTFALL), properties.get(P_SHORTFALL + 1), properties.get(P_SHORTFALL + 2),
                 properties.get(P_SHORTFALL + 3), properties.get(P_SHORTFALL + 4)};
@@ -282,8 +285,8 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
     }
 
     /** The block that keeps the zone from taking a round ({@link State#ZONE_FORBIDDEN}). */
-    public net.minecraft.block.Block forbiddenBlock() {
-        return net.minecraft.registry.Registries.BLOCK.get(wide(P_FORBIDDEN_BLOCK));
+    public Block forbiddenBlock() {
+        return Registries.BLOCK.get(wide(P_FORBIDDEN_BLOCK));
     }
 
     /** Where that block is. */

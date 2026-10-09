@@ -1,9 +1,13 @@
 package fr.lordfinn.steveparty.blocks.custom.pipe;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -41,22 +45,22 @@ public interface PipeDestinationProvider {
      *
      * @param dimension its dimension, null for the one of the capped end
      */
-    record Exit(@Nullable net.minecraft.registry.RegistryKey<net.minecraft.world.World> dimension, BlockPos pos, Direction opening) {
+    record Exit(@Nullable RegistryKey<World> dimension, BlockPos pos, Direction opening) {
         public Exit(BlockPos pos, Direction opening) {
             this(null, pos, opening);
         }
     }
 
-    Map<net.minecraft.item.Item, Function<net.minecraft.item.ItemStack, PipeDestinationProvider>> BY_ITEM = new HashMap<>();
+    Map<Item, Function<ItemStack, PipeDestinationProvider>> BY_ITEM = new HashMap<>();
 
     /** How a cartridge item sends travellers on, when it sits in a capped end. */
-    static void register(net.minecraft.item.Item cartridge, Function<net.minecraft.item.ItemStack, PipeDestinationProvider> provider) {
+    static void register(Item cartridge, Function<ItemStack, PipeDestinationProvider> provider) {
         BY_ITEM.put(cartridge, provider);
     }
 
-    static @Nullable PipeDestinationProvider of(net.minecraft.item.ItemStack cartridge) {
+    static @Nullable PipeDestinationProvider of(ItemStack cartridge) {
         if (cartridge.isEmpty()) return null;
-        Function<net.minecraft.item.ItemStack, PipeDestinationProvider> provider = BY_ITEM.get(cartridge.getItem());
+        Function<ItemStack, PipeDestinationProvider> provider = BY_ITEM.get(cartridge.getItem());
         return provider == null ? null : provider.apply(cartridge);
     }
 }

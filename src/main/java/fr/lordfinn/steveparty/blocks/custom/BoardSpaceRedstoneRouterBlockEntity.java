@@ -10,10 +10,12 @@ import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -158,9 +160,9 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     public static void onTokenStopped(ServerWorld world, BoardSpaceBlockEntity boardSpace) {
         BoardSpaceRedstoneRouterBlockEntity router = routerOf(world, boardSpace.getPos());
         if (router == null) return;
-        net.minecraft.item.ItemStack stack = boardSpace.getActiveCartridgeItemStack();
+        ItemStack stack = boardSpace.getActiveCartridgeItemStack();
         var behavior = boardSpace.getBoardSpaceBehavior(stack);
-        int level = behavior == null ? LEVEL_DEFAULT : behavior.comparatorLevel(boardSpace, stack == null ? net.minecraft.item.ItemStack.EMPTY : stack);
+        int level = behavior == null ? LEVEL_DEFAULT : behavior.comparatorLevel(boardSpace, stack == null ? ItemStack.EMPTY : stack);
         if (level <= 0) return; // the role says nothing happened (a token blocked by a Threshold obstacle)
         router.pulse(Math.clamp(level, PASS_SIGNAL + 1, 15), LANDING_TICKS);
     }
@@ -215,7 +217,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     }
 
     @Override
-    public void setWorld(net.minecraft.world.World world) {
+    public void setWorld(World world) {
         super.setWorld(world);
         // Rebuild the in-memory routing list from the cartridge (the persistent state already holds the mapping)
         this.routedBoardSpaces = List.copyOf(getDestinations(0));

@@ -3,6 +3,9 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -10,9 +13,12 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
@@ -82,7 +88,7 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
 
     /** The model, facing north: its base, the cloud, the referee's head, his lamp. In sixteenths of a block. */
     private static final double[][] BOXES = {{0, 0, 0, 16, 2, 16}, {1, 2, 2, 15, 9, 14}, {6, 7, 3, 14, 15, 13}, {2, 8, 6, 6, 16, 10}};
-    private static final java.util.Map<Direction, VoxelShape> SHAPES = new java.util.EnumMap<>(Direction.class);
+    private static final Map<Direction, VoxelShape> SHAPES = new EnumMap<>(Direction.class);
 
     static {
         for (Direction facing : Direction.Type.HORIZONTAL) {
@@ -191,17 +197,17 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, net.minecraft.item.Item.TooltipContext context, java.util.List<Text> tooltip,
-                              net.minecraft.item.tooltip.TooltipType options) {
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip,
+                              TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        for (String line : java.util.List.of("page", "play", "redstone")) {
+        for (String line : List.of("page", "play", "redstone")) {
             tooltip.add(Text.translatable("tooltip.steveparty.mini_game_controller." + line).formatted(Formatting.GRAY));
         }
     }
 
     /** It is placed: the power it receives then is not an edge (it acts on the next one). */
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack stack) {
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.onPlaced(world, pos, state, placer, stack);
         if (!world.isClient && world.getBlockEntity(pos) instanceof MiniGameControllerBlockEntity controller) {
             controller.initPower(world.isReceivingRedstonePower(pos));

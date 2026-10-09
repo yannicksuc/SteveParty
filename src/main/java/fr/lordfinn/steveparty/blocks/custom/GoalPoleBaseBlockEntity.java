@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import com.mojang.brigadier.StringReader;
@@ -49,11 +50,15 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock.POWERED;
@@ -349,7 +354,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         NbtList list = new NbtList();
         server.getScoreboard().getObjectives().stream()
                 .filter(objective -> !objective.getName().startsWith("steveparty_"))
-                .sorted(java.util.Comparator.comparing(ScoreboardObjective::getName))
+                .sorted(Comparator.comparing(ScoreboardObjective::getName))
                 .limit(MAX_LISTED_OBJECTIVES)
                 .forEach(objective -> {
                     NbtCompound entry = new NbtCompound();
@@ -557,7 +562,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         MinecraftServer server = world.getServer();
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(holder);
         UUID uuid = player != null ? player.getUuid()
-                : server.getUserCache() == null ? null : server.getUserCache().findByName(holder).map(com.mojang.authlib.GameProfile::getId).orElse(null);
+                : server.getUserCache() == null ? null : server.getUserCache().findByName(holder).map(GameProfile::getId).orElse(null);
         return uuid == null ? -1 : teams.teamOf(uuid);
     }
 
@@ -750,8 +755,8 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
      * The mini-game pages this base is linked to: those it was clicked with, and those of the podiums it touches
      * (itself or its pole). Worked out when something happens.
      */
-    public java.util.Set<UUID> linkedPages() {
-        java.util.Set<UUID> pages = new java.util.LinkedHashSet<>();
+    public Set<UUID> linkedPages() {
+        Set<UUID> pages = new LinkedHashSet<>();
         if (!(world instanceof ServerWorld serverWorld)) return pages;
         pages.addAll(MiniGamePages.pageIdsAt(serverWorld, pos));
         for (PodiumGroup group : Podiums.groupsOf(this)) pages.addAll(group.pages());
@@ -771,7 +776,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
      */
     @Nullable
     public PartyControllerEntity countedParty() {
-        java.util.Set<UUID> pages = linkedPages();
+        Set<UUID> pages = linkedPages();
         if (!pages.isEmpty()) return PartyControllerEntity.getPartyPlayingPage(pages).orElse(null);
         return runningParty();
     }
@@ -817,7 +822,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     public long getTotal() { return total; }
     public int getPoints(String holder) { return points.getOrDefault(holder, 0); }
     /** Points per player (read only; synced to clients for the wrench details). */
-    public Map<String, Integer> getPointsView() { return java.util.Collections.unmodifiableMap(points); }
+    public Map<String, Integer> getPointsView() { return Collections.unmodifiableMap(points); }
     public boolean isSourceInvalid() { return sourceInvalid; }
     @Nullable public ScoreboardObjective getMirror() { return mirror; }
 

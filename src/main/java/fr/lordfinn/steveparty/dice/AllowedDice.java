@@ -16,6 +16,7 @@ import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -34,7 +35,7 @@ public final class AllowedDice {
     public static List<ItemStack> defaults() {
         // The Default Die and its power-up version (carrying the Power-up Module)
         ItemStack die = new ItemStack(ModItems.DEFAULT_DICE);
-        return List.of(die, DiceModules.set(die.copy(), java.util.Map.of(DiceModules.POWER_UP, 1)));
+        return List.of(die, DiceModules.set(die.copy(), Map.of(DiceModules.POWER_UP, 1)));
     }
 
     /** True if {@code stack} is a die (plain, double, triple, forged or not). */

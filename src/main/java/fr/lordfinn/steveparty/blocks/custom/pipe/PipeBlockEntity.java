@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.ImplementedInventory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
@@ -30,7 +31,7 @@ public class PipeBlockEntity extends BlockEntity implements ImplementedInventory
         this(ModBlockEntities.PIPE_ENTITY, pos, state);
     }
 
-    protected PipeBlockEntity(net.minecraft.block.entity.BlockEntityType<? extends PipeBlockEntity> type, BlockPos pos, BlockState state) {
+    protected PipeBlockEntity(BlockEntityType<? extends PipeBlockEntity> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
     }
 

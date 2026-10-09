@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * A way a mini-game can be played, a page having one or more ({@link MiniGamePageData#formats()}):
@@ -99,7 +100,7 @@ public record MiniGameFormat(Kind kind, List<Side> sides, boolean sameSize) {
     public MiniGameFormat {
         if (kind == null) kind = Kind.TEAMS;
         List<Side> clean = new ArrayList<>(sides == null ? List.of() : sides);
-        clean.removeIf(java.util.Objects::isNull);
+        clean.removeIf(Objects::isNull);
         if (kind == Kind.TEAMS) {
             while (clean.size() < MIN_SIDES) clean.add(Side.atLeast(1));
             while (clean.size() > MAX_SIDES) clean.removeLast();

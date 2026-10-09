@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -73,7 +74,7 @@ public final class MiniGameNameColors {
         if (owner == null) return;
         Scoreboard scoreboard = owner.getScoreboard();
         String name = player.getNameForScoreboard();
-        String teamName = PREFIX + role.name().toLowerCase(java.util.Locale.ROOT);
+        String teamName = PREFIX + role.name().toLowerCase(Locale.ROOT);
         Team current = scoreboard.getScoreHolderTeam(name);
         if (current != null && current.getName().equals(teamName)) return;
         if (!COLOURED.containsKey(player.getUuid())) {

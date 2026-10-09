@@ -14,6 +14,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
@@ -77,7 +78,7 @@ public final class MistigriBadLuck {
             if (player.isSpectator()) return ActionResult.PASS;
             BlockPos pos = hit.getBlockPos();
             if (!isSeat(world.getBlockState(pos).getBlock()) || sitter(world, pos) == null) return ActionResult.PASS;
-            if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
+            if (player instanceof ServerPlayerEntity serverPlayer) {
                 MessageUtils.sendToPlayer(serverPlayer, Text.translatable("message.steveparty.mistigri.on_chest")
                         .formatted(Formatting.DARK_PURPLE), MessageUtils.MessageType.ACTION_BAR);
                 world.playSound(null, pos, ModSounds.MISTIGRI_HISS, SoundCategory.NEUTRAL, 0.6f, 1.1f);
@@ -187,7 +188,7 @@ public final class MistigriBadLuck {
         world.spawnParticles(ParticleTypes.WITCH, at.x, at.y, at.z, 12, 0.3, 0.4, 0.3, 0.05);
         world.playSound(null, at.x, at.y, at.z, ModSounds.MISTIGRI_BAD_LUCK, SoundCategory.NEUTRAL, 0.7f, 1.0f);
         mistigri.getLookControl().lookAt(player);
-        if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
+        if (player instanceof ServerPlayerEntity serverPlayer) {
             MessageUtils.sendToPlayer(serverPlayer, Text.translatable("message.steveparty.mistigri.crossed")
                     .formatted(Formatting.DARK_PURPLE), MessageUtils.MessageType.ACTION_BAR);
         }
