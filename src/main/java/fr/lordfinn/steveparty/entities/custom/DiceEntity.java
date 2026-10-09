@@ -94,6 +94,11 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     private DiceOutcome outcome = DiceOutcome.NONE;
     private List<DiceFace> rolledFaces = List.of();
     private @Nullable DiceThrow lastThrow;
+    /**
+     * A board show's die (a Trichaudron space's choice): its result goes to this only, nothing else (no move, no
+     * announce, no reveal message, no power-up, no curse spent); null for a thrown die. Server side, not saved.
+     */
+    private @Nullable Consumer<List<DiceFace>> showResult;
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.dice.idle");
@@ -288,6 +293,23 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         sequence.start();
     }
 
+    /**
+     * Makes this die (before it is spawned) a board show's: it rolls {@code die} (its faces and modules) for
+     * {@code roller} (a Slow die: only them stop it), and its result goes to {@code onResult} only (see
+     * {@link #showResult}). Its roll starts with {@link #startRoll}.
+     */
+    public void rollForShow(ItemStack die, @Nullable UUID roller, Consumer<List<DiceFace>> onResult) {
+        this.itemReference = ItemStack.EMPTY; // nothing given back
+        this.dieStack = die.copy();
+        this.showResult = onResult;
+        setOwner(roller);
+    }
+
+    /** A board show's die ({@link #rollForShow}). */
+    public boolean isShowDie() {
+        return showResult != null;
+    }
+
     /** True once the roll of this throw is final. */
     public boolean isRollFinished() {
         DiceEntity lead = lead();
@@ -302,6 +324,11 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     public void onRollFinished(List<DiceFace> faces) {
         this.rolledFaces = List.copyOf(faces);
         this.secondsSinceRolled = 0;
+        if (showResult != null) {
+            this.outcome = DiceOutcome.of(faces);
+            showResult.accept(this.rolledFaces);
+            return;
+        }
         DiceOutcome result = DiceOutcome.of(faces);
         Map<DiceModule, Integer> modules = DiceModules.of(dieStack);
         for (Map.Entry<DiceModule, Integer> entry : modules.entrySet()) result = entry.getKey().modifyOutcome(result, entry.getValue());
@@ -676,6 +703,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
      * a bare die (no item: summoned) rolls again.
      */
     private void onPlayerHit(ServerPlayerEntity player) {
+        if (showResult != null && sequence != null && sequence.phase() == DiceRollSequence.Phase.DONE) return; // its show removes it
         if (rollWasLoadedFinished || (sequence != null && sequence.phase() == DiceRollSequence.Phase.DONE)) {
             if (!itemReference.isEmpty()) {
                 explode(player);

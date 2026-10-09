@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_inventory_cartridge": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:inventory_cartridge"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:trichaudron_cartridge"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_inventory_cartridge"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:trichaudron_cartridge"
+    ]
+  }
+}

@@ -600,6 +600,38 @@ public final class TileStampTextures {
     private static final Map<Character, Float> MISTIGRI_SHADES =
             Map.of('#', FEATURE, '-', 0.3f, 'n', 0.1f, 'o', -0.7f, 'w', 0.2f);
 
+    /**
+     * The Trichaudron: a round-bellied cauldron (a square: roundness in the shades), three necks rising from its rim,
+     * a head on each. Painted as a PNG (textures/block/tile_face/trichaudron), this glyph is its fallback.
+     */
+    private static final String[] TRICHAUDRON = {
+            ".o....o....o..",
+            ".oo...oo...oo.",
+            "..o....o...o..",
+            "..o....o..o...",
+            "...o...o..o...",
+            "...o...o.o....",
+            "..##########..",
+            "..#oooooooo#..",
+            "..#oooooooo#..",
+            "..#oo----oo#..",
+            "..#oooooooo#..",
+            "..##########..",
+            "...#......#...",
+            ".............."};
+    private static final String[] SMALL_TRICHAUDRON = {
+            "o...o...o.",
+            "o...o..o..",
+            ".o..o..o..",
+            ".o..o.o...",
+            "##########",
+            "#oooooooo#",
+            "#oo----oo#",
+            "#oooooooo#",
+            "##########",
+            ".#......#."};
+    private static final Map<Character, Float> TRICHAUDRON_SHADES = Map.of('#', FEATURE, 'o', -0.6f, '-', 0.3f);
+
     // ---------------------------------------------------------------- the pictograms of the roles
 
     /**
@@ -618,7 +650,8 @@ public final class TileStampTextures {
             BoardSpaceType.TILE_THRESHOLD, new Pictogram("threshold", THRESHOLD, SMALL_THRESHOLD, THRESHOLD_SHADES),
             BoardSpaceType.TILE_POT, new Pictogram("pot", POT, SMALL_POT, POT_SHADES),
             BoardSpaceType.TILE_KEY_GATE, new Pictogram("key_gate", KEY_GATE, SMALL_KEY_GATE, KEY_GATE_SHADES),
-            BoardSpaceType.TILE_MISTIGRI, new Pictogram("mistigri", MISTIGRI, SMALL_MISTIGRI, MISTIGRI_SHADES));
+            BoardSpaceType.TILE_MISTIGRI, new Pictogram("mistigri", MISTIGRI, SMALL_MISTIGRI, MISTIGRI_SHADES),
+            BoardSpaceType.TILE_TRICHAUDRON, new Pictogram("trichaudron", TRICHAUDRON, SMALL_TRICHAUDRON, TRICHAUDRON_SHADES));
 
     /**
      * The face of a tile of role {@code type} when it is a pictogram (a shop, a star, an acorn, a ghost, a hurdle, a nest,

@@ -61,7 +61,8 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
                     : new CartridgeGhostInventory(() -> ref.resolve(player), () -> ref.commit(player.getWorld()));
             ghostStart = slots.size();
             for (int i = 0; i < GhostSlotsModule.COUNT; i++) {
-                addSlot(new GhostSlot(ghosts, i, shellX + CartridgeLayout.PAD_X + module.slotX(i), CartridgeLayout.TOP + module.slotY(i), () -> true));
+                boolean shown = i < module.count();
+                addSlot(new GhostSlot(ghosts, i, shellX + CartridgeLayout.PAD_X + module.slotX(i), CartridgeLayout.TOP + module.slotY(i), () -> shown));
             }
             int invX = (backgroundWidth - CartridgeLayout.INVENTORY_W) / 2;
             int invY = CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP;

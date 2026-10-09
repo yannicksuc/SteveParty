@@ -18,6 +18,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.glandouille.AcornHatItem;
 import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.powerups.PowerUps;
@@ -125,6 +126,9 @@ public class ModItems {
     /** Its tile's face and its gates are teal until dyed; a token leaving it by a locked exit needs a Gate Key. */
     public static final Item KEY_GATE_CARTRIDGE = register("key_gate_cartridge", KeyGateCartridgeItem::new,
             new Item.Settings().component(ModComponents.COLOR, KeyGateCartridgeItem.COLOR));
+    /** Its tile's face is magma crust until dyed; the Trichaudron's heads hold the prizes of its stock. */
+    public static final Item TRICHAUDRON_CARTRIDGE = register("trichaudron_cartridge", TrichaudronCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, TrichaudronCartridgeItem.COLOR));
     /** The Gate Key: opens a Key gate on the board, used up (KeyGates). */
     public static final Item GATE_KEY = register("gate_key", GateKeyItem::new,
             new Item.Settings().maxCount(16));

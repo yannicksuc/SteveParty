@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenuHost;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
@@ -82,8 +81,10 @@ public class BoardSpaceScreenHandler extends CartridgeContainerScreenHandler imp
                 });
         ghostStart = slots.size();
         for (int i = 0; i < GhostSlotsModule.COUNT; i++) {
+            int index = i;
+            // Shown for a cartridge with ghost slots (Inventory, Trichaudron): all at the same place, its first module
             addSlot(new GhostSlot(ghosts, i, MENU_X + CartridgeLayout.PAD_X + module.slotX(i), CartridgeLayout.TOP + module.slotY(i),
-                    () -> selectedStack().getItem() instanceof InventoryCartridgeItem));
+                    () -> index < GhostSlotsModule.countOf(selectedStack())));
         }
     }
 

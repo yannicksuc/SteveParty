@@ -17,6 +17,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehav
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TeleportTileBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ThresholdTileBehavior;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TrichaudronTileBehavior;
 import net.minecraft.util.StringIdentifiable;
 
 import java.util.function.Supplier;
@@ -48,7 +49,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Pot commun »: passing tokens feed a pot, the token stopping on it wins it (see PotTileBehavior). */
     TILE_POT("tile_pot", PotTileBehavior::new),
     /** « Portail à clé »: gates on some exits, opened by a Gate Key (see KeyGateTileBehavior). */
-    TILE_KEY_GATE("tile_key_gate", KeyGateTileBehavior::new);
+    TILE_KEY_GATE("tile_key_gate", KeyGateTileBehavior::new),
+    /** « Trichaudron »: the Trichaudron's three heads each hold a hidden prize, a slow die picks one (see TrichaudronTileBehavior). */
+    TILE_TRICHAUDRON("tile_trichaudron", TrichaudronTileBehavior::new);
 
     private final String name;
     private final Supplier<ABoardSpaceBehavior> behavior;
