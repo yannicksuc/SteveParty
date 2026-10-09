@@ -254,7 +254,8 @@ public class StevepartyClient implements ClientModInitializer {
         // Every Steve Party egg is drawn per mob (textures/item/*_spawn_egg.png, 1.21.5 style): item/generated gives
         // layer0 tint index 0, so the vanilla spawn-egg tint is replaced by a white one
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG,
-                ModItems.BOXED_TRADER_SPAWN_EGG, ModItems.FROUSSEUX_SPAWN_EGG, ModItems.BOOMCART_SPAWN_EGG);
+                ModItems.BOXED_TRADER_SPAWN_EGG, ModItems.FROUSSEUX_SPAWN_EGG, ModItems.BOOMCART_SPAWN_EGG,
+                ModItems.FUMAROLE_SPAWN_EGG);
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.GLANDOUILLE_SPAWN_EGGS);
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
@@ -374,6 +375,9 @@ public class StevepartyClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.MULA_SPARKLE, MulaSparkleParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.MAGIC_SHAPE, MagicShapeParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.STAR_FLARE, StarFlareParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.THERMAL_PLUME, fr.lordfinn.steveparty.client.particle.ThermalSteamParticle::plume);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.THERMAL_BASE, fr.lordfinn.steveparty.client.particle.ThermalSteamParticle::base);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.THERMAL_POOF, fr.lordfinn.steveparty.client.particle.ThermalSteamParticle::poof);
     }
 
     private static void initScreens() {

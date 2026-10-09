@@ -139,6 +139,25 @@ public class ModSounds {
     public static final SoundEvent BOOMCART_REFUSE = register("boomcart.refuse");
     /** It blows (on top of the TNT's blast or the firework's sparks). */
     public static final SoundEvent BOOMCART_EXPLODE = register("boomcart.explode");
+    // Fumarole (Fumerolle): vanilla sounds for now (assets/steveparty/sounds.json)
+    /** Its low rumble and the crackle of its tank. */
+    public static final SoundEvent FUMAROLE_AMBIENT = register("fumarole.ambient");
+    public static final SoundEvent FUMAROLE_HURT = register("fumarole.hurt");
+    public static final SoundEvent FUMAROLE_DEATH = register("fumarole.death");
+    /** Its heavy steps. */
+    public static final SoundEvent FUMAROLE_STEP = register("fumarole.step");
+    /** A gulp of lava pumped from a source. */
+    public static final SoundEvent FUMAROLE_PUMP = register("fumarole.pump");
+    /** Its tank gurgles (a bucket taken or poured). */
+    public static final SoundEvent FUMAROLE_GURGLE = register("fumarole.gurgle");
+    /** The warning second before a blast: steam hisses in its vent. */
+    public static final SoundEvent FUMAROLE_CHARGE = register("fumarole.charge");
+    /** The thermal blast. */
+    public static final SoundEvent FUMAROLE_BLAST = register("fumarole.blast");
+    /** The weak puff of an empty tank. */
+    public static final SoundEvent FUMAROLE_PUFF = register("fumarole.puff");
+    /** Its tank spilling as it dies. */
+    public static final SoundEvent FUMAROLE_SPILL = register("fumarole.spill");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }
