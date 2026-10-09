@@ -1,10 +1,8 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -37,26 +35,11 @@ public abstract class MobTileBehavior extends ABoardSpaceBehavior {
     public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity,
                                      @Nullable PartyControllerEntity partyController) {
         if (!(world instanceof ServerWorld serverWorld) || boardSpaceEntity == null) return;
-        if (partyOnly() && (partyController == null || partyController.isRemoved() || !partyController.getPartyData().isStarted())) {
+        if (partyOnly() && !isPartyRunning(partyController)) {
             landPlain(serverWorld, boardSpaceEntity, token, partyController);
             return;
         }
         startShow(serverWorld, pos, token, boardSpaceEntity, partyController, resumeTurn(partyController));
     }
 
-    /** A plain landing (nothing summoned). */
-    protected static void landPlain(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token,
-                                    @Nullable PartyControllerEntity party) {
-        TileFeedback.land(world, tile, token, party, TileFeedback.Landing.DEFAULT, TileFeedback.Landing.DEFAULT.noticeKey());
-    }
-
-    /** The party's next step once the show is over, if the landing's step is still the current one (none: nothing). */
-    protected static Runnable resumeTurn(@Nullable PartyControllerEntity party) {
-        PartyStep step = party == null ? null : party.getPartyData().getCurrentStep();
-        return () -> {
-            if (party != null && !party.isRemoved() && step != null && party.getPartyData().getCurrentStep() == step) {
-                party.nextStep();
-            }
-        };
-    }
 }

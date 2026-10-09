@@ -1,7 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
@@ -57,15 +56,13 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
         BlockPos target = TileTeleport.pick(serverWorld, boardSpaceEntity, cartridge);
         if (target == null) {
             // Alone in its network: an ordinary space, the party goes on right away (keepsTurn false)
-            TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.DEFAULT,
-                    TileFeedback.Landing.DEFAULT.noticeKey());
+            landPlain(serverWorld, boardSpaceEntity, token, partyController);
             return;
         }
         // The notice « 🌀 X est téléporté ! » and the whirl
-        TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.TELEPORT,
-                TileFeedback.Landing.TELEPORT.noticeKey());
+        TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.TELEPORT);
         TeleportSettingsComponent settings = TileTeleport.settings(cartridge);
-        PartyStep step = partyController == null ? null : partyController.getPartyData().getCurrentStep();
+        Runnable resume = resumeTurn(partyController);
         // No second move during the warp (a dice rolled meanwhile would move it again)
         if (token instanceof TokenizedEntityInterface tokenized) {
             tokenized.steveparty$setStatus(TokenStatus.clearStatus(tokenized.steveparty$getStatus(), TokenStatus.CAN_MOVE));
@@ -73,10 +70,7 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
         TileTeleport.teleport(serverWorld, token, pos, target, settings.network().color(), () -> {
             // Pushed one space on: the turn goes on when it lands there (that space's landing, see BoardSpaceBlockEntity)
             if (settings.push() && !token.isRemoved() && TileTeleport.push(serverWorld, token, target, settings.pushTriggers())) return;
-            if (partyController != null && !partyController.isRemoved() && step != null
-                    && partyController.getPartyData().getCurrentStep() == step) {
-                partyController.nextStep();
-            }
+            resume.run();
         });
     }
 

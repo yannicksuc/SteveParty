@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -23,6 +24,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import static net.minecraft.util.ActionResult.PASS;
 import static net.minecraft.util.ActionResult.SUCCESS;
@@ -94,6 +96,30 @@ public abstract class ABoardSpaceBehavior {
     public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyController) {
         if (world instanceof ServerWorld serverWorld && boardSpaceEntity != null)
             TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController);
+    }
+
+    /** A plain landing: the default jingle and notice, nothing of its role (outside a party, a role that did not play...). */
+    protected static void landPlain(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token,
+                                    @Nullable PartyControllerEntity party) {
+        TileFeedback.land(world, tile, token, party, TileFeedback.Landing.DEFAULT);
+    }
+
+    /** {@code party} is there and its party runs (a role playing only in a party). */
+    protected static boolean isPartyRunning(@Nullable PartyControllerEntity party) {
+        return party != null && !party.isRemoved() && party.getPartyData().isStarted();
+    }
+
+    /**
+     * The party's next step once a role holding the turn ({@link #keepsTurn}) is done, if the landing's step is still
+     * the current one (no party: nothing). Taken at the landing.
+     */
+    protected static Runnable resumeTurn(@Nullable PartyControllerEntity party) {
+        PartyStep step = party == null ? null : party.getPartyData().getCurrentStep();
+        return () -> {
+            if (party != null && !party.isRemoved() && step != null && party.getPartyData().getCurrentStep() == step) {
+                party.nextStep();
+            }
+        };
     }
 
     /**

@@ -513,7 +513,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
         // Pushed here after a teleport: an ordinary space if the Teleport Cartridge says so, or if it is a teleport tile
         if (TileTeleport.endPush(token, behavior) && this.world instanceof ServerWorld serverWorld) {
-            TileFeedback.land(serverWorld, this, token, partyController, TileFeedback.Landing.DEFAULT, TileFeedback.Landing.DEFAULT.noticeKey());
+            TileFeedback.land(serverWorld, this, token, partyController, TileFeedback.Landing.DEFAULT);
             partyController.nextStep();
             return;
         }

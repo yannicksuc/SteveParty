@@ -28,7 +28,7 @@ public class ReplayBoardSpaceBehavior extends ABoardSpaceBehavior {
         if (!(world instanceof ServerWorld serverWorld) || boardSpaceEntity == null) return;
         // The extra turn is inserted right after the current one: the caller then goes on with the next step, that turn
         TileFeedback.Landing landing = grant(partyController, token);
-        TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing, landing.noticeKey());
+        TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing);
     }
 
     /**
