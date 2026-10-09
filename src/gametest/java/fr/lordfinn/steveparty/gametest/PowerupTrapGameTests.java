@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
 import fr.lordfinn.steveparty.powerups.effects.TrapState;
@@ -75,11 +76,11 @@ public class PowerupTrapGameTests implements FabricGameTest {
      * up to the first turn of {@code first} ("a" or "b"). Mock players are removed if the test fails.
      */
     private static void game(TestContext context, BlockPos bAt, String first, BiConsumer<Game, Runnable> test) {
-        ServerPlayerEntity a = context.createMockCreativeServerPlayerInWorld();
-        ServerPlayerEntity b = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity a = TestPlayers.mock(context);
+        ServerPlayerEntity b = TestPlayers.mock(context);
         Runnable cleanUp = () -> {
-            context.getWorld().getServer().getPlayerManager().remove(a);
-            context.getWorld().getServer().getPlayerManager().remove(b);
+            TestPlayers.remove(context, a);
+            TestPlayers.remove(context, b);
         };
         try {
             for (int x = 0; x < 9; x++) {

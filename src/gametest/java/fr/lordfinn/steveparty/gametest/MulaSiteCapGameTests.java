@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
 import fr.lordfinn.steveparty.config.ServerConfig;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.payloads.custom.TelescopePayloads;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -294,7 +295,7 @@ public class MulaSiteCapGameTests implements FabricGameTest {
         ServerConfig config = ServerConfig.get();
         int before = config.mulaMaxSites;
         BlockPos telescope = context.getAbsolutePos(new BlockPos(1, 1, 1));
-        ServerPlayerEntity ann = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity ann = TestPlayers.mock(context);
         ann.refreshPositionAndAngles(telescope.getX() + 1.5, telescope.getY(), telescope.getZ() + 0.5, 0, 0);
         MulaSpawnSites sites = MulaSpawnSites.get(world);
         List<MulaSpawnSites.Site> later = new ArrayList<>();

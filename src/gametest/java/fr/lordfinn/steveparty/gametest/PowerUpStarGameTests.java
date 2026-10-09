@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.powerups.PowerUps;
@@ -79,8 +80,7 @@ public class PowerUpStarGameTests implements FabricGameTest {
 
     private static ServerPlayerEntity player(TestContext context) {
         @SuppressWarnings("removal")
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         return player;
     }
 
@@ -93,7 +93,7 @@ public class PowerUpStarGameTests implements FabricGameTest {
     private static void finish(TestContext context, ServerPlayerEntity player) {
         for (BlockPos pos : STAR_SPACES) context.setBlockState(pos, Blocks.AIR);
         context.setBlockState(CONTROLLER, Blocks.AIR);
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
         context.complete();
     }
 

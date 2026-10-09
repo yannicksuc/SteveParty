@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockUse;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerMode;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerReaction;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BellBlock;
 import net.minecraft.block.BlockState;
@@ -54,15 +55,14 @@ public class VillagerBlockGameTests implements FabricGameTest {
 
     /** A player standing {@code offset} from the villager block, looking away from it. */
     private static ServerPlayerEntity playerAt(TestContext context, Vec3d offset, GameMode gameMode) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(gameMode);
+        ServerPlayerEntity player = TestPlayers.mock(context, gameMode);
         BlockPos abs = context.getAbsolutePos(POS);
         player.refreshPositionAndAngles(abs.getX() + 0.5 + offset.x, abs.getY() + offset.y, abs.getZ() + 0.5 + offset.z, 0, -90);
         return player;
     }
 
     private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     private static BlockHitResult hit(TestContext context) {

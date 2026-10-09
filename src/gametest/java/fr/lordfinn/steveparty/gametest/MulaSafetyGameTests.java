@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.damage.DamageSource;
@@ -42,7 +43,7 @@ public class MulaSafetyGameTests implements FabricGameTest {
         });
         context.assertTrue(!mula.handleFallDamage(40f, 1f, sources.fall()), "no fall damage from a long fall");
         context.assertTrue(mula.getType().isFireImmune(), "fire immune");
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         BlockPos at = context.getAbsolutePos(new BlockPos(0, 2, 0));
         player.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         try {
@@ -73,7 +74,7 @@ public class MulaSafetyGameTests implements FabricGameTest {
     /** Eight Mulas packed in one spot, a player watching (flock, play...), for 10 s: no damage, none in a wall. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 260)
     public void packedMulasTakeNoDamage(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         BlockPos at = context.getAbsolutePos(new BlockPos(1, 2, 1));
         player.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         List<MulaEntity> mulas = new ArrayList<>();
@@ -89,7 +90,7 @@ public class MulaSafetyGameTests implements FabricGameTest {
                     context.assertTrue(!m.isInsideWall(), "not in a wall: " + m.getPos());
                 }
             } finally {
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
                 mulas.forEach(MulaEntity::discard);
             }
             context.complete();
@@ -105,7 +106,7 @@ public class MulaSafetyGameTests implements FabricGameTest {
         ServerWorld world = context.getWorld();
         long time = world.getTimeOfDay();
         world.setTimeOfDay(14000);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         BlockPos at = context.getAbsolutePos(new BlockPos(0, 2, 0));
         player.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         BlockPos fence = new BlockPos(2, 2, 2);

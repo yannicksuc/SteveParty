@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
 import fr.lordfinn.steveparty.persistent_state.ShopProtection;
@@ -406,8 +407,8 @@ public class ShopGameTests implements FabricGameTest {
         context.setBlockState(register, ModBlocks.CASH_REGISTER);
         context.setBlockState(chest, Blocks.CHEST);
         context.setBlockState(unownedChest, Blocks.CHEST);
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
-        ServerPlayerEntity stranger = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity owner = TestPlayers.mock(context);
+        ServerPlayerEntity stranger = TestPlayers.mock(context);
         UUID shop = shopOf(context, owner.getUuid(), stall, register, chest);
         UUID unownedShop = shopOf(context, null, unownedChest);
         try {
@@ -512,7 +513,7 @@ public class ShopGameTests implements FabricGameTest {
         context.setBlockState(dispenser.east(), Blocks.REDSTONE_BLOCK);
 
         context.waitAndRun(60, () -> {
-            ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+            ServerPlayerEntity player = TestPlayers.mock(context);
             try {
                 context.assertEquals(inventoryAt(context, chestPos).count(Items.DIAMOND), 5, "the hopper filled the stock");
                 player.setPosition(trader.getPos().add(0, 0, 1));
@@ -528,7 +529,7 @@ public class ShopGameTests implements FabricGameTest {
                         && inventoryAt(context, stallPos.down()).isEmpty(), "nothing pulled from the stall: its offer is whole");
                 context.assertTrue(trader.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD).isEmpty(), "no armour put on the merchant");
             } finally {
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
             }
             context.waitAndRun(40, () -> {
                 try {
@@ -647,7 +648,7 @@ public class ShopGameTests implements FabricGameTest {
             links.linkBlock(trader.getUuid(), GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(pos)));
         }
 
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         player.setPosition(trader.getPos().add(0, 0, 1));
         trader.interact(player, Hand.MAIN_HAND);
         context.assertTrue(player.currentScreenHandler instanceof MerchantScreenHandler, "merchant screen opened");
@@ -667,7 +668,7 @@ public class ShopGameTests implements FabricGameTest {
             context.assertTrue(buyOnce(handler, player), "and again");
             context.assertEquals(register.count(Items.EMERALD), 5, "every payment in the cash register");
             player.closeHandledScreen();
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
             context.complete();
         });
     }

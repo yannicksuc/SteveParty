@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
@@ -149,7 +150,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
         List<ServerPlayerEntity> own = List.of(mine);
         Vec3d center = context.getAbsolute(new Vec3d(4, 2, 4));
         for (ServerPlayerEntity other : new ArrayList<>(context.getWorld().getServer().getPlayerManager().getPlayerList())) {
-            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) context.getWorld().getServer().getPlayerManager().remove(other);
+            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) TestPlayers.remove(context, other);
         }
     }
 
@@ -157,7 +158,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
         for (ServerPlayerEntity player : players) {
             if (player.hasVehicle()) player.stopRiding();
             MiniGamePipes.leaveParty(player.getUuid());
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -531,13 +532,13 @@ public class MiniGameTestGameTests implements FabricGameTest {
         try {
             alone(context, p1, p2);
             context.assertEquals(MiniGameTest.start(server, id, null, 0), Status.READY, "the test starts");
-            Reconnect.leave(p2);
+            TestPlayers.leave(p2);
             MiniGameTest.stop(id);
             context.assertTrue(at(p1, start1), "who is there is back at once");
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "who left is waited for");
             MiniGameReturns.simulateRestart(server);
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "and still is after a restart");
-            back = Reconnect.join(context, away);
+            back = TestPlayers.join(context, away);
         } catch (RuntimeException e) {
             if (back != null) remove(context, back);
             cleanUp(context, id, p1, p2);

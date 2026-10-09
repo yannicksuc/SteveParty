@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.gametest;
 
-import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
@@ -8,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat.Side;
@@ -23,7 +23,6 @@ import fr.lordfinn.steveparty.minigame.MiniGameTest;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
@@ -198,8 +197,7 @@ public class MiniGameFormatGameTests implements FabricGameTest {
     // ------------------------------------------------------------------ the round: name colours, ways out
 
     private static ServerPlayerEntity player(TestContext context, double x, double y, double z) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
         player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
         return player;
@@ -208,7 +206,7 @@ public class MiniGameFormatGameTests implements FabricGameTest {
     private static void remove(TestContext context, ServerPlayerEntity player) {
         if (player.hasVehicle()) player.stopRiding();
         MiniGamePipes.leaveParty(player.getUuid());
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     /** A pipe of {@code block} standing on stone: a mouth on top. */
@@ -227,12 +225,6 @@ public class MiniGameFormatGameTests implements FabricGameTest {
         Vec3d at = context.getRelative(player.getPos());
         return !player.hasVehicle() && Math.abs(at.x - (mouth.getX() + 0.5)) < 1.2 && Math.abs(at.z - (mouth.getZ() + 0.5)) < 1.2
                 && at.y >= mouth.getY() + 0.9;
-    }
-
-    private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) then.run();
-        else if (ticks <= 0) context.throwGameTestException(what);
-        else context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
     }
 
     /**

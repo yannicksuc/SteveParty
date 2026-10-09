@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -53,7 +54,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
     }
 
     private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     /** Lit before the spell (already hissing) or after: a creeper token never explodes. */
@@ -110,7 +111,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void vanillaActionsDoNotBreakPawns(TestContext context) {
         floor(context);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             AxolotlEntity axolotl = token(context.spawnEntity(EntityType.AXOLOTL, new BlockPos(1, 2, 1)));
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
@@ -164,7 +165,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
     public void boxedTraderTokenIsStoredInAToken(TestContext context) {
         floor(context);
         BoxedTraderEntity trader = token(context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(3, 2, 3)));
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             ItemStack stack = new ItemStack(ModItems.TOKEN);
             player.setStackInHand(Hand.MAIN_HAND, stack);
@@ -181,7 +182,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
     /** Two Mulas following the same player, resting right on top of each other, drift apart. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
     public void followingMulasKeepApart(TestContext context) {
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity owner = TestPlayers.mock(context);
         BlockPos at = context.getAbsolutePos(new BlockPos(3, 2, 3));
         owner.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         MulaEntity first = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(4, 4, 3));

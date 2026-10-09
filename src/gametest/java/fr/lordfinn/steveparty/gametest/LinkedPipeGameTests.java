@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
@@ -32,9 +33,10 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
+
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The pipes linked to a mini-game page: closed during a round, out of a round the way out by a mini-game pipe of the
@@ -53,8 +55,7 @@ public class LinkedPipeGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, double x, double y, double z) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         player.getInventory().clear();
         Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
         player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
@@ -64,13 +65,7 @@ public class LinkedPipeGameTests implements FabricGameTest {
     private static void remove(TestContext context, ServerPlayerEntity player) {
         if (player.hasVehicle()) player.stopRiding();
         MiniGamePipes.leaveParty(player.getUuid());
-        context.getWorld().getServer().getPlayerManager().remove(player);
-    }
-
-    private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) then.run();
-        else if (ticks <= 0) context.throwGameTestException(what);
-        else context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
+        TestPlayers.remove(context, player);
     }
 
     /** True once the player stands out of the mouth at {@code mouth} opening on {@code side}. */

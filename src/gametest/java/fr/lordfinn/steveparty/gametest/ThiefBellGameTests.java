@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Thief Bell power-up: coins stolen at random (5 to 15, no more than the target holds), the Golden one steals a

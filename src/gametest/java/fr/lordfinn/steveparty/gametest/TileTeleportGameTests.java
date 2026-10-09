@@ -27,6 +27,7 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
@@ -69,6 +70,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Teleport tile and its networks: a token landing on it is warped to another Teleport tile of the same colour on
@@ -235,16 +238,6 @@ public class TileTeleportGameTests implements FabricGameTest {
     private static void assertOn(TestContext context, MobEntity token, BlockPos absolute, String what) {
         BoardSpaceBlockEntity on = BoardSpaces.boardSpaceOf(token);
         context.assertTrue(on != null && on.getPos().equals(absolute), what + ": on " + absolute + ", found " + (on == null ? null : on.getPos()));
-    }
-
-    /** Runs {@code then} as soon as {@code condition} holds, failing after {@code ticks}. */
-    private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) {
-            then.run();
-            return;
-        }
-        context.assertTrue(ticks > 0, "timed out: " + what);
-        context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
     }
 
     private static BooleanSupplier turnEnded(PartyControllerEntity controller) {
@@ -468,7 +461,7 @@ public class TileTeleportGameTests implements FabricGameTest {
 
         BoardSpaceBlockEntity tile = tile(context, new BlockPos(2, 1, 2), teleport(TeleportNetwork.VIOLET));
         BlockPos pos = tile.getPos();
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             Vec3d near = pos.toCenterPos().add(1.5, 0.5, 0);
             player.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
@@ -504,7 +497,7 @@ public class TileTeleportGameTests implements FabricGameTest {
             context.assertEquals(tile.getActiveCartridgeItemStack().get(ModComponents.COLOR), TeleportNetwork.GREEN.color(), "green tile");
             context.assertEquals(dye.getCount(), 1, "the dye is not used up");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

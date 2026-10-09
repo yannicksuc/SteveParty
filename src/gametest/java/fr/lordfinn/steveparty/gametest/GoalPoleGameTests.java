@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleFlags;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleSearch;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.minecraft.text.Text;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
@@ -48,7 +49,6 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
 import java.util.List;
-import java.util.UUID;
 
 public class GoalPoleGameTests implements FabricGameTest {
     private static final BlockPos BASE = new BlockPos(2, 1, 2);
@@ -578,7 +578,7 @@ public class GoalPoleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player")
     public void anObjectiveOfTheServerCanBeTheGoal(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         String name = player.getGameProfile().getName();
         var scoreboard = context.getWorld().getScoreboard();
         String objectiveName = "jumps" + context.getAbsolutePos(BASE).getX();
@@ -607,7 +607,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             removeBase(context);
         } finally {
             if (scoreboard.getNullableObjective(objectiveName) != null) scoreboard.removeObjective(scoreboard.getNullableObjective(objectiveName));
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -698,7 +698,7 @@ public class GoalPoleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player", tickLimit = 120)
     public void criterionIncreasesAndLandingsWithAPlayer(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         String name = player.getGameProfile().getName();
         GoalPoleBaseBlockEntity base;
         try {
@@ -730,13 +730,13 @@ public class GoalPoleGameTests implements FabricGameTest {
             context.assertTrue(pole.onPlayerTouch(player), "first touch: a landing");
             context.assertTrue(!pole.onPlayerTouch(player), "still standing: not a new landing");
         } catch (RuntimeException e) {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
             throw e;
         }
         GoalPoleBaseBlockEntity finalBase = base;
         context.waitAndRun(45, () -> {
             boolean again = poleEntity(context, BASE.up()).onPlayerTouch(player);
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
             removeBase(context);
             context.assertTrue(again, "back after 2 s away: a new landing");
             context.assertTrue(finalBase.isRemoved(), "base removed");
@@ -750,7 +750,7 @@ public class GoalPoleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_boards", tickLimit = 60)
     public void eachBaseCountsLandingsOnItsOwnPoles(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         String name = player.getGameProfile().getName();
         BlockPos otherBase = BASE.east(3);
         try {
@@ -781,7 +781,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             GoalPoleNetwork.onLanding(poleA, player);
             context.assertTrue(a.getPoints(name) == 0, "a full signal: back to 0 and paused, not counted");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
             context.setBlockState(otherBase, Blocks.AIR);
             removeBase(context);
         }
@@ -1105,7 +1105,7 @@ public class GoalPoleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_modes", tickLimit = 40)
     public void playersInPlainWords(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         String name = player.getGameProfile().getName();
         try {
             GoalPoleBaseBlockEntity base = placeBase(context, base());
@@ -1135,7 +1135,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             removeBase(context);
             context.complete();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -1145,7 +1145,7 @@ public class GoalPoleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_party", tickLimit = 40)
     public void partyLinkFollowsThePartyAndResetsAtItsStart(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         BlockPos controllerPos = BASE.east(4);
         BlockPos otherBase = BASE.west(2);
         try {
@@ -1181,7 +1181,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             removeBase(context);
             context.complete();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -1232,7 +1232,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         GoalPoleNetwork.processPending();
         GoalPoleBlockEntity pole = poleEntity(context, BASE.up());
         BlockPos basePos = context.getAbsolutePos(BASE), polePos = context.getAbsolutePos(BASE.up());
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             Vec3d near = basePos.toCenterPos().add(1.5, 0, 0);
             player.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
@@ -1262,7 +1262,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             context.assertTrue(pole.getValue() == 7, "survival: the goal is applied");
         } finally {
             player.closeHandledScreen();
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         removeBase(context);
         context.complete();

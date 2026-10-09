@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxCompanion;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.ItemEntity;
@@ -37,8 +38,7 @@ public class FrousseuxGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, BlockPos at) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         Vec3d pos = context.getAbsolute(Vec3d.ofBottomCenter(at));
         player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
         player.getInventory().clear();

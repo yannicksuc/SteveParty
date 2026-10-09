@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -63,7 +64,7 @@ public class TokenPawnGameTests implements FabricGameTest {
 
     /** @param settleTicks ticks for it to come down onto the ground before it is watched (tokens fall like today) */
     private static void assertStaysStill(TestContext context, MobEntity mob, float yaw, int settleTicks) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         player.setPosition(mob.getX() + 2, mob.getY(), mob.getZ() + 1);
         TokenMovementService.faceYaw(mob, yaw);
         token(mob).steveparty$setTokenized(true);
@@ -145,7 +146,7 @@ public class TokenPawnGameTests implements FabricGameTest {
         floor(context);
         CowEntity cow = context.spawnEntity(EntityType.COW, new BlockPos(2, 2, 2));
         token(cow).steveparty$setTokenized(true);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WHEAT));
         context.assertTrue(cow.interact(player, Hand.MAIN_HAND) == ActionResult.PASS, "wheat does nothing to a token");
         context.assertFalse(cow.isInLove(), "a token does not fall in love");

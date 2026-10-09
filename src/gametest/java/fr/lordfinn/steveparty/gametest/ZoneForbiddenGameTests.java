@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.config.ServerConfig;
@@ -278,8 +279,8 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
             context.assertTrue(outsider.getInventory().count(Items.NETHER_STAR) == 1, "the rule is for the members of a session");
             bubble.end();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(member);
-            context.getWorld().getServer().getPlayerManager().remove(outsider);
+            TestPlayers.remove(context, member);
+            TestPlayers.remove(context, outsider);
         }
         context.complete();
     }

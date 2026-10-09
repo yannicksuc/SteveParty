@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpace
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TeleportNetwork;
 import fr.lordfinn.steveparty.components.TeleportSettingsComponent;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -79,14 +80,14 @@ public class CartridgeMenuGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity playerNear(TestContext context, BlockPos absolute) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         Vec3d near = absolute.toCenterPos().add(1.5, 0.5, 0);
         player.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
         return player;
     }
 
     private static void remove(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     // ------------------------------------------------------------------ texts: do they fit?
@@ -323,7 +324,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
         CartridgeSettingPayload.CODEC.encode(buf, payload);
         context.assertEquals(CartridgeSettingPayload.CODEC.decode(buf), payload, "sent");
 
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             ItemStack shop = new ItemStack(ModItems.SHOP_CARTRIDGE);
             player.setStackInHand(Hand.MAIN_HAND, shop);
@@ -352,7 +353,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
     /** Each cartridge's settings through its modules: every value written reads back, in hand and in a tile. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void everyModuleRoundTrips(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             CartridgeRef hand = CartridgeRef.hand(Hand.MAIN_HAND);
             for (Item item : CARTRIDGES) {
@@ -430,7 +431,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void ghostSlotsInHandAndInTiles(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             ItemStack cartridge = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
             player.setStackInHand(Hand.MAIN_HAND, cartridge);

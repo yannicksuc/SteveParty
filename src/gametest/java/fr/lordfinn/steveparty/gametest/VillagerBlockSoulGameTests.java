@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerSoul;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -105,7 +106,7 @@ public class VillagerBlockSoulGameTests implements FabricGameTest {
 
         BlockState state = context.getWorld().getBlockState(context.getAbsolutePos(FEET));
         context.assertFalse(state.isToolRequired(), "no tool needed");
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.changeGameMode(GameMode.SURVIVAL);
             player.setOnGround(true); // mining in the air is 5 times slower
@@ -133,7 +134,7 @@ public class VillagerBlockSoulGameTests implements FabricGameTest {
             assertIsHmmbert(context, back, offers, "released after all that");
             back.discard();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSupport;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.recipes.TileSizeRecipe;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -127,7 +128,7 @@ public class TileSizeGameTests implements FabricGameTest {
         floor(context);
         context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(SIZE, SE));
         assertLarge(context, TILE);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         player.interactionManager.tryBreakBlock(context.getAbsolutePos(TILE.add(1, 0, 1)));
         context.expectBlock(Blocks.AIR, TILE);
         for (BlockPos part : parts(TILE)) context.expectBlock(Blocks.AIR, part);
