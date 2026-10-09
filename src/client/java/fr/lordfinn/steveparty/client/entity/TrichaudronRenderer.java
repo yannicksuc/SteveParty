@@ -10,18 +10,14 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
+import org.joml.Vector3d;
+import software.bernie.geckolib.cache.object.GeoBone;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.client.render.item.ItemRenderer;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronRiding;
 import java.util.List;
 import org.joml.Vector3f;
 import software.bernie.geckolib.cache.object.GeoBone;
@@ -55,15 +51,18 @@ public class TrichaudronRenderer extends GeoEntityRenderer<TrichaudronEntity> {
 
     /** The reins: a plain wool texture, tinted a rope's tan. */
     private static final Identifier ROPE = Identifier.ofVanilla("textures/block/white_wool.png");
-    private static final ItemStack SADDLE = new ItemStack(Items.SADDLE);
     /** A rein's sag (blocks at its middle), its thickness, its segments. */
     private static final float REIN_SAG = 0.35f, REIN_WIDTH = 0.05f;
     private static final int REIN_SEGMENTS = 16;
-    private final ItemRenderer itemRenderer;
+    private final TrichaudronModel model;
 
     public TrichaudronRenderer(EntityRendererFactory.Context context) {
-        super(context, new TrichaudronModel());
-        this.itemRenderer = context.getItemRenderer();
+        this(context, new TrichaudronModel());
+    }
+
+    private TrichaudronRenderer(EntityRendererFactory.Context context, TrichaudronModel model) {
+        super(context, model);
+        this.model = model;
         this.shadowRadius = 1.6f;
         addRenderLayer(new EmissiveLayer<>(this, trichaudron -> VEINS, trichaudron -> true, TrichaudronRenderer::veinsTint).animated());
         addRenderLayer(new TankAndVentLayer(this));
@@ -75,30 +74,15 @@ public class TrichaudronRenderer extends GeoEntityRenderer<TrichaudronEntity> {
         poseStack.push();
         poseStack.translate(0, -trichaudron.lavaSink(partialTick), 0); // in shallow lava: no knee flush with its surface
         super.render(trichaudron, entityYaw, partialTick, poseStack, bufferSource, packedLight);
-        if (trichaudron.isSaddled()) renderSaddles(trichaudron, partialTick, poseStack, bufferSource, packedLight);
         poseStack.pop();
         renderReins(trichaudron, partialTick, poseStack, bufferSource, packedLight);
     }
 
-    /** Saddled: a saddle on each of the three seats of the tank's front rim. */
-    private void renderSaddles(TrichaudronEntity trichaudron, float partialTick, MatrixStack poseStack,
-                               VertexConsumerProvider bufferSource, int light) {
-        float bodyYaw = MathHelper.lerpAngleDegrees(partialTick, trichaudron.prevBodyYaw, trichaudron.bodyYaw);
-        for (int seat = 0; seat < TrichaudronEntity.HEADS.length; seat++) {
-            Vec3d at = TrichaudronRiding.seat(seat, TrichaudronEntity.RIM_HEIGHT, TrichaudronEntity.RIM_FORWARD);
-            poseStack.push();
-            poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-bodyYaw));
-            // upright on the rim like a horse's saddle, seen from the side: its sprite's plane along the turtle
-            poseStack.translate(at.x, TrichaudronEntity.HEIGHT + 0.22, at.z);
-            poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90));
-            poseStack.scale(1.1f, 1.1f, 1.1f);
-            itemRenderer.renderItem(SADDLE, ModelTransformationMode.FIXED, light, OverlayTexture.DEFAULT_UV, poseStack,
-                    bufferSource, trichaudron.getWorld(), trichaudron.getId() + seat);
-            poseStack.pop();
-        }
-    }
-
-    /** Each rider's reins: a rope from each hand to the top of the neck of the head he holds, sagging. */
+    /**
+     * Each rider's reins: a rope from each hand to the top of the neck of the head he holds (the first rider the centre
+     * head, then the left, then the right: TrichaudronEntity#headOf), sagging. The neck's end is its skull bone as just
+     * drawn (TrichaudronModel#reinBone), so the reins follow the neck however it bends and turns.
+     */
     private void renderReins(TrichaudronEntity trichaudron, float partialTick, MatrixStack poseStack,
                              VertexConsumerProvider bufferSource, int light) {
         List<Entity> riders = trichaudron.getPassengerList();
@@ -106,9 +90,14 @@ public class TrichaudronRenderer extends GeoEntityRenderer<TrichaudronEntity> {
         VertexConsumer rope = bufferSource.getBuffer(RenderLayer.getEntityCutoutNoCull(ROPE));
         MatrixStack.Entry entry = poseStack.peek();
         if (riders.isEmpty()) return;
-        for (int i = 0; i < riders.size() && i < TrichaudronEntity.HEADS.length; i++) {
-            if (!(riders.get(i) instanceof PlayerEntity rider)) continue;
-            Vec3d neck = trichaudron.neckTop(i, partialTick).subtract(origin);
+        float sink = trichaudron.lavaSink(partialTick);
+        for (Entity passenger : riders) {
+            int i = trichaudron.headOf(passenger);
+            if (i < 0 || !(passenger instanceof PlayerEntity rider)) continue;
+            GeoBone bone = model.reinBone(i);
+            Vector3d local = bone == null ? null : bone.getLocalPosition();
+            Vec3d neck = local == null ? trichaudron.neckTop(i, partialTick).subtract(origin)
+                    : new Vec3d(local.x, local.y - sink, local.z);
             float yaw = MathHelper.lerpAngleDegrees(partialTick, rider.prevBodyYaw, rider.bodyYaw);
             Vec3d seat = rider.getLerpedPos(partialTick).subtract(origin);
             Vec3d ahead = Vec3d.fromPolar(0, yaw), side = Vec3d.fromPolar(0, yaw + 90);

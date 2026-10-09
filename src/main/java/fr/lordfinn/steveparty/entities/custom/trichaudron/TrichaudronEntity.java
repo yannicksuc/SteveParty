@@ -13,6 +13,7 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.RideableInventory;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -84,7 +85,7 @@ import software.bernie.geckolib.animation.RawAnimation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -98,22 +99,23 @@ import java.util.UUID;
  *     ({@link #SPAWN_TANK_MIN}). Only lava goes in: a lava bucket pours one in, an empty bucket takes one out.</li>
  *     <li><b>Pumping</b> ({@link TrichaudronGoals.Pump}): below a full tank it walks (or swims) to lava, dips its centre
  *     head and drinks: a bucket a gulp, the lava source left as it was.</li>
- *     <li><b>Taming</b>: empty its tank with buckets and it becomes tamable ({@link #isTamable}). Each head trusts
- *     whoever fed it a magma cream ({@link #feedHead}): it never shoots them again, whatever the others do. The
- *     three heads fed by the same player, once tamable: tamed, that player its owner.</li>
- *     <li><b>Untamed riders</b>: like a horse it lets you climb on; after a few seconds its heads fidget, then one turns
- *     round and sprays you off ({@link #sprayOff}): thrown high and back, a little fire unless fire-proof (a raised
- *     shield toward the head spares you that, not the fall off).</li>
- *     <li><b>Tamed</b>: its owner opens its saddle slot (sneaking, or with an empty hand while it has no saddle);
+ *     <li><b>Taming</b>, like a horse's: whoever takes lava from a wild one with a bucket is one who empties it
+ *     ({@link #isEmptier}, the last {@link #EMPTIERS_KEPT} kept). Climbing on a wild one is a try at taming it: after a
+ *     few seconds its heads fidget, then either it gives in (an emptier only, with {@link #tameChance}: the emptier its
+ *     tank, the likelier, each failed try a little likelier still) or one head turns round and sprays the rider off
+ *     ({@link #sprayOff}): thrown high and back, a little fire unless fire-proof (a raised shield toward the head spares
+ *     him that, not the fall off). Someone who never emptied it is always thrown, and provokes it.</li>
+ *     <li><b>Tamed</b>: its screen (saddle slot, lava gauge) opens like a horse's ({@link #openInventory}): its rider's
+ *     inventory key, or a sneaking click while nobody rides it;
  *     saddled, up to three players ride it on the tank's front rim ({@link TrichaudronRiding}).</li>
  *     <li><b>Its heads</b> ({@link #HEADS}): three necks, each a turret of its own: its own aim (synced:
  *     {@link #getHeadTarget}) and its own vent ({@link #getVent}). Wild, one blasts at a time, the heads taking turns
  *     ({@link TrichaudronGoals.Blast}); ridden, each rider fires his own head.</li>
  *     <li><b>The thermal blast</b>: see {@link TrichaudronBlast}.</li>
  *     <li><b>Neutral</b>: it leaves players alone until one provokes it ({@link #provoke}): hits it (projectiles too),
- *     takes lava from its tank while it is wild, or climbs on while it is wild. From then on it fights that player,
+ *     or climbs on while it is wild without ever having emptied it. From then on it fights that player,
  *     and only him, for {@link #ANGER_TICKS} ticks, and calms down once that is over and he keeps
- *     {@link #CALM_DISTANCE} blocks from its shell. Its owner and players all its heads trust never provoke it. Mobs
+ *     {@link #CALM_DISTANCE} blocks from its shell. Its owner never provokes it. Mobs
  *     that hurt it are fought back (TrichaudronGoals.Revenge).</li>
  *     <li><b>A hunter in the Nether</b>: wild and without piglins on, now and then it hunts a mob of
  *     {@code #steveparty:trichaudron_prey} close by ({@link #findPrey}), never a player.</li>
@@ -128,7 +130,7 @@ import java.util.UUID;
  *     0 to 2 magma cream.</li>
  * </ul>
  */
-public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
+public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, RideableInventory {
     /** Its shell and legs: 52 px wide, the tank's rim 61 px high. The necks reach far beyond (not in the box). */
     public static final float WIDTH = 3.2f, HEIGHT = 3.8125f, EYE_HEIGHT = 2.76f;
     public static final int TANK_MAX = 27, SPAWN_TANK_MIN = 14, SPAWN_TANK_MAX = 20;
@@ -158,6 +160,8 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
     public static final float BODY_TURN = 3, LOOK_TURN = 4;
 
     public static final double PUMP_MIN = 2.0, PUMP_MAX = 9.0, PUMP_DOWN = 6.0, PUMP_UP = 1.0;
+    /** Taming: how many emptiers it remembers, its chance with an empty tank (percent), a failed try's temper. */
+    public static final int EMPTIERS_KEPT = 4, TAME_EMPTY = 70, TEMPER_STEP = 10;
     /** How long a provocation lasts (ticks), and how far (blocks from its shell) the player must keep to calm it. */
     public static final int ANGER_TICKS = 600;
     public static final double CALM_DISTANCE = 16.0;
@@ -179,7 +183,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
 
     public static final byte VENT_IDLE = 0, VENT_CHARGING = 1, VENT_SPITTING = 2;
     /** Entity statuses (clients: its moods): a head fed (+ head), a head sulking (+ head), tamed. */
-    public static final byte STATUS_FED = 100, STATUS_SULK = 110, STATUS_TAMED = 120, STATUS_TAMABLE = 121;
+    public static final byte STATUS_SULK = 110, STATUS_TAMED = 120, STATUS_EMPTIED = 121;
 
     /** The scalding steam's damage type (data/steveparty/damage_type/thermal_steam.json). */
     public static final RegistryKey<DamageType> THERMAL_STEAM = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Steveparty.id("thermal_steam"));
@@ -190,7 +194,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
     /** Bits: tamed, tamable, saddled, climbing. */
     private static final TrackedData<Byte> FLAGS = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.BYTE);
     private static final TrackedData<Integer> CHARGE = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.INTEGER);
-    private static final int TAMED = 1, TAMABLE = 2, SADDLED = 4, CLIMBING = 8;
+    private static final int TAMED = 1, SADDLED = 4, CLIMBING = 8; // (2: a former "tamable", unused)
     private static final List<TrackedData<Integer>> HEAD_TARGETS = new ArrayList<>();
 
     static {
@@ -212,8 +216,9 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
     final TrichaudronPumping pumping = new TrichaudronPumping();
     /** Its saddle slot. */
     public final SimpleInventory inventory = new SimpleInventory(1);
-    /** The players each head trusts (fed it a magma cream). */
-    private final List<Set<UUID>> trust = new ArrayList<>();
+    /** The last players who took lava from it while it was wild (oldest first), and its temper (failed tamings). */
+    private final Set<UUID> emptiers = new LinkedHashSet<>();
+    private int temper;
     private @Nullable UUID owner;
     /** The players who provoked it, and until when (world time) it stays angry with each. */
     private final Map<UUID, Long> grudges = new HashMap<>();
@@ -257,7 +262,6 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         setPathfindingPenalty(PathNodeType.DAMAGE_FIRE, 0.0f);
         setPathfindingPenalty(PathNodeType.WATER, 8.0f);
         for (int i = 0; i < HEADS.length; i++) {
-            trust.add(new HashSet<>());
             clientPitch[i] = prevClientPitch[i] = HEADS[i].restPitch();
             clientYaw[i] = prevClientYaw[i] = HEADS[i].restYaw();
         }
@@ -331,10 +335,6 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         return bit(TAMED);
     }
 
-    public boolean isTamable() {
-        return bit(TAMABLE);
-    }
-
     public boolean isSaddled() {
         return bit(SADDLED);
     }
@@ -395,15 +395,22 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         return MathHelper.lerp(partialTick, prevClientTankLevel, clientTankLevel);
     }
 
-    /** Whether this head trusts this player (fed it a magma cream, or owns the turtle). */
-    public boolean trusts(int head, PlayerEntity player) {
-        return isOwner(player) || trust.get(head).contains(player.getUuid());
+    /** Whether this player took lava from it while it was wild: only such a player can tame it. */
+    public boolean isEmptier(PlayerEntity player) {
+        return emptiers.contains(player.getUuid());
     }
 
-    /** Whether every head trusts this player. */
-    public boolean trustedByAll(PlayerEntity player) {
-        for (int head = 0; head < HEADS.length; head++) if (!trusts(head, player)) return false;
-        return true;
+    public int getTemper() {
+        return temper;
+    }
+
+    /**
+     * Its chance (percent) to give in to an emptier on its back: {@link #TAME_EMPTY} with an empty tank, nothing with a
+     * full one, in between as the tank goes, plus its temper (every failed try adds {@link #TEMPER_STEP}).
+     */
+    public static int tameChance(int tank, int temper) {
+        int fromTank = Math.round(TAME_EMPTY * (1 - MathHelper.clamp(tank, 0, TANK_MAX) / (float) TANK_MAX));
+        return MathHelper.clamp(fromTank + temper, 0, 100);
     }
 
     /** Whether it is swimming: deep in lava. */
@@ -453,19 +460,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         }
         if (stack.isOf(Items.LAVA_BUCKET)) {
             if (getTank() >= TANK_MAX) return ActionResult.PASS;
-            if (!client) {
-                setTank(getTank() + 1);
-                player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.BUCKET)));
-                playSound(SoundEvents.ITEM_BUCKET_EMPTY_LAVA, 1.0f, 1.0f);
-                playSound(ModSounds.TRICHAUDRON_GURGLE, 0.8f, 1.0f);
-            }
-            return ActionResult.success(client);
-        }
-        if (stack.isOf(Items.MAGMA_CREAM)) {
-            if (!client) {
-                int head = headLookedAt(player);
-                feedHead(player, head < 0 ? nearestHead(player) : head, stack);
-            }
+            if (!client) refuel(player, hand);
             return ActionResult.success(client);
         }
         if (isTamed() && isOwner(player) && stack.isOf(Items.SADDLE) && !isSaddled()) {
@@ -475,7 +470,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
             }
             return ActionResult.success(client);
         }
-        if (isTamed() && isOwner(player) && (player.shouldCancelInteraction() || !isSaddled())) {
+        if (isTamed() && player.shouldCancelInteraction()) { // like a horse: sneaking, a click opens its screen
             if (!client) openInventory(player);
             return ActionResult.success(client);
         }
@@ -487,73 +482,30 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         return super.interactMob(player, hand);
     }
 
-    /** An empty bucket takes a bucket of lava; emptied, an untamed one becomes tamable. */
+    /** An empty bucket takes a bucket of lava; from a wild one, the player is one who empties it (it doesn't mind). */
     public void takeBucket(PlayerEntity player, Hand hand) {
-        if (!isTamed()) provoke(player); // stealing a wild one's lava
+        if (!isTamed()) {
+            emptiers.remove(player.getUuid());
+            emptiers.add(player.getUuid());
+            while (emptiers.size() > EMPTIERS_KEPT) emptiers.remove(emptiers.iterator().next());
+        }
         setTank(getTank() - 1);
         player.setStackInHand(hand, ItemUsage.exchangeStack(player.getStackInHand(hand), player, new ItemStack(Items.LAVA_BUCKET)));
         playSound(SoundEvents.ITEM_BUCKET_FILL_LAVA, 1.0f, 1.0f);
         playSound(ModSounds.TRICHAUDRON_GURGLE, 0.8f, 1.0f);
-        if (getTank() == 0 && !isTamed() && !isTamable()) {
-            setBit(TAMABLE, true);
-            getWorld().sendEntityStatus(this, STATUS_TAMABLE);
+        if (getTank() == 0 && !isTamed()) { // emptied: a sigh, its heads sulking a moment
+            getWorld().sendEntityStatus(this, STATUS_EMPTIED);
             playSound(SoundEvents.BLOCK_FIRE_EXTINGUISH, 1.0f, 0.5f);
         }
     }
 
-    /**
-     * Feeds a head a magma cream: it trusts this player from now on (never shoots him) and wiggles. When all the heads
-     * trust the same player and it is tamable: tamed, him its owner. A tamed one is healed instead.
-     */
-    public void feedHead(PlayerEntity player, int head, ItemStack cream) {
-        if (head < 0) return;
-        if (isTamed()) {
-            heal(10);
-        } else {
-            trust.get(head).add(player.getUuid());
-            if (isTamable() && trustedByAll(player)) tame(player);
-        }
-        if (!player.getAbilities().creativeMode) cream.decrement(1);
-        playSound(SoundEvents.ENTITY_GENERIC_EAT, 1.0f, 0.6f);
-        getWorld().sendEntityStatus(this, (byte) (STATUS_FED + head));
-        if (getTarget() instanceof PlayerEntity target && target == player && trustedByAll(player)) setTarget(null);
-    }
-
-    private void tame(PlayerEntity player) {
+    /** Tamed: this player its owner, for good (hearts, its heads wiggling). */
+    public void tame(PlayerEntity player) {
         owner = player.getUuid();
         setBit(TAMED, true);
         setPersistent();
         setTarget(null);
         getWorld().sendEntityStatus(this, STATUS_TAMED);
-    }
-
-    /** How far a player reaches a head with his hand (they are big and far from its shell). */
-    public static final double HEAD_REACH = 12;
-
-    /** The head this player's crosshair points at (within {@link #HEAD_REACH} blocks), or -1. */
-    public int headLookedAt(PlayerEntity player) {
-        Vec3d eye = player.getEyePos(), look = player.getRotationVector();
-        int best = -1;
-        double bestAlong = Double.MAX_VALUE;
-        for (int head = 0; head < HEADS.length; head++) {
-            Vec3d center = headCenter(head);
-            double along = center.subtract(eye).dotProduct(look);
-            if (along < 0 || along > HEAD_REACH) continue;
-            if (eye.add(look.multiply(along)).squaredDistanceTo(center) > 1.8 * 1.8) continue;
-            if (along < bestAlong) {
-                bestAlong = along;
-                best = head;
-            }
-        }
-        return best;
-    }
-
-    private int nearestHead(PlayerEntity player) {
-        int best = 0;
-        for (int head = 1; head < HEADS.length; head++) {
-            if (headCenter(head).squaredDistanceTo(player.getPos()) < headCenter(best).squaredDistanceTo(player.getPos())) best = head;
-        }
-        return best;
     }
 
     /** The middle of a head (a little behind its nozzle). */
@@ -563,8 +515,14 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         return nozzle.subtract(Vec3d.fromPolar(0, yaw).multiply(1.6));
     }
 
-    private void openInventory(PlayerEntity player) {
-        if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
+    /**
+     * Its screen (saddle, lava gauge), like a horse's: tamed only, for its rider (the inventory key while riding, see
+     * RideableInventory) or, with nobody on, whoever clicks it sneaking.
+     */
+    @Override
+    public void openInventory(PlayerEntity player) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer) || !isTamed()) return;
+        if (hasPassengers() && !hasPassenger(player)) return;
         serverPlayer.openHandledScreen(new ExtendedScreenHandlerFactory<Integer>() {
             @Override
             public Integer getScreenOpeningData(ServerPlayerEntity opener) {
@@ -588,7 +546,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         player.startRiding(this);
         if (!isTamed()) {
             scheduleThrow();
-            provoke(player); // climbing on a wild one: once thrown off, it fights him
+            if (!isEmptier(player)) provoke(player); // a stranger climbing on: once thrown off, it fights him
         }
     }
 
@@ -827,9 +785,9 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         return false;
     }
 
-    /** Whether this head would shoot at this entity: never at one it trusts. */
+    /** Whether this head would shoot at this entity: never at its owner. */
     public boolean mayShoot(int head, Entity target) {
-        return !(target instanceof PlayerEntity player && trusts(head, player));
+        return !(target instanceof PlayerEntity player && isOwner(player));
     }
 
     /** One head fires at a target (wild): see {@link TrichaudronBlast}. */
@@ -846,6 +804,10 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
     public void riderClick(PlayerEntity rider) {
         int head = getPassengerList().indexOf(rider);
         if (head < 0 || head >= HEADS.length || !isSteered()) return;
+        if (rider.getMainHandStack().isOf(Items.LAVA_BUCKET)) { // its fuel, poured in from the saddle
+            refuel(rider, Hand.MAIN_HAND);
+            return;
+        }
         if (airborneJump && !isOnGround() && climbTo == null) {
             if (!tryGrab()) grabArmed = GRAB_ARMED_TICKS; // no wall within reach yet: the heads keep reaching out
             return;
@@ -865,14 +827,38 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
     }
 
     private final long[] ventIdleAt = new long[HEADS.length];
+    /** Leaping out of the lava: it flies (no lava drag, no floating) until it is out or falls back. */
+    private boolean lavaLaunch;
 
     // ---------------------------------------------------------------- jumping, climbing
+
+    /** A lava bucket poured into its tank (+1 bucket), the bucket left empty. False if the tank is full. */
+    public boolean refuel(PlayerEntity player, Hand hand) {
+        ItemStack stack = player.getStackInHand(hand);
+        if (!stack.isOf(Items.LAVA_BUCKET) || getTank() >= TANK_MAX) return false;
+        setTank(getTank() + 1);
+        player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.BUCKET)));
+        playSound(SoundEvents.ITEM_BUCKET_EMPTY_LAVA, 1.0f, 1.0f);
+        playSound(ModSounds.TRICHAUDRON_GURGLE, 0.8f, 1.0f);
+        return true;
+    }
+
+    /** Which head (0 centre, 1 left, 2 right) this rider holds by its reins: the order they climbed on; -1 if none. */
+    public int headOf(Entity rider) {
+        int index = getPassengerList().indexOf(rider);
+        return index < HEADS.length ? index : -1;
+    }
 
     /** The thrusters: a leap for this charge, paid from the tank. False if it can't (no ground or lava, no lava left). */
     public boolean thrusterJump(int charge) {
         if (charge < TrichaudronRiding.CHARGE_MIN || getTank() <= 0 || !(standing() || isSwimmingInLava())) return false;
+        boolean fromLava = isSwimmingInLava();
         setTank(getTank() - TrichaudronRiding.jumpCost(charge));
         Vec3d leap = TrichaudronRiding.jumpVelocity(charge, getYaw());
+        if (fromLava) {
+            leap = TrichaudronRiding.lavaLeap(leap);
+            lavaLaunch = true; // the lava's drag and its floating would swallow the leap: it flies until out
+        }
         setVelocity(leap);
         velocityDirty = true;
         velocityModified = true;
@@ -955,6 +941,15 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
             move(MovementType.SELF, getVelocity());
             return;
         }
+        if (lavaLaunch) {
+            if (isInLava() && getVelocity().y > -0.2) { // leaping out of the lava: a plain flight, no lava drag
+                move(MovementType.SELF, getVelocity());
+                Vec3d v = getVelocity();
+                setVelocity(v.x * 0.98, (v.y - 0.08) * 0.98, v.z * 0.98);
+                return;
+            }
+            lavaLaunch = false;
+        }
         if (isSteered()) {
             rideTravel();
             return;
@@ -980,12 +975,13 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
     private void rideTravel() {
         TrichaudronRiding.Steer steer = TrichaudronRiding.combine(getPassengerList(),
                 rider -> ((LivingEntityJumpingAccessor) rider).steveparty$isJumping());
-        float yaw = getYaw() - TrichaudronRiding.turnFor(steer.turn());
+        float fuel = TrichaudronRiding.fuelFactor(getTank()); // lava is its fuel: empty, it can't move
+        float yaw = getYaw() - TrichaudronRiding.turnFor(steer.turn()) * fuel;
         setYaw(yaw);
         prevYaw = yaw;
         setBodyYaw(yaw);
         setHeadYaw(yaw);
-        float speed = TrichaudronRiding.speedFor(steer.forward());
+        float speed = TrichaudronRiding.speedFor(steer.forward()) * fuel;
         Vec3d input = new Vec3d(0, 0, steer.moving() ? Math.signum(steer.forward()) : 0);
         if (isSwimmingInLava()) {
             swim(input, speed);
@@ -1007,7 +1003,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
     protected void mobTick() {
         super.mobTick();
         LivingEntity target = getTarget();
-        if (target instanceof PlayerEntity player && (trustedByAll(player) || isOwner(player))) setTarget(null);
+        if (target instanceof PlayerEntity player && isOwner(player)) setTarget(null);
         long now = getWorld().getTime();
         grudges.entrySet().removeIf(grudge -> {
             if (now < grudge.getValue()) return false;
@@ -1087,6 +1083,12 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         }
         if (now >= throwAt) {
             for (int head = 0; head < HEADS.length; head++) setHeadTarget(head, null);
+            if (rider instanceof PlayerEntity player && isEmptier(player) && random.nextInt(100) < tameChance(getTank(), temper)) {
+                tame(player); // it gives in
+                throwAt = -1;
+                return;
+            }
+            temper = Math.min(100, temper + TEMPER_STEP);
             sprayOff(rider);
             throwAt = hasPlayerRider() ? now + THROW_MIN / 2 : -1;
         }
@@ -1094,13 +1096,13 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- anger
 
-    /** This player provoked it: it fights him for {@link #ANGER_TICKS} ticks (never its owner or a fully trusted one). */
+    /** This player provoked it: it fights him for {@link #ANGER_TICKS} ticks (never its owner). */
     public void provoke(PlayerEntity player) {
         provoke(player, ANGER_TICKS);
     }
 
     public void provoke(PlayerEntity player, int ticks) {
-        if (getWorld().isClient || isOwner(player) || trustedByAll(player) || player.getAbilities().creativeMode || player.isSpectator()) return;
+        if (getWorld().isClient || isOwner(player) || player.getAbilities().creativeMode || player.isSpectator()) return;
         grudges.merge(player.getUuid(), getWorld().getTime() + ticks, Math::max);
         if (getTarget() == null || !getTarget().isAlive()) setTarget(player);
     }
@@ -1307,12 +1309,6 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     public void handleStatus(byte status) {
-        if (status >= STATUS_FED && status < STATUS_FED + HEADS.length) {
-            moods.trigger(status - STATUS_FED, TrichaudronMoods.Mood.WIGGLE, 60);
-            Vec3d at = nozzle(status - STATUS_FED);
-            for (int k = 0; k < 4; k++) getWorld().addParticle(ParticleTypes.HEART, at.x + random.nextGaussian() * 0.4, at.y + 0.6, at.z + random.nextGaussian() * 0.4, 0, 0.1, 0);
-            return;
-        }
         if (status >= STATUS_SULK && status < STATUS_SULK + HEADS.length) {
             moods.trigger(status - STATUS_SULK, TrichaudronMoods.Mood.SULK, 100);
             return;
@@ -1325,7 +1321,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
             }
             return;
         }
-        if (status == STATUS_TAMABLE) {
+        if (status == STATUS_EMPTIED) {
             for (int head = 0; head < HEADS.length; head++) {
                 moods.trigger(head, TrichaudronMoods.Mood.SULK, 90);
                 Vec3d at = nozzle(head);
@@ -1411,15 +1407,11 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         nbt.putInt("Tank", getTank());
         pumping.write(nbt);
         nbt.putBoolean("Tamed", isTamed());
-        nbt.putBoolean("Tamable", isTamable());
         if (owner != null) nbt.putUuid("Owner", owner);
-        NbtList heads = new NbtList();
-        for (Set<UUID> players : trust) {
-            NbtList list = new NbtList();
-            for (UUID uuid : players) list.add(NbtHelper.fromUuid(uuid));
-            heads.add(list);
-        }
-        nbt.put("Trust", heads);
+        NbtList emptierList = new NbtList();
+        for (UUID uuid : emptiers) emptierList.add(NbtHelper.fromUuid(uuid));
+        nbt.put("Emptiers", emptierList);
+        nbt.putInt("Temper", temper);
         NbtList grudgeList = new NbtList();
         long now = getWorld().getTime();
         grudges.forEach((uuid, until) -> {
@@ -1438,14 +1430,10 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         setTank(nbt.getInt("Tank"));
         pumping.read(nbt);
         setBit(TAMED, nbt.getBoolean("Tamed"));
-        setBit(TAMABLE, nbt.getBoolean("Tamable"));
         owner = nbt.containsUuid("Owner") ? nbt.getUuid("Owner") : null;
-        NbtList heads = nbt.getList("Trust", NbtElement.LIST_TYPE);
-        for (int head = 0; head < HEADS.length; head++) {
-            trust.get(head).clear();
-            if (head >= heads.size()) continue;
-            for (NbtElement uuid : heads.getList(head)) trust.get(head).add(NbtHelper.toUuid(uuid));
-        }
+        emptiers.clear(); // (the trust of each head, from older versions, is left unread)
+        for (NbtElement uuid : nbt.getList("Emptiers", NbtElement.INT_ARRAY_TYPE)) emptiers.add(NbtHelper.toUuid(uuid));
+        temper = nbt.getInt("Temper");
         grudges.clear();
         long now = getWorld() == null ? 0 : getWorld().getTime();
         for (NbtElement element : nbt.getList("Grudges", NbtElement.COMPOUND_TYPE)) {
