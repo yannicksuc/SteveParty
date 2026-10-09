@@ -5,7 +5,7 @@
       "description": {
         "identifier": "geometry.mistigri",
         "texture_width": 128,
-        "texture_height": 64,
+        "texture_height": 128,
         "visible_bounds_width": 6,
         "visible_bounds_height": 4,
         "visible_bounds_offset": [
@@ -43,36 +43,20 @@
           "cubes": [
             {
               "origin": [
-                -7,
-                7,
+                -10,
+                3,
                 -11
               ],
               "size": [
-                14,
-                11,
+                20,
+                15,
                 11
               ],
               "uv": [
-                52,
-                0
+                64,
+                64
               ],
               "inflate": 0.02
-            },
-            {
-              "origin": [
-                -5,
-                3,
-                -7
-              ],
-              "size": [
-                10,
-                4,
-                7
-              ],
-              "uv": [
-                20,
-                44
-              ]
             }
           ]
         },
@@ -191,18 +175,18 @@
           "cubes": [
             {
               "origin": [
-                -6,
+                -7,
                 12,
                 -17
               ],
               "size": [
+                14,
                 12,
-                12,
-                10
+                12
               ],
               "uv": [
-                52,
-                22
+                0,
+                91
               ]
             },
             {
@@ -297,14 +281,14 @@
           "name": "ear_left",
           "parent": "head",
           "pivot": [
-            4,
+            5,
             24,
             -12
           ],
           "cubes": [
             {
               "origin": [
-                2,
+                3,
                 24,
                 -13
               ],
@@ -324,14 +308,14 @@
           "name": "ear_right",
           "parent": "head",
           "pivot": [
-            -4,
+            -5,
             24,
             -12
           ],
           "cubes": [
             {
               "origin": [
-                -6,
+                -7,
                 24,
                 -13
               ],
@@ -347,7 +331,7 @@
             },
             {
               "origin": [
-                -6,
+                -7,
                 26,
                 -13
               ],
@@ -374,34 +358,18 @@
           "cubes": [
             {
               "origin": [
-                -7,
-                7,
-                0
-              ],
-              "size": [
-                14,
-                11,
-                12
-              ],
-              "uv": [
-                0,
-                0
-              ]
-            },
-            {
-              "origin": [
-                -5,
+                -10,
                 3,
                 0
               ],
               "size": [
-                10,
-                4,
-                7
+                20,
+                15,
+                12
               ],
               "uv": [
-                20,
-                44
+                0,
+                64
               ]
             }
           ]
@@ -1197,14 +1165,14 @@
           "name": "leg_front_left",
           "parent": "root",
           "pivot": [
-            4,
+            7,
             8,
             -7
           ],
           "cubes": [
             {
               "origin": [
-                2,
+                5,
                 0,
                 -9
               ],
@@ -1224,14 +1192,14 @@
           "name": "leg_front_right",
           "parent": "root",
           "pivot": [
-            -4,
+            -7,
             8,
             -7
           ],
           "cubes": [
             {
               "origin": [
-                -6,
+                -9,
                 0,
                 -9
               ],
@@ -1251,14 +1219,14 @@
           "name": "leg_back_left",
           "parent": "root",
           "pivot": [
-            4,
+            7,
             8,
             8
           ],
           "cubes": [
             {
               "origin": [
-                2,
+                5,
                 0,
                 6
               ],
@@ -1278,14 +1246,14 @@
           "name": "leg_back_right",
           "parent": "root",
           "pivot": [
-            -4,
+            -7,
             8,
             8
           ],
           "cubes": [
             {
               "origin": [
-                -6,
+                -9,
                 0,
                 6
               ],
