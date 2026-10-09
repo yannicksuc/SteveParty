@@ -9,7 +9,6 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
@@ -25,11 +24,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
-import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
 
 /**
  * What a Glandouille space does (see GlandouilleTileBehavior): a tower of invulnerable Glandouilles pops up behind the
@@ -59,8 +56,8 @@ public final class GlandouillePushes {
     /** How far behind the token (and the tokens ahead of it) the tower stands. */
     private static final double BEHIND = 0.7;
 
-    /** The running shows, by the UUID of the token that landed. */
-    private static final Map<UUID, Show> RUNNING = ServerMemory.forgetOnStop(new HashMap<>());
+    /** The running shows, by the token that landed. */
+    private static final BoardSequences<Show> RUNNING = new BoardSequences<>();
     /** For the GameTests: each show's Glandouilles as they appear. */
     public static final List<Consumer<GlandouilleEntity>> SPAWN_LISTENERS = new CopyOnWriteArrayList<>();
 
@@ -68,7 +65,7 @@ public final class GlandouillePushes {
     }
 
     public static boolean isRunning(MobEntity token) {
-        return RUNNING.containsKey(token.getUuid());
+        return RUNNING.isRunning(token);
     }
 
     /**
@@ -112,7 +109,7 @@ public final class GlandouillePushes {
      */
     public static boolean pushTower(ServerWorld world, BlockPos from, List<BlockPos> route, MobEntity token, int height,
                                     Runnable onDone) {
-        if (route.isEmpty() || RUNNING.containsKey(token.getUuid())) return false;
+        if (route.isEmpty() || RUNNING.isRunning(token)) return false;
         List<Vec3d> points = new ArrayList<>();
         points.add(BoardSpaces.standPos(world, from));
         for (BlockPos space : route) points.add(BoardSpaces.standPos(world, space));
@@ -127,7 +124,7 @@ public final class GlandouillePushes {
         float yaw = yawOf(dir);
         GlandouilleEntity below = null;
         for (int i = 0; i < Math.max(1, height); i++) {
-            GlandouilleEntity one = spawn(world, TOWER[i % TOWER.length], start, yaw);
+            GlandouilleEntity one = show.spawn(TOWER[i % TOWER.length], start, yaw);
             if (one == null) continue;
             if (below != null) one.startRiding(below, true);
             else show.bottom = one;
@@ -137,47 +134,27 @@ public final class GlandouillePushes {
         if (show.bottom == null) return false;
         for (GlandouilleEntity one : show.crew) one.actOut(GlandouilleEntity.Mood.TELEGRAPH);
         poof(world, start, 12);
-        run(show, show::tickTower);
+        RUNNING.run(show, show::tickTower);
         return true;
     }
 
     /** The lone Glandouille tries to push {@code token} (on {@code from}) and can't. */
     public static boolean pushAlone(ServerWorld world, BlockPos from, MobEntity token, @Nullable BlockPos toward, Runnable onDone) {
-        if (RUNNING.containsKey(token.getUuid())) return false;
+        if (RUNNING.isRunning(token)) return false;
         Vec3d at = BoardSpaces.standPos(world, from);
         Vec3d dir = toward != null ? direction(at, BoardSpaces.standPos(world, toward)) : Vec3d.fromPolar(0, token.getYaw());
         Show show = new Show(world, token, onDone);
         show.points = List.of(at);
         show.spaces = List.of(from.toImmutable());
         Vec3d start = at.subtract(dir.multiply(BEHIND * 0.8));
-        GlandouilleEntity one = spawn(world, GlandouilleVariant.CLASSIC, start, yawOf(dir));
+        GlandouilleEntity one = show.spawn(GlandouilleVariant.CLASSIC, start, yawOf(dir));
         if (one == null) return false;
         show.bottom = one;
         show.crew.add(one);
         one.actOut(GlandouilleEntity.Mood.PUSH_FAIL);
         poof(world, start, 8);
-        run(show, show::tickLone);
+        RUNNING.run(show, show::tickLone);
         return true;
-    }
-
-    private static void run(Show show, Runnable tick) {
-        RUNNING.put(show.token.getUuid(), show);
-        SCHEDULER.repeat(show.task, 1, tick, () -> !show.done, () -> {
-        });
-    }
-
-    private static @Nullable GlandouilleEntity spawn(ServerWorld world, GlandouilleVariant variant, Vec3d at, float yaw) {
-        GlandouilleEntity one = ModEntities.GLANDOUILLE.create(world);
-        if (one == null) return null;
-        one.setVariant(variant);
-        one.setHat(true);
-        one.makeBoardActor();
-        one.refreshPositionAndAngles(at.x, at.y, at.z, yaw, 0);
-        one.bodyYaw = yaw;
-        one.headYaw = yaw;
-        world.spawnEntity(one);
-        SPAWN_LISTENERS.forEach(listener -> listener.accept(one));
-        return one;
     }
 
     private static Vec3d direction(Vec3d from, Vec3d to) {
@@ -195,11 +172,7 @@ public final class GlandouillePushes {
     }
 
     /** One show: its tower (or lone Glandouille), the tokens it carries along, where it goes. */
-    private static final class Show {
-        final UUID task = UUID.randomUUID();
-        final ServerWorld world;
-        final MobEntity token;
-        final Runnable onDone;
+    private static final class Show extends BoardSequences.Sequence {
         final List<GlandouilleEntity> crew = new ArrayList<>();
         /** Fallen off the tower, with the tick they fell at: they vanish {@link #FALL_TICKS} later. */
         final Map<GlandouilleEntity, Integer> fallen = new HashMap<>();
@@ -210,12 +183,24 @@ public final class GlandouillePushes {
         List<BlockPos> spaces = List.of();
         GlandouilleEntity bottom;
         int tick;
-        boolean done;
 
         Show(ServerWorld world, MobEntity token, Runnable onDone) {
-            this.world = world;
-            this.token = token;
-            this.onDone = onDone;
+            super(world, token, onDone);
+        }
+
+        /** One of its Glandouilles, a board actor (with its hat), at {@code at}. */
+        @Nullable GlandouilleEntity spawn(GlandouilleVariant variant, Vec3d at, float yaw) {
+            GlandouilleEntity one = ModEntities.GLANDOUILLE.create(world);
+            if (one == null) return null;
+            one.setVariant(variant);
+            one.setHat(true);
+            cast(one);
+            one.refreshPositionAndAngles(at.x, at.y, at.z, yaw, 0);
+            one.bodyYaw = yaw;
+            one.headYaw = yaw;
+            world.spawnEntity(one);
+            SPAWN_LISTENERS.forEach(listener -> listener.accept(one));
+            return one;
         }
 
         void tickTower() {
@@ -361,10 +346,7 @@ public final class GlandouillePushes {
         }
 
         void finish() {
-            if (done) return;
-            done = true;
-            SCHEDULER.cancel(task);
-            RUNNING.remove(token.getUuid());
+            if (!close()) return;
             Vec3d at = null;
             for (GlandouilleEntity one : crew) if (!one.isRemoved()) at = one.getPos();
             if (at != null) poof(world, at, 14);
@@ -375,6 +357,7 @@ public final class GlandouillePushes {
             }
             for (GlandouilleEntity one : fallen.keySet()) one.discard();
             fallen.clear();
+            dismissActors();
             onDone.run();
         }
     }

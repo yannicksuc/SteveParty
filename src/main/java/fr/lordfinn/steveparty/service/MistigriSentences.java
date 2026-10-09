@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.entities.ModEntities;
-import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.Action;
@@ -13,8 +12,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import fr.lordfinn.steveparty.utils.ServerMemory;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ItemStackParticleEffect;
@@ -32,13 +29,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
+import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
 
 /**
  * What a Mistigri space does (see MistigriTileBehavior): the Mistigri leaps onto the space beside the token, swats his
@@ -104,38 +97,36 @@ public final class MistigriSentences {
     /** His leap starts this far from the space (blocks, to the token's side). */
     private static final double APPEAR_SIDE = 4.5, SEAT_SIDE = 1.5, DIE_AHEAD = 2.2;
 
-    private static final Map<UUID, Show> RUNNING = ServerMemory.forgetOnStop(new HashMap<>());
+    private static final BoardSequences<Show> RUNNING = new BoardSequences<>();
 
     private MistigriSentences() {
     }
 
     public static void initialize() {
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            for (Show show : new ArrayList<>(RUNNING.values())) show.finish(false);
-        });
+        RUNNING.stopWithServer(show -> show.finish(false));
     }
 
     public static boolean isRunning(MobEntity token) {
-        return RUNNING.containsKey(token.getUuid());
+        return RUNNING.isRunning(token);
     }
 
     public static @Nullable Phase phase(MobEntity token) {
-        Show show = RUNNING.get(token.getUuid());
+        Show show = RUNNING.get(token);
         return show == null ? null : show.phase;
     }
 
     public static @Nullable MistigriEntity actor(MobEntity token) {
-        Show show = RUNNING.get(token.getUuid());
+        Show show = RUNNING.get(token);
         return show == null ? null : show.actor;
     }
 
     public static @Nullable MistigriDieEntity die(MobEntity token) {
-        Show show = RUNNING.get(token.getUuid());
+        Show show = RUNNING.get(token);
         return show == null ? null : show.die;
     }
 
     public static @Nullable Sentence sentence(MobEntity token) {
-        Show show = RUNNING.get(token.getUuid());
+        Show show = RUNNING.get(token);
         return show == null ? null : show.sentence;
     }
 
@@ -160,10 +151,9 @@ public final class MistigriSentences {
      */
     public static Start start(ServerWorld world, BlockPos tile, MobEntity token, PartyControllerEntity party,
                               ItemStack cartridge, @Nullable Sentence forced, Runnable onDone) {
-        if (RUNNING.containsKey(token.getUuid())) return Start.STARTED;
-        UUID playerId = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getTokenOwner() : null;
-        ServerPlayerEntity player = playerId == null ? null : world.getServer().getPlayerManager().getPlayer(playerId);
-        if (player == null || player.isDisconnected()) {
+        if (RUNNING.isRunning(token)) return Start.STARTED;
+        ServerPlayerEntity player = BoardSequences.tokenPlayer(world, token);
+        if (player == null) {
             tell(party, null, Text.translatable("message.steveparty.mistigri_space.no_player").formatted(Formatting.GRAY));
             return Start.NO_PLAYER;
         }
@@ -172,49 +162,38 @@ public final class MistigriSentences {
             tell(party, player, Text.translatable("message.steveparty.mistigri_space.no_sentence").formatted(Formatting.GRAY));
             return Start.NO_SENTENCE;
         }
-        Show show = new Show(world, tile.toImmutable(), token, playerId, party, sentence, sentence.amount(cartridge), onDone);
+        Show show = new Show(world, tile.toImmutable(), token, player.getUuid(), party, sentence, sentence.amount(cartridge), onDone);
         if (!show.spawn()) return Start.NO_SENTENCE;
-        RUNNING.put(token.getUuid(), show);
-        SCHEDULER.repeat(show.task, 1, show::tick, () -> !show.done, () -> {
-        });
+        RUNNING.run(show, show::tick);
         return Start.STARTED;
     }
 
     private static void tell(PartyControllerEntity party, @Nullable ServerPlayerEntity player, Text message) {
-        List<ServerPlayerEntity> audience = new ArrayList<>(party.getPartyAudience());
-        if (player != null && !audience.contains(player)) audience.add(player);
-        MessageUtils.sendToPlayers(audience, message, MessageUtils.MessageType.CHAT);
+        BoardSequences.tell(party, message, player);
     }
 
     /** One show: the Mistigri, his die, the sentence. */
-    private static final class Show {
-        final UUID task = UUID.randomUUID();
-        final ServerWorld world;
+    private static final class Show extends BoardSequences.Sequence {
         final BlockPos tile;
-        final MobEntity token;
         final UUID playerId;
         final PartyControllerEntity party;
         final Sentence sentence;
         final int amount;
-        final Runnable onDone;
         MistigriEntity actor;
         @Nullable MistigriDieEntity die;
         Phase phase = Phase.LEAP_IN;
         int phaseTick;
-        boolean done;
         Vec3d from = Vec3d.ZERO, seat = Vec3d.ZERO, away = Vec3d.ZERO, dieFrom = Vec3d.ZERO, dieTo = Vec3d.ZERO;
         float yaw;
 
         Show(ServerWorld world, BlockPos tile, MobEntity token, UUID playerId, PartyControllerEntity party,
              Sentence sentence, int amount, Runnable onDone) {
-            this.world = world;
+            super(world, token, onDone);
             this.tile = tile;
-            this.token = token;
             this.playerId = playerId;
             this.party = party;
             this.sentence = sentence;
             this.amount = amount;
-            this.onDone = onDone;
         }
 
         @Nullable ServerPlayerEntity player() {
@@ -226,8 +205,7 @@ public final class MistigriSentences {
         boolean spawn() {
             MistigriEntity one = ModEntities.MISTIGRI.create(world);
             if (one == null) return false;
-            one.makeBoardActor();
-            BoardActors.join(task, one);
+            cast(one);
             Vec3d stand = BoardSpaces.standPos(world, tile);
             yaw = token.getYaw();
             Vec3d right = Vec3d.fromPolar(0, yaw + 90);
@@ -295,7 +273,7 @@ public final class MistigriSentences {
             if (phaseTick == 8) {
                 MistigriDieEntity one = ModEntities.MISTIGRI_DIE.create(world);
                 if (one != null) {
-                    BoardActors.join(task, one);
+                    castProp(one);
                     dieFrom = seat.add(Vec3d.fromPolar(0, yaw).multiply(0.9)).add(0, 1.0, 0);
                     dieTo = seat.add(Vec3d.fromPolar(0, yaw).multiply(DIE_AHEAD));
                     one.refreshPositionAndAngles(dieFrom.x, dieFrom.y, dieFrom.z, yaw, 0);
@@ -418,25 +396,18 @@ public final class MistigriSentences {
 
         /** Over: the actors go; the move back starts (it then holds the turn), else the turn goes on. */
         void finish(boolean completed) {
-            if (done) return;
-            done = true;
-            SCHEDULER.cancel(task);
-            RUNNING.remove(token.getUuid());
+            if (!close()) return;
             for (Vec3d at : new Vec3d[]{actor == null ? null : actor.getPos(), die == null ? null : die.getPos()}) {
                 if (at == null) continue;
                 world.spawnParticles(ParticleTypes.LARGE_SMOKE, at.x, at.y + 0.6, at.z, 10, 0.4, 0.4, 0.4, 0.02);
                 world.spawnParticles(ParticleTypes.WITCH, at.x, at.y + 0.6, at.z, 10, 0.4, 0.4, 0.4, 0.05);
             }
-            BoardActors.end(task);
+            dismissActors();
             if (completed && sentence == Sentence.BACK && !token.isRemoved()
                     && AdvanceBackMoves.launch(world, token, tile, -amount) > 0) {
                 return; // its landing over there goes on with the turn
             }
             onDone.run();
         }
-    }
-
-    private static float yawToward(Vec3d from, Vec3d to) {
-        return (float) (MathHelper.atan2(to.z - from.z, to.x - from.x) * MathHelper.DEGREES_PER_RADIAN) - 90f;
     }
 }
