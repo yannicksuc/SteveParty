@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.client.screens.TrapSetupScreen;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.*;
+import fr.lordfinn.steveparty.client.entity.SixSevenClient;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -79,6 +80,7 @@ public class PayloadReceivers {
         // A dice prompt (Choice / Lucky / Reroll / swap picker), or its end
         ClientPayloads.receive(DicePromptPayload.ID, (payload, context) -> DicePickScreen.onPayload(context.client(), payload));
         ClientPayloads.receive(DiceRevealPayload.ID, (payload, context) -> DiceRevealHud.onPayload(payload));
+        ClientPayloads.receive(SixSevenPayload.ID, (payload, context) -> SixSevenClient.onPayload(payload));
         ClientTickEvents.END_CLIENT_TICK.register(
                 DicePickScreen::showWaiting);
     }
