@@ -4,6 +4,8 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.jumpshoes.JumpShoes;
 import fr.lordfinn.steveparty.items.custom.jumpshoes.JumpShoesState;
 import fr.lordfinn.steveparty.items.custom.jumpshoes.TripleJumpChain;
+import fr.lordfinn.steveparty.items.tooltip.ItemTips;
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LadderBlock;
@@ -19,12 +21,17 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.EnchantmentTags;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** The Triple Jump Shoes: the jump chain, the Double Jump enchantment, the wall kick direction, no unfair fall damage. */
 public class JumpShoesGameTests implements FabricGameTest {
@@ -167,5 +174,38 @@ public class JumpShoesGameTests implements FabricGameTest {
         climber.setPosition(context.getAbsolute(new Vec3d(1.54, 4, 2.5)));
         context.assertTrue(!JumpShoes.touchesWall(climber, Direction.WEST, JumpShoes.SERVER_REACH), "a ladder is no wall");
         context.complete();
+    }
+    /** Behind Shift: the triple jump and the wall jump; the double jump only on enchanted shoes. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void tooltipTellsTheDoubleJumpOnlyWhenEnchanted(TestContext context) {
+        String key = "tooltip.steveparty.triple_jump_shoes.use.";
+        Set<String> plain = tooltipKeys(new ItemStack(ModItems.TRIPLE_JUMP_SHOES));
+        context.assertTrue(plain.contains(key + "triple") && plain.contains(key + "wall"), "triple and wall jump told, got " + plain);
+        context.assertTrue(!plain.contains(key + "double"), "no double jump on plain shoes");
+        ItemStack enchanted = new ItemStack(ModItems.TRIPLE_JUMP_SHOES);
+        enchanted.addEnchantment(doubleJump(context), 1);
+        context.assertTrue(tooltipKeys(enchanted).contains(key + "double"), "double jump told on enchanted shoes");
+        context.complete();
+    }
+
+    private static Set<String> tooltipKeys(ItemStack stack) {
+        List<Text> lines = new ArrayList<>();
+        Tooltips.forTests(true);
+        try {
+            ItemTips.append(stack, lines);
+        } finally {
+            Tooltips.forTests(null);
+        }
+        Set<String> keys = new HashSet<>();
+        for (Text line : lines) collect(line, keys);
+        return keys;
+    }
+
+    private static void collect(Text text, Set<String> keys) {
+        if (text.getContent() instanceof TranslatableTextContent t) {
+            keys.add(t.getKey());
+            for (Object arg : t.getArgs()) if (arg instanceof Text a) collect(a, keys);
+        }
+        for (Text sibling : text.getSiblings()) collect(sibling, keys);
     }
 }
