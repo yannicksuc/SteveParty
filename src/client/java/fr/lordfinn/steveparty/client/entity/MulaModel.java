@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaMotion;
 import net.minecraft.util.math.MathHelper;
@@ -64,12 +65,7 @@ public class MulaModel extends DefaultedEntityGeoModel<MulaEntity> {
             widen(processor.getBone("eye_right"), layer.eyeWiden);
         }
         // the core swells and beats with how full it is
-        GeoBone core = processor.getBone("core");
-        if (core != null) {
-            core.setScaleX(layer.coreScale);
-            core.setScaleY(layer.coreScale);
-            core.setScaleZ(layer.coreScale);
-        }
+        GeoBones.scale(processor.getBone("core"), layer.coreScale);
     }
 
     /** Eye scale y at or below which the lid covers the whole eye, and at or above which it is hidden. */
