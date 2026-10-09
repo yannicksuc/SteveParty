@@ -27,6 +27,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.ai.pathing.Path;
+import net.minecraft.entity.ai.pathing.PathNode;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.passive.PigEntity;
@@ -711,6 +713,109 @@ public class GlandouilleGameTests implements FabricGameTest {
                 context.assertTrue(c.getVehicle() == b, "c still on b");
                 context.assertEquals(b.getMood(), Mood.CALM, "b calm again");
                 context.assertFalse(GlandouilleTowers.hasRider(a), "nobody on a");
+                context.complete();
+            });
+        });
+    }
+
+    // ---------------------------------------------------------------- room for the whole tower
+
+    /** The path of {@code walker} to {@code to} (relative), never null. */
+    private static Path pathTo(TestContext context, GlandouilleEntity walker, BlockPos to) {
+        Path path = walker.getNavigation().findPathTo(context.getAbsolutePos(to), 0);
+        context.assertTrue(path != null, "a path is found");
+        return path;
+    }
+
+    private static String describe(TestContext context, Path path) {
+        StringBuilder out = new StringBuilder();
+        BlockPos origin = context.getAbsolutePos(BlockPos.ORIGIN);
+        for (int i = 0; i < path.getLength(); i++) {
+            PathNode node = path.getNode(i);
+            out.append(node.x - origin.getX()).append(',').append(node.y - origin.getY()).append(',').append(node.z - origin.getZ()).append(' ');
+        }
+        return out.toString();
+    }
+
+    /** Whether {@code path} goes through relative column {@code (x, z)}. */
+    private static boolean through(TestContext context, Path path, int x, int z) {
+        BlockPos abs = context.getAbsolutePos(new BlockPos(x, 0, z));
+        for (int i = 0; i < path.getLength(); i++) {
+            PathNode node = path.getNode(i);
+            if (node.x == abs.getX() && node.z == abs.getZ()) return true;
+        }
+        return false;
+    }
+
+    /**
+     * A tower of 4 (more than 2 blocks high) never paths under an overhang leaving 2 blocks of room; a lone one walks
+     * right under it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void aTowerNeverPathsUnderAnOverhangTooLowForIt(TestContext context) {
+        TestBoards.floor(context, 8);
+        for (int x = 3; x <= 5; x++) for (int z = 0; z < 8; z++) context.setBlockState(new BlockPos(x, 3, z), Blocks.STONE);
+        List<GlandouilleEntity> tower = tower(context, GlandouilleVariant.CLASSIC, 4, new BlockPos(1, 1, 3));
+        GlandouilleEntity lone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 6));
+        // with their AI on (a mob without AI never lands, and finds no path): the paths are asked for at once on landing
+        context.waitAndRun(3, () -> {
+            context.assertEquals(tower.getFirst().towerBlocks(), 3, "a tower of 4 needs 3 blocks of room");
+            context.assertEquals(lone.towerBlocks(), 1, "a lone one, 1");
+            Path towerPath = pathTo(context, tower.getFirst(), new BlockPos(6, 1, 3));
+            for (int x = 3; x <= 5; x++) for (int z = 0; z < 8; z++) {
+                context.assertFalse(through(context, towerPath, x, z), "the tower never goes under the overhang: " + x + "," + z);
+            }
+            Path lonePath = pathTo(context, lone, new BlockPos(6, 1, 6));
+            context.assertTrue(lonePath.reachesTarget() && through(context, lonePath, 4, 6), "the lone one walks under it");
+            context.complete();
+        });
+    }
+
+    /** A wall with a low tunnel and a high gap: the tower goes round by the gap, a lone one takes the tunnel. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void aTowerGoesRoundALowTunnel(TestContext context) {
+        TestBoards.floor(context, 8);
+        for (int z = 0; z < 8; z++) {
+            if (z == 4) continue; // the high gap
+            for (int y = 1; y <= 4; y++) {
+                if (z == 1 && y <= 2) continue; // the low tunnel
+                context.setBlockState(new BlockPos(4, y, z), Blocks.STONE);
+            }
+        }
+        List<GlandouilleEntity> tower = tower(context, GlandouilleVariant.CLASSIC, 4, new BlockPos(1, 1, 2));
+        GlandouilleEntity lone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(2, 1, 0));
+        // with their AI on (a mob without AI never lands, and finds no path): the paths are asked for at once on landing
+        context.waitAndRun(3, () -> {
+            Path towerPath = pathTo(context, tower.getFirst(), new BlockPos(6, 1, 2));
+            context.assertTrue(towerPath.reachesTarget(), "the tower gets there: " + describe(context, towerPath));
+            context.assertFalse(through(context, towerPath, 4, 1), "not through the low tunnel");
+            context.assertTrue(through(context, towerPath, 4, 4), "round by the high gap");
+            Path lonePath = pathTo(context, lone, new BlockPos(6, 1, 1));
+            context.assertTrue(lonePath.reachesTarget() && through(context, lonePath, 4, 1), "the lone one takes the tunnel");
+            context.complete();
+        });
+    }
+
+    /**
+     * A ceiling built over a tower of 4 (2 blocks of room): the top one, its cap in the ceiling, hops down beside the
+     * tower, never smothered; a smothered one up a tower steps off too.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aCeilingOverATowerShedsItsTopOnes(TestContext context) {
+        TestBoards.floor(context, 8);
+        List<GlandouilleEntity> tower = tower(context, GlandouilleVariant.CLASSIC, 4, new BlockPos(3, 1, 3));
+        GlandouilleEntity bottom = tower.getFirst(), top = tower.get(3);
+        bottom.setAiDisabled(true);
+        context.waitAndRun(2, () -> {
+            for (int x = 1; x <= 5; x++) for (int z = 1; z <= 5; z++) context.setBlockState(new BlockPos(x, 3, z), Blocks.STONE);
+            context.waitAndRun(GlandouilleEntity.CLEARANCE_CHECK_TICKS + 5, () -> {
+                context.assertTrue(top.getVehicle() == null, "the top one stepped off");
+                context.assertEquals(GlandouilleTowers.height(bottom), 3, "a tower of 3 left, it fits");
+                context.assertTrue(context.getWorld().isSpaceEmpty(top, top.getBoundingBox().contract(1.0E-3)), "not in the ceiling");
+                for (GlandouilleEntity one : tower) context.assertTrue(one.getHealth() == one.getMaxHealth(), "nobody smothered");
+                GlandouilleEntity third = tower.get(2);
+                context.assertFalse(third.damage(context.getWorld().getDamageSources().inWall(), 1f), "a smothered one up a tower");
+                context.assertTrue(third.getVehicle() == null && third.getHealth() == third.getMaxHealth(), "steps off, unhurt");
                 context.complete();
             });
         });

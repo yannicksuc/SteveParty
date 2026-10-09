@@ -19,6 +19,7 @@ import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
+import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -118,6 +119,10 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     public static final float BONE_MEAL_ACORN_CHANCE = 0.4f;
     /** A crash or a hit of its charge sends its cap flying, very rarely (never while it carries a tower). */
     public static final float HAT_LOSS_CHANCE = 0.03f;
+    /** Room kept above a tower (blocks) when it picks where to walk. */
+    public static final double CLEARANCE_MARGIN = 0.1;
+    /** How often (ticks) a tower checks that its top ones are not in a block (a ceiling put over it, an overhang). */
+    public static final int CLEARANCE_CHECK_TICKS = 10;
     /** Spawned without its cap, rarely. */
     public static final float HATLESS_SPAWN_CHANCE = 0.03f;
     /** How hard its charge (and a flicked one) shoves. */
@@ -185,6 +190,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     /** A throw (aimed, gravity coming back smoothly), not a flick. */
     private boolean thrown;
     private Vec3d slideVelocity = Vec3d.ZERO;
+    /** Its tower's height from its feet (blocks), the bottom one's cache: -1 until computed, again when the tower changes. */
+    private double towerHeight = -1;
     private int slideRelaunches;
     /** Hopping off a tower: the tower it lands back on (null: the ground). */
     private @Nullable GlandouilleEntity hopOnto;
@@ -225,6 +232,16 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             @Override
             public boolean canStart() {
                 return isFree() && !isAnchored() && super.canStart();
+            }
+
+            /** Never a spot its tower can't stand in (under a low ceiling): a few tries, else it stays. */
+            @Override
+            protected @Nullable Vec3d getWanderTarget() {
+                for (int i = 0; i < 3; i++) {
+                    Vec3d target = super.getWanderTarget();
+                    if (target == null || GlandouilleTowers.fitsAt(GlandouilleEntity.this, target)) return target;
+                }
+                return null;
             }
 
             @Override
@@ -321,8 +338,48 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
 
     @Override
     public void onTrackedDataSet(TrackedData<?> data) {
-        if (VARIANT.equals(data)) calculateDimensions();
+        if (VARIANT.equals(data)) {
+            calculateDimensions();
+            GlandouilleTowers.bottom(this).towerChanged();
+        }
         super.onTrackedDataSet(data);
+    }
+
+    // ---------------------------------------------------------------- the tower's height
+
+    @Override
+    protected EntityNavigation createNavigation(World world) {
+        return new GlandouilleNavigation(this, world);
+    }
+
+    /** The height of the tower standing on it, itself included (blocks, from its feet to the top one's cap). */
+    public double towerHeight() {
+        if (towerHeight < 0) towerHeight = GlandouilleTowers.stackHeight(this);
+        return towerHeight;
+    }
+
+    /** How many free blocks its tower needs above the ground it walks on (the path search's height). */
+    public int towerBlocks() {
+        return Math.max(1, MathHelper.ceil(towerHeight() + CLEARANCE_MARGIN));
+    }
+
+    /** Someone climbed on or got off somewhere in its tower: its height is computed again, its path too. */
+    void towerChanged() {
+        this.towerHeight = -1;
+        EntityNavigation navigation = getNavigation();
+        if (!getWorld().isClient && navigation != null && !navigation.isIdle()) navigation.recalculatePath();
+    }
+
+    @Override
+    protected void addPassenger(Entity passenger) {
+        super.addPassenger(passenger);
+        for (Entity at = this; at instanceof GlandouilleEntity one; at = at.getVehicle()) one.towerChanged();
+    }
+
+    @Override
+    protected void removePassenger(Entity passenger) {
+        super.removePassenger(passenger);
+        for (Entity at = this; at instanceof GlandouilleEntity one; at = at.getVehicle()) one.towerChanged();
     }
 
     // ---------------------------------------------------------------- board actors
@@ -468,6 +525,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             return;
         }
         detectStomps(world);
+        if ((this.age + getId()) % CLEARANCE_CHECK_TICKS == 0 && GlandouilleTowers.hasRider(this)) GlandouilleTowers.shedUnderCeiling(this);
         tickMood(world);
     }
 
@@ -630,7 +688,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             setVelocity(getVelocity().multiply(0.2, 1, 0.2));
             return;
         }
-        if (chargeTicks > 2 && this.horizontalCollision) {
+        if (chargeTicks > 2 && (this.horizontalCollision || towerHitsAhead(world))) {
             bonk(world);
             return;
         }
@@ -654,6 +712,14 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         other.takeKnockback(strength, -dir.x, -dir.z);
         other.addVelocity(0, 0.2, 0);
         other.velocityModified = true;
+    }
+
+    /** The tower on it (above its own head) is about to run into a block this tick (an overhang, a low ceiling). */
+    private boolean towerHitsAhead(ServerWorld world) {
+        if (!GlandouilleTowers.hasRider(this)) return false;
+        Box upper = GlandouilleTowers.towerBox(this, getPos()).withMinY(getY() + getHeight());
+        Vec3d v = getVelocity();
+        return !world.isSpaceEmpty(this, upper.offset(v.x, 0, v.z));
     }
 
     /** Its charge ended in a wall: dizzy (a tower on it falls down). */
@@ -779,6 +845,11 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         if (source.isOf(DamageTypes.FALL)) return false; // a light acorn
         // carried (in a player's hand, or in a tower in it): never smothered by the blocks around the carrier
         if (source.isOf(DamageTypes.IN_WALL) && GlandouilleTowers.bottom(this).getVehicle() instanceof PlayerEntity) return false;
+        // up a tower with its head in a block (a ceiling over the tower): it hops down beside it, never smothered
+        if (source.isOf(DamageTypes.IN_WALL) && getVehicle() instanceof GlandouilleEntity) {
+            GlandouilleTowers.shed(this);
+            return false;
+        }
         Entity attacker = source.getAttacker();
         if (attacker instanceof LivingEntity living && !source.isIn(DamageTypeTags.IS_EXPLOSION)
                 && !source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
