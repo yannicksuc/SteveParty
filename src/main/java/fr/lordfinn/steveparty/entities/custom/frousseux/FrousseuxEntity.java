@@ -106,8 +106,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** Its dodge: this far, at most this often (ticks). */
     private static final double DODGE_MIN = 2.5, DODGE_MAX = 4.5;
     private static final int DODGE_COOLDOWN = 8;
-    /** What it steals: one of these, never more than one at a time. */
-    public static final TagKey<Item> SHINY = TagKey.of(RegistryKeys.ITEM, Steveparty.id("frousseux_shiny"));
+    /** What it steals: one of these (the shiny things a Magpie also picks up), never more than one at a time. */
+    public static final TagKey<Item> SHINY = TagKey.of(RegistryKeys.ITEM, Steveparty.id("shiny"));
     /** Held in either hand, these keep a player from being robbed. */
     public static final TagKey<Item> WARDS = TagKey.of(RegistryKeys.ITEM, Steveparty.id("frousseux_wards"));
     /** A player this close to a wild one gets robbed, at most once every {@link #STEAL_COOLDOWN} ticks. */
