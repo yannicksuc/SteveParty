@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneForbidden;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.PlayerEntity;
@@ -139,10 +140,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
             }
         });
         int invX = INVENTORY_GRID_X + 1, invY = INVENTORY_GRID_Y + 1;
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col + row * 9 + 9, invX + col * 18, invY + row * 18));
-        }
-        for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col, invX + col * 18, invY + 58));
+        PlayerSlots.add(this::addSlot, playerInventory, invX, invY);
         addProperties(properties);
     }
 

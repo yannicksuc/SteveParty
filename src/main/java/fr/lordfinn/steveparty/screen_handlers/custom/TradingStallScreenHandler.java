@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -75,7 +76,7 @@ public class TradingStallScreenHandler extends ScreenHandler {
         }
 
         // Player inventory
-        addPlayerSlots(playerInventory, PLAYER_INV_X, PLAYER_INV_Y);
+        PlayerSlots.add(this::addSlot, playerInventory, PLAYER_INV_X, PLAYER_INV_Y);
     }
 
     @Override
@@ -107,17 +108,5 @@ public class TradingStallScreenHandler extends ScreenHandler {
     public boolean canUse(PlayerEntity player) {
         // The block still there and in reach (the inventory alone always said yes)
         return ScreenHandlerChecks.canUseInventory(this.inventory, player);
-    }
-
-    /** The player's inventory (3 rows) at (left, top) and its hotbar 58 pixels under it. */
-    private void addPlayerSlots(PlayerInventory playerInventory, int left, int top) {
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, left + col * 18, top + row * 18));
-            }
-        }
-        for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, left + col * 18, top + 58));
-        }
     }
 }

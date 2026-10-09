@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -101,7 +102,7 @@ public class DiceForgeScreenHandler extends ScreenHandler {
 
         // --- Player inventory ---
         // Matches the slot cells painted in the texture (rows at y = 237, 255, 273, hotbar at 295)
-        addPlayerSlots(playerInventory, INVENTORY_X + 8, INVENTORY_Y + 7);
+        PlayerSlots.add(this::addSlot, playerInventory, INVENTORY_X + 8, INVENTORY_Y + 7);
         addProperties(properties);
     }
 
@@ -165,22 +166,6 @@ public class DiceForgeScreenHandler extends ScreenHandler {
         @Override
         public boolean canInsert(ItemStack stack) {
             return isValidForSlot(inventory, getIndex(), stack, isActivated());
-        }
-    }
-
-    private void addPlayerSlots(PlayerInventory playerInventory, int left, int top) {
-        // Player inventory (3 rows)
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9,
-                        left + col * 18, top + row * 18));
-            }
-        }
-
-        // Hotbar
-        for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col,
-                    left + col * 18, top + 58));
         }
     }
 
