@@ -25,7 +25,7 @@ public final class DiceRevealLayout {
     /** Plate: the icon's left margin, the text's start, and the room after the text. */
     public static final int PLATE_ICON_X = 4, PLATE_TEXT_X = 17, PLATE_RIGHT = 7;
     /** Room on each side of the text in a pill: a die, the total, the badge. */
-    public static final int DIE_PAD = 4, PILL_PAD = 6;
+    public static final int DIE_PAD = 5, PILL_PAD = 6;
     /** Between the plate and the first pill; on each side of an operator; between the result and the badge. */
     public static final int PLATE_GAP = 6, GUTTER = 3, BADGE_GAP = 6;
     /** The texts a die may show, the widest of them sets every die's pill (with the faces actually shown). */
@@ -54,6 +54,11 @@ public final class DiceRevealLayout {
     /** The width of a text as drawn (without the font's trailing pixel). */
     private static int ink(Measure measure, String text) {
         return Math.max(0, measure.width(text) - 1);
+    }
+
+    /** An operator as drawn: its ink and the font's shadow, a pixel right of it. */
+    private static int sign(Measure measure, String sign) {
+        return ink(measure, sign) + 1;
     }
 
     public static int plateWidth(int textInk) {
@@ -89,7 +94,7 @@ public final class DiceRevealLayout {
         boolean multi = dice > 1;
         if (multi) {
             int die = dieWidth(measure, faces);
-            int plus = ink(measure, "+");
+            int plus = sign(measure, "+");
             for (int i = 0; i < dice; i++) {
                 if (i > 0) {
                     boxes.add(new Box(Kind.PLUS, x, plus, -1));
@@ -101,7 +106,7 @@ public final class DiceRevealLayout {
         }
         if (total != null) {
             if (multi) {
-                int equals = ink(measure, "=");
+                int equals = sign(measure, "=");
                 boxes.add(new Box(Kind.EQUALS, x, equals, -1));
                 x += equals + GUTTER;
             }
