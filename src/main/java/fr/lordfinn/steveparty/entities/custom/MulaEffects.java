@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
@@ -216,7 +217,7 @@ public final class MulaEffects {
             for (int half = 0; half < 2; half++) {
                 double u = (COMET_TICKS - cometTicks - 0.5 * half) / COMET_TICKS;
                 double s = MathHelper.clamp(u, 0, 1);
-                double theta = MathHelper.TAU * s * s * (3 - 2 * s);
+                double theta = MathHelper.TAU * Easing.smoothstep(s);
                 double forward = radius * Math.sin(theta), up = radius * (1 - Math.cos(theta));
                 world.addParticle(half == 0 ? BIG_WHITE_TWINKLE : mula.getVariant().getTwinkle(),
                         cx + fx * forward, cy + up, cz + fz * forward, 0, 0, 0);
@@ -475,7 +476,7 @@ public final class MulaEffects {
      * a spiral whose radius opens then closes, turning 1.25 times. Written into moteX/Y/Z (no allocation).
      */
     private void motePoint(double u, int k, double cx, double cy, double cz) {
-        double e = u * u * (3 - 2 * u);
+        double e = Easing.smoothstep(u);
         double size = mula.getScaleFactor() * mula.getScale();
         double sx = MathHelper.lerp(e, meltX, cx), sy = MathHelper.lerp(e, meltY, cy), sz = MathHelper.lerp(e, meltZ, cz);
         double radius = (0.25 + 0.35 * size) * Math.sin(Math.PI * Math.min(1, u * 1.15)) * (1 - 0.35 * u);
@@ -499,7 +500,7 @@ public final class MulaEffects {
             itemY = MathHelper.lerp(e * 0.35, handY, cy) + 0.45 * e;
             itemZ = MathHelper.lerp(e * 0.35, handZ, cz);
             double shrink = MathHelper.clamp((p - 0.35) / 0.65, 0, 1);
-            itemScale = (float) (0.6 * (1 - shrink * shrink * (3 - 2 * shrink)));
+            itemScale = (float) (0.6 * (1 - Easing.smoothstep(shrink)));
             itemSpin = (float) (p * 160);
             if (age <= ABSORB_RISE_TICKS * 0.7) {
                 meltX = itemX;
@@ -509,7 +510,7 @@ public final class MulaEffects {
         } else {
             double up = MathHelper.clamp(age / REFUSE_TOP_TICKS, 0, 1);
             double down = MathHelper.clamp((age - REFUSE_TOP_TICKS - 3) / (REFUSE_TICKS - REFUSE_TOP_TICKS - 3), 0, 1);
-            double e = up * up * (3 - 2 * up) * (1 - down * down * (3 - 2 * down));
+            double e = Easing.smoothstep(up) * (1 - Easing.smoothstep(down));
             itemX = MathHelper.lerp(e * 0.45, handX, cx);
             itemY = MathHelper.lerp(e * 0.45, handY, cy) + 0.5 * e;
             itemZ = MathHelper.lerp(e * 0.45, handZ, cz);

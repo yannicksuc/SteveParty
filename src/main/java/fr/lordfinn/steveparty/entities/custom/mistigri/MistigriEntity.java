@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.entities.custom.mistigri;
 
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
 import fr.lordfinn.steveparty.entities.PetTeleports;
-import fr.lordfinn.steveparty.service.BoardActors;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
@@ -76,7 +76,7 @@ import java.util.UUID;
  * may ask for one ({@code Action:"groom"} in his data: groom, stretch, yawn, swat, eat, leap, summon), as it may set
  * {@code Angry} (ticks), {@code Loafing} or {@code Sitting}: building blocks for players' mini-games.
  */
-public class MistigriEntity extends TameableEntity implements GeoEntity, FollowsOwnerAnywhere {
+public class MistigriEntity extends TameableEntity implements GeoEntity, FollowsOwnerAnywhere, BoardActor {
     public static final float WIDTH = 1.2f, HEIGHT = 1.5f;
     public static final double MAX_HEALTH = 30.0;
     /** How long he stays angry (ticks), and the Bad Luck given to whoever hit him. */
@@ -297,15 +297,15 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
 
     // ---------------------------------------------------------------- board actor
 
+    /** A Mistigri of a board space: invulnerable, no will of his own, never saved. */
+    @Override
     public boolean isBoardActor() {
         return boardActor;
     }
 
-    /** A Mistigri of a board space: invulnerable, no will of his own, never saved. */
-    public void makeBoardActor() {
+    @Override
+    public void setBoardActor() {
         this.boardActor = true;
-        setAiDisabled(true);
-        if (!getWorld().isClient) BoardActors.mark(this);
     }
 
     @Override
@@ -333,11 +333,9 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         if (boardActor || !isAlive()) return;
         tickSwat(world);
         if (age % 2 == 0) MistigriBadLuck.tickCrossings(world, this);
+        tickFollow(isTamed());
         if (age % 20 == 5) {
-            if (isTamed()) {
-                MistigriBadLuck.giveLuck(world, this);
-                PetTeleports.remember(this);
-            }
+            if (isTamed()) MistigriBadLuck.giveLuck(world, this);
             if (!isAngry() && wolfNearby(world)) setAngry(ANGRY_TICKS);
         }
         // got off his chest (pushed, the chest broken): no longer sitting on it
@@ -479,19 +477,13 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     /** Going along: tamed by them, not told to sit, not on a lead or riding, not the board's. */
     @Override
     public boolean goesWithOwner(ServerPlayerEntity owner) {
-        return isAlive() && isTamed() && owner.getUuid().equals(getOwnerUuid()) && !isSitting() && !boardActor
-                && !isLeashed() && !hasVehicle();
+        return followsFreely(owner) && isTamed() && !isSitting() && !boardActor;
     }
 
     /** Far behind: recreated by them (PetTeleports) rather than moved in place, which could leave him unseen. */
     @Override
     public void tryTeleportToOwner() {
-        if (getOwner() instanceof ServerPlayerEntity owner && owner.getWorld() == getWorld()
-                && squaredDistanceTo(owner) > PetTeleports.NEAR * PetTeleports.NEAR) {
-            if (goesWithOwner(owner)) PetTeleports.bring(this, owner.getServerWorld(), arrivalSpot(owner), getYaw());
-            return;
-        }
-        super.tryTeleportToOwner();
+        if (!catchUpFar(getOwner())) super.tryTeleportToOwner();
     }
 
     // ---------------------------------------------------------------- save
