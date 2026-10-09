@@ -29,6 +29,7 @@ import net.minecraft.world.World;
 import java.util.List;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.board.BoardLinks;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity.getDestinationsStatus;
 import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT;
@@ -101,7 +102,7 @@ public class InventoryCartridgeItem extends CartridgeItem {
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         World world = context.getWorld();
-        if (fr.lordfinn.steveparty.board.BoardLinks.container(world, context.getBlockPos()) == null) return super.useOnBlock(context);
+        if (BoardLinks.container(world, context.getBlockPos()) == null) return super.useOnBlock(context);
         return toggleDestination(context);
     }
 

@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlock;
 import fr.lordfinn.steveparty.items.custom.CartridgeContainerOpener;
+import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
@@ -35,7 +37,7 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
     protected final int numberOfCartridges;
 
     @Override
-    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {
+    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         if (blockEntity instanceof NamedScreenHandlerFactory) {
             return (NamedScreenHandlerFactory) blockEntity;
@@ -63,7 +65,7 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         // The Wrench opens board spaces and routers, or swaps their cartridge for the off hand one (see WrenchActions)
         if (mainHandStack.getItem() instanceof WrenchItem && isLinkedWithWrench()) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // The Tile Linker Brush paints links over every holder of a cartridge (see BrushLinks)
-        if (mainHandStack.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        if (mainHandStack.getItem() instanceof TileLinkerBrushItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // A Wrench in the off hand lets the main hand item act
         boolean offHandOpener = offHandStack.getItem() instanceof CartridgeContainerOpener
                 && (mainHandStack.isEmpty() || !(offHandStack.getItem() instanceof WrenchItem));
@@ -79,7 +81,7 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
 
     /** Board spaces and routers: the Wrench opens them (or swaps their cartridge), the Tile Linker Brush paints their links. */
     public boolean isLinkedWithWrench() {
-        return this instanceof ABoardSpaceBlock || this instanceof fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlock;
+        return this instanceof ABoardSpaceBlock || this instanceof BoardSpaceRedstoneRouterBlock;
     }
 
     /** Opens the interface of this container for {@code player} (server side), e.g. a right click with the Wrench. */

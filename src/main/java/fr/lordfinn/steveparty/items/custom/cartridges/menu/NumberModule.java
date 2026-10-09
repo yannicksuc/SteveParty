@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.items.custom.cartridges.menu;
 import net.minecraft.item.ItemStack;
 
 import java.util.function.ObjIntConsumer;
+import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 
 /**
@@ -16,12 +17,12 @@ public final class NumberModule extends CartridgeModule {
     private final ToIntFunction<ItemStack> getter;
     private final ObjIntConsumer<CartridgeEdit> setter;
     private final ToIntFunction<ItemStack> color;
-    private final java.util.function.Predicate<ItemStack> enabled;
+    private final Predicate<ItemStack> enabled;
 
     /** Like the other constructor, greyed out (unchangeable) while {@code enabled} says no. */
     public NumberModule(String id, String labelKey, int min, int max, ToIntFunction<ItemStack> getter,
                         ObjIntConsumer<CartridgeEdit> setter, ToIntFunction<ItemStack> color,
-                        java.util.function.Predicate<ItemStack> enabled) {
+                        Predicate<ItemStack> enabled) {
         super(id, labelKey);
         if (min > max) throw new IllegalArgumentException("empty range: " + id);
         this.min = min;

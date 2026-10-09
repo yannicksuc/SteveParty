@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.components.TrapSetComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
@@ -13,6 +14,7 @@ import net.minecraft.util.Formatting;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * The Trap Cartridge: a space where traps are set. A token of a party stopping on it may set a Trap there (a Trap item
@@ -42,7 +44,7 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
         }
 
         public String id() {
-            return name().toLowerCase(java.util.Locale.ROOT);
+            return name().toLowerCase(Locale.ROOT);
         }
 
         public boolean hasAmount() {
@@ -97,7 +99,7 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     /** A cartridge with this effect (tests, commands). */
-    public static ItemStack with(net.minecraft.item.Item item, Effect effect, int amount) {
+    public static ItemStack with(Item item, Effect effect, int amount) {
         ItemStack stack = new ItemStack(item);
         putSetting(stack, EFFECT, effect.ordinal());
         if (effect.hasAmount()) putSetting(stack, AMOUNT + "_" + effect.id(), amount);

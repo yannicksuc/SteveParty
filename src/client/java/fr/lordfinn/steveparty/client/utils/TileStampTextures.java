@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.utils;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.TileStampComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
@@ -166,7 +167,7 @@ public final class TileStampTextures {
      * arrow in the darkest shade and the number of spaces almost white ("3 ⏩", "⏪ 2").
      */
     public static Identifier advanceBack(int steps, boolean small) {
-        int rgb = fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.color(steps);
+        int rgb = AdvanceBackCartridgeItem.color(steps);
         return TEXTURES.get(new Key("advance_back:" + steps, rgb, small), key -> register(advanceBackValues(steps, small), rgb, small));
     }
 

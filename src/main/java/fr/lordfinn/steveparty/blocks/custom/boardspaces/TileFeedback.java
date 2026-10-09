@@ -4,10 +4,12 @@ import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
+import fr.lordfinn.steveparty.service.TurnMoves;
 import fr.lordfinn.steveparty.utils.Argb;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
@@ -228,11 +230,11 @@ public final class TileFeedback {
      * over (same rules as in a game: see {@link BoardSpaceBlockEntity#onTileReached}).
      */
     private static void freePlayRouterSignal(ServerWorld world, MobEntity token, BoardSpaceBlockEntity tile) {
-        int steps = token instanceof fr.lordfinn.steveparty.entities.TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
+        int steps = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
         ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
         boolean stops = steps == 0 && (ABoardSpaceBlock.countsAsStep(tile.getCachedState().getBlock())
                 || behavior != null && behavior.needToStop(world, tile.getPos())
-                || fr.lordfinn.steveparty.service.TurnMoves.isHaltedOn(token, tile.getPos()));
+                || TurnMoves.isHaltedOn(token, tile.getPos()));
         if (stops) BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, tile);
         else BoardSpaceRedstoneRouterBlockEntity.onTokenPassed(world, tile.getPos());
     }
