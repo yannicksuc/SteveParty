@@ -72,6 +72,8 @@ public final class DiceRollSequence {
     /** The reveal: the faces of the throw, how many are shown, ticks since it began, the double / triple shown. */
     private List<DiceFace> revealing = List.of();
     private int revealed, revealAge, comboShown;
+    /** The reveal is all at once (one die, Choice): only its end is shown. */
+    private boolean instant;
 
     public DiceRollSequence(DiceEntity lead) {
         this.lead = lead;
@@ -401,6 +403,7 @@ public final class DiceRollSequence {
         revealed = 0;
         revealAge = 0;
         comboShown = 0;
+        instant = revealing.size() <= 1 || chooses();
         // Dice stopped for a prompt (Lucky, Reroll) turn again to land one by one; a Slow die keeps the face it was stopped on
         for (DiceEntity die : lead.group()) {
             if (!die.isRolling()) {
@@ -408,7 +411,7 @@ public final class DiceRollSequence {
                 die.setFaceShown(false);
             }
         }
-        if (revealing.size() <= 1 || chooses()) {
+        if (instant) {
             // One die, or faces the roller picked: all at once
             while (revealed < revealing.size()) revealNext();
             complete();
@@ -450,7 +453,7 @@ public final class DiceRollSequence {
             }
             DiceReveal.combo(matching, same);
         }
-        if (revealed < revealing.size()) DiceReveal.send(lead, revealing.size(), shown, null);
+        if (!instant) DiceReveal.send(lead, revealing.size(), shown, null); // the last die too: the total comes after a pause
     }
 
     /** All revealed: the total, then the roll is announced (and the token moves). */
