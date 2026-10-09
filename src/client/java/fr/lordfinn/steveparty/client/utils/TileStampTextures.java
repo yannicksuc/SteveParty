@@ -592,6 +592,41 @@ public final class TileStampTextures {
                 key -> register(glyphValues(small ? SMALL_POT : POT, small, POT_SHADES), rgb, small));
     }
 
+    /** The Key gate: a gate's frame, its veil, a keyhole in the middle. */
+    private static final String[] KEY_GATE = {
+            "..............",
+            ".############.",
+            ".#oooooooooo#.",
+            ".#oooooooooo#.",
+            ".#oooo##oooo#.",
+            ".#ooo####ooo#.",
+            ".#ooo####ooo#.",
+            ".#oooo##oooo#.",
+            ".#oooo##oooo#.",
+            ".#ooo####ooo#.",
+            ".#oooooooooo#.",
+            ".#oooooooooo#.",
+            ".############.",
+            ".............."};
+    private static final String[] SMALL_KEY_GATE = {
+            "..........",
+            ".########.",
+            ".#oooooo#.",
+            ".#oo##oo#.",
+            ".#o####o#.",
+            ".#oo##oo#.",
+            ".#o####o#.",
+            ".#oooooo#.",
+            ".########.",
+            ".........."};
+    private static final Map<Character, Float> KEY_GATE_SHADES = Map.of('#', FEATURE, 'o', -0.6f);
+
+    /** The Key gate's face: a gate with a keyhole on the blank tile face, in the ramp of {@code rgb} (teal). */
+    public static Identifier keyGateFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("key_gate", rgb, small),
+                key -> register(glyphValues(small ? SMALL_KEY_GATE : KEY_GATE, small, KEY_GATE_SHADES), rgb, small));
+    }
+
     /** The Mistigri: a cat's head, pointed ears (one notched), one slit eye open, the other shut, a nose, whiskers. */
     private static final String[] MISTIGRI = {
             "..o.......o.o.",

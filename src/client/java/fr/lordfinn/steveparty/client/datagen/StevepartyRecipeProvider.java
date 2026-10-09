@@ -228,6 +228,12 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .input(Items.FEATHER)
                 .criterion(hasItem(Items.FEATHER), conditionsFromItem(Items.FEATHER))
                 .offerTo(exporter, id("magpie_nest"));
+        // The Gate Key: a gold ingot and an amethyst shard (its gem)
+        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.GATE_KEY, 1)
+                .input(Items.GOLD_INGOT)
+                .input(Items.AMETHYST_SHARD)
+                .criterion(hasItem(Items.AMETHYST_SHARD), conditionsFromItem(Items.AMETHYST_SHARD))
+                .offerTo(exporter, id("gate_key"));
 
         generatePolishedConcrete();
         generatePolishedTerracotta();
@@ -365,6 +371,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.THRESHOLD_CARTRIDGE, Items.IRON_BARS);
         // The Pie's nest: the Common pot, kept by the Pie
         offerCartridge(ModItems.POT_CARTRIDGE, ModItems.MAGPIE_NEST);
+        // A Gate Key: the Key gate
+        offerCartridge(ModItems.KEY_GATE_CARTRIDGE, ModItems.GATE_KEY);
 
         // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
         // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)

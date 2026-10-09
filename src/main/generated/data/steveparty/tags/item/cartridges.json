@@ -13,6 +13,7 @@
     "steveparty:frousseux_cartridge",
     "steveparty:mistigri_cartridge",
     "steveparty:threshold_cartridge",
-    "steveparty:pot_cartridge"
+    "steveparty:pot_cartridge",
+    "steveparty:key_gate_cartridge"
   ]
 }

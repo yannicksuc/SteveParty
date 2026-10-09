@@ -143,6 +143,16 @@
           }
         ]
       }
+    },
+    "key_gate": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:key_gate_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -184,6 +194,9 @@
     ],
     [
       "pot"
+    ],
+    [
+      "key_gate"
     ]
   ],
   "rewards": {
