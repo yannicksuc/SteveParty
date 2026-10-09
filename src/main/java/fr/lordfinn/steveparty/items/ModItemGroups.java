@@ -125,7 +125,7 @@ public final class ModItemGroups {
         entries.add(BOX_COSTUME);
         for (Item egg : GLANDOUILLE_SPAWN_EGGS) entries.add(egg);
         addAll(entries, ACORN, ACORN_HAT, FROUSSEUX_SPAWN_EGG, ModItems.CANDLE_SAUCER, MISTIGRI_SPAWN_EGG,
-                BOOMCART_SPAWN_EGG, TRICHAUDRON_SPAWN_EGG, ModItems.MAGPIE_NEST);
+                BOOMCART_SPAWN_EGG, TRICHAUDRON_SPAWN_EGG, MAGPIE_SPAWN_EGG, ModItems.MAGPIE_NEST);
     }
 
     /** Stencils, signs, plastic and polished blocks, then the stencil library. */
