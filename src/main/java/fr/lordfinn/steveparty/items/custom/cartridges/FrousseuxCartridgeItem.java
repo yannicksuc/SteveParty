@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
@@ -26,22 +25,17 @@ public class FrousseuxCartridgeItem extends CartridgeItem {
     public static final int MAX_COINS = 99, DEFAULT_COINS = 15;
     public static final int MAX_STARS = 5, DEFAULT_STARS = 1;
 
+    private static final BoolSetting STARS = new BoolSetting(ModComponents.FROUSSEUX_STARS);
+    private static final IntSetting COINS = new IntSetting(ModComponents.FROUSSEUX_COINS, 1, MAX_COINS, DEFAULT_COINS);
+    private static final IntSetting STAR_COUNT = new IntSetting(ModComponents.FROUSSEUX_STAR_COUNT, 1, MAX_STARS, DEFAULT_STARS);
+
     private static final String K = MENU_KEY + "frousseux.";
     private static final List<CartridgeModule> MODULES = List.of(
             description("frousseux_cartridge", 3),
-            new ChoiceModule("loot", K + "loot",
-                    List.of(new ChoiceModule.Option(K + "coins", -1, K + "coins.tooltip"),
-                            new ChoiceModule.Option(K + "stars", -1, K + "stars.tooltip")),
-                    stack -> stealsStars(stack) ? 1 : 0,
-                    (edit, value) -> edit.stack().set(ModComponents.FROUSSEUX_STARS, value == 1)),
-            new NumberModule("coins", K + "coin_count", 1, MAX_COINS, FrousseuxCartridgeItem::coins,
-                    (edit, value) -> edit.stack().set(ModComponents.FROUSSEUX_COINS, value), stack -> COLOR,
-                    stack -> !stealsStars(stack)),
-            new NumberModule("stars", K + "star_count", 1, MAX_STARS, FrousseuxCartridgeItem::stars,
-                    (edit, value) -> edit.stack().set(ModComponents.FROUSSEUX_STAR_COUNT, value), stack -> COLOR,
-                    FrousseuxCartridgeItem::stealsStars),
-            new InfoModule("hint", null, 2, context -> List.of(
-                    new InfoModule.Line(Text.translatable(K + "hint"), InfoModule.Tone.SOFT))));
+            STARS.choice("loot", K + "loot", ChoiceModule.Option.tipped(K + "coins"), ChoiceModule.Option.tipped(K + "stars")),
+            COINS.module("coins", K + "coin_count", stack -> COLOR, stack -> !stealsStars(stack)),
+            STAR_COUNT.module("stars", K + "star_count", stack -> COLOR, FrousseuxCartridgeItem::stealsStars),
+            InfoModule.hint("hint", K + "hint", 2));
 
     public FrousseuxCartridgeItem(Settings settings) {
         super(settings);
@@ -64,19 +58,17 @@ public class FrousseuxCartridgeItem extends CartridgeItem {
 
     /** It steals stars rather than coins. */
     public static boolean stealsStars(ItemStack stack) {
-        return stack != null && stack.getOrDefault(ModComponents.FROUSSEUX_STARS, false);
+        return STARS.get(stack);
     }
 
     /** Coins it steals: 1 to {@link #MAX_COINS}. */
     public static int coins(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return DEFAULT_COINS;
-        return Math.max(1, Math.min(MAX_COINS, stack.getOrDefault(ModComponents.FROUSSEUX_COINS, DEFAULT_COINS)));
+        return COINS.get(stack);
     }
 
     /** Stars it steals: 1 to {@link #MAX_STARS}. */
     public static int stars(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return DEFAULT_STARS;
-        return Math.max(1, Math.min(MAX_STARS, stack.getOrDefault(ModComponents.FROUSSEUX_STAR_COUNT, DEFAULT_STARS)));
+        return STAR_COUNT.get(stack);
     }
 
     /** What it steals, as set: the number of coins or of stars. */

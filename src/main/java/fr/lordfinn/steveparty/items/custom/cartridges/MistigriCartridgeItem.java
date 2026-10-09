@@ -14,7 +14,6 @@ import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -116,13 +115,11 @@ public class MistigriCartridgeItem extends CartridgeItem {
     }
 
     private static Map<String, Integer> settings(ItemStack stack) {
-        return stack == null ? Map.of() : stack.getOrDefault(ModComponents.MISTIGRI_SETTINGS, Map.of());
+        return IntMaps.of(stack, ModComponents.MISTIGRI_SETTINGS);
     }
 
     private static void put(ItemStack stack, String key, int value) {
-        Map<String, Integer> settings = new HashMap<>(settings(stack));
-        settings.put(key, value);
-        stack.set(ModComponents.MISTIGRI_SETTINGS, Map.copyOf(settings));
+        IntMaps.put(stack, ModComponents.MISTIGRI_SETTINGS, key, value);
     }
 
     /** How likely {@code sentence} is: 0 (never) to {@link #MAX_WEIGHT}. */

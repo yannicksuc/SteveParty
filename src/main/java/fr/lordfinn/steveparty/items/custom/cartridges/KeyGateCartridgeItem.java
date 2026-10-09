@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.MutableText;
@@ -37,24 +36,32 @@ public class KeyGateCartridgeItem extends BoardRuleCartridgeItem {
     public static final int FOREVER = 10;
     /** The sides, in the order of the menu's buttons. */
     public static final List<Direction> SIDES = List.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST);
-    private static final String EDITED = "side";
+    /** The side being edited in the menu. */
+    private static final Setting EDITED = new Setting("side", 0, 0, SIDES.size() - 1);
+    private static final Setting WITHOUT_KEY_SETTING = new Setting(WITHOUT_KEY, REPLAY | BACK_TO_START, 0, 3);
+    private static final Setting STAY_OPEN_SETTING = new Setting(STAY_OPEN, 0, 0, FOREVER);
 
     private static final String K = MENU_KEY + "key_gate.";
     private static final List<CartridgeModule> MODULES = List.of(
             description("key_gate_cartridge", 2),
-            new ChoiceModule("side", K + "side", SIDES.stream().map(side -> new ChoiceModule.Option(K + "side." + side.asString(),
-                    -1, K + "side." + side.asString() + ".tooltip")).toList(),
-                    stack -> setting(stack, EDITED, 0, 0, SIDES.size() - 1), (edit, value) -> putSetting(edit.stack(), EDITED, value)),
+            EDITED.choice("side", K + "side", SIDES.stream().map(side -> ChoiceModule.Option.tipped(K + "side." + side.asString())).toList()),
             new ChoiceModule("locked", K + "locked", List.of(new ChoiceModule.Option(K + "free"), new ChoiceModule.Option(K + "locked_option")),
-                    stack -> isLocked(stack, SIDES.get(setting(stack, EDITED, 0, 0, SIDES.size() - 1))) ? 1 : 0,
-                    (edit, value) -> putSetting(edit.stack(), "lock_" + SIDES.get(setting(edit.stack(), EDITED, 0, 0, SIDES.size() - 1)).asString(), value)),
-            new ChoiceModule("without_key", K + "without_key", List.of(new ChoiceModule.Option(K + "without_key.wait", -1, K + "without_key.wait.tooltip"),
-                    new ChoiceModule.Option(K + "without_key.replay", -1, K + "without_key.replay.tooltip"),
-                    new ChoiceModule.Option(K + "without_key.start", -1, K + "without_key.start.tooltip"),
-                    new ChoiceModule.Option(K + "without_key.all", -1, K + "without_key.all.tooltip")),
-                    stack -> setting(stack, WITHOUT_KEY, 3, 0, 3), (edit, value) -> putSetting(edit.stack(), WITHOUT_KEY, value)),
-            new NumberModule("stay_open", K + "stay_open", 0, FOREVER, KeyGateCartridgeItem::stayOpen,
-                    (edit, value) -> putSetting(edit.stack(), STAY_OPEN, value), stack -> COLOR));
+                    stack -> isLocked(stack, edited(stack)) ? 1 : 0,
+                    (edit, value) -> putSetting(edit.stack(), lockKey(edited(edit.stack())), value)),
+            WITHOUT_KEY_SETTING.choice("without_key", K + "without_key", List.of(ChoiceModule.Option.tipped(K + "without_key.wait"),
+                    ChoiceModule.Option.tipped(K + "without_key.replay"), ChoiceModule.Option.tipped(K + "without_key.start"),
+                    ChoiceModule.Option.tipped(K + "without_key.all"))),
+            STAY_OPEN_SETTING.number("stay_open", K + "stay_open", stack -> COLOR));
+
+    /** The side the menu edits now. */
+    private static Direction edited(ItemStack stack) {
+        return SIDES.get(EDITED.get(stack));
+    }
+
+    /** The setting of the exit on {@code side}: 0 free, 1 locked. */
+    private static String lockKey(Direction side) {
+        return "lock_" + side.asString();
+    }
 
     public KeyGateCartridgeItem(Settings settings) {
         super(settings);
@@ -77,11 +84,11 @@ public class KeyGateCartridgeItem extends BoardRuleCartridgeItem {
 
     /** The exit on {@code side} is locked (all of them by default). */
     public static boolean isLocked(ItemStack stack, Direction side) {
-        return setting(stack, "lock_" + side.asString(), 1, 0, 1) == 1;
+        return setting(stack, lockKey(side), 1, 0, 1) == 1;
     }
 
     public static void setLocked(ItemStack stack, Direction side, boolean locked) {
-        putSetting(stack, "lock_" + side.asString(), locked ? 1 : 0);
+        putSetting(stack, lockKey(side), locked ? 1 : 0);
     }
 
     /** The side of {@code from} the board space at {@code to} leaves by: the axis it is furthest along. */
@@ -97,16 +104,16 @@ public class KeyGateCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     public static boolean allowsCancel(ItemStack stack) {
-        return (setting(stack, WITHOUT_KEY, 3, 0, 3) & REPLAY) != 0;
+        return (WITHOUT_KEY_SETTING.get(stack) & REPLAY) != 0;
     }
 
     public static boolean allowsStart(ItemStack stack) {
-        return (setting(stack, WITHOUT_KEY, 3, 0, 3) & BACK_TO_START) != 0;
+        return (WITHOUT_KEY_SETTING.get(stack) & BACK_TO_START) != 0;
     }
 
     /** Rounds the gate stays open once a key opened it: 0 it closes behind the token, {@link #FOREVER} for good. */
     public static int stayOpen(ItemStack stack) {
-        return setting(stack, STAY_OPEN, 0, 0, FOREVER);
+        return STAY_OPEN_SETTING.get(stack);
     }
 
     @Override

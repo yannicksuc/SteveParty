@@ -4,13 +4,11 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import fr.lordfinn.steveparty.service.TurnMoves;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,25 +75,23 @@ public class ThresholdCartridgeItem extends BoardRuleCartridgeItem {
     private static final String[] KINDS = {"total", "double", "triple"};
     /** The signs of the total, in the order of {@link Operator}. */
     private static final int SIGNS = 5;
+    private static final Setting KIND_SETTING = new Setting(KIND, 0, 0, KINDS.length - 1);
+    private static final Setting SIGN_SETTING = new Setting(SIGN, 0, 0, SIGNS - 1);
+    private static final Setting VALUE_SETTING = new Setting(VALUE, DEFAULT_VALUE, 1, MAX_VALUE);
     private static final List<CartridgeModule> MODULES = modules0();
 
     private static List<CartridgeModule> modules0() {
         List<ChoiceModule.Option> kinds = new ArrayList<>();
-        for (String kind : KINDS) kinds.add(new ChoiceModule.Option(K + "kind." + kind, -1, K + "kind." + kind + ".tooltip"));
+        for (String kind : KINDS) kinds.add(ChoiceModule.Option.tipped(K + "kind." + kind));
         List<ChoiceModule.Option> signs = new ArrayList<>();
         for (int i = 0; i < SIGNS; i++) {
-            String id = Operator.values()[i].id();
-            signs.add(new ChoiceModule.Option(K + "operator." + id, -1, K + "operator." + id + ".tooltip"));
+            signs.add(ChoiceModule.Option.tipped(K + "operator." + Operator.values()[i].id()));
         }
         return List.of(
                 description("threshold_cartridge", 3),
-                new ChoiceModule("kind", K + "kind", kinds, stack -> setting(stack, KIND, 0, 0, KINDS.length - 1),
-                        (edit, value) -> putSetting(edit.stack(), KIND, value)),
-                new ChoiceModule("operator", K + "operator", signs, stack -> setting(stack, SIGN, 0, 0, SIGNS - 1),
-                        (edit, value) -> putSetting(edit.stack(), SIGN, value), stack -> operator(stack).hasValue()),
-                new NumberModule("value", K + "value", 1, MAX_VALUE, ThresholdCartridgeItem::value,
-                        (edit, value) -> putSetting(edit.stack(), VALUE, value), stack -> COLOR,
-                        stack -> operator(stack).hasValue()));
+                KIND_SETTING.choice("kind", K + "kind", kinds),
+                SIGN_SETTING.choice("operator", K + "operator", signs, stack -> operator(stack).hasValue()),
+                VALUE_SETTING.number("value", K + "value", stack -> COLOR, stack -> operator(stack).hasValue()));
     }
 
     public ThresholdCartridgeItem(Settings settings) {
@@ -118,12 +114,12 @@ public class ThresholdCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     public static Operator operator(ItemStack stack) {
-        int kind = setting(stack, KIND, 0, 0, KINDS.length - 1);
-        return kind == 0 ? Operator.values()[setting(stack, SIGN, 0, 0, SIGNS - 1)] : kind == 1 ? Operator.DOUBLE : Operator.TRIPLE;
+        int kind = KIND_SETTING.get(stack);
+        return kind == 0 ? Operator.values()[SIGN_SETTING.get(stack)] : kind == 1 ? Operator.DOUBLE : Operator.TRIPLE;
     }
 
     public static int value(ItemStack stack) {
-        return setting(stack, VALUE, DEFAULT_VALUE, 1, MAX_VALUE);
+        return VALUE_SETTING.get(stack);
     }
 
     /** True if {@code roll} gets over the obstacle set by {@code stack}. */
