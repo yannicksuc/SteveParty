@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnParty
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DicePrompts;
-import fr.lordfinn.steveparty.items.custom.PowerUpItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -84,9 +83,10 @@ public final class PowerUpService {
             return false;
         }
         ServerWorld world = (ServerWorld) turn.controller().getWorld();
+        ItemStack item = player.getStackInHand(hand).copyWithCount(1);
         if (powerUp.target() != PowerUp.Target.PLAYER) {
             return finish(new PowerUpUse(world, player, turn.controller(), turn.step(), powerUp, null,
-                    powerUp.target() == PowerUp.Target.TILE ? tile : null), hand);
+                    powerUp.target() == PowerUp.Target.TILE ? tile : null, item), hand);
         }
         List<ServerPlayerEntity> others = otherPlayers(turn.controller(), world, player);
         if (others.isEmpty()) {
@@ -97,7 +97,7 @@ public final class PowerUpService {
         // No roll and no other power-up while the player picks
         Runnable release = hold(world, step, PICK_HOLD_TICKS);
         boolean[] picked = {false};
-        powerUp.pickPlayer(new PowerUpUse(world, player, turn.controller(), step, powerUp, null, null), others, target -> {
+        powerUp.pickPlayer(new PowerUpUse(world, player, turn.controller(), step, powerUp, null, null, item), others, target -> {
             if (picked[0]) return;
             picked[0] = true;
             release.run();
@@ -109,7 +109,7 @@ public final class PowerUpService {
                 refuse(player, late);
                 return;
             }
-            finish(new PowerUpUse(world, player, now.controller(), step, powerUp, target.getUuid(), null), hand);
+            finish(new PowerUpUse(world, player, now.controller(), step, powerUp, target.getUuid(), null, item), hand);
         });
         return true;
     }
@@ -129,7 +129,7 @@ public final class PowerUpService {
      */
     private static boolean finish(PowerUpUse use, Hand hand) {
         Text refusal = use.powerUp().refusal(use);
-        if (refusal == null && !holds(use.player(), hand, use.powerUp()))
+        if (refusal == null && !holds(use.player(), hand, use))
             refusal = Text.translatable("message.steveparty.powerup.not_held");
         if (refusal != null) {
             refuse(use.player(), refusal);
@@ -142,7 +142,7 @@ public final class PowerUpService {
             refuse(use.player(), result.refusal());
             return false;
         }
-        consume(use.player(), hand, use.powerUp());
+        consume(use.player(), hand, use);
         announce(use);
         use.controller().markDirty();
         use.controller().sendPacketToInterestedPlayers();
@@ -150,23 +150,24 @@ public final class PowerUpService {
     }
 
     /** Whether the player still has one of the power-up (always in creative): in the hand that used it, or anywhere. */
-    private static boolean holds(ServerPlayerEntity player, Hand hand, PowerUp powerUp) {
-        return player.isInCreativeMode() || find(player, hand, powerUp) != null;
+    private static boolean holds(ServerPlayerEntity player, Hand hand, PowerUpUse use) {
+        return player.isInCreativeMode() || find(player, hand, use) != null;
     }
 
     /** One of the power-up, from the hand that used it, else from anywhere in the inventory (moved meanwhile). */
-    private static void consume(ServerPlayerEntity player, Hand hand, PowerUp powerUp) {
+    private static void consume(ServerPlayerEntity player, Hand hand, PowerUpUse use) {
         if (player.isInCreativeMode()) return;
-        ItemStack stack = find(player, hand, powerUp);
+        ItemStack stack = find(player, hand, use);
         if (stack != null) stack.decrement(1);
     }
 
-    private static @Nullable ItemStack find(ServerPlayerEntity player, Hand hand, PowerUp powerUp) {
+    /** The item used (same components: a signed Trap is not an unsigned one), in that hand or anywhere. */
+    private static @Nullable ItemStack find(ServerPlayerEntity player, Hand hand, PowerUpUse use) {
         ItemStack held = player.getStackInHand(hand);
-        if (held.getItem() instanceof PowerUpItem item && item.powerUp() == powerUp) return held;
+        if (ItemStack.areItemsAndComponentsEqual(held, use.item())) return held;
         for (int slot = 0; slot < player.getInventory().size(); slot++) {
             ItemStack stack = player.getInventory().getStack(slot);
-            if (stack.getItem() instanceof PowerUpItem item && item.powerUp() == powerUp) return stack;
+            if (ItemStack.areItemsAndComponentsEqual(stack, use.item())) return stack;
         }
         return null;
     }

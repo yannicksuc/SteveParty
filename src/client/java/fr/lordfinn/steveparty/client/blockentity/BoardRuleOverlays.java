@@ -6,7 +6,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.TrapSetComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.BoardRuleCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
@@ -39,6 +38,8 @@ public final class BoardRuleOverlays {
     /** Height of the label's middle above the tile's block. */
     private static final double LABEL_Y = 1.7;
     private static final float LABEL_SCALE = 0.03f;
+    /** Half the width of the jaws of a Trap set on a check point (around its floating cube). */
+    private static final float CHECK_POINT_HALF = 0.3f;
 
     private BoardRuleOverlays() {
     }
@@ -53,15 +54,19 @@ public final class BoardRuleOverlays {
             label(Text.translatable("gui.steveparty.pot.label", PotCartridgeItem.coins(stack)), centreX, centreZ, 0xFFD54A, matrices, consumers);
         } else if (tileType == BoardSpaceType.TILE_KEY_GATE && stack.getItem() instanceof KeyGateCartridgeItem) {
             gates(entity, stack, centreX, centreZ, tickDelta, matrices, consumers);
-        } else if (tileType == BoardSpaceType.TILE_TRAP && stack.get(ModComponents.TRAP_SET) instanceof
-                TrapSetComponent trap) {
-            trapPlate(trap.color(), centreX, centreZ, matrices, consumers, light);
         }
     }
 
     /** The renderer of the check points: what their role shows over them (they have no face to draw). */
     public static void renderCheckPoint(BoardSpaceBlockEntity entity, float tickDelta, MatrixStack matrices,
                                         VertexConsumerProvider consumers, int light, int overlay) {
+        // A Trap set here: small jaws on the floor around the check point, its badge above
+        BoardSpaceBlockEntity.TrapMark trap = entity.getTrapMark();
+        if (trap != null) {
+            TrapMarkRenderer.jaws(trap, CHECK_POINT_HALF, 0, matrices, consumers, light);
+            float time = entity.getWorld() == null ? 0 : (entity.getWorld().getTime() % 24000) + tickDelta;
+            TrapMarkRenderer.icon(trap, 0.5, 0.5, 0.5, time, matrices, consumers);
+        }
         BlockState state = entity.getCachedState();
         if (!state.contains(ABoardSpaceBlock.TILE_TYPE)) return;
         BoardSpaceType type = state.get(ABoardSpaceBlock.TILE_TYPE);
@@ -174,27 +179,5 @@ public final class BoardRuleOverlays {
                                int rgb, int alpha, int light, float nx, float ny, float nz) {
         c.vertex(e.getPositionMatrix(), x, y, z).color((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, alpha)
                 .texture(0.5f, 0.5f).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(e, nx, ny, nz);
-    }
-
-    // ---------------------------------------------------------------- a Trap set
-
-    /** A trap set on the space: a low plate in its setter's colour, iron jaws open around it, teeth up. */
-    private static void trapPlate(int color, double centreX, double centreZ, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
-        VertexConsumer consumer = consumers.getBuffer(RenderLayer.getEntityTranslucent(WHITE));
-        matrices.push();
-        matrices.translate(centreX, 0.13, centreZ);
-        MatrixStack.Entry e = matrices.peek();
-        int iron = 0x5A5F68, dark = 0x32353B;
-        box(e, consumer, -0.18f, 0, -0.18f, 0.18f, 0.03f, 0.18f, color, 255, light);
-        box(e, consumer, -0.32f, 0, -0.32f, 0.32f, 0.02f, -0.26f, iron, 255, light);
-        box(e, consumer, -0.32f, 0, 0.26f, 0.32f, 0.02f, 0.32f, iron, 255, light);
-        box(e, consumer, -0.32f, 0, -0.26f, -0.26f, 0.02f, 0.26f, dark, 255, light);
-        box(e, consumer, 0.26f, 0, -0.26f, 0.32f, 0.02f, 0.26f, dark, 255, light);
-        for (int i = 0; i < 5; i++) {
-            float x = -0.24f + i * 0.12f;
-            box(e, consumer, x, 0.02f, -0.27f, x + 0.04f, 0.07f, -0.23f, iron, 255, light);
-            box(e, consumer, x + 0.04f, 0.02f, 0.23f, x + 0.08f, 0.07f, 0.27f, iron, 255, light);
-        }
-        matrices.pop();
     }
 }

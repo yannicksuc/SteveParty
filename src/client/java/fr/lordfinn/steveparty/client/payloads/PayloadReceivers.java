@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.client.gui.party.PartyHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.screens.DicePickScreen;
 import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
+import fr.lordfinn.steveparty.client.screens.TrapSetupScreen;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.*;
@@ -67,6 +68,11 @@ public class PayloadReceivers {
             if (client.world.getEntityById(payload.entityId()) instanceof LivingEntity mob) {
                 client.setScreen(new TokenSpellScreen(mob, payload.currentSize(), payload.resize(), payload.currentColor()));
             }
+        });
+
+        // An unsigned Trap's setup screen (sneak right-click), unless another screen is open
+        ClientPayloads.receive(TrapSetupPayloads.Open.ID, (payload, context) -> {
+            if (context.client().currentScreen == null) context.client().setScreen(new TrapSetupScreen(payload.hand()));
         });
 
         // A dice prompt (Choice / Lucky / Reroll / swap picker), or its end

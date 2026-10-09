@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.powerups;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DicePrompts;
+import fr.lordfinn.steveparty.items.custom.PowerUpItem;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.Item;
@@ -106,6 +107,11 @@ public abstract class PowerUp {
     /** Its item (AIR if it is not registered). */
     public final Item item() {
         return Registries.ITEM.get(Steveparty.id(itemPath()));
+    }
+
+    /** Its item, created at registration ({@code ModItems}): a {@link PowerUpItem} unless it needs its own. */
+    public Item createItem(Item.Settings settings) {
+        return new PowerUpItem(this, settings);
     }
 
     /** Its name (the item's). */

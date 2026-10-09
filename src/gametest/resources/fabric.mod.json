@@ -52,7 +52,6 @@
       "fr.lordfinn.steveparty.gametest.ThresholdGameTests",
       "fr.lordfinn.steveparty.gametest.PotGameTests",
       "fr.lordfinn.steveparty.gametest.KeyGateGameTests",
-      "fr.lordfinn.steveparty.gametest.BoardTrapGameTests",
       "fr.lordfinn.steveparty.gametest.BoardActorsGameTests",
       "fr.lordfinn.steveparty.gametest.DiceModulesGameTests",
       "fr.lordfinn.steveparty.gametest.DiceRecipeGameTests",
@@ -116,6 +115,7 @@
       "fr.lordfinn.steveparty.gametest.PolishedTilesGameTests",
       "fr.lordfinn.steveparty.gametest.BoardExplosionGameTests",
       "fr.lordfinn.steveparty.gametest.PowerupTrapGameTests",
+      "fr.lordfinn.steveparty.gametest.TrapSetupGameTests",
       "fr.lordfinn.steveparty.gametest.StarWhistleGameTests",
       "fr.lordfinn.steveparty.gametest.FrousseuxGameTests",
       "fr.lordfinn.steveparty.gametest.FumaroleGameTests"
