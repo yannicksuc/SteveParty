@@ -295,7 +295,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     }
 
     private static void drawPlus(DrawContext context, TextRenderer textRenderer, int centerX, int centerY, int color) {
-        context.fill(centerX - 4, centerY - 1, centerX + 4, centerY + 1, color);
+        drawMinus(context, textRenderer, centerX, centerY, color);
         context.fill(centerX - 1, centerY - 4, centerX + 1, centerY + 4, color);
     }
 

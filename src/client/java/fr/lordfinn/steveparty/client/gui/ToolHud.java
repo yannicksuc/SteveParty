@@ -95,7 +95,7 @@ public final class ToolHud {
         for (int i = 0; i < lines.size(); i++) {
             var line = lines.get(i);
             int y = boxesTop - 10 * (lines.size() - i);
-            context.drawTextWithShadow(textRenderer, line, centerX - textRenderer.getWidth(line) / 2, y, HINT);
+            context.drawCenteredTextWithShadow(textRenderer, line, centerX, y, HINT);
         }
     }
 
