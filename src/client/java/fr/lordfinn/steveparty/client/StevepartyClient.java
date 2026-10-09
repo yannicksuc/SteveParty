@@ -69,6 +69,7 @@ import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
@@ -253,11 +254,8 @@ public class StevepartyClient implements ClientModInitializer {
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
         // Every Steve Party egg is drawn per mob (textures/item/*_spawn_egg.png, 1.21.5 style): item/generated gives
-        // layer0 tint index 0, so the vanilla spawn-egg tint is replaced by a white one
-        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG,
-                ModItems.BOXED_TRADER_SPAWN_EGG, ModItems.FROUSSEUX_SPAWN_EGG, ModItems.BOOMCART_SPAWN_EGG, ModItems.MISTIGRI_SPAWN_EGG,
-                ModItems.FUMAROLE_SPAWN_EGG);
-        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.GLANDOUILLE_SPAWN_EGGS);
+        // layer0 tint index 0, so the vanilla spawn-egg tint is replaced by a white one (ModItems.spawnEgg lists them)
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.SPAWN_EGGS.toArray(Item[]::new));
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
 
