@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.dice.DiceThrow;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.events.DiceThrowRevealed;
+import fr.lordfinn.steveparty.hud.DiceRevealLayout;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.DiceRevealPayload;
 import fr.lordfinn.steveparty.service.TurnMoves;
@@ -213,6 +214,77 @@ public class DiceRevealGameTests implements FabricGameTest {
                 && back.dice() == 3 && back.faces().equals(payload.faces()) && back.combo() == 2 && back.number() == 2
                 && back.total().map(Text::getString).orElse("").equals("11"), "the reveal reaches the clients whole");
         context.complete();
+    }
+
+    // ---------------------------------------------------------------- the HUD's grid
+
+    /** A font like Minecraft's: 6 pixels a character (a space 4, « ! » 2), the trailing pixel included. */
+    private static final DiceRevealLayout.Measure FONT = text -> {
+        int width = 0;
+        for (char c : text.toCharArray()) width += c == ' ' ? 4 : c == '!' ? 2 : 6;
+        return width;
+    };
+
+    /**
+     * The reveal's row on a fixed grid, in every state of 1, 2 and 3 dice, wide special faces and a long name: the dice
+     * never move nor change width, the same gutter around « + » and « = », the same gap before the badge (after the
+     * last die or the total), room inside the plate and the pills, and the row never wider than reserved.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
+    public void theRevealIsLaidOutOnAFixedGrid(TestContext context) {
+        List<List<String>> throwsToShow = List.of(List.of("4"), List.of("+10¢", "−10¢"), List.of("3", "3", "10★"),
+                List.of("10★", "10★", "10★"));
+        for (String name : List.of("LordFinn :", "Maximilien_Dupont :")) {
+            for (List<String> faces : throwsToShow) {
+                int dice = faces.size();
+                String total = dice == 1 ? faces.getFirst() : "13";
+                int reserved = DiceRevealLayout.reserved(FONT, name, dice, faces, total, List.of("Double !", "Triple !"));
+                List<DiceRevealLayout.Box> first = null;
+                // Each die stopping (a double showing from the second one on), then the total
+                for (int shown = dice == 1 ? 1 : 0; shown <= dice + 1; shown++) {
+                    List<String> revealed = faces.subList(0, Math.min(shown, dice));
+                    long same = revealed.stream().filter(face -> face.equals(revealed.getFirst())).count();
+                    String combo = dice < 2 ? null : same >= 3 ? "Triple !" : same == 2 ? "Double !" : null;
+                    String state = name + " " + faces + " " + shown;
+                    List<DiceRevealLayout.Box> boxes = DiceRevealLayout.layout(FONT, name, dice, revealed, shown > dice || dice == 1 ? total : null, combo);
+                    checkRow(context, boxes, name, state);
+                    context.assertTrue(DiceRevealLayout.width(boxes) <= reserved, "never wider than reserved: " + state);
+                    if (first == null) first = boxes;
+                    for (int i = 0; i < first.size(); i++) {
+                        DiceRevealLayout.Box was = first.get(i);
+                        if (was.kind() != DiceRevealLayout.Kind.PLATE && was.kind() != DiceRevealLayout.Kind.DIE
+                                && was.kind() != DiceRevealLayout.Kind.PLUS) continue;
+                        context.assertTrue(boxes.contains(was), "the plate and the dice don't move: " + state);
+                    }
+                }
+            }
+        }
+        context.complete();
+    }
+
+    private static void checkRow(TestContext context, List<DiceRevealLayout.Box> boxes, String name, String state) {
+        int dieWidth = -1;
+        for (int i = 0; i < boxes.size(); i++) {
+            DiceRevealLayout.Box box = boxes.get(i);
+            switch (box.kind()) {
+                case PLATE -> context.assertTrue(box.width() - DiceRevealLayout.PLATE_TEXT_X - (FONT.width(name) - 1) >= 3,
+                        "room after the name: " + state);
+                case DIE -> {
+                    if (dieWidth < 0) dieWidth = box.width();
+                    context.assertTrue(box.width() == dieWidth, "every die the same width: " + state);
+                    context.assertTrue(box.width() - (FONT.width("−10¢") - 1) >= 2 * 3, "room inside a die: " + state);
+                }
+                case TOTAL, BADGE -> context.assertTrue(box.width() >= 2 * 3 + FONT.width("00") - 1, "room inside a pill: " + state);
+                default -> {
+                }
+            }
+            if (i == 0) continue;
+            DiceRevealLayout.Box before = boxes.get(i - 1);
+            int gap = box.x() - before.right();
+            int expected = before.kind() == DiceRevealLayout.Kind.PLATE ? DiceRevealLayout.PLATE_GAP
+                    : box.kind() == DiceRevealLayout.Kind.BADGE ? DiceRevealLayout.BADGE_GAP : DiceRevealLayout.GUTTER;
+            context.assertTrue(gap == expected, "gap " + gap + " before " + box.kind() + " (" + expected + " expected): " + state);
+        }
     }
 
     private static DiceThrow throwOf(DiceFace... faces) {

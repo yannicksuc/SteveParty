@@ -3,34 +3,34 @@ package fr.lordfinn.steveparty.client.gui.party;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
+import fr.lordfinn.steveparty.hud.DiceRevealLayout;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import fr.lordfinn.steveparty.payloads.custom.DiceRevealPayload;
 import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import static fr.lordfinn.steveparty.hud.HudShapes.GAP;
 import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
 
 /**
  * The reveal of a throw, at the action bar's place, in the party HUD's look: the roller on a white plate (gold: my own
  * throw), then a pill per die, « ? » while it turns, popping in with its face as it stops (« 3 + 5 + ? »), then « = »
  * and the total in a gold pill; a double / triple flashes in a green / orange pill and tints the matching faces
- * (green / gold). A single die shows its result only. Sent by the server ({@link DiceRevealPayload}) to the players
- * near the dice and to the roller's party; it stays a few seconds after the total, then fades. The vanilla action bar goes above it.
+ * (green / gold). A single die shows its result only. Laid out on a fixed grid ({@link DiceRevealLayout}): nothing
+ * jumps from one state to the next. Sent by the server ({@link DiceRevealPayload}) to the players near the dice and to
+ * the roller's party; it stays a few seconds after the total, then fades. The vanilla action bar goes above it.
  */
 public final class DiceRevealHud {
-    private static final int H = 15;
+    private static final int H = DiceRevealLayout.H;
     private static final float POP_TICKS = 7;
     /** How long the whole reveal stays after its total, and when it gives up without one (ticks). */
     private static final double STAY_TICKS = 70, LOST_TICKS = 200, FADE_TICKS = 10;
@@ -47,6 +47,10 @@ public final class DiceRevealHud {
     private static int combo;
     /** Top of the plates drawn in the last frames (the action bar goes above it), and frames since. */
     private static int top;
+    /** Where the row of the current throw starts (see {@link DiceRevealLayout}), for that throw and screen width. */
+    private static int anchorThrow = Integer.MIN_VALUE, anchorScreen, anchorX;
+    /** The longest plate and total texts (cut with an ellipsis beyond). */
+    private static final int MAX_PLATE_TEXT = 120, MAX_TOTAL_TEXT = 160;
     private static int framesSinceDrawn = Integer.MAX_VALUE;
 
     private DiceRevealHud() {
@@ -117,60 +121,66 @@ public final class DiceRevealHud {
         }
         DiceRevealPayload reveal = shown;
         boolean mine = client.player != null && reveal.roller().map(client.player.getUuid()::equals).orElse(false);
-        List<Piece> pieces = layout(reveal, mine, now);
-        int width = -(GAP + 1);
-        for (Piece piece : pieces) width += piece.width + GAP + 1;
+        TextRenderer font = HudDraw.font();
+        DiceRevealLayout.Measure measure = font::getWidth;
+        String plate = cut(font, Text.translatable("hud.steveparty.dice_reveal.who", reveal.name()).getString(), MAX_PLATE_TEXT);
+        List<DiceFace> faces = reveal.faces();
+        int dice = Math.max(reveal.dice(), faces.size());
+        List<String> faceTexts = new ArrayList<>();
+        for (DiceFace face : faces) faceTexts.add(face.asText().getString());
+        String total = reveal.total().map(text -> cut(font, text.getString(), MAX_TOTAL_TEXT)).orElse(null);
+        String badge = reveal.combo() >= 2 ? badge(reveal.combo()) : null;
+        List<DiceRevealLayout.Box> boxes = DiceRevealLayout.layout(measure, plate, dice, faceTexts, total, badge);
+
         int screenWidth = context.getScaledWindowWidth(), screenHeight = context.getScaledWindowHeight();
+        // The row starts where the whole final row is centred, once per throw: nothing before the badge moves after
+        if (anchorThrow != reveal.throwId() || anchorScreen != screenWidth) {
+            anchorThrow = reveal.throwId();
+            anchorScreen = screenWidth;
+            int reserved = DiceRevealLayout.reserved(measure, plate, dice, faceTexts, total, List.of(badge(2), badge(3)));
+            anchorX = (screenWidth - reserved) / 2;
+        }
+        int width = DiceRevealLayout.width(boxes);
+        int x0 = Math.max(4, Math.min(anchorX, screenWidth - 4 - width));
         // Its plates' bottom (their shadow included) over the held item's name, or over a tool's HUD (Tile Linker Brush...)
         int y = screenHeight - BOTTOM_FROM_SCREEN_BOTTOM - (H + 3);
         int tool = ToolHud.occupiedTop();
         if (tool >= 0) y = Math.min(y, tool - 2 - (H + 3));
-        int x = (screenWidth - width) / 2;
-        for (Piece piece : pieces) {
-            piece.draw(context, x, y, alpha, now);
-            x += piece.width + GAP + 1;
+        for (DiceRevealLayout.Box box : boxes) {
+            int x = x0 + box.x();
+            switch (box.kind()) {
+                case PLATE -> drawPlate(context, box, x, y, plate, mine, alpha);
+                case PLUS -> HudDraw.shadowed(context, "+", x, y + 4, HudPaint.TEXT, alpha);
+                case EQUALS -> HudDraw.shadowed(context, "=", x, y + 4, HudPaint.TEXT, alpha);
+                case DIE -> {
+                    int i = box.index();
+                    if (i < faces.size()) {
+                        DiceFace face = faces.get(i);
+                        boolean matching = reveal.combo() >= 2 && face.steps() == reveal.number();
+                        Ramp ramp = matching ? (reveal.combo() >= 3 ? HudPaint.GOLD : GREEN) : rampOf(face);
+                        drawPill(context, box, x, y, faceTexts.get(i), ramp, i < faceAt.size() ? faceAt.get(i) : now,
+                                matching ? comboAt : -1000, false, alpha, now);
+                    } else {
+                        drawPill(context, box, x, y, "?", HudPaint.EMPTY_SLOT, -1000, -1000, true, alpha, now);
+                    }
+                }
+                case TOTAL -> drawPill(context, box, x, y, total, HudPaint.GOLD, totalAt, -1000, false, alpha, now);
+                case BADGE -> drawPill(context, box, x, y, badge, reveal.combo() >= 3 ? HudPaint.MINI_GAME : GREEN,
+                        comboAt, comboAt, false, alpha, now);
+            }
         }
         top = y - 1;
         framesSinceDrawn = 0;
     }
 
-    /** One thing in the row: the plate, a die's pill, a sign, the total, the double (its shape's width, drawn at x). */
-    private abstract static class Piece {
-        int width;
-
-        abstract void draw(DrawContext context, int x, int y, float alpha, double now);
+    private static String badge(int combo) {
+        return Text.translatable(combo >= 3 ? "hud.steveparty.dice_reveal.triple" : "hud.steveparty.dice_reveal.double").getString();
     }
 
-    private static List<Piece> layout(DiceRevealPayload reveal, boolean mine, double now) {
-        List<Piece> pieces = new ArrayList<>();
-        Text who = Text.translatable("hud.steveparty.dice_reveal.who", reveal.name());
-        pieces.add(new Plate(HudDraw.fit(who, 140), mine));
-        List<DiceFace> faces = reveal.faces();
-        int dice = Math.max(reveal.dice(), faces.size());
-        if (dice > 1) {
-            for (int i = 0; i < dice; i++) {
-                if (i > 0) pieces.add(new Sign("+"));
-                if (i < faces.size()) {
-                    DiceFace face = faces.get(i);
-                    boolean matching = reveal.combo() >= 2 && face.steps() == reveal.number();
-                    Ramp ramp = matching ? (reveal.combo() >= 3 ? HudPaint.GOLD : GREEN) : rampOf(face);
-                    pieces.add(new Pill(face.asText().getString(), ramp, i < faceAt.size() ? faceAt.get(i) : now,
-                            matching ? comboAt : -1000));
-                } else {
-                    pieces.add(new Pill("?", HudPaint.EMPTY_SLOT, -1000, -1000));
-                }
-            }
-        }
-        Optional<Text> total = reveal.total();
-        if (total.isPresent()) {
-            if (dice > 1) pieces.add(new Sign("="));
-            pieces.add(new Pill(HudDraw.fit(Text.literal(total.get().getString()), 160), HudPaint.GOLD, totalAt, -1000));
-        }
-        if (reveal.combo() >= 2) {
-            Text flash = Text.translatable(reveal.combo() >= 3 ? "hud.steveparty.dice_reveal.triple" : "hud.steveparty.dice_reveal.double");
-            pieces.add(new Pill(flash.getString(), reveal.combo() >= 3 ? HudPaint.MINI_GAME : GREEN, comboAt, comboAt));
-        }
-        return pieces;
+    /** The text, cut with an ellipsis to fit in {@code width} pixels. */
+    private static String cut(TextRenderer font, String text, int width) {
+        if (font.getWidth(text) - 1 <= width) return text;
+        return font.trimToWidth(text, width - font.getWidth("…")) + "…";
     }
 
     /** The pill of a face, by its kind (the colours of the faces' texts). */
@@ -185,90 +195,41 @@ public final class DiceRevealHud {
     }
 
     /** The roller: the dice icon and « LordFinn : ». */
-    private static final class Plate extends Piece {
-        final OrderedText text;
-        final boolean gold;
-
-        Plate(OrderedText text, boolean gold) {
-            this.text = text;
-            this.gold = gold;
-            this.width = 4 + 9 + 4 + Math.max(0, HudDraw.font().getWidth(text) - 1) + 5;
-        }
-
-        @Override
-        void draw(DrawContext context, int x, int y, float alpha, double now) {
-            HudPaint.draw(context, HudPaint.shape(Form.CUT1, width, H, gold ? HudPaint.PLATE_GOLD : HudPaint.PLATE,
-                    HudPaint.SHADOW | HudPaint.OUTLINE), x - PAD, y - PAD, alpha);
-            HudDraw.icon(context, HudDraw.ICON_DICE, x + 4, y + 3, alpha);
-            HudDraw.text(context, text, x + 17, y + 4, HudPaint.TEXT_DARK, alpha);
-        }
+    private static void drawPlate(DrawContext context, DiceRevealLayout.Box box, int x, int y, String text, boolean gold, float alpha) {
+        HudPaint.draw(context, HudPaint.shape(Form.CUT1, box.width(), H, gold ? HudPaint.PLATE_GOLD : HudPaint.PLATE,
+                HudPaint.SHADOW | HudPaint.OUTLINE), x - PAD, y - PAD, alpha);
+        HudDraw.icon(context, HudDraw.ICON_DICE, x + DiceRevealLayout.PLATE_ICON_X, y + 3, alpha);
+        HudDraw.text(context, text, x + DiceRevealLayout.PLATE_TEXT_X, y + 4, HudPaint.TEXT_DARK, alpha);
     }
 
-    /** « + » between two dice, « = » before the total. */
-    private static final class Sign extends Piece {
-        final String sign;
-
-        Sign(String sign) {
-            this.sign = sign;
-            this.width = HudDraw.font().getWidth(sign) - 1;
+    /**
+     * A pill, its text centred: a die's face (« ? » bobbing while it turns), the total, the badge. It grows in, never
+     * past its box (the gaps stay clear); the pills of a double flash lighter on the beat.
+     */
+    private static void drawPill(DrawContext context, DiceRevealLayout.Box box, int x, int y, String text, Ramp ramp,
+                                 double popAt, double pulseAt, boolean waiting, float alpha, double now) {
+        int w = box.width();
+        boolean dark = ramp == HudPaint.NEUTRAL || ramp == HudPaint.EMPTY_SLOT;
+        int colour = dark ? HudPaint.TEXT_DARK : ramp == HudPaint.GOLD ? ramp.outline() : 0xFFFFFFFF;
+        float pop = (float) ((now - popAt) / POP_TICKS);
+        float scale = pop < 1 ? 0.6f + 0.4f * Easing.easeOutCubic(Easing.clamp01(pop)) : 1;
+        double pulse = now - pulseAt;
+        // A double / triple: three beats
+        if (pulse >= 0 && pulse < 30 && Math.sin(pulse * Math.PI / 5) > 0) {
+            ramp = new Ramp(ramp.outline(), ramp.hi(), ramp.hi(), ramp.body()); // lit up, the text dark on it
+            colour = ramp.outline();
         }
-
-        @Override
-        void draw(DrawContext context, int x, int y, float alpha, double now) {
-            HudDraw.shadowed(context, sign, x, y + 4, HudPaint.TEXT, alpha);
-        }
-    }
-
-    /** A pill: a die's face (« ? » while it turns), the total, the double; it pops in, a double's faces pulse. */
-    private static final class Pill extends Piece {
-        final @Nullable String text;
-        final @Nullable OrderedText ordered;
-        final Ramp ramp;
-        final double popAt, pulseAt;
-
-        Pill(String text, Ramp ramp, double popAt, double pulseAt) {
-            this.text = text;
-            this.ordered = null;
-            this.ramp = ramp;
-            this.popAt = popAt;
-            this.pulseAt = pulseAt;
-            this.width = Math.max(H, HudDraw.font().getWidth(text) - 1 + 10);
-        }
-
-        Pill(OrderedText text, Ramp ramp, double popAt, double pulseAt) {
-            this.text = null;
-            this.ordered = text;
-            this.ramp = ramp;
-            this.popAt = popAt;
-            this.pulseAt = pulseAt;
-            this.width = Math.max(H, HudDraw.font().getWidth(text) - 1 + 10);
-        }
-
-        @Override
-        void draw(DrawContext context, int x, int y, float alpha, double now) {
-            int w = width;
-            float pop = (float) ((now - popAt) / POP_TICKS);
-            float scale = pop < 1 ? 1 + 0.3f * (1 - Easing.easeOutBack(Easing.clamp01(pop))) : 1;
-            // A double / triple: a beat, three times
-            double pulse = now - pulseAt;
-            if (pulse >= 0 && pulse < 30) scale += 0.1f * (float) Math.abs(Math.sin(pulse * Math.PI / 10));
-            boolean waiting = "?".equals(text);
-            int dy = waiting ? Math.round((float) Math.sin(now * 1.3 + x) * 1.2f) : 0;
-            MatrixStack matrices = context.getMatrices();
-            matrices.push();
-            float mx = x + width / 2f, my = y + H / 2f;
-            matrices.translate(mx, my + dy, 0);
-            matrices.scale(scale, scale, 1);
-            matrices.translate(-mx, -my, 0);
-            float a = waiting ? alpha * 0.8f : alpha;
-            HudPaint.draw(context, HudPaint.shape(Form.PILL, w, H, ramp, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), x - PAD, y - PAD, a);
-            int textWidth = (text != null ? HudDraw.font().getWidth(text) : HudDraw.font().getWidth(ordered)) - 1;
-            int tx = x + (w - textWidth) / 2;
-            int colour = ramp == HudPaint.NEUTRAL || ramp == HudPaint.EMPTY_SLOT ? HudPaint.TEXT_DARK
-                    : ramp == HudPaint.GOLD ? ramp.outline() : 0xFFFFFFFF;
-            if (text != null) HudDraw.text(context, text, tx, y + 4, colour, a);
-            else HudDraw.text(context, ordered, tx, y + 4, colour, a);
-            matrices.pop();
-        }
+        int dy = waiting ? Math.round((float) Math.sin(now * 1.3 + x) * 1.2f) : 0;
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        float mx = x + w / 2f, my = y + H / 2f;
+        matrices.translate(mx, my + dy, 0);
+        matrices.scale(scale, scale, 1);
+        matrices.translate(-mx, -my, 0);
+        float a = waiting ? alpha * 0.8f : alpha;
+        HudPaint.draw(context, HudPaint.shape(Form.PILL, w, H, ramp, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), x - PAD, y - PAD, a);
+        int textWidth = HudDraw.font().getWidth(text) - 1;
+        HudDraw.text(context, text, x + (w - textWidth + 1) / 2, y + 4, colour, a);
+        matrices.pop();
     }
 }
