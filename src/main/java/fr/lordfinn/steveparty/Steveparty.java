@@ -54,7 +54,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.service.BoardActors.initialize();
         fr.lordfinn.steveparty.service.FrousseuxThefts.initialize();
         fr.lordfinn.steveparty.service.MistigriSentences.initialize();
-        fr.lordfinn.steveparty.entities.custom.mistigri.MistigriJinx.initialize();
+        fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck.initialize();
         fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning.initialize();
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration.initialize();
         fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents.initialize();

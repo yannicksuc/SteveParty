@@ -42,7 +42,7 @@ import java.util.UUID;
  *     <li><b>Chests</b>: a chest, barrel or ender chest he sits on won't open.</li>
  * </ul>
  */
-public final class MistigriJinx {
+public final class MistigriBadLuck {
     /** His path: from this far ahead to this far (blocks). */
     public static final double MIN_AHEAD = 0.4, AHEAD = 5.0;
     /** Half the width of the band in front of him where a crossing counts (blocks each side of his line). */
@@ -59,7 +59,7 @@ public final class MistigriJinx {
     record Watch(Vec3d origin, Vec3d facing, Vec3d right, double side, long since) {
     }
 
-    private MistigriJinx() {
+    private MistigriBadLuck() {
     }
 
     public static void initialize() {
@@ -119,7 +119,7 @@ public final class MistigriJinx {
     private static void missed(ServerWorld world, Entity target) {
         Vec3d at = target.getPos().add(0, target.getHeight() * 0.6, 0);
         world.spawnParticles(ParticleTypes.WITCH, at.x, at.y, at.z, 8, 0.3, 0.3, 0.3, 0.05);
-        world.playSound(null, at.x, at.y, at.z, ModSounds.MISTIGRI_JINX, SoundCategory.HOSTILE, 0.5f, 1.4f);
+        world.playSound(null, at.x, at.y, at.z, ModSounds.MISTIGRI_BAD_LUCK, SoundCategory.HOSTILE, 0.5f, 1.4f);
     }
 
     /** Keeps Luck on his owner while near him (refreshed every second, a little longer than that). */
@@ -162,7 +162,7 @@ public final class MistigriJinx {
                 crossed(world, mistigri, player, now);
             }
         }
-        for (Iterator<Map.Entry<UUID, Long>> it = mistigri.jinxCooldowns.entrySet().iterator(); it.hasNext(); ) {
+        for (Iterator<Map.Entry<UUID, Long>> it = mistigri.badLuckCooldowns.entrySet().iterator(); it.hasNext(); ) {
             if (it.next().getValue() <= now) it.remove();
         }
     }
@@ -179,13 +179,13 @@ public final class MistigriJinx {
 
     /** {@code player} crossed his path: Bad Luck (a minute), witch sparks, his hiss. */
     public static void crossed(ServerWorld world, MistigriEntity mistigri, PlayerEntity player, long now) {
-        Long next = mistigri.jinxCooldowns.get(player.getUuid());
+        Long next = mistigri.badLuckCooldowns.get(player.getUuid());
         if (next != null && next > now) return;
-        mistigri.jinxCooldowns.put(player.getUuid(), now + COOLDOWN);
+        mistigri.badLuckCooldowns.put(player.getUuid(), now + COOLDOWN);
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.UNLUCK, UNLUCK_TICKS, 0), mistigri);
         Vec3d at = player.getPos().add(0, player.getHeight() * 0.6, 0);
         world.spawnParticles(ParticleTypes.WITCH, at.x, at.y, at.z, 12, 0.3, 0.4, 0.3, 0.05);
-        world.playSound(null, at.x, at.y, at.z, ModSounds.MISTIGRI_JINX, SoundCategory.NEUTRAL, 0.7f, 1.0f);
+        world.playSound(null, at.x, at.y, at.z, ModSounds.MISTIGRI_BAD_LUCK, SoundCategory.NEUTRAL, 0.7f, 1.0f);
         mistigri.getLookControl().lookAt(player);
         if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
             MessageUtils.sendToPlayer(serverPlayer, Text.translatable("message.steveparty.mistigri.crossed")

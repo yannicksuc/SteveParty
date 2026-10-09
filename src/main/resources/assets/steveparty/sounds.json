@@ -1104,8 +1104,8 @@
       }
     ]
   },
-  "mistigri.jinx": {
-    "subtitle": "subtitles.steveparty.mistigri.jinx",
+  "mistigri.bad_luck": {
+    "subtitle": "subtitles.steveparty.mistigri.bad_luck",
     "sounds": [
       {
         "name": "minecraft:entity.witch.ambient",

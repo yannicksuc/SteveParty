@@ -154,7 +154,7 @@ public class ModEntities {
                     .build(PLAYER_PAWN_KEY.getValue().toString())
     );
 
-    /** The Mistigri (Jinx), the big black witch's cat of bad luck (see MistigriEntity). */
+    /** The Mistigri, the big black witch's cat of bad luck (see MistigriEntity). */
     public static final RegistryKey<EntityType<?>> MISTIGRI_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mistigri"));
     public static final EntityType<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity> MISTIGRI = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("mistigri"),

@@ -5,7 +5,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriGoals;
-import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriJinx;
+import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -184,12 +184,12 @@ public class MistigriGameTests implements FabricGameTest {
         mistigri.setBodyYaw(0); // facing +z
         ServerPlayerEntity player = survival(context);
         moveTo(context, player, new Vec3d(2.0, 1, 4.0)); // ahead, on one side
-        MistigriJinx.tickCrossings(context.getWorld(), mistigri);
+        MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
         context.assertFalse(player.hasStatusEffect(StatusEffects.UNLUCK), "standing in front of him is fine");
         moveTo(context, player, new Vec3d(5.0, 1, 4.0)); // across his line
-        MistigriJinx.tickCrossings(context.getWorld(), mistigri);
+        MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
         context.assertTrue(player.hasStatusEffect(StatusEffects.UNLUCK), "crossing his path: Bad Luck");
-        context.assertTrue(player.getStatusEffect(StatusEffects.UNLUCK).getDuration() > MistigriJinx.UNLUCK_TICKS - 5, "a whole minute");
+        context.assertTrue(player.getStatusEffect(StatusEffects.UNLUCK).getDuration() > MistigriBadLuck.UNLUCK_TICKS - 5, "a whole minute");
         context.complete();
     }
 
@@ -201,9 +201,9 @@ public class MistigriGameTests implements FabricGameTest {
         mistigri.setBodyYaw(0);
         ServerPlayerEntity player = survival(context);
         moveTo(context, player, new Vec3d(2.0, 1, 4.0)); // behind him
-        MistigriJinx.tickCrossings(context.getWorld(), mistigri);
+        MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
         moveTo(context, player, new Vec3d(5.0, 1, 4.0));
-        MistigriJinx.tickCrossings(context.getWorld(), mistigri);
+        MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
         context.assertFalse(player.hasStatusEffect(StatusEffects.UNLUCK), "behind him: no bad luck");
         context.complete();
     }
@@ -217,9 +217,9 @@ public class MistigriGameTests implements FabricGameTest {
         ServerPlayerEntity owner = survival(context);
         mistigri.tame(owner);
         moveTo(context, owner, new Vec3d(2.0, 1, 4.0));
-        MistigriJinx.tickCrossings(context.getWorld(), mistigri);
+        MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
         moveTo(context, owner, new Vec3d(5.0, 1, 4.0));
-        MistigriJinx.tickCrossings(context.getWorld(), mistigri);
+        MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
         context.assertFalse(owner.hasStatusEffect(StatusEffects.UNLUCK), "his owner: no bad luck");
         context.complete();
     }
@@ -267,10 +267,10 @@ public class MistigriGameTests implements FabricGameTest {
         ServerPlayerEntity owner = survival(context), other = survival(context);
         moveTo(context, owner, new Vec3d(3.5, 1, 5.5));
         moveTo(context, other, new Vec3d(4.5, 1, 5.5));
-        MistigriJinx.giveLuck(context.getWorld(), mistigri);
+        MistigriBadLuck.giveLuck(context.getWorld(), mistigri);
         context.assertFalse(owner.hasStatusEffect(StatusEffects.LUCK), "a wild one gives none");
         mistigri.tame(owner);
-        MistigriJinx.giveLuck(context.getWorld(), mistigri);
+        MistigriBadLuck.giveLuck(context.getWorld(), mistigri);
         context.assertTrue(owner.hasStatusEffect(StatusEffects.LUCK), "his owner: Luck");
         context.assertFalse(other.hasStatusEffect(StatusEffects.LUCK), "only his owner");
         context.complete();
@@ -281,10 +281,10 @@ public class MistigriGameTests implements FabricGameTest {
         floor(context);
         MistigriEntity mistigri = mistigri(context, CAT);
         Vec3d near = context.getAbsolute(new Vec3d(5, 1, 5));
-        context.assertFalse(MistigriJinx.nearTamed(context.getWorld(), near), "a wild one jinxes no monster");
+        context.assertFalse(MistigriBadLuck.nearTamed(context.getWorld(), near), "a wild one brings no monster bad luck");
         mistigri.tame(player(context));
-        context.assertTrue(MistigriJinx.nearTamed(context.getWorld(), near), "near a tamed one");
-        context.assertFalse(MistigriJinx.nearTamed(context.getWorld(), near.add(30, 0, 0)), "far from him");
+        context.assertTrue(MistigriBadLuck.nearTamed(context.getWorld(), near), "near a tamed one");
+        context.assertFalse(MistigriBadLuck.nearTamed(context.getWorld(), near.add(30, 0, 0)), "far from him");
         // some of a zombie's blows miss (one in three: a hundred blows can't all land)
         net.minecraft.entity.passive.PigEntity victim = context.spawnMob(EntityType.PIG, new BlockPos(5, 1, 5));
         victim.setAiDisabled(true);
@@ -309,10 +309,10 @@ public class MistigriGameTests implements FabricGameTest {
         BlockPos chest = new BlockPos(3, 1, 3);
         context.setBlockState(chest, Blocks.CHEST);
         MistigriEntity mistigri = mistigri(context, chest.up());
-        context.assertTrue(MistigriJinx.sitter(context.getWorld(), context.getAbsolutePos(chest)) == null, "standing on it is not sitting");
+        context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), context.getAbsolutePos(chest)) == null, "standing on it is not sitting");
         mistigri.loafOn(context.getAbsolutePos(chest));
-        context.assertTrue(MistigriJinx.sitter(context.getWorld(), context.getAbsolutePos(chest)) == mistigri, "he sits on it");
-        context.assertTrue(MistigriJinx.isSeat(Blocks.BARREL) && MistigriJinx.isSeat(Blocks.ENDER_CHEST), "barrels and ender chests too");
+        context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), context.getAbsolutePos(chest)) == mistigri, "he sits on it");
+        context.assertTrue(MistigriBadLuck.isSeat(Blocks.BARREL) && MistigriBadLuck.isSeat(Blocks.ENDER_CHEST), "barrels and ender chests too");
         context.complete();
     }
 
