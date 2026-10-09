@@ -19,6 +19,7 @@ import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
+import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -118,6 +119,15 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     public static final float BONE_MEAL_ACORN_CHANCE = 0.4f;
     /** A crash or a hit of its charge sends its cap flying, very rarely (never while it carries a tower). */
     public static final float HAT_LOSS_CHANCE = 0.03f;
+    /** A thrown frosty one landing at less than this angle with the ground (degrees) slides on instead of stopping. */
+    public static final double ICE_LANDING_MAX_ANGLE = 60;
+    /** Landed sliding: its speed kept from the throw, at most this (blocks per tick), and what it keeps each tick. */
+    public static final double ICE_LANDING_KEEP = 0.5, ICE_LANDING_MAX_SPEED = 0.6;
+    public static final double ICE_FRICTION = 0.98, ICE_FRICTION_ON_ICE = 0.99;
+    /** Room kept above a tower (blocks) when it picks where to walk. */
+    public static final double CLEARANCE_MARGIN = 0.1;
+    /** How often (ticks) a tower checks that its top ones are not in a block (a ceiling put over it, an overhang). */
+    public static final int CLEARANCE_CHECK_TICKS = 10;
     /** Spawned without its cap, rarely. */
     public static final float HATLESS_SPAWN_CHANCE = 0.03f;
     /** How hard its charge (and a flicked one) shoves. */
@@ -185,7 +195,13 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     /** A throw (aimed, gravity coming back smoothly), not a flick. */
     private boolean thrown;
     private Vec3d slideVelocity = Vec3d.ZERO;
+    /** Its tower's height from its feet (blocks), the bottom one's cache: -1 until computed, again when the tower changes. */
+    private double towerHeight = -1;
     private int slideRelaunches;
+    /** Slid on from a throw's landing: a wall stops it dizzy (no bounce), it slows like a block on ice. */
+    private boolean iceLanding;
+    /** Its velocity as it was moved this tick in flight (the landing's angle). */
+    private Vec3d flightVelocity = Vec3d.ZERO;
     /** Hopping off a tower: the tower it lands back on (null: the ground). */
     private @Nullable GlandouilleEntity hopOnto;
     /** Its old tower mates, left alone (never shoved) until {@link #sparedUntil}. */
@@ -225,6 +241,16 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             @Override
             public boolean canStart() {
                 return isFree() && !isAnchored() && super.canStart();
+            }
+
+            /** Never a spot its tower can't stand in (under a low ceiling): a few tries, else it stays. */
+            @Override
+            protected @Nullable Vec3d getWanderTarget() {
+                for (int i = 0; i < 3; i++) {
+                    Vec3d target = super.getWanderTarget();
+                    if (target == null || GlandouilleTowers.fitsAt(GlandouilleEntity.this, target)) return target;
+                }
+                return null;
             }
 
             @Override
@@ -321,8 +347,48 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
 
     @Override
     public void onTrackedDataSet(TrackedData<?> data) {
-        if (VARIANT.equals(data)) calculateDimensions();
+        if (VARIANT.equals(data)) {
+            calculateDimensions();
+            GlandouilleTowers.bottom(this).towerChanged();
+        }
         super.onTrackedDataSet(data);
+    }
+
+    // ---------------------------------------------------------------- the tower's height
+
+    @Override
+    protected EntityNavigation createNavigation(World world) {
+        return new GlandouilleNavigation(this, world);
+    }
+
+    /** The height of the tower standing on it, itself included (blocks, from its feet to the top one's cap). */
+    public double towerHeight() {
+        if (towerHeight < 0) towerHeight = GlandouilleTowers.stackHeight(this);
+        return towerHeight;
+    }
+
+    /** How many free blocks its tower needs above the ground it walks on (the path search's height). */
+    public int towerBlocks() {
+        return Math.max(1, MathHelper.ceil(towerHeight() + CLEARANCE_MARGIN));
+    }
+
+    /** Someone climbed on or got off somewhere in its tower: its height is computed again, its path too. */
+    void towerChanged() {
+        this.towerHeight = -1;
+        EntityNavigation navigation = getNavigation();
+        if (!getWorld().isClient && navigation != null && !navigation.isIdle()) navigation.recalculatePath();
+    }
+
+    @Override
+    protected void addPassenger(Entity passenger) {
+        super.addPassenger(passenger);
+        for (Entity at = this; at instanceof GlandouilleEntity one; at = at.getVehicle()) one.towerChanged();
+    }
+
+    @Override
+    protected void removePassenger(Entity passenger) {
+        super.removePassenger(passenger);
+        for (Entity at = this; at instanceof GlandouilleEntity one; at = at.getVehicle()) one.towerChanged();
     }
 
     // ---------------------------------------------------------------- board actors
@@ -468,6 +534,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             return;
         }
         detectStomps(world);
+        if ((this.age + getId()) % CLEARANCE_CHECK_TICKS == 0 && GlandouilleTowers.hasRider(this)) GlandouilleTowers.shedUnderCeiling(this);
         tickMood(world);
     }
 
@@ -480,7 +547,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
                 if (target != null) startTelegraph(target);
             }
             case TELEGRAPH -> {
-                setVelocity(0, getVelocity().y, 0);
+                // stands still to stomp; a tower knocked by a blow first lands where it was thrown
+                if (isOnGround() || !GlandouilleTowers.hasRider(this)) setVelocity(0, getVelocity().y, 0);
                 if (chargeTarget != null && chargeTarget.isAlive()) lookAt(chargeTarget);
                 int elapsed = TELEGRAPH_TICKS - moodTicks;
                 if (elapsed == 4 || elapsed == 9) playSound(ModSounds.GLANDOUILLE_STOMP, 0.9f, 0.9f + random.nextFloat() * 0.2f);
@@ -630,7 +698,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             setVelocity(getVelocity().multiply(0.2, 1, 0.2));
             return;
         }
-        if (chargeTicks > 2 && this.horizontalCollision) {
+        if (chargeTicks > 2 && (this.horizontalCollision || towerHitsAhead(world))) {
             bonk(world);
             return;
         }
@@ -654,6 +722,14 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         other.takeKnockback(strength, -dir.x, -dir.z);
         other.addVelocity(0, 0.2, 0);
         other.velocityModified = true;
+    }
+
+    /** The tower on it (above its own head) is about to run into a block this tick (an overhang, a low ceiling). */
+    private boolean towerHitsAhead(ServerWorld world) {
+        if (!GlandouilleTowers.hasRider(this)) return false;
+        Box upper = GlandouilleTowers.towerBox(this, getPos()).withMinY(getY() + getHeight());
+        Vec3d v = getVelocity();
+        return !world.isSpaceEmpty(this, upper.offset(v.x, 0, v.z));
     }
 
     /** Its charge ended in a wall: dizzy (a tower on it falls down). */
@@ -779,6 +855,11 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         if (source.isOf(DamageTypes.FALL)) return false; // a light acorn
         // carried (in a player's hand, or in a tower in it): never smothered by the blocks around the carrier
         if (source.isOf(DamageTypes.IN_WALL) && GlandouilleTowers.bottom(this).getVehicle() instanceof PlayerEntity) return false;
+        // up a tower with its head in a block (a ceiling over the tower): it hops down beside it, never smothered
+        if (source.isOf(DamageTypes.IN_WALL) && getVehicle() instanceof GlandouilleEntity) {
+            GlandouilleTowers.shed(this);
+            return false;
+        }
         Entity attacker = source.getAttacker();
         if (attacker instanceof LivingEntity living && !source.isIn(DamageTypeTags.IS_EXPLOSION)
                 && !source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
@@ -790,7 +871,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
 
     /**
      * Hit by {@code attacker} (a blow, or what it threw): no damage. One inside a tower is flicked out of it; the
-     * frosty one slides; the others are pushed and get angry.
+     * bottom one of a tower takes the whole tower with it, still stacked; the frosty one slides; the others are pushed
+     * and get angry.
      */
     public void onHit(LivingEntity attacker, @Nullable Entity direct) {
         if (boardActor) return;
@@ -817,17 +899,18 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             setMood(Mood.SULK, SULK_TICKS / 2);
             return;
         }
-        // only the one hit goes: the tower on it hops off and comes down on the ground
-        if (GlandouilleTowers.hasRider(this)) {
-            leaveTower();
-            GlandouilleTowers.hopOff(this, null);
-        }
+        // the bottom one of a tower: the whole tower goes with it, still stacked (it rides on it)
         if (getMood() == Mood.HOPPING) setMood(Mood.CALM, 0);
         if (getVariant() == GlandouilleVariant.FROSTY) {
             startSlide(dir.multiply(0.85));
             return;
         }
         takeKnockback(0.6, -dir.x, -dir.z);
+        // a tower never thrown up into a ceiling: under one, it is only pushed along the ground
+        if (GlandouilleTowers.hasRider(this) && !GlandouilleTowers.fitsAt(this, getPos().add(0, 0.5, 0))) {
+            Vec3d v = getVelocity();
+            setVelocity(v.x, Math.min(v.y, 0), v.z);
+        }
         this.velocityModified = true;
         Mood mood = getMood();
         if (mood == Mood.SLEEPING) wakeUp(attacker);
@@ -901,12 +984,31 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             playSound(ModSounds.GLANDOUILLE_RAM, 1f, 1.2f);
         }
         if (flown % 2 == 0) world.spawnParticles(ParticleTypes.CLOUD, getX(), getY() + 0.3, getZ(), 1, 0, 0, 0, 0);
-        if (--moodTicks <= 0 || (flown > 2 && (this.horizontalCollision || this.verticalCollision || isOnGround()))) {
+        boolean landed = flown > 2 && (this.horizontalCollision || this.verticalCollision || isOnGround());
+        // a thrown frosty one coming down at a grazing angle onto the ground slides on, like a curling stone
+        if (landed && thrown && getVariant() == GlandouilleVariant.FROSTY && isOnGround() && !this.horizontalCollision
+                && grazing(flightVelocity)) {
+            setNoGravity(false);
+            Vec3d flat = new Vec3d(flightVelocity.x, 0, flightVelocity.z).multiply(ICE_LANDING_KEEP);
+            if (flat.length() > ICE_LANDING_MAX_SPEED) flat = flat.normalize().multiply(ICE_LANDING_MAX_SPEED);
+            startSlide(flat, 0.5f);
+            this.iceLanding = true;
+            world.spawnParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 0.1, getZ(), 10, 0.25, 0.05, 0.25, 0.05);
+            return;
+        }
+        this.flightVelocity = getVelocity();
+        if (--moodTicks <= 0 || landed) {
             setNoGravity(false);
             if (this.horizontalCollision) playSound(ModSounds.GLANDOUILLE_BONK, 1f, 1.2f);
             setVelocity(getVelocity().multiply(0.2, 1, 0.2));
             stun();
         }
+    }
+
+    /** Coming down at less than {@link #ICE_LANDING_MAX_ANGLE} with the ground. */
+    private static boolean grazing(Vec3d velocity) {
+        double angle = Math.toDegrees(Math.atan2(Math.abs(velocity.y), velocity.horizontalLength()));
+        return angle < ICE_LANDING_MAX_ANGLE;
     }
 
     // ---------------------------------------------------------------- hopping off a tower
@@ -983,11 +1085,21 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
      * tower on the old mossy one, it stops and climbs on top ({@link GlandouilleTowers#carryOnImpact}).
      */
     public void startSlide(Vec3d velocity) {
+        startSlide(velocity, 1f);
+    }
+
+    private void startSlide(Vec3d velocity, float volume) {
         if (boardActor) return;
         this.slideVelocity = new Vec3d(velocity.x, 0, velocity.z);
         this.slideRelaunches = 0;
+        this.iceLanding = false;
         setMood(Mood.SLIDING, 200);
-        playSound(ModSounds.GLANDOUILLE_SLIDE, 1f, 1f);
+        playSound(ModSounds.GLANDOUILLE_SLIDE, volume, 1f);
+    }
+
+    /** Slid on from a throw's landing (see {@link #ICE_LANDING_MAX_ANGLE}). */
+    public boolean iceLanding() {
+        return iceLanding && getMood() == Mood.SLIDING;
     }
 
     public Vec3d slideVelocity() {
@@ -1009,6 +1121,14 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
                 bounced = true;
             }
             slideVelocity = new Vec3d(x, 0, z);
+            if (bounced && iceLanding) {
+                // slid on from a throw into a wall: it stops there, dizzy like any other
+                iceLanding = false;
+                playSound(ModSounds.GLANDOUILLE_BONK, 1f, 1.2f);
+                setVelocity(0, v.y, 0);
+                stun();
+                return;
+            }
             if (bounced) {
                 playSound(ModSounds.GLANDOUILLE_BONK, 0.7f, 1.4f);
                 world.spawnParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 0.3, getZ(), 6, 0.2, 0.2, 0.2, 0.05);
@@ -1019,7 +1139,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
                 }
             }
         }
-        slideVelocity = slideVelocity.multiply(0.985);
+        slideVelocity = slideVelocity.multiply(iceLanding ? iceFriction() : 0.985);
         setVelocity(slideVelocity.x, v.y, slideVelocity.z);
         Box reach = getBoundingBox().expand(0.15);
         for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, reach,
@@ -1046,6 +1166,12 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         if (--moodTicks <= 0 || slideVelocity.horizontalLength() < 0.03) {
             setMood(Mood.STUNNED, getVariant().stunTicks / 2);
         }
+    }
+
+    /** Slid on from a throw: like a block on the ground, a little less on ice or packed snow. */
+    private double iceFriction() {
+        float slipperiness = getWorld().getBlockState(getVelocityAffectingPos()).getBlock().getSlipperiness();
+        return slipperiness > 0.6f ? ICE_FRICTION_ON_ICE : ICE_FRICTION;
     }
 
     /** The bottom one of a tower hit something: whoever is up there slides with it (frosty), see GlandouilleTowers. */
