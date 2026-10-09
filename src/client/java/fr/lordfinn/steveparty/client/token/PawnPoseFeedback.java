@@ -10,6 +10,7 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import software.bernie.geckolib.event.GeoRenderEvent;
 
 /**
  * Client side of the mob pawn poses: the player who poses a pawn reads which pose it takes ("Pose 3/7"); the poses
@@ -22,7 +23,7 @@ public final class PawnPoseFeedback {
     public static void initialize() {
         TokenPoses.setClientFeedback(PawnPoseFeedback::show);
         // A posed GeckoLib pawn drawn: the shared bones back as they were (see GeoPoses)
-        software.bernie.geckolib.event.GeoRenderEvent.Entity.Post.EVENT.register(event -> GeoPoses.restore());
+        GeoRenderEvent.Entity.Post.EVENT.register(event -> GeoPoses.restore());
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
             @Override
             public Identifier getFabricId() {

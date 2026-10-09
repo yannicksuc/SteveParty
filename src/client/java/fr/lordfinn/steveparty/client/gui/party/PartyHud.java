@@ -16,11 +16,14 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.hud.ChatHud;
+import net.minecraft.client.gui.hud.ChatHudLine;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -83,7 +86,7 @@ public final class PartyHud {
                 boolean hidden = !PartyHudLayout.hidden();
                 PartyHudLayout.setHidden(hidden);
                 if (client.player != null)
-                    client.player.sendMessage(net.minecraft.text.Text.translatable(hidden ? "hud.steveparty.party.hidden" : "hud.steveparty.party.shown",
+                    client.player.sendMessage(Text.translatable(hidden ? "hud.steveparty.party.hidden" : "hud.steveparty.party.shown",
                             toggleKey.getBoundKeyLocalizedText()), true);
             }
         });
@@ -233,10 +236,10 @@ public final class PartyHud {
      */
     private static void clearOfChat(Hud hud, int screenHeight) {
         MinecraftClient client = MinecraftClient.getInstance();
-        net.minecraft.client.gui.hud.ChatHud chat = client.inGameHud.getChatHud();
+        ChatHud chat = client.inGameHud.getChatHud();
         int ticks = client.inGameHud.getTicks(), lines = 0;
         boolean open = chat.isChatFocused();
-        for (net.minecraft.client.gui.hud.ChatHudLine.Visible line : ((ChatHudAccessor) chat).steveparty$getVisibleMessages()) {
+        for (ChatHudLine.Visible line : ((ChatHudAccessor) chat).steveparty$getVisibleMessages()) {
             if (!open && ticks - line.addedTime() >= 200) break;
             if (++lines >= chat.getVisibleLineCount()) break;
         }

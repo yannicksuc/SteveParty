@@ -6,6 +6,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.text.Text;
+import net.minecraft.util.Util;
 
 import java.util.function.Consumer;
 
@@ -119,7 +120,7 @@ public class PartyButton extends PressableWidget {
             context.drawText(textRenderer, shown, left + (room - textRenderer.getWidth(shown)) / 2, top, color, shadow);
             return;
         }
-        long now = net.minecraft.util.Util.getMeasuringTimeMs();
+        long now = Util.getMeasuringTimeMs();
         if (marqueeStart < 0) marqueeStart = now;
         int travel = textRenderer.getWidth(message) - room;
         long moveMs = Math.max(1, (long) (travel / MARQUEE_SPEED * 1000F));

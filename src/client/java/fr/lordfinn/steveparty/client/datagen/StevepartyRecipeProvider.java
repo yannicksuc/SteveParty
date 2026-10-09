@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.recipes.DiceModuleRecipe;
 import fr.lordfinn.steveparty.recipes.TileCartridgeRecipe;
 import fr.lordfinn.steveparty.recipes.TileShapedRecipe;
 import fr.lordfinn.steveparty.recipes.UnmirroredShapedRecipe;
+import java.util.ArrayList;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
@@ -115,7 +116,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
 
     /** Coin / debt faces: any face of the family is cut into any value of it at the stonecutter. */
     private void offerFaceValues(String prefix) {
-        List<Item> family = new java.util.ArrayList<>();
+        List<Item> family = new ArrayList<>();
         for (int value = 1; value <= DiceFacesComponent.DiceFace.MAX_COINS; value++)
             family.add(Registries.ITEM.get(Steveparty.id(prefix + value)));
         for (Item output : family) {

@@ -16,8 +16,10 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -133,7 +135,7 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
         // The light: a bright spot travelling the cable's length
         int length = Math.abs(x1 - x0) + Math.abs(toY - fromY) + Math.abs(x2 - x1);
         if (length <= 0) return;
-        int at = (int) (net.minecraft.util.Util.getMeasuringTimeMs() / 25 % (length + 20)) - 10;
+        int at = (int) (Util.getMeasuringTimeMs() / 25 % (length + 20)) - 10;
         for (int[] seg : path) {
             int len = Math.abs(seg[2] - seg[0]) + Math.abs(seg[3] - seg[1]);
             if (at >= 0 && at <= len) {
@@ -162,7 +164,7 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
     protected List<Text> getTooltipFromItem(ItemStack stack) {
         List<Text> tooltip = super.getTooltipFromItem(stack);
         if (!isSingle && focusedSlot != null && focusedSlot.id < handler.getInventorySize() && stack.getItem() instanceof CartridgeItem) {
-            tooltip = new java.util.ArrayList<>(tooltip);
+            tooltip = new ArrayList<>(tooltip);
             tooltip.add(1, Text.translatable(CartridgeItem.MENU_KEY + "select_hint").formatted(Formatting.YELLOW));
         }
         return tooltip;

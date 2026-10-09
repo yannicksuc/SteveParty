@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.HorizontalFacingBlock;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.render.item.ItemRenderer;
@@ -27,7 +28,7 @@ public class TradingStallBlockEntityRenderer implements BlockEntityRenderer<Trad
 
     @Override
     public void render(TradingStallBlockEntity entity, float tickDelta, MatrixStack matrices,
-                       net.minecraft.client.render.VertexConsumerProvider vertexConsumers, int light, int overlay) {
+                       VertexConsumerProvider vertexConsumers, int light, int overlay) {
         World world = entity.getWorld();
         if (world == null) return;
 

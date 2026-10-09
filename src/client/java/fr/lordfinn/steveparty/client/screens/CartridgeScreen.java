@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.payloads.custom.CartridgeSlotScrollPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.GhostSlot;
+import java.util.List;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -117,7 +118,7 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
     }
 
     /** The wheel over a ghost slot: its quantity (predicted here, applied by the server). */
-    static boolean scrollGhost(java.util.List<Slot> slots, int syncId, int originX, int originY, double mouseX, double mouseY, double amount) {
+    static boolean scrollGhost(List<Slot> slots, int syncId, int originX, int originY, double mouseX, double mouseY, double amount) {
         if (amount == 0) return false;
         for (Slot slot : slots) {
             if (!(slot instanceof GhostSlot ghost) || !slot.isEnabled()) continue;

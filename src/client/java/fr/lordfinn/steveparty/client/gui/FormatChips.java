@@ -11,6 +11,7 @@ import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntFunction;
 
 /**
  * A format's pawn pictogram and its chip, as the editor's mock-ups draw them (the art sources
@@ -137,7 +138,7 @@ public final class FormatChips {
      * Where chips laid left to right go, a new row when one does not fit {@code width}: {x, y, w} of each, from the
      * top left of the area.
      */
-    public static List<int[]> flow(TextRenderer font, List<MiniGameFormat> formats, java.util.function.IntFunction<Look> looks, int width, int gap) {
+    public static List<int[]> flow(TextRenderer font, List<MiniGameFormat> formats, IntFunction<Look> looks, int width, int gap) {
         List<int[]> at = new ArrayList<>();
         int x = 0, y = 0;
         for (int i = 0; i < formats.size(); i++) {
@@ -154,7 +155,7 @@ public final class FormatChips {
     }
 
     /** Draws chips laid by {@link #flow}; returns the height they take. */
-    public static int drawFlow(DrawContext context, TextRenderer font, List<MiniGameFormat> formats, java.util.function.IntFunction<Look> looks,
+    public static int drawFlow(DrawContext context, TextRenderer font, List<MiniGameFormat> formats, IntFunction<Look> looks,
                                int x, int y, int width, int gap) {
         List<int[]> at = flow(font, formats, looks, width, gap);
         int bottom = 0;

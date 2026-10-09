@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
 import net.fabricmc.fabric.api.client.rendering.v1.TooltipComponentCallback;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
@@ -72,11 +73,11 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
 
     @Override
     public int getHeight() {
-        TextRenderer textRenderer = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
         MiniGamePageData data = MiniGamePageClient.page(page);
         if (data == null || data.isBlank()) return 0;
         int height = data.image() != null ? PICTURE_HEIGHT + 3 : 0;
-        java.util.List<int[]> chips = FormatChips.flow(textRenderer, data.formats(), i -> look(data, i), WIDTH, 3);
+        List<int[]> chips = FormatChips.flow(textRenderer, data.formats(), i -> look(data, i), WIDTH, 3);
         height += chips.getLast()[1] + 13 + 3;
         if (!data.isPlayable()) height += 10;
         if (!data.description().isEmpty()) height += 2 + 10 * lines(textRenderer, MiniGameText.parse(data.description()), MAX_DESCRIPTION_LINES).size();

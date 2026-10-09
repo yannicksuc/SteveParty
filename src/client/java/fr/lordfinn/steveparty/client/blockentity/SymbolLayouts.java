@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.WoodenPanelBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.enums.Orientation;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.List;
@@ -83,14 +84,14 @@ public final class SymbolLayouts {
     private static SymbolQuad turned(SymbolQuad quad, float degrees) {
         Vector3f center = new Vector3f(quad.topLeft()).add(quad.bottomRight()).mul(0.5F);
         // Clockwise seen from the front = counter clockwise around the normal
-        org.joml.Quaternionf rotation = new org.joml.Quaternionf().rotateAxis((float) Math.toRadians(-degrees), quad.normal());
+        Quaternionf rotation = new Quaternionf().rotateAxis((float) Math.toRadians(-degrees), quad.normal());
         return new SymbolQuad(
                 turn(quad.topLeft(), center, rotation), turn(quad.topRight(), center, rotation),
                 turn(quad.bottomRight(), center, rotation), turn(quad.bottomLeft(), center, rotation),
                 new Vector3f(quad.normal()));
     }
 
-    private static Vector3f turn(Vector3f point, Vector3f center, org.joml.Quaternionf rotation) {
+    private static Vector3f turn(Vector3f point, Vector3f center, Quaternionf rotation) {
         return rotation.transform(new Vector3f(point).sub(center)).add(center);
     }
 
@@ -99,12 +100,12 @@ public final class SymbolLayouts {
         return new SymbolQuad(
                 tiltX(quad.topLeft(), degrees, originY, originZ), tiltX(quad.topRight(), degrees, originY, originZ),
                 tiltX(quad.bottomRight(), degrees, originY, originZ), tiltX(quad.bottomLeft(), degrees, originY, originZ),
-                new org.joml.Quaternionf().rotationX((float) Math.toRadians(degrees)).transform(new Vector3f(quad.normal())));
+                new Quaternionf().rotationX((float) Math.toRadians(degrees)).transform(new Vector3f(quad.normal())));
     }
 
     private static Vector3f tiltX(Vector3f point, float degrees, float originY, float originZ) {
         Vector3f relative = new Vector3f(point.x, point.y - originY, point.z - originZ);
-        new org.joml.Quaternionf().rotationX((float) Math.toRadians(degrees)).transform(relative);
+        new Quaternionf().rotationX((float) Math.toRadians(degrees)).transform(relative);
         return relative.add(0, originY, originZ);
     }
 }

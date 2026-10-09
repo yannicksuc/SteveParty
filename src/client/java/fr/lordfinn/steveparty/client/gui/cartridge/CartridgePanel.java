@@ -21,8 +21,11 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -37,6 +40,7 @@ import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -186,7 +190,7 @@ public final class CartridgePanel {
         modules = now == null ? List.of() : CartridgeMenus.modules(current);
         int n = modules.size();
         pending = new int[n];
-        java.util.Arrays.fill(pending, NO_PENDING);
+        Arrays.fill(pending, NO_PENDING);
         pendingTicks = new int[n];
         sparkStart = new long[n];
         flashStart = new long[n];
@@ -523,7 +527,7 @@ public final class CartridgePanel {
     private String labelName(ItemStack current, CartridgeItem cartridge, int room) {
         if (cartridge == null) return I18n.translate(CartridgeItem.MENU_KEY + "empty");
         String name = current.getName().getString();
-        if (textRenderer.getWidth(name) <= room || current.contains(net.minecraft.component.DataComponentTypes.CUSTOM_NAME)) return name;
+        if (textRenderer.getWidth(name) <= room || current.contains(DataComponentTypes.CUSTOM_NAME)) return name;
         // The icon already says it is a cartridge: « Rejouer » rather than « Cartouche Rejouer »
         String key = CartridgeItem.MENU_KEY + "name." + Registries.ITEM.getId(current.getItem()).getPath();
         return I18n.hasTranslation(key) ? I18n.translate(key) : name;
@@ -789,7 +793,7 @@ public final class CartridgePanel {
             } else if (!client.world.isChunkLoaded(at.getX() >> 4, at.getZ() >> 4)) {
                 name = I18n.translate(CartridgeItem.MENU_KEY + "inventory.chests.container");
                 state = I18n.translate(CartridgeItem.MENU_KEY + "inventory.chests.unloaded");
-            } else if (!(client.world.getBlockEntity(at) instanceof net.minecraft.inventory.Inventory)) {
+            } else if (!(client.world.getBlockEntity(at) instanceof Inventory)) {
                 name = I18n.translate(CartridgeItem.MENU_KEY + "inventory.chests.container");
                 state = I18n.translate(CartridgeItem.MENU_KEY + "inventory.chests.absent");
             } else {
@@ -1020,7 +1024,7 @@ public final class CartridgePanel {
 
     /** How much a click on − / + or a wheel notch changes a number: one, or ten with Shift on a wide range (a price). */
     private static int step(NumberModule number) {
-        return net.minecraft.client.gui.screen.Screen.hasShiftDown() && number.max() - number.min() >= 20 ? 10 : 1;
+        return Screen.hasShiftDown() && number.max() - number.min() >= 20 ? 10 : 1;
     }
 
     /** The wheel over a number: one more / one less (ten with Shift on a wide range); elsewhere on a shell too low for its modules: scrolls them. */

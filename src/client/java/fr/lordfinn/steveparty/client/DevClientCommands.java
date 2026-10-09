@@ -1,17 +1,24 @@
 package fr.lordfinn.steveparty.client;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
 import fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Mouse;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.option.Perspective;
 import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 /**
  * Dev runs only (never registered in a released game): client commands that press the player's buttons, so that the
@@ -25,12 +32,12 @@ public final class DevClientCommands {
     private static double[] pinnedCursor;
 
     /** Puts the mouse at the pinned position (the window may be in the background: no real cursor moves). */
-    private static void pinCursor(net.minecraft.client.MinecraftClient client) {
+    private static void pinCursor(MinecraftClient client) {
         if (pinnedCursor == null) return;
         try {
             double scale = client.getWindow().getScaleFactor();
             for (String name : new String[]{"x", "y"}) {
-                Field field = net.minecraft.client.Mouse.class.getDeclaredField(name);
+                Field field = Mouse.class.getDeclaredField(name);
                 field.setAccessible(true);
                 field.setDouble(client.mouse, pinnedCursor[name.equals("x") ? 0 : 1] * scale);
             }
@@ -41,7 +48,7 @@ public final class DevClientCommands {
 
     public static void initialize() {
         if (!FabricLoader.getInstance().isDevelopmentEnvironment()) return;
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(DevClientCommands::pinCursor);
+        ClientTickEvents.END_CLIENT_TICK.register(DevClientCommands::pinCursor);
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) -> dispatcher.register(
                 ClientCommandManager.literal("sptest")
                         .then(ClientCommandManager.literal("click").executes(context -> {
@@ -57,7 +64,7 @@ public final class DevClientCommands {
                         .then(ClientCommandManager.literal("perspective")
                                 .then(ClientCommandManager.argument("view", IntegerArgumentType.integer(0, 2)).executes(context -> {
                                     context.getSource().getClient().options.setPerspective(
-                                            net.minecraft.client.option.Perspective.values()[IntegerArgumentType.getInteger(context, "view")]);
+                                            Perspective.values()[IntegerArgumentType.getInteger(context, "view")]);
                                     return 1;
                                 })))
                         // The mouse wheel turned (vertical notches, + up), through Mouse#onMouseScroll like a real one
@@ -67,7 +74,7 @@ public final class DevClientCommands {
                                     int notches = IntegerArgumentType.getInteger(context, "notches");
                                     client.execute(() -> {
                                         try {
-                                            java.lang.reflect.Method scroll = net.minecraft.client.Mouse.class.getDeclaredMethod(
+                                            Method scroll = Mouse.class.getDeclaredMethod(
                                                     "onMouseScroll", long.class, double.class, double.class);
                                             scroll.setAccessible(true);
                                             scroll.invoke(client.mouse, client.getWindow().getHandle(), 0.0, (double) notches);
@@ -79,7 +86,7 @@ public final class DevClientCommands {
                                 })))
                         // The Stencil Hammer in hand: its refill screen
                         .then(ClientCommandManager.literal("hammer").executes(context -> {
-                            net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                            ClientPlayNetworking.send(
                                     new ToolWheelPayload(
                                             ToolWheelPayload.Action.HAMMER_OPEN, 0));
                             return 1;
@@ -109,9 +116,9 @@ public final class DevClientCommands {
                         }))
                         // Hitboxes shown or not (F3 + B)
                         .then(ClientCommandManager.literal("hitboxes")
-                                .then(ClientCommandManager.argument("shown", com.mojang.brigadier.arguments.BoolArgumentType.bool()).executes(context -> {
+                                .then(ClientCommandManager.argument("shown", BoolArgumentType.bool()).executes(context -> {
                                     context.getSource().getClient().getEntityRenderDispatcher().setRenderHitboxes(
-                                            com.mojang.brigadier.arguments.BoolArgumentType.getBool(context, "shown"));
+                                            BoolArgumentType.getBool(context, "shown"));
                                     return 1;
                                 })))
                         // The GUI scale (0: auto)
