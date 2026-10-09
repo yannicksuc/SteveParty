@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
@@ -79,14 +80,18 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+    protected void appendState(ItemStack stack, Tooltips tips) {
         int distance = distance(stack);
-        tooltip.add((distance == 0 ? Text.translatable("tooltip.steveparty.glandouille_cartridge.none")
-                : distance < 0 ? Text.translatable("tooltip.steveparty.glandouille_cartridge.distance_back", -distance)
-                : Text.translatable("tooltip.steveparty.glandouille_cartridge.distance", distance))
-                .styled(headline(0xD9A066)));
-        if (lone(stack)) tooltip.add(Text.translatable("tooltip.steveparty.glandouille_cartridge.lone").formatted(Formatting.GRAY));
-        else if (distance > 0) tooltip.add(Text.translatable("tooltip.steveparty.glandouille_cartridge.tower", tower(stack)).formatted(Formatting.GRAY));
-        super.appendTooltip(stack, context, tooltip, type);
+        tips.state(distance == 0 ? Text.translatable("tooltip.steveparty.glandouille_cartridge.none")
+                : Text.translatable(distance < 0 ? "tooltip.steveparty.glandouille_cartridge.distance_back"
+                : "tooltip.steveparty.glandouille_cartridge.distance", Tooltips.rgb(Math.abs(distance), 0xD9A066)));
+        if (lone(stack)) tips.state(Text.translatable("tooltip.steveparty.glandouille_cartridge.lone"));
+        else if (distance > 0) tips.state(Text.translatable("tooltip.steveparty.glandouille_cartridge.tower",
+                Tooltips.rgb(tower(stack), 0xD9A066)));
+    }
+
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        more.note("tooltip.steveparty.cartridge.glandouille_cartridge.rules");
     }
 }

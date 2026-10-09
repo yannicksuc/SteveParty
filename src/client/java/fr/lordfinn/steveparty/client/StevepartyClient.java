@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
@@ -265,6 +266,7 @@ public class StevepartyClient implements ClientModInitializer {
         BandanaArmorRenderer.register();
         ExplorerHelmetRenderer.register();
         MiniGamePageTooltipComponent.register();
+        Tooltips.setShiftProbe(net.minecraft.client.gui.screen.Screen::hasShiftDown);
         TitleScreenBackground.initialize();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));
 
