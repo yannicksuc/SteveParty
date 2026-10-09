@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.entities.custom.goals;
 
 import fr.lordfinn.steveparty.entities.custom.MulaDances;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaEscorts;
 import fr.lordfinn.steveparty.entities.custom.MulaHome;
 import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.block.BlockState;
@@ -349,7 +350,7 @@ public final class MulaGoals {
             return owner != null && mula.isTamed() && !mula.isSitting() && mula.getMulaBrain().isActive()
                     && mula.getMulaBrain().ownerStillTicks() >= STILL_TICKS && owner.squaredDistanceTo(mula) < 36
                     // (one of its followers: the Mulas past the followers' limit stay where they are)
-                    && fr.lordfinn.steveparty.entities.custom.MulaEscorts.isFollower(owner.getUuid(), mula);
+                    && MulaEscorts.isFollower(owner.getUuid(), mula);
         }
 
         @Override

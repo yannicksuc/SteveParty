@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilInteractions;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.api.EnvType;
@@ -28,7 +29,7 @@ import static fr.lordfinn.steveparty.components.ModComponents.STENCIL_PIXELS;
 
 /**
  * A 16x16 stencil, drawn at the stencil maker. With a dye in the other hand it paints its shape on a stencil
- * sign ({@link fr.lordfinn.steveparty.blocks.custom.signs.StencilInteractions}) or sprays it on the face of any
+ * sign ({@link StencilInteractions}) or sprays it on the face of any
  * full block ({@link StencilPaintBlock}).
  */
 public class StencilItem extends Item {
@@ -48,7 +49,7 @@ public class StencilItem extends Item {
     }
 
     public static ItemStack of(StencilPatterns.Pattern pattern) {
-        ItemStack stack = new ItemStack(fr.lordfinn.steveparty.items.ModItems.STENCIL);
+        ItemStack stack = new ItemStack(ModItems.STENCIL);
         setShape(pattern.shape(), stack);
         return stack;
     }

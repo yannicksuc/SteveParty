@@ -3,6 +3,9 @@ package fr.lordfinn.steveparty.components;
 import com.mojang.serialization.Codec;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
+import fr.lordfinn.steveparty.dice.DiceModulesComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import net.minecraft.component.ComponentType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -167,12 +170,12 @@ public class ModComponents {
             registerComponent("tile-stamp", TileStampComponent.CODEC);
 
     /** The size a tile item places (none: the standard size). */
-    public static final ComponentType<fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize> TILE_SIZE =
-            registerComponent("tile-size", fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.CODEC);
+    public static final ComponentType<TileSize> TILE_SIZE =
+            registerComponent("tile-size", TileSize.CODEC);
 
     /** How many items a player may buy during a stop at a Shop Cartridge's space (1 by default). */
     public static final ComponentType<Integer> SHOP_PURCHASES =
-            registerComponent("shop-purchases", Codec.intRange(1, fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.MAX_PURCHASES));
+            registerComponent("shop-purchases", Codec.intRange(1, ShopCartridgeItem.MAX_PURCHASES));
     /** Price and options of a Star Cartridge (see StarSettingsComponent). */
     public static final ComponentType<StarSettingsComponent> STAR_SETTINGS =
             registerComponent("star-settings", StarSettingsComponent.CODEC);
@@ -203,6 +206,6 @@ public class ModComponents {
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();
-        fr.lordfinn.steveparty.dice.DiceModulesComponent.initialize();
+        DiceModulesComponent.initialize();
     }
 }

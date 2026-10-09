@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
@@ -39,7 +40,7 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
 
     public CashRegisterBlock(Settings settings) {
         // Mined as easily as before, never broken by an explosion (see ModBlocks.BOARD_RESISTANCE)
-        super(settings.nonOpaque().strength(1.0f, fr.lordfinn.steveparty.blocks.ModBlocks.BOARD_RESISTANCE));
+        super(settings.nonOpaque().strength(1.0f, ModBlocks.BOARD_RESISTANCE));
         this.setDefaultState(this.stateManager.getDefaultState()
                 .with(POWERED, false)
                 .with(Properties.HORIZONTAL_FACING, Direction.NORTH));

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.fumarole;
 
+import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
@@ -180,7 +181,7 @@ public final class FumaroleGoals {
                 if (ticks == charge - TURN_TICKS) fumarole.setHeadTarget(head, target);
                 if (ticks == charge) {
                     fumarole.setVent(head, FumaroleEntity.VENT_CHARGING);
-                    fumarole.playSound(fr.lordfinn.steveparty.sounds.ModSounds.FUMAROLE_CHARGE, 2.0f, 0.9f + 0.1f * head);
+                    fumarole.playSound(ModSounds.FUMAROLE_CHARGE, 2.0f, 0.9f + 0.1f * head);
                     fumarole.playSpit(head);
                 }
                 if (ticks == fireAt[head]) {

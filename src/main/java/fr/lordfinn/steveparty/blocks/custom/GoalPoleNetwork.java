@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.entity.BlockEntity;
@@ -135,7 +136,7 @@ public final class GoalPoleNetwork {
     }
 
     /** A party started: the bases linked to it (following its players) go back to 0. */
-    public static void onPartyStarted(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller) {
+    public static void onPartyStarted(PartyControllerEntity controller) {
         for (GoalPoleBaseBlockEntity base : bases()) {
             if (!base.isRemoved() && base.getWorld() == controller.getWorld()) base.onPartyStarted(controller);
         }

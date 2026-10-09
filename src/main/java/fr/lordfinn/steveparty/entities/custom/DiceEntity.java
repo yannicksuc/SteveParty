@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
+import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.mixin.FireworkRocketEntityAccessor;
@@ -304,7 +305,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.outcome = result;
         // A die bound to a black cat by a witch hut, landing on a 1 or a 0: a Mistigri
         if (this.getWorld() instanceof ServerWorld serverWorld) {
-            fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning.onRollFinished(serverWorld, this, faces);
+            MistigriSummoning.onRollFinished(serverWorld, this, faces);
         }
         DiceOutcome announced = result;
         this.getOwner().ifPresent(owner -> {

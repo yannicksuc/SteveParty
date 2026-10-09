@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.board;
 
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.block.entity.BlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -209,8 +211,8 @@ public final class BoardLinks {
     public static void linkNearestChest(PlayerEntity player, CartridgeContainerBlockEntity container, int slot) {
         World world = container.getWorld();
         ItemStack cartridge = container.getStack(slot);
-        if (world == null || !(cartridge.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem)
-                || !fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.isEmpty(cartridge)) return;
+        if (world == null || !(cartridge.getItem() instanceof InventoryCartridgeItem)
+                || !CartridgeContainers.isEmpty(cartridge)) return;
         BlockPos center = container.getPos();
         BlockPos nearest = null;
         double best = Double.MAX_VALUE;
@@ -223,7 +225,7 @@ public final class BoardLinks {
         }
         if (nearest == null) return;
         java.util.List<net.minecraft.util.math.GlobalPos> linked = java.util.List.of(net.minecraft.util.math.GlobalPos.create(world.getRegistryKey(), nearest));
-        fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, linked);
+        CartridgeContainers.set(cartridge, linked);
         sync(container);
         if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
             LinkHistory.record(serverPlayer, new LinkHistory.ChestChange(center.toImmutable(), slot, java.util.List.of(), linked));

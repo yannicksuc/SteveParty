@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
+import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -28,7 +29,7 @@ import java.util.Map;
 public class PartyBellBlockEntity extends BlockEntity {
     public static final int RANGE = 64;
     /** Loaded server-side bells, keyed by dimension + position. */
-    private static final Map<GlobalPos, PartyBellBlockEntity> BELLS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new LinkedHashMap<>());
+    private static final Map<GlobalPos, PartyBellBlockEntity> BELLS = ServerMemory.forgetOnStop(new LinkedHashMap<>());
 
     /** Value of the last moment heard, read by comparators (0-15). */
     private int value = 0;

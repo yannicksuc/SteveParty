@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlockEntity;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -67,7 +68,7 @@ public class CashRegisterScreenHandler extends ScreenHandler {
     @Override
     public boolean canUse(PlayerEntity player) {
         // The block still there and in reach (the inventory alone always said yes)
-        return fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks.canUseInventory(this.inventory, player);
+        return ScreenHandlerChecks.canUseInventory(this.inventory, player);
     }
 
     /** The player's inventory (3 rows) at (left, top) and its hotbar 58 pixels under it. */

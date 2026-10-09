@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.mixin;
 
 import fr.lordfinn.steveparty.StatusEffectExtension;
+import fr.lordfinn.steveparty.items.custom.BoxCostumeBlock;
+import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import fr.lordfinn.steveparty.utils.JumpTracker;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -37,15 +39,15 @@ public abstract class LivingEntityMixin extends Entity {
     /** A player hidden in a Box Costume: mobs notice him from much closer, like a mob wearing its own head. */
     @Inject(method = "getAttackDistanceScalingFactor", at = @At("RETURN"), cancellable = true)
     private void steveparty$hiddenInBox(Entity entity, CallbackInfoReturnable<Double> cir) {
-        if ((Object) this instanceof PlayerEntity player && fr.lordfinn.steveparty.items.custom.BoxCostumeItem.isHiddenInBox(player)) {
-            cir.setReturnValue(cir.getReturnValueD() * fr.lordfinn.steveparty.items.custom.BoxCostumeItem.HIDDEN_DETECTION_FACTOR);
+        if ((Object) this instanceof PlayerEntity player && BoxCostumeItem.isHiddenInBox(player)) {
+            cir.setReturnValue(cir.getReturnValueD() * BoxCostumeItem.HIDDEN_DETECTION_FACTOR);
         }
     }
 
     /** A player who is a block of the grid in his Box Costume is not pushed around by those bumping into him. */
     @Inject(method = "isPushable", at = @At("HEAD"), cancellable = true)
     private void steveparty$boxCostumeBlock(CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof PlayerEntity player && fr.lordfinn.steveparty.items.custom.BoxCostumeBlock.isBlockAligned(player)) {
+        if ((Object) this instanceof PlayerEntity player && BoxCostumeBlock.isBlockAligned(player)) {
             cir.setReturnValue(false);
         }
     }

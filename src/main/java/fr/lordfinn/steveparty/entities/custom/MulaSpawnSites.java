@@ -1,6 +1,9 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.telescope.TelescopeService;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -64,7 +67,7 @@ public class MulaSpawnSites extends PersistentState {
 
     /** The most sites a dimension keeps (the config's {@code mulaMaxSites}). */
     public static int maxSites() {
-        return Math.max(1, fr.lordfinn.steveparty.config.ServerConfig.get().mulaMaxSites);
+        return Math.max(1, ServerConfig.get().mulaMaxSites);
     }
 
     /**
@@ -123,7 +126,7 @@ public class MulaSpawnSites extends PersistentState {
 
     private static MulaSpawnSites listened(ServerWorld world, MulaSpawnSites sites) {
         if (sites.onRetired == null) {
-            sites.onRetired = retired -> fr.lordfinn.steveparty.telescope.TelescopeService.siteRetired(world, retired);
+            sites.onRetired = retired -> TelescopeService.siteRetired(world, retired);
             // a save read with more sites than the cap was trimmed: its Mulas must look
             epoch++;
         }
@@ -322,7 +325,7 @@ public class MulaSpawnSites extends PersistentState {
             }
             world.spawnEntity(mula);
         }
-        fr.lordfinn.steveparty.Steveparty.LOGGER.info("{} Mulas came down from the ephemeride at {} {} {}",
+        Steveparty.LOGGER.info("{} Mulas came down from the ephemeride at {} {} {}",
                 site.colours.length, site.pos.getX(), (int) y, site.pos.getZ());
     }
 

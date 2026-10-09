@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -221,7 +222,7 @@ public class DiceForgeScreenHandler extends ScreenHandler {
                 if (!insertPreferringGhosts(stackInSlot, BLANK_SLOT, BLANK_SLOT + 1)) return ItemStack.EMPTY;
             } else if (DiceFace.isFace(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, 0, FACE_SLOTS)) return ItemStack.EMPTY;
-            } else if (fr.lordfinn.steveparty.dice.DiceModules.isModuleItem(stackInSlot)) {
+            } else if (DiceModules.isModuleItem(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, FIRST_MODULE_SLOT, FIRST_MODULE_SLOT + MODULE_SLOTS)) return ItemStack.EMPTY;
             } else if (isStarFragment(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, FIRST_FRAGMENT_SLOT, FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS)) return ItemStack.EMPTY;

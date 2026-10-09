@@ -1,6 +1,9 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
+import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.goals.FollowOwnerWhileFlyingGoal;
@@ -367,12 +370,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		int flight = MulaStarEntity.flightTicksFor(distance);
 		MulaRebirths.get(world).add(new MulaRebirths.Entry(this.getUuid(), x, z, atForge ? endY : this.getY(),
 				world.getTime() + flight, saved));
-		MulaStarEntity star = new MulaStarEntity(fr.lordfinn.steveparty.entities.ModEntities.MULA_STAR, world);
+		MulaStarEntity star = new MulaStarEntity(ModEntities.MULA_STAR, world);
 		star.launch(this.getX(), startY, this.getZ(), this.getVariant(), dirX, dirZ, distance, apex, endY - startY);
 		world.spawnEntity(star);
 		world.playSound(null, this.getX(), startY, this.getZ(), net.minecraft.sound.SoundEvents.ENTITY_ALLAY_ITEM_THROWN,
 				net.minecraft.sound.SoundCategory.NEUTRAL, 0.6f, 1.5f * voice());
-		fr.lordfinn.steveparty.Steveparty.LOGGER.info("A {} Mula burst into a shooting star: reborn at {} {} in {} s{}",
+		Steveparty.LOGGER.info("A {} Mula burst into a shooting star: reborn at {} {} in {} s{}",
 				getVariant().name().toLowerCase(Locale.ROOT), x, z, flight / 20, atForge ? " (at its forge)" : "");
 		this.discard();
 	}
@@ -734,7 +737,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		MulaDances.position(forge, danceSlot(), danceCount(), prevDanceSlot, prevDanceCount, danceChangeTick,
 				this.getWorld().getTime(), partialTick, out, danceTmp);
 		double cx = forge.getX() + 0.5, cy = forge.getY() + 2.4, cz = forge.getZ() + 0.5;
-		if (this.getWorld().getBlockEntity(forge) instanceof fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity be) {
+		if (this.getWorld().getBlockEntity(forge) instanceof DiceForgeBlockEntity be) {
 			cy = Math.max(cy, be.getCoreCenter().y);
 		}
 		out[0] += cx;

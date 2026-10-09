@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.villager;
 
 import fr.lordfinn.steveparty.payloads.custom.VillagerBlockPunchPayload;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
+import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -23,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * </ul>
  */
 public final class VillagerBlockEvents {
-    private static final Map<UUID, Integer> CHAT_COUNTS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new ConcurrentHashMap<>());
+    private static final Map<UUID, Integer> CHAT_COUNTS = ServerMemory.forgetOnStop(new ConcurrentHashMap<>());
 
     private VillagerBlockEvents() {
     }

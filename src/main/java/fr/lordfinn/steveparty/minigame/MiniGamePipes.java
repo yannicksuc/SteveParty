@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.minigame;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeDestinationProvider;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
@@ -481,8 +482,8 @@ public final class MiniGamePipes {
 
     /** @return true if two pipes are of the same colour: the same dye (plastic and stained glass alike), else the same kind. */
     public static boolean sameColour(BlockState a, BlockState b) {
-        if (!(a.getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock first)
-                || !(b.getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock second)) return false;
+        if (!(a.getBlock() instanceof PipeBlock first)
+                || !(b.getBlock() instanceof PipeBlock second)) return false;
         if (first.kind().colored && second.kind().colored) return first.color() == second.color();
         return first.kind() == second.kind();
     }

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.minigame;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGameTeleports;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
@@ -73,7 +74,7 @@ public final class MiniGameReturns extends PersistentState {
             if (alive || !get(newPlayer.server).pending.containsKey(newPlayer.getUuid())) return;
             MinecraftServer server = newPlayer.server;
             UUID id = newPlayer.getUuid();
-            fr.lordfinn.steveparty.Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 1, () -> {
+            Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 1, () -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
                 if (player != null && !player.isDead()) bringBack(player, false);
             });
@@ -139,7 +140,7 @@ public final class MiniGameReturns extends PersistentState {
         // have run, which would undo a teleport now
         MinecraftServer server = player.server;
         UUID id = player.getUuid();
-        fr.lordfinn.steveparty.Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 1, () -> {
+        Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 1, () -> {
             ServerPlayerEntity joined = server.getPlayerManager().getPlayer(id);
             if (joined != null && !joined.isDead()) bringBack(joined, inventory);
         });

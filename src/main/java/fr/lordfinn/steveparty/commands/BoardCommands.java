@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.board.BoardBlueprint;
 import fr.lordfinn.steveparty.board.BoardValidator;
 import fr.lordfinn.steveparty.board.LinkHistory;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -101,7 +102,7 @@ public final class BoardCommands {
     /** The Tile Linker Brush in hand, whose anchor follows the undo. */
     private static @Nullable ItemStack heldBrush(ServerPlayerEntity player) {
         ItemStack held = player.getMainHandStack();
-        return fr.lordfinn.steveparty.board.TileLinkerBrush.isBrush(held) ? held : null;
+        return TileLinkerBrush.isBrush(held) ? held : null;
     }
 
     private static int undo(ServerCommandSource source, boolean undo) throws CommandSyntaxException {

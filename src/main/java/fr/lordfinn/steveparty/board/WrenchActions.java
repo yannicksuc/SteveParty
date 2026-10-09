@@ -1,17 +1,24 @@
 package fr.lordfinn.steveparty.board;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
+import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
+import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.podium.Podiums;
+import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -57,8 +64,8 @@ public final class WrenchActions {
     private record LastUse(BlockPos pos, long tick) {
     }
 
-    private static final Map<UUID, LastUse> LAST_USES = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
-    private static final Map<UUID, Text> LAST_LABELS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<UUID, LastUse> LAST_USES = ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<UUID, Text> LAST_LABELS = ServerMemory.forgetOnStop(new HashMap<>());
 
     private WrenchActions() {
     }
@@ -68,9 +75,9 @@ public final class WrenchActions {
     /** Right click on a block with the Wrench. */
     public static ActionResult useOnBlock(ServerPlayerEntity player, ItemStack wrench, ServerWorld world, BlockPos clicked) {
         // A podium (sneaking: a plain click is the podium's, it changes what a signal does): its group is reset
-        if (fr.lordfinn.steveparty.blocks.custom.PodiumBlock.isPodium(world.getBlockState(clicked))) {
+        if (PodiumBlock.isPodium(world.getBlockState(clicked))) {
             if (player.isSneaking() && !isRepeat(player, clicked, world.getTime()))
-                fr.lordfinn.steveparty.podium.Podiums.wrenchReset(player, world, clicked);
+                Podiums.wrenchReset(player, world, clicked);
             return ActionResult.SUCCESS;
         }
         BlockPos pos = BoardSpaces.resolve(world, clicked);
@@ -111,8 +118,8 @@ public final class WrenchActions {
         player.sendMessage(text, true);
     }
 
-    private static final Map<UUID, Text> LAST_WARNINGS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
-    private static final Map<UUID, Long> LAST_WARNING_AT = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<UUID, Text> LAST_WARNINGS = ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<UUID, Long> LAST_WARNING_AT = ServerMemory.forgetOnStop(new HashMap<>());
     private static final long WARNING_REPEAT_MS = 3000;
 
     /**
@@ -281,7 +288,7 @@ public final class WrenchActions {
         if (!(world instanceof ServerWorld serverWorld) || !(placer instanceof ServerPlayerEntity player)) return;
         ItemStack brush = player.getOffHandStack();
         if (!TileLinkerBrush.isBrush(brush)) return;
-        if (world.getBlockState(pos).getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock) return;
+        if (world.getBlockState(pos).getBlock() instanceof ABoardSpaceBlock) return;
         if (BrushLinks.isHolder(world, pos)) {
             recorded(player, world, brush, () -> {
                 TileLinkerBrush.setAnchor(brush, world, pos);
@@ -355,7 +362,7 @@ public final class WrenchActions {
             if (world.isClient) return ActionResult.SUCCESS;
             ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
             if (isRepeat(serverPlayer, trader.getBlockPos(), world.getTime())) return ActionResult.SUCCESS;
-            if (!fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks.canBuildAt(serverPlayer, shop.container().getPos())) {
+            if (!ScreenHandlerChecks.canBuildAt(serverPlayer, shop.container().getPos())) {
                 TileLinkerBrush.cannotEdit(serverPlayer, shop.container().getPos());
                 return ActionResult.SUCCESS;
             }
@@ -380,7 +387,7 @@ public final class WrenchActions {
         CartridgeContainerBlockEntity container = origin == null ? null : BoardLinks.container(world, origin);
         if (container == null) return null;
         int slot = BoardLinks.slotOf(container, TileLinkerBrush.level(brush));
-        return container.getStack(slot).getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem
+        return container.getStack(slot).getItem() instanceof ShopCartridgeItem
                 ? new ShopOrigin(container, slot) : null;
     }
 
@@ -436,7 +443,7 @@ public final class WrenchActions {
     }
 
     /** Colour of a shop link (particles, board view): the Shop Cartridge's lime green. */
-    public static final int SHOP_COLOR = fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.COLOR;
+    public static final int SHOP_COLOR = ShopCartridgeItem.COLOR;
 
     // ---------------------------------------------------------------- sounds
 
@@ -454,7 +461,7 @@ public final class WrenchActions {
     /** A new link: a small star pop on the linked space (few particles, short). */
     private static void starPop(ServerWorld world, BlockPos target) {
         net.minecraft.util.math.Vec3d at = BoardSpaces.standPos(world, target).add(0, 0.35, 0);
-        world.spawnParticles(fr.lordfinn.steveparty.particles.MagicShapeEffect.sparkle(2.4F, 0.8F, 9, 0xF7D038),
+        world.spawnParticles(MagicShapeEffect.sparkle(2.4F, 0.8F, 9, 0xF7D038),
                 at.x, at.y, at.z, 3, 0.15, 0.1, 0.15, 0.02);
     }
 

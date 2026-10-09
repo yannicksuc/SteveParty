@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.minigame.MiniGameControllers;
 import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
@@ -179,10 +181,10 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     public Activity activity() {
         UUID id = getPageId();
         if (id == null) return Activity.IDLE;
-        java.util.Optional<fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity> party =
-                fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.getPartyPlayingPage(List.of(id));
+        java.util.Optional<PartyControllerEntity> party =
+                PartyControllerEntity.getPartyPlayingPage(List.of(id));
         if (party.isPresent() && party.get().getPartyData().getCurrentStep()
-                instanceof fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep step) {
+                instanceof MiniGamePartyStep step) {
             return step.isPractice() ? Activity.PRACTICE : Activity.PARTY_ROUND;
         }
         MiniGameTest played = MiniGameTest.of(id);
@@ -230,7 +232,7 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     public boolean playOrStop(@Nullable ServerPlayerEntity starter) {
         UUID id = getPageId();
         if (id == null || !(world instanceof ServerWorld serverWorld)
-                || fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.getPartyPlayingPage(List.of(id)).isPresent()) return false;
+                || PartyControllerEntity.getPartyPlayingPage(List.of(id)).isPresent()) return false;
         boolean done = MiniGameTest.of(id) != null ? MiniGameTest.stop(id)
                 : MiniGameTest.start(serverWorld.getServer(), id, starter, MiniGameTest.COUNTDOWN_SECONDS) == MiniGameTest.Status.READY;
         if (done) refreshState();

@@ -4,6 +4,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.ShopLinkComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
@@ -47,7 +50,7 @@ public final class LinkHistory {
         public boolean apply(ServerWorld world, boolean undo) {
             // Any holder's cartridge: a board space's, a router's, a Hop Switch's...
             BrushLinks.Held held = BrushLinks.held(world, pos, slot);
-            if (held == null || !(held.cartridge().getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem)) return false;
+            if (held == null || !(held.cartridge().getItem() instanceof CartridgeItem)) return false;
             List<BlockPos> expected = undo ? after : before;
             if (!BoardLinks.links(held.cartridge()).equals(expected)) return false;
             BoardLinks.setLinks(held.cartridge(), undo ? before : after, world);
@@ -74,24 +77,24 @@ public final class LinkHistory {
             BrushLinks.Held held = BrushLinks.held(world, pos, slot);
             if (held == null) return false;
             ItemStack cartridge = held.cartridge();
-            if (cartridge.isEmpty() || !fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey())
+            if (cartridge.isEmpty() || !CartridgeContainers.of(cartridge, world.getRegistryKey())
                     .equals(undo ? after : before)) return false;
-            fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, undo ? before : after);
+            CartridgeContainers.set(cartridge, undo ? before : after);
             held.sync().run();
             return true;
         }
     }
 
     /** The shop chosen for the Shop Cartridge in {@code slot} (null: the nearest merchant). */
-    public record ShopChange(BlockPos pos, int slot, @Nullable fr.lordfinn.steveparty.components.ShopLinkComponent before,
-                             @Nullable fr.lordfinn.steveparty.components.ShopLinkComponent after) implements Change {
+    public record ShopChange(BlockPos pos, int slot, @Nullable ShopLinkComponent before,
+                             @Nullable ShopLinkComponent after) implements Change {
         @Override
         public boolean apply(ServerWorld world, boolean undo) {
             CartridgeContainerBlockEntity container = BoardLinks.container(world, pos);
             if (container == null) return false;
             ItemStack cartridge = container.getStack(slot);
             if (cartridge.isEmpty() || !Objects.equals(cartridge.get(ModComponents.SHOP_LINK), undo ? after : before)) return false;
-            fr.lordfinn.steveparty.components.ShopLinkComponent value = undo ? before : after;
+            ShopLinkComponent value = undo ? before : after;
             if (value == null) cartridge.remove(ModComponents.SHOP_LINK);
             else cartridge.set(ModComponents.SHOP_LINK, value);
             BoardLinks.sync(container);
