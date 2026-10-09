@@ -692,27 +692,79 @@ public class GlandouilleGameTests implements FabricGameTest {
         });
     }
 
-    /** The bottom one hit goes alone too: the tower on it hops off and lands on the ground, still stacked. */
+    /**
+     * The bottom one of a tower hit: the whole tower goes along the blow, still a tower of 3 all the way (in the air and
+     * landed), each one right above the one below.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
-    public void aHitBottomOneLeavesItsTowerBehind(TestContext context) {
+    public void aHitBottomOneTakesItsTowerAlong(TestContext context) {
         TestBoards.floor(context, 8);
-        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.FROSTY, 3, new BlockPos(2, 1, 3));
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(2, 1, 3));
         GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2);
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
         context.waitAndRun(2, () -> {
             Vec3d start = a.getPos();
+            double[] highest = {start.y};
             a.onHit(player, player);
-            context.assertEquals(a.getMood(), Mood.SLIDING, "a slides away");
-            context.assertTrue(b.getVehicle() == null && c.getVehicle() == b, "b (with c on it) let go of a");
-            context.assertEquals(b.getMood(), Mood.HOPPING, "b hops");
-            context.assertTrue(b.hopOnto() == null, "nothing below: b comes down on the ground");
+            context.assertTrue(b.getVehicle() == a && c.getVehicle() == b, "still stacked when hit");
+            context.runAtEveryTick(() -> {
+                highest[0] = Math.max(highest[0], a.getY());
+                context.assertTrue(b.getVehicle() == a && c.getVehicle() == b, "still stacked on the way");
+                context.assertTrue(horizontal(c.getPos(), a.getPos()) < 0.05, "the top one right above the bottom one");
+            });
+            // before it stomps and charges back at the hitter (it holds a grudge)
+            context.waitAndRun(14, () -> {
+                context.assertTrue(a.getX() - start.x > 0.5, "the tower went along the blow: " + (a.getX() - start.x));
+                context.assertTrue(highest[0] - start.y > 0.1, "thrown up a little: " + (highest[0] - start.y));
+                context.assertTrue(a.isOnGround(), "landed");
+                context.assertEquals(GlandouilleTowers.height(a), 3, "still a tower of 3");
+                context.complete();
+            });
+        });
+    }
+
+    /** Under a low ceiling, a hit tower is pushed along the ground, never up into it: nobody steps off nor is smothered. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aHitTowerIsNeverThrownIntoACeiling(TestContext context) {
+        TestBoards.floor(context, 8);
+        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(new BlockPos(x, 3, z), Blocks.STONE);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(2, 1, 3));
+        GlandouilleEntity a = members.getFirst();
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
+        context.waitAndRun(2, () -> {
+            Vec3d start = a.getPos();
+            double[] highest = {start.y};
+            a.onHit(player, player);
+            context.runAtEveryTick(() -> highest[0] = Math.max(highest[0], a.getY()));
+            context.waitAndRun(30, () -> {
+                context.assertTrue(a.getX() - start.x > 0.3, "pushed along: " + (a.getX() - start.x));
+                context.assertTrue(highest[0] - start.y < 0.01, "not thrown up: " + (highest[0] - start.y));
+                context.assertEquals(GlandouilleTowers.height(a), 3, "still a tower of 3");
+                for (GlandouilleEntity one : members) context.assertTrue(one.getHealth() == one.getMaxHealth(), "nobody smothered");
+                context.complete();
+            });
+        });
+    }
+
+    /** The middle one of a tower of 3 hit goes alone: the top one comes back down on the bottom one, a tower of 2. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aHitMiddleOneGoesAlone(TestContext context) {
+        TestBoards.floor(context, 8);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(1, 1, 3));
+        GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2);
+        GlandouilleEntity lone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 6));
+        ServerPlayerEntity player = player(context, new BlockPos(0, 1, 3), -90f); // facing +x
+        context.waitAndRun(2, () -> {
+            Vec3d aStart = a.getPos();
+            b.onHit(player, player);
+            lone.onHit(player, player);
+            context.assertEquals(b.getMood(), Mood.FLYING, "b flies out alone");
+            context.assertTrue(lone.getVelocity().x > 0.1, "a lone one is pushed as before: " + lone.getVelocity());
             context.waitAndRun(40, () -> {
-                context.assertTrue(a.getX() - start.x > 1.5, "a slid off alone: " + (a.getX() - start.x));
-                context.assertTrue(b.getVehicle() == null && b.isOnGround(), "b on the ground");
-                context.assertTrue(horizontal(b.getPos(), start) < 0.1, "b where the tower was: " + horizontal(b.getPos(), start));
-                context.assertTrue(c.getVehicle() == b, "c still on b");
-                context.assertEquals(b.getMood(), Mood.CALM, "b calm again");
-                context.assertFalse(GlandouilleTowers.hasRider(a), "nobody on a");
+                context.assertTrue(b.getVehicle() == null && !GlandouilleTowers.hasRider(b), "b alone");
+                context.assertTrue(c.getVehicle() == a, "c back on a");
+                context.assertEquals(GlandouilleTowers.height(a), 2, "a tower of 2");
+                context.assertTrue(horizontal(a.getPos(), aStart) < 0.05, "a not pushed");
                 context.complete();
             });
         });

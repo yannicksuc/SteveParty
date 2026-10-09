@@ -47,7 +47,7 @@ import java.util.List;
  *     way, a tower has no height limit but the server's safety one ({@link ServerConfig#glandouilleMaxStack}).</li>
  *     <li><b>Flick</b>: hitting one inside a tower (not the bottom one) shoots it out like a missile along the blow,
  *     alone: the ones above it hop straight up and come back down onto the one below ({@link #hopOff}). The bottom one
- *     hit goes alone too, its tower hopping off it and landing on the ground.</li>
+ *     hit takes the whole tower with it, pushed (or slid, the frosty one) still stacked, never up into a ceiling.</li>
  *     <li><b>Impacts</b>: a flicked one flying into another tower (or a lone one) lands on top of it; a sliding one
  *     carries what it slides into on top of itself and slides on, a little slower per acorn; a tower standing on the old
  *     mossy one is too heavy: the slider stops and climbs on it. Over the safety limit, they are shoved as before.</li>

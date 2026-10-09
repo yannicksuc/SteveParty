@@ -538,7 +538,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
                 if (target != null) startTelegraph(target);
             }
             case TELEGRAPH -> {
-                setVelocity(0, getVelocity().y, 0);
+                // stands still to stomp; a tower knocked by a blow first lands where it was thrown
+                if (isOnGround() || !GlandouilleTowers.hasRider(this)) setVelocity(0, getVelocity().y, 0);
                 if (chargeTarget != null && chargeTarget.isAlive()) lookAt(chargeTarget);
                 int elapsed = TELEGRAPH_TICKS - moodTicks;
                 if (elapsed == 4 || elapsed == 9) playSound(ModSounds.GLANDOUILLE_STOMP, 0.9f, 0.9f + random.nextFloat() * 0.2f);
@@ -861,7 +862,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
 
     /**
      * Hit by {@code attacker} (a blow, or what it threw): no damage. One inside a tower is flicked out of it; the
-     * frosty one slides; the others are pushed and get angry.
+     * bottom one of a tower takes the whole tower with it, still stacked; the frosty one slides; the others are pushed
+     * and get angry.
      */
     public void onHit(LivingEntity attacker, @Nullable Entity direct) {
         if (boardActor) return;
@@ -888,17 +890,18 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             setMood(Mood.SULK, SULK_TICKS / 2);
             return;
         }
-        // only the one hit goes: the tower on it hops off and comes down on the ground
-        if (GlandouilleTowers.hasRider(this)) {
-            leaveTower();
-            GlandouilleTowers.hopOff(this, null);
-        }
+        // the bottom one of a tower: the whole tower goes with it, still stacked (it rides on it)
         if (getMood() == Mood.HOPPING) setMood(Mood.CALM, 0);
         if (getVariant() == GlandouilleVariant.FROSTY) {
             startSlide(dir.multiply(0.85));
             return;
         }
         takeKnockback(0.6, -dir.x, -dir.z);
+        // a tower never thrown up into a ceiling: under one, it is only pushed along the ground
+        if (GlandouilleTowers.hasRider(this) && !GlandouilleTowers.fitsAt(this, getPos().add(0, 0.5, 0))) {
+            Vec3d v = getVelocity();
+            setVelocity(v.x, Math.min(v.y, 0), v.z);
+        }
         this.velocityModified = true;
         Mood mood = getMood();
         if (mood == Mood.SLEEPING) wakeUp(attacker);
