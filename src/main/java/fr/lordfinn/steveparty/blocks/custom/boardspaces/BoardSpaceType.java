@@ -17,7 +17,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehav
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TeleportTileBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ThresholdTileBehavior;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TrapTileBehavior;
 import net.minecraft.util.StringIdentifiable;
 
 import java.util.function.Supplier;
@@ -49,9 +48,7 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Pot commun »: passing tokens feed a pot, the token stopping on it wins it (see PotTileBehavior). */
     TILE_POT("tile_pot", PotTileBehavior::new),
     /** « Portail à clé »: gates on some exits, opened by a Gate Key (see KeyGateTileBehavior). */
-    TILE_KEY_GATE("tile_key_gate", KeyGateTileBehavior::new),
-    /** « Piège »: players set their Traps here, the next other player stopping here springs one (see TrapTileBehavior). */
-    TILE_TRAP("tile_trap", TrapTileBehavior::new);
+    TILE_KEY_GATE("tile_key_gate", KeyGateTileBehavior::new);
 
     private final String name;
     private final Supplier<ABoardSpaceBehavior> behavior;

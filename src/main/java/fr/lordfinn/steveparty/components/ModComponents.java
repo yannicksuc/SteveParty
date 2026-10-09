@@ -125,7 +125,7 @@ public class ModComponents {
     public static final ComponentType<Map<String, Integer>> MISTIGRI_SETTINGS =
             registerComponent("mistigri-settings", Codec.unboundedMap(Codec.STRING, Codec.INT));
     /**
-     * The settings of the Threshold obstacle, Common pot, Key gate and Trap cartridges, by name (a missing one is its
+     * The settings of the Threshold obstacle, Common pot and Key gate cartridges, by name (a missing one is its
      * default; see each cartridge).
      */
     public static final ComponentType<Map<String, Integer>> BOARD_CARTRIDGE_SETTINGS =
@@ -139,9 +139,6 @@ public class ModComponents {
     /** The items the Pie stole into a Common pot (kept in its cartridge, given to the pot's winner). */
     public static final ComponentType<List<ItemStack>> POT_ITEMS =
             registerComponent("pot-items", ItemStack.CODEC.listOf());
-    /** The trap set on a Trap cartridge's space (kept in the cartridge, so in its tile). */
-    public static final ComponentType<TrapSetComponent> TRAP_SET =
-            registerComponent("trap-set", TrapSetComponent.CODEC);
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =

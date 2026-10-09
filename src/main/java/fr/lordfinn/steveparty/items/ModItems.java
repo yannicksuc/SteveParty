@@ -24,7 +24,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.glandouille.AcornHatItem;
 import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.powerups.PowerUps;
@@ -145,12 +144,6 @@ public class ModItems {
             new Item.Settings().component(ModComponents.COLOR, KeyGateCartridgeItem.COLOR));
     /** The Gate Key: opens a Key gate on the board, used up (KeyGates). */
     public static final Item GATE_KEY = register("gate_key", GateKeyItem::new,
-            new Item.Settings().maxCount(16));
-    /** Its tile's face is moss green until dyed; players set their Traps there. */
-    public static final Item TRAP_CARTRIDGE = register("trap_cartridge", TrapCartridgeItem::new,
-            new Item.Settings().component(ModComponents.COLOR, TrapCartridgeItem.COLOR));
-    /** The Trap: set on a Trap space where its player's token stopped (BoardTraps). */
-    public static final Item BOARD_TRAP = register("board_trap", BoardTrapItem::new,
             new Item.Settings().maxCount(16));
     public static final Item MINI_GAME_PAGE = register("mini_game_page", MiniGamePageItem::new);
     public static final Item MINI_GAME_REMOTE = registerUnstackable("mini_game_remote", MiniGameRemoteItem::new);
@@ -375,8 +368,6 @@ public class ModItems {
             itemGroup.add(MAGPIE_NEST);
             itemGroup.add(KEY_GATE_CARTRIDGE);
             itemGroup.add(GATE_KEY);
-            itemGroup.add(TRAP_CARTRIDGE);
-            itemGroup.add(BOARD_TRAP);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);

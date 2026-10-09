@@ -52,7 +52,6 @@
       "fr.lordfinn.steveparty.gametest.ThresholdGameTests",
       "fr.lordfinn.steveparty.gametest.PotGameTests",
       "fr.lordfinn.steveparty.gametest.KeyGateGameTests",
-      "fr.lordfinn.steveparty.gametest.BoardTrapGameTests",
       "fr.lordfinn.steveparty.gametest.BoardActorsGameTests",
       "fr.lordfinn.steveparty.gametest.DiceModulesGameTests",
       "fr.lordfinn.steveparty.gametest.DiceRecipeGameTests",
