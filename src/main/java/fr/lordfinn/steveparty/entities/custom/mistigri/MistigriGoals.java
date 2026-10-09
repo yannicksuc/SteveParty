@@ -44,7 +44,8 @@ public final class MistigriGoals {
 
         @Override
         public boolean canStart() {
-            return mistigri.isAngry() || mistigri.isActing() && mistigri.getAction() != Action.LEAP;
+            // playing, his acts are the play goal's: it keeps moving him
+            return mistigri.isAngry() || mistigri.isActing() && mistigri.getAction() != Action.LEAP && !mistigri.isPlaying();
         }
 
         @Override
@@ -122,12 +123,15 @@ public final class MistigriGoals {
     }
 
     /**
-     * Knocks something off with a paw, once in a while: the item in an item frame within reach of a paw, or a book out
-     * of a chiseled bookshelf. Walks there, rears up, swats: it falls to the ground.
+     * Knocks something off with a paw, once in a while: the item in an item frame (on a wall, low or up to {@link #REACH}
+     * blocks above his feet, on the floor, or on a low ceiling), or a book out of a chiseled bookshelf. Walks to a spot
+     * from where he reaches it (hopping on a block next to it if need be), swats, rearing and hopping for a high one:
+     * it falls to the ground. Never breaks the frame.
      */
     static final class KnockOff extends Goal {
         private final MistigriEntity mistigri;
         private @Nullable ItemFrameEntity frame;
+        private @Nullable BlockPos spot;
         private @Nullable BlockPos shelf;
         private int ticks, swatAt;
 
@@ -141,6 +145,7 @@ public final class MistigriGoals {
             if (!mistigri.isFree() || !(mistigri.getWorld() instanceof ServerWorld world)) return false;
             if (world.getTime() < mistigri.nextSwatTime || mistigri.getRandom().nextInt(20) != 0) return false;
             frame = findFrame(world, mistigri);
+            spot = frame == null ? null : standSpot(world, frame);
             shelf = frame == null ? findShelf(world, mistigri) : null;
             return frame != null || shelf != null;
         }
@@ -157,13 +162,18 @@ public final class MistigriGoals {
             ticks = 0;
             swatAt = 0;
             mistigri.setLoafing(false);
-            Vec3d target = target();
-            mistigri.getNavigation().startMovingTo(target.x, target.y, target.z, 0.9);
+            Vec3d to = destination();
+            mistigri.getNavigation().startMovingTo(to.x, to.y, to.z, 0.9);
         }
 
         @Override
         public void stop() {
+            // given up (out of reach after all): not again straight away
+            if (swatAt == 0 && mistigri.getWorld() instanceof ServerWorld world) {
+                mistigri.nextSwatTime = Math.max(mistigri.nextSwatTime, world.getTime() + GIVE_UP_COOLDOWN);
+            }
             frame = null;
+            spot = null;
             shelf = null;
             mistigri.getNavigation().stop();
         }
@@ -172,44 +182,107 @@ public final class MistigriGoals {
             return frame != null ? frame.getPos() : Vec3d.ofCenter(shelf);
         }
 
+        private Vec3d destination() {
+            return spot != null ? Vec3d.ofBottomCenter(spot) : target();
+        }
+
         @Override
         public void tick() {
             ticks++;
             Vec3d target = target();
             mistigri.getLookControl().lookAt(target.x, target.y, target.z);
-            if (swatAt == 0) {
-                double dx = target.x - mistigri.getX(), dz = target.z - mistigri.getZ();
-                if (dx * dx + dz * dz < 2.6 * 2.6) {
-                    mistigri.getNavigation().stop();
-                    float yaw = (float) (MathHelper.atan2(dz, dx) * MathHelper.DEGREES_PER_RADIAN) - 90f;
-                    mistigri.setYaw(yaw);
-                    mistigri.setBodyYaw(yaw);
-                    mistigri.setHeadYaw(yaw);
-                    mistigri.act(Action.SWAT); // he stands still for it (Hold): the paw lands mid-swing
+            if (swatAt != 0) return;
+            double dx = target.x - mistigri.getX(), dz = target.z - mistigri.getZ();
+            double dy = frame != null ? frame.getY() - mistigri.getY() : 0;
+            if (inReach(frame, dx * dx + dz * dz, dy) && mistigri.isOnGround()) {
+                mistigri.getNavigation().stop();
+                float yaw = (float) (MathHelper.atan2(dz, dx) * MathHelper.DEGREES_PER_RADIAN) - 90f;
+                mistigri.setYaw(yaw);
+                mistigri.setBodyYaw(yaw);
+                mistigri.setHeadYaw(yaw);
+                mistigri.act(Action.SWAT); // he stands still for it (Hold): the paw lands mid-swing
+                if (dy > HOP_ABOVE) { // up high: he rears and hops, the paw lands at the top of the hop
+                    mistigri.setVelocity(dx * 0.08, 0.42 + 0.1 * (dy - HOP_ABOVE), dz * 0.08);
+                    mistigri.velocityDirty = true;
+                    mistigri.swatAt(frame, null, 6);
+                } else {
                     mistigri.swatAt(frame, shelf, 10);
-                    swatAt = ticks;
-                } else if (ticks % 20 == 0) {
-                    mistigri.getNavigation().startMovingTo(target.x, target.y, target.z, 0.9);
                 }
+                swatAt = ticks;
+            } else if (ticks % 20 == 0) {
+                Vec3d to = destination();
+                mistigri.getNavigation().startMovingTo(to.x, to.y, to.z, 0.9);
             }
         }
     }
 
-    /** An item frame holding something, at most a paw's reach above his feet (2.5 blocks), the nearest. */
+    /** How high above his feet his paw reaches an item frame: raised, rearing, or with a hop (blocks). */
+    static final double REACH = 3.0;
+    /** Above this (blocks over his feet) he hops for it. */
+    static final double HOP_ABOVE = 1.4;
+    /** After giving up on something out of reach (ticks). */
+    static final int GIVE_UP_COOLDOWN = 200;
+
+    /** Whether he reaches {@code frame} (the shelf when null) from where he stands: close enough, and in height. */
+    static boolean inReach(@Nullable ItemFrameEntity frame, double horizontalSquared, double dy) {
+        if (frame == null) return horizontalSquared < 2.6 * 2.6;
+        if (dy < -1.0 || dy > REACH + 0.2) return false;
+        // a frame on a wall: from where the wall stops his wide body (rearing or hopping for a high one); on the floor
+        // or on a ceiling: close by, under it
+        double reach = frame.getHorizontalFacing().getAxis().isHorizontal() ? 2.6 : 1.7;
+        return horizontalSquared < reach * reach;
+    }
+
+    /**
+     * An item frame (or glow item frame) holding something he can reach (see {@link #standSpot}), the nearest. Only
+     * the frames' entities in a box around him: cheap, and only when he wants to knock something off.
+     */
     public static @Nullable ItemFrameEntity findFrame(ServerWorld world, MistigriEntity mistigri) {
         ItemFrameEntity best = null;
         double bestDistance = Double.MAX_VALUE;
-        for (ItemFrameEntity frame : world.getEntitiesByClass(ItemFrameEntity.class, mistigri.getBoundingBox().expand(SEARCH),
+        for (ItemFrameEntity frame : world.getEntitiesByClass(ItemFrameEntity.class,
+                mistigri.getBoundingBox().expand(SEARCH, REACH + 1, SEARCH),
                 frame -> frame.isAlive() && !frame.getHeldItemStack().isEmpty())) {
-            double dy = frame.getY() - mistigri.getY();
-            if (dy < -0.5 || dy > 2.5 || frame.getHorizontalFacing() == Direction.DOWN) continue;
             double distance = frame.squaredDistanceTo(mistigri);
-            if (distance < bestDistance) {
+            if (distance < bestDistance && standSpot(world, frame) != null) {
                 bestDistance = distance;
                 best = frame;
             }
         }
         return best;
+    }
+
+    /**
+     * Where he can stand to swat {@code frame}'s item: the floor under it (a frame on a wall or on a ceiling: as far
+     * down as his paw reaches; on the floor: its own cell), else the floor of a cell next to it (a block he hops on);
+     * null if none.
+     */
+    public static @Nullable BlockPos standSpot(ServerWorld world, ItemFrameEntity frame) {
+        BlockPos cell = frame.getBlockPos();
+        BlockPos spot = floorUnder(world, cell);
+        if (spot != null && reaches(frame, spot)) return spot;
+        for (Direction side : Direction.Type.HORIZONTAL) {
+            BlockPos next = floorUnder(world, cell.offset(side));
+            if (next != null && reaches(frame, next)) return next;
+        }
+        return null;
+    }
+
+    /** The first free cell at or below {@code from}, with a floor under it, at most REACH + 1 blocks down. */
+    private static @Nullable BlockPos floorUnder(ServerWorld world, BlockPos from) {
+        BlockPos.Mutable pos = from.mutableCopy();
+        for (int i = 0; i <= REACH + 1; i++) {
+            if (!world.getBlockState(pos).getCollisionShape(world, pos).isEmpty()) return null;
+            BlockPos below = pos.down();
+            if (world.getBlockState(below).isSideSolidFullSquare(world, below, Direction.UP)) return pos.toImmutable();
+            pos.move(Direction.DOWN);
+        }
+        return null;
+    }
+
+    private static boolean reaches(ItemFrameEntity frame, BlockPos spot) {
+        double dy = frame.getY() - spot.getY();
+        return dy >= -0.5 && dy <= REACH;
     }
 
     /** A chiseled bookshelf holding a book, within a paw's reach above his feet, the nearest. */
@@ -312,7 +385,7 @@ public final class MistigriGoals {
             Vec3d top = new Vec3d(chest.getX() + 0.5, chest.getY() + 1, chest.getZ() + 0.5);
             if (mistigri.standsOn(chest) && mistigri.isOnGround()) {
                 mistigri.getNavigation().stop();
-                mistigri.loafOn(chest);
+                mistigri.napOn(chest);
                 seated = true;
                 ticks = 0;
                 return;

@@ -42,6 +42,11 @@ import net.minecraft.world.GameMode;
  * (what it stole given back), what it drops, and the cobwebs its owner walks through.
  */
 public class FrousseuxGameTests implements SteveGameTest {
+    /**
+     * The thefts, apart from the tests with survival players: a survival player near would get the stolen item
+     * (FrousseuxCourier). Each courier test runs in a batch of its own for the same reason.
+     */
+    private static final String THEFT = "frousseux_theft";
 
     private static FrousseuxEntity frousseux(TestContext context, BlockPos at) {
         FrousseuxEntity one = context.spawnEntity(ModEntities.FROUSSEUX, at);
@@ -59,7 +64,7 @@ public class FrousseuxGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void itsShinyThingsAreTagged(TestContext context) {
         for (var item : new Item[]{Items.IRON_INGOT, Items.GOLD_NUGGET, Items.RAW_COPPER, Items.DIAMOND,
-                Items.EMERALD, Items.LAPIS_LAZULI, Items.REDSTONE, Items.AMETHYST_SHARD}) {
+                Items.EMERALD, Items.LAPIS_LAZULI, Items.REDSTONE, Items.AMETHYST_SHARD, ModItems.COIN}) {
             context.assertTrue(new ItemStack(item).isIn(FrousseuxEntity.SHINY), item + " is shiny");
         }
         context.assertFalse(new ItemStack(Items.COBBLESTONE).isIn(FrousseuxEntity.SHINY), "cobblestone is not");
@@ -67,7 +72,7 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = THEFT)
     public void itStealsOneItemNeverTheStack(TestContext context) {
         TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
@@ -84,7 +89,7 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = THEFT)
     public void nothingShinyNothingStolen(TestContext context) {
         TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
@@ -129,7 +134,7 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = THEFT)
     public void tamingGivesTheItemBack(TestContext context) {
         TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
@@ -144,7 +149,7 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = THEFT)
     public void flintAndSteelFirstGetsTheItemBack(TestContext context) {
         TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
@@ -159,7 +164,7 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = THEFT)
     public void killedItDropsWhatItStole(TestContext context) {
         TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
@@ -343,7 +348,7 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = THEFT)
     public void itLeavesTheSameVictimBeForTenMinutes(TestContext context) {
         TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
@@ -357,6 +362,134 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.assertFalse(frousseux.stealFrom(player), "not the same player again so soon");
         context.assertTrue(frousseux.stealFrom(other), "someone else, yes");
         context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = THEFT)
+    public void itStealsCoins(TestContext context) {
+        TestBoards.floor(context, 8);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        ServerPlayerEntity player = player(context, new BlockPos(3, 1, 4));
+        player.getInventory().setStack(0, new ItemStack(ModItems.COIN, 12));
+        context.assertTrue(frousseux.stealFrom(player), "it steals");
+        context.assertTrue(frousseux.getStolen().isOf(ModItems.COIN), "a coin");
+        context.assertTrue(player.getInventory().count(ModItems.COIN) == 11, "eleven left");
+        context.complete();
+    }
+
+    // ---------------------------------------------------------------- what it stole, given to someone else
+
+    /** A survival player joined at the relative position, removed at the end of the test. */
+    private static ServerPlayerEntity survivor(TestContext context, String name, GameMode mode, double x, double z) {
+        ServerPlayerEntity player = TestPlayers.joined(context, "fc", name, mode, x, 1, z);
+        TestPlayers.removeAtEnd(context, player);
+        return player;
+    }
+
+    /** A wild one, free to fly (its AI on). */
+    private static FrousseuxEntity flying(TestContext context, BlockPos at) {
+        return context.spawnEntity(ModEntities.FROUSSEUX, at);
+    }
+
+    /** The diamond lies at {@code player}'s feet (within 2 blocks) or is in their inventory. */
+    private static boolean gotDiamond(TestContext context, ServerPlayerEntity player) {
+        if (player.getInventory().count(Items.DIAMOND) > 0) return true;
+        return !context.getWorld().getEntitiesByClass(ItemEntity.class, player.getBoundingBox().expand(2),
+                item -> item.getStack().isOf(Items.DIAMOND)).isEmpty();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "frousseux_courier", tickLimit = 600)
+    public void inMultiplayerItCarriesTheLootToAnotherPlayer(TestContext context) {
+        TestBoards.floor(context, 20, 20, 0);
+        // a thick wall between them (4 blocks, 3 high): over it, not through it
+        for (int x = 8; x < 12; x++) for (int z = 0; z < 20; z++) for (int y = 1; y <= 3; y++) {
+            context.setBlockState(new BlockPos(x, y, z), Blocks.STONE);
+        }
+        ServerPlayerEntity victim = survivor(context, "Victim", GameMode.SURVIVAL, 3.5, 4.5);
+        ServerPlayerEntity receiver = survivor(context, "Receiver", GameMode.ADVENTURE, 16.5, 15.5);
+        FrousseuxEntity frousseux = flying(context, new BlockPos(3, 2, 3));
+        victim.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 3));
+        context.assertTrue(frousseux.stealFrom(victim), "it steals");
+        context.assertTrue(frousseux.isDelivering() && !frousseux.isFleeing(), "off to the other player, not fleeing");
+        context.assertTrue(frousseux.courierReceiver() == receiver, "to the receiver");
+        context.assertTrue(victim.getInventory().count(Items.DIAMOND) == 2, "one diamond taken");
+        boolean[] done = {false};
+        context.runAtEveryTick(() -> {
+            if (done[0] || !gotDiamond(context, receiver)) return;
+            done[0] = true;
+            context.assertTrue(frousseux.getStolen().isEmpty() && !frousseux.isDelivering(), "given away");
+            context.assertTrue(victim.getInventory().count(Items.DIAMOND) == 2, "the victim did not get it back");
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "frousseux_courier_nearest", tickLimit = 400)
+    public void itGivesToTheNearestOtherPlayer(TestContext context) {
+        TestBoards.floor(context, 20, 20, 0);
+        ServerPlayerEntity victim = survivor(context, "Victim", GameMode.SURVIVAL, 3.5, 4.5);
+        ServerPlayerEntity near = survivor(context, "Near", GameMode.SURVIVAL, 8.5, 3.5);
+        survivor(context, "Far", GameMode.SURVIVAL, 18.5, 18.5);
+        FrousseuxEntity frousseux = flying(context, new BlockPos(3, 2, 3));
+        victim.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 1));
+        context.assertTrue(frousseux.stealFrom(victim), "it steals");
+        context.assertTrue(frousseux.courierReceiver() == near, "the nearest one");
+        boolean[] done = {false};
+        context.runAtEveryTick(() -> {
+            if (done[0] || !gotDiamond(context, near)) return;
+            done[0] = true;
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "frousseux_courier_solo", tickLimit = 100)
+    public void aloneItKeepsTheLootAndFlees(TestContext context) {
+        TestBoards.floor(context, 20, 20, 0);
+        ServerPlayerEntity victim = survivor(context, "Victim", GameMode.SURVIVAL, 3.5, 4.5);
+        // neither a creative player nor a spectator gets it
+        survivor(context, "Creative", GameMode.CREATIVE, 8.5, 8.5);
+        survivor(context, "Spectator", GameMode.SPECTATOR, 9.5, 9.5);
+        FrousseuxEntity frousseux = flying(context, new BlockPos(3, 2, 3));
+        victim.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 1));
+        context.assertTrue(frousseux.stealFrom(victim), "it steals");
+        context.assertFalse(frousseux.isDelivering(), "nobody to give it to");
+        context.assertTrue(frousseux.isFleeing(), "it flees");
+        context.runAtTick(context.getTick() + 40, () -> {
+            context.assertTrue(frousseux.getStolen().isOf(Items.DIAMOND), "it still carries the diamond");
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "frousseux_courier_gone", tickLimit = 100)
+    public void theReceiverGoneItFleesWithTheLoot(TestContext context) {
+        TestBoards.floor(context, 20, 20, 0);
+        ServerPlayerEntity victim = survivor(context, "Victim", GameMode.SURVIVAL, 3.5, 4.5);
+        ServerPlayerEntity receiver = survivor(context, "Receiver", GameMode.SURVIVAL, 18.5, 18.5);
+        FrousseuxEntity frousseux = flying(context, new BlockPos(3, 2, 3));
+        victim.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 1));
+        context.assertTrue(frousseux.stealFrom(victim), "it steals");
+        context.assertTrue(frousseux.isDelivering(), "off to the receiver");
+        TestPlayers.remove(context, receiver);
+        context.runAtTick(context.getTick() + 15, () -> {
+            context.assertFalse(frousseux.isDelivering(), "nobody left to give it to");
+            context.assertTrue(frousseux.isFleeing(), "it flees");
+            context.assertTrue(frousseux.getStolen().isOf(Items.DIAMOND), "with the diamond");
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "frousseux_courier_board", tickLimit = 100)
+    public void aBoardFrousseuxNeverStealsNorGives(TestContext context) {
+        TestBoards.floor(context, 20, 20, 0);
+        ServerPlayerEntity victim = survivor(context, "Victim", GameMode.SURVIVAL, 3.5, 4.5);
+        survivor(context, "Receiver", GameMode.SURVIVAL, 8.5, 8.5);
+        FrousseuxEntity frousseux = flying(context, new BlockPos(3, 2, 3));
+        frousseux.setBoardActor();
+        victim.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 1));
+        context.assertFalse(frousseux.stealFrom(victim), "the board's own never steals");
+        context.runAtTick(context.getTick() + 20, () -> {
+            context.assertTrue(victim.getInventory().count(Items.DIAMOND) == 1, "nothing taken");
+            context.assertFalse(frousseux.isDelivering(), "nothing to give");
+            context.complete();
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)

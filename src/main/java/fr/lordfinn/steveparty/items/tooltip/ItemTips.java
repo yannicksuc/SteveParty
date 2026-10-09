@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.items.tooltip;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.items.custom.jumpshoes.JumpShoes;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -56,7 +57,13 @@ public final class ItemTips {
         map.put(item("plunger"), (stack, tips) -> tips
                 .summary(KEY + "plunger.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "plunger.use")));
-        map.put(item("triple_jump_shoes"), (stack, tips) -> tips.summary(KEY + "triple_jump_shoes.summary"));
+        map.put(item("triple_jump_shoes"), (stack, tips) -> tips
+                .summary(KEY + "triple_jump_shoes.summary")
+                .more(more -> {
+                    more.use(Tooltips.Keys.jump(), KEY + "triple_jump_shoes.use.triple")
+                            .use(Tooltips.Keys.jump(), KEY + "triple_jump_shoes.use.wall");
+                    if (JumpShoes.hasDoubleJump(stack)) more.use(Tooltips.Keys.jump(), KEY + "triple_jump_shoes.use.double");
+                }));
         map.put(item("mini_games_catalogue"), (stack, tips) -> tips
                 .summary(KEY + "mini_games_catalogue.summary")
                 .more(more -> more
@@ -113,7 +120,9 @@ public final class ItemTips {
                 .more(more -> more
                         .use(Tooltips.Keys.use(), KEY + "looting_box.use")
                         .note(KEY + "looting_box.rules")));
-        map.put(item("magpie_nest"), simple("magpie_nest"));
+        map.put(item("magpie_nest"), (stack, tips) -> tips
+                .summary(KEY + "magpie_nest.summary")
+                .more(more -> more.use(Tooltips.Keys.use(), KEY + "magpie_nest.use").note(KEY + "magpie_nest.pot")));
         map.put(item("stencil_maker"), simple("stencil_maker"));
         map.put(item("check_point"), (stack, tips) -> tips.summary(KEY + "check_point.summary"));
         return map;

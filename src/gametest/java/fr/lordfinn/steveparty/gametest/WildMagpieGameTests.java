@@ -30,7 +30,8 @@ import net.minecraft.world.biome.SpawnSettings;
 /**
  * The wild Pie: born in the woods (and not the Common pot's Pie), standing exactly on the visual top of what it
  * perches on (a fence or a wall post at 1.0 not 1.5, a log, a chain, a slab, a stairs' upper step), landing there
- * by itself, its colour saved, and its flight to a perch.
+ * by itself, its colour saved, and its flight to a perch. The flights have a batch of their own: a wild Pie flies to
+ * the shiny things lying around (WildMagpieEntity#fetchShiny), those of the other tests too.
  */
 public class WildMagpieGameTests implements SteveGameTest {
     /** Beyond the template: a magpie looks for perches 16 blocks around. */
@@ -99,7 +100,7 @@ public class WildMagpieGameTests implements SteveGameTest {
     }
 
     /** Let go above a fence (as from its egg: over the fence's 1.5 collision), it settles on the post, at 1.0. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60, batchId = "wild_magpie_flight")
     public void itSettlesOnTheFencePost(TestContext context) {
         BlockPos fence = new BlockPos(2, 1, 2);
         context.setBlockState(fence, Blocks.OAK_FENCE.getDefaultState());
@@ -133,7 +134,7 @@ public class WildMagpieGameTests implements SteveGameTest {
     }
 
     /** Off to another perch (the other fence 10 blocks away, or the floor around), it lands exactly on its top. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "wild_magpie_flight")
     public void itFliesToAnotherPerch(TestContext context) {
         BlockPos from = new BlockPos(0, 1, 0), to = new BlockPos(7, 1, 7);
         context.setBlockState(from, Blocks.OAK_FENCE.getDefaultState());

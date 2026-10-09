@@ -24,7 +24,8 @@ import java.util.EnumSet;
  *     <li>the end of the way is open space, never inside a block: it never goes into thick rock.</li>
  * </ul>
  * Each route is checked when it is chosen, and again whenever it enters another block (the world may have changed);
- * shut in anyway (blocks placed around it), it slips out to the nearest open space ({@link #escape}).
+ * shut in anyway (blocks placed around it), it slips out to the nearest open space ({@link #escape}). Carrying a stolen
+ * thing to another player, it goes leg by leg by the same rule ({@link #towards}).
  */
 public final class FrousseuxFlight {
     /** The thickest wall it passes through, in full blocks. */
@@ -203,6 +204,84 @@ public final class FrousseuxFlight {
             if (--repick > 0 && frousseux.flight().isMovingTo()) return;
             repick = 20;
             Vec3d to = fleeTarget(frousseux, frousseux.fleeFrom(), frousseux.getRandom());
+            if (to != null) frousseux.getMoveControl().moveTo(to.x, to.y, to.z, SPEED);
+        }
+
+        @Override
+        public void stop() {
+            frousseux.flight().stop();
+        }
+    }
+
+    /** Each leg of its way to someone: at most this long (blocks), picked again often (they move). */
+    private static final double STRIDE = 8;
+
+    /**
+     * Its next leg towards {@code who} (its feet), by the thin-walls rule: straight at them (a {@link #STRIDE} at most)
+     * when the walls allow it, else the best of a few detours (the one ending nearest them); null when none fits.
+     */
+    static @Nullable Vec3d towards(FrousseuxEntity frousseux, Entity who, Random random) {
+        World world = frousseux.getWorld();
+        Vec3d centre = frousseux.getBoundingBox().getCenter();
+        double half = frousseux.getHeight() / 2;
+        Vec3d chest = who.getPos().add(0, who.getHeight() * 0.6, 0);
+        Vec3d back = centre.subtract(chest);
+        // by them, a step short of their chest, on its own side
+        Vec3d goal = back.lengthSquared() < 1e-4 ? chest : chest.add(back.normalize().multiply(0.9));
+        Vec3d way = goal.subtract(centre);
+        double length = way.length();
+        Vec3d leg = length <= STRIDE ? goal : centre.add(way.multiply(STRIDE / length));
+        if (fits(frousseux, leg.subtract(0, half, 0)) && canFly(world, centre, leg)) return leg.subtract(0, half, 0);
+        double heading = Math.atan2(way.z, way.x);
+        Vec3d best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (int tries = 0; tries < 16; tries++) {
+            double angle = heading + (random.nextDouble() - 0.5) * Math.PI * 1.6;
+            double distance = 2 + random.nextDouble() * 4;
+            Vec3d at = centre.add(Math.cos(angle) * distance, random.nextInt(5) - 2, Math.sin(angle) * distance);
+            if (!fits(frousseux, at.subtract(0, half, 0)) || !canFly(world, centre, at)) continue;
+            double left = at.squaredDistanceTo(goal);
+            if (left < bestDistance) {
+                best = at;
+                bestDistance = left;
+            }
+        }
+        return best == null ? null : best.subtract(0, half, 0);
+    }
+
+    /** Off to give what it stole to another player ({@link FrousseuxCourier}): to them, fast, a new leg twice a second. */
+    static final class Deliver extends Goal {
+        private static final double SPEED = FrousseuxEntity.FLY_SPEED * 2.2;
+        private final FrousseuxEntity frousseux;
+        private int repick;
+
+        Deliver(FrousseuxEntity frousseux) {
+            this.frousseux = frousseux;
+            setControls(EnumSet.of(Control.MOVE));
+        }
+
+        @Override
+        public boolean canStart() {
+            return frousseux.isDelivering() && !frousseux.isTamed() && !frousseux.isBoardActor();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return canStart();
+        }
+
+        @Override
+        public void start() {
+            repick = 0;
+        }
+
+        @Override
+        public void tick() {
+            if (--repick > 0 && frousseux.flight().isMovingTo()) return;
+            repick = 10;
+            Entity receiver = frousseux.courierReceiver();
+            if (receiver == null) return;
+            Vec3d to = towards(frousseux, receiver, frousseux.getRandom());
             if (to != null) frousseux.getMoveControl().moveTo(to.x, to.y, to.z, SPEED);
         }
 

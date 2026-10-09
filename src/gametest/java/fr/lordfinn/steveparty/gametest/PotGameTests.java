@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
-import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -290,10 +290,73 @@ public class PotGameTests implements SteveGameTest {
                 120, "the Pie comes", () -> {
                     MagpieEntity magpie = context.getWorld().getEntitiesByType(ModEntities.MAGPIE, around, MagpieEntity::isAlive).getFirst();
                     context.assertEquals(magpie.getHome(), context.getAbsolutePos(pos), "its home is the pot space");
-                    context.assertEquals(context.getBlockState(nestPos).get(MagpieNestBlock.COINS), 2, "9 coins: a pile in the nest");
+                    context.assertEquals(((MagpieNestBlockEntity) context.getBlockEntity(nestPos)).getPileCount(), 9, "9 coins: a pile of 9 in the nest");
                     context.assertTrue(!magpie.damage(context.getWorld().getDamageSources().generic(), 100), "never hurt");
                     tile.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
                     when(context, magpie::isRemoved, 120, "the Pie leaves with the cartridge", context::complete);
                 });
+    }
+
+    /** The pot's nest, linked by the pot space's care (a nest two blocks beside the pot space). */
+    private static MagpieNestBlockEntity nest(TestContext context, Board board) {
+        BlockPos nestPos = PATH.get(POT).add(0, 0, 3);
+        context.setBlockState(nestPos.down(), Blocks.STONE);
+        context.setBlockState(nestPos, ModBlocks.MAGPIE_NEST);
+        CommonPots.care(context.getWorld(), board.pot(), board.cartridge());
+        return context.getBlockEntity(nestPos);
+    }
+
+    /**
+     * The nest is the pot: the stakes land in it, coins and shiny things put in it by hand go into the pot (each one
+     * more coin on the pile), its pile counts the pot; the winner takes it all (the shiny things too) and empties it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "pot_nest_content")
+    public void theNestIsThePot(TestContext context) {
+        Board board = board(context, pot(2));
+        give(board, 5);
+        context.waitAndRun(2, () -> {
+            MagpieNestBlockEntity nest = nest(context, board);
+            context.assertEquals(nest.getPot(), board.pot().getPos(), "linked to the pot space");
+            CommonPots.pass(context.getWorld(), board.pot(), board.token());
+            context.assertEquals(PotCartridgeItem.coins(board.cartridge()), 2, "the stake in the pot");
+            context.assertEquals(nest.getPileCount(), 2, "and in the nest");
+            context.assertTrue(nest.insert(new ItemStack(ModItems.COIN, 3)).isEmpty(), "coins by hand");
+            context.assertTrue(nest.insert(new ItemStack(Items.EMERALD, 2)).isEmpty(), "a shiny thing by hand");
+            context.assertTrue(!nest.insert(new ItemStack(Items.DIRT)).isEmpty(), "dirt is no treasure");
+            context.assertEquals(PotCartridgeItem.coins(board.cartridge()), 5, "the coins in the pot");
+            context.assertEquals(PotCartridgeItem.items(board.cartridge()).getFirst().getCount(), 2, "the emeralds in the pot");
+            context.assertEquals(nest.getPileCount(), 7, "one coin of the pile a thing: 5 coins, 2 emeralds");
+            context.assertTrue(nest.takeTreasure().isEmpty() && nest.takeCoins(5) == 0, "nobody takes from a pot's nest");
+            int before = board.coins();
+            CommonPots.win(context.getWorld(), board.pot(), board.token());
+            context.assertEquals(board.coins() - before, 5, "the winner takes the coins");
+            context.assertEquals(InventoryUtils.count(board.player().getInventory(), new ItemStack(Items.EMERALD)), 2, "and the emeralds");
+            context.assertEquals(nest.getPileCount(), 0, "the nest emptied");
+            context.complete();
+        });
+    }
+
+    /** What a nest held on its own goes into the pot when it gets linked. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "pot_nest_link")
+    public void aNestBringsItsContentToThePot(TestContext context) {
+        ItemStack cartridge = pot(1);
+        PotCartridgeItem.setCoins(cartridge, 3);
+        Board board = board(context, cartridge);
+        BlockPos nestPos = PATH.get(POT).add(0, 0, 3);
+        context.setBlockState(nestPos.down(), Blocks.STONE);
+        context.setBlockState(nestPos, ModBlocks.MAGPIE_NEST);
+        MagpieNestBlockEntity nest = context.getBlockEntity(nestPos);
+        nest.insert(new ItemStack(ModItems.COIN, 4));
+        nest.insert(new ItemStack(Items.DIAMOND));
+        context.assertEquals(nest.getPileCount(), 5, "on its own: 4 coins and a diamond");
+        CommonPots.care(context.getWorld(), board.pot(), board.cartridge());
+        context.assertEquals(PotCartridgeItem.coins(board.cartridge()), 7, "its coins joined the pot's 3");
+        context.assertTrue(PotCartridgeItem.items(board.cartridge()).getFirst().isOf(Items.DIAMOND), "its diamond too");
+        context.assertEquals(nest.getPileCount(), 8, "the nest shows the whole pot");
+        // the cartridge gone: the nest is on its own again, empty (the pot stayed in the cartridge)
+        board.pot().setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
+        context.assertTrue(!nest.isLinked(), "no pot any more");
+        context.assertEquals(nest.getPileCount(), 0, "the pot left with its cartridge");
+        context.complete();
     }
 }

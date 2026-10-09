@@ -9,9 +9,15 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriGoals;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
+import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriPlay;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.ChestBlock;
+import net.minecraft.block.enums.ChestType;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
@@ -27,6 +33,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
@@ -322,6 +329,205 @@ public class MistigriGameTests implements SteveGameTest {
         context.assertFalse(mistigri.isAsleepOnChest(), "a raw fish wakes him");
         context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), context.getAbsolutePos(chest)) == null, "the chest opens again");
         context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heKnocksOffAFrameOnTheFloor(TestContext context) {
+        knocksOff(context, new BlockPos(3, 1, 6), Direction.UP);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heKnocksOffAFrameLowOnAWall(TestContext context) {
+        wall(context, 3, 6, 2);
+        knocksOff(context, new BlockPos(3, 1, 5), Direction.NORTH);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heKnocksOffAFrameHighOnAWall(TestContext context) {
+        wall(context, 3, 6, 4);
+        knocksOff(context, new BlockPos(3, 3, 5), Direction.NORTH);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heKnocksOffAFrameOnALowCeiling(TestContext context) {
+        context.setBlockState(new BlockPos(3, 4, 5), Blocks.STONE);
+        knocksOff(context, new BlockPos(3, 3, 5), Direction.DOWN);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void heHopsOnABlockForAFrameOnAHigherCeiling(TestContext context) {
+        context.setBlockState(new BlockPos(3, 5, 5), Blocks.STONE);
+        context.setBlockState(new BlockPos(4, 1, 5), Blocks.STONE); // the block he hops on
+        knocksOff(context, new BlockPos(3, 4, 5), Direction.DOWN);
+    }
+
+    /** A stone wall column at ({@code x}, 1..{@code height}, {@code z}). */
+    private static void wall(TestContext context, int x, int z, int height) {
+        for (int y = 1; y <= height; y++) context.setBlockState(new BlockPos(x, y, z), Blocks.STONE);
+    }
+
+    /** A frame holding a diamond in {@code cell}, facing {@code facing}: a wild Mistigri knocks it off, frame unbroken. */
+    private static void knocksOff(TestContext context, BlockPos cell, Direction facing) {
+        TestBoards.floor(context, 8);
+        ServerWorld world = context.getWorld();
+        ItemFrameEntity frame = new ItemFrameEntity(world, context.getAbsolutePos(cell), facing);
+        frame.setHeldItemStack(new ItemStack(Items.DIAMOND));
+        world.spawnEntity(frame);
+        MistigriEntity mistigri = context.spawnEntity(ModEntities.MISTIGRI, new BlockPos(3, 1, 2));
+        context.assertTrue(MistigriGoals.standSpot(world, frame) != null, "somewhere he reaches it from");
+        context.assertTrue(MistigriGoals.findFrame(world, mistigri) == frame, "he spots it");
+        boolean[] done = {false};
+        context.runAtEveryTick(() -> {
+            if (done[0] || !frame.getHeldItemStack().isEmpty()) return;
+            done[0] = true;
+            context.assertTrue(frame.isAlive(), "the frame is never broken");
+            context.assertTrue(!world.getEntitiesByClass(ItemEntity.class, frame.getBoundingBox().expand(4),
+                    item -> item.getStack().isOf(Items.DIAMOND)).isEmpty(), "the diamond fell");
+            frame.discard();
+            context.complete();
+        });
+    }
+
+    // ---------------------------------------------------------------- play
+
+    private static ItemEntity acorn(TestContext context, BlockPos at) {
+        BlockPos abs = context.getAbsolutePos(at);
+        ItemEntity acorn = new ItemEntity(context.getWorld(), abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5,
+                new ItemStack(ModItems.ACORN));
+        acorn.setVelocity(Vec3d.ZERO);
+        context.getWorld().spawnEntity(acorn);
+        return acorn;
+    }
+
+    // each its own batch: an acorn or a Glandouille next door would catch the other tests' cats' eyes
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "mistigri_acorn", tickLimit = 600)
+    public void aThrownAcornDistractsHimAndHePlaysWithIt(TestContext context) {
+        TestBoards.floor(context, 8);
+        MistigriEntity mistigri = context.spawnEntity(ModEntities.MISTIGRI, new BlockPos(1, 1, 1));
+        mistigri.setAngry(400); // even angry
+        ItemEntity acorn = acorn(context, new BlockPos(6, 1, 6));
+        Vec3d[] reached = {null};
+        context.runAtEveryTick(() -> {
+            context.assertTrue(acorn.isAlive(), "he never takes the acorn");
+            if (reached[0] == null) {
+                if (mistigri.isPlaying() && acorn.squaredDistanceTo(mistigri) < 2.5 * 2.5) {
+                    context.assertFalse(mistigri.isAngry(), "the acorn made him forget his anger");
+                    reached[0] = acorn.getPos();
+                }
+                return;
+            }
+            if (acorn.getPos().squaredDistanceTo(reached[0]) > 0.6 * 0.6) {
+                acorn.discard();
+                context.complete();
+            }
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "mistigri_acorn_picked_up", tickLimit = 400)
+    public void heStopsPlayingWhenTheAcornIsPickedUp(TestContext context) {
+        TestBoards.floor(context, 8);
+        MistigriEntity mistigri = context.spawnEntity(ModEntities.MISTIGRI, new BlockPos(2, 1, 2));
+        ItemEntity acorn = acorn(context, new BlockPos(4, 1, 2));
+        int[] pickedAt = {-1};
+        int[] tick = {0};
+        context.runAtEveryTick(() -> {
+            tick[0]++;
+            if (pickedAt[0] < 0) {
+                if (mistigri.isPlaying()) {
+                    acorn.discard(); // as a player picking it up
+                    pickedAt[0] = tick[0];
+                }
+                return;
+            }
+            if (tick[0] - pickedAt[0] >= 3) {
+                context.assertFalse(mistigri.isPlaying(), "the game ends with the acorn gone");
+                context.complete();
+            }
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "mistigri_cat_and_mouse", tickLimit = 1200)
+    public void hePlaysCatAndMouseWithAGlandouilleWithoutHurtingIt(TestContext context) {
+        TestBoards.floor(context, 8);
+        GlandouilleEntity glandouille = context.spawnEntity(ModEntities.GLANDOUILLE, new BlockPos(6, 1, 6));
+        float health = glandouille.getHealth();
+        MistigriEntity mistigri = context.spawnEntity(ModEntities.MISTIGRI, new BlockPos(1, 1, 1));
+        context.assertTrue(MistigriPlay.findPrey(context.getWorld(), mistigri) == glandouille, "he spots it");
+        boolean[] chased = {false};
+        context.runAtEveryTick(() -> {
+            context.assertTrue(glandouille.isAlive() && glandouille.getHealth() >= health, "never hurt");
+            if (!chased[0] && glandouille.scaredOf() == mistigri) chased[0] = true;
+            if (chased[0] && glandouille.getNavigation().isFollowingPath()) {
+                glandouille.discard();
+                context.complete(); // pounced on, it runs away
+            }
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "mistigri_board_glandouilles")
+    public void heLeavesBoardAndCarriedGlandouillesAlone(TestContext context) {
+        TestBoards.floor(context, 8);
+        MistigriEntity mistigri = mistigri(context, new BlockPos(2, 1, 2));
+        GlandouilleEntity onTheBoard = context.spawnEntity(ModEntities.GLANDOUILLE, new BlockPos(4, 1, 2));
+        onTheBoard.setBoardActor();
+        GlandouilleEntity ofATile = context.spawnEntity(ModEntities.GLANDOUILLE, new BlockPos(5, 1, 3));
+        ofATile.setInvulnerable(true); // a board space's mob
+        GlandouilleEntity carried = context.spawnEntity(ModEntities.GLANDOUILLE, new BlockPos(3, 1, 4));
+        ServerPlayerEntity player = player(context);
+        player.refreshPositionAndAngles(carried.getX(), carried.getY(), carried.getZ(), 0, 0);
+        carried.startRiding(player, true);
+        context.assertFalse(MistigriPlay.isPrey(onTheBoard), "not the board's");
+        context.assertFalse(MistigriPlay.isPrey(ofATile), "not a board space's");
+        context.assertFalse(MistigriPlay.isPrey(carried), "not one in a player's hands");
+        context.assertTrue(MistigriPlay.findPrey(context.getWorld(), mistigri) == null, "none to play with");
+        onTheBoard.scare(mistigri, 100);
+        ofATile.scare(mistigri, 100);
+        context.assertTrue(onTheBoard.scaredOf() == null && ofATile.scaredOf() == null, "a board's one never runs from him");
+        carried.stopRiding();
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void heLiesOnTheLidCentredAlongTheChest(TestContext context) {
+        TestBoards.floor(context, 8);
+        // a single chest, he landed off-centre
+        BlockPos single = context.getAbsolutePos(new BlockPos(2, 1, 2));
+        context.setBlockState(new BlockPos(2, 1, 2), Blocks.CHEST.getDefaultState().with(ChestBlock.FACING, Direction.SOUTH));
+        MistigriEntity onSingle = mistigri(context, new BlockPos(2, 2, 2));
+        onSingle.setPosition(onSingle.getX() + 0.3, single.getY() + 0.875, onSingle.getZ() - 0.2);
+        onSingle.napOn(single);
+        context.assertTrue(near(onSingle.getX(), single.getX() + 0.5) && near(onSingle.getZ(), single.getZ() + 0.5), "centred on the chest");
+        context.assertTrue(near(onSingle.getY(), single.getY() + 14 / 16.0), "on its lid");
+        context.assertTrue(Direction.fromRotation(onSingle.getYaw()).getAxis() == Direction.Axis.X, "lengthwise along its front");
+        // a double chest: in the middle of both halves
+        BlockPos half = new BlockPos(5, 1, 2);
+        BlockState left = Blocks.CHEST.getDefaultState().with(ChestBlock.FACING, Direction.NORTH).with(ChestBlock.CHEST_TYPE, ChestType.LEFT);
+        BlockPos otherHalf = half.offset(ChestBlock.getFacing(left));
+        context.setBlockState(half, left);
+        context.setBlockState(otherHalf, left.with(ChestBlock.CHEST_TYPE, ChestType.RIGHT));
+        BlockPos a = context.getAbsolutePos(half), b = context.getAbsolutePos(otherHalf);
+        MistigriEntity onDouble = mistigri(context, half.up());
+        onDouble.napOn(a);
+        context.assertTrue(near(onDouble.getX(), (a.getX() + b.getX()) / 2.0 + 0.5) && near(onDouble.getZ(), a.getZ() + 0.5), "in the middle of the double chest");
+        context.assertTrue(Direction.fromRotation(onDouble.getYaw()).getAxis() == Direction.Axis.X, "along both halves");
+        // a barrel: a full block
+        BlockPos barrel = context.getAbsolutePos(new BlockPos(2, 1, 5));
+        context.setBlockState(new BlockPos(2, 1, 5), Blocks.BARREL);
+        MistigriEntity onBarrel = mistigri(context, new BlockPos(2, 2, 5));
+        onBarrel.napOn(barrel);
+        context.assertTrue(near(onBarrel.getY(), barrel.getY() + 1.0), "on the barrel's top");
+        context.waitAndRun(10, () -> {
+            context.assertTrue(onSingle.chest() != null && onDouble.chest() != null && onBarrel.chest() != null, "still asleep there");
+            context.assertTrue(near(onSingle.getY(), single.getY() + 14 / 16.0), "still on the lid");
+            context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), single) == onSingle, "the chest won't open");
+            context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), a) == onDouble
+                    && MistigriBadLuck.sitter(context.getWorld(), b) == onDouble, "neither half of the double chest opens");
+            context.complete();
+        });
+    }
+
+    private static boolean near(double a, double b) {
+        return Math.abs(a - b) < 1e-4;
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
