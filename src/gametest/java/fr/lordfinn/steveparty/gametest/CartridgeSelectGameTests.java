@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.Item;
@@ -32,7 +33,7 @@ public class CartridgeSelectGameTests implements FabricGameTest {
         BlockPos tile = tiles.getFirst();
         context.setBlockState(new BlockPos(5, 0, 1), net.minecraft.block.Blocks.STONE);
         BlockPos ground = context.getAbsolutePos(new BlockPos(5, 0, 1));
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.changeGameMode(GameMode.SURVIVAL);
             Vec3d at = context.getAbsolute(new Vec3d(3.5, 1, 3.5));
@@ -60,7 +61,7 @@ public class CartridgeSelectGameTests implements FabricGameTest {
                 player.setSneaking(true);
             }
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

@@ -1,13 +1,13 @@
 package fr.lordfinn.steveparty.gametest;
 
-import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.config.ServerConfig;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -44,10 +44,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
@@ -74,7 +71,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
@@ -90,7 +86,6 @@ import java.util.stream.Stream;
  */
 public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
     private static final String BATCH = "zone_bubble_life";
-    private static final AtomicInteger SERIAL = new AtomicInteger();
 
     // ------------------------------------------------------------------ helpers
 
@@ -117,32 +112,13 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
         return MiniGameZone.of(context.getWorld().getRegistryKey(), context.getAbsolutePos(at(1, 1, 1)), context.getAbsolutePos(at(4, 5, 4)));
     }
 
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(at(x, 0, z), Blocks.STONE);
-    }
-
     private static ZoneBubble begin(TestContext context, MiniGameZone zone, ServerPlayerEntity... participants) {
         endLeftSession(context);
         return ZoneBubbles.begin(context.getWorld().getServer(), UUID.randomUUID(), zone, List.of(participants), List.of(), ZoneBubble.Options.DEFAULT);
     }
 
     private static ServerPlayerEntity player(TestContext context, String name, double x, double y, double z) {
-        ServerWorld world = context.getWorld();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "l" + SERIAL.incrementAndGet() + name);
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions());
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        player.changeGameMode(GameMode.SURVIVAL);
-        player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-        return player;
-    }
-
-    private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
+        return TestPlayers.joined(context, "l", name, GameMode.SURVIVAL, x, y, z);
     }
 
     private static void later(TestContext context, long ticks, Runnable step) {
@@ -225,7 +201,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_fidelity")
     public void everyKindComesBackAsItWas(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         MiniGameZone zone = MiniGameZone.of(world.getRegistryKey(), context.getAbsolutePos(at(1, 1, 1)), context.getAbsolutePos(at(6, 4, 6)));
         Map<BlockPos, BlockState> states = new HashMap<>();
@@ -391,7 +367,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 80)
     public void ticksTheZoneWaitedForAreAskedAgain(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         BlockPos button = context.getAbsolutePos(at(2, 1, 2));
         world.setBlockState(button, Blocks.STONE_BUTTON.getDefaultState().with(Properties.BLOCK_FACE, BlockFace.FLOOR).with(Properties.POWERED, true), Block.NOTIFY_ALL);
@@ -413,7 +389,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
     /** A bed slept in during the round does not move the spawn point: the one the player had is given back. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void spawnPointIsGivenBack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         ServerPlayerEntity player = player(context, "spawn", 2.5, 1, 2.5);
         BlockPos home = context.getAbsolutePos(at(7, 1, 7));
@@ -422,14 +398,14 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
         player.setSpawnPoint(world.getRegistryKey(), context.getAbsolutePos(at(2, 1, 2)), 0, false, false);
         bubble.end();
         context.assertTrue(home.equals(player.getSpawnPointPosition()) && player.isSpawnForced(), "the spawn point is back, got " + player.getSpawnPointPosition());
-        remove(context, player);
+        TestPlayers.remove(context, player);
         context.complete();
     }
 
     /** Effects stay on their side: one had before the round is paused in it, one got in the round does not follow out. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void effectsStayOnTheirSide(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerPlayerEntity player = player(context, "fx", 2.5, 1, 2.5);
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 2400, 1));
         ZoneBubble bubble = begin(context, zone(context), player);
@@ -439,7 +415,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
         StatusEffectInstance speed = player.getStatusEffect(StatusEffects.SPEED);
         context.assertTrue(speed != null && speed.getAmplifier() == 1 && speed.getDuration() > 2300, "the speed is back, as long as it was");
         context.assertTrue(!player.hasStatusEffect(StatusEffects.STRENGTH), "the strength of the round stays in it");
-        remove(context, player);
+        TestPlayers.remove(context, player);
         context.complete();
     }
 
@@ -448,7 +424,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
     /** A crash while the zone is put back over several ticks: what changed meanwhile is put back too when the server starts. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_crash")
     public void crashDuringTheRestorationIsRecovered(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MinecraftServer server = context.getWorld().getServer();
         ServerConfig config = ServerConfig.get();
         int perTick = config.miniGameBubbleRestorePerTick;

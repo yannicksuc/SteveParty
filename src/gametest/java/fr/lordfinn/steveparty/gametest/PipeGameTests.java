@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
@@ -51,6 +52,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
+
 /** Travel pipes: shapes and connections, the Wrench, going in, travelling, warps. */
 public class PipeGameTests implements FabricGameTest {
 
@@ -84,17 +87,6 @@ public class PipeGameTests implements FabricGameTest {
         return PipeShape.mouth(state, dir) != null;
     }
 
-    /** Runs {@code then} as soon as {@code condition} holds, failing with {@code what} after {@code ticks} ticks. */
-    private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) {
-            then.run();
-        } else if (ticks <= 0) {
-            context.throwGameTestException(what);
-        } else {
-            context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
-        }
-    }
-
     private static Vec3d relative(TestContext context, Entity entity) {
         return context.getRelative(entity.getPos());
     }
@@ -110,10 +102,8 @@ public class PipeGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, Vec3d relativeFeet, float yaw) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
-        Vec3d abs = context.getAbsolute(relativeFeet);
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, yaw, 0);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
+        TestPlayers.place(context, player, relativeFeet, yaw, 0);
         return player;
     }
 

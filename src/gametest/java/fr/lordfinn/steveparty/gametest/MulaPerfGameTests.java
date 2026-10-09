@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEscorts;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.minecraft.block.Blocks;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -45,8 +46,7 @@ public class MulaPerfGameTests implements FabricGameTest {
     private static void benchmark(TestContext context, int tamed) {
         ServerWorld world = context.getWorld();
         int maxFollowers = MulaEscorts.max();
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
-        owner.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity owner = TestPlayers.mock(context, GameMode.SURVIVAL);
         Vec3d centre = context.getAbsolute(new Vec3d(0.5, 1, 0.5));
         owner.refreshPositionAndAngles(centre.x, centre.y, centre.z, 0, 0);
         // walls on the owner's way round (followers beyond 8 blocks fly round them)
@@ -108,8 +108,7 @@ public class MulaPerfGameTests implements FabricGameTest {
     public void mulasPastTheLimitWaitForAFreePlace(TestContext context) {
         ServerWorld world = context.getWorld();
         int max = MulaEscorts.max();
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
-        owner.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity owner = TestPlayers.mock(context, GameMode.SURVIVAL);
         Vec3d at = context.getAbsolute(new Vec3d(0.5, 1, 0.5));
         owner.refreshPositionAndAngles(at.x, at.y, at.z, 0, 0);
         List<MulaEntity> mulas = new ArrayList<>();

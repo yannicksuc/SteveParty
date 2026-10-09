@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -21,15 +22,10 @@ public class DiceGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity playerNextTo(TestContext context, boolean sneaking) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        Vec3d pos = context.getAbsolute(new Vec3d(DICE_POS.getX() + 0.5, DICE_POS.getY(), DICE_POS.getZ() - 1.5));
-        player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        TestPlayers.place(context, player, new Vec3d(DICE_POS.getX() + 0.5, DICE_POS.getY(), DICE_POS.getZ() - 1.5), 0, 0);
         player.setSneaking(sneaking);
         return player;
-    }
-
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
@@ -97,10 +93,10 @@ public class DiceGameTests implements FabricGameTest {
                 dice.damage(world.getDamageSources().playerAttack(sneaking), 1F);
                 context.assertTrue(dice.isRemoved(), "a sneaking hit explodes the dice");
             } finally {
-                disconnect(context, sneaking);
+                TestPlayers.remove(context, sneaking);
             }
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -115,14 +111,14 @@ public class DiceGameTests implements FabricGameTest {
     /** A player standing in the test, holding {@code stack}, looking at {@code pitch} (-90: straight up). */
     private static ServerPlayerEntity thrower(TestContext context, net.minecraft.item.ItemStack stack, float pitch, boolean sneaking) {
         context.setBlockState(new BlockPos(4, 1, 4), net.minecraft.block.Blocks.STONE);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         Vec3d pos = context.getAbsolute(new Vec3d(4.5, 2, 4.5));
         player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, pitch);
         player.setSneaking(sneaking);
         player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, stack);
         context.addFinalTask(() -> {
             diceOf(context, player).forEach(DiceEntity::discard);
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         });
         return player;
     }
@@ -186,7 +182,7 @@ public class DiceGameTests implements FabricGameTest {
         try {
             context.assertTrue(!thrown.getFirst().isInThrowGrace(other), "someone else is not held back");
         } finally {
-            disconnect(context, other);
+            TestPlayers.remove(context, other);
         }
         context.waitAndRun(DiceEntity.THROW_GRACE_TICKS + 2, () -> {
             context.assertTrue(thrown.stream().allMatch(DiceEntity::isRolling), "still rolling meanwhile");

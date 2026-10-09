@@ -8,10 +8,11 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
+import fr.lordfinn.steveparty.gametest.kit.TestAsserts;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
-import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -35,6 +36,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
+
 /**
  * A mini-game pipe sends to its mini-game whatever the order its run was built in (playtest of 2026-10-06, #71): its
  * end into the wall capped (the pipe placed against the wall first), a mouth facing the wall (the run built first, the
@@ -57,34 +60,10 @@ public class MiniGamePipeBuildOrderGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, double x, double y, double z) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
+        TestPlayers.place(context, player, x, y, z);
         return player;
-    }
-
-    private static void remove(TestContext context, ServerPlayerEntity player) {
-        if (player.hasVehicle()) player.stopRiding();
-        MiniGamePipes.leaveParty(player.getUuid());
-        context.getWorld().getServer().getPlayerManager().remove(player);
-    }
-
-    private static boolean near(TestContext context, ServerPlayerEntity player, BlockPos mouth) {
-        Vec3d at = context.getRelative(player.getPos());
-        return !player.hasVehicle() && Math.abs(at.x - (mouth.getX() + 0.5)) < 1.2 && Math.abs(at.z - (mouth.getZ() + 0.5)) < 1.2
-                && at.y >= mouth.getY() + 0.9;
-    }
-
-    private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) {
-            then.run();
-        } else if (ticks <= 0) {
-            context.throwGameTestException(what);
-        } else {
-            context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
-        }
     }
 
     /** How a run {wall, x=1, x=2, x=3 (its mouth east)} along row {@code z} is built. */
@@ -145,7 +124,7 @@ public class MiniGamePipeBuildOrderGameTests implements FabricGameTest {
             pipes[i] = build(context, builder, orders.get(i), 1 + 2 * i);
             ((MiniGamePipeBlockEntity) context.getBlockEntity(pipes[i])).setPage(page.copyWithCount(1));
         }
-        remove(context, builder);
+        TestPlayers.leaveMiniGames(context, builder);
         // What each order makes of the mini-game pipe
         context.assertTrue(PipeShape.ends(context.getBlockState(pipes[0])).stream().anyMatch(end -> end.capped() && end.dir() == Direction.WEST),
                 "against the wall first: capped into the wall");
@@ -171,13 +150,13 @@ public class MiniGamePipeBuildOrderGameTests implements FabricGameTest {
         BlockPos mouth = new BlockPos(3, 2, 1 + 2 * i);
         ServerPlayerEntity player = player(context, 4.2, 2, mouth.getZ() + 0.5);
         if (!PipeTravel.enter(world, context.getAbsolutePos(mouth), Direction.EAST, player, 0)) {
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
             context.throwGameTestException(orders.get(i) + ": could not go in");
             return;
         }
-        when(context, () -> near(context, player, arrival), 80, orders.get(i) + ": never came out of the mini-game's pipe", () -> {
+        when(context, () -> TestAsserts.cameOutAt(context, player, arrival), 80, orders.get(i) + ": never came out of the mini-game's pipe", () -> {
             boolean alive = player.isAlive() && !player.isInsideWall();
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
             context.assertTrue(alive, orders.get(i) + ": came out hurt or in a wall");
             context.waitAndRun(1, () -> go(context, orders, i + 1, arrival));
         });

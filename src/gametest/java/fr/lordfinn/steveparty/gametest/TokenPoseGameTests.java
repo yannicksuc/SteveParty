@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EntityType;
@@ -17,7 +18,6 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 
 /**
  * Mob pawn poses, server side: a right click with an empty hand gives the pawn its next pose number (saved, synced);
@@ -27,9 +27,8 @@ public class TokenPoseGameTests implements FabricGameTest {
     private static final BlockPos MOB_POS = new BlockPos(2, 2, 2);
 
     private static ServerPlayerEntity player(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        Vec3d pos = context.getAbsolute(new Vec3d(MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() - 1.0));
-        player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        TestPlayers.place(context, player, MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() - 1.0);
         return player;
     }
 
@@ -59,7 +58,7 @@ public class TokenPoseGameTests implements FabricGameTest {
             player.interact(zombie, Hand.MAIN_HAND);
             context.assertEquals(pose(zombie), 2, "an item does not pose it");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -72,7 +71,7 @@ public class TokenPoseGameTests implements FabricGameTest {
             player.interact(zombie, Hand.MAIN_HAND);
             context.assertEquals(pose(zombie), 0, "only pawns have poses");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -89,7 +88,7 @@ public class TokenPoseGameTests implements FabricGameTest {
             player.interact(horse, Hand.MAIN_HAND);
             context.assertEquals(pose(horse), 1, "sneaking poses it");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -112,7 +111,7 @@ public class TokenPoseGameTests implements FabricGameTest {
             NbtCompound stored = player.getMainHandStack().get(fr.lordfinn.steveparty.components.ModComponents.ENTITY_DATA_COMPONENT).entityData();
             context.assertEquals(stored.getInt("TokenPose"), 5, "pose kept in the Token");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -128,7 +127,7 @@ public class TokenPoseGameTests implements FabricGameTest {
             context.assertTrue(pawn.getStatuePose() == before.next(), "its statue pose changes");
             context.assertEquals(pose(pawn), 0, "not a mob pose");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

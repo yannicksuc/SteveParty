@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
@@ -34,7 +36,6 @@ import fr.lordfinn.steveparty.podium.PodiumGroup;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
 import fr.lordfinn.steveparty.podium.PodiumSignal;
 import fr.lordfinn.steveparty.podium.Podiums;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -44,10 +45,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.stat.Stats;
@@ -112,28 +110,7 @@ public class PodiumGameTests implements FabricGameTest {
 
     /** A connected player with a name of its own (the goal poles count by name), standing at a relative position. */
     private static ServerPlayerEntity player(TestContext context, String name, double x, double y, double z) {
-        ServerWorld world = context.getWorld();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "p" + SERIAL.incrementAndGet() + name);
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions()) {
-            @Override
-            public boolean isSpectator() {
-                return false;
-            }
-
-            @Override
-            public boolean isCreative() {
-                return true;
-            }
-        };
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        player.changeGameMode(GameMode.CREATIVE);
-        player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-        return player;
+        return TestPlayers.joinedCreative(context, "p", name, x, y, z);
     }
 
     /** Standing on the top of a column. */
@@ -141,10 +118,6 @@ public class PodiumGameTests implements FabricGameTest {
         BlockPos abs = context.getAbsolutePos(bottom);
         double height = PodiumBlock.heightOf(context.getWorld(), abs) / 2.0;
         player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY() + height, abs.getZ() + 0.5, 0, 0);
-    }
-
-    private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
     private static int coins(PartyControllerEntity controller, ServerPlayerEntity player) {
@@ -205,13 +178,13 @@ public class PodiumGameTests implements FabricGameTest {
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, teams == null ? TeamDisposition.freeForAll(uuids) : teams);
         controller.catalogue = catalogue;
         // A well stocked bank: the gains are taken from it
-        BankFixtures.stock(context, controller, CONTROLLER.up(), 640, 64);
+        TestBank.stock(context, controller, CONTROLLER.up(), 640, 64);
         return new Played(controller, step, data, pageStack, MiniGamePages.idOf(pageStack));
     }
 
     private static void cleanUp(TestContext context, ServerPlayerEntity... players) {
-        remove(context, players);
-        if (context.getBlockState(CONTROLLER).isOf(ModBlocks.PARTY_CONTROLLER)) context.removeBlock(CONTROLLER);
+        TestPlayers.remove(context, players);
+        TestCleanup.removeIf(context, CONTROLLER, ModBlocks.PARTY_CONTROLLER);
     }
 
     private static Set<UUID> set(ServerPlayerEntity... players) {
@@ -373,7 +346,7 @@ public class PodiumGameTests implements FabricGameTest {
             context.assertEquals(MiniGamePages.get(server, id).podiumLinks().size(), 1, "the counter stays");
             context.setBlockState(basePos, Blocks.AIR);
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -399,7 +372,7 @@ public class PodiumGameTests implements FabricGameTest {
                 context.assertTrue(Podiums.toggle(sam, world, abs), "another player");
                 context.assertEquals(occupant(context, first), sam.getUuid(), "sam holds it");
             } catch (RuntimeException e) {
-                remove(context, alex, sam);
+                TestPlayers.remove(context, alex, sam);
                 throw e;
             }
             context.waitAndRun(8, () -> {
@@ -413,7 +386,7 @@ public class PodiumGameTests implements FabricGameTest {
                     context.assertEquals(occupant(context, second), alex.getUuid(), "on the second");
                     context.assertEquals(master(context, second).getOccupant().place(), 2, "the slab is the second place");
                 } finally {
-                    remove(context, alex, sam);
+                    TestPlayers.remove(context, alex, sam);
                 }
                 context.complete();
             });
@@ -431,7 +404,7 @@ public class PodiumGameTests implements FabricGameTest {
                 context.assertTrue(occupant(context, podium) == null, "standing on it is not registering");
                 player.setSneaking(true);
             } catch (RuntimeException e) {
-                remove(context, player);
+                TestPlayers.remove(context, player);
                 throw e;
             }
             context.waitAndRun(10, () -> {
@@ -439,7 +412,7 @@ public class PodiumGameTests implements FabricGameTest {
                     context.assertEquals(occupant(context, podium), player.getUuid(), "registered by sneaking, and still crouched");
                     player.setSneaking(false);
                 } catch (RuntimeException e) {
-                    remove(context, player);
+                    TestPlayers.remove(context, player);
                     throw e;
                 }
                 context.waitAndRun(6, () -> {
@@ -448,7 +421,7 @@ public class PodiumGameTests implements FabricGameTest {
                         try {
                             context.assertTrue(occupant(context, podium) == null, "sneaking again unregisters");
                         } finally {
-                            remove(context, player);
+                            TestPlayers.remove(context, player);
                         }
                         context.complete();
                     });
@@ -547,7 +520,7 @@ public class PodiumGameTests implements FabricGameTest {
             context.setBlockState(podium.west(), Blocks.REDSTONE_BLOCK);
             context.assertEquals(occupant(context, podium), expected.getUuid(), "the nearest player is registered");
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -638,7 +611,7 @@ public class PodiumGameTests implements FabricGameTest {
             context.assertTrue(pole.getTotal() == 17L && pole.isGoalMet(), "everyone's total: 17, the goal is met");
         } finally {
             context.setBlockState(BASE, Blocks.AIR);
-            remove(context, a1, a2, b1);
+            TestPlayers.remove(context, a1, a2, b1);
         }
         context.complete();
     }
@@ -685,11 +658,11 @@ public class PodiumGameTests implements FabricGameTest {
             context.assertEquals(occupant(context, first), j3.getUuid(), "a new race: j3 is first this time");
         } catch (RuntimeException e) {
             context.setBlockState(BASE, Blocks.AIR);
-            remove(context, j1, j2, j3);
+            TestPlayers.remove(context, j1, j2, j3);
             throw e;
         }
         context.setBlockState(BASE, Blocks.AIR);
-        remove(context, j1, j2, j3);
+        TestPlayers.remove(context, j1, j2, j3);
         context.complete();
     }
 
@@ -749,7 +722,7 @@ public class PodiumGameTests implements FabricGameTest {
             context.assertEquals(player.getInventory().count(Items.EMERALD), 7, "resetting never touches the coins");
             context.setBlockState(BASE, Blocks.AIR);
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

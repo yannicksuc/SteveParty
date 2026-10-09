@@ -16,6 +16,10 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StarSettingsComponent;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestAsserts;
+import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
@@ -40,6 +44,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
 
 /**
  * The Star Cartridge: the party's star stands on an active star space (drawn when the party starts); a token reaching
@@ -67,12 +73,6 @@ public class StarCartridgeGameTests implements FabricGameTest {
                          net.minecraft.block.entity.ChestBlockEntity bank) {
         TokenizedEntityInterface tokenized() {
             return (TokenizedEntityInterface) token;
-        }
-    }
-
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 10; x++) {
-            for (int z = 0; z < 10; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
         }
     }
 
@@ -110,7 +110,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
      * START, its party started, and the star on STAR.
      */
     private static Board board(TestContext context, ServerPlayerEntity owner, Block starBlock) {
-        floor(context);
+        TestBoards.floor(context, 10);
         space(context, START, ModBlocks.TILE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), STAR);
         space(context, STAR, starBlock, new ItemStack(ModItems.STAR_CARTRIDGE), END);
         space(context, END, ModBlocks.TILE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), null);
@@ -123,21 +123,17 @@ public class StarCartridgeGameTests implements FabricGameTest {
         owner.setPosition(context.getAbsolute(new Vec3d(4, 1, -10)));
         PartyControllerEntity controller = party(context, cow, owner);
         controller.setStarSpace(context.getAbsolutePos(STAR));
-        net.minecraft.block.entity.ChestBlockEntity bank = BankFixtures.stock(context, controller, BANK, 0, BANK_STARS);
+        net.minecraft.block.entity.ChestBlockEntity bank = TestBank.stock(context, controller, BANK, 0, BANK_STARS);
         return new Board(cow, controller, List.of(STAR, OTHER, ANOTHER), bank);
-    }
-
-    private static int count(ServerPlayerEntity player, ItemStack template) {
-        return InventoryUtils.count(player.getInventory(), template);
     }
 
     /** Runs {@code test} with a mock player (removed on failure; the tests remove it when they end). */
     private static void withPlayer(TestContext context, Consumer<ServerPlayerEntity> test) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             test.accept(player);
         } catch (RuntimeException e) {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
             throw e;
         }
     }
@@ -154,10 +150,6 @@ public class StarCartridgeGameTests implements FabricGameTest {
         });
     }
 
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
-    }
-
     private static BlockPos spaceOf(CowEntity cow) {
         BoardSpaceBlockEntity space = BoardSpaces.boardSpaceOf(cow);
         return space == null ? null : space.getPos();
@@ -168,7 +160,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
         for (BlockPos pos : starSpaces) context.setBlockState(pos, Blocks.AIR);
         context.setBlockState(CONTROLLER, Blocks.AIR);
         context.setBlockState(BANK, Blocks.AIR);
-        if (player != null) disconnect(context, player);
+        if (player != null) TestPlayers.remove(context, player);
         context.complete();
     }
 
@@ -177,7 +169,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     /** Yellow tile and check point (yellow is no longer the shop's), its landing, its comparator level, its menu defaults. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "star_cartridge_makesAYellowStarSpace")
     public void makesAYellowStarSpace(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 10);
         BoardSpaceBlockEntity tile = space(context, STAR, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), null);
         BoardSpaceBlockEntity checkPoint = space(context, END, ModBlocks.CHECK_POINT, new ItemStack(ModItems.STAR_CARTRIDGE), null);
         context.assertEquals(tile.getCachedState().get(ABoardSpaceBlock.TILE_TYPE), BoardSpaceType.TILE_STAR, "a star tile");
@@ -199,7 +191,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "star_cartridge_startsOnAnActiveStarSpace")
     public void startsOnAnActiveStarSpace(TestContext context) {
         withPlayer(context, owner -> {
-            floor(context);
+            TestBoards.floor(context, 10);
             space(context, STAR, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), null);
             // Switched off: its Star Cartridge is in a slot that is not the active one
             context.setBlockState(OTHER, ModBlocks.ADVANCED_TILE);
@@ -220,7 +212,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "star_cartridge_switchingOffMovesTheStar")
     public void switchingOffMovesTheStar(TestContext context) {
         withPlayer(context, owner -> {
-            floor(context);
+            TestBoards.floor(context, 10);
             context.setBlockState(STAR, ModBlocks.ADVANCED_TILE);
             BoardSpaceBlockEntity star = context.getBlockEntity(STAR);
             star.setStack(0, new ItemStack(ModItems.STAR_CARTRIDGE));
@@ -256,7 +248,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "star_cartridge_noActiveStarSpaceHidesTheStar")
     public void noActiveStarSpaceHidesTheStar(TestContext context) {
         withPlayer(context, owner -> {
-            floor(context);
+            TestBoards.floor(context, 10);
             context.setBlockState(STAR, ModBlocks.ADVANCED_TILE);
             BoardSpaceBlockEntity star = context.getBlockEntity(STAR);
             star.setStack(0, new ItemStack(ModItems.STAR_CARTRIDGE));
@@ -283,7 +275,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "star_cartridge_shownStarSpaceFollowsTheStar")
     public void shownStarSpaceFollowsTheStar(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 10);
         List<BlockPos> starSpaces = List.of(STAR, OTHER, ANOTHER);
         for (BlockPos pos : starSpaces) space(context, pos, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), null);
         List<BlockPos> absolute = starSpaces.stream().map(context::getAbsolutePos).toList();
@@ -340,8 +332,8 @@ public class StarCartridgeGameTests implements FabricGameTest {
                     context.assertTrue(PartyStars.decide(owner, true), "bought");
                     context.assertEquals(count(owner, coin), 5, "the price paid");
                     context.assertEquals(count(owner, starItem), 1, "a star given");
-                    context.assertEquals(BankFixtures.count(board.bank(), starItem), BANK_STARS - 1, "the star taken from the bank");
-                    context.assertEquals(BankFixtures.count(board.bank(), coin), PRICE, "the coins paid into the bank");
+                    context.assertEquals(TestAsserts.count(board.bank(), starItem), BANK_STARS - 1, "the star taken from the bank");
+                    context.assertEquals(TestAsserts.count(board.bank(), coin), PRICE, "the coins paid into the bank");
                     BlockPos moved = board.party().getStarSpace();
                     context.assertTrue(context.getAbsolutePos(OTHER).equals(moved) || context.getAbsolutePos(ANOTHER).equals(moved),
                             "the star went to another star space, got " + moved);

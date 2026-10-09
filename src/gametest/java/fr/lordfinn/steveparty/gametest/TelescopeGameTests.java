@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.TelescopeBlockEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
 import fr.lordfinn.steveparty.entities.custom.MulaStarEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.payloads.custom.TelescopePayloads;
 import fr.lordfinn.steveparty.telescope.TelescopeMath;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
@@ -192,8 +193,8 @@ public class TelescopeGameTests implements FabricGameTest {
         ServerWorld world = context.getWorld();
         BlockPos telescope = context.getAbsolutePos(new BlockPos(1, 1, 1));
         context.setBlockState(new BlockPos(1, 1, 1), ModBlocks.TELESCOPE.getDefaultState());
-        ServerPlayerEntity ann = context.createMockCreativeServerPlayerInWorld();
-        ServerPlayerEntity bob = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity ann = TestPlayers.mock(context);
+        ServerPlayerEntity bob = TestPlayers.mock(context);
         ann.refreshPositionAndAngles(telescope.getX() + 1.5, telescope.getY(), telescope.getZ() + 0.5, 0, 0);
         bob.refreshPositionAndAngles(telescope.getX() - 0.5, telescope.getY(), telescope.getZ() + 0.5, 0, 0);
         MulaSpawnSites sites = MulaSpawnSites.get(world);
@@ -279,8 +280,8 @@ public class TelescopeGameTests implements FabricGameTest {
         context.setBlockState(second, ModBlocks.TELESCOPE.getDefaultState());
         TelescopeBlockEntity telescope = context.getBlockEntity(first), other = context.getBlockEntity(second);
         BlockPos at = context.getAbsolutePos(first), otherAt = context.getAbsolutePos(second);
-        ServerPlayerEntity ann = context.createMockCreativeServerPlayerInWorld();
-        ServerPlayerEntity bob = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity ann = TestPlayers.mock(context);
+        ServerPlayerEntity bob = TestPlayers.mock(context);
         try {
             ann.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() - 2.0, 0, -40);
             bob.refreshPositionAndAngles(at.getX() + 2.5, at.getY(), at.getZ() + 0.5, 90, -40);
@@ -397,7 +398,7 @@ public class TelescopeGameTests implements FabricGameTest {
     public void sneakingPicksItUp(TestContext context) {
         BlockPos pos = new BlockPos(2, 1, 2);
         placeTelescope(context, pos);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.changeGameMode(GameMode.SURVIVAL);
             player.getInventory().clear();
@@ -405,7 +406,7 @@ public class TelescopeGameTests implements FabricGameTest {
             context.assertTrue(context.getBlockState(pos).isAir() && context.getBlockState(pos.up()).isAir(), "both halves gone");
             context.assertEquals(player.getInventory().count(ModBlocks.TELESCOPE.asItem()), 1, "in the inventory");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.waitAndRun(2, () -> {
             context.assertEquals(droppedTelescopes(context, pos), 0, "nothing dropped");

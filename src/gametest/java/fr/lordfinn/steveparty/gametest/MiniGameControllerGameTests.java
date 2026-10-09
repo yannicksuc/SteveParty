@@ -19,6 +19,9 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.ZoneFaces;
 import fr.lordfinn.steveparty.minigame.PageZoneTool;
@@ -45,7 +48,6 @@ import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler.State;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
@@ -53,10 +55,7 @@ import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
@@ -136,50 +135,20 @@ public class MiniGameControllerGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, String name, double x, double y, double z) {
-        ServerWorld world = context.getWorld();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "c" + SERIAL.incrementAndGet() + name);
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions()) {
-            @Override
-            public boolean isSpectator() {
-                return false;
-            }
-
-            @Override
-            public boolean isCreative() {
-                return true;
-            }
-        };
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        player.changeGameMode(GameMode.CREATIVE);
-        player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-        return player;
+        return TestPlayers.joinedCreative(context, "c", name, x, y, z);
     }
 
     /** The players other tests left around are sent away: they would be recruited like anyone near a pipe. */
     private static void alone(TestContext context, ServerPlayerEntity... mine) {
-        List<ServerPlayerEntity> own = List.of(mine);
-        Vec3d center = context.getAbsolute(new Vec3d(4, 2, 4));
-        for (ServerPlayerEntity other : new ArrayList<>(context.getWorld().getServer().getPlayerManager().getPlayerList())) {
-            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) context.getWorld().getServer().getPlayerManager().remove(other);
-        }
+        TestPlayers.alone(context, new Vec3d(4, 2, 4), 40, mine);
     }
 
     private static void cleanUp(TestContext context, UUID page, ServerPlayerEntity... players) {
         MiniGameTest.stop(page);
-        if (context.getBlockState(PARTY).isOf(ModBlocks.PARTY_CONTROLLER)) context.removeBlock(PARTY);
-        if (context.getBlockState(HOME).isOf(ModBlocks.MINI_GAME_CONTROLLER)) context.removeBlock(HOME);
-        if (context.getBlockState(POWER).isOf(Blocks.REDSTONE_BLOCK)) context.removeBlock(POWER);
-        for (ServerPlayerEntity player : players) {
-            if (player.hasVehicle()) player.stopRiding();
-            MiniGamePipes.leaveParty(player.getUuid());
-            if (context.getWorld().getServer().getPlayerManager().getPlayer(player.getUuid()) != null)
-                context.getWorld().getServer().getPlayerManager().remove(player);
-        }
+        TestCleanup.removeIf(context, PARTY, ModBlocks.PARTY_CONTROLLER);
+        TestCleanup.removeIf(context, HOME, ModBlocks.MINI_GAME_CONTROLLER);
+        TestCleanup.removeIf(context, POWER, Blocks.REDSTONE_BLOCK);
+        TestPlayers.leaveMiniGamesIfOnline(context, players);
     }
 
     /** A Mini-game Controller at {@code pos}, holding the page when {@code page} is not null. */
@@ -225,7 +194,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, TeamDisposition.freeForAll(uuids));
         controller.catalogue = catalogue;
         // A well stocked bank: the gains are taken from it
-        BankFixtures.stock(context, controller, PARTY.up(), 640, 64);
+        TestBank.stock(context, controller, PARTY.up(), 640, 64);
         return controller;
     }
 
@@ -299,7 +268,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             context.assertTrue(!MiniGameControllers.has(server, id), "a broken controller frees its page");
             context.expectItem(ModItems.MINI_GAME_PAGE);
         } finally {
-            if (context.getBlockState(other).isOf(ModBlocks.MINI_GAME_CONTROLLER)) context.removeBlock(other);
+            TestCleanup.removeIf(context, other, ModBlocks.MINI_GAME_CONTROLLER);
             cleanUp(context, id, player);
         }
         context.complete();
@@ -1061,11 +1030,11 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             MiniGamePartyStep step = step(controller);
             step.leaveForMiniGame(controller);
             context.assertTrue(step.isPractice() && step.isAway(p2.getUuid()), "the practice round, p2 sent to it");
-            Reconnect.leave(p2);
+            TestPlayers.leave(p2);
             step.end(controller);
             context.assertTrue(p1.getPos().distanceTo(start1) < 0.01, "p1, there, is back at once");
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "p2, gone, is waited for");
-            back = Reconnect.join(context, away);
+            back = TestPlayers.join(context, away);
         } catch (RuntimeException e) {
             if (back != null) cleanUp(context, id, back);
             cleanUp(context, id, p1, p2);

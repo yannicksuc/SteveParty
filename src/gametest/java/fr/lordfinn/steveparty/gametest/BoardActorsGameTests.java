@@ -17,6 +17,7 @@ import net.minecraft.util.math.Vec3d;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 
 /**
  * The mobs board spaces summon (BoardActors): nothing hurts them but commands and the void, a creative player

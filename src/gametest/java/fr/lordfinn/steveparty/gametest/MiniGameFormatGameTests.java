@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.gametest;
 
-import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
@@ -8,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat.Side;
@@ -17,13 +17,11 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
-import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
@@ -36,7 +34,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
 import java.util.Arrays;
@@ -198,17 +195,9 @@ public class MiniGameFormatGameTests implements FabricGameTest {
     // ------------------------------------------------------------------ the round: name colours, ways out
 
     private static ServerPlayerEntity player(TestContext context, double x, double y, double z) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
+        TestPlayers.place(context, player, x, y, z);
         return player;
-    }
-
-    private static void remove(TestContext context, ServerPlayerEntity player) {
-        if (player.hasVehicle()) player.stopRiding();
-        MiniGamePipes.leaveParty(player.getUuid());
-        context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
     /** A pipe of {@code block} standing on stone: a mouth on top. */
@@ -221,18 +210,6 @@ public class MiniGameFormatGameTests implements FabricGameTest {
 
     private static GlobalPos global(TestContext context, BlockPos relative) {
         return GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(relative));
-    }
-
-    private static boolean near(TestContext context, ServerPlayerEntity player, BlockPos mouth) {
-        Vec3d at = context.getRelative(player.getPos());
-        return !player.hasVehicle() && Math.abs(at.x - (mouth.getX() + 0.5)) < 1.2 && Math.abs(at.z - (mouth.getZ() + 0.5)) < 1.2
-                && at.y >= mouth.getY() + 0.9;
-    }
-
-    private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) then.run();
-        else if (ticks <= 0) context.throwGameTestException(what);
-        else context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
     }
 
     /**
@@ -265,7 +242,7 @@ public class MiniGameFormatGameTests implements FabricGameTest {
         } finally {
             MiniGameNameColors.restore(server, player.getUuid());
             scoreboard.removeTeam(before);
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
         }
         context.complete();
     }

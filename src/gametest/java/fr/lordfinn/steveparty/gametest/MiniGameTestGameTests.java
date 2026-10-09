@@ -19,6 +19,8 @@ import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
@@ -35,7 +37,6 @@ import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.MiniGameTest.Status;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.podium.Podiums;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -44,10 +45,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
@@ -117,28 +115,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
 
     /** A connected player with a name of its own, standing at a relative position. */
     private static ServerPlayerEntity player(TestContext context, String name, double x, double y, double z) {
-        ServerWorld world = context.getWorld();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "t" + SERIAL.incrementAndGet() + name);
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions()) {
-            @Override
-            public boolean isSpectator() {
-                return false;
-            }
-
-            @Override
-            public boolean isCreative() {
-                return true;
-            }
-        };
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        player.changeGameMode(GameMode.CREATIVE);
-        player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-        return player;
+        return TestPlayers.joinedCreative(context, "t", name, x, y, z);
     }
 
     /**
@@ -146,24 +123,12 @@ public class MiniGameTestGameTests implements FabricGameTest {
      * like anyone standing near a pipe. (These tests run in batches of their own: nobody else is playing now.)
      */
     private static void alone(TestContext context, ServerPlayerEntity... mine) {
-        List<ServerPlayerEntity> own = List.of(mine);
-        Vec3d center = context.getAbsolute(new Vec3d(4, 2, 4));
-        for (ServerPlayerEntity other : new ArrayList<>(context.getWorld().getServer().getPlayerManager().getPlayerList())) {
-            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) context.getWorld().getServer().getPlayerManager().remove(other);
-        }
-    }
-
-    private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) {
-            if (player.hasVehicle()) player.stopRiding();
-            MiniGamePipes.leaveParty(player.getUuid());
-            context.getWorld().getServer().getPlayerManager().remove(player);
-        }
+        TestPlayers.alone(context, new Vec3d(4, 2, 4), 40, mine);
     }
 
     private static void cleanUp(TestContext context, UUID page, ServerPlayerEntity... players) {
         MiniGameTest.stop(page);
-        remove(context, players);
+        TestPlayers.leaveMiniGames(context, players);
     }
 
     private static boolean at(ServerPlayerEntity player, Vec3d pos) {
@@ -200,7 +165,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
             MiniGamePipes.enterParty(g.getUuid(), id, () -> true);
             context.assertTrue(!MiniGameTest.recruit(server, MiniGamePages.get(server, id)).containsKey(g.getUuid()), "nobody in two mini-games at once");
         } finally {
-            remove(context, g, b, w, exit, high, far);
+            TestPlayers.leaveMiniGames(context, g, b, w, exit, high, far);
         }
         context.complete();
     }
@@ -377,7 +342,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
 
                 // A test whose players all leave the server stops by itself
                 context.assertEquals(MiniGameTest.start(server, id, null, 0), Status.READY, "another test");
-                remove(context, p1, p2);
+                TestPlayers.leaveMiniGames(context, p1, p2);
             } catch (RuntimeException e) {
                 cleanUp(context, id, p1, p2);
                 throw e;
@@ -482,7 +447,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
             context.assertEquals(MiniGameTest.start(server, id, null, 0), Status.PARTY_PLAYING, "refused");
             context.removeBlock(CONTROLLER);
         } finally {
-            if (context.getBlockState(CONTROLLER).isOf(ModBlocks.PARTY_CONTROLLER)) context.removeBlock(CONTROLLER);
+            TestCleanup.removeIf(context, CONTROLLER, ModBlocks.PARTY_CONTROLLER);
             cleanUp(context, id, p1, p2);
         }
         context.complete();
@@ -531,15 +496,15 @@ public class MiniGameTestGameTests implements FabricGameTest {
         try {
             alone(context, p1, p2);
             context.assertEquals(MiniGameTest.start(server, id, null, 0), Status.READY, "the test starts");
-            Reconnect.leave(p2);
+            TestPlayers.leave(p2);
             MiniGameTest.stop(id);
             context.assertTrue(at(p1, start1), "who is there is back at once");
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "who left is waited for");
             MiniGameReturns.simulateRestart(server);
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "and still is after a restart");
-            back = Reconnect.join(context, away);
+            back = TestPlayers.join(context, away);
         } catch (RuntimeException e) {
-            if (back != null) remove(context, back);
+            if (back != null) TestPlayers.leaveMiniGames(context, back);
             cleanUp(context, id, p1, p2);
             throw e;
         }
@@ -550,7 +515,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
                 context.assertTrue(at(joined, start2), "it comes back where it stood before the test");
                 context.assertTrue(!MiniGameReturns.isPending(server, away.getId()), "once");
             } finally {
-                remove(context, joined);
+                TestPlayers.leaveMiniGames(context, joined);
                 cleanUp(context, id, p1, p2);
             }
             context.complete();
