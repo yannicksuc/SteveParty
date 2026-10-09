@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.dice.DiceRollSequence;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.gametest.kit.TestWait;
 import fr.lordfinn.steveparty.items.ModItems;
 import java.util.List;
 import java.util.Map;
@@ -202,11 +203,15 @@ public class DiceGameTests implements FabricGameTest {
         context.waitAndRun(DiceEntity.THROW_GRACE_TICKS + 2, () -> {
             context.assertTrue(thrown.stream().allMatch(DiceEntity::isRolling), "still rolling meanwhile");
             thrown.getLast().damage(world.getDamageSources().playerAttack(player), 1F);
-            context.assertTrue(thrown.stream().noneMatch(DiceEntity::isRolling) && thrown.getFirst().isRollFinished(), "then the thrower's hit stops them");
-            // The finished dice are unchanged: the next hit makes them go away at once
-            thrown.getFirst().damage(world.getDamageSources().playerAttack(player), 1F);
-            context.assertTrue(thrown.stream().allMatch(DiceEntity::isRemoved), "a hit on the finished dice makes them go away");
-            context.complete();
+            context.assertTrue(!thrown.getFirst().lead().isRolling() && !thrown.getFirst().isRollFinished(), "then the thrower's hit stops them, one after the other");
+            TestWait.when(context, () -> thrown.getFirst().isRollFinished(),
+                    DiceRollSequence.REVEAL_STEP_TICKS + DiceRollSequence.REVEAL_TOTAL_TICKS + 4, "the throw is revealed", () -> {
+                context.assertTrue(thrown.stream().noneMatch(DiceEntity::isRolling), "both stopped");
+                // The finished dice are unchanged: the next hit makes them go away at once
+                thrown.getFirst().damage(world.getDamageSources().playerAttack(player), 1F);
+                context.assertTrue(thrown.stream().allMatch(DiceEntity::isRemoved), "a hit on the finished dice makes them go away");
+                context.complete();
+            });
         });
     }
 
