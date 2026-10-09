@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.entity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
@@ -22,6 +23,24 @@ public class GlandouilleRenderer extends GeoEntityRenderer<GlandouilleEntity> {
     public GlandouilleRenderer(EntityRendererFactory.Context context) {
         super(context, new GlandouilleModel());
         this.shadowRadius = 0.35f;
+    }
+
+    /** A carried one is drawn in its carrier's hand ({@link GlandouilleInHand}), not where it stands. */
+    @Override
+    public boolean shouldRender(GlandouilleEntity glandouille, Frustum frustum, double x, double y, double z) {
+        return !GlandouilleInHand.carried(glandouille) && super.shouldRender(glandouille, frustum, x, y, z);
+    }
+
+    @Override
+    public boolean hasLabel(GlandouilleEntity glandouille) {
+        return !GlandouilleInHand.drawing && super.hasLabel(glandouille);
+    }
+
+    @Override
+    protected void applyRotations(GlandouilleEntity glandouille, MatrixStack poseStack, float ageInTicks, float rotationYaw,
+                                  float partialTick, float nativeScale) {
+        super.applyRotations(glandouille, poseStack, ageInTicks, GlandouilleInHand.drawing ? GlandouilleInHand.yaw : rotationYaw,
+                partialTick, nativeScale);
     }
 
     @Override
