@@ -817,12 +817,12 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
         C("steveparty:piggy_bank"),
     ], parents=["controller"], gate="party_time"),
     E("goal_pole", "steveparty:goal_pole", ("Goal Pole", "Mât d'arrivée"), ("Jump to the top and score", "Sauter au sommet et marquer"), [
-        T("Place a **Goal Pole Base**, stack **Goal Pole** segments on it and hang one **Flag**: it goes to the "
-          "top. Land on top of the pole: **+1 ♥**, an extra life: a golden heart, no fall damage, and a point for the base.\n\n"
+        T("Place a **Goal Pole Base**, stack **Goal Pole** segments on it: the pole comes with its red "
+          "**Flag**, at the top. Land on top of the pole: **+1 ♥**, an extra life: a golden heart, no fall damage, and a point for the base.\n\n"
           "The base counts landings (or any scoreboard criterion) for the party players, everyone, nearby players "
           "or a selector. Set it up with the Wrench.",
-          "Pose un **socle de mât d'arrivée**, empile des segments de **mât d'arrivée** et accroche un "
-          "**drapeau** : il se place en haut. Atterris au sommet : **+1 ♥**, une vie bonus : un cœur doré, pas de dégâts de chute, "
+          "Pose un **socle de mât d'arrivée**, empile des segments de **mât d'arrivée** : le mât arrive avec son "
+          "**drapeau** rouge, en haut. Atterris au sommet : **+1 ♥**, une vie bonus : un cœur doré, pas de dégâts de chute, "
           "et un point pour le socle.\n\nLe socle compte les arrivées (ou un critère de scoreboard) pour les joueurs "
           "de la partie, tous, ceux à proximité ou un sélecteur. Réglage à la clé."),
         T("Right-click the pole: its goal (at least 1 by default). The flag stays up until it is reached, then "
