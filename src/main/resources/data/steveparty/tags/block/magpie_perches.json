@@ -1,0 +1,8 @@
+{
+  "values": [
+    "#minecraft:fences",
+    "#minecraft:walls",
+    "#minecraft:logs",
+    "minecraft:chain"
+  ]
+}
