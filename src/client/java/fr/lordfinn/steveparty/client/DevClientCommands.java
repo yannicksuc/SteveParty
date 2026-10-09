@@ -66,6 +66,17 @@ public final class DevClientCommands {
                             KeyBinding.onKeyPressed(InputUtil.Type.MOUSE.createFromCode(GLFW.GLFW_MOUSE_BUTTON_RIGHT));
                             return 1;
                         }))
+                        // A key binding pressed once, by its name (e.g. "key.inventory": E), as if its key were hit
+                        .then(ClientCommandManager.literal("key")
+                                .then(ClientCommandManager.argument("binding", StringArgumentType.greedyString()).executes(context -> {
+                                    String name = StringArgumentType.getString(context, "binding");
+                                    for (KeyBinding binding : context.getSource().getClient().options.allKeys) {
+                                        if (!binding.getTranslationKey().equals(name)) continue;
+                                        KeyBinding.onKeyPressed(InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey()));
+                                        return 1;
+                                    }
+                                    return 0;
+                                })))
                         // The camera: first person, third person from behind (F5) or from the front
                         .then(ClientCommandManager.literal("perspective")
                                 .then(ClientCommandManager.argument("view", IntegerArgumentType.integer(0, 2)).executes(context -> {
