@@ -138,9 +138,28 @@ public final class Tooltips {
         return summary(Text.translatable(key, args));
     }
 
+    /** What it is for: a sentence, so its first letter is a capital (descriptions shared with other places aren't). */
     public Tooltips summary(Text text) {
+        int first = lines.size();
         add(lines, text, TEXT, "");
+        if (wrapping && lines.size() > first) lines.set(first, capitalized(lines.get(first)));
         return this;
+    }
+
+    /** {@code line} (a line cut by {@link #add}: literal parts) with its first letter as a capital. */
+    private static Text capitalized(Text line) {
+        MutableText copy = line.copyContentOnly().setStyle(line.getStyle());
+        boolean done = false;
+        for (Text part : line.getSiblings()) {
+            String string = part.getString();
+            if (!done && !string.isEmpty()) {
+                copy.append(Text.literal(string.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + string.substring(1)).setStyle(part.getStyle()));
+                done = true;
+            } else {
+                copy.append(part);
+            }
+        }
+        return copy;
     }
 
     /**
@@ -335,6 +354,25 @@ public final class Tooltips {
             return Optional.empty();
         }, Style.EMPTY.withColor(base));
         if (!word.isEmpty()) words.add(word);
+        // French punctuation (« : », « ; », « ! », « ? », « » ») never starts a line: kept with the word before
+        for (int i = words.size() - 1; i > 0; i--) {
+            List<Piece> w = words.get(i), before = words.get(i - 1);
+            if (w.isEmpty() || before.isEmpty() || !";:!?»".contains(w.getFirst().string.substring(0, 1))) continue;
+            List<Piece> joined = new ArrayList<>(before);
+            joined.add(new Piece(" ", w.getFirst().style));
+            joined.addAll(w);
+            words.set(i - 1, joined);
+            words.remove(i);
+        }
+        for (int i = words.size() - 2; i >= 0; i--) {
+            List<Piece> w = words.get(i), after = words.get(i + 1);
+            if (w.isEmpty() || after.isEmpty() || !w.getLast().string.endsWith("«")) continue;
+            List<Piece> joined = new ArrayList<>(w);
+            joined.add(new Piece(" ", w.getLast().style));
+            joined.addAll(after);
+            words.set(i, joined);
+            words.remove(i + 1);
+        }
 
         MutableText line = Text.literal(indent);
         int length = indent.length();
