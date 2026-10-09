@@ -13,10 +13,12 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
@@ -95,9 +97,9 @@ public class BoardSpaceGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void tilesSavedUnderTheirOldNamesLoad(TestContext context) {
         var registries = context.getWorld().getRegistryManager();
-        context.assertTrue(net.minecraft.registry.Registries.BLOCK.get(Steveparty.id("simple_tile")) == ModBlocks.TILE,
+        context.assertTrue(Registries.BLOCK.get(Steveparty.id("simple_tile")) == ModBlocks.TILE,
                 "the old Tile's block id is the Tile's");
-        context.assertTrue(net.minecraft.registry.Registries.ITEM.get(Steveparty.id("simple_tile")) == ModBlocks.TILE.asItem(),
+        context.assertTrue(Registries.ITEM.get(Steveparty.id("simple_tile")) == ModBlocks.TILE.asItem(),
                 "the old Tile's item id is the Tile's");
         // An old Advanced Tile: its block id ("tile") is now the Tile's, its block entity ("tile_entity") says what it was
         BlockPos source = new BlockPos(5, 1, 5);
@@ -109,7 +111,7 @@ public class BoardSpaceGameTests implements FabricGameTest {
         context.setBlockState(TILE.down(), Blocks.STONE);
         context.setBlockState(TILE, ModBlocks.TILE);
         BlockPos abs = context.getAbsolutePos(TILE);
-        net.minecraft.block.entity.BlockEntity loaded = net.minecraft.block.entity.BlockEntity.createFromNbt(abs, context.getBlockState(TILE), saved, registries);
+        BlockEntity loaded = BlockEntity.createFromNbt(abs, context.getBlockState(TILE), saved, registries);
         context.assertTrue(loaded instanceof AdvancedTileBlockEntity,
                 "its block entity loads as an Advanced Tile's: " + loaded);
         context.getWorld().addBlockEntity(loaded);

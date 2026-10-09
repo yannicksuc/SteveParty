@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.service.TokenMovementService;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.SnowBlock;
 import net.minecraft.block.StairsBlock;
@@ -26,10 +27,15 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.RaycastContext;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,7 +107,7 @@ public class TileSupportGameTests implements FabricGameTest {
                 "outline along the slope: " + slope.outline());
         // Walked like bare stairs: its lowest step is the lower stair step (half a block above the stairs below),
         // and it rises by steps of a quarter of a block, each longer than a walking stride per tick
-        java.util.List<net.minecraft.util.math.Box> boxes = slope.shape().getBoundingBoxes();
+        List<Box> boxes = slope.shape().getBoundingBoxes();
         double lowest = boxes.stream().mapToDouble(box -> box.maxY).min().orElse(9);
         context.assertTrue(Math.abs(lowest + 0.5) < 1.0E-6, "lowest step on the lower stair step: " + lowest);
         for (double z = 0; z < 1; z += 1.0 / 16) {
@@ -143,17 +149,17 @@ public class TileSupportGameTests implements FabricGameTest {
     public void aTiltedTileKeepsItsSquareFace(TestContext context) {
         // Turned, not stretched: a level square keeps its sides' lengths once on the slope
         for (TileSupport support : List.of(TileSupport.SLOPE_NORTH, TileSupport.SLOPE_EAST, TileSupport.SLOPE_NORTH_WEST, TileSupport.OUTER_SOUTH_EAST)) {
-            org.joml.Matrix4f matrix = support.transform();
-            org.joml.Vector3f a = matrix.transformPosition(new org.joml.Vector3f(0, 0, 0));
-            org.joml.Vector3f b = matrix.transformPosition(new org.joml.Vector3f(1, 0, 0));
-            org.joml.Vector3f c = matrix.transformPosition(new org.joml.Vector3f(0, 0, 1));
+            Matrix4f matrix = support.transform();
+            Vector3f a = matrix.transformPosition(new Vector3f(0, 0, 0));
+            Vector3f b = matrix.transformPosition(new Vector3f(1, 0, 0));
+            Vector3f c = matrix.transformPosition(new Vector3f(0, 0, 1));
             context.assertTrue(Math.abs(a.distance(b) - 1) < 1.0E-5 && Math.abs(a.distance(c) - 1) < 1.0E-5,
                     support + ": sides " + a.distance(b) + " / " + a.distance(c));
             // ... and lies on the slope: its middle on the support's surface
-            org.joml.Vector3f middle = matrix.transformPosition(new org.joml.Vector3f(0.5f, 0, 0.5f));
+            Vector3f middle = matrix.transformPosition(new Vector3f(0.5f, 0, 0.5f));
             context.assertTrue(Math.abs(middle.y - support.surfaceY(0.5, 0.5)) < 1.0E-5, support + ": middle on the surface");
             // ... rising 45 degrees toward its high side
-            org.joml.Vector3f up = matrix.transformPosition(new org.joml.Vector3f(
+            Vector3f up = matrix.transformPosition(new Vector3f(
                     (float) (0.5 + 0.1 * Math.signum(support.gradientX())), 0, (float) (0.5 + 0.1 * Math.signum(support.gradientZ()))));
             context.assertTrue(up.y > middle.y, support + ": rises toward its high side");
         }
@@ -170,16 +176,16 @@ public class TileSupportGameTests implements FabricGameTest {
         // From the west, just above the slabs (y + 0.55 in the slab's cell), toward the tile's layer
         Vec3d start = new Vec3d(abs.getX() - 1.5, abs.getY() - 0.45, abs.getZ() + 0.5);
         Vec3d end = new Vec3d(abs.getX() + 0.5, abs.getY() - 0.42, abs.getZ() + 0.5);
-        var vanilla = world.raycast(new net.minecraft.world.RaycastContext(start, end, net.minecraft.world.RaycastContext.ShapeType.OUTLINE,
-                net.minecraft.world.RaycastContext.FluidHandling.NONE, net.minecraft.block.ShapeContext.absent()));
+        var vanilla = world.raycast(new RaycastContext(start, end, RaycastContext.ShapeType.OUTLINE,
+                RaycastContext.FluidHandling.NONE, ShapeContext.absent()));
         var hit = BoardSpaces.preferTile(world, start, end, vanilla);
-        context.assertTrue(hit instanceof net.minecraft.util.hit.BlockHitResult block && block.getBlockPos().equals(abs),
+        context.assertTrue(hit instanceof BlockHitResult block && block.getBlockPos().equals(abs),
                 "the lowered tile is aimed at from the side: " + hit.getPos() + " vanilla " + vanilla.getType());
         // Straight down on the bare slab, past the tile's overhang (half a block around its block): still the slab
         Vec3d above = new Vec3d(abs.getX() - 0.75, abs.getY() + 1, abs.getZ() + 0.5);
         Vec3d below = new Vec3d(abs.getX() - 0.75, abs.getY() - 1.5, abs.getZ() + 0.5);
-        var onSlab = world.raycast(new net.minecraft.world.RaycastContext(above, below, net.minecraft.world.RaycastContext.ShapeType.OUTLINE,
-                net.minecraft.world.RaycastContext.FluidHandling.NONE, net.minecraft.block.ShapeContext.absent()));
+        var onSlab = world.raycast(new RaycastContext(above, below, RaycastContext.ShapeType.OUTLINE,
+                RaycastContext.FluidHandling.NONE, ShapeContext.absent()));
         context.assertTrue(BoardSpaces.preferTile(world, above, below, onSlab) == onSlab, "the bare slab stays the target");
         context.complete();
     }

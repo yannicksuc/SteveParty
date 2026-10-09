@@ -28,6 +28,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -153,7 +154,7 @@ final class DiceTestKit {
 
     static Item face(String path) {
         Item item = Registries.ITEM.get(Steveparty.id(path));
-        if (item == net.minecraft.item.Items.AIR) throw new AssertionError("no such face item: " + path);
+        if (item == Items.AIR) throw new AssertionError("no such face item: " + path);
         return item;
     }
 

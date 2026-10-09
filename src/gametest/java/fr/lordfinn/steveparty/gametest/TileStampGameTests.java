@@ -16,7 +16,9 @@ import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.tooltip.TooltipData;
@@ -57,7 +59,7 @@ public class TileStampGameTests implements FabricGameTest {
         return context.getBlockState(pos).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit);
     }
 
-    private static PlayerEntity stencilAndDye(TestContext context, String patternId, net.minecraft.item.Item dye, int dyes) {
+    private static PlayerEntity stencilAndDye(TestContext context, String patternId, Item dye, int dyes) {
         PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
         player.setStackInHand(Hand.MAIN_HAND, StencilItem.of(StencilPatterns.byId(patternId)));
         player.setStackInHand(Hand.OFF_HAND, new ItemStack(dye, dyes));
@@ -78,7 +80,7 @@ public class TileStampGameTests implements FabricGameTest {
         // Kept when saved and loaded (and sent to the clients the same way)
         var registries = context.getWorld().getRegistryManager();
         NbtCompound nbt = tile.createNbtWithIdentifyingData(registries);
-        BoardSpaceBlockEntity copy = (BoardSpaceBlockEntity) net.minecraft.block.entity.BlockEntity.createFromNbt(tile.getPos(), tile.getCachedState(), nbt, registries);
+        BoardSpaceBlockEntity copy = (BoardSpaceBlockEntity) BlockEntity.createFromNbt(tile.getPos(), tile.getCachedState(), nbt, registries);
         context.assertTrue(copy != null && stamp.equals(copy.getStamp()), "saved with the tile");
         context.complete();
     }

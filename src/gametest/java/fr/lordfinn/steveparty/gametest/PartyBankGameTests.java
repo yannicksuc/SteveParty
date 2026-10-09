@@ -36,12 +36,14 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -155,11 +157,11 @@ public class PartyBankGameTests implements FabricGameTest {
             context.assertTrue(PartyBank.target(cartridge) == null, "a new cartridge remembers nothing");
             player.setStackInHand(Hand.MAIN_HAND, cartridge);
             BlockPos abs = context.getAbsolutePos(CHEST);
-            var hit = new net.minecraft.util.hit.BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false);
+            var hit = new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false);
             player.interactionManager.interactBlock(player, world, cartridge, Hand.MAIN_HAND, hit);
             context.assertTrue(PartyBank.target(cartridge) != null && PartyBank.target(cartridge).pos().equals(abs)
                     && PartyBank.target(cartridge).dimension().equals(world.getRegistryKey()), "main hand, a click on the chest: it remembers it");
-            context.assertTrue(!(player.currentScreenHandler instanceof net.minecraft.screen.GenericContainerScreenHandler), "the chest did not open");
+            context.assertTrue(!(player.currentScreenHandler instanceof GenericContainerScreenHandler), "the chest did not open");
             player.interactionManager.interactBlock(player, world, cartridge, Hand.MAIN_HAND, hit);
             context.assertTrue(PartyBank.target(cartridge) == null, "a click on the same chest: forgotten");
             // In the off hand (sneaking, as the main hand would open the chest): the same

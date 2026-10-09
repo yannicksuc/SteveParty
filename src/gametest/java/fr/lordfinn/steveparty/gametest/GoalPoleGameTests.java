@@ -11,6 +11,12 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import net.minecraft.item.DyeItem;
+import net.minecraft.item.Item;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.recipe.RecipeType;
+import net.minecraft.scoreboard.ScoreHolder;
+import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.text.Text;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
@@ -25,6 +31,7 @@ import fr.lordfinn.steveparty.recipes.FlagDyeRecipe;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.book.CraftingRecipeCategory;
 import net.minecraft.recipe.input.CraftingRecipeInput;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
@@ -52,7 +59,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntPredicate;
 
 public class GoalPoleGameTests implements FabricGameTest {
     private static final BlockPos BASE = new BlockPos(2, 1, 2);
@@ -193,7 +202,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         return new BlockHitResult(Vec3d.ofCenter(abs).add(0, 0, -0.1), Direction.NORTH, abs, false);
     }
 
-    private static net.minecraft.util.ActionResult use(TestContext context, PlayerEntity player) {
+    private static ActionResult use(TestContext context, PlayerEntity player) {
         BlockPos abs = context.getAbsolutePos(FLAG_POLE);
         return context.getWorld().getBlockState(abs).onUse(context.getWorld(), player, sideHit(context));
     }
@@ -329,11 +338,11 @@ public class GoalPoleGameTests implements FabricGameTest {
     private static ItemStack craft(TestContext context, int width, int height, ItemStack... grid) {
         CraftingRecipeInput input = CraftingRecipeInput.create(width, height, List.of(grid));
         return context.getWorld().getServer().getRecipeManager()
-                .getFirstMatch(net.minecraft.recipe.RecipeType.CRAFTING, input, context.getWorld())
+                .getFirstMatch(RecipeType.CRAFTING, input, context.getWorld())
                 .map(entry -> entry.value().craft(input, context.getWorld().getRegistryManager())).orElse(ItemStack.EMPTY);
     }
 
-    private static ItemStack flagFromWool(TestContext context, net.minecraft.item.Item a, net.minecraft.item.Item b, net.minecraft.item.Item c) {
+    private static ItemStack flagFromWool(TestContext context, Item a, Item b, Item c) {
         return craft(context, 2, 2, new ItemStack(a), ItemStack.EMPTY, new ItemStack(b), new ItemStack(c));
     }
 
@@ -350,8 +359,8 @@ public class GoalPoleGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void mixedWoolsMixTheirColours(TestContext context) {
         ItemStack flag = flagFromWool(context, Items.WHITE_WOOL, Items.WHITE_WOOL, Items.BLUE_WOOL);
-        int expected = FlagItem.mix(FlagItem.NO_COLOR, List.of((net.minecraft.item.DyeItem) Items.WHITE_DYE,
-                (net.minecraft.item.DyeItem) Items.WHITE_DYE, (net.minecraft.item.DyeItem) Items.BLUE_DYE));
+        int expected = FlagItem.mix(FlagItem.NO_COLOR, List.of((DyeItem) Items.WHITE_DYE,
+                (DyeItem) Items.WHITE_DYE, (DyeItem) Items.BLUE_DYE));
         context.assertTrue(FlagItem.getColor(flag) == expected, "white, white and blue mixed, got " + Integer.toHexString(FlagItem.getColor(flag)));
         context.assertTrue(FlagItem.matchingDye(expected) == null, "a mix, not a dye colour");
         context.complete();
@@ -370,7 +379,7 @@ public class GoalPoleGameTests implements FabricGameTest {
     public void dyeingAWoolFlagMixesWithItsColour(TestContext context) {
         ItemStack orange = flagFromWool(context, Items.ORANGE_WOOL, Items.ORANGE_WOOL, Items.ORANGE_WOOL);
         ItemStack dyed = craft(context, 2, 1, orange, new ItemStack(Items.BLUE_DYE));
-        int expected = FlagItem.mix(FlagItem.dyeColor(DyeColor.ORANGE), List.of((net.minecraft.item.DyeItem) Items.BLUE_DYE));
+        int expected = FlagItem.mix(FlagItem.dyeColor(DyeColor.ORANGE), List.of((DyeItem) Items.BLUE_DYE));
         context.assertTrue(FlagItem.getColor(dyed) == expected, "orange + blue, got " + Integer.toHexString(FlagItem.getColor(dyed)));
         context.assertTrue(expected != FlagItem.dyeColor(DyeColor.BLUE), "not simply blue");
         context.complete();
@@ -410,7 +419,7 @@ public class GoalPoleGameTests implements FabricGameTest {
     }
 
     private static int mirrorScore(TestContext context, String holder) {
-        var score = context.getWorld().getScoreboard().getScore(net.minecraft.scoreboard.ScoreHolder.fromName(holder), objective(context));
+        var score = context.getWorld().getScoreboard().getScore(ScoreHolder.fromName(holder), objective(context));
         return score == null ? 0 : score.getScore();
     }
 
@@ -480,15 +489,15 @@ public class GoalPoleGameTests implements FabricGameTest {
     public void pointsAreMirroredInTheScoreboard(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
         ScoreboardObjective mirror = objective(context);
-        context.assertTrue(mirror != null && mirror.getCriterion() == net.minecraft.scoreboard.ScoreboardCriterion.DUMMY, "dummy mirror");
+        context.assertTrue(mirror != null && mirror.getCriterion() == ScoreboardCriterion.DUMMY, "dummy mirror");
         base.credit("Alex", 2, null);
         context.assertTrue(mirrorScore(context, "Alex") == 2, "mirrored");
         var scoreboard = context.getWorld().getScoreboard();
-        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Alex"), mirror).setScore(7);
+        scoreboard.getOrCreateScore(ScoreHolder.fromName("Alex"), mirror).setScore(7);
         context.assertTrue(base.getPoints("Alex") == 7 && base.getTotal() == 7, "command sets the points, got " + base.getTotal());
-        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Sam"), mirror).setScore(1);
+        scoreboard.getOrCreateScore(ScoreHolder.fromName("Sam"), mirror).setScore(1);
         context.assertTrue(base.getTotal() == 8, "another holder added by a command");
-        scoreboard.removeScore(net.minecraft.scoreboard.ScoreHolder.fromName("Alex"), mirror);
+        scoreboard.removeScore(ScoreHolder.fromName("Alex"), mirror);
         context.assertTrue(base.getTotal() == 1, "removed score = 0 points, got " + base.getTotal());
         removeBase(context);
         context.complete();
@@ -528,7 +537,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.assertTrue(base.getTotal() == 0 && mirrorScore(context, "Sam") == 0, "reset");
         // Points set by a command while paused stay, even when a neighbour changes
         var scoreboard = context.getWorld().getScoreboard();
-        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Sam"), objective(context)).setScore(4);
+        scoreboard.getOrCreateScore(ScoreHolder.fromName("Sam"), objective(context)).setScore(4);
         context.setBlockState(BASE.west(), Blocks.STONE);
         context.assertTrue(base.getTotal() == 4, "a steady signal resets once, got " + base.getTotal());
         context.setBlockState(BASE.west(), Blocks.AIR);
@@ -542,15 +551,15 @@ public class GoalPoleGameTests implements FabricGameTest {
     public void oldResetPortSettingIsIgnored(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
         var registries = context.getWorld().getRegistryManager();
-        net.minecraft.nbt.NbtCompound saved = base.createNbt(registries);
+        NbtCompound saved = base.createNbt(registries);
         saved.putString("ResetPort", "MARKED_SIDE");
-        net.minecraft.nbt.NbtCompound points = new net.minecraft.nbt.NbtCompound();
+        NbtCompound points = new NbtCompound();
         points.putInt("Alex", 3);
         saved.put("Points", points);
         base.read(saved, registries);
         context.assertTrue(base.getTotal() == 3, "points loaded, got " + base.getTotal());
         context.assertFalse(base.createNbt(registries).contains("ResetPort"), "the setting is not saved any more");
-        net.minecraft.nbt.NbtCompound settings = base.writeSettings();
+        NbtCompound settings = base.writeSettings();
         settings.putString("ResetPort", "MARKED_SIDE");
         base.applySettings(settings);
         BlockPos west = BASE.offset(Direction.WEST);
@@ -586,8 +595,8 @@ public class GoalPoleGameTests implements FabricGameTest {
         String name = player.getGameProfile().getName();
         var scoreboard = context.getWorld().getScoreboard();
         String objectiveName = "jumps" + context.getAbsolutePos(BASE).getX();
-        ScoreboardObjective jumps = scoreboard.addObjective(objectiveName, net.minecraft.scoreboard.ScoreboardCriterion.DUMMY, Text.literal("Jumps"),
-                net.minecraft.scoreboard.ScoreboardCriterion.RenderType.INTEGER, true, null);
+        ScoreboardObjective jumps = scoreboard.addObjective(objectiveName, ScoreboardCriterion.DUMMY, Text.literal("Jumps"),
+                ScoreboardCriterion.RenderType.INTEGER, true, null);
         try {
             GoalPoleBaseBlockEntity base = placeBase(context, base());
             base.setPlayers(GoalPoleBaseBlockEntity.Players.SELECTOR, 16);
@@ -599,8 +608,8 @@ public class GoalPoleGameTests implements FabricGameTest {
             scoreboard.getOrCreateScore(player, jumps).setScore(7);
             context.assertTrue(base.getPoints(name) == 3, "+3 counted, got " + base.getPoints(name));
             boolean listed = false;
-            for (net.minecraft.nbt.NbtElement element : base.writeSettings().getList("Objectives", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) {
-                net.minecraft.nbt.NbtCompound entry = (net.minecraft.nbt.NbtCompound) element;
+            for (NbtElement element : base.writeSettings().getList("Objectives", NbtElement.COMPOUND_TYPE)) {
+                NbtCompound entry = (NbtCompound) element;
                 listed |= entry.getString("Name").equals(objectiveName) && entry.getString("Criterion").equals("dummy");
                 context.assertTrue(!entry.getString("Name").startsWith("steveparty_"), "the bases' own objectives are not offered");
             }
@@ -625,14 +634,14 @@ public class GoalPoleGameTests implements FabricGameTest {
     public void legacyBaseIsMigrated(TestContext context) {
         var scoreboard = context.getWorld().getScoreboard();
         String name = GoalPoleBaseBlockEntity.getObjectiveName(context.getWorld(), context.getAbsolutePos(BASE));
-        ScoreboardObjective old = scoreboard.addObjective(name, net.minecraft.scoreboard.ScoreboardCriterion.getOrCreateStatCriterion("deathCount").orElseThrow(),
-                Text.literal("old"), net.minecraft.scoreboard.ScoreboardCriterion.RenderType.INTEGER, true, null);
-        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Bob"), old).setScore(4);
-        net.minecraft.nbt.NbtCompound legacy = new net.minecraft.nbt.NbtCompound();
+        ScoreboardObjective old = scoreboard.addObjective(name, ScoreboardCriterion.getOrCreateStatCriterion("deathCount").orElseThrow(),
+                Text.literal("old"), ScoreboardCriterion.RenderType.INTEGER, true, null);
+        scoreboard.getOrCreateScore(ScoreHolder.fromName("Bob"), old).setScore(4);
+        NbtCompound legacy = new NbtCompound();
         legacy.putString("Selector", "@a");
         legacy.putString("Goal", "deathCount");
         legacy.putBoolean("ResetSidePowered", false);
-        legacy.put("LastScores", new net.minecraft.nbt.NbtCompound());
+        legacy.put("LastScores", new NbtCompound());
         context.setBlockState(BASE, base().with(GoalPoleBaseBlock.POWERED, true));
         GoalPoleBaseBlockEntity base = baseEntity(context);
         base.read(legacy, context.getWorld().getRegistryManager());
@@ -643,7 +652,7 @@ public class GoalPoleGameTests implements FabricGameTest {
                 "same selector, as the advanced choice");
         context.assertTrue(base.getPoints("Bob") == 4 && base.getTotal() == 4, "old scores become points, got " + base.getTotal());
         ScoreboardObjective mirror = objective(context);
-        context.assertTrue(mirror != null && mirror.getCriterion() == net.minecraft.scoreboard.ScoreboardCriterion.DUMMY, "the objective is now the dummy mirror");
+        context.assertTrue(mirror != null && mirror.getCriterion() == ScoreboardCriterion.DUMMY, "the objective is now the dummy mirror");
         context.assertTrue(mirrorScore(context, "Bob") == 4, "mirror keeps the score");
         context.assertTrue(sourceObjective(context) != null, "source objective created");
         var saved = base.createNbt(context.getWorld().getRegistryManager());
@@ -805,7 +814,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         poleEntity(context, BASE.up()).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 4, false);
         ServerWorld world = context.getWorld();
         BlockPos low = context.getAbsolutePos(BASE.up()), high = context.getAbsolutePos(BASE.up(2)), abs = context.getAbsolutePos(BASE);
-        java.util.function.IntPredicate both = level -> world.getBlockState(low).getComparatorOutput(world, low) == level
+        IntPredicate both = level -> world.getBlockState(low).getComparatorOutput(world, low) == level
                 && world.getBlockState(high).getComparatorOutput(world, high) == level;
         context.assertTrue(both.test(0), "nothing yet: 0 on every segment");
         base.credit("Alex", 1, null);
@@ -886,7 +895,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             context.setBlockState(columns[c].up(), pole(false, false));
             context.setBlockState(columns[c].up(2), pole(false, true));
             for (int s = 0; s < 2; s++) {
-                net.minecraft.nbt.NbtCompound old = new net.minecraft.nbt.NbtCompound();
+                NbtCompound old = new NbtCompound();
                 old.putInt("Comparator", GoalPoleBlockEntity.Comparator.EQUAL.ordinal());
                 old.putInt("Value", values[c][s]);
                 poleEntity(context, columns[c].up(s + 1)).read(old, registries);
@@ -1131,7 +1140,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             base.setPlayers(GoalPoleBaseBlockEntity.Players.PARTY, 16);
             context.assertTrue(base.linkedParty() == null && !base.follows(player), "party players without a party: nobody");
             // Settings from the screen
-            net.minecraft.nbt.NbtCompound settings = base.writeSettings();
+            NbtCompound settings = base.writeSettings();
             settings.putString("Players", "RADIUS");
             settings.putInt("Radius", 7);
             base.applySettings(settings);
@@ -1168,7 +1177,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             context.assertTrue(!base.follows(player), "no party running: nobody");
             PartyData data = new PartyData();
             data.addStep(new PartyStep());
-            data.addStep(new EndPartyStep(new java.util.ArrayList<>()));
+            data.addStep(new EndPartyStep(new ArrayList<>()));
             controller.setPartyData(data);
             controller.nextStep();
             context.assertTrue(data.isStarted(), "party running");

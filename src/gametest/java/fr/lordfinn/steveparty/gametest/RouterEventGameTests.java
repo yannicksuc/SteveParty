@@ -22,7 +22,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The Router as a sensor: a comparator reading it pulses when a token stops on one of its board spaces (the strength
@@ -114,7 +116,7 @@ public class RouterEventGameTests implements FabricGameTest {
         tile.setStack(0, new ItemStack(ModItems.SHOP_CARTRIDGE));
         context.assertEquals(tile.getBoardSpaceBehavior().comparatorLevel(tile, tile.getStack(0)),
                 BoardSpaceRedstoneRouterBlockEntity.LEVEL_SHOP, "shop");
-        java.util.Set<Integer> levels = new java.util.HashSet<>();
+        Set<Integer> levels = new HashSet<>();
         for (TileFeedback.Landing landing : TileFeedback.Landing.values()) {
             int level = BoardSpaceRedstoneRouterBlockEntity.landingSignal(landing);
             context.assertTrue(level > BoardSpaceRedstoneRouterBlockEntity.PASS_SIGNAL && level <= 15, landing + " in range");

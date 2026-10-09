@@ -13,6 +13,7 @@ import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableTextContent;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +28,7 @@ public class LangGameTests implements FabricGameTest {
         try (InputStream in = LangGameTests.class.getResourceAsStream("/assets/steveparty/lang/" + code + ".json")) {
             if (in == null) throw new AssertionError("no lang file " + code);
             return JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new AssertionError(e);
         }
     }

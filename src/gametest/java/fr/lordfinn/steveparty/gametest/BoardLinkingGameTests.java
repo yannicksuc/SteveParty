@@ -28,19 +28,39 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilGunScreenHandler;
 import fr.lordfinn.steveparty.stencil.StencilShape;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.ComparatorBlock;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.GameMode;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
@@ -226,8 +246,8 @@ public class BoardLinkingGameTests implements FabricGameTest {
     }
 
     /** This test's area only (tests run side by side). */
-    static net.minecraft.util.math.BlockBox box(TestContext context) {
-        return net.minecraft.util.math.BlockBox.create(context.getAbsolutePos(new BlockPos(0, 0, 0)), context.getAbsolutePos(new BlockPos(8, 3, 8)));
+    static BlockBox box(TestContext context) {
+        return BlockBox.create(context.getAbsolutePos(new BlockPos(0, 0, 0)), context.getAbsolutePos(new BlockPos(8, 3, 8)));
     }
 
     static void link(TestContext context, BlockPos from, BlockPos... to) {
@@ -258,10 +278,10 @@ public class BoardLinkingGameTests implements FabricGameTest {
         context.setBlockState(new BlockPos(1, 1, 7), Blocks.STONE);
         link(context, t.get(5), context.getAbsolutePos(new BlockPos(1, 1, 7)));
         BoardValidator.Report report = BoardValidator.check(BoardGraph.collect(context.getWorld(), box(context)));
-        java.util.Map<String, List<BlockPos>> issues = new java.util.HashMap<>();
+        Map<String, List<BlockPos>> issues = new HashMap<>();
         for (BoardValidator.Issue issue : report.issues()) issues.put(issue.key(), issue.positions());
         context.assertEquals(report.starts(), 1, "one start");
-        context.assertEquals(java.util.Set.copyOf(issues.get("dead_ends")), java.util.Set.of(t.get(3), t.get(5)), "c and e are dead ends");
+        context.assertEquals(Set.copyOf(issues.get("dead_ends")), Set.of(t.get(3), t.get(5)), "c and e are dead ends");
         context.assertEquals(issues.get("unreachable"), List.of(t.get(5)), "e is unreachable");
         context.assertEquals(issues.get("broken_links"), List.of(t.get(5)), "e's link is broken");
         context.assertEquals(issues.get("no_token"), List.of(t.get(0)), "the start has no token");
@@ -302,8 +322,8 @@ public class BoardLinkingGameTests implements FabricGameTest {
                 ItemStack tile = new ItemStack(ModBlocks.TILE);
                 player.setStackInHand(Hand.MAIN_HAND, tile);
                 BlockPos ground = context.getAbsolutePos(new BlockPos(x, 0, 1));
-                tile.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
-                        new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, ground, false)));
+                tile.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND,
+                        new BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), Direction.UP, ground, false)));
                 placed.add(ground.up());
             }
             context.assertEquals(links(context, placed.get(0)), List.of(placed.get(1)), "first → second");
@@ -329,20 +349,20 @@ public class BoardLinkingGameTests implements FabricGameTest {
             // The anchor back on the first tile (a stroke on it alone), click the far chest
             player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
             paint(player, brush, context, t.get(0));
-            net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
-                    new net.minecraft.util.hit.BlockHitResult(far.toCenterPos(), net.minecraft.util.math.Direction.UP, far, false));
+            UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
+                    new BlockHitResult(far.toCenterPos(), Direction.UP, far, false));
             context.assertEquals(CartridgeContainers.in(boardSpace(context, t.get(0)).getStack(0), context.getWorld()),
                     List.of(near, far), "the clicked chest, after the first (a cartridge holds a list)");
             // The same chest again: out of the list
-            net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
-                    new net.minecraft.util.hit.BlockHitResult(near.toCenterPos(), net.minecraft.util.math.Direction.UP, near, false));
+            UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
+                    new BlockHitResult(near.toCenterPos(), Direction.UP, near, false));
             context.assertEquals(CartridgeContainers.in(boardSpace(context, t.get(0)).getStack(0), context.getWorld()),
                     List.of(far), "the near one clicked again: removed");
             // The Wrench no longer links chests: the chest's own use goes on
             ItemStack wrench = wrench(player);
-            net.minecraft.util.ActionResult withWrench = net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
-                    new net.minecraft.util.hit.BlockHitResult(near.toCenterPos(), net.minecraft.util.math.Direction.UP, near, false));
-            context.assertEquals(withWrench, net.minecraft.util.ActionResult.PASS, "the Wrench leaves the chest alone " + wrench);
+            ActionResult withWrench = UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
+                    new BlockHitResult(near.toCenterPos(), Direction.UP, near, false));
+            context.assertEquals(withWrench, ActionResult.PASS, "the Wrench leaves the chest alone " + wrench);
         });
     }
 
@@ -368,10 +388,10 @@ public class BoardLinkingGameTests implements FabricGameTest {
         withPlayer(context, true, player -> {
             ServerWorld world = context.getWorld();
             BoardBlueprint.Clip clip = BoardBlueprint.copy(world,
-                    net.minecraft.util.math.BlockBox.create(t.get(0), t.get(2)), context.getAbsolutePos(new BlockPos(2, 1, 2)));
+                    BlockBox.create(t.get(0), t.get(2)), context.getAbsolutePos(new BlockPos(2, 1, 2)));
             BlockPos anchor = context.getAbsolutePos(new BlockPos(6, 1, 6));
             WrenchActions.recorded(player, world, null, () -> BoardBlueprint.paste(world, clip, anchor,
-                    net.minecraft.util.BlockRotation.CLOCKWISE_90, false, player));
+                    BlockRotation.CLOCKWISE_90, false, player));
             // Relative to the anchor, (x, z) turns into (-z, x)
             BlockPos a = anchor.add(1, 0, -1), b = anchor.add(1, 0, 1), c = anchor.add(-1, 0, 1);
             context.assertEquals(links(context, a), List.of(b), "a' → b'");
@@ -389,11 +409,11 @@ public class BoardLinkingGameTests implements FabricGameTest {
                 .with(ATileBlock.SIZE, TileLayout.LARGE_SOUTH_EAST));
         ServerWorld world = context.getWorld();
         BoardBlueprint.Clip clip = BoardBlueprint.copy(world,
-                net.minecraft.util.math.BlockBox.create(context.getAbsolutePos(new BlockPos(2, 1, 2)), context.getAbsolutePos(new BlockPos(3, 1, 3))),
+                BlockBox.create(context.getAbsolutePos(new BlockPos(2, 1, 2)), context.getAbsolutePos(new BlockPos(3, 1, 3))),
                 context.getAbsolutePos(new BlockPos(2, 1, 2)));
         context.assertEquals(clip.entries().size(), 1, "the parts are not copied");
         BlockPos anchor = context.getAbsolutePos(new BlockPos(5, 1, 5));
-        BoardBlueprint.paste(world, clip, anchor, net.minecraft.util.BlockRotation.CLOCKWISE_90, false, null);
+        BoardBlueprint.paste(world, clip, anchor, BlockRotation.CLOCKWISE_90, false, null);
         context.assertEquals(world.getBlockState(anchor).get(ATileBlock.SIZE),
                 TileLayout.LARGE_SOUTH_WEST, "south-east turned 90 degrees: south-west");
         context.assertTrue(world.getBlockState(anchor.west()).getBlock() instanceof TilePartBlock,
@@ -408,7 +428,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
         BlockPos oldB = context.getAbsolutePos(new BlockPos(3, 1, 1)), outside = context.getAbsolutePos(new BlockPos(7, 1, 7));
         link(context, moved.get(0), oldB, outside);
         int count = BoardBlueprint.translate(context.getWorld(),
-                net.minecraft.util.math.BlockBox.create(moved.get(0), moved.get(1)), new net.minecraft.util.math.Vec3i(0, 0, 3), null);
+                BlockBox.create(moved.get(0), moved.get(1)), new Vec3i(0, 0, 3), null);
         context.assertEquals(count, 1, "one link moved");
         context.assertEquals(links(context, moved.get(0)), List.of(moved.get(1), outside), "the inner link follows, the outer one stays");
         context.complete();
@@ -418,7 +438,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
     public void aLoopTemplateIsClosedAndStarts(TestContext context) {
         List<BlockPos> cells = BoardBlueprint.template(context.getWorld(),
                 BoardBlueprint.Template.LOOP, context.getAbsolutePos(new BlockPos(1, 1, 7)),
-                net.minecraft.util.math.Direction.NORTH, 6, 2, null);
+                Direction.NORTH, 6, 2, null);
         context.assertEquals(cells.size(), 6, "6 tiles");
         for (int i = 0; i < 6; i++) context.assertEquals(links(context, cells.get(i)), List.of(cells.get((i + 1) % 6)), "tile " + i);
         context.assertEquals(context.getWorld().getBlockState(cells.getFirst()).get(TILE_TYPE), BoardSpaceType.TILE_START, "the first one starts");
@@ -438,8 +458,8 @@ public class BoardLinkingGameTests implements FabricGameTest {
         withPlayer(context, true, player -> {
             player.setStackInHand(Hand.MAIN_HAND, item);
             BlockPos ground = context.getAbsolutePos(new BlockPos(5, 0, 5));
-            item.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
-                    new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, ground, false)));
+            item.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND,
+                    new BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), Direction.UP, ground, false)));
             BoardSpaceBlockEntity copy = boardSpace(context, ground.up());
             context.assertTrue(copy.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "the copy has its cartridge");
             context.assertTrue(BoardLinks.links(copy, 0).isEmpty(), "but no links to the original's neighbours");
@@ -452,17 +472,17 @@ public class BoardLinkingGameTests implements FabricGameTest {
      * An Advanced Tile at (3, 1, 1) receiving a power of 5 (a comparator reading a third-full chest), and a Tile at
      * (6, 1, 1). The comparator needs a few ticks: {@code then} runs once the power is there.
      */
-    static void poweredAdvancedTile(TestContext context, java.util.function.BiConsumer<BlockPos, BlockPos> then) {
+    static void poweredAdvancedTile(TestContext context, BiConsumer<BlockPos, BlockPos> then) {
         BlockPos advanced = tiles(context, ModBlocks.ADVANCED_TILE, new BlockPos(3, 1, 1)).getFirst();
         BlockPos next = tiles(context, ModBlocks.TILE, new BlockPos(6, 1, 1)).getFirst();
         context.setBlockState(new BlockPos(1, 0, 1), Blocks.STONE);
         context.setBlockState(new BlockPos(2, 0, 1), Blocks.STONE);
         // The comparator first: it only reads its chest when a neighbour changes (setBlockState is no player placement)
         context.setBlockState(new BlockPos(2, 1, 1), Blocks.COMPARATOR.getDefaultState()
-                .with(net.minecraft.block.ComparatorBlock.FACING, net.minecraft.util.math.Direction.WEST));
+                .with(ComparatorBlock.FACING, Direction.WEST));
         context.setBlockState(new BlockPos(1, 1, 1), Blocks.CHEST);
-        net.minecraft.inventory.Inventory chest = (net.minecraft.inventory.Inventory) context.getBlockEntity(new BlockPos(1, 1, 1));
-        for (int i = 0; i < 9; i++) chest.setStack(i, new ItemStack(net.minecraft.item.Items.STONE, 64)); // 1/3 full: 5
+        Inventory chest = (Inventory) context.getBlockEntity(new BlockPos(1, 1, 1));
+        for (int i = 0; i < 9; i++) chest.setStack(i, new ItemStack(Items.STONE, 64)); // 1/3 full: 5
         chest.markDirty();
         context.waitAndRun(6, () -> {
             context.assertEquals(boardSpace(context, advanced).getActiveSlot(), 5, "powered at 5");
@@ -563,10 +583,10 @@ public class BoardLinkingGameTests implements FabricGameTest {
             ItemStack wrench = brush(player);
             paint(player, wrench, context, t.toArray(BlockPos[]::new));
             context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "linked");
-            player.changeGameMode(net.minecraft.world.GameMode.ADVENTURE);
+            player.changeGameMode(GameMode.ADVENTURE);
             context.assertTrue(!LinkHistory.undo(player, true, wrench), "adventure: nothing undone");
             context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "adventure: still linked");
-            player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+            player.changeGameMode(GameMode.SURVIVAL);
             context.assertTrue(LinkHistory.undo(player, true, wrench), "survival: undone");
             context.assertEquals(links(context, t.get(0)), List.of(), "survival: the link is gone");
         });
@@ -612,8 +632,8 @@ public class BoardLinkingGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, held);
             BlockPos ground = context.getAbsolutePos(new BlockPos(3, 0, 3));
             ItemStack inHand = player.getMainHandStack();
-            net.minecraft.util.hit.BlockHitResult onGround = new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0),
-                    net.minecraft.util.math.Direction.UP, ground, false);
+            BlockHitResult onGround = new BlockHitResult(ground.toCenterPos().add(0, 0.5, 0),
+                    Direction.UP, ground, false);
             player.interactionManager.interactBlock(player, context.getWorld(), inHand, Hand.MAIN_HAND, onGround);
             context.assertEquals(inHand.get(ModComponents.DESTINATIONS_COMPONENT).destinations(), List.of(ground), "the ground is selected");
             context.assertTrue(player.currentScreenHandler == player.playerScreenHandler, "no menu on a block");
@@ -621,20 +641,20 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertTrue(!inHand.contains(ModComponents.DESTINATIONS_COMPONENT), "clicked again, the ground is unselected");
 
             // In the air (looking up, nothing above): its menu
-            net.minecraft.util.math.Vec3d sky = context.getAbsolute(new net.minecraft.util.math.Vec3d(6.5, 1, 6.5));
+            Vec3d sky = context.getAbsolute(new Vec3d(6.5, 1, 6.5));
             player.refreshPositionAndAngles(sky.x, sky.y, sky.z, 0, -90);
             inHand.use(context.getWorld(), player, Hand.MAIN_HAND);
             context.assertTrue(player.currentScreenHandler != player.playerScreenHandler, "its menu is open");
             player.closeHandledScreen();
 
             BlockPos tile = t.getFirst();
-            inHand.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
-                    new net.minecraft.util.hit.BlockHitResult(tile.toCenterPos(), net.minecraft.util.math.Direction.UP, tile, false)));
+            inHand.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND,
+                    new BlockHitResult(tile.toCenterPos(), Direction.UP, tile, false)));
             context.assertEquals(inHand.get(ModComponents.DESTINATIONS_COMPONENT).destinations(), List.of(tile), "the tile is linked");
             context.setBlockState(new BlockPos(1, 1, 1), Blocks.AIR);
             BlockPos under = tile.down();
-            inHand.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
-                    new net.minecraft.util.hit.BlockHitResult(under.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, under, false)));
+            inHand.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND,
+                    new BlockHitResult(under.toCenterPos().add(0, 0.5, 0), Direction.UP, under, false)));
             context.assertTrue(!inHand.contains(ModComponents.DESTINATIONS_COMPONENT), "the missing tile is unlinked by clicking under it");
         });
     }
@@ -691,10 +711,10 @@ public class BoardLinkingGameTests implements FabricGameTest {
             player.getInventory().setStack(10, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP, 2));
             player.getInventory().setStack(11, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR, 5));
             context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
-                    net.minecraft.registry.Registries.ITEM.getRawId(net.minecraft.item.Items.STONE)), "stone is no cartridge");
+                    Registries.ITEM.getRawId(Items.STONE)), "stone is no cartridge");
             context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE, -2), "no item -2");
             context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
-                    net.minecraft.registry.Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR_STOP)), "the stop cartridge");
+                    Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR_STOP)), "the stop cartridge");
             context.assertTrue(TileLinkerBrush.cartridge(brush) == ModItems.BOARD_SPACE_BEHAVIOR_STOP, "kept on the brush");
             paint(player, brush, context, t.get(0), t.get(1), t.get(2));
             context.assertTrue(boardSpace(context, t.get(0)).getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "a stop cartridge went in");
@@ -703,7 +723,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertEquals(player.getInventory().getStack(11).getCount(), 5, "the plain ones untouched");
             // The plain Cartridge is a kind like the others; keeping the tiles' cartridges is the default: nothing stored
             context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
-                    net.minecraft.registry.Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR)), "the plain cartridge");
+                    Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR)), "the plain cartridge");
             context.assertTrue(TileLinkerBrush.cartridge(brush) == ModItems.BOARD_SPACE_BEHAVIOR, "stored");
             context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE, ToolWheelPayload.KEEP_CARTRIDGES), "keep");
             context.assertTrue(!brush.contains(ModComponents.LINK_CARTRIDGE), "the default: no component left");
@@ -717,7 +737,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             ItemStack wrench = wrench(player);
             wrench.set(ModComponents.BLOCK_ORIGIN_COMPONENT, new BlockOriginComponent(
                     context.getAbsolutePos(new BlockPos(1, 1, 1)), ""));
-            wrench.set(ModComponents.WRENCH_STATE, new net.minecraft.nbt.NbtCompound());
+            wrench.set(ModComponents.WRENCH_STATE, new NbtCompound());
             wrench.inventoryTick(context.getWorld(), player, 0, true);
             context.assertTrue(!wrench.contains(ModComponents.BLOCK_ORIGIN_COMPONENT) && !wrench.contains(ModComponents.WRENCH_STATE),
                     "an old wrench's origin and mode are dropped");
@@ -768,12 +788,12 @@ public class BoardLinkingGameTests implements FabricGameTest {
         withPlayer(context, true, player -> {
             ServerWorld world = context.getWorld();
             // Level with the ground plus 0.2: over the thin tile's shape (0.125 high), under what is drawn of it
-            net.minecraft.util.math.Vec3d eye = context.getAbsolute(new net.minecraft.util.math.Vec3d(1.5, 1.2, 2.5));
-            net.minecraft.util.math.Vec3d east = new net.minecraft.util.math.Vec3d(1, 0, 0);
+            Vec3d eye = context.getAbsolute(new Vec3d(1.5, 1.2, 2.5));
+            Vec3d east = new Vec3d(1, 0, 0);
             context.assertEquals(BrushAim.along(world, player, eye, east), tile, "grazing over it");
             // Down onto the ground just before it
-            net.minecraft.util.math.Vec3d high = context.getAbsolute(new net.minecraft.util.math.Vec3d(1.5, 4, 2.5));
-            net.minecraft.util.math.Vec3d target = context.getAbsolute(new net.minecraft.util.math.Vec3d(4.95, 1.0, 2.5));
+            Vec3d high = context.getAbsolute(new Vec3d(1.5, 4, 2.5));
+            Vec3d target = context.getAbsolute(new Vec3d(4.95, 1.0, 2.5));
             context.assertEquals(BrushAim.along(world, player, high, target.subtract(high)), tile, "the ground at its edge");
             // A wall in between
             context.setBlockState(new BlockPos(3, 1, 2), Blocks.STONE);
@@ -841,7 +861,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertEquals(BrushAim.ghosts(player, world, TileLinkerBrush.level(brush)).get(ghost),
                     List.of(t), "the dangling link is a ghost");
             context.assertTrue(BrushAim.aimed(player, world, 1f) == null, "not a board space");
-            context.assertEquals(BrushAim.aimed(player, world, 1f, java.util.Set.of(ghost)), ghost,
+            context.assertEquals(BrushAim.aimed(player, world, 1f, Set.of(ghost)), ghost,
                     "but the brush aims at its ghost");
             TileLinkerBrush.paint(player, brush, world, t);
             hold(player, brush, context, 1);
@@ -868,7 +888,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             StencilItem.setShape(StencilShape.full(), stencil);
             contents.set(0, stencil.copy());
             contents.set(4, stencil.copy());
-            contents.set(StencilGunItem.STENCIL_SLOTS + 2, new ItemStack(net.minecraft.item.Items.RED_DYE, 8));
+            contents.set(StencilGunItem.STENCIL_SLOTS + 2, new ItemStack(Items.RED_DYE, 8));
             StencilGunItem.setContents(hammer, contents);
             player.setStackInHand(Hand.MAIN_HAND, hammer);
             ItemStack held = player.getMainHandStack();
@@ -878,7 +898,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertTrue(!pick(player, ToolWheelPayload.Action.HAMMER_STENCIL, 9), "no slot 9");
             context.assertEquals(StencilGunItem.selection(held).stencil(), 4, "slot 4 stamped");
             context.assertTrue(pick(player, ToolWheelPayload.Action.HAMMER_DYE, 2), "the red dye");
-            context.assertTrue(StencilGunItem.selectedLoad(held).color() == net.minecraft.util.DyeColor.RED, "paints red");
+            context.assertTrue(StencilGunItem.selectedLoad(held).color() == DyeColor.RED, "paints red");
             context.assertTrue(!pick(player, ToolWheelPayload.Action.HAMMER_DYE, 3), "no dye in slot 3");
             context.assertTrue(pick(player, ToolWheelPayload.Action.HAMMER_DYE, StencilGunSelection.ENGRAVE), "Engrave");
             context.assertTrue(StencilGunItem.selectedLoad(held).color() == null, "no paint");

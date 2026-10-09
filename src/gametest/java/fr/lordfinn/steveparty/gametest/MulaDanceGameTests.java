@@ -7,9 +7,11 @@ import fr.lordfinn.steveparty.entities.custom.MulaDances;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.utils.GravityPull;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.item.ItemStack;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -323,7 +325,7 @@ public class MulaDanceGameTests implements FabricGameTest {
         // a forge holds Mulas only with its core in
         DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
         forge.setStack(DiceForgeBlockEntity.CENTER_SLOT,
-                new net.minecraft.item.ItemStack(ModBlocks.GRAVITY_CORE));
+                new ItemStack(ModBlocks.GRAVITY_CORE));
     }
 
     /** A risen core's gravity doesn't pull the Mulas (they dance round it instead). */
@@ -331,8 +333,8 @@ public class MulaDanceGameTests implements FabricGameTest {
     public void mulasAreNotPulledByTheCore(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(2, 3, 2));
         mula.setAiDisabled(true);
-        mula.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
-        net.minecraft.util.math.Vec3d core = mula.getPos().add(3, 1, 0);
+        mula.setVelocity(Vec3d.ZERO);
+        Vec3d core = mula.getPos().add(3, 1, 0);
         GravityPull.pullAround(context.getWorld(), core, 10, 1, false, 0);
         context.assertTrue(mula.getVelocity().lengthSquared() == 0, "not pulled: " + mula.getVelocity());
         context.complete();

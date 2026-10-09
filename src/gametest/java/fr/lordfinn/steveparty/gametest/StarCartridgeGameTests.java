@@ -34,6 +34,7 @@ import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.CowEntity;
 import net.minecraft.item.ItemStack;
@@ -73,7 +74,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     private static final int PRICE = StarSettingsComponent.DEFAULT_PRICE;
 
     private record Board(CowEntity token, PartyControllerEntity party, List<BlockPos> starSpaces,
-                         net.minecraft.block.entity.ChestBlockEntity bank) {
+                         ChestBlockEntity bank) {
         TokenizedEntityInterface tokenized() {
             return (TokenizedEntityInterface) token;
         }
@@ -126,7 +127,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
         owner.setPosition(context.getAbsolute(new Vec3d(4, 1, -10)));
         PartyControllerEntity controller = party(context, cow, owner);
         controller.setStarSpace(context.getAbsolutePos(STAR));
-        net.minecraft.block.entity.ChestBlockEntity bank = TestBank.stock(context, controller, BANK, 0, BANK_STARS);
+        ChestBlockEntity bank = TestBank.stock(context, controller, BANK, 0, BANK_STARS);
         return new Board(cow, controller, List.of(STAR, OTHER, ANOTHER), bank);
     }
 

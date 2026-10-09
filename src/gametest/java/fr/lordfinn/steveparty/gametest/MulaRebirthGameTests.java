@@ -8,13 +8,18 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.world.GameMode;
 
 import java.util.List;
 import java.util.UUID;
@@ -159,7 +164,7 @@ public class MulaRebirthGameTests implements FabricGameTest {
         context.assertTrue(MulaStarEntity.distanceFor(MulaStarEntity.MIN_APEX, MulaEntity.MulaVariant.BLUE) == 100
                 && MulaStarEntity.distanceFor(MulaStarEntity.MAX_APEX, MulaEntity.MulaVariant.RED) == 400, "others: 100-400");
         ServerWorld world = context.getWorld();
-        ServerPlayerEntity player = TestPlayers.mock(context, net.minecraft.world.GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         MulaEntity black = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         black.setVariant(MulaEntity.MulaVariant.BLACK);
         black.setHunger(MulaEntity.MAX_HUNGER - 1);
@@ -169,17 +174,17 @@ public class MulaRebirthGameTests implements FabricGameTest {
         blue.setHunger(MulaEntity.MAX_HUNGER - 1);
         blue.setAiDisabled(true);
         try {
-            player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.COOKED_BEEF, 4));
-            black.interactMob(player, net.minecraft.util.Hand.MAIN_HAND);
-            player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.COD, 4));
-            blue.interactMob(player, net.minecraft.util.Hand.MAIN_HAND);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.COOKED_BEEF, 4));
+            black.interactMob(player, Hand.MAIN_HAND);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.COD, 4));
+            blue.interactMob(player, Hand.MAIN_HAND);
         } finally {
             world.getServer().getPlayerManager().remove(player);
         }
         UUID id = black.getUuid();
         context.runAtTick(60, () -> {
             int blackCount = 0, blueCount = 0;
-            for (var item : world.getEntitiesByClass(net.minecraft.entity.ItemEntity.class, new Box(context.getAbsolutePos(new BlockPos(3, 3, 3))).expand(12), e -> true)) {
+            for (var item : world.getEntitiesByClass(ItemEntity.class, new Box(context.getAbsolutePos(new BlockPos(3, 3, 3))).expand(12), e -> true)) {
                 if (item.getStack().isOf(ModItems.BLACK_STAR_FRAGMENT)) blackCount += item.getStack().getCount();
                 if (item.getStack().isOf(ModItems.BLUE_STAR_FRAGMENT)) blueCount += item.getStack().getCount();
                 item.discard();

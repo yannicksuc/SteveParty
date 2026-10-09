@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.VillagerBlock;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
@@ -8,6 +10,10 @@ import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockUse;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerMode;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerReaction;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BellBlock;
 import net.minecraft.block.BlockState;
@@ -18,11 +24,14 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -95,11 +104,11 @@ public class VillagerBlockGameTests implements FabricGameTest {
         BlockState state = context.getWorld().getBlockState(context.getAbsolutePos(POS));
         try {
             context.assertTrue(state.onUseWithItem(ItemStack.EMPTY, context.getWorld(), player, Hand.MAIN_HAND, hit(context))
-                    == net.minecraft.util.ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION, "empty hand: the block's own use (a poke)");
+                    == ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION, "empty hand: the block's own use (a poke)");
             context.assertTrue(state.onUseWithItem(new ItemStack(Items.STONE), context.getWorld(), player, Hand.MAIN_HAND, hit(context))
-                    == net.minecraft.util.ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION, "a block in hand is placed");
+                    == ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION, "a block in hand is placed");
             context.assertTrue(state.onUseWithItem(new ItemStack(Items.WATER_BUCKET), context.getWorld(), player, Hand.MAIN_HAND, hit(context))
-                    == net.minecraft.util.ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION, "an unwanted item keeps its use");
+                    == ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION, "an unwanted item keeps its use");
             context.assertEquals(villager.getReaction(), VillagerReaction.REFUSE, "but it shakes its head");
             context.assertTrue(state.onUseWithItem(new ItemStack(Items.EMERALD), context.getWorld(), player, Hand.MAIN_HAND, hit(context))
                     .isAccepted(), "the emerald is taken (admired, not consumed)");
@@ -150,11 +159,11 @@ public class VillagerBlockGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void everyLineAndSubtitleIsTranslated(TestContext context) {
         for (String code : new String[]{"en_us", "fr_fr"}) {
-            com.google.gson.JsonObject lang;
-            try (java.io.InputStream in = VillagerBlockGameTests.class.getResourceAsStream("/assets/steveparty/lang/" + code + ".json")) {
-                lang = com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8))
+            JsonObject lang;
+            try (InputStream in = VillagerBlockGameTests.class.getResourceAsStream("/assets/steveparty/lang/" + code + ".json")) {
+                lang = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
                         .getAsJsonObject();
-            } catch (java.io.IOException e) {
+            } catch (IOException e) {
                 throw new AssertionError(e);
             }
             for (VillagerReaction reaction : VillagerReaction.values()) {
@@ -162,7 +171,7 @@ public class VillagerBlockGameTests implements FabricGameTest {
                     context.assertTrue(lang.has(reaction.messageKey()), code + " has " + reaction.messageKey());
                 }
             }
-            for (net.minecraft.util.Identifier id : net.minecraft.registry.Registries.SOUND_EVENT.getIds()) {
+            for (Identifier id : Registries.SOUND_EVENT.getIds()) {
                 if (id.getNamespace().equals("steveparty") && id.getPath().startsWith("villager_block.")) {
                     context.assertTrue(lang.has("subtitles.steveparty." + id.getPath()), code + " has the subtitle of " + id);
                 }

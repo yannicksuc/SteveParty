@@ -13,6 +13,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +65,7 @@ public class MulaSafetyGameTests implements FabricGameTest {
         MulaEntity b = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         context.assertTrue(!a.isCollidable(), "not a solid box");
         context.assertTrue(!a.collidesWith(b) && !b.collidesWith(a), "Mulas pass through each other");
-        b.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
+        b.setVelocity(Vec3d.ZERO);
         a.pushAwayFrom(b);
         context.assertTrue(b.getVelocity().lengthSquared() == 0 && a.getVelocity().lengthSquared() == 0,
                 "and don't push each other");

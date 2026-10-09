@@ -35,6 +35,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -142,7 +143,7 @@ public class MiniGameFormatGameTests implements FabricGameTest {
     }
 
     private static MiniGamePipeLink link(int x, MiniGamePipeRole role) {
-        return new MiniGamePipeLink(GlobalPos.create(net.minecraft.world.World.OVERWORLD, new BlockPos(x, 0, 0)), Direction.UP, role);
+        return new MiniGamePipeLink(GlobalPos.create(World.OVERWORLD, new BlockPos(x, 0, 0)), Direction.UP, role);
     }
 
     /** Of several formats that fit, the most specific is played; the draw only keeps pages with a fitting format and its pipes. */

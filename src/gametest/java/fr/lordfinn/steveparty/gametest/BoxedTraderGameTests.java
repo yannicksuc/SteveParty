@@ -15,9 +15,14 @@ import fr.lordfinn.steveparty.items.custom.BoxCostumeBlock;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.BarrelBlock;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.MovementType;
 import net.minecraft.item.Equipment;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
@@ -27,17 +32,26 @@ import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 /** Boxed Trader: bandana and box theft, Box Costume, wearable Bandana, who he pays attention to, wandering, grid alignment. */
 public class BoxedTraderGameTests implements FabricGameTest {
@@ -279,7 +293,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         for (List<BlockState> line : lines) {
             for (BlockState state : line) context.assertTrue(BoxedTraderEntity.isValidBoxBlock(state), "valid box: " + state);
         }
-        java.util.function.Function<net.minecraft.block.Block, List<BlockState>> lineOf = block -> lines.stream()
+        Function<Block, List<BlockState>> lineOf = block -> lines.stream()
                 .filter(line -> line.stream().anyMatch(state -> state.isOf(block))).findFirst().orElseThrow();
         context.assertEquals(lineOf.apply(Blocks.WHITE_WOOL).size(), 16, "wool colours");
         context.assertEquals(lineOf.apply(Blocks.RED_GLAZED_TERRACOTTA).size(), 16, "glazed terracotta colours");
@@ -289,12 +303,12 @@ public class BoxedTraderGameTests implements FabricGameTest {
         context.assertTrue(lineOf.apply(Blocks.OAK_LOG).size() >= 10 && lineOf.apply(Blocks.OAK_LOG).stream().anyMatch(state -> state.isOf(Blocks.WARPED_STEM)), "logs and stems");
         context.assertTrue(lineOf.apply(Blocks.OAK_PLANKS).size() >= 11, "planks");
         context.assertEquals(lineOf.apply(Blocks.CHISELED_TUFF).size(), 1, "chiseled tuff alone");
-        context.assertTrue(lineOf.apply(Blocks.BARREL).getFirst().get(net.minecraft.block.BarrelBlock.FACING) == net.minecraft.util.math.Direction.UP, "barrel lid up");
+        context.assertTrue(lineOf.apply(Blocks.BARREL).getFirst().get(BarrelBlock.FACING) == Direction.UP, "barrel lid up");
         // Each line has the same chance, whatever its size; inside a line, each member too
-        net.minecraft.util.math.random.Random random = net.minecraft.util.math.random.Random.create(42);
+        Random random = Random.create(42);
         int draws = 31 * 2000;
-        java.util.Map<List<BlockState>, Integer> perLine = new java.util.HashMap<>();
-        java.util.Map<BlockState, Integer> perWool = new java.util.HashMap<>();
+        Map<List<BlockState>, Integer> perLine = new HashMap<>();
+        Map<BlockState, Integer> perWool = new HashMap<>();
         for (int i = 0; i < draws; i++) {
             BlockState picked = BoxedTraderBoxes.pick(random);
             List<BlockState> line = lines.stream().filter(candidate -> candidate.contains(picked)).findFirst().orElseThrow();
@@ -313,7 +327,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aMerchantFromHisSpawnEggGetsARandomBox(TestContext context) {
         TestBoards.floor(context, 8);
-        java.util.Set<net.minecraft.block.Block> seen = new java.util.HashSet<>();
+        Set<Block> seen = new HashSet<>();
         for (int i = 0; i < 12; i++) {
             BoxedTraderEntity trader = ModEntities.BOXED_TRADER_ENTITY.spawnFromItemStack(context.getWorld(), new ItemStack(ModItems.BOXED_TRADER_SPAWN_EGG),
                     null, context.getAbsolutePos(new BlockPos(3, 1, 3)), SpawnReason.SPAWN_EGG, false, false);
@@ -348,16 +362,16 @@ public class BoxedTraderGameTests implements FabricGameTest {
     /** Worlds saved before the rename: the Hiding Trader's ids still load as the Boxed Trader's. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void oldHidingTraderIdsStillLoad(TestContext context) {
-        context.assertTrue(net.minecraft.registry.Registries.ENTITY_TYPE.get(Steveparty.id("hiding_trader")) == ModEntities.BOXED_TRADER_ENTITY,
+        context.assertTrue(Registries.ENTITY_TYPE.get(Steveparty.id("hiding_trader")) == ModEntities.BOXED_TRADER_ENTITY,
                 "old entity id");
-        context.assertTrue(net.minecraft.registry.Registries.ITEM.get(Steveparty.id("hiding_trader_spawn_egg")) == ModItems.BOXED_TRADER_SPAWN_EGG,
+        context.assertTrue(Registries.ITEM.get(Steveparty.id("hiding_trader_spawn_egg")) == ModItems.BOXED_TRADER_SPAWN_EGG,
                 "old spawn egg id");
         NbtCompound saved = new NbtCompound();
         saved.putString("id", "steveparty:hiding_trader");
         saved.putBoolean(BoxedTraderEntity.BOX_GLITCHED_NBT, true);
-        net.minecraft.entity.Entity loaded = net.minecraft.entity.EntityType.loadEntityWithPassengers(saved, context.getWorld(), entity -> entity);
+        Entity loaded = EntityType.loadEntityWithPassengers(saved, context.getWorld(), entity -> entity);
         context.assertTrue(loaded instanceof BoxedTraderEntity trader && trader.isBoxGlitched(), "a saved Hiding Trader loads as a Boxed Trader: " + loaded);
-        context.assertTrue(net.minecraft.registry.Registries.ENTITY_TYPE.getId(ModEntities.BOXED_TRADER_ENTITY).equals(Steveparty.id("boxed_trader")), "saved under the new id");
+        context.assertTrue(Registries.ENTITY_TYPE.getId(ModEntities.BOXED_TRADER_ENTITY).equals(Steveparty.id("boxed_trader")), "saved under the new id");
         context.complete();
     }
 
@@ -422,7 +436,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
             costumeTicks(player, 40);
             context.assertTrue(player.getPos().squaredDistanceTo(centre) < 1e-12, "pushed to the centre of his cell: " + player.getPos() + " / " + centre);
             context.assertTrue(BoxCostumeBlock.isBlockAligned(player), "a block of the grid");
-            net.minecraft.util.math.Box cube = new net.minecraft.util.math.Box(BlockPos.ofFloored(centre));
+            Box cube = new Box(BlockPos.ofFloored(centre));
             context.assertTrue(player.getBoundingBox().equals(cube), "his box is the cell's cube: " + player.getBoundingBox());
             context.assertTrue(player.isCollidable() && !player.isPushable(), "a hard obstacle, not pushed");
         } catch (RuntimeException e) {
@@ -430,7 +444,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
             throw e;
         }
         // Something dropped on him lands on the cube
-        ArmorStandEntity stand = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, new Vec3d(3.5, 3, 2.5));
+        ArmorStandEntity stand = context.spawnEntity(EntityType.ARMOR_STAND, new Vec3d(3.5, 3, 2.5));
         context.waitAndRun(30, () -> {
             try {
                 context.assertTrue(Math.abs(stand.getY() - (centre.y + 1)) < 0.01, "the armour stand stands on him: y " + stand.getY() + ", his feet " + centre.y);
@@ -489,7 +503,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
             context.assertFalse(BoxCostumeItem.isHiddenInBox(player), "sneaking without the costume");
             player.equipStack(EquipmentSlot.CHEST, BoxCostumeItem.create(Blocks.GOLD_BLOCK.getDefaultState()));
             context.assertTrue(BoxCostumeItem.isHiddenInBox(player), "sneaking with it: hidden");
-            ZombieEntity zombie = context.spawnEntity(net.minecraft.entity.EntityType.ZOMBIE, new BlockPos(1, 1, 1));
+            ZombieEntity zombie = context.spawnEntity(EntityType.ZOMBIE, new BlockPos(1, 1, 1));
             context.assertTrue(player.getAttackDistanceScalingFactor(zombie) <= BoxCostumeItem.HIDDEN_DETECTION_FACTOR + 1e-6, "monsters hardly notice him");
             player.setSneaking(false);
             context.assertFalse(BoxCostumeItem.isHiddenInBox(player), "standing: out of the box");
@@ -573,7 +587,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, bandana.copy());
             player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
             context.assertTrue(player.getEquippedStack(EquipmentSlot.HEAD).isOf(ModItems.BANDANA), "right click equips it");
-            ArmorStandEntity stand = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, new BlockPos(1, 1, 1));
+            ArmorStandEntity stand = context.spawnEntity(EntityType.ARMOR_STAND, new BlockPos(1, 1, 1));
             context.assertTrue(stand.canEquip(bandana), "armour stands can wear it");
         });
     }
@@ -659,18 +673,18 @@ public class BoxedTraderGameTests implements FabricGameTest {
             context.assertTrue(BoxCostumeBlock.isBlockAligned(hider), "still on the centre: a block");
             // Walking into him: stopped against the cube
             walker.setPosition(context.getAbsolute(new Vec3d(2.0, 1, 3.5)));
-            walker.move(net.minecraft.entity.MovementType.SELF, new Vec3d(1.0, 0, 0));
+            walker.move(MovementType.SELF, new Vec3d(1.0, 0, 0));
             double face = context.getAbsolute(new Vec3d(3.0, 1, 3.5)).x;
             context.assertTrue(Math.abs(walker.getBoundingBox().maxX - face) < 1e-6, "stopped by the cube: " + walker.getBoundingBox().maxX + " / " + face);
             // Standing on him, then something lands in his cell: he stays a block, on every side
             walker.setPosition(context.getAbsolute(new Vec3d(3.5, 2.2, 3.5)));
-            walker.move(net.minecraft.entity.MovementType.SELF, new Vec3d(0, -1.0, 0));
+            walker.move(MovementType.SELF, new Vec3d(0, -1.0, 0));
             context.assertTrue(Math.abs(walker.getY() - context.getAbsolute(new Vec3d(3.5, 2, 3.5)).y) < 1e-6, "standing on him: y " + walker.getY());
-            ArmorStandEntity stand = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, new Vec3d(3.9, 1, 3.9));
+            ArmorStandEntity stand = context.spawnEntity(EntityType.ARMOR_STAND, new Vec3d(3.9, 1, 3.9));
             hider.setOnGround(false);
             for (int i = 0; i < 20; i++) BoxCostumeBlock.tick(hider, i % 2 == 0);
             context.assertTrue(BoxCostumeBlock.isBlockAligned(hider) && hider.isCollidable(), "still a block under him and with someone in his cell");
-            walker.move(net.minecraft.entity.MovementType.SELF, new Vec3d(0, -0.5, 0));
+            walker.move(MovementType.SELF, new Vec3d(0, -0.5, 0));
             context.assertTrue(Math.abs(walker.getY() - context.getAbsolute(new Vec3d(3.5, 2, 3.5)).y) < 1e-6, "does not fall through: y " + walker.getY());
             stand.discard();
         } finally {

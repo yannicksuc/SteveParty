@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
@@ -22,6 +23,7 @@ import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GameMode;
 
 import java.util.List;
 
@@ -126,7 +128,7 @@ public class AllowedDiceGameTests implements FabricGameTest {
         while (controller.removeAllowedDie(0)) ;
         ItemStack forged = die("dice_face_1", "dice_face_2");
         controller.setAllowedDie(0, forged);
-        player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+        player.changeGameMode(GameMode.SURVIVAL);
         context.assertTrue(throwDie(context, player, new ItemStack(ModItems.TRIPLE_DICE)), "off: an unlisted die is thrown");
         controller.setRestrictDice(true);
         ItemStack plain = new ItemStack(ModItems.DEFAULT_DICE, 2);
@@ -155,7 +157,7 @@ public class AllowedDiceGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void theGhostSlotsListACopyOfTheDieClicked(TestContext context) {
         ServerPlayerEntity player = player(context);
-        context.setBlockState(CONTROLLER.down(), net.minecraft.block.Blocks.STONE);
+        context.setBlockState(CONTROLLER.down(), Blocks.STONE);
         context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
         PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
         atEnd(context, () -> context.removeBlock(CONTROLLER));
@@ -189,7 +191,7 @@ public class AllowedDiceGameTests implements FabricGameTest {
         context.assertEquals(controller.getAllowedDice().size(), 1, "an empty hand takes it off");
         context.assertTrue(controller.getAllowedDice().getFirst().isOf(ModItems.DOUBLE_DICE), "the next one moves up");
         context.assertTrue(player.getInventory().count(ModItems.TRIPLE_DICE) == 0, "nothing given back");
-        player.changeGameMode(net.minecraft.world.GameMode.ADVENTURE);
+        player.changeGameMode(GameMode.ADVENTURE);
         handler.onSlotClick(DICE_PANEL_FIRST_SLOT, 0, SlotActionType.PICKUP, player);
         context.assertEquals(controller.getAllowedDice().size(), 1, "Adventure: read only");
         context.complete();
