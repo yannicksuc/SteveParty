@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleHead;
 import net.minecraft.util.math.MathHelper;
@@ -66,8 +67,7 @@ public class FumaroleModel extends DefaultedEntityGeoModel<FumaroleEntity> {
             lava.setPosY(TANK_RISE * fumarole.tankLevel(partial) / FumaroleEntity.TANK_MAX);
         }
         for (FumaroleHead head : FumaroleEntity.HEADS) {
-            GeoBone vent = getAnimationProcessor().getBone(head.name("vent"));
-            if (vent != null) vent.setHidden(true);
+            GeoBones.hide(getAnimationProcessor(), head.name("vent"), true);
         }
         if (fumarole.deathTime > 0) return;
         GeoBone body = getAnimationProcessor().getBone("body");

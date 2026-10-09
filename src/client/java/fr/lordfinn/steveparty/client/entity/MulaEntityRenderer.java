@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.client.utils.ShaderPacks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
@@ -115,7 +116,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             spawnParticles(animatable);
             renderFloatingItem(poseStack, animatable, bufferSource, partialTick);
         }
-        super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer, isReRender, partialTick, 0xF000F0, packedOverlay, renderColor);
+        super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer, isReRender, partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, packedOverlay, renderColor);
     }
 
     /**
@@ -139,7 +140,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         poseStack.translate((effects.itemX() - mx) / ratio, (effects.itemY() - my) / ratio, (effects.itemZ() - mz) / ratio);
         poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(effects.itemSpin()));
         poseStack.scale(size / ratio, size / ratio, size / ratio);
-        MinecraftClient.getInstance().getItemRenderer().renderItem(stack, ModelTransformationMode.GROUND, 0xF000F0,
+        MinecraftClient.getInstance().getItemRenderer().renderItem(stack, ModelTransformationMode.GROUND, LightmapTextureManager.MAX_LIGHT_COORDINATE,
                 OverlayTexture.DEFAULT_UV, poseStack, bufferSource, mula.getWorld(), mula.getId() + 1);
         poseStack.pop();
     }
@@ -331,7 +332,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         private static void vertex(VertexConsumer vertices, MatrixStack.Entry entry, float x, float y, float z, float u,
                                    float v, int r, int g, int b, int alpha) {
             vertices.vertex(entry.getPositionMatrix(), x, y, z).color(r, g, b, alpha).texture(u, v)
-                    .overlay(OverlayTexture.DEFAULT_UV).light(0xF000F0).normal(entry, 0.0F, 1.0F, 0.0F);
+                    .overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(entry, 0.0F, 1.0F, 0.0F);
         }
 
         private void drawQuad(MatrixStack matrices, net.minecraft.client.render.VertexConsumer vertices, int light,

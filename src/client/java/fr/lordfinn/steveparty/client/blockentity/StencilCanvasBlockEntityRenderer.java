@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.signs.WoodenPanelBlock;
 import fr.lordfinn.steveparty.client.hammer.StencilHammerStrikes;
 import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -50,7 +51,6 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
     /** Symbols stay visible as far as signs are usually seen (the default is 64 blocks). */
     private static final int RENDER_DISTANCE = 256;
     private static final int ENGRAVED_COLOR = 0x6A1E1A16;
-    private static final int FULL_BRIGHT = 0xF000F0;
     /** Opacity of the paint for each brush step (StencilCanvasBlockEntity#MAX_FADE + 1 steps). */
     private static final float[] FADE_ALPHA = {1.0F, 0.78F, 0.58F, 0.4F, 0.24F};
     /** Sprayed paint is a little see-through: the texture of the block it is on shows under it. */
@@ -141,7 +141,7 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
         float alpha = FADE_ALPHA[Math.clamp(fade, 0, FADE_ALPHA.length - 1)]
                 * (state.getBlock() instanceof StencilPaintBlock && !cache.seeThroughSupport ? SPRAY_ALPHA : 1.0F);
         argb = ColorHelper.Argb.withAlpha(Math.round((argb >>> 24) * alpha), argb);
-        int symbolLight = glowing && color != null ? FULL_BRIGHT : light;
+        int symbolLight = glowing && color != null ? LightmapTextureManager.MAX_LIGHT_COORDINATE : light;
         VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(cache.texture));
 
         matrices.push();

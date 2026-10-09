@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
@@ -34,11 +35,11 @@ import software.bernie.geckolib.util.Color;
  */
 public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     private static final Identifier WAX = Steveparty.id("textures/entity/frousseux_wax.png");
-    private static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
-    private static final Identifier CORE = Steveparty.id("textures/entity/frousseux_flame_core.png");
+    /** Its flame's animated textures (the same frames): the flame, then its heart and wick; the candle holder's too. */
+    public static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
+    public static final Identifier CORE = Steveparty.id("textures/entity/frousseux_flame_core.png");
     /** Its flame's bones, one a stage (FrousseuxEntity.Flame order): each its own size, pixel for pixel. */
     private static final String[] STAGE_BONES = {"flame_full", "flame_high", "flame_low", "flame_ember"};
-    private static final int FULL_BRIGHT = 0xF000F0;
 
     private final ItemRenderer itemRenderer;
 
@@ -70,6 +71,12 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
 
     static int alpha(float alpha) {
         return MathHelper.clamp(Math.round(alpha * 255), 0, 255);
+    }
+
+    /** {@code rgb} opaque, each channel times {@code brightness} (0 to 1): a flame's colour at its stage. */
+    public static int shade(int rgb, float brightness) {
+        return 0xFF000000 | (int) (((rgb >> 16) & 0xFF) * brightness) << 16 | (int) (((rgb >> 8) & 0xFF) * brightness) << 8
+                | (int) ((rgb & 0xFF) * brightness);
     }
 
     /** {@code argb} with the given opacity (0 to 1) over its own. */
@@ -128,29 +135,16 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
         public void render(MatrixStack poseStack, FrousseuxEntity frousseux, BakedGeoModel bakedModel, @Nullable RenderLayer renderType,
                            VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay) {
-            for (String name : FrousseuxModel.OVERLAY_BONES) bakedModel.getBone(name).ifPresent(bone -> bone.setHidden(false));
-            bakedModel.getBone("body").ifPresent(bone -> bone.setHidden(false));
-            for (String name : HOLDERS) {
-                bakedModel.getBone(name).ifPresent(bone -> {
-                    bone.setHidden(true);
-                    bone.setChildrenHidden(false);
-                });
-            }
-            for (int i = 0; i < OTHERS.length; i++) {
-                GeoBone bone = bakedModel.getBone(OTHERS[i]).orElse(null);
-                if (bone == null) continue;
-                othersHidden[i] = bone.isHidden();
-                bone.setHidden(true);
-            }
+            GeoBones.hide(bakedModel, FrousseuxModel.OVERLAY_BONES, false);
+            GeoBones.hide(bakedModel, "body", false);
+            for (String name : HOLDERS) GeoBones.hideOnlyItself(bakedModel, name);
+            GeoBones.hideFor(bakedModel, OTHERS, othersHidden);
             RenderLayer layer = RenderLayer.getEntityTranslucent(getTextureResource(frousseux));
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, packedLight, packedOverlay, withAlpha(0xFFFFFFFF, frousseux.bodyAlpha(partialTick)));
-            for (int i = 0; i < OTHERS.length; i++) {
-                int index = i;
-                bakedModel.getBone(OTHERS[i]).ifPresent(bone -> bone.setHidden(othersHidden[index]));
-            }
-            for (String name : HOLDERS) bakedModel.getBone(name).ifPresent(bone -> bone.setHidden(false));
-            for (String name : FrousseuxModel.OVERLAY_BONES) bakedModel.getBone(name).ifPresent(bone -> bone.setHidden(true));
+            GeoBones.restore(bakedModel, OTHERS, othersHidden);
+            GeoBones.hide(bakedModel, HOLDERS, false);
+            GeoBones.hide(bakedModel, FrousseuxModel.OVERLAY_BONES, true);
         }
     }
 
@@ -177,44 +171,28 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             GeoBone body = bakedModel.getBone("body").orElse(null), flame = bakedModel.getBone("flame").orElse(null);
             if (body == null || flame == null) return;
             boolean bodyHidden = body.isHidden();
-            for (int i = 0; i < OTHERS.length; i++) {
-                GeoBone bone = bakedModel.getBone(OTHERS[i]).orElse(null);
-                if (bone == null) continue;
-                othersHidden[i] = bone.isHidden();
-                bone.setHidden(true);
-            }
-            body.setHidden(true);
-            body.setChildrenHidden(false);
+            GeoBones.hideFor(bakedModel, OTHERS, othersHidden);
+            GeoBones.hideOnlyItself(body);
             flame.setHidden(false);
             int stage = frousseux.getFlame().ordinal();
-            for (int i = 0; i < STAGE_BONES.length; i++) {
-                int index = i;
-                bakedModel.getBone(STAGE_BONES[i]).ifPresent(bone -> bone.setHidden(index != stage));
-            }
+            for (int i = 0; i < STAGE_BONES.length; i++) GeoBones.hide(bakedModel, STAGE_BONES[i], i != stage);
 
             float brightness = frousseux.getFlame().brightness;
-            int tint = frousseux.getColor().flameEdge;
-            int r = (int) (((tint >> 16) & 0xFF) * brightness), g = (int) (((tint >> 8) & 0xFF) * brightness),
-                    b = (int) ((tint & 0xFF) * brightness);
             AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta): GeckoLib animates it
             RenderLayer layer = RenderLayer.getBeaconBeam(FLAME, true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
-                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, withAlpha(0xFF000000 | r << 16 | g << 8 | b, frousseux.flameAlpha(partialTick)));
-            int pale = frousseux.getColor().flameHeart;
-            int hr = (int) (((pale >> 16) & 0xFF) * brightness), hg = (int) (((pale >> 8) & 0xFF) * brightness),
-                    hb = (int) ((pale & 0xFF) * brightness);
+                    partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
+                    withAlpha(shade(frousseux.getColor().flameEdge, brightness), frousseux.flameAlpha(partialTick)));
             AnimatableTexture.setAndUpdate(CORE);
             RenderLayer heartLayer = RenderLayer.getBeaconBeam(CORE, true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, heartLayer, bufferSource.getBuffer(heartLayer),
-                    partialTick, FULL_BRIGHT, OverlayTexture.DEFAULT_UV, withAlpha(0xFF000000 | hr << 16 | hg << 8 | hb, frousseux.flameAlpha(partialTick)));
+                    partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
+                    withAlpha(shade(frousseux.getColor().flameHeart, brightness), frousseux.flameAlpha(partialTick)));
 
             flame.setHidden(true);
             body.setHidden(bodyHidden);
             body.setChildrenHidden(false);
-            for (int i = 0; i < OTHERS.length; i++) {
-                int index = i;
-                bakedModel.getBone(OTHERS[i]).ifPresent(bone -> bone.setHidden(othersHidden[index]));
-            }
+            GeoBones.restore(bakedModel, OTHERS, othersHidden);
         }
     }
 }

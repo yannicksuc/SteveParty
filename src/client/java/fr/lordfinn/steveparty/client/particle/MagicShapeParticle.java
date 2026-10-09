@@ -9,6 +9,7 @@ import net.minecraft.client.particle.ParticleFactory;
 import net.minecraft.client.particle.ParticleTextureSheet;
 import net.minecraft.client.particle.SpriteBillboardParticle;
 import net.minecraft.client.particle.SpriteProvider;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
 
@@ -74,7 +75,7 @@ public class MagicShapeParticle extends SpriteBillboardParticle {
 
     @Override
     protected int getBrightness(float tint) {
-        return 0xF000F0;
+        return LightmapTextureManager.MAX_LIGHT_COORDINATE;
     }
 
     @Environment(EnvType.CLIENT)
