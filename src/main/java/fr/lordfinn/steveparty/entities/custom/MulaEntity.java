@@ -14,6 +14,7 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.control.BodyControl;
 import net.minecraft.entity.ai.pathing.BirdNavigation;
@@ -1587,18 +1588,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 			this.id = id;
 			this.color = color;
 			this.fragmentItem = fragmentItem;
-			this.starDust = new DustParticleEffect(Vec3d.unpackRgb(lighten(color, id == 5 ? 0.3f : 0.45f)).toVector3f(), 0.7f);
+			this.starDust = new DustParticleEffect(Vec3d.unpackRgb(Argb.lighten(color, id == 5 ? 0.3f : 0.45f)).toVector3f(), 0.7f);
 			// the black one glows white: a black light would not show
-			this.glowColor = id == 5 ? 0xFFFFFF : lighten(color, 0.5f);
+			this.glowColor = id == 5 ? 0xFFFFFF : Argb.lighten(color, 0.5f);
 			this.twinkle = new MulaSparkleEffect(glowColor, 1f, MulaSparkleEffect.TWINKLE);
-		}
-
-		private static int lighten(int rgb, float towardWhite) {
-			int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
-			r += (int) ((255 - r) * towardWhite);
-			g += (int) ((255 - g) * towardWhite);
-			b += (int) ((255 - b) * towardWhite);
-			return (r << 16) | (g << 8) | b;
 		}
 
 		public int getId() { return id; }
@@ -1609,7 +1602,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 		public int getGlowColor() { return glowColor; }
 
 		/** Colour of its halo: its own colour, only a little lightened so each Mula shines in its colour; white for the black one. */
-		public int getHaloColor() { return id == 5 ? 0xFFFFFF : lighten(color, 0.2f); }
+		public int getHaloColor() { return id == 5 ? 0xFFFFFF : Argb.lighten(color, 0.2f); }
 		public MulaSparkleEffect getTwinkle() { return twinkle; }
 
 		public static MulaVariant byId(int id) {
