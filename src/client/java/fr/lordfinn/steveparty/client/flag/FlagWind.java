@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.flag;
 
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.util.math.MathHelper;
 
 /**
@@ -83,8 +84,7 @@ public final class FlagWind {
     }
 
     private static float smooth(float t) {
-        t = MathHelper.clamp(t, 0f, 1f);
-        return t * t * (3f - 2f * t);
+        return Easing.smoothstep(Easing.clamp01(t));
     }
 
     private static long mix(long z) {

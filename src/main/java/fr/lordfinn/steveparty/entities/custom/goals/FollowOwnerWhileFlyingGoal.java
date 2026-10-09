@@ -235,7 +235,7 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
             pos.move(0, -1, 0);
         }
         double groundY = pos.getY() + 1.0;
-        targetY = Math.max(groundY + 1.0, Math.min(targetY, groundY + 5.0));
+        targetY = MathHelper.clamp(targetY, groundY + 1.0, groundY + 5.0);
 
         // the same goal as the path it follows: no new search
         if (!entity.getNavigation().isIdle() && !Double.isNaN(pathX)

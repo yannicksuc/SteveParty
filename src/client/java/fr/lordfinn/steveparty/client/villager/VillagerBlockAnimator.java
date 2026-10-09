@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.villager.VillagerAnim;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerExpression;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerMode;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerReaction;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.util.math.MathHelper;
 
 /**
@@ -302,8 +303,7 @@ public final class VillagerBlockAnimator {
     }
 
     private static float ease(float u) {
-        u = MathHelper.clamp(u, 0f, 1f);
-        return u * u * (3f - 2f * u);
+        return Easing.smoothstep(Easing.clamp01(u));
     }
 
     private static void tremble(VillagerPose p, float t, float amount) {

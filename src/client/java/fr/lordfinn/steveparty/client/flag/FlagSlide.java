@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.flag;
 
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.util.math.MathHelper;
 
 /**
@@ -61,7 +62,7 @@ public final class FlagSlide {
         if (u <= 0) return from;
         if (u >= 1) return to;
         float t = (float) u;
-        if (!down) return MathHelper.lerp(t * t * (3f - 2f * t), from, to);
+        if (!down) return MathHelper.lerp(Easing.smoothstep(t), from, to);
         if (t < FALL) {
             float fall = t / FALL;
             return MathHelper.lerp(fall * fall, from, to);
