@@ -38,6 +38,8 @@ public final class BoardRuleOverlays {
     /** Height of the label's middle above the tile's block. */
     private static final double LABEL_Y = 1.7;
     private static final float LABEL_SCALE = 0.03f;
+    /** Half the width of the jaws of a Trap set on a check point (around its floating cube). */
+    private static final float CHECK_POINT_HALF = 0.3f;
 
     private BoardRuleOverlays() {
     }
@@ -58,6 +60,13 @@ public final class BoardRuleOverlays {
     /** The renderer of the check points: what their role shows over them (they have no face to draw). */
     public static void renderCheckPoint(BoardSpaceBlockEntity entity, float tickDelta, MatrixStack matrices,
                                         VertexConsumerProvider consumers, int light, int overlay) {
+        // A Trap set here: small jaws on the floor around the check point, its badge above
+        BoardSpaceBlockEntity.TrapMark trap = entity.getTrapMark();
+        if (trap != null) {
+            TrapMarkRenderer.jaws(trap, CHECK_POINT_HALF, 0, matrices, consumers, light);
+            float time = entity.getWorld() == null ? 0 : (entity.getWorld().getTime() % 24000) + tickDelta;
+            TrapMarkRenderer.icon(trap, 0.5, 0.5, 0.5, time, matrices, consumers);
+        }
         BlockState state = entity.getCachedState();
         if (!state.contains(ABoardSpaceBlock.TILE_TYPE)) return;
         BoardSpaceType type = state.get(ABoardSpaceBlock.TILE_TYPE);
