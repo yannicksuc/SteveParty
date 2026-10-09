@@ -247,6 +247,16 @@ public final class WorldDraw {
         matrices.pop();
     }
 
+    /**
+     * {@code plate} stretched over (x0, y0)-(x1, y1) in label space (the current matrices: text pixels, y down, facing
+     * the camera), drawn right away so that what is drawn on it next is never covered.
+     */
+    public static void plate(MatrixStack matrices, VertexConsumerProvider consumers, Plate plate, float x0, float y0, float x1, float y1) {
+        RenderLayer layer = RenderLayer.getText(plate.texture);
+        nineSlice(consumers.getBuffer(layer), matrices.peek().getPositionMatrix(), x0, y0, x1, y1);
+        if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
+    }
+
     /** The plate stretched over (x0, y0)-(x1, y1), its 4 pixel border kept. */
     private static void nineSlice(VertexConsumer consumer, Matrix4f matrix, float x0, float y0, float x1, float y1) {
         float b = PLATE_BORDER;

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -99,5 +100,14 @@ public class GlandouilleTileBehavior extends MobTileBehavior {
     @Override
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return GlandouilleCartridgeItem.distance(stack) == 0 ? TileFeedback.Landing.DEFAULT : TileFeedback.Landing.GLANDOUILLE;
+    }
+
+    /** How far its tower pushes the tokens. */
+    @Override
+    public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
+        int distance = GlandouilleCartridgeItem.distance(stack);
+        if (distance == 0) return;
+        info.line(distance > 0 ? TileInfo.line("glandouille", TileInfo.value(distance))
+                : TileInfo.line("glandouille.back", TileInfo.bad(-distance)));
     }
 }

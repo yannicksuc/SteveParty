@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import net.minecraft.server.world.ServerWorld;
+import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -44,5 +46,12 @@ public class ShopBoardSpaceBehavior extends ABoardSpaceBehavior {
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
         setColor(boardSpaceBlockEntity, ShopCartridgeItem.COLOR);
+    }
+
+    /** How many things its stop lets buy. */
+    @Override
+    public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
+        if (stack.getItem() instanceof ShopCartridgeItem)
+            info.line(TileInfo.line("shop", TileInfo.value(ShopCartridgeItem.purchases(stack))));
     }
 }
