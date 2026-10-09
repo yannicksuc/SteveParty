@@ -31,9 +31,9 @@ public final class AllowedDice {
     private AllowedDice() {
     }
 
-    /** The list a new controller starts with: the plain Default Die (no faces, no modules). */
+    /** The list a new controller starts with: the plain Simple Die (no faces, no modules). */
     public static List<ItemStack> defaults() {
-        // The Default Die and its power-up version (carrying the Power-up Module)
+        // The Simple Die and its power-up version (carrying the Power-up Module)
         ItemStack die = new ItemStack(ModItems.DEFAULT_DICE);
         return List.of(die, DiceModules.set(die.copy(), Map.of(DiceModules.POWER_UP, 1)));
     }

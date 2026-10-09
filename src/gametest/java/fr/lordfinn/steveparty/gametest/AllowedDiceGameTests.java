@@ -32,7 +32,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 import static fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.*;
 
 /**
- * The party's « Restrict dice » setting ({@link AllowedDice}): off by default, the Default Die listed; the same die is
+ * The party's « Restrict dice » setting ({@link AllowedDice}): off by default, the Simple Die listed; the same die is
  * the same item with the same faces and modules; on, in a party listing dice, any other die is refused (nothing thrown,
  * nothing spent), an empty list allows every die; off or outside a party, every die is thrown. Its ghost slots list a copy of the die clicked, an empty hand takes it off.
  */
@@ -82,14 +82,14 @@ public class AllowedDiceGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** Off by default, the list holding the Default Die; both saved, an emptied list too (only a missing one gets the default). */
+    /** Off by default, the list holding the Simple Die; both saved, an emptied list too (only a missing one gets the default). */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void theSettingIsSavedWithTheParty(TestContext context) {
         ServerPlayerEntity player = player(context);
         PartyControllerEntity controller = partyOf(context, player);
         context.assertTrue(!controller.isRestrictDice(), "off by default: every die");
         context.assertEquals(controller.getAllowedDice().size(), AllowedDice.defaults().size(), "the default list");
-        context.assertTrue(AllowedDice.sameDie(controller.getAllowedDice().getFirst(), new ItemStack(ModItems.DEFAULT_DICE)), "the Default Die first");
+        context.assertTrue(AllowedDice.sameDie(controller.getAllowedDice().getFirst(), new ItemStack(ModItems.DEFAULT_DICE)), "the Simple Die first");
         ItemStack forged = with(die("dice_face_1", "dice_face_2"), DiceModules.SLOW, 1);
         context.assertTrue(!controller.setAllowedDie(5, new ItemStack(ModItems.DEFAULT_DICE, 3)), "the same die twice is refused");
         context.assertTrue(controller.setAllowedDie(5, forged), "a forged die listed, after the last one");
