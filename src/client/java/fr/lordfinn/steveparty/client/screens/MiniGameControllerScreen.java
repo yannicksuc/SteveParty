@@ -2,8 +2,10 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
-import fr.lordfinn.steveparty.client.gui.ConsolePaint.Ramp;
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
+import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -182,7 +184,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
             if (format != null) context.drawTooltip(textRenderer, List.of(format.name(), format.meaning().formatted(Formatting.GRAY)), mouseX, mouseY);
         } else {
             // The zone's line: whole, and where it is drawn
-            if (mouseX >= x + CX && mouseX < x + CX + CW - BUTTON_W - 4 && mouseY >= y + ROW2_Y && mouseY < y + ROW2_Y + 18) {
+            if (HitArea.contains(mouseX, mouseY, x + CX, y + ROW2_Y, CW - BUTTON_W - 4, 18)) {
                 MiniGamePageData data = page();
                 boolean restore = data != null && data.restores(), adventure = data != null && data.adventure();
                 context.drawOrderedTooltip(textRenderer, textRenderer.wrapLines(Text.empty().append(zoneText()).append("\n")
@@ -239,15 +241,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     private void ghost(DrawContext context, int index, Item item) {
         Slot slot = handler.getSlot(index);
         if (slot.hasStack()) return;
-        context.drawItem(new ItemStack(item), x + slot.x, y + slot.y);
-        veil(context, x + slot.x, y + slot.y, 0xA6000000 | (SLOT_BODY & 0xFFFFFF));
-    }
-
-    private static void veil(DrawContext context, int left, int top, int colour) {
-        context.getMatrices().push();
-        context.getMatrices().translate(0, 0, 250);
-        context.fill(left, top, left + 16, top + 16, colour);
-        context.getMatrices().pop();
+        PartyGui.ghostItem(context, new ItemStack(item), x + slot.x, y + slot.y, null, 0xA6000000 | (SLOT_BODY & 0xFFFFFF));
     }
 
     /** The monitor's screen: the page's picture and what it says, or how to give the controller a page. */
@@ -257,7 +251,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         chipsShown.clear();
         if (stack.isEmpty()) {
             context.drawItem(new ItemStack(ModItems.MINI_GAME_PAGE), px + 32, py + 15);
-            veil(context, px + 32, py + 15, 0x80000000 | (SCREEN & 0xFFFFFF));
+            PartyGui.veil(context, px + 32, py + 15, 0x80000000 | (SCREEN & 0xFFFFFF));
             List<OrderedText> lines = textRenderer.wrapLines(Text.translatable(KEY + "card.empty"), TW + 1);
             for (int i = 0; i < Math.min(5, lines.size()); i++) context.drawText(textRenderer, lines.get(i), tx, ty + i * 9, SCREEN_SOFT, true);
             return;
@@ -297,7 +291,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
 
     private int chipAt(int mouseX, int mouseY) {
         for (int[] chip : chipsShown) {
-            if (mouseX >= chip[0] && mouseX < chip[0] + chip[2] && mouseY >= chip[1] && mouseY < chip[1] + 13) return chip[3];
+            if (HitArea.contains(mouseX, mouseY, chip[0], chip[1], chip[2], 13)) return chip[3];
         }
         return -1;
     }
@@ -336,8 +330,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
 
     /** Dark text with a light shadow (the mock-ups' {@code dark}). */
     private void dark(DrawContext context, OrderedText text, int tx, int ty, int colour) {
-        context.drawText(textRenderer, text, tx + 1, ty + 1, 0xFFFFFFFF, false);
-        context.drawText(textRenderer, text, tx, ty, colour, false);
+        ConsolePaint.darkText(context, textRenderer, text, tx, ty, colour, 0xFFFFFFFF);
     }
 
     /** {@code text} on one line {@code width} pixels wide (its last pixel column), cut with « … » when longer. */

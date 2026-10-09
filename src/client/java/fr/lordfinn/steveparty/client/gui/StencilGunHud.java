@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.stencil.StencilShape;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
@@ -52,7 +53,7 @@ public final class StencilGunHud {
         StencilGunItem.Load load = shown.load();
         panel.box((context, x, y) -> {
             if (load.shape() == null) return;
-            int paint = load.color() != null ? 0xFF000000 | load.color().getEntityColor() : 0xFF6B6B6B;
+            int paint = load.color() != null ? Argb.opaque(load.color().getEntityColor()) : 0xFF6B6B6B;
             byte[] shape = load.shape();
             for (int px = 0; px < 16; px++) {
                 for (int py = 0; py < 16; py++) {

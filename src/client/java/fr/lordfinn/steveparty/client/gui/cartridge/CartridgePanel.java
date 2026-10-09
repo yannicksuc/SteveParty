@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.gui.cartridge;
 
+import fr.lordfinn.steveparty.client.gui.GuiText;
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
@@ -75,7 +77,6 @@ public final class CartridgePanel {
     /** A text too long for its box, under the mouse: pixels per second, and the pause at each end. */
     private static final float MARQUEE_SPEED = 28F;
     private static final long MARQUEE_PAUSE_MS = 700;
-    private static final String ELLIPSIS = "…";
     private static final int SCROLL_STEP = 14;
 
     private final MinecraftClient client;
@@ -340,7 +341,7 @@ public final class CartridgePanel {
             String key = maxWidth + "|" + text;
             String cut = truncated.get(key);
             if (cut == null) {
-                cut = textRenderer.trimToWidth(text, Math.max(0, maxWidth - textRenderer.getWidth(ELLIPSIS))).stripTrailing() + ELLIPSIS;
+                cut = GuiText.cut(textRenderer, text, maxWidth);
                 truncated.put(key, cut);
             }
             context.drawText(textRenderer, cut, tx, ty, color, shadow);
@@ -531,13 +532,13 @@ public final class CartridgePanel {
     private void drawLabel(DrawContext context, ItemStack current, int w, int mouseX, int mouseY) {
         int sx = x + 6, sy = y + 5, sw = w - 12, sh = 20;
         CartridgeItem cartridge = CartridgeMenus.cartridge(current);
-        int color = 0xFF000000 | (cartridge == null ? 0x8A8A8A : cartridge.menuColor(current));
+        int color = Argb.opaque(cartridge == null ? 0x8A8A8A : cartridge.menuColor(current));
         context.fill(sx, sy, sx + sw, sy + sh, STICKER_EDGE);
         context.fill(sx + 1, sy + 1, sx + sw - 1, sy + 3, STRIP);
         context.fill(sx + 1, sy + 3, sx + sw - 1, sy + sh - 1, color);
         context.fill(sx + 1, sy + 3, sx + sw - 1, sy + 4, Argb.lighten(color, 0.35F));
         context.fill(sx + 1, sy + sh - 2, sx + sw - 1, sy + sh - 1, Argb.darken(color, 0.35F));
-        boolean dark = luminance(color) > 165;
+        boolean dark = Argb.luminance(color) > 165;
         int textColor = dark ? 0xFF2A2A2A : 0xFFFFFFFF;
         int textX = sx + 4;
         if (cartridge != null) {
@@ -553,9 +554,9 @@ public final class CartridgePanel {
             right -= slotWidth + 4;
         }
         int room = Math.max(10, right - textX);
-        boolean hovered = inside(mouseX, mouseY, textX, sy, room, sh);
+        boolean hovered = HitArea.contains(mouseX, mouseY, textX, sy, room, sh);
         drawFitted(context, labelName(current, cartridge, room), textX, sy + 7, room, textColor, !dark, hovered);
-        drawToggle(context, toggleX, toggleY, CartridgeGuiConfig.currentAnimation(), inside(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2));
+        drawToggle(context, toggleX, toggleY, CartridgeGuiConfig.currentAnimation(), HitArea.contains(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2));
     }
 
     /** The lightning button: the current animation on (yellow) or off (grey). */
@@ -583,7 +584,7 @@ public final class CartridgePanel {
             context.fill(mx - 1, my, mx + numberWidth + 2, my + 9, chipColor);
             context.drawText(textRenderer, number, mx + 1, my + 1, flash > 0.5F ? 0xFF3B2600 : (enabled ? CHIP_TEXT : LABEL_OFF), false);
             int lx = mx + numberWidth + 5, room = columnW - (lx - mx);
-            boolean hovered = inside(mouseX, mouseY, mx, my, columnW, CartridgeModule.LABEL_H);
+            boolean hovered = HitArea.contains(mouseX, mouseY, mx, my, columnW, CartridgeModule.LABEL_H);
             // A choice of colours: its title names the one chosen (« Réseau : violet »)
             String chosen = null;
             int chosenColor = 0;
@@ -591,7 +592,7 @@ public final class CartridgePanel {
                 int value = value(current, i);
                 if (value >= 0 && value < choice.options().size()) {
                     chosen = optionTexts[i][value];
-                    chosenColor = Argb.lighten(0xFF000000 | choice.options().get(value).color(), 0.3F);
+                    chosenColor = Argb.lighten(Argb.opaque(choice.options().get(value).color()), 0.3F);
                 }
             }
             if (chosen == null) {
@@ -627,7 +628,7 @@ public final class CartridgePanel {
         for (int o = 0; o < n; o++) {
             int bx = choiceX(choice, mx, o), bw = choiceW(choice), bh = swatches ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
             boolean selected = o == value && choice.enabled(current);
-            boolean over = inside(mouseX, mouseY, bx, top, bw, bh);
+            boolean over = HitArea.contains(mouseX, mouseY, bx, top, bw, bh);
             boolean hovered = active && over;
             PartyGui.Theme theme = !choice.enabled(current) ? PartyGui.BUTTON_DISABLED : selected ? PartyGui.BUTTON_SELECTED : PartyGui.BUTTON;
             if (hovered && !selected) theme = theme.brighter();
@@ -635,7 +636,7 @@ public final class CartridgePanel {
             int push = selected ? 1 : 0;
             ChoiceModule.Option option = choice.options().get(o);
             if (swatches) {
-                int c = 0xFF000000 | option.color();
+                int c = Argb.opaque(option.color());
                 PartyGui.button(context, bx + 4 + push, top + 4 + push, bw - 8, bh - 8,
                         new PartyGui.Theme(Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), false);
             } else {
@@ -673,9 +674,9 @@ public final class CartridgePanel {
     private void drawNumber(DrawContext context, ItemStack current, int i, NumberModule number, int mx, int top,
                             int mouseX, int mouseY, boolean active) {
         int value = value(current, i);
-        int color = 0xFF000000 | number.color(current);
-        stepButton(context, mx + MINUS_X, top, "-", active && value > number.min(), inside(mouseX, mouseY, mx + MINUS_X, top, STEP_W, NumberModule.ROW_H));
-        stepButton(context, mx + PLUS_X, top, "+", active && value < number.max(), inside(mouseX, mouseY, mx + PLUS_X, top, STEP_W, NumberModule.ROW_H));
+        int color = Argb.opaque(number.color(current));
+        stepButton(context, mx + MINUS_X, top, "-", active && value > number.min(), HitArea.contains(mouseX, mouseY, mx + MINUS_X, top, STEP_W, NumberModule.ROW_H));
+        stepButton(context, mx + PLUS_X, top, "+", active && value < number.max(), HitArea.contains(mouseX, mouseY, mx + PLUS_X, top, STEP_W, NumberModule.ROW_H));
         context.fill(mx + FIGURE_X, top, mx + FIGURE_X + FIGURE_W, top + NumberModule.ROW_H, OUTLINE);
         context.fill(mx + FIGURE_X + 1, top + 1, mx + FIGURE_X + FIGURE_W - 1, top + NumberModule.ROW_H - 1, 0xFF161A14);
         String figure = Integer.toString(value);
@@ -721,14 +722,14 @@ public final class CartridgePanel {
         int value = value(current, i);
         for (int v = 0; v <= ColorModule.DEFAULT; v++) {
             int sx = colorX(mx, v), sy = colorY(top, v);
-            int c = 0xFF000000 | module.colorOf(v);
-            boolean hovered = active && inside(mouseX, mouseY, sx, sy, ColorModule.SWATCH, ColorModule.SWATCH);
+            int c = Argb.opaque(module.colorOf(v));
+            boolean hovered = active && HitArea.contains(mouseX, mouseY, sx, sy, ColorModule.SWATCH, ColorModule.SWATCH);
             if (v == value) context.fill(sx - 1, sy - 1, sx + ColorModule.SWATCH + 1, sy + ColorModule.SWATCH + 1, 0xFFFFC52E);
             PartyGui.button(context, sx, sy, ColorModule.SWATCH, ColorModule.SWATCH,
                     new PartyGui.Theme(hovered ? 0xFFFFFFFF : Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), v == value);
             if (v == ColorModule.DEFAULT) {
                 // The cartridge's own colour: a small cartridge mark
-                int mark = luminance(c) > 140 ? 0xFF2A2A2A : 0xFFFFFFFF;
+                int mark = Argb.luminance(c) > 140 ? 0xFF2A2A2A : 0xFFFFFFFF;
                 context.fill(sx + 4, sy + 3, sx + 9, sy + 10, mark);
                 context.fill(sx + 5, sy + 4, sx + 8, sy + 6, STRIP);
             }
@@ -826,7 +827,7 @@ public final class CartridgePanel {
         List<ContainerRow> rows = rows(current);
         if (rows.isEmpty()) {
             drawFitted(context, I18n.translate(CartridgeItem.MENU_KEY + "inventory.chest.none"), mx, top + 1, columnW, TONE_BAD, false,
-                    inside(mouseX, mouseY, mx, top, columnW, ContainersModule.ROW_H));
+                    HitArea.contains(mouseX, mouseY, mx, top, columnW, ContainersModule.ROW_H));
         }
         int buttons = editable ? 2 * (ROW_BUTTON + 1) : 0;
         for (int r = 0; r < rows.size(); r++) {
@@ -837,7 +838,7 @@ public final class CartridgePanel {
             context.fill(cx, cy, cx + numberWidth + 3, cy + 9, CHIP);
             context.drawText(textRenderer, number, cx + 2, cy + 1, CHIP_TEXT, false);
             int tx = cx + numberWidth + 5, room = cellW() - (tx - cx) - buttons;
-            drawFitted(context, row.coords(), tx, cy + 1, room, row.color(), false, inside(mouseX, mouseY, tx, cy, room, ContainersModule.ROW_H));
+            drawFitted(context, row.coords(), tx, cy + 1, room, row.color(), false, HitArea.contains(mouseX, mouseY, tx, cy, room, ContainersModule.ROW_H));
             if (!editable) continue;
             rowButton(context, rowButtonX(mx, r, ContainersModule.UP), cy, "◀", r > 0, mouseX, mouseY);
             rowButton(context, rowButtonX(mx, r, ContainersModule.REMOVE), cy, "×", true, mouseX, mouseY);
@@ -845,11 +846,11 @@ public final class CartridgePanel {
         // What a click does, under the list
         int hintY = top + (containerRows(rows.size()) - 1) * ContainersModule.ROW_H;
         drawFitted(context, I18n.translate(CartridgeItem.MENU_KEY + "inventory.click"), mx, hintY + 1, columnW, TONE_SOFT, false,
-                inside(mouseX, mouseY, mx, hintY, columnW, ContainersModule.ROW_H));
+                HitArea.contains(mouseX, mouseY, mx, hintY, columnW, ContainersModule.ROW_H));
     }
 
     private void rowButton(DrawContext context, int bx, int ry, String sign, boolean active, int mouseX, int mouseY) {
-        boolean hovered = active && inside(mouseX, mouseY, bx, ry, ROW_BUTTON, ROW_BUTTON);
+        boolean hovered = active && HitArea.contains(mouseX, mouseY, bx, ry, ROW_BUTTON, ROW_BUTTON);
         PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
         PartyGui.button(context, bx, ry, ROW_BUTTON, ROW_BUTTON, theme, false);
         context.drawText(textRenderer, sign, bx + (ROW_BUTTON - textRenderer.getWidth(sign)) / 2 + 1, ry + 1, active ? PartyGui.TEXT_DARK : 0xFF7A7A7A, false);
@@ -876,7 +877,7 @@ public final class CartridgePanel {
     public boolean renderTooltip(DrawContext context, int mouseX, int mouseY) {
         int sx = x + 6, sw = width() - 12;
         int toggleX = sx + sw - TOGGLE - 4, toggleY = y + 11;
-        if (inside(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2)) {
+        if (HitArea.contains(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2)) {
             context.drawTooltip(textRenderer, Text.translatable(CartridgeItem.MENU_KEY
                     + (CartridgeGuiConfig.currentAnimation() ? "animation.on" : "animation.off")), mouseX, mouseY);
             return true;
@@ -889,7 +890,7 @@ public final class CartridgePanel {
             if (module instanceof ChoiceModule choice) {
                 int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                 for (int o = 0; o < choice.options().size(); o++) {
-                    if (!inside(mouseX, mouseY, choiceX(choice, mx, o), top, choiceW(choice), bh)) continue;
+                    if (!HitArea.contains(mouseX, mouseY, choiceX(choice, mx, o), top, choiceW(choice), bh)) continue;
                     ChoiceModule.Option option = choice.options().get(o);
                     List<Text> lines = new ArrayList<>();
                     lines.add(Text.translatable(option.key()));
@@ -904,13 +905,13 @@ public final class CartridgePanel {
                     int cy = cellY(top, r);
                     if (canEdit.getAsBoolean()) {
                         for (int op : new int[]{ContainersModule.UP, ContainersModule.REMOVE}) {
-                            if (!inside(mouseX, mouseY, rowButtonX(mx, r, op), cy, ROW_BUTTON, ROW_BUTTON)) continue;
+                            if (!HitArea.contains(mouseX, mouseY, rowButtonX(mx, r, op), cy, ROW_BUTTON, ROW_BUTTON)) continue;
                             context.drawTooltip(textRenderer, Text.translatable(CartridgeItem.MENU_KEY + "inventory.chests." + (op == ContainersModule.REMOVE ? "remove" : "up")), mouseX, mouseY);
                             return true;
                         }
                     }
                     // The container: its block, where, and whether it is there
-                    if (inside(mouseX, mouseY, cellX(mx, r), cy, cellW(), ContainersModule.ROW_H)) {
+                    if (HitArea.contains(mouseX, mouseY, cellX(mx, r), cy, cellW(), ContainersModule.ROW_H)) {
                         ContainerRow row = rows.get(r);
                         List<Text> lines = new ArrayList<>();
                         lines.add(Text.literal((r + 1) + ". " + row.name()));
@@ -922,14 +923,14 @@ public final class CartridgePanel {
                 }
             } else if (module instanceof ColorModule) {
                 for (int v = 0; v <= ColorModule.DEFAULT; v++) {
-                    if (!inside(mouseX, mouseY, colorX(mx, v), colorY(top, v), ColorModule.SWATCH, ColorModule.SWATCH)) continue;
+                    if (!HitArea.contains(mouseX, mouseY, colorX(mx, v), colorY(top, v), ColorModule.SWATCH, ColorModule.SWATCH)) continue;
                     context.drawTooltip(textRenderer, v == ColorModule.DEFAULT ? Text.translatable(CartridgeItem.MENU_KEY + "color.default")
                             : Text.translatable("color.minecraft." + DyeColor.byId(v).getName()), mouseX, mouseY);
                     return true;
                 }
             }
         }
-        if (!canEdit.getAsBoolean() && !modules.isEmpty() && inside(mouseX, mouseY, x, y, width(), shellHeight)) {
+        if (!canEdit.getAsBoolean() && !modules.isEmpty() && HitArea.contains(mouseX, mouseY, x, y, width(), shellHeight)) {
             context.drawTooltip(textRenderer, Text.translatable(CartridgeItem.MENU_KEY + "read_only"), mouseX, mouseY);
             return true;
         }
@@ -964,7 +965,7 @@ public final class CartridgePanel {
         if (button != 0) return false;
         int sx = x + 6, sw = width() - 12;
         int toggleX = sx + sw - TOGGLE - 4, toggleY = y + 11;
-        if (inside(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2)) {
+        if (HitArea.contains(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2)) {
             CartridgeGuiConfig.setCurrentAnimation(!CartridgeGuiConfig.currentAnimation());
             click();
             return true;
@@ -980,22 +981,22 @@ public final class CartridgePanel {
                 case ChoiceModule choice -> {
                     int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                     for (int o = 0; o < choice.options().size(); o++) {
-                        if (inside(mouseX, mouseY, choiceX(choice, mx, o), top, choiceW(choice), bh)) return change(i, o, value);
+                        if (HitArea.contains(mouseX, mouseY, choiceX(choice, mx, o), top, choiceW(choice), bh)) return change(i, o, value);
                     }
                 }
                 case NumberModule number -> {
-                    if (inside(mouseX, mouseY, mx + MINUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.max(number.min(), value - step(number)), value);
-                    if (inside(mouseX, mouseY, mx + PLUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.min(number.max(), value + step(number)), value);
+                    if (HitArea.contains(mouseX, mouseY, mx + MINUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.max(number.min(), value - step(number)), value);
+                    if (HitArea.contains(mouseX, mouseY, mx + PLUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.min(number.max(), value + step(number)), value);
                     if (showsLamps(number)) {
                         int lw = lampWidth(number);
                         for (int v = number.min(); v <= number.max(); v++) {
-                            if (inside(mouseX, mouseY, mx + LAMPS_X + (v - number.min()) * (lw + 2), top + 3, lw, 12)) return change(i, v, value);
+                            if (HitArea.contains(mouseX, mouseY, mx + LAMPS_X + (v - number.min()) * (lw + 2), top + 3, lw, 12)) return change(i, v, value);
                         }
                     }
                 }
                 case ColorModule color -> {
                     for (int v = 0; v <= ColorModule.DEFAULT; v++) {
-                        if (inside(mouseX, mouseY, colorX(mx, v), colorY(top, v), ColorModule.SWATCH, ColorModule.SWATCH)) return change(i, v, value);
+                        if (HitArea.contains(mouseX, mouseY, colorX(mx, v), colorY(top, v), ColorModule.SWATCH, ColorModule.SWATCH)) return change(i, v, value);
                     }
                 }
                 case ContainersModule containers -> {
@@ -1003,7 +1004,7 @@ public final class CartridgePanel {
                     for (int r = 0; r < count; r++) {
                         int cy = cellY(top, r);
                         for (int op : new int[]{ContainersModule.UP, ContainersModule.REMOVE}) {
-                            if (inside(mouseX, mouseY, rowButtonX(mx, r, op), cy, ROW_BUTTON, ROW_BUTTON)) {
+                            if (HitArea.contains(mouseX, mouseY, rowButtonX(mx, r, op), cy, ROW_BUTTON, ROW_BUTTON)) {
                                 // An action, not a value: sent as is (the list shown follows the server's)
                                 return change(i, ContainersModule.action(r, op), Integer.MIN_VALUE);
                             }
@@ -1024,12 +1025,12 @@ public final class CartridgePanel {
 
     /** The wheel over a number: one more / one less (ten with Shift on a wide range); elsewhere on a shell too low for its modules: scrolls them. */
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        if (amount == 0 || !inside(mouseX, mouseY, x, y, width(), shellHeight)) return false;
+        if (amount == 0 || !HitArea.contains(mouseX, mouseY, x, y, width(), shellHeight)) return false;
         ItemStack current = stack.get();
         if (canEdit.getAsBoolean() && inContent(mouseY)) {
             for (int i = 0; i < modules.size(); i++) {
                 if (!(modules.get(i) instanceof NumberModule number) || !number.enabled(current)) continue;
-                if (!inside(mouseX, mouseY, x + layout.x(i), moduleY(i), columnW, heights[i])) continue;
+                if (!HitArea.contains(mouseX, mouseY, x + layout.x(i), moduleY(i), columnW, heights[i])) continue;
                 int value = value(current, i);
                 return change(i, Math.clamp(value + (amount > 0 ? step(number) : -step(number)), number.min(), number.max()), value);
             }
@@ -1062,17 +1063,6 @@ public final class CartridgePanel {
     }
 
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return inside(mouseX, mouseY, x, y, width(), shellHeight);
-    }
-
-    // ------------------------------------------------------------------ helpers
-
-    private static boolean inside(double mouseX, double mouseY, int x, int y, int w, int h) {
-        return mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
-    }
-
-    private static int luminance(int argb) {
-        int r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
-        return (r * 299 + g * 587 + b * 114) / 1000;
+        return HitArea.contains(mouseX, mouseY, x, y, width(), shellHeight);
     }
 }

@@ -151,7 +151,7 @@ public final class MiniGameResultsHud {
         if (row.team() >= 0) {
             MiniGamePipeRole role = MiniGamePipeRole.ofTeam(row.team());
             names.append(role.text().copy().styled(style -> style.withBold(true))).append(" ");
-            context.fill(left, y + 1, left + 3, y + ROW - 3, Argb.fade(0xFF000000 | role.color(), alpha));
+            context.fill(left, y + 1, left + 3, y + ROW - 3, Argb.fade(Argb.opaque(role.color()), alpha));
             left += 5;
         } else if (row.place() == 0) {
             names.append(Text.translatable("hud.steveparty.minigame.results.participant")).append(" ");

@@ -12,7 +12,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
-import fr.lordfinn.steveparty.client.gui.ConsolePaint.Ramp;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.party.HudPaint;
@@ -1095,7 +1095,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     /** The colour of a player's chip: his token's (the HUDs' ramps). */
     private static Ramp chipRamp(PartyLiveData.Standing player, int index) {
-        HudPaint.Ramp ramp = HudPaint.playerRamp(player.color(), index);
+        Ramp ramp = HudPaint.playerRamp(player.color(), index);
         return new Ramp(ramp.outline(), ramp.hi(), ramp.body(), ramp.shadow());
     }
 

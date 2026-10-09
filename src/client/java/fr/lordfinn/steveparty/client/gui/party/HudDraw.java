@@ -2,16 +2,15 @@ package fr.lordfinn.steveparty.client.gui.party;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.OrderedText;
-import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Language;
 import net.minecraft.util.math.ColorHelper;
 
 /**
@@ -93,10 +92,7 @@ final class HudDraw {
 
     /** The text, cut with an ellipsis to fit in {@code width} pixels. */
     static OrderedText fit(Text text, int width) {
-        TextRenderer font = font();
-        if (font.getWidth(text) <= width) return text.asOrderedText();
-        StringVisitable cut = font.trimToWidth(text, Math.max(0, width - font.getWidth("…")));
-        return Language.getInstance().reorder(StringVisitable.concat(cut, StringVisitable.plain("…")));
+        return GuiText.fit(font(), text, width);
     }
 
     // ------------------------------------------------------------------ easing

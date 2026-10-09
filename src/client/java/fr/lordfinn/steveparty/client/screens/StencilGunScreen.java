@@ -159,13 +159,9 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         double a = Math.toRadians(StencilGunScreenHandler.HEADER / 2);
         int ty = StencilGunScreenHandler.CENTER_Y - (int) Math.round(Math.cos(a) * r) - 4;
         int dx = (int) Math.round(Math.sin(a) * r);
-        title(context, Text.translatable("screen.steveparty.stencil_gun.dyes"), StencilGunScreenHandler.CENTER_X - dx, ty);
-        title(context, Text.translatable("screen.steveparty.stencil_gun.stencils"), StencilGunScreenHandler.CENTER_X + dx, ty);
+        context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.steveparty.stencil_gun.dyes"), StencilGunScreenHandler.CENTER_X - dx, ty, 0xFFFFFFFF);
+        context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.steveparty.stencil_gun.stencils"), StencilGunScreenHandler.CENTER_X + dx, ty, 0xFFFFFFFF);
         context.drawText(textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, TEXT, false);
-    }
-
-    private void title(DrawContext context, Text text, int centerX, int y) {
-        context.drawText(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, 0xFFFFFFFF, true);
     }
 
     /** The slot plate under the mouse (not the titles' nor the hub), or null. */

@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -15,22 +17,22 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ConsoleButton extends PressableWidget {
     public enum Kind {
-        NEUTRAL(ConsolePaint.Ramp.of(0x000000, 0xffffff, 0xe2e2e2, 0x8a8a8a)),
-        GOLD(ConsolePaint.Ramp.of(0x8a4a00, 0xffe36a, 0xffc600, 0xffaa00)),
-        GREEN(ConsolePaint.Ramp.of(0x08270a, 0xa6ef8a, 0x46ae2e, 0x1f6a14)),
-        RED(ConsolePaint.Ramp.of(0x33030a, 0xff8f8f, 0xd9283b, 0x8e1022)),
-        OFF(ConsolePaint.Ramp.of(0x3a3a3a, 0xd0d0d0, 0xa8a8a8, 0x808080)),
+        NEUTRAL(Ramp.of(0x000000, 0xffffff, 0xe2e2e2, 0x8a8a8a)),
+        GOLD(Ramp.of(0x8a4a00, 0xffe36a, 0xffc600, 0xffaa00)),
+        GREEN(Ramp.of(0x08270a, 0xa6ef8a, 0x46ae2e, 0x1f6a14)),
+        RED(Ramp.of(0x33030a, 0xff8f8f, 0xd9283b, 0x8e1022)),
+        OFF(Ramp.of(0x3a3a3a, 0xd0d0d0, 0xa8a8a8, 0x808080)),
         /** On a dark screen: the screen's colours, a light label. */
-        SCREEN(ConsolePaint.Ramp.of(0x0d0a18, 0x3d3a66, 0x262350, 0x0d0a18)),
+        SCREEN(Ramp.of(0x0d0a18, 0x3d3a66, 0x262350, 0x0d0a18)),
         /** On the mini-game page's paper: plain, green (the main action), teal, greyed. */
-        PAPER(ConsolePaint.Ramp.of(0x7e9192, 0xffffff, 0xd6ebec, 0xc7dbdc)),
-        PAPER_GREEN(ConsolePaint.Ramp.of(0x005a40, 0x8ff5d0, 0x00c792, 0x00ac82)),
-        PAPER_TEAL(ConsolePaint.Ramp.of(0x004a50, 0x8ff0f6, 0x00b3bd, 0x008c95)),
-        PAPER_OFF(ConsolePaint.Ramp.of(0x8aa3a6, 0xf0f6f6, 0xdde9ea, 0xc9d7d8));
+        PAPER(Ramp.of(0x7e9192, 0xffffff, 0xd6ebec, 0xc7dbdc)),
+        PAPER_GREEN(Ramp.of(0x005a40, 0x8ff5d0, 0x00c792, 0x00ac82)),
+        PAPER_TEAL(Ramp.of(0x004a50, 0x8ff0f6, 0x00b3bd, 0x008c95)),
+        PAPER_OFF(Ramp.of(0x8aa3a6, 0xf0f6f6, 0xdde9ea, 0xc9d7d8));
 
-        final ConsolePaint.Ramp ramp;
+        final Ramp ramp;
 
-        Kind(ConsolePaint.Ramp ramp) {
+        Kind(Ramp ramp) {
             this.ramp = ramp;
         }
 
@@ -96,8 +98,8 @@ public class ConsoleButton extends PressableWidget {
         Kind shown = active || kind == Kind.SCREEN ? kind : kind.paper() ? Kind.PAPER_OFF : Kind.OFF;
         boolean highlighted = active && (isHovered() || isFocused());
         boolean held = highlighted && isHovered() && MinecraftClient.getInstance().mouse.wasLeftButtonClicked();
-        ConsolePaint.Ramp ramp = shown.ramp;
-        if (held) ramp = new ConsolePaint.Ramp(ramp.outline(), ramp.shadow(), ramp.body(), ramp.hi());
+        Ramp ramp = shown.ramp;
+        if (held) ramp = new Ramp(ramp.outline(), ramp.shadow(), ramp.body(), ramp.hi());
         ConsolePaint.box(context, getX(), getY(), width, height, ramp, 1, 1);
         // The highlight follows the button's cut corners
         if (highlighted) ConsolePaint.highlight(context, getX(), getY(), width, height, 1, shown.paper() ? 0xFF008C95 : 0xFFFFFFFF,
@@ -121,7 +123,7 @@ public class ConsoleButton extends PressableWidget {
             return;
         }
         int colour = shown == Kind.SCREEN ? (active ? 0xFFE0EEF3 : 0xFF5E5C88) : light ? 0xFFFFFFFF : shown == Kind.OFF ? 0xFF5E5E5E : ramp.outline();
-        int shade = light ? (colour & 0xFCFCFC) >> 2 | 0xFF000000 : shown == Kind.OFF ? 0xFFC8C8C8 : shown.ramp.hi();
+        int shade = light ? Argb.opaque(Argb.darken(colour, 0.75f)) : shown == Kind.OFF ? 0xFFC8C8C8 : shown.ramp.hi();
         if (icon != null) {
             for (int row = 0; row < icon.rows.length; row++) {
                 for (int col = 0; col < icon.width(); col++) {
