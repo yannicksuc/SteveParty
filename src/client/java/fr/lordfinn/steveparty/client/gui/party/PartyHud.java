@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
 import fr.lordfinn.steveparty.hud.HudPlacements.Hud;
 import fr.lordfinn.steveparty.client.mixin.BossBarHudAccessor;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -301,7 +302,7 @@ public final class PartyHud {
         fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
         float[] bounds = BOUNDS[hud.ordinal()];
         // Sliding in from its edge while fading in
-        float slide = preview ? 0 : (1 - HudDraw.easeOutCubic(alpha)) * 6 * (placement.anchor.fy > 0.5f ? 1 : -1);
+        float slide = preview ? 0 : (1 - Easing.easeOutCubic(alpha)) * 6 * (placement.anchor.fy > 0.5f ? 1 : -1);
         MatrixStack matrices = context.getMatrices();
         matrices.push();
         matrices.translate(bounds[0], bounds[1] + slide, 0);

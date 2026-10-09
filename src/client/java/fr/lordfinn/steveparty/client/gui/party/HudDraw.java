@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.gui.party;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -12,7 +13,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Language;
 import net.minecraft.util.math.ColorHelper;
-import net.minecraft.util.math.MathHelper;
 
 /**
  * Drawing bits shared by the party HUDs, in the mod's GUI style (the board plates of {@link ToolHud}: light plates cut
@@ -47,15 +47,9 @@ final class HudDraw {
         return MinecraftClient.getInstance().textRenderer;
     }
 
-    /** A colour with its alpha multiplied by {@code alpha} (0..1). */
-    static int fade(int argb, float alpha) {
-        int a = MathHelper.clamp(Math.round(ColorHelper.Argb.getAlpha(argb) * alpha), 0, 255);
-        return ColorHelper.Argb.withAlpha(a, argb);
-    }
-
     /** White, faded: the tint of sprites. */
     static int white(float alpha) {
-        return fade(0xFFFFFFFF, alpha);
+        return Argb.fade(0xFFFFFFFF, alpha);
     }
 
     /** Runs texture draws blended and faded to {@code alpha} (1.21.1 textures take no colour: the shader colour). */
@@ -81,20 +75,20 @@ final class HudDraw {
     }
 
     static void text(DrawContext context, Text text, int x, int y, int color, float alpha) {
-        context.drawText(font(), text, x, y, fade(color, alpha), false);
+        context.drawText(font(), text, x, y, Argb.fade(color, alpha), false);
     }
 
     static void text(DrawContext context, OrderedText text, int x, int y, int color, float alpha) {
-        context.drawText(font(), text, x, y, fade(color, alpha), false);
+        context.drawText(font(), text, x, y, Argb.fade(color, alpha), false);
     }
 
     static void text(DrawContext context, String text, int x, int y, int color, float alpha) {
-        context.drawText(font(), text, x, y, fade(color, alpha), false);
+        context.drawText(font(), text, x, y, Argb.fade(color, alpha), false);
     }
 
     /** Light text with the font's shadow (a quarter of its colour, a pixel down and right). */
     static void shadowed(DrawContext context, String text, int x, int y, int color, float alpha) {
-        context.drawText(font(), text, x, y, fade(color, alpha), true);
+        context.drawText(font(), text, x, y, Argb.fade(color, alpha), true);
     }
 
     /** The text, cut with an ellipsis to fit in {@code width} pixels. */
@@ -106,24 +100,6 @@ final class HudDraw {
     }
 
     // ------------------------------------------------------------------ easing
-
-    static float clamp01(float t) {
-        return t < 0 ? 0 : t > 1 ? 1 : t;
-    }
-
-    static float easeOutCubic(float t) {
-        t = clamp01(t);
-        float u = 1 - t;
-        return 1 - u * u * u;
-    }
-
-    /** Overshoots a little before settling: the pops. */
-    static float easeOutBack(float t) {
-        t = clamp01(t);
-        float c1 = 1.70158f, c3 = c1 + 1;
-        float u = t - 1;
-        return 1 + c3 * u * u * u + c1 * u * u;
-    }
 
     /** Frame-rate independent smoothing of {@code current} towards {@code target} ({@code rate} per tick). */
     static float approach(float current, float target, float rate, float deltaTicks) {

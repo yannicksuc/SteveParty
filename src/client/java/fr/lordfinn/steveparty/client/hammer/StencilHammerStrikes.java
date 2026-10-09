@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.hammer;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlockEntity;
 import fr.lordfinn.steveparty.items.custom.StencilHammerStrike;
 import fr.lordfinn.steveparty.payloads.custom.StencilHammerStrikePayload;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -302,7 +303,7 @@ public final class StencilHammerStrikes {
         }
         if (t < HOLD_END) return -0.45F;
         float r = MathHelper.clamp((t - HOLD_END) / (END - HOLD_END), 0, 1);
-        return MathHelper.lerp(r * r * (3 - 2 * r), -0.45F, restPitch);
+        return MathHelper.lerp(Easing.smoothstep(r), -0.45F, restPitch);
     }
 
     /** Camera shake of the striker when the head lands, in degrees (roll, pitch). */

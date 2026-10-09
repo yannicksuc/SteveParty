@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.telescope;
 
 import fr.lordfinn.steveparty.blocks.custom.TelescopeBlockEntity;
 import fr.lordfinn.steveparty.telescope.TelescopeMath;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
@@ -38,7 +39,7 @@ public final class TelescopePoses {
         /** 0..1, eased in and out. */
         public float ease(float tickDelta) {
             float e = MathHelper.lerp(tickDelta, prevEase, ease);
-            return e * e * (3 - 2 * e);
+            return Easing.smoothstep(e);
         }
     }
 

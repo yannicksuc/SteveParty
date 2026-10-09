@@ -14,6 +14,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import fr.lordfinn.steveparty.payloads.custom.CartridgeSettingPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GhostSlot;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -534,8 +535,8 @@ public final class CartridgePanel {
         context.fill(sx, sy, sx + sw, sy + sh, STICKER_EDGE);
         context.fill(sx + 1, sy + 1, sx + sw - 1, sy + 3, STRIP);
         context.fill(sx + 1, sy + 3, sx + sw - 1, sy + sh - 1, color);
-        context.fill(sx + 1, sy + 3, sx + sw - 1, sy + 4, lighten(color, 0.35F));
-        context.fill(sx + 1, sy + sh - 2, sx + sw - 1, sy + sh - 1, darken(color, 0.35F));
+        context.fill(sx + 1, sy + 3, sx + sw - 1, sy + 4, Argb.lighten(color, 0.35F));
+        context.fill(sx + 1, sy + sh - 2, sx + sw - 1, sy + sh - 1, Argb.darken(color, 0.35F));
         boolean dark = luminance(color) > 165;
         int textColor = dark ? 0xFF2A2A2A : 0xFFFFFFFF;
         int textX = sx + 4;
@@ -577,7 +578,7 @@ public final class CartridgePanel {
         int top = my;
         if (labels[i] != null) {
             String number = (i + 1 < 10 ? "0" : "") + (i + 1);
-            int chipColor = flash > 0 ? mix(CHIP, 0xFFFFC52E, flash) : CHIP;
+            int chipColor = flash > 0 ? Argb.lerp(CHIP, 0xFFFFC52E, flash) : CHIP;
             int numberWidth = textRenderer.getWidth(number);
             context.fill(mx - 1, my, mx + numberWidth + 2, my + 9, chipColor);
             context.drawText(textRenderer, number, mx + 1, my + 1, flash > 0.5F ? 0xFF3B2600 : (enabled ? CHIP_TEXT : LABEL_OFF), false);
@@ -590,7 +591,7 @@ public final class CartridgePanel {
                 int value = value(current, i);
                 if (value >= 0 && value < choice.options().size()) {
                     chosen = optionTexts[i][value];
-                    chosenColor = lighten(0xFF000000 | choice.options().get(value).color(), 0.3F);
+                    chosenColor = Argb.lighten(0xFF000000 | choice.options().get(value).color(), 0.3F);
                 }
             }
             if (chosen == null) {
@@ -636,7 +637,7 @@ public final class CartridgePanel {
             if (swatches) {
                 int c = 0xFF000000 | option.color();
                 PartyGui.button(context, bx + 4 + push, top + 4 + push, bw - 8, bh - 8,
-                        new PartyGui.Theme(darken(c, 0.6F), lighten(c, 0.4F), c, darken(c, 0.35F)), false);
+                        new PartyGui.Theme(Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), false);
             } else {
                 String text = optionTexts[i][o];
                 int room = bw - 6;
@@ -684,7 +685,7 @@ public final class CartridgePanel {
         context.getMatrices().translate(mx + FIGURE_X + (FIGURE_W - textRenderer.getWidth(figure) * scale) / 2F + (scale == 2 ? 1 : 0),
                 top + (scale == 2 ? 2 : 5), 0);
         context.getMatrices().scale(scale, scale, 1);
-        context.drawText(textRenderer, figure, 0, 0, lighten(color, 0.3F), false);
+        context.drawText(textRenderer, figure, 0, 0, Argb.lighten(color, 0.3F), false);
         context.getMatrices().pop();
         if (!showsLamps(number)) return;
         int lw = lampWidth(number);
@@ -692,7 +693,7 @@ public final class CartridgePanel {
             int lx = mx + LAMPS_X + (v - number.min()) * (lw + 2);
             boolean on = v <= value;
             PartyGui.button(context, lx, top + 3, lw, 12, on
-                    ? new PartyGui.Theme(darken(color, 0.6F), lighten(color, 0.4F), color, darken(color, 0.35F))
+                    ? new PartyGui.Theme(Argb.darken(color, 0.6F), Argb.lighten(color, 0.4F), color, Argb.darken(color, 0.35F))
                     : new PartyGui.Theme(OUTLINE, 0xFF3A3A3A, 0xFF2B2B2B, 0xFF1E1E1E), !on);
             String digit = Integer.toString(v);
             if (lw >= textRenderer.getWidth(digit) + 3) {
@@ -724,7 +725,7 @@ public final class CartridgePanel {
             boolean hovered = active && inside(mouseX, mouseY, sx, sy, ColorModule.SWATCH, ColorModule.SWATCH);
             if (v == value) context.fill(sx - 1, sy - 1, sx + ColorModule.SWATCH + 1, sy + ColorModule.SWATCH + 1, 0xFFFFC52E);
             PartyGui.button(context, sx, sy, ColorModule.SWATCH, ColorModule.SWATCH,
-                    new PartyGui.Theme(hovered ? 0xFFFFFFFF : darken(c, 0.6F), lighten(c, 0.4F), c, darken(c, 0.35F)), v == value);
+                    new PartyGui.Theme(hovered ? 0xFFFFFFFF : Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), v == value);
             if (v == ColorModule.DEFAULT) {
                 // The cartridge's own colour: a small cartridge mark
                 int mark = luminance(c) > 140 ? 0xFF2A2A2A : 0xFFFFFFFF;
@@ -1073,24 +1074,5 @@ public final class CartridgePanel {
     private static int luminance(int argb) {
         int r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
         return (r * 299 + g * 587 + b * 114) / 1000;
-    }
-
-    private static int lighten(int argb, float amount) {
-        int r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
-        r += (int) ((255 - r) * amount);
-        g += (int) ((255 - g) * amount);
-        b += (int) ((255 - b) * amount);
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
-    }
-
-    private static int darken(int argb, float amount) {
-        int r = (int) (((argb >> 16) & 0xFF) * (1 - amount)), g = (int) (((argb >> 8) & 0xFF) * (1 - amount)), b = (int) ((argb & 0xFF) * (1 - amount));
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
-    }
-
-    private static int mix(int a, int b, float t) {
-        int ar = (a >> 16) & 0xFF, ag = (a >> 8) & 0xFF, ab = a & 0xFF;
-        int br = (b >> 16) & 0xFF, bg = (b >> 8) & 0xFF, bb = b & 0xFF;
-        return 0xFF000000 | ((int) (ar + (br - ar) * t) << 16) | ((int) (ag + (bg - ag) * t) << 8) | (int) (ab + (bb - ab) * t);
     }
 }

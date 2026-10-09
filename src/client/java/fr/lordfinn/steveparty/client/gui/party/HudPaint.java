@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.texture.NativeImage;
@@ -11,7 +12,6 @@ import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -34,7 +34,7 @@ public final class HudPaint {
 
         /** The standings' rows: the colour, very light. */
         Ramp pastel() {
-            return new Ramp(outline, 0xFFFFFFFF, mix(body, 0xFFFFFFFF, 0.8f), mix(body, 0xFFFFFFFF, 0.6f));
+            return new Ramp(outline, 0xFFFFFFFF, Argb.opaque(Argb.lerp(body, 0xFFFFFFFF, 0.8f)), Argb.opaque(Argb.lerp(body, 0xFFFFFFFF, 0.6f)));
         }
     }
 
@@ -66,10 +66,6 @@ public final class HudPaint {
     /** A frame round a head: white, the outline in the player's colour. */
     static Ramp white(int outline) {
         return new Ramp(outline, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFDFE6EA);
-    }
-
-    static int mix(int a, int b, float t) {
-        return ColorHelper.Argb.lerp(t, a, b) | 0xFF000000;
     }
 
     /** The ramp of a token: its colour's nearest among the players' (the palette by turn order without one). */
@@ -175,7 +171,7 @@ public final class HudPaint {
         }
         if ((flags & BAND) != 0) {
             // A glossy band: the two top rows of each column, moved two rows down (not on the side edges)
-            int light = mix(ramp.body(), 0xFFFFFFFF, 0.45f);
+            int light = Argb.opaque(Argb.lerp(ramp.body(), 0xFFFFFFFF, 0.45f));
             for (int y = 2; y < h; y++) {
                 for (int x = 1; x < w - 1; x++) {
                     if (!m[y][x] || isTop(m, x, y) || !isTop(m, x, y - 2)) continue;

@@ -2,13 +2,13 @@ package fr.lordfinn.steveparty.client.gui.party;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
 
 import static fr.lordfinn.steveparty.hud.HudShapes.GAP;
 import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
@@ -116,7 +116,7 @@ final class NoticeHud {
     private void drawLines(DrawContext context, float alpha, double now) {
         float t = (float) ((now - changedAt) / CROSSFADE_TICKS);
         if (t < 1 && previous.text != null) {
-            float in = HudDraw.easeOutCubic(t);
+            float in = Easing.easeOutCubic(t);
             drawLine(context, previous, (line.width - previous.width) / 2, -Math.round(in * 4), alpha * (1 - in), now);
             drawLine(context, line, 0, Math.round((1 - in) * 4), alpha * in, now);
         } else {
@@ -135,7 +135,7 @@ final class NoticeHud {
             HudPaint.Ramp ramp = line.warn ? RED : HudPaint.GOLD;
             MatrixStack matrices = context.getMatrices();
             float pop = line == this.line ? (float) ((now - badgeAt) / BADGE_POP_TICKS) : 1;
-            float scale = pop < 1 ? 1 + 0.4f * (1 - HudDraw.easeOutBack(pop)) : 1;
+            float scale = pop < 1 ? 1 + 0.4f * (1 - Easing.easeOutBack(pop)) : 1;
             matrices.push();
             float mx = cx + PAD + line.badgeWidth / 2f, my = y + PAD + H / 2f;
             matrices.translate(mx, my, 0);
