@@ -36,6 +36,7 @@ import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartSpawns;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxSpawns;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEvents;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleSpawns;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleCarrySave;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
@@ -172,6 +173,7 @@ public class Steveparty implements ModInitializer {
         PartyStars.initialize();
         GlandouilleSpawns.initialize();
         GlandouilleTowers.initialize();
+        GlandouilleCarrySave.initialize();
         FrousseuxSpawns.initialize();
         FumaroleSpawns.initialize();
         FumaroleEvents.initialize();

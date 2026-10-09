@@ -19,17 +19,21 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * First person, carrying Glandouilles: the stack is drawn in the main hand like a held item (whatever the hand holds),
- * following the camera, the view bobbing and the hand's swing; the other hand is drawn as usual.
+ * First person, carrying Glandouilles: the stack is drawn where the bare main hand is, seen from behind, like a held
+ * item (whatever the hand holds), following the camera, the view bobbing and the hand's swing; the other hand is drawn
+ * as usual.
  */
 @Mixin(HeldItemRenderer.class)
 public class HeldItemRendererGlandouilleCarryMixin {
     /** The stack's size in the hand, against its real one. */
     @Unique
-    private static final float STEVEPARTY$SCALE = 0.38f;
-    /** From where an item is held to the stack's feet (screen units), and how far it turns its face to the middle. */
+    private static final float STEVEPARTY$SCALE = 0.55f;
+    /**
+     * From where an item is held to the stack's feet (screen units): out to the hand's side, down and closer, where the
+     * bare fist is (cut by the bottom of the screen like it); and how far it turns toward the middle of the screen.
+     */
     @Unique
-    private static final float STEVEPARTY$DOWN = -0.16f, STEVEPARTY$IN = 0.14f, STEVEPARTY$TURN = 30f;
+    private static final float STEVEPARTY$OUT = -0.06f, STEVEPARTY$DOWN = -0.05f, STEVEPARTY$CLOSER = 0.2f, STEVEPARTY$TURN = 8f;
 
     @Shadow
     private void applyEquipOffset(MatrixStack matrices, Arm arm, float equipProgress) {
@@ -59,10 +63,10 @@ public class HeldItemRendererGlandouilleCarryMixin {
                 0.2f * MathHelper.sin(swingRoot * MathHelper.TAU), -0.2f * MathHelper.sin(swingProgress * MathHelper.PI));
         applyEquipOffset(matrices, arm, equipProgress);
         applySwingOffset(matrices, arm, swingProgress);
-        matrices.translate(-side * STEVEPARTY$IN, -STEVEPARTY$DOWN, 0f);
+        matrices.translate(side * STEVEPARTY$OUT, -STEVEPARTY$DOWN, STEVEPARTY$CLOSER);
         matrices.scale(STEVEPARTY$SCALE, STEVEPARTY$SCALE, STEVEPARTY$SCALE);
-        // its face to the player, turned a little toward the middle of the screen
-        GlandouilleInHand.render(bottom, 180f - side * STEVEPARTY$TURN, tickDelta, matrices, vertexConsumers, light);
+        // seen from behind, looking where the player looks, turned a little toward the middle of the screen
+        GlandouilleInHand.render(bottom, side * STEVEPARTY$TURN, tickDelta, matrices, vertexConsumers, light);
         matrices.pop();
     }
 }

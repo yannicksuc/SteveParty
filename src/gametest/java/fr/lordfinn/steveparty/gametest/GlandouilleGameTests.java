@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleCarrySave;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.Mood;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
@@ -251,6 +252,28 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.assertTrue(first.getFirst().getVehicle() == null && first.getFirst().getPos().distanceTo(ground) < 0.01, "standing there");
         context.assertEquals(GlandouilleTowers.height(first.getFirst()), 8, "still 8 high");
         context.complete();
+    }
+
+    /** A player leaving with a stack in hand takes it with him (not left on top of his head) and has it in hand again when back. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aCarriedStackLeavesAndComesBackWithItsPlayer(TestContext context) {
+        TestBoards.floor(context, 8);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.MOSSY, 3, new BlockPos(5, 1, 3));
+        ServerPlayerEntity player = player(context, new BlockPos(3, 1, 3), -90f);
+        context.waitAndRun(2, () -> {
+            context.assertTrue(GlandouilleTowers.pickUp(player, members.getFirst()), "picked up");
+            context.assertTrue(GlandouilleCarrySave.stash(player), "taken along when he leaves");
+            context.assertTrue(members.stream().allMatch(GlandouilleEntity::isRemoved), "none of them left behind");
+            context.assertTrue(player.hasAttached(GlandouilleCarrySave.TYPE), "saved with the player");
+            context.assertTrue(GlandouilleCarrySave.restore(player), "back with him");
+            GlandouilleEntity back = GlandouilleTowers.carried(player);
+            context.assertTrue(back != null, "in his hand again");
+            context.assertEquals(GlandouilleTowers.height(back), 3, "the whole stack");
+            context.assertEquals(back.getVariant(), GlandouilleVariant.MOSSY, "the same ones");
+            context.assertFalse(player.hasAttached(GlandouilleCarrySave.TYPE), "brought back once only");
+            context.assertFalse(GlandouilleCarrySave.restore(player), "nothing more to bring back");
+            context.complete();
+        });
     }
 
     /**
