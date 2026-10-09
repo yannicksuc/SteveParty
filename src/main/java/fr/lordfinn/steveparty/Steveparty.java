@@ -41,6 +41,7 @@ import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
+import fr.lordfinn.steveparty.dice.SixSeven;
 import fr.lordfinn.steveparty.entities.custom.pawn.PawnPossessions;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerFlare;
@@ -117,6 +118,7 @@ public class Steveparty implements ModInitializer {
         MistigriSentences.initialize();
         MistigriBadLuck.initialize();
         MistigriSummoning.initialize();
+        SixSeven.initialize();
         TileMigration.initialize();
         VillagerBlockEvents.initialize();
         ModComponents.initialize();
