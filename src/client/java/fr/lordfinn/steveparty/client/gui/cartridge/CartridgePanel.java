@@ -266,8 +266,11 @@ public final class CartridgePanel {
                     String k = CartridgeItem.MENU_KEY + "inventory.";
                     giveText = I18n.translate(k + "give");
                     takeText = I18n.translate(k + "take");
-                    ghostHelp = textRenderer.wrapLines(Text.translatable(k + "wheel"), Math.max(40, columnW - ghostHelpX()));
-                    yield Math.max((GhostSlotsModule.COUNT / GhostSlotsModule.COLUMNS) * GhostSlotsModule.SLOT, 26 + ghostHelp.size() * InfoModule.LINE_H);
+                    // Slots that only give (a Trichaudron's prizes): their own help, no give / take legend
+                    ghostHelp = textRenderer.wrapLines(Text.translatable(ghosts.signed() ? k + "wheel" : ghosts.helpKey()),
+                            Math.max(40, columnW - ghostHelpX()));
+                    int legend = ghosts.signed() ? 26 : 2;
+                    yield Math.max(ghosts.rows() * GhostSlotsModule.SLOT, legend + ghostHelp.size() * InfoModule.LINE_H);
                 }
                 case InfoModule info -> {
                     int width = columnW - (info.hasIcon() ? InfoModule.ICON + 4 : 0);
@@ -741,7 +744,7 @@ public final class CartridgePanel {
     }
 
     private void drawGhostSlots(DrawContext context, GhostSlotsModule ghosts, int mx, int my) {
-        for (int s = 0; s < GhostSlotsModule.COUNT; s++) {
+        for (int s = 0; s < ghosts.count(); s++) {
             int sx = mx + ghosts.slotX(s) - 1, sy = my + ghosts.slotY(s) - 1;
             context.fill(sx, sy, sx + 18, sy + 18, 0xFF2B2B2B);
             context.fill(sx + 1, sy + 1, sx + 18, sy + 18, 0xFF5A5A5A);
@@ -749,6 +752,10 @@ public final class CartridgePanel {
         }
         // On the right of the slots: green gives, red takes, then how to set the quantity
         int tx = mx + ghostHelpX(), ty = my + CartridgeModule.LABEL_H + 2, room = columnW - ghostHelpX() - 8;
+        if (!ghosts.signed()) {
+            for (int l = 0; l < ghostHelp.size(); l++) context.drawText(textRenderer, ghostHelp.get(l), tx, ty + l * InfoModule.LINE_H, TONE_SOFT, false);
+            return;
+        }
         context.fill(tx, ty + 1, tx + 5, ty + 6, 0xFF46AE2E);
         drawFitted(context, giveText, tx + 8, ty, room, TONE_NORMAL, false, false);
         context.fill(tx, ty + 12, tx + 5, ty + 17, 0xFFD9283B);
