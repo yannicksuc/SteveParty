@@ -30,6 +30,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import fr.lordfinn.steveparty.powerups.effects.TrapKind;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.particle.ParticleTypes;
@@ -49,6 +52,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
@@ -58,9 +62,11 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private static final String ACTIVE_SLOT_KEY = "ActiveSlot";
     private static final String CYCLE_INDEXES_KEY = "CycleIndexes";
     private static final String STAMP_KEY = "Stamp";
+    private static final String TRAP_KEY = "Trap";
 
     /** The look stamped on the tile itself (shown while it holds no cartridge: see TileStamping). */
     private @Nullable TileStampComponent stamp;
+    private @Nullable TrapMark trapMark;
 
     private int ticks = 0;
     private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
@@ -416,6 +422,30 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         super.removeFromCopiedStackNbt(nbt);
         nbt.remove("Items");
         nbt.remove(STAMP_KEY);
+        nbt.remove(TRAP_KEY);
+    }
+
+    /**
+     * What the players see of a Trap set on this space (the party keeps the trap itself, see TrapEffect): what it does
+     * and its setter's colour, drawn as a frame around the space and an icon over it.
+     */
+    public record TrapMark(TrapKind kind, int color) {
+        public static final Codec<TrapMark> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                TrapKind.CODEC.fieldOf("kind").forGetter(TrapMark::kind),
+                Codec.INT.fieldOf("color").forGetter(TrapMark::color)
+        ).apply(instance, TrapMark::new));
+    }
+
+    public @Nullable TrapMark getTrapMark() {
+        return trapMark;
+    }
+
+    /** Shows (or, with null, takes off) a Trap on this space; saved and sent to the clients. */
+    public void setTrapMark(@Nullable TrapMark mark) {
+        if (Objects.equals(mark, trapMark)) return;
+        this.trapMark = mark;
+        super.markDirty();
+        syncToClients();
     }
 
     public @Nullable TileStampComponent getStamp() {
@@ -437,6 +467,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             TileStampComponent.CODEC.encodeStart(NbtOps.INSTANCE, stamp)
                     .ifSuccess(element -> nbt.put(STAMP_KEY, element));
         }
+        if (trapMark != null) {
+            TrapMark.CODEC.encodeStart(NbtOps.INSTANCE, trapMark).ifSuccess(element -> nbt.put(TRAP_KEY, element));
+        }
         if (!cycleIndexes.isEmpty()) {
             NbtCompound cycles = new NbtCompound();
             cycleIndexes.forEach((slot, index) -> cycles.putInt(Integer.toString(slot), index));
@@ -451,6 +484,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         stamp = nbt.contains(STAMP_KEY)
                 ? TileStampComponent.CODEC.parse(NbtOps.INSTANCE, nbt.get(STAMP_KEY)).result().orElse(null)
                 : null;
+        trapMark = nbt.contains(TRAP_KEY) ? TrapMark.CODEC.parse(NbtOps.INSTANCE, nbt.get(TRAP_KEY)).result().orElse(null) : null;
         activeSlotNeedsCheck = true;
         routerKnown = false;
         appliedCartridge = getStack(activeSlot);
@@ -504,8 +538,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
-        // A hidden trap (Trap power-up) springs on the tokens that stop here, before the space's own role
-        TrapEffect.onTokenStopped(partyController, this, token);
+        // A Trap (power-up) springs on the tokens that stop here, before the space's own role; sent back, the token
+        // lands elsewhere (that landing goes on with the turn)
+        if (TrapEffect.onTokenStopped(partyController, this, token).movesToken()) return;
         // A board space without cartridge acts as a default one: the game must go on
         ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
         // Pushed here after a teleport: an ordinary space if the Teleport Cartridge says so, or if it is a teleport tile

@@ -238,12 +238,6 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .input(Items.AMETHYST_SHARD)
                 .criterion(hasItem(Items.AMETHYST_SHARD), conditionsFromItem(Items.AMETHYST_SHARD))
                 .offerTo(exporter, id("gate_key"));
-        // The Trap: a tripwire hook on an iron ingot
-        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.BOARD_TRAP, 1)
-                .input(Items.TRIPWIRE_HOOK)
-                .input(Items.IRON_INGOT)
-                .criterion(hasItem(Items.TRIPWIRE_HOOK), conditionsFromItem(Items.TRIPWIRE_HOOK))
-                .offerTo(exporter, id("board_trap"));
 
         generatePolishedConcrete();
         generatePolishedTerracotta();
@@ -384,8 +378,6 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.POT_CARTRIDGE, ModItems.MAGPIE_NEST);
         // A Gate Key: the Key gate
         offerCartridge(ModItems.KEY_GATE_CARTRIDGE, ModItems.GATE_KEY);
-        // A Trap: the Trap space
-        offerCartridge(ModItems.TRAP_CARTRIDGE, ModItems.BOARD_TRAP);
 
         // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
         // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)

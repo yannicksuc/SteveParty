@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.powerups;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -20,10 +21,11 @@ import java.util.UUID;
  * @param powerUp      the power-up used
  * @param targetPlayer the player aimed at ({@link PowerUp.Target#PLAYER}), null otherwise
  * @param targetTile   the board space aimed at ({@link PowerUp.Target#TILE}), null otherwise
+ * @param item         a copy of the power-up's item used (one), with its components (a signed Trap...)
  */
 public record PowerUpUse(ServerWorld world, ServerPlayerEntity player, PartyControllerEntity controller,
                          TokenTurnPartyStep turn, PowerUp powerUp, @Nullable UUID targetPlayer,
-                         @Nullable BlockPos targetTile) {
+                         @Nullable BlockPos targetTile, ItemStack item) {
 
     /** The power-up state of the turn: what {@link PowerUp#apply} sets up for the rest of the turn goes in its data. */
     public PowerUpTurn state() {

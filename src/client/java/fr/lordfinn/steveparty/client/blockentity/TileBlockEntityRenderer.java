@@ -125,10 +125,14 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
             renderLevelModel(state, matrices, vertexConsumers, light, overlay, color);
             matrices.pop();
         }
+        // A Trap set here: jaws around the tile, as large and turned as it is (on its support)
+        BoardSpaceBlockEntity.TrapMark trap = entity.getTrapMark();
+        if (trap != null) TrapMarkRenderer.jaws(trap, small ? TileSize.SMALL_SCALE : 1f, direction, matrices, vertexConsumers, light);
         if (tileType == BoardSpaceType.TILE_START) {
             matrices.pop();
             Matrix4f onSupport = support.transform(centreX, centreZ).translate((float) (centreX - 0.5), 0, (float) (centreZ - 0.5));
             renderTileStart(entity, small, onSupport, matrices, vertexConsumers, light, stack);
+            trapIcon(entity, trap, support, centreX, centreZ, tickDelta, matrices, vertexConsumers);
             return;
         }
         // A stamped look replaces the face (the tile's own, or its cartridge's: see TileStamping)
@@ -137,6 +141,15 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         matrices.pop();
         // What the role shows over the space (a Threshold obstacle's condition...)
         BoardRuleOverlays.render(entity, tileType, stack, centreX, centreZ, tickDelta, matrices, vertexConsumers, light);
+        trapIcon(entity, trap, support, centreX, centreZ, tickDelta, matrices, vertexConsumers);
+    }
+
+    /** The badge of a Trap set here (none: nothing), upright over where the tokens stand. */
+    private static void trapIcon(BoardSpaceBlockEntity entity, @Nullable BoardSpaceBlockEntity.TrapMark trap, TileSupport support,
+                                 double centreX, double centreZ, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers) {
+        if (trap == null) return;
+        float time = entity.getWorld() == null ? 0 : (entity.getWorld().getTime() % 24000) + tickDelta;
+        TrapMarkRenderer.icon(trap, centreX, support.standY(centreX, centreZ), centreZ, time, matrices, consumers);
     }
 
     /**
@@ -160,7 +173,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         else if (tileType == BoardSpaceType.TILE_REPLAY) face = TileStampTextures.replayFace(color, small);
         // A Teleport tile: a portal (its rings drifting) in the colour of its network (violet by default)
         else if (tileType == BoardSpaceType.TILE_TELEPORT) face = TileStampTextures.teleportFace(color, small);
-        // A shop, a star space, Glandouille, Frousseux, Mistigri, a Threshold obstacle, a Common pot, a Key gate, a Trap:
+        // A shop, a star space, Glandouille, Frousseux, Mistigri, a Threshold obstacle, a Common pot, a Key gate:
         // its pictogram in the cartridge's colour
         else {
             face = TileStampTextures.pictogramFace(tileType, color, small);
