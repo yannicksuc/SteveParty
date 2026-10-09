@@ -6,7 +6,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
-import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.BoardTraps;
@@ -63,10 +62,5 @@ public class TrapTileBehavior extends ABoardSpaceBehavior {
             return BoardSpaceRedstoneRouterBlockEntity.LEVEL_MALUS;
         }
         return BoardSpaceRedstoneRouterBlockEntity.LEVEL_DEFAULT;
-    }
-
-    @Override
-    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
-        if (!stack.contains(ModComponents.COLOR)) setColor(boardSpaceBlockEntity, TrapCartridgeItem.COLOR);
     }
 }

@@ -80,8 +80,8 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 
     public static int stake(ItemStack stack) {

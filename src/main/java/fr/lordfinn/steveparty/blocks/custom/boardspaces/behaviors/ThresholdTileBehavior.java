@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
-import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.TurnMoves;
@@ -106,10 +105,5 @@ public class ThresholdTileBehavior extends ABoardSpaceBehavior {
     @Override
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return comparatorLevel(boardSpaceEntity, stack) == 0 ? TileFeedback.Landing.STOP : TileFeedback.Landing.DEFAULT;
-    }
-
-    @Override
-    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
-        if (!stack.contains(ModComponents.COLOR)) setColor(boardSpaceBlockEntity, ThresholdCartridgeItem.COLOR);
     }
 }

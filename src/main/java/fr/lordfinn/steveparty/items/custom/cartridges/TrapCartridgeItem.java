@@ -76,8 +76,8 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 
     public static Effect effect(ItemStack stack) {

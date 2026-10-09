@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.payloads.custom.UpdateColoredTilePayload;
@@ -131,7 +132,15 @@ public abstract class ABoardSpaceBehavior {
         }
     }
 
+    /**
+     * The tile's colour follows its cartridge {@code stack} (just put in, or edited): by default a cartridge with a
+     * tile colour of its own ({@link CartridgeItem#tileColor}) shows it until dyed. A role whose colour depends on its
+     * settings overrides it.
+     */
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
+        if (stack.getItem() instanceof CartridgeItem cartridge && cartridge.tileColor() >= 0 && !stack.contains(ModComponents.COLOR)) {
+            setColor(boardSpaceBlockEntity, cartridge.tileColor());
+        }
     }
 
     public Status getStatus(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {

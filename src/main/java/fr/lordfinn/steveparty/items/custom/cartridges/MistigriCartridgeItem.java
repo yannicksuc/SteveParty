@@ -111,8 +111,8 @@ public class MistigriCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 
     private static Map<String, Integer> settings(ItemStack stack) {

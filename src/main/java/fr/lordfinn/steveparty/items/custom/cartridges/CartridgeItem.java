@@ -62,10 +62,23 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
         return SIMPLE_MODULES;
     }
 
-    /** The colour of the label of its menu (and of its tile, most of the time). */
+    /** The menu's label colour of a cartridge without colour of its own. */
+    private static final int UNTINTED_MENU_COLOR = 0xE8E8E8;
+
+    /**
+     * The colour of its tile until dyed ({@code 0xRRGGBB}), -1 for none of its own: the plain tile, or a colour it
+     * works out itself (it then overrides {@link #menuColor} and its behaviour's colour). A tile holding it shows it
+     * while its cartridge has no {@link ModComponents#COLOR} (see ABoardSpaceBehavior#updateBoardSpaceColor).
+     */
+    public int tileColor() {
+        return -1;
+    }
+
+    /** The colour of the label of its menu (and of its tile, most of the time): its dye, else its tile's colour. */
     public int menuColor(ItemStack stack) {
         Integer color = stack.get(ModComponents.COLOR);
-        return color != null ? color & 0xFFFFFF : 0xE8E8E8;
+        if (color != null) return color & 0xFFFFFF;
+        return tileColor() >= 0 ? tileColor() : UNTINTED_MENU_COLOR;
     }
 
     /** A short description of what the cartridge does ({@code gui.steveparty.cartridge_menu.desc.<id>}). */

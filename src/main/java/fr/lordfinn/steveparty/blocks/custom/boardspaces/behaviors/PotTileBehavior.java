@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
-import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.CommonPots;
@@ -63,10 +62,5 @@ public class PotTileBehavior extends ABoardSpaceBehavior {
     @Override
     public Status getStatus(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
         return Status.GOOD;
-    }
-
-    @Override
-    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
-        if (!stack.contains(ModComponents.COLOR)) setColor(boardSpaceBlockEntity, PotCartridgeItem.COLOR);
     }
 }

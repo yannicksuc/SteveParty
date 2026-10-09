@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnParty
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
-import fr.lordfinn.steveparty.components.ModComponents;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
@@ -20,9 +19,6 @@ import org.jetbrains.annotations.Nullable;
  * {@link TokenTurnPartyStep#grantReplay}.
  */
 public class ReplayBoardSpaceBehavior extends ABoardSpaceBehavior {
-    /** The face of a Replay tile (cyan), unless its cartridge is dyed. */
-    public static final int COLOR = 0x1CC6D6;
-
     public ReplayBoardSpaceBehavior() {
         super(BoardSpaceType.TILE_REPLAY);
     }
@@ -52,11 +48,5 @@ public class ReplayBoardSpaceBehavior extends ABoardSpaceBehavior {
     @Override
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return TileFeedback.Landing.REPLAY;
-    }
-
-    /** A cartridge without colour (an old one, or cleared) still shows the Replay cyan. */
-    @Override
-    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
-        if (!stack.contains(ModComponents.COLOR)) setColor(boardSpaceBlockEntity, COLOR);
     }
 }

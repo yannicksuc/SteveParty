@@ -71,8 +71,8 @@ public class KeyGateCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 
     /** The exit on {@code side} is locked (all of them by default). */

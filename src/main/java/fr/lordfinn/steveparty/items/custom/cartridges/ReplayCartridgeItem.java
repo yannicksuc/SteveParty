@@ -1,17 +1,17 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior;
-import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
-import net.minecraft.item.ItemStack;
 
 import java.util.List;
 
 /** Rejouer / Roll Again: the tile gives the token's owner another turn (see ReplayBoardSpaceBehavior). */
 public class ReplayCartridgeItem extends CartridgeItem {
+    /** The face of a Replay tile (cyan), unless its cartridge is dyed. */
+    public static final int COLOR = 0x1CC6D6;
+
     private static final List<CartridgeModule> MODULES = List.of(
-            description("replay_cartridge", 3), colorModule(ReplayBoardSpaceBehavior.COLOR));
+            description("replay_cartridge", 3), colorModule(COLOR));
 
     public ReplayCartridgeItem(Settings settings) {
         super(settings);
@@ -28,7 +28,7 @@ public class ReplayCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, ReplayBoardSpaceBehavior.COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 }
