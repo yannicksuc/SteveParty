@@ -18,6 +18,7 @@ import fr.lordfinn.steveparty.client.entity.DeferredGlows;
 import fr.lordfinn.steveparty.client.entity.FrousseuxRenderer;
 import fr.lordfinn.steveparty.client.entity.TrichaudronRenderer;
 import fr.lordfinn.steveparty.client.entity.TrichaudronRiderClient;
+import fr.lordfinn.steveparty.client.entity.SixSevenClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleRenderer;
 import fr.lordfinn.steveparty.client.entity.MagpieRenderer;
@@ -241,6 +242,7 @@ public class StevepartyClient implements ClientModInitializer {
         ToolWheel.initialize();
         GlandouilleCarryClient.initialize();
         TrichaudronRiderClient.initialize();
+        SixSevenClient.initialize();
         BrushClient.initialize();
         TileInfoClient.initialize();
         TileOutline.initialize();
