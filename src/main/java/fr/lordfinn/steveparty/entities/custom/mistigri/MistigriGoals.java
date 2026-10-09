@@ -44,7 +44,8 @@ public final class MistigriGoals {
 
         @Override
         public boolean canStart() {
-            return mistigri.isAngry() || mistigri.isActing() && mistigri.getAction() != Action.LEAP;
+            // playing, his acts are the play goal's: it keeps moving him
+            return mistigri.isAngry() || mistigri.isActing() && mistigri.getAction() != Action.LEAP && !mistigri.isPlaying();
         }
 
         @Override

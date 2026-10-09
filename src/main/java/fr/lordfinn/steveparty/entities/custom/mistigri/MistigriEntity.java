@@ -94,7 +94,9 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     /** What he is doing for a moment: an act played once by the animations. */
     public enum Action {
         NONE("", 0), GROOM("groom", 64), STRETCH("stretch", 52), YAWN("yawn", 44), SWAT("swat", 22), EAT("eat", 32),
-        LEAP("leap", 20), SUMMON("summon", 52);
+        LEAP("leap", 20), SUMMON("summon", 52),
+        // playing (an acorn, a Glandouille): a paw tap, a toss in the air, a pounce
+        BAT("bat", 18), TOSS("toss", 26), POUNCE("pounce", 26);
 
         public final String animation;
         /** Its length (ticks): the animation's. */
@@ -121,6 +123,9 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     private static final TrackedData<Boolean> ON_CHEST =
             DataTracker.registerData(MistigriEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** Staring at someone (following them about). */
+    /** Playing: lying in wait (stalking) or rolled on his back (see {@link PlayPose}). */
+    private static final TrackedData<Integer> PLAY_POSE =
+            DataTracker.registerData(MistigriEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Boolean> STARING =
             DataTracker.registerData(MistigriEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
@@ -142,6 +147,10 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     private @Nullable ItemFrameEntity swatFrame;
     private @Nullable BlockPos swatShelf;
     private int swatIn;
+    /** Playing (server side): the play goals' flag. */
+    private boolean playing;
+    /** No new play before (world time): after a game, a while without. */
+    long nextPlayTime;
 
     /** His swat knocks {@code frame}'s item (or a book out of {@code shelf}) off in {@code ticks}. */
     void swatAt(@Nullable ItemFrameEntity frame, @Nullable BlockPos shelf, int ticks) {
@@ -176,11 +185,13 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
         this.goalSelector.add(1, new SitGoal(this));
+        this.goalSelector.add(1, new MistigriPlay.PlayWithAcorn(this));
         this.goalSelector.add(2, new MistigriGoals.Hold(this));
         this.goalSelector.add(3, new MistigriGoals.FollowOwner(this));
         this.goalSelector.add(4, new MistigriGoals.KnockOff(this));
         this.goalSelector.add(5, new MistigriGoals.SitOnChest(this));
         this.goalSelector.add(6, new MistigriGoals.StareFollow(this));
+        this.goalSelector.add(6, new MistigriPlay.CatAndMouse(this));
         this.goalSelector.add(7, new MistigriGoals.IdleActs(this));
         this.goalSelector.add(8, new WanderAroundFarGoal(this, 0.8) {
             @Override
@@ -200,6 +211,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         builder.add(LOAFING, false);
         builder.add(ON_CHEST, false);
         builder.add(STARING, false);
+        builder.add(PLAY_POSE, 0);
     }
 
     // ---------------------------------------------------------------- state
@@ -275,6 +287,38 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         return isLoafing() ? chest : null;
     }
 
+    /** A held playing posture (its animation loops). */
+    public enum PlayPose {
+        NONE, STALK, ON_BACK
+    }
+
+    public PlayPose getPlayPose() {
+        int id = this.dataTracker.get(PLAY_POSE);
+        return id >= 0 && id < PlayPose.values().length ? PlayPose.values()[id] : PlayPose.NONE;
+    }
+
+    void setPlayPose(PlayPose pose) {
+        this.dataTracker.set(PLAY_POSE, pose.ordinal());
+    }
+
+    /** Playing (an acorn, cat and mouse with a Glandouille): see MistigriPlay. */
+    public boolean isPlaying() {
+        return playing;
+    }
+
+    void setPlaying(boolean playing) {
+        this.playing = playing;
+        if (!playing) setPlayPose(PlayPose.NONE);
+    }
+
+    /** Forgets what he was up to: no more anger, no swat on its way, up from his loaf (an acorn caught his eye). */
+    void distract() {
+        setAngry(0);
+        swatAt(null, null, 0);
+        setLoafing(false);
+        setStaring(false);
+    }
+
     public boolean isStaring() {
         return this.dataTracker.get(STARING);
     }
@@ -285,7 +329,8 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
 
     /** Free to do as he likes: alive, not the board's, not angry, not acting, not told to sit, not asleep on a chest. */
     public boolean isFree() {
-        return isAlive() && !boardActor && !isAngry() && !isActing() && !isSitting() && !isLeashed() && !isAsleepOnChest();
+        return isAlive() && !boardActor && !isAngry() && !isActing() && !isSitting() && !isLeashed() && !isAsleepOnChest()
+                && !playing;
     }
 
     public int fishFed() {
@@ -558,6 +603,8 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     private static final RawAnimation LOAF = RawAnimation.begin().thenLoop("loaf");
     private static final RawAnimation SLEEP = RawAnimation.begin().thenLoop("sleep");
     private static final RawAnimation STARE = RawAnimation.begin().thenLoop("stare");
+    private static final RawAnimation STALK = RawAnimation.begin().thenLoop("stalk");
+    private static final RawAnimation ON_BACK = RawAnimation.begin().thenLoop("on_back");
     private static final RawAnimation ANGRY_ANIM = RawAnimation.begin().thenPlay("angry_in").thenLoop("angry");
     private static final Map<Action, RawAnimation> ACTS = new EnumMap<>(Action.class);
 
@@ -575,6 +622,9 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     private PlayState animate(AnimationState<MistigriEntity> state) {
         Action action = getAction();
         if (action != Action.NONE) return state.setAndContinue(ACTS.get(action));
+        PlayPose play = getPlayPose();
+        if (play == PlayPose.STALK) return state.setAndContinue(STALK);
+        if (play == PlayPose.ON_BACK) return state.setAndContinue(ON_BACK);
         if (isAngry()) return state.setAndContinue(ANGRY_ANIM);
         if (isInSittingPose()) return state.setAndContinue(SIT);
         if (isAsleepOnChest()) return state.setAndContinue(SLEEP);
