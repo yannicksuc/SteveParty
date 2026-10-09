@@ -13,6 +13,7 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.RideableInventory;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -104,7 +105,8 @@ import java.util.UUID;
  *     <li><b>Untamed riders</b>: like a horse it lets you climb on; after a few seconds its heads fidget, then one turns
  *     round and sprays you off ({@link #sprayOff}): thrown high and back, a little fire unless fire-proof (a raised
  *     shield toward the head spares you that, not the fall off).</li>
- *     <li><b>Tamed</b>: its owner opens its saddle slot (sneaking, or with an empty hand while it has no saddle);
+ *     <li><b>Tamed</b>: its screen (saddle slot, lava gauge) opens like a horse's ({@link #openInventory}): its rider's
+ *     inventory key, or a sneaking click while nobody rides it;
  *     saddled, up to three players ride it on the tank's front rim ({@link TrichaudronRiding}).</li>
  *     <li><b>Its heads</b> ({@link #HEADS}): three necks, each a turret of its own: its own aim (synced:
  *     {@link #getHeadTarget}) and its own vent ({@link #getVent}). Wild, one blasts at a time, the heads taking turns
@@ -128,7 +130,7 @@ import java.util.UUID;
  *     0 to 2 magma cream.</li>
  * </ul>
  */
-public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
+public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, RideableInventory {
     /** Its shell and legs: 52 px wide, the tank's rim 61 px high. The necks reach far beyond (not in the box). */
     public static final float WIDTH = 3.2f, HEIGHT = 3.8125f, EYE_HEIGHT = 2.76f;
     public static final int TANK_MAX = 27, SPAWN_TANK_MIN = 14, SPAWN_TANK_MAX = 20;
@@ -475,7 +477,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
             }
             return ActionResult.success(client);
         }
-        if (isTamed() && isOwner(player) && (player.shouldCancelInteraction() || !isSaddled())) {
+        if (isTamed() && player.shouldCancelInteraction()) { // like a horse: sneaking, a click opens its screen
             if (!client) openInventory(player);
             return ActionResult.success(client);
         }
@@ -563,8 +565,14 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
         return nozzle.subtract(Vec3d.fromPolar(0, yaw).multiply(1.6));
     }
 
-    private void openInventory(PlayerEntity player) {
-        if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
+    /**
+     * Its screen (saddle, lava gauge), like a horse's: tamed only, for its rider (the inventory key while riding, see
+     * RideableInventory) or, with nobody on, whoever clicks it sneaking.
+     */
+    @Override
+    public void openInventory(PlayerEntity player) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer) || !isTamed()) return;
+        if (hasPassengers() && !hasPassenger(player)) return;
         serverPlayer.openHandledScreen(new ExtendedScreenHandlerFactory<Integer>() {
             @Override
             public Integer getScreenOpeningData(ServerPlayerEntity opener) {

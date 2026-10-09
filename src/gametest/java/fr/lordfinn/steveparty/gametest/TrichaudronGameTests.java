@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronSpawns;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronGoals;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronBlast;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronScreenHandler;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronPumping;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronRiding;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
@@ -226,6 +227,37 @@ public class TrichaudronGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itsScreenOpensLikeAHorses(TestContext context) {
+        TestBoards.floor(context, 8);
+        TrichaudronEntity wild = spawn(context, new BlockPos(2, 1, 2));
+        ServerPlayerEntity owner = player(context, ItemStack.EMPTY), other = player(context, ItemStack.EMPTY);
+        wild.openInventory(owner);
+        context.assertFalse(owner.currentScreenHandler instanceof TrichaudronScreenHandler, "wild: no screen");
+        TrichaudronEntity trichaudron = spawn(context, new BlockPos(5, 1, 5));
+        tame(trichaudron, owner);
+        owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SADDLE));
+        owner.interact(trichaudron, Hand.MAIN_HAND);
+        owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+        owner.interact(trichaudron, Hand.MAIN_HAND);
+        context.assertTrue(owner.getVehicle() == trichaudron, "the owner rides it");
+        trichaudron.openInventory(owner); // what the inventory key sends while riding
+        context.assertTrue(owner.currentScreenHandler instanceof TrichaudronScreenHandler, "its rider's inventory key: its screen");
+        owner.closeHandledScreen();
+        trichaudron.openInventory(other);
+        context.assertFalse(other.currentScreenHandler instanceof TrichaudronScreenHandler, "ridden by someone else: not for a passer-by");
+        owner.stopRiding();
+        other.setSneaking(true);
+        other.interact(trichaudron, Hand.MAIN_HAND);
+        context.assertTrue(other.currentScreenHandler instanceof TrichaudronScreenHandler, "nobody on: a sneaking click opens it");
+        context.assertFalse(other.hasVehicle(), "and doesn't climb on");
+        other.closeHandledScreen();
+        TestPlayers.remove(context, owner, other);
+        wild.discard();
+        trichaudron.discard();
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void tamedAndSaddledItIsRidden(TestContext context) {
         TestBoards.floor(context, 8);
         TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
@@ -234,7 +266,7 @@ public class TrichaudronGameTests implements FabricGameTest {
         context.assertTrue(trichaudron.isTamed(), "tamed");
         owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
         owner.interact(trichaudron, Hand.MAIN_HAND);
-        context.assertFalse(owner.hasVehicle(), "no saddle: no ride (its saddle slot opens)");
+        context.assertFalse(owner.hasVehicle(), "no saddle: no ride");
         owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SADDLE));
         owner.interact(trichaudron, Hand.MAIN_HAND);
         context.assertTrue(trichaudron.isSaddled(), "saddled");
