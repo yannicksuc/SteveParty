@@ -33,13 +33,11 @@ public class Steveparty implements ModInitializer {
 
     public static final String MOD_ID = "steveparty";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-    public static Steveparty Instance = null;
     public static final TaskScheduler SCHEDULER = new TaskScheduler();
     public static MinecraftServer SERVER = null;
 
     @Override
     public void onInitialize() {
-        Instance = this;
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
         ServerLifecycleEvents.SERVER_STOPPED.register(this::onServerStopped);
         ModSounds.initialize();
