@@ -57,10 +57,6 @@ public class BoxedTraderGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
-    }
-
     /** Runs the checks, always disconnecting the mock player (a stray player would open other tests' traders). */
     private static void checks(TestContext context, ServerPlayerEntity player, Runnable checks) {
         checks(context, player, checks, true);
@@ -71,7 +67,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         try {
             checks.run();
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         if (complete) context.complete();
     }
@@ -103,7 +99,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
                 context.assertEquals(drops.size(), 1, "one bandana dropped");
                 context.assertEquals(BandanaItem.getColor(drops.getFirst().getStack()), color, "in the merchant's colour");
             } catch (RuntimeException e) {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
                 throw e;
             }
             context.waitAndRun(BoxedTraderEntity.SHOCK_TICKS + 3, () -> checks(context, player, () -> {
@@ -126,7 +122,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
                 trader.interact(player, Hand.MAIN_HAND);
                 context.assertFalse(trader.hasBandana(), "the bandana taken");
             } catch (RuntimeException e) {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
                 throw e;
             }
             context.waitAndRun(window + 5, () -> {
@@ -135,7 +131,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
                     trader.interact(player, Hand.MAIN_HAND);
                     context.assertTrue(trader.isBoxGlitched(), "the look of his box taken");
                 } catch (RuntimeException e) {
-                    disconnect(context, player);
+                    TestPlayers.remove(context, player);
                     throw e;
                 }
                 context.waitAndRun(window + 5, () -> checks(context, player,
@@ -180,7 +176,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
                 context.assertFalse(trader.hasBandana(), "first shear: the bandana");
                 context.assertFalse(trader.isBoxGlitched(), "his box keeps its look");
             } catch (RuntimeException e) {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
                 throw e;
             }
             context.waitAndRun(BoxedTraderEntity.SHOCK_TICKS + 3, () -> {
@@ -192,7 +188,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
                     // The theft cooldown is over: he comes out again
                     trader.startTheftHiding(-BoxedTraderEntity.THEFT_HIDE_TICKS - 1);
                 } catch (RuntimeException e) {
-                    disconnect(context, player);
+                    TestPlayers.remove(context, player);
                     throw e;
                 }
                 context.waitAndRun(2, () -> checks(context, player, () -> {
@@ -434,7 +430,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
             context.assertTrue(player.getBoundingBox().equals(cube), "his box is the cell's cube: " + player.getBoundingBox());
             context.assertTrue(player.isCollidable() && !player.isPushable(), "a hard obstacle, not pushed");
         } catch (RuntimeException e) {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
             throw e;
         }
         // Something dropped on him lands on the cube
@@ -448,7 +444,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
                 context.assertFalse(BoxCostumeBlock.isBlockAligned(player), "standing: no longer a block");
                 context.assertTrue(Math.abs(player.getBoundingBox().getLengthX() - 0.6) < 1e-4 && !player.isCollidable(), "his usual size, no obstacle");
             } catch (RuntimeException e) {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
                 throw e;
             }
             context.waitAndRun(30, () -> checks(context, player,
@@ -483,7 +479,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
                 context.assertFalse(BoxCostumeBlock.isBlockAligned(player) || player.isCollidable(), "not a block at " + start);
             }
         } finally {
-            players.forEach(player -> disconnect(context, player));
+            players.forEach(player -> TestPlayers.remove(context, player));
         }
         context.complete();
     }
@@ -652,7 +648,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
                 context.assertTrue(Math.abs(player.getBoundingBox().minY - start.y) < 1e-9, "the cube stands on that floor: " + player.getBoundingBox());
             }
         } finally {
-            players.forEach(player -> disconnect(context, player));
+            players.forEach(player -> TestPlayers.remove(context, player));
         }
         context.complete();
     }
@@ -682,8 +678,8 @@ public class BoxedTraderGameTests implements FabricGameTest {
             context.assertTrue(Math.abs(walker.getY() - context.getAbsolute(new Vec3d(3.5, 2, 3.5)).y) < 1e-6, "does not fall through: y " + walker.getY());
             stand.discard();
         } finally {
-            disconnect(context, walker);
-            disconnect(context, hider);
+            TestPlayers.remove(context, walker);
+            TestPlayers.remove(context, hider);
         }
         context.complete();
     }
@@ -698,7 +694,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
             for (int i = 0; i < 3; i++) BoxCostumeBlock.tick(hider, false);
             context.assertTrue(BoxCostumeBlock.isBlockAligned(hider), "a block for those who watch him");
         } finally {
-            disconnect(context, hider);
+            TestPlayers.remove(context, hider);
         }
         context.complete();
     }

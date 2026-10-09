@@ -29,10 +29,6 @@ public class DiceGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
-    }
-
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void killCommandRemovesDice(TestContext context) {
         DiceEntity dice = spawnDice(context);
@@ -98,10 +94,10 @@ public class DiceGameTests implements FabricGameTest {
                 dice.damage(world.getDamageSources().playerAttack(sneaking), 1F);
                 context.assertTrue(dice.isRemoved(), "a sneaking hit explodes the dice");
             } finally {
-                disconnect(context, sneaking);
+                TestPlayers.remove(context, sneaking);
             }
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -123,7 +119,7 @@ public class DiceGameTests implements FabricGameTest {
         player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, stack);
         context.addFinalTask(() -> {
             diceOf(context, player).forEach(DiceEntity::discard);
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         });
         return player;
     }
@@ -187,7 +183,7 @@ public class DiceGameTests implements FabricGameTest {
         try {
             context.assertTrue(!thrown.getFirst().isInThrowGrace(other), "someone else is not held back");
         } finally {
-            disconnect(context, other);
+            TestPlayers.remove(context, other);
         }
         context.waitAndRun(DiceEntity.THROW_GRACE_TICKS + 2, () -> {
             context.assertTrue(thrown.stream().allMatch(DiceEntity::isRolling), "still rolling meanwhile");

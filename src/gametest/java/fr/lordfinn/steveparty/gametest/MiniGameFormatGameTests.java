@@ -17,7 +17,6 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
-import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -203,12 +202,6 @@ public class MiniGameFormatGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void remove(TestContext context, ServerPlayerEntity player) {
-        if (player.hasVehicle()) player.stopRiding();
-        MiniGamePipes.leaveParty(player.getUuid());
-        TestPlayers.remove(context, player);
-    }
-
     /** A pipe of {@code block} standing on stone: a mouth on top. */
     private static BlockPos mouth(TestContext context, Block block, int x, int z) {
         context.setBlockState(new BlockPos(x, 1, z), Blocks.STONE);
@@ -257,7 +250,7 @@ public class MiniGameFormatGameTests implements FabricGameTest {
         } finally {
             MiniGameNameColors.restore(server, player.getUuid());
             scoreboard.removeTeam(before);
-            remove(context, player);
+            TestPlayers.leaveMiniGames(context, player);
         }
         context.complete();
     }

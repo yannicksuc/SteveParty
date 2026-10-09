@@ -86,10 +86,6 @@ public class CartridgeMenuGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void remove(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
-    }
-
     // ------------------------------------------------------------------ texts: do they fit?
 
     private static JsonObject lang(String code) {
@@ -311,7 +307,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.STICK));
             context.assertTrue(!CartridgeMenus.apply(player, hand, "arrival", 0), "not a cartridge: refused");
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -345,7 +341,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
             context.assertTrue(!menu.canUse(player), "the cartridge gone: the menu closes");
             player.currentScreenHandler = player.playerScreenHandler;
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -420,7 +416,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
                     TeleportSettingsComponent.DEFAULT.withNetwork(TeleportNetwork.BLUE), "written in the tile");
             context.assertEquals(tile.getStack(0).get(ModComponents.COLOR), TeleportNetwork.BLUE.color(), "blue tile");
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -483,7 +479,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
             context.assertTrue(inTile.get(ModComponents.INVENTORY_COMPONENT).getStack(5).isEmpty(), "adventure: no change");
             player.currentScreenHandler = player.playerScreenHandler;
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

@@ -140,7 +140,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
         try {
             test.accept(player);
         } catch (RuntimeException e) {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
             throw e;
         }
     }
@@ -157,10 +157,6 @@ public class StarCartridgeGameTests implements FabricGameTest {
         });
     }
 
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
-    }
-
     private static BlockPos spaceOf(CowEntity cow) {
         BoardSpaceBlockEntity space = BoardSpaces.boardSpaceOf(cow);
         return space == null ? null : space.getPos();
@@ -171,7 +167,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
         for (BlockPos pos : starSpaces) context.setBlockState(pos, Blocks.AIR);
         context.setBlockState(CONTROLLER, Blocks.AIR);
         context.setBlockState(BANK, Blocks.AIR);
-        if (player != null) disconnect(context, player);
+        if (player != null) TestPlayers.remove(context, player);
         context.complete();
     }
 

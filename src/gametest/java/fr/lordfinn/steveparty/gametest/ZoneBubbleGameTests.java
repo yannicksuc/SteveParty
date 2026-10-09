@@ -8,7 +8,6 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -36,10 +35,7 @@ import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.entity.vehicle.HopperMinecartEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
@@ -61,7 +57,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The mini-game bubble: a zone in session is given back as it was (blocks, containers, entities), its players
@@ -74,7 +69,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ZoneBubbleGameTests implements FabricGameTest {
     private static final String BATCH = "zone_bubble";
     private static final String STASH_TAG = "steveparty.zone_bubble";
-    private static final AtomicInteger SERIAL = new AtomicInteger();
     /** The time of day each running test began at. */
     private static final Map<TestContext, Long> STARTED_AT = new IdentityHashMap<>();
 
@@ -128,31 +122,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
 
     /** A connected survival player with a name of its own, standing at a relative position. */
     private static ServerPlayerEntity player(TestContext context, String name, double x, double y, double z) {
-        ServerPlayerEntity player = connect(context, new GameProfile(UUID.randomUUID(), "z" + SERIAL.incrementAndGet() + name));
-        player.changeGameMode(GameMode.SURVIVAL);
-        player.getInventory().clear();
-        move(context, player, x, y, z);
-        return player;
-    }
-
-    /** A player logs in: as it was saved if it came before, new otherwise. */
-    private static ServerPlayerEntity connect(TestContext context, GameProfile profile) {
-        ServerWorld world = context.getWorld();
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions());
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        return player;
-    }
-
-    private static void move(TestContext context, ServerPlayerEntity player, double x, double y, double z) {
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-    }
-
-    private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) TestPlayers.remove(context, player);
+        return TestPlayers.joined(context, "z", name, GameMode.SURVIVAL, x, y, z);
     }
 
     /** Runs a step of a test some ticks after its start; what makes it fail is also written to the log. */
@@ -359,7 +329,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         context.assertTrue(count(player, Items.NETHERITE_BLOCK) == 0 && player.currentScreenHandler.getCursorStack().isEmpty(), "nothing of the session is left");
         context.assertTrue(!player.getCommandTags().contains(STASH_TAG) && ZoneBubbles.ofPlayer(player) == null, "the player is of no session any more");
         context.assertTrue(itemsIn(context, zone(context)).isEmpty(), "nothing was dropped");
-        remove(context, player);
+        TestPlayers.remove(context, player);
         done(context);
     }
 
@@ -387,7 +357,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
 
         bubble.end();
         context.assertTrue(count(late, Items.EMERALD) == 4 && count(watcher, Items.GOLD_INGOT) == 5, "the others get theirs at the end");
-        remove(context, first, late, watcher);
+        TestPlayers.remove(context, first, late, watcher);
         done(context);
     }
 
@@ -409,11 +379,11 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         server.getPlayerManager().remove(player);
         bubble.end();
 
-        ServerPlayerEntity again = connect(context, profile);
+        ServerPlayerEntity again = TestPlayers.join(context, profile);
         context.assertTrue(count(again, Items.DIAMOND) == 3 && again.experienceLevel == 9, "it holds what it owns again");
         context.assertTrue(count(again, Items.NETHERITE_BLOCK) == 0 && !again.getCommandTags().contains(STASH_TAG), "and nothing of the session");
         context.assertTrue(ZoneBubbles.ofPlayer(again) == null, "it is of no session");
-        remove(context, again);
+        TestPlayers.remove(context, again);
         done(context);
     }
 
@@ -442,7 +412,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             bubble.end();
             context.assertTrue(count(respawned[0], Items.DIAMOND) == 3 && count(respawned[0], Items.NETHERITE_BLOCK) == 0, "it gets what it owns back");
             context.assertTrue(itemsIn(context, zone(context)).isEmpty(), "what it dropped went with the session");
-            remove(context, respawned[0]);
+            TestPlayers.remove(context, respawned[0]);
             done(context);
         });
     }
@@ -468,8 +438,8 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             Vec3d in = context.getAbsolute(new Vec3d(2.5, 1, 2.5));
             context.assertTrue(!outsider.teleport(world, in.x, in.y, in.z, Set.of(), 0, 0) && !inZone(context, outsider), "nobody else is teleported in");
             // walking (or anything else moving it): sent back
-            move(context, inside, 6.5, 1, 2.5);
-            move(context, outsider, 2.5, 1, 2.5);
+            TestPlayers.place(context, inside, 6.5, 1, 2.5);
+            TestPlayers.place(context, outsider, 2.5, 1, 2.5);
         });
         later(context, 4, () -> {
             context.assertTrue(inZone(context, inside), "a participant out of the zone is put back in");
@@ -484,13 +454,13 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             context.assertTrue(inside.dropItem(new ItemStack(Items.NETHERITE_BLOCK), false, true) == null, "out of its zone, what it drops is destroyed");
             context.assertTrue(!inside.interactionManager.tryBreakBlock(context.getAbsolutePos(at(6, 1, 2))), "out of its zone, it breaks nothing");
             context.assertTrue(!inside.interactionManager.tryBreakBlock(context.getAbsolutePos(at(3, 1, 3))), "not even in the zone");
-            move(context, inside, 2.5, 1, 2.5);
+            TestPlayers.place(context, inside, 2.5, 1, 2.5);
         });
         later(context, 9, () -> {
             context.assertTrue(inside.interactionManager.tryBreakBlock(context.getAbsolutePos(at(3, 1, 3))), "back in, it plays again");
             bubble.end();
             context.expectBlock(Blocks.DIRT, at(3, 1, 3));
-            remove(context, inside, outsider);
+            TestPlayers.remove(context, inside, outsider);
             done(context);
         });
     }
@@ -547,7 +517,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
 
         bubble.end();
         context.expectBlock(Blocks.DIRT, in);
-        remove(context, participant, outsider, spectator);
+        TestPlayers.remove(context, participant, outsider, spectator);
         done(context);
     }
 
@@ -820,7 +790,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
 
         bubble.end();
         context.expectBlock(Blocks.DRAGON_EGG, at(2, 2, 3));
-        remove(context, player);
+        TestPlayers.remove(context, player);
         done(context);
     }
 
@@ -974,7 +944,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             config.miniGameBubbleRestorePerTick = perTick;
             context.assertTrue(bubble.state() == ZoneBubble.State.ENDED, "done after a few ticks");
             for (int x = 1; x <= 4; x++) for (int y = 1; y <= 4; y++) for (int z = 1; z <= 4; z++) context.expectBlock(Blocks.AIR, at(x, y, z));
-            remove(context, player);
+            TestPlayers.remove(context, player);
             done(context);
         });
     }
@@ -999,7 +969,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             bubble.endNow();
             context.expectBlock(Blocks.GOLD_BLOCK, at(2, 1, 2));
             context.assertTrue(count(player, Items.DIAMOND) == 1, "nothing happened");
-            remove(context, player);
+            TestPlayers.remove(context, player);
         } finally {
             config.miniGameBubble = true;
         }
@@ -1063,7 +1033,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         context.setBlockState(at(2, 1, 2), Blocks.EMERALD_BLOCK);
         ZoneBubbles.recover(server);
         context.expectBlock(Blocks.EMERALD_BLOCK, at(2, 1, 2));
-        remove(context, saved, rolledBack);
+        TestPlayers.remove(context, saved, rolledBack);
         done(context);
     }
 
@@ -1082,7 +1052,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         context.expectBlock(Blocks.STONE, at(2, 1, 2));
         context.expectBlock(Blocks.AIR, at(3, 1, 3));
         context.assertTrue(count(player, Items.DIAMOND) == 1 && !player.getCommandTags().contains(STASH_TAG), "the inventory is back");
-        remove(context, player);
+        TestPlayers.remove(context, player);
         done(context);
     }
 

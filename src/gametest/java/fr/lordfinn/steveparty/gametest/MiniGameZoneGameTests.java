@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import java.util.Map;
 import java.util.HashMap;
@@ -44,7 +45,6 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler.State;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
@@ -54,10 +54,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
@@ -162,40 +159,20 @@ public class MiniGameZoneGameTests implements FabricGameTest {
 
     /** A connected survival player with a name of its own, standing at a relative position. */
     private static ServerPlayerEntity player(TestContext context, String name, double x, double y, double z) {
-        ServerWorld world = context.getWorld();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "a" + SERIAL.incrementAndGet() + name);
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions());
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        player.changeGameMode(GameMode.SURVIVAL);
-        player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-        return player;
+        return TestPlayers.joined(context, "a", name, GameMode.SURVIVAL, x, y, z);
     }
 
     /** The players other tests left around are sent away: they would be recruited like anyone near a pipe. */
     private static void alone(TestContext context, ServerPlayerEntity... mine) {
-        List<ServerPlayerEntity> own = List.of(mine);
-        Vec3d center = context.getAbsolute(new Vec3d(4, 2, 4));
-        for (ServerPlayerEntity other : new ArrayList<>(context.getWorld().getServer().getPlayerManager().getPlayerList())) {
-            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) TestPlayers.remove(context, other);
-        }
+        TestPlayers.alone(context, new Vec3d(4, 2, 4), 40, mine);
     }
 
     private static void cleanUp(TestContext context, UUID page, ServerPlayerEntity... players) {
         MiniGameTest.stop(page);
-        if (context.getBlockState(PARTY).isOf(ModBlocks.PARTY_CONTROLLER)) context.removeBlock(PARTY);
+        TestCleanup.removeIf(context, PARTY, ModBlocks.PARTY_CONTROLLER);
         for (ZoneBubble left : ZoneBubbles.all()) left.endNow();
-        if (context.getBlockState(HOME).isOf(ModBlocks.MINI_GAME_CONTROLLER)) context.removeBlock(HOME);
-        for (ServerPlayerEntity player : players) {
-            if (player.hasVehicle()) player.stopRiding();
-            MiniGamePipes.leaveParty(player.getUuid());
-            if (context.getWorld().getServer().getPlayerManager().getPlayer(player.getUuid()) != null)
-                TestPlayers.remove(context, player);
-        }
+        TestCleanup.removeIf(context, HOME, ModBlocks.MINI_GAME_CONTROLLER);
+        TestPlayers.leaveMiniGamesIfOnline(context, players);
     }
 
     /** A party whose mini-game step, on {@code pageId}, is at its countdown with {@code participants}. */

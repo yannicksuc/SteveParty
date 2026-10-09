@@ -92,10 +92,6 @@ public class GameplayRulesGameTests implements FabricGameTest {
         return player;
     }
 
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
-    }
-
     private static void assertVillagerFall(TestContext context, Block below, GameMode gameMode, float fallDistance, boolean shouldBreak) {
         ServerPlayerEntity player = fallOnVillager(context, below, gameMode, fallDistance);
         context.waitAndRun(3, () -> {
@@ -108,7 +104,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
                     context.expectBlock(below, VILLAGER_POS.down());
                 }
             } finally {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
             }
             context.complete();
         });
@@ -163,7 +159,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
             token.steveparty$setTokenOwner(player);
             context.assertTrue(TokenizerWandItem.canControlToken(player, new ItemStack(ModItems.TOKENIZER_WAND), pig), "own token allowed");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -201,7 +197,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
             context.assertEquals(player.getMainHandStack().getCount(), 64 - attempts, "not used on a tamed Mula");
             context.assertTrue(mula.isSitting(), "the owner's click makes it sit");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -240,8 +236,8 @@ public class GameplayRulesGameTests implements FabricGameTest {
             context.assertTrue(mula.isSitting(), "owner makes it sit");
             context.assertEquals(owner.getMainHandStack().getCount(), 1, "the item is not consumed");
         } catch (RuntimeException e) {
-            disconnect(context, owner);
-            disconnect(context, stranger);
+            TestPlayers.remove(context, owner);
+            TestPlayers.remove(context, stranger);
             throw e;
         }
         double startX = mula.getX();
@@ -271,8 +267,8 @@ public class GameplayRulesGameTests implements FabricGameTest {
                 mula.interactMob(owner, Hand.MAIN_HAND);
                 context.assertTrue(!mula.isSitting(), "owner makes it stand (empty hand)");
             } finally {
-                disconnect(context, owner);
-                disconnect(context, stranger);
+                TestPlayers.remove(context, owner);
+                TestPlayers.remove(context, stranger);
             }
             context.complete();
         });

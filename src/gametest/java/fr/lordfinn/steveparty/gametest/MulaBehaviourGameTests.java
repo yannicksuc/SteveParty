@@ -19,10 +19,6 @@ import java.util.List;
 /** The Mula's behaviours: orbiting an idle owner, flock neighbour cache, curiosity distances, night altitude, shyness. */
 public class MulaBehaviourGameTests implements FabricGameTest {
 
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        TestPlayers.remove(context, player);
-    }
-
     /** A tamed Mula starts circling its owner after the owner has stood still for a few seconds. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void orbitStartsWhenTheOwnerStandsStill(TestContext context) {
@@ -37,7 +33,7 @@ public class MulaBehaviourGameTests implements FabricGameTest {
                 context.assertTrue(mula.getMulaBrain().orbiting, "orbits its still owner (still for "
                         + mula.getMulaBrain().ownerStillTicks() + " ticks)");
             } finally {
-                disconnect(context, owner);
+                TestPlayers.remove(context, owner);
             }
             context.complete();
         });
@@ -68,7 +64,7 @@ public class MulaBehaviourGameTests implements FabricGameTest {
                 }
             }
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -175,7 +171,7 @@ public class MulaBehaviourGameTests implements FabricGameTest {
             context.assertTrue(ownerToTarget.x * threatToOwner.x + ownerToTarget.z * threatToOwner.z > 0,
                     "hides on the far side of its owner: " + behind);
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
