@@ -1096,7 +1096,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE);
         BlockState first = context.getBlockState(BASE.up());
         context.assertTrue(first.get(GoalPoleBlock.FLAG) && first.get(GoalPoleBlock.TOP), "a new pole has its flag at the top");
-        context.assertTrue(first.get(GoalPoleBlock.FACING) == Direction.SOUTH, "facing the player, got " + first.get(GoalPoleBlock.FACING));
+        context.assertTrue(first.get(GoalPoleBlock.FACING) == Direction.SOUTH.rotateYClockwise(), "facing the player, got " + first.get(GoalPoleBlock.FACING));
         context.assertTrue(poleEntity(context, BASE.up()).getFlagColor() == FlagItem.NO_COLOR, "the classic red flag");
         context.assertTrue(GoalPoleBlock.showsGoal(first), "the goal shows above it");
 
@@ -1112,10 +1112,11 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.assertTrue(world.getBlockState(low).onUse(world, player,
                 new BlockHitResult(Vec3d.ofCenter(low).add(0, 0, 0.1), Direction.SOUTH, low, false)).isAccepted(), "dyed");
         player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
-        BlockHitResult east = new BlockHitResult(Vec3d.ofCenter(low).add(0.1, 0, 0), Direction.EAST, low, false);
-        context.assertTrue(world.getBlockState(low).onUse(world, player, east).isAccepted(), "turned");
+        BlockHitResult west = new BlockHitResult(Vec3d.ofCenter(low).add(-0.1, 0, 0), Direction.WEST, low, false);
+        context.assertTrue(world.getBlockState(low).onUse(world, player, west).isAccepted(), "turned");
         Direction turned = context.getBlockState(BASE.up(3)).get(GoalPoleBlock.FACING);
-        context.assertTrue(turned == GoalPoleBlock.flagFacing(east, player) && turned != Direction.SOUTH, "turned towards the east, got " + turned);
+        context.assertTrue(turned == GoalPoleBlock.flagFacing(west, player) && turned != first.get(GoalPoleBlock.FACING),
+                "turned towards the west, got " + turned);
         GoalPoleBlockEntity top = poleEntity(context, BASE.up(3));
         context.assertTrue(top.getFlagColor() == FlagItem.dyeColor(DyeColor.LIME), "lime");
 
