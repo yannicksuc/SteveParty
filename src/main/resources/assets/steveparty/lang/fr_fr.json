@@ -831,6 +831,7 @@
   "block.steveparty.trading_stall": "Étal du marchand",
   "block.steveparty.goal_pole_base": "Socle de mât d'arrivée",
   "block.steveparty.goal_pole": "Mât d'arrivée",
+  "block.steveparty.goal_pole.tooltip.flagless": "Sans drapeau",
   "block.steveparty.goal_pole.tooltip.goal": "son objectif",
   "block.steveparty.goal_pole.tooltip.turn": "main vide sur une face : orienter le drapeau",
   "block.steveparty.goal_pole.tooltip.shears": "aux cisailles : retirer le drapeau",
