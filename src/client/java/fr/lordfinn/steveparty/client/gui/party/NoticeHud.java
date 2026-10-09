@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.gui.party;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import fr.lordfinn.steveparty.utils.Easing;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
@@ -24,8 +25,8 @@ final class NoticeHud {
     private static final int MAX_TEXT = 260;
     private static final float CROSSFADE_TICKS = 6;
     private static final float BADGE_POP_TICKS = 7;
-    private static final HudPaint.Ramp GREEN = HudPaint.Ramp.of(0x0e3a12, 0xc6f5ae, 0x6ccb52, 0x45a03a);
-    private static final HudPaint.Ramp RED = HudPaint.Ramp.of(0x4a0808, 0xffb7ae, 0xe8413c, 0xb02e26);
+    private static final Ramp GREEN = Ramp.of(0x0e3a12, 0xc6f5ae, 0x6ccb52, 0x45a03a);
+    private static final Ramp RED = Ramp.of(0x4a0808, 0xffb7ae, 0xe8413c, 0xb02e26);
 
     /** A notice, laid out. */
     private static final class Line {
@@ -132,7 +133,7 @@ final class NoticeHud {
         HudDraw.text(context, line.text, x + PAD + 17, y + PAD + 4, HudPaint.TEXT_DARK, alpha);
         int cx = x + line.plateWidth + GAP + 1;
         if (line.badge != null) {
-            HudPaint.Ramp ramp = line.warn ? RED : HudPaint.GOLD;
+            Ramp ramp = line.warn ? RED : HudPaint.GOLD;
             MatrixStack matrices = context.getMatrices();
             float pop = line == this.line ? (float) ((now - badgeAt) / BADGE_POP_TICKS) : 1;
             float scale = pop < 1 ? 1 + 0.4f * (1 - Easing.easeOutBack(pop)) : 1;

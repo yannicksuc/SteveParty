@@ -9,6 +9,8 @@ import fr.lordfinn.steveparty.hud.TurnStripLayout.Kind;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Type;
 import fr.lordfinn.steveparty.utils.Argb;
 import fr.lordfinn.steveparty.utils.Easing;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
+import fr.lordfinn.steveparty.client.gui.paint.PaintedTextures.Tex;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.DefaultSkinHelper;
@@ -255,7 +257,7 @@ final class TurnBarHud {
 
     private void player(DrawContext context, El el, int x, int y, float alpha) {
         PartyHudModel.Player player = el.step.player() >= 0 && el.step.player() < model.players.size() ? model.players.get(el.step.player()) : null;
-        HudPaint.Ramp ramp = player != null ? player.ramp : HudPaint.NEUTRAL;
+        Ramp ramp = player != null ? player.ramp : HudPaint.NEUTRAL;
         HudPaint.draw(context, HudPaint.shape(Form.CHEVRON, el.w, el.h, ramp, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), x, y, alpha);
         if (el.halo) HudPaint.draw(context, HudPaint.halo(Form.CHEVRON, el.w, el.h), x, y, alpha);
         int d = el.h / 4, size = TurnStripLayout.FRAME[el.level];
@@ -286,7 +288,7 @@ final class TurnBarHud {
         context.drawText(font, initial, x + (8 - font.getWidth(initial)) / 2 + 1, y, Argb.fade(0xFFFFFFFF, alpha), false);
     }
 
-    private static HudPaint.Ramp kindRamp(Kind kind) {
+    private static Ramp kindRamp(Kind kind) {
         return switch (kind) {
             case MINI_GAME -> HudPaint.MINI_GAME;
             case EVENT -> HudPaint.EVENT;
@@ -294,7 +296,7 @@ final class TurnBarHud {
         };
     }
 
-    private static HudPaint.Tex icon(Kind kind) {
+    private static Tex icon(Kind kind) {
         return switch (kind) {
             case MINI_GAME -> HudPaint.gamepad();
             case EVENT -> HudPaint.bell();
@@ -306,15 +308,15 @@ final class TurnBarHud {
 
     /** A step's round medallion: a ring in its colour, white inside, its icon. */
     private static void stepDisc(DrawContext context, Kind kind, int d, int x, int y, float alpha) {
-        HudPaint.Ramp ramp = kindRamp(kind);
+        Ramp ramp = kindRamp(kind);
         HudPaint.draw(context, HudPaint.shape(Form.PILL, d, d, ramp, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), x, y, alpha);
         HudPaint.draw(context, HudPaint.shape(Form.PILL, d - 4, d - 4, HudPaint.white(ramp.shadow()), 0), x + 2, y + 2, alpha);
-        HudPaint.Tex icon = icon(kind);
+        Tex icon = icon(kind);
         HudPaint.draw(context, icon, x + PAD + (d - icon.width()) / 2, y + PAD + (d - icon.height()) / 2, alpha);
     }
 
     private static void bigStep(DrawContext context, El el, int x, int y, float alpha) {
-        HudPaint.Ramp ramp = kindRamp(el.step.kind());
+        Ramp ramp = kindRamp(el.step.kind());
         HudPaint.draw(context, HudPaint.shape(Form.PILL, el.w, el.h, ramp, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), x, y, alpha);
         HudPaint.draw(context, HudPaint.halo(Form.PILL, el.w, el.h), x, y, alpha);
         stepDisc(context, el.step.kind(), TurnStripLayout.BIG_MEDAL, x + 2, y + 3, alpha);

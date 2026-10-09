@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
-import fr.lordfinn.steveparty.client.gui.ConsolePaint.Ramp;
+import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
