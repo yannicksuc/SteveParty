@@ -118,7 +118,7 @@
       "fr.lordfinn.steveparty.gametest.TrapSetupGameTests",
       "fr.lordfinn.steveparty.gametest.StarWhistleGameTests",
       "fr.lordfinn.steveparty.gametest.FrousseuxGameTests",
-      "fr.lordfinn.steveparty.gametest.FumaroleGameTests"
+      "fr.lordfinn.steveparty.gametest.TrichaudronGameTests"
     ]
   },
   "depends": {

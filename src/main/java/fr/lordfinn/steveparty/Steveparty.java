@@ -34,8 +34,8 @@ import fr.lordfinn.steveparty.entities.custom.MulaLift;
 import fr.lordfinn.steveparty.entities.custom.MulaRebirths;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartSpawns;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxSpawns;
-import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEvents;
-import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleSpawns;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEvents;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
@@ -173,8 +173,8 @@ public class Steveparty implements ModInitializer {
         GlandouilleSpawns.initialize();
         GlandouilleTowers.initialize();
         FrousseuxSpawns.initialize();
-        FumaroleSpawns.initialize();
-        FumaroleEvents.initialize();
+        TrichaudronSpawns.initialize();
+        TrichaudronEvents.initialize();
         BoomcartSpawns.initialize();
         PetTeleports.initialize();
         // the Frousseux candle holder burns as planks do: fire catches it and burns it away, the Frousseux gone with it

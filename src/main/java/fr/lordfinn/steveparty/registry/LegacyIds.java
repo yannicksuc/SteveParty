@@ -37,5 +37,8 @@ public final class LegacyIds {
         RegistryAliases.add(id("super_golden_minigame_pipe"), id("iron_minigame_pipe"));
         RegistryAliases.add(id("mega_golden_minigame_pipe"), id("golden_minigame_pipe"));
         RegistryAliases.add(id("golden_pipe"), id("minigame_pipe"));
+        // The Trichaudron (Tricauldron) was the Fumarole: worlds saved before keep their beasts and spawn eggs
+        RegistryAliases.add(id("fumarole"), id("trichaudron"));
+        RegistryAliases.add(id("fumarole_spawn_egg"), id("trichaudron_spawn_egg"));
     }
 }

@@ -10,7 +10,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.SimpleParticleType;
 
 /**
- * The Fumarole's steam (the sprites of vanilla 26.2's geyser, 8 frames each, played over the particle's life): a puff
+ * The Trichaudron's steam (the sprites of vanilla 26.2's geyser, 8 frames each, played over the particle's life): a puff
  * that swells, slows down, rises a little and fades. One class, three kinds:
  * <ul>
  *     <li>{@link #plume}: the blast's thick plume, big and quick, keeping most of its speed;</li>

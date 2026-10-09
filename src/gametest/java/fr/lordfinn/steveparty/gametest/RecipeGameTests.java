@@ -90,7 +90,7 @@ public class RecipeGameTests implements FabricGameTest {
             Map.entry("mossy_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("frosty_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("boomcart_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
-            Map.entry("fumarole_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            Map.entry("trichaudron_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("frousseux_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("mistigri_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("frousseux_candle_holder", "a tamed Frousseux put to sleep by its owner"),

@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.entities.custom.fumarole;
+package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
 import java.util.Arrays;
 import net.minecraft.util.math.MathHelper;
@@ -6,7 +6,7 @@ import net.minecraft.util.math.random.Random;
 
 /**
  * Its personality, client side only (nothing synced but the triggers sent as entity statuses): little moods of its
- * heads and body, laid over its pose by FumaroleModel.
+ * heads and body, laid over its pose by TrichaudronModel.
  * <ul>
  *     <li>Bored (no enemy, nobody riding, not pumping): each head looks around on its own ({@link Mood#LOOK}),
  *     yawns a puff of steam now and then ({@link Mood#YAWN}).</li>
@@ -18,24 +18,24 @@ import net.minecraft.util.math.random.Random;
  *     ({@link #slosh}).</li>
  * </ul>
  * Outputs, per head: a wanted yaw (from the body) and pitch (Minecraft pitch of its nozzle), or NaN to leave it, and a
- * roll (radians); for the body a roll, for the shell a slosh roll. Everything is slow and heavy: FumaroleEntity eases
- * the heads there at {@link FumaroleEntity#HEAD_EASE} a tick, and the wobbles here last seconds, not blinks.
+ * roll (radians); for the body a roll, for the shell a slosh roll. Everything is slow and heavy: TrichaudronEntity eases
+ * the heads there at {@link TrichaudronEntity#HEAD_EASE} a tick, and the wobbles here last seconds, not blinks.
  */
-public final class FumaroleMoods {
+public final class TrichaudronMoods {
     public enum Mood { NONE, LOOK, YAWN, SNIFF, WIGGLE, SULK, FIDGET }
 
-    private static final int HEADS = FumaroleEntity.HEADS.length;
+    private static final int HEADS = TrichaudronEntity.HEADS.length;
     private final Mood[] mood = new Mood[HEADS];
     private final int[] left = new int[HEADS], length = new int[HEADS];
     private final float[] lookYaw = new float[HEADS], lookPitch = new float[HEADS];
     public final float[] yaw = new float[HEADS], pitch = new float[HEADS], roll = new float[HEADS];
     public float bodyRoll, shellRoll;
     private int shake, slosh;
-    /** Set for one tick when a head yawns its puff or the tank burps (FumaroleEntity spawns the steam). */
+    /** Set for one tick when a head yawns its puff or the tank burps (TrichaudronEntity spawns the steam). */
     public final boolean[] puff = new boolean[HEADS];
     public boolean burp;
 
-    public FumaroleMoods() {
+    public TrichaudronMoods() {
         Arrays.fill(mood, Mood.NONE);
     }
 
@@ -68,7 +68,7 @@ public final class FumaroleMoods {
             if (mood[h] != Mood.NONE) continue;
             if (bored) {
                 if (random.nextInt(400) == 0) {
-                    lookYaw[h] = FumaroleEntity.HEADS[h].restYaw() + random.nextFloat() * 80 - 40;
+                    lookYaw[h] = TrichaudronEntity.HEADS[h].restYaw() + random.nextFloat() * 80 - 40;
                     lookPitch[h] = random.nextFloat() * 36 - 18;
                     trigger(h, Mood.LOOK, 100 + random.nextInt(80));
                 } else if (random.nextInt(1400) == 0) {
@@ -87,7 +87,7 @@ public final class FumaroleMoods {
     }
 
     private void apply(int h, int age) {
-        FumaroleHead head = FumaroleEntity.HEADS[h];
+        TrichaudronHead head = TrichaudronEntity.HEADS[h];
         yaw[h] = Float.NaN;
         pitch[h] = Float.NaN;
         roll[h] = 0;

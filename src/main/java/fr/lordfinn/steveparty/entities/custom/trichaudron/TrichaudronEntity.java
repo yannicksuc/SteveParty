@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.entities.custom.fumarole;
+package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.mixin.LivingEntityJumpingAccessor;
@@ -91,12 +91,12 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * The Fumarole (Fumerolle): a huge, slow, three-headed tortoise of the Nether carrying a tank of lava on its back
+ * The Trichaudron (EN: Tricauldron): a huge, slow, three-headed tortoise of the Nether carrying a tank of lava on its back
  * (docs: SteveParty-Workshop/docs/tortue-du-nether.md).
  * <ul>
  *     <li><b>Its tank</b> ({@link #getTank()}): 0 to {@link #TANK_MAX} buckets, synced, saved; born at least half full
  *     ({@link #SPAWN_TANK_MIN}). Only lava goes in: a lava bucket pours one in, an empty bucket takes one out.</li>
- *     <li><b>Pumping</b> ({@link FumaroleGoals.Pump}): below a full tank it walks (or swims) to lava, dips its centre
+ *     <li><b>Pumping</b> ({@link TrichaudronGoals.Pump}): below a full tank it walks (or swims) to lava, dips its centre
  *     head and drinks: a bucket a gulp, the lava source left as it was.</li>
  *     <li><b>Taming</b>: empty its tank with buckets and it becomes tamable ({@link #isTamable}). Each head trusts
  *     whoever fed it a magma cream ({@link #feedHead}): it never shoots them again, whatever the others do. The
@@ -105,30 +105,30 @@ import java.util.UUID;
  *     round and sprays you off ({@link #sprayOff}): thrown high and back, a little fire unless fire-proof (a raised
  *     shield toward the head spares you that, not the fall off).</li>
  *     <li><b>Tamed</b>: its owner opens its saddle slot (sneaking, or with an empty hand while it has no saddle);
- *     saddled, up to three players ride it on the tank's front rim ({@link FumaroleRiding}).</li>
+ *     saddled, up to three players ride it on the tank's front rim ({@link TrichaudronRiding}).</li>
  *     <li><b>Its heads</b> ({@link #HEADS}): three necks, each a turret of its own: its own aim (synced:
  *     {@link #getHeadTarget}) and its own vent ({@link #getVent}). Wild, one blasts at a time, the heads taking turns
- *     ({@link FumaroleGoals.Blast}); ridden, each rider fires his own head.</li>
- *     <li><b>The thermal blast</b>: see {@link FumaroleBlast}.</li>
+ *     ({@link TrichaudronGoals.Blast}); ridden, each rider fires his own head.</li>
+ *     <li><b>The thermal blast</b>: see {@link TrichaudronBlast}.</li>
  *     <li><b>Neutral</b>: it leaves players alone until one provokes it ({@link #provoke}): hits it (projectiles too),
  *     takes lava from its tank while it is wild, or climbs on while it is wild. From then on it fights that player,
  *     and only him, for {@link #ANGER_TICKS} ticks, and calms down once that is over and he keeps
  *     {@link #CALM_DISTANCE} blocks from its shell. Its owner and players all its heads trust never provoke it. Mobs
- *     that hurt it are fought back (FumaroleGoals.Revenge).</li>
+ *     that hurt it are fought back (TrichaudronGoals.Revenge).</li>
  *     <li><b>A hunter in the Nether</b>: wild and without piglins on, now and then it hunts a mob of
- *     {@code #steveparty:fumarole_prey} close by ({@link #findPrey}), never a player.</li>
- *     <li><b>Piglin riders</b>: near a bastion some are born with 1 to 3 piglins sat on its rim (FumaroleSpawns).
+ *     {@code #steveparty:trichaudron_prey} close by ({@link #findPrey}), never a player.</li>
+ *     <li><b>Piglin riders</b>: near a bastion some are born with 1 to 3 piglins sat on its rim (TrichaudronSpawns).
  *     Ridden by piglins it is hostile to the players its piglins are hostile to (a piglin spares a player in gold, a
  *     brute nobody), and the more piglins, the faster it walks ({@link #PIGLIN_SPEED}), the farther it spots players
- *     ({@link #PIGLIN_RANGE}) and the more often it shoots (FumaroleGoals.Blast#cooldownFactor); the piglins drive it
+ *     ({@link #PIGLIN_RANGE}) and the more often it shoots (TrichaudronGoals.Blast#cooldownFactor); the piglins drive it
  *     toward its target. Once they are off, it is neutral again (unless provoked).</li>
- *     <li><b>In lava</b> it swims, floating with its tank out ({@link FumaroleRiding#SWIM_DEPTH}); it is born on the
+ *     <li><b>In lava</b> it swims, floating with its tank out ({@link TrichaudronRiding#SWIM_DEPTH}); it is born on the
  *     shores of the Nether's lava lakes or in them.</li>
  *     <li><b>Its death</b>: its lava spills (with mobGriefing, up to {@link #SPILL_MAX} sources), it drops its saddle and
  *     0 to 2 magma cream.</li>
  * </ul>
  */
-public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
+public class TrichaudronEntity extends PathAwareEntity implements GeoEntity {
     /** Its shell and legs: 52 px wide, the tank's rim 61 px high. The necks reach far beyond (not in the box). */
     public static final float WIDTH = 3.2f, HEIGHT = 3.8125f, EYE_HEIGHT = 2.76f;
     public static final int TANK_MAX = 27, SPAWN_TANK_MIN = 14, SPAWN_TANK_MAX = 20;
@@ -140,10 +140,10 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
      * Its heads, centre first, and where each rests: measured on the v14 export (pose_s): the centre neck 11 segments
      * long, the side ones 8, splayed 30 degrees out from 13 px either side.
      */
-    public static final FumaroleHead[] HEADS = {
-            new FumaroleHead(0, "_c", 0.0, 1.125, 8.31, 2.76, 0, 20, 4.11, 4.33, 0.0),
-            new FumaroleHead(1, "_l", -0.8125, 1.125, 7.38, 2.13, -30, 20, 3.17, 3.66, -0.8),
-            new FumaroleHead(2, "_r", 0.8125, 1.125, 7.76, 2.89, 30, 5, 3.34, 3.38, 0.8),
+    public static final TrichaudronHead[] HEADS = {
+            new TrichaudronHead(0, "_c", 0.0, 1.125, 8.31, 2.76, 0, 20, 4.11, 4.33, 0.0),
+            new TrichaudronHead(1, "_l", -0.8125, 1.125, 7.38, 2.13, -30, 20, 3.17, 3.66, -0.8),
+            new TrichaudronHead(2, "_r", 0.8125, 1.125, 7.76, 2.89, 30, 5, 3.34, 3.38, 0.8),
     };
     /** The head that dips into the lava to pump. */
     public static final int PUMP_HEAD = 0;
@@ -162,13 +162,13 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     public static final int ANGER_TICKS = 600;
     public static final double CALM_DISTANCE = 16.0;
     /** The prey it hunts (wild, no piglins on): within this range of its shell, one look every so often. */
-    public static final TagKey<EntityType<?>> PREY = TagKey.of(RegistryKeys.ENTITY_TYPE, Steveparty.id("fumarole_prey"));
+    public static final TagKey<EntityType<?>> PREY = TagKey.of(RegistryKeys.ENTITY_TYPE, Steveparty.id("trichaudron_prey"));
     public static final double HUNT_RANGE = 20.0;
     public static final int HUNT_PERIOD = 20, HUNT_CHANCE = 4;
     /** With 0 to 3 piglins on: its walking speed bonus (share of its base), how far (from its shell) it spots players. */
     public static final double[] PIGLIN_SPEED = {0, 0.3, 0.6, 0.9};
     public static final double[] PIGLIN_RANGE = {0, 16, 24, 32};
-    private static final Identifier PIGLIN_SPEED_ID = Steveparty.id("fumarole_piglin_riders");
+    private static final Identifier PIGLIN_SPEED_ID = Steveparty.id("trichaudron_piglin_riders");
     /** Lava sources spilt on death: one per this many buckets, at most {@link #SPILL_MAX}. */
     public static final int SPILL_PER = 9, SPILL_MAX = 3;
     /** An untamed one throws its rider off after this many ticks (and up to this many more), fidgeting before. */
@@ -184,18 +184,18 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     /** The scalding steam's damage type (data/steveparty/damage_type/thermal_steam.json). */
     public static final RegistryKey<DamageType> THERMAL_STEAM = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Steveparty.id("thermal_steam"));
 
-    private static final TrackedData<Integer> TANK = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER);
-    private static final TrackedData<Integer> VENTS = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER);
-    private static final TrackedData<Boolean> PUMPING = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Integer> TANK = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Integer> VENTS = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Boolean> PUMPING = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** Bits: tamed, tamable, saddled, climbing. */
-    private static final TrackedData<Byte> FLAGS = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.BYTE);
-    private static final TrackedData<Integer> CHARGE = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Byte> FLAGS = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.BYTE);
+    private static final TrackedData<Integer> CHARGE = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final int TAMED = 1, TAMABLE = 2, SADDLED = 4, CLIMBING = 8;
     private static final List<TrackedData<Integer>> HEAD_TARGETS = new ArrayList<>();
 
     static {
-        for (FumaroleHead ignored : HEADS) {
-            HEAD_TARGETS.add(DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER));
+        for (TrichaudronHead ignored : HEADS) {
+            HEAD_TARGETS.add(DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.INTEGER));
         }
     }
 
@@ -209,7 +209,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     public static final String MAIN_CONTROLLER = "main", ACTION_CONTROLLER = "action";
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
-    final FumarolePumping pumping = new FumarolePumping();
+    final TrichaudronPumping pumping = new TrichaudronPumping();
     /** Its saddle slot. */
     public final SimpleInventory inventory = new SimpleInventory(1);
     /** The players each head trusts (fed it a magma cream). */
@@ -245,10 +245,10 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     public final float[] clientYaw = new float[HEADS.length], clientPitch = new float[HEADS.length];
     public final float[] prevClientYaw = new float[HEADS.length], prevClientPitch = new float[HEADS.length];
     /** Client only: its personality. */
-    public final FumaroleMoods moods = new FumaroleMoods();
+    public final TrichaudronMoods moods = new TrichaudronMoods();
     private boolean wasSwimming;
 
-    public FumaroleEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
+    public TrichaudronEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
         this.experiencePoints = 15;
         this.moveControl = new HeavyMoveControl(this);
@@ -278,13 +278,13 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     protected void initGoals() {
-        this.goalSelector.add(1, new FumaroleGoals.Blast(this));
-        this.goalSelector.add(2, new FumaroleGoals.Pump(this));
-        this.goalSelector.add(3, new FumaroleGoals.Approach(this));
+        this.goalSelector.add(1, new TrichaudronGoals.Blast(this));
+        this.goalSelector.add(2, new TrichaudronGoals.Pump(this));
+        this.goalSelector.add(3, new TrichaudronGoals.Approach(this));
         this.goalSelector.add(5, new WanderAroundGoal(this, 1.0, 160));
         this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 12.0f));
         this.goalSelector.add(7, new LookAroundGoal(this));
-        this.targetSelector.add(1, new FumaroleGoals.Revenge(this));
+        this.targetSelector.add(1, new TrichaudronGoals.Revenge(this));
     }
 
     @Override
@@ -304,7 +304,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         setTank(SPAWN_TANK_MIN + world.getRandom().nextInt(SPAWN_TANK_MAX - SPAWN_TANK_MIN + 1));
         EntityData data = super.initialize(world, difficulty, spawnReason, entityData);
         if (spawnReason == SpawnReason.NATURAL || spawnReason == SpawnReason.CHUNK_GENERATION) {
-            int piglins = FumaroleSpawns.piglinRiders(world, getBlockPos(), world.getRandom());
+            int piglins = TrichaudronSpawns.piglinRiders(world, getBlockPos(), world.getRandom());
             if (piglins > 0) mountPiglins(world, difficulty, piglins);
         }
         return data;
@@ -408,7 +408,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     /** Whether it is swimming: deep in lava. */
     public boolean isSwimmingInLava() {
-        return isInLava() && getFluidHeight(FluidTags.LAVA) > FumaroleRiding.SWIM_MIN_DEPTH;
+        return isInLava() && getFluidHeight(FluidTags.LAVA) > TrichaudronRiding.SWIM_MIN_DEPTH;
     }
 
     // ---------------------------------------------------------------- pumping
@@ -420,9 +420,9 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         return horizontal >= PUMP_MIN && horizontal <= PUMP_MAX && dy >= -PUMP_DOWN && dy <= PUMP_UP;
     }
 
-    /** Whether it may drink from this lava now: tank not full, a lava source there, its pace (FumarolePumping). */
+    /** Whether it may drink from this lava now: tank not full, a lava source there, its pace (TrichaudronPumping). */
     public boolean canPump(BlockPos source) {
-        return getTank() < TANK_MAX && pumping.rateAllows(getWorld().getTime()) && FumarolePumping.isSource(getWorld(), source);
+        return getTank() < TANK_MAX && pumping.rateAllows(getWorld().getTime()) && TrichaudronPumping.isSource(getWorld(), source);
     }
 
     /** Drinks a bucket from this lava: the tank gains one, the source stays. False if it may not. */
@@ -430,7 +430,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         if (getWorld().isClient || !canPump(source)) return false;
         pumping.record(getWorld().getTime());
         setTank(getTank() + 1);
-        playSound(ModSounds.FUMAROLE_PUMP, 1.2f, 0.8f + random.nextFloat() * 0.2f);
+        playSound(ModSounds.TRICHAUDRON_PUMP, 1.2f, 0.8f + random.nextFloat() * 0.2f);
         if (getWorld() instanceof ServerWorld server) {
             Vec3d at = Vec3d.ofCenter(source);
             server.spawnParticles(ParticleTypes.LAVA, at.x, at.y + 0.5, at.z, 6, 0.4, 0.2, 0.4, 0.0);
@@ -457,7 +457,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
                 setTank(getTank() + 1);
                 player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.BUCKET)));
                 playSound(SoundEvents.ITEM_BUCKET_EMPTY_LAVA, 1.0f, 1.0f);
-                playSound(ModSounds.FUMAROLE_GURGLE, 0.8f, 1.0f);
+                playSound(ModSounds.TRICHAUDRON_GURGLE, 0.8f, 1.0f);
             }
             return ActionResult.success(client);
         }
@@ -493,7 +493,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         setTank(getTank() - 1);
         player.setStackInHand(hand, ItemUsage.exchangeStack(player.getStackInHand(hand), player, new ItemStack(Items.LAVA_BUCKET)));
         playSound(SoundEvents.ITEM_BUCKET_FILL_LAVA, 1.0f, 1.0f);
-        playSound(ModSounds.FUMAROLE_GURGLE, 0.8f, 1.0f);
+        playSound(ModSounds.TRICHAUDRON_GURGLE, 0.8f, 1.0f);
         if (getTank() == 0 && !isTamed() && !isTamable()) {
             setBit(TAMABLE, true);
             getWorld().sendEntityStatus(this, STATUS_TAMABLE);
@@ -573,12 +573,12 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
             @Override
             public Text getDisplayName() {
-                return FumaroleEntity.this.getDisplayName();
+                return TrichaudronEntity.this.getDisplayName();
             }
 
             @Override
             public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity opener) {
-                return new FumaroleScreenHandler(syncId, playerInventory, inventory, FumaroleEntity.this);
+                return new TrichaudronScreenHandler(syncId, playerInventory, inventory, TrichaudronEntity.this);
             }
         });
     }
@@ -598,7 +598,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     protected boolean canAddPassenger(Entity passenger) {
-        return getPassengerList().size() < FumaroleRiding.MAX_RIDERS;
+        return getPassengerList().size() < TrichaudronRiding.MAX_RIDERS;
     }
 
     /** Its riders, seat order (centre, left, right). */
@@ -619,7 +619,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     protected Vec3d getPassengerAttachmentPos(Entity passenger, EntityDimensions dimensions, float scaleFactor) {
         int index = Math.max(0, getPassengerList().indexOf(passenger));
-        return FumaroleRiding.seat(index, RIM_HEIGHT - lavaSink(1), RIM_FORWARD).rotateY(-getYaw() * MathHelper.RADIANS_PER_DEGREE);
+        return TrichaudronRiding.seat(index, RIM_HEIGHT - lavaSink(1), RIM_FORWARD).rotateY(-getYaw() * MathHelper.RADIANS_PER_DEGREE);
     }
 
     @Override
@@ -635,7 +635,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         updatePiglinSpeed();
     }
 
-    /** Its piglins ride, they don't drive: its own goals keep walking and aiming it (FumaroleGoals.Approach). */
+    /** Its piglins ride, they don't drive: its own goals keep walking and aiming it (TrichaudronGoals.Approach). */
     @Override
     public @Nullable LivingEntity getControllingPassenger() {
         return null;
@@ -680,7 +680,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
      * with it (spawnEntityAndPassengers).
      */
     public void mountPiglins(ServerWorldAccess world, LocalDifficulty difficulty, int count) {
-        for (int i = 0; i < count && getPassengerList().size() < FumaroleRiding.MAX_RIDERS; i++) {
+        for (int i = 0; i < count && getPassengerList().size() < TrichaudronRiding.MAX_RIDERS; i++) {
             EntityType<? extends AbstractPiglinEntity> type = random.nextInt(10) == 0 ? EntityType.PIGLIN_BRUTE : EntityType.PIGLIN;
             AbstractPiglinEntity piglin = type.create(world.toServerWorld());
             if (piglin == null) return;
@@ -706,14 +706,14 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         away = away.normalize();
         world.spawnParticles(ModParticles.THERMAL_PLUME, rider.getX(), rider.getY() + 0.5, rider.getZ(), 12, 0.5, 0.4, 0.5, 0.05);
         world.spawnParticles(ModParticles.THERMAL_POOF, from.x, from.y, from.z, 4, 0.3, 0.3, 0.3, 0.02);
-        playSound(ModSounds.FUMAROLE_PUFF, 2.0f, 0.7f);
+        playSound(ModSounds.TRICHAUDRON_PUFF, 2.0f, 0.7f);
         world.sendEntityStatus(this, (byte) (STATUS_SULK + head));
         if (rider instanceof LivingEntity living) {
-            if (FumaroleBlast.shields(living, rider.getPos().subtract(from).normalize())) {
+            if (TrichaudronBlast.shields(living, rider.getPos().subtract(from).normalize())) {
                 world.playSound(null, rider.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 0.8f);
                 return;
             }
-            if (!FumaroleBlast.fireProof(living)) living.setOnFireFor(THROW_FIRE_SECONDS);
+            if (!TrichaudronBlast.fireProof(living)) living.setOnFireFor(THROW_FIRE_SECONDS);
         }
         rider.setVelocity(away.x * THROW_BACK, THROW_UP, away.z * THROW_BACK);
         rider.velocityModified = true;
@@ -721,17 +721,17 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- the heads
 
-    public Vec3d nozzle(FumaroleHead head, float bodyYaw, float yaw) {
+    public Vec3d nozzle(TrichaudronHead head, float bodyYaw, float yaw) {
         return getPos().add(Vec3d.fromPolar(0, bodyYaw).multiply(head.base()))
                 .add(Vec3d.fromPolar(0, bodyYaw + 90).multiply(head.side()))
                 .add(Vec3d.fromPolar(0, yaw).multiply(head.reach()))
                 .add(0, head.up(), 0);
     }
 
-    /** Standing on the bottom of lava deep enough to cover its knees: {@link FumaroleRiding#SHALLOW_SINK}, else 0. */
+    /** Standing on the bottom of lava deep enough to cover its knees: {@link TrichaudronRiding#SHALLOW_SINK}, else 0. */
     private float sinkGoal() {
-        return isOnGround() && isInLava() && getFluidHeight(FluidTags.LAVA) > FumaroleRiding.SWIM_MIN_DEPTH
-                ? FumaroleRiding.SHALLOW_SINK : 0;
+        return isOnGround() && isInLava() && getFluidHeight(FluidTags.LAVA) > TrichaudronRiding.SWIM_MIN_DEPTH
+                ? TrichaudronRiding.SHALLOW_SINK : 0;
     }
 
     /** How much lower it is drawn, its riders sat (client: eased; server: as it stands). */
@@ -746,7 +746,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     /** Where a rider's reins hold a head: the top of its neck (client: as drawn). */
     public Vec3d neckTop(int head, float partialTick) {
-        FumaroleHead h = HEADS[head];
+        TrichaudronHead h = HEADS[head];
         float body = MathHelper.lerpAngleDegrees(partialTick, prevBodyYaw, bodyYaw);
         float yaw = body + MathHelper.lerp(partialTick, prevClientYaw[head], clientYaw[head]);
         Vec3d pos = getLerpedPos(partialTick).add(0, -lavaSink(partialTick), 0);
@@ -818,7 +818,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     }
 
     public boolean inRange(int head, Vec3d point) {
-        double range = getTank() > 0 ? FumaroleBlast.RANGE : FumaroleBlast.PUFF_RANGE;
+        double range = getTank() > 0 ? TrichaudronBlast.RANGE : TrichaudronBlast.PUFF_RANGE;
         return blastOrigin(head).squaredDistanceTo(point) <= range * range;
     }
 
@@ -832,14 +832,14 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         return !(target instanceof PlayerEntity player && trusts(head, player));
     }
 
-    /** One head fires at a target (wild): see {@link FumaroleBlast}. */
+    /** One head fires at a target (wild): see {@link TrichaudronBlast}. */
     public List<LivingEntity> blast(int head, Entity target) {
         return blastAt(head, aimPoint(target));
     }
 
     /** One head fires straight at a point (wild: the aim it locked, no homing). */
     public List<LivingEntity> blastAt(int head, Vec3d point) {
-        return FumaroleBlast.fire(this, head, blastOrigin(head), point);
+        return TrichaudronBlast.fire(this, head, blastOrigin(head), point);
     }
 
     /** A rider's click on his head: fires where he looks; in the air after a leap, grabs the wall instead. */
@@ -852,15 +852,15 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         }
         long now = getWorld().getTime();
         if (now < headReady[head]) return;
-        headReady[head] = now + FumaroleRiding.FIRE_COOLDOWN;
+        headReady[head] = now + TrichaudronRiding.FIRE_COOLDOWN;
         Vec3d eye = rider.getEyePos();
-        Vec3d end = eye.add(rider.getRotationVector().multiply(FumaroleBlast.RANGE));
+        Vec3d end = eye.add(rider.getRotationVector().multiply(TrichaudronBlast.RANGE));
         BlockHitResult hit = getWorld().raycast(new RaycastContext(eye, end, RaycastContext.ShapeType.COLLIDER,
                 RaycastContext.FluidHandling.NONE, rider));
         Vec3d aim = hit.getType() == HitResult.Type.MISS ? end : hit.getPos();
         aimHeadAt(head, aim, true);
         setVent(head, VENT_SPITTING);
-        FumaroleBlast.fire(this, head, blastOrigin(head), aim);
+        TrichaudronBlast.fire(this, head, blastOrigin(head), aim);
         ventIdleAt[head] = now + 10;
     }
 
@@ -870,15 +870,15 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     /** The thrusters: a leap for this charge, paid from the tank. False if it can't (no ground or lava, no lava left). */
     public boolean thrusterJump(int charge) {
-        if (charge < FumaroleRiding.CHARGE_MIN || getTank() <= 0 || !(standing() || isSwimmingInLava())) return false;
-        setTank(getTank() - FumaroleRiding.jumpCost(charge));
-        Vec3d leap = FumaroleRiding.jumpVelocity(charge, getYaw());
+        if (charge < TrichaudronRiding.CHARGE_MIN || getTank() <= 0 || !(standing() || isSwimmingInLava())) return false;
+        setTank(getTank() - TrichaudronRiding.jumpCost(charge));
+        Vec3d leap = TrichaudronRiding.jumpVelocity(charge, getYaw());
         setVelocity(leap);
         velocityDirty = true;
         velocityModified = true;
         airborneJump = true;
         jumpFromY = getY();
-        playSound(ModSounds.FUMAROLE_BLAST, 3.0f, 0.6f);
+        playSound(ModSounds.TRICHAUDRON_BLAST, 3.0f, 0.6f);
         if (getWorld() instanceof ServerWorld world) {
             for (int head = 0; head < HEADS.length; head++) {
                 Vec3d at = nozzle(head);
@@ -903,7 +903,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     /** In the air after a leap: the heads grab the wall ahead and pull it onto the ledge, if there is one. */
     public boolean tryGrab() {
-        Vec3d ledge = FumaroleRiding.findLedge(getWorld(), getPos(), getYaw(), WIDTH / 2, HEIGHT, jumpFromY);
+        Vec3d ledge = TrichaudronRiding.findLedge(getWorld(), getPos(), getYaw(), WIDTH / 2, HEIGHT, jumpFromY);
         if (ledge == null) return false;
         climbTo = ledge;
         climbTicks = 0;
@@ -922,18 +922,18 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         if (climbTo == null) return;
         climbTicks++;
         if (getY() < climbTo.y + 0.05) {
-            setVelocity(0, FumaroleRiding.CLIMB_SPEED, 0);
+            setVelocity(0, TrichaudronRiding.CLIMB_SPEED, 0);
         } else {
             Vec3d over = new Vec3d(climbTo.x - getX(), 0, climbTo.z - getZ());
             if (over.horizontalLength() < 0.3) {
                 endClimb();
                 return;
             }
-            Vec3d step = over.normalize().multiply(Math.min(FumaroleRiding.CLIMB_OVER_SPEED, over.horizontalLength()));
+            Vec3d step = over.normalize().multiply(Math.min(TrichaudronRiding.CLIMB_OVER_SPEED, over.horizontalLength()));
             setVelocity(step.x, 0.02, step.z);
         }
         velocityDirty = true;
-        if (climbTicks > FumaroleRiding.CLIMB_TIMEOUT) endClimb();
+        if (climbTicks > TrichaudronRiding.CLIMB_TIMEOUT) endClimb();
     }
 
     private void endClimb() {
@@ -969,23 +969,23 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     /** Floats in lava, its tank out, and moves along {@code input} at {@code speed} (blocks a tick, steady). */
     void swim(Vec3d input, float speed) {
         float drag = 0.8f;
-        updateVelocity(speed * FumaroleRiding.SWIM_FACTOR * (1 - drag), input);
+        updateVelocity(speed * TrichaudronRiding.SWIM_FACTOR * (1 - drag), input);
         double depth = getFluidHeight(FluidTags.LAVA);
-        double vy = getVelocity().y + (depth > FumaroleRiding.SWIM_DEPTH ? 0.04 : -0.03);
+        double vy = getVelocity().y + (depth > TrichaudronRiding.SWIM_DEPTH ? 0.04 : -0.03);
         vy = MathHelper.clamp(vy, -0.25, 0.15) * 0.85;
         setVelocity(getVelocity().x * drag, vy, getVelocity().z * drag);
         move(MovementType.SELF, getVelocity());
     }
 
     private void rideTravel() {
-        FumaroleRiding.Steer steer = FumaroleRiding.combine(getPassengerList(),
+        TrichaudronRiding.Steer steer = TrichaudronRiding.combine(getPassengerList(),
                 rider -> ((LivingEntityJumpingAccessor) rider).steveparty$isJumping());
-        float yaw = getYaw() - FumaroleRiding.turnFor(steer.turn());
+        float yaw = getYaw() - TrichaudronRiding.turnFor(steer.turn());
         setYaw(yaw);
         prevYaw = yaw;
         setBodyYaw(yaw);
         setHeadYaw(yaw);
-        float speed = FumaroleRiding.speedFor(steer.forward());
+        float speed = TrichaudronRiding.speedFor(steer.forward());
         Vec3d input = new Vec3d(0, 0, steer.moving() ? Math.signum(steer.forward()) : 0);
         if (isSwimmingInLava()) {
             swim(input, speed);
@@ -995,7 +995,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         }
         // the jump: charged while held, fired on release
         if (steer.jumping()) {
-            charge = Math.min(FumaroleRiding.CHARGE_MAX, charge + 1);
+            charge = Math.min(TrichaudronRiding.CHARGE_MAX, charge + 1);
         } else if (charge > 0) {
             thrusterJump(charge);
             charge = 0;
@@ -1149,7 +1149,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         LivingEntity best = null;
         double bestDistance = Double.MAX_VALUE;
         for (LivingEntity mob : getWorld().getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(HUNT_RANGE),
-                mob -> mob.getType().isIn(PREY) && mob.isAlive() && !(mob instanceof FumaroleEntity) && !hasPassenger(mob))) {
+                mob -> mob.getType().isIn(PREY) && mob.isAlive() && !(mob instanceof TrichaudronEntity) && !hasPassenger(mob))) {
             double d = distanceFromShell(mob);
             if (d <= HUNT_RANGE && d < bestDistance && getVisibilityCache().canSee(mob)) {
                 best = mob;
@@ -1201,7 +1201,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
                     getZ() + random.nextGaussian() * 1.2, 0, 0, 0);
         }
         if (moods.burp) {
-            getWorld().playSound(getX(), getY(), getZ(), ModSounds.FUMAROLE_GURGLE, getSoundCategory(), 1.0f, 0.7f, false);
+            getWorld().playSound(getX(), getY(), getZ(), ModSounds.TRICHAUDRON_GURGLE, getSoundCategory(), 1.0f, 0.7f, false);
             for (int k = 0; k < 4; k++) {
                 getWorld().addParticle(ParticleTypes.CAMPFIRE_SIGNAL_SMOKE, getX() + random.nextGaussian() * 0.4, getY() + HEIGHT,
                         getZ() + random.nextGaussian() * 0.4, 0, 0.06, 0);
@@ -1218,7 +1218,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
                 for (int k = 0; k < 3; k++) {
                     getWorld().addParticle(ModParticles.THERMAL_BASE, at.x, at.y, at.z, ahead.x * 0.05, 0.06, ahead.z * 0.05);
                 }
-                getWorld().playSound(at.x, at.y, at.z, ModSounds.FUMAROLE_PUFF, getSoundCategory(), 0.6f, 0.6f, false);
+                getWorld().playSound(at.x, at.y, at.z, ModSounds.TRICHAUDRON_PUFF, getSoundCategory(), 0.6f, 0.6f, false);
             }
             if (charging > 0 && random.nextInt(3) == 0) {
                 getWorld().addParticle(ModParticles.THERMAL_BASE, at.x, at.y - 0.4, at.z, 0, -0.08, 0);
@@ -1249,11 +1249,11 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     private void easeHead(int head) {
         prevClientYaw[head] = clientYaw[head];
         prevClientPitch[head] = clientPitch[head];
-        FumaroleHead rest = HEADS[head];
+        TrichaudronHead rest = HEADS[head];
         float yaw = rest.restYaw(), pitch = rest.restPitch(), turn = HEAD_TURN;
         Entity target = getHeadTarget(head);
         Entity rider = head < getPassengerList().size() ? getPassengerList().get(head) : null;
-        // wild, its vent charging or spitting but no target any more: its aim is locked (FumaroleGoals.Blast), it holds
+        // wild, its vent charging or spitting but no target any more: its aim is locked (TrichaudronGoals.Blast), it holds
         if (target == null && getVent(head) != VENT_IDLE && !isSteered()) return;
         if (target != null && !hasPassenger(target)) {
             Vec3d to = aimPoint(target).subtract(nozzle(rest, bodyYaw, bodyYaw + clientYaw[head]));
@@ -1308,18 +1308,18 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     public void handleStatus(byte status) {
         if (status >= STATUS_FED && status < STATUS_FED + HEADS.length) {
-            moods.trigger(status - STATUS_FED, FumaroleMoods.Mood.WIGGLE, 60);
+            moods.trigger(status - STATUS_FED, TrichaudronMoods.Mood.WIGGLE, 60);
             Vec3d at = nozzle(status - STATUS_FED);
             for (int k = 0; k < 4; k++) getWorld().addParticle(ParticleTypes.HEART, at.x + random.nextGaussian() * 0.4, at.y + 0.6, at.z + random.nextGaussian() * 0.4, 0, 0.1, 0);
             return;
         }
         if (status >= STATUS_SULK && status < STATUS_SULK + HEADS.length) {
-            moods.trigger(status - STATUS_SULK, FumaroleMoods.Mood.SULK, 100);
+            moods.trigger(status - STATUS_SULK, TrichaudronMoods.Mood.SULK, 100);
             return;
         }
         if (status == STATUS_TAMED) {
             for (int head = 0; head < HEADS.length; head++) {
-                moods.trigger(head, FumaroleMoods.Mood.WIGGLE, 70);
+                moods.trigger(head, TrichaudronMoods.Mood.WIGGLE, 70);
                 Vec3d at = nozzle(head);
                 for (int k = 0; k < 6; k++) getWorld().addParticle(ParticleTypes.HEART, at.x + random.nextGaussian() * 0.5, at.y + 0.8, at.z + random.nextGaussian() * 0.5, 0, 0.1, 0);
             }
@@ -1327,7 +1327,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         }
         if (status == STATUS_TAMABLE) {
             for (int head = 0; head < HEADS.length; head++) {
-                moods.trigger(head, FumaroleMoods.Mood.SULK, 90);
+                moods.trigger(head, TrichaudronMoods.Mood.SULK, 90);
                 Vec3d at = nozzle(head);
                 getWorld().addParticle(ParticleTypes.LARGE_SMOKE, at.x, at.y, at.z, 0, 0.05, 0);
             }
@@ -1358,7 +1358,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         world.spawnParticles(ParticleTypes.LAVA, getX(), getY() + 1.5, getZ(), 10 + buckets, 1.0, 0.6, 1.0, 0.0);
         world.spawnParticles(ParticleTypes.LARGE_SMOKE, getX(), getY() + 2, getZ(), 20, 1.0, 0.8, 1.0, 0.03);
         world.spawnParticles(ParticleTypes.CAMPFIRE_SIGNAL_SMOKE, getX(), getY() + 2.5, getZ(), 4, 0.6, 0.3, 0.6, 0.01);
-        playSound(ModSounds.FUMAROLE_SPILL, 1.5f, 0.8f);
+        playSound(ModSounds.TRICHAUDRON_SPILL, 1.5f, 0.8f);
         if (!world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) return 0;
         int sources = Math.min(buckets / SPILL_PER, SPILL_MAX);
         int placed = 0;
@@ -1369,7 +1369,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         for (BlockPos spot : spots) {
             if (placed >= sources) break;
             BlockState state = world.getBlockState(spot);
-            if (!(state.isAir() || state.isReplaceable()) || FumarolePumping.isSource(world, spot)) continue;
+            if (!(state.isAir() || state.isReplaceable()) || TrichaudronPumping.isSource(world, spot)) continue;
             world.setBlockState(spot, Blocks.LAVA.getDefaultState());
             placed++;
         }
@@ -1461,7 +1461,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     protected @Nullable SoundEvent getAmbientSound() {
-        return ModSounds.FUMAROLE_AMBIENT;
+        return ModSounds.TRICHAUDRON_AMBIENT;
     }
 
     @Override
@@ -1471,12 +1471,12 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        return ModSounds.FUMAROLE_HURT;
+        return ModSounds.TRICHAUDRON_HURT;
     }
 
     @Override
     protected SoundEvent getDeathSound() {
-        return ModSounds.FUMAROLE_DEATH;
+        return ModSounds.TRICHAUDRON_DEATH;
     }
 
     @Override
@@ -1486,7 +1486,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {
-        playSound(ModSounds.FUMAROLE_STEP, 0.6f, 1.0f);
+        playSound(ModSounds.TRICHAUDRON_STEP, 0.6f, 1.0f);
     }
 
     // ---------------------------------------------------------------- animations
@@ -1498,17 +1498,17 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, MAIN_CONTROLLER, 6, this::animate));
-        for (FumaroleHead head : HEADS) {
+        for (TrichaudronHead head : HEADS) {
             controllers.add(new AnimationController<>(this, head.name(ACTION_CONTROLLER), 4, state -> PlayState.STOP)
                     .triggerableAnim("spit", RawAnimation.begin().thenPlay(head.name(ANIM_SPIT))));
         }
     }
 
     /**
-     * Pumping plays at its authored pace (its gulp is timed, FumaroleGoals.Pump); the idle breath and the walk are
+     * Pumping plays at its authored pace (its gulp is timed, TrichaudronGoals.Pump); the idle breath and the walk are
      * slowed down: {@link #IDLE_PACE}, {@link #WALK_PACE} (the walk's stride follows {@link #SPEED}).
      */
-    private PlayState animate(AnimationState<FumaroleEntity> state) {
+    private PlayState animate(AnimationState<TrichaudronEntity> state) {
         if (isPumping()) {
             state.getController().setAnimationSpeed(1);
             return state.setAndContinue(PUMP);

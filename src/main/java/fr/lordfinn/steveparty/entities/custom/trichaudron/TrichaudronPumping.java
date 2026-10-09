@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.entities.custom.fumarole;
+package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -10,10 +10,10 @@ import net.minecraft.world.World;
 import java.util.Arrays;
 
 /**
- * The Fumarole's pumping pace. It drinks from lava sources without taking them (the lava stays: no hole in a lake, no
+ * The Trichaudron's pumping pace. It drinks from lava sources without taking them (the lava stays: no hole in a lake, no
  * river cut off): a bucket a gulp, at most one every {@link #MIN_GAP} ticks and {@link #MAX_PER_MINUTE} a minute.
  */
-public final class FumarolePumping {
+public final class TrichaudronPumping {
     public static final int MAX_PER_MINUTE = 6;
     public static final int MIN_GAP = 60;
     private static final int MINUTE = 1200;
@@ -21,7 +21,7 @@ public final class FumarolePumping {
     /** When it pumped its last gulps (world time), oldest first; empty slots are {@link Long#MIN_VALUE}. */
     private final long[] gulps = new long[MAX_PER_MINUTE];
 
-    public FumarolePumping() {
+    public TrichaudronPumping() {
         Arrays.fill(gulps, Long.MIN_VALUE);
     }
 

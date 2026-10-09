@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.entities.custom.fumarole;
+package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
 import fr.lordfinn.steveparty.entities.MobSpawns;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -19,29 +19,29 @@ import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.gen.structure.Structure;
 
 /**
- * Where Fumaroles live: in the Nether wastes, the basalt deltas and the soul sand valleys, by the lava: on solid ground
+ * Where Trichaudrons live: in the Nether wastes, the basalt deltas and the soul sand valleys, by the lava: on solid ground
  * with a lava source within {@link #LAVA_RANGE} blocks around and below, or in the lava lakes and rivers themselves
  * (it swims). Rarely and always alone: weight {@link #WEIGHT} among the monsters, then one natural try in
- * {@link #CHANCE} kept. Its tank is born at least half full (FumaroleEntity#initialize). Within
- * {@link #CAMP_RANGE} blocks of a bastion ({@code #steveparty:fumarole_rider_camps}), {@link #MOUNTED_PERCENT} % are
+ * {@link #CHANCE} kept. Its tank is born at least half full (TrichaudronEntity#initialize). Within
+ * {@link #CAMP_RANGE} blocks of a bastion ({@code #steveparty:trichaudron_rider_camps}), {@link #MOUNTED_PERCENT} % are
  * born with piglins on ({@link #piglinRiders}): one (50 %), two (35 %) or three (15 %).
  */
-public final class FumaroleSpawns {
+public final class TrichaudronSpawns {
     private static final int WEIGHT = 4, CHANCE = 3;
     private static final int LAVA_RANGE = 6, LAVA_DOWN = 4;
-    public static final TagKey<Structure> RIDER_CAMPS = TagKey.of(RegistryKeys.STRUCTURE, Steveparty.id("fumarole_rider_camps"));
+    public static final TagKey<Structure> RIDER_CAMPS = TagKey.of(RegistryKeys.STRUCTURE, Steveparty.id("trichaudron_rider_camps"));
     public static final int CAMP_RANGE = 48, MOUNTED_PERCENT = 40;
 
-    private FumaroleSpawns() {
+    private TrichaudronSpawns() {
     }
 
     public static void initialize() {
-        MobSpawns.register(ModEntities.FUMAROLE, SpawnLocationTypes.UNRESTRICTED, FumaroleSpawns::canSpawn,
+        MobSpawns.register(ModEntities.TRICHAUDRON, SpawnLocationTypes.UNRESTRICTED, TrichaudronSpawns::canSpawn,
                 BiomeSelectors.includeByKey(BiomeKeys.NETHER_WASTES, BiomeKeys.BASALT_DELTAS, BiomeKeys.SOUL_SAND_VALLEY),
                 SpawnGroup.MONSTER, WEIGHT, 1, 1);
     }
 
-    static boolean canSpawn(EntityType<FumaroleEntity> type, ServerWorldAccess world, SpawnReason reason,
+    static boolean canSpawn(EntityType<TrichaudronEntity> type, ServerWorldAccess world, SpawnReason reason,
                             BlockPos pos, Random random) {
         if (reason != SpawnReason.NATURAL && reason != SpawnReason.CHUNK_GENERATION) return true;
         if (random.nextInt(CHANCE) != 0) return false;
