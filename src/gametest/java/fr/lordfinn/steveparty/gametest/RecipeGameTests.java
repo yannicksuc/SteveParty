@@ -217,6 +217,10 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.ACORN)).isOf(ModItems.GLANDOUILLE_CARTRIDGE), "glandouille cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.CANDLE)).isOf(ModItems.FROUSSEUX_CARTRIDGE), "frousseux cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.LOADED_DIE)).isOf(ModItems.MISTIGRI_CARTRIDGE), "mistigri cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.IRON_BARS)).isOf(ModItems.THRESHOLD_CARTRIDGE), "threshold cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.MAGPIE_NEST)).isOf(ModItems.POT_CARTRIDGE), "pot cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.GATE_KEY)).isOf(ModItems.KEY_GATE_CARTRIDGE), "key gate cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.BOARD_TRAP)).isOf(ModItems.TRAP_CARTRIDGE), "trap cartridge");
 
         // The Tile and the Advanced Tile (their cartridges loaded: TileCartridgeGameTests)
         ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[net.minecraft.util.DyeColor.WHITE.getId()]);

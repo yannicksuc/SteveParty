@@ -126,7 +126,11 @@ public class TileFeedbackGameTests implements FabricGameTest {
                 TileTeleport.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR,
                 fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.COLOR,
                 fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.COLOR,
-                fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.COLOR);
+                fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.COLOR,
+                fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.COLOR,
+                fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem.COLOR,
+                fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem.COLOR,
+                fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem.COLOR);
         for (int i = 0; i < colours.size(); i++) {
             for (int j = i + 1; j < colours.size(); j++) {
                 context.assertTrue(distance(colours.get(i), colours.get(j)) > 40,

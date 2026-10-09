@@ -347,9 +347,12 @@ public class StevepartyClient implements ClientModInitializer {
         // Cut out: the start tile's top is made of value layers (see TileColors#tint)
         BlockRenderLayerMap.INSTANCE.putBlocks(RenderLayer.getCutout(), ModBlocks.ADVANCED_TILE, ModBlocks.TILE);
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.ACORN_CROP, RenderLayer.getCutout());
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.MAGPIE_NEST, RenderLayer.getCutout());
 
         BlockEntityRendererFactories.register(ModBlockEntities.ADVANCED_TILE_ENTITY, TileBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
+        // A check point has no face: only what a board rule cartridge shows over it (a Threshold obstacle's condition...)
+        BlockEntityRendererFactories.register(ModBlockEntities.CHECK_POINT_ENTITY, context -> fr.lordfinn.steveparty.client.blockentity.BoardRuleOverlays::renderCheckPoint);
         TileStampTooltipComponent.register();
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
@@ -412,6 +415,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.BOOMCART, BoomcartRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI, MistigriRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI_DIE, MistigriDieRenderer::new);
+        EntityRendererRegistry.register(ModEntities.MAGPIE, fr.lordfinn.steveparty.client.entity.MagpieRenderer::new);
         EntityRendererRegistry.register(ModEntities.PLAYER_PAWN, PlayerPawnRenderer::new);
         PawnPossessionClient.initialize();
         PawnPoseFeedback.initialize();

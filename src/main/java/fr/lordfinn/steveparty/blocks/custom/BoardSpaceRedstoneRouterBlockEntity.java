@@ -161,7 +161,14 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
         net.minecraft.item.ItemStack stack = boardSpace.getActiveCartridgeItemStack();
         var behavior = boardSpace.getBoardSpaceBehavior(stack);
         int level = behavior == null ? LEVEL_DEFAULT : behavior.comparatorLevel(boardSpace, stack == null ? net.minecraft.item.ItemStack.EMPTY : stack);
+        if (level <= 0) return; // the role says nothing happened (a token blocked by a Threshold obstacle)
         router.pulse(Math.clamp(level, PASS_SIGNAL + 1, 15), LANDING_TICKS);
+    }
+
+    /** Something happened on {@code boardSpace} (a token got over a Threshold obstacle): its router pulses {@code level}. */
+    public static void onBoardSpaceEvent(ServerWorld world, BlockPos boardSpace, int level) {
+        BoardSpaceRedstoneRouterBlockEntity router = routerOf(world, boardSpace);
+        if (router != null && level > 0) router.pulse(Math.clamp(level, PASS_SIGNAL + 1, 15), LANDING_TICKS);
     }
 
     /** A token went over the board space at {@code boardSpace} during a move: a short weak pulse. */

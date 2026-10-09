@@ -27,6 +27,8 @@ public class PartyData {
      * (the HUD shows it through the standings' bonuses).
      */
     private final Set<UUID> protectedTokens = new LinkedHashSet<>();
+    /** Tokens whose next turn is lost (a Trap): saved with the party, see TokenTurnPartyStep#start. */
+    private final Set<UUID> skippedTokens = new LinkedHashSet<>();
     /** The hidden traps of the Trap power-up: saved with the party, never sent to the clients. */
     private final fr.lordfinn.steveparty.powerups.effects.TrapState traps = new fr.lordfinn.steveparty.powerups.effects.TrapState();
 
@@ -73,6 +75,13 @@ public class PartyData {
             }
         });
         traps.readNbt(nbt);
+        skippedTokens.clear();
+        nbt.getList("SkippedTokens", 8).forEach(token -> {
+            try {
+                skippedTokens.add(UUID.fromString(token.asString()));
+            } catch (IllegalArgumentException ignored) {
+            }
+        });
     }
 
     /**
@@ -98,6 +107,11 @@ public class PartyData {
             nbt.put("ProtectedTokens", protectedNbt);
         }
         traps.writeNbt(nbt);
+        if (!skippedTokens.isEmpty()) {
+            NbtList skippedNbt = new NbtList();
+            skippedTokens.forEach(uuid -> skippedNbt.add(NbtString.of(uuid.toString())));
+            nbt.put("SkippedTokens", skippedNbt);
+        }
         return nbt;
     }
 
@@ -208,9 +222,15 @@ public class PartyData {
         return protectedTokens;
     }
 
+    /** The tokens whose next turn is lost (live set). */
+    public Set<UUID> getSkippedTokens() {
+        return skippedTokens;
+    }
+
     public void reset() {
         this.tokens.clear();
         this.protectedTokens.clear();
+        this.skippedTokens.clear();
         this.stepIndex = -1;
         this.steps.clear();
         this.traps.clear();

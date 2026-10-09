@@ -133,6 +133,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         Identifier face = faceTexture(tileType, stack, TileStamping.displayedStamp(entity, stack), color, small);
         if (face != null) renderFace(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face)), light, small, direction, 1f);
         matrices.pop();
+        // What the role shows over the space (a Threshold obstacle's condition...)
+        BoardRuleOverlays.render(entity, tileType, stack, centreX, centreZ, tickDelta, matrices, vertexConsumers, light);
     }
 
     /**
@@ -166,6 +168,14 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         else if (tileType == BoardSpaceType.TILE_FROUSSEUX) face = TileStampTextures.frousseuxFace(color, small);
         // A Mistigri space: the black cat's head, one eye open, in the cartridge's witch plum
         else if (tileType == BoardSpaceType.TILE_MISTIGRI) face = TileStampTextures.mistigriFace(color, small);
+        // A Threshold obstacle: a striped hurdle in the cartridge's steel blue
+        else if (tileType == BoardSpaceType.TILE_THRESHOLD) face = TileStampTextures.thresholdFace(color, small);
+        // A Common pot: a nest full of coins in the cartridge's straw
+        else if (tileType == BoardSpaceType.TILE_POT) face = TileStampTextures.potFace(color, small);
+        // A Key gate: a gate with a keyhole in the cartridge's teal
+        else if (tileType == BoardSpaceType.TILE_KEY_GATE) face = TileStampTextures.keyGateFace(color, small);
+        // A Trap space: open jaws in the cartridge's moss green
+        else if (tileType == BoardSpaceType.TILE_TRAP) face = TileStampTextures.trapFace(color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
         return face;

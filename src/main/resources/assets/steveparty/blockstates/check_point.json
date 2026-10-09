@@ -9,6 +9,12 @@
     "tile_type=tile_replay": { "model": "steveparty:block/check_point" },
     "tile_type=tile_teleport": { "model": "steveparty:block/check_point" },
     "tile_type=tile_star": { "model": "steveparty:block/check_point_star" },
-    "tile_type=tile_glandouille": { "model": "steveparty:block/check_point" }
+    "tile_type=tile_glandouille": { "model": "steveparty:block/check_point" },
+    "tile_type=tile_frousseux": { "model": "steveparty:block/check_point" },
+    "tile_type=tile_mistigri": { "model": "steveparty:block/check_point" },
+    "tile_type=tile_threshold": { "model": "steveparty:block/check_point" },
+    "tile_type=tile_pot": { "model": "steveparty:block/check_point" },
+    "tile_type=tile_key_gate": { "model": "steveparty:block/check_point" },
+    "tile_type=tile_trap": { "model": "steveparty:block/check_point" }
   }
 }
