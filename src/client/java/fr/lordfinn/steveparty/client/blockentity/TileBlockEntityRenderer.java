@@ -164,6 +164,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         else if (tileType == BoardSpaceType.TILE_GLANDOUILLE) face = TileStampTextures.glandouilleFace(color, small);
         // A Frousseux space: the little candle ghost in the cartridge's night indigo
         else if (tileType == BoardSpaceType.TILE_FROUSSEUX) face = TileStampTextures.frousseuxFace(color, small);
+        // A Mistigri space: the black cat's head, one eye open, in the cartridge's witch purple
+        else if (tileType == BoardSpaceType.TILE_MISTIGRI) face = TileStampTextures.mistigriFace(color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
         return face;

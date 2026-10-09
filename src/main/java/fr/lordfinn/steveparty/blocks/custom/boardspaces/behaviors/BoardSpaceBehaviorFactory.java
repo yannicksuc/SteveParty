@@ -20,6 +20,7 @@ public class BoardSpaceBehaviorFactory {
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_STAR, new StarBoardSpaceBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_GLANDOUILLE, new GlandouilleTileBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_FROUSSEUX, new FrousseuxTileBehavior());
+            BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_MISTIGRI, new MistigriTileBehavior());
         }
 
         public static ABoardSpaceBehavior get(BoardSpaceType type) {

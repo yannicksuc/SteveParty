@@ -20,7 +20,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Glandouille »: a tower of Glandouilles pushes the tokens some spaces on (see GlandouilleTileBehavior). */
     TILE_GLANDOUILLE("tile_glandouille"),
     /** « Frousseux »: a Frousseux steals coins or stars from another player (see FrousseuxTileBehavior). */
-    TILE_FROUSSEUX("tile_frousseux");
+    TILE_FROUSSEUX("tile_frousseux"),
+    /** « Mistigri »: the black cat of bad luck rolls his loaded die and passes a sentence (see MistigriTileBehavior). */
+    TILE_MISTIGRI("tile_mistigri");
 
     private final String name;
 

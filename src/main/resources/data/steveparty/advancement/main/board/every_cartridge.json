@@ -113,6 +113,16 @@
           }
         ]
       }
+    },
+    "mistigri": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:mistigri_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -145,6 +155,9 @@
     ],
     [
       "frousseux"
+    ],
+    [
+      "mistigri"
     ]
   ],
   "rewards": {
