@@ -81,7 +81,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     /** A sector picked on the wheel of the tool in hand, as the client sends it. */
     static boolean pick(ServerPlayerEntity player, ToolWheelPayload.Action action, int value) {
-        return new ToolWheelPayload(action, value).handle(player);
+        return new ToolWheelPayload(action, value).apply(player);
     }
 
     /** Runs {@code test} with a mock player, always removed afterwards. */
@@ -660,7 +660,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertEquals(TileLinkerBrush.level(brush), 12, "still 12");
             context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, TileLinkerBrush.POWERED), "the powered slot");
             context.assertTrue(!brush.contains(ModComponents.LINK_LEVEL), "the default: no component left");
-            context.assertTrue(!new ToolWheelPayload(99, 0).handle(player), "an unknown action");
+            context.assertTrue(!new ToolWheelPayload(99, 0).apply(player), "an unknown action");
             // Not the brush in hand: nothing
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.WRENCH));
             context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, 3), "the Wrench has no level");

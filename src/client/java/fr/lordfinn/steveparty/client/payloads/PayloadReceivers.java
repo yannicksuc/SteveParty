@@ -3,17 +3,19 @@ package fr.lordfinn.steveparty.client.payloads;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.gui.party.PartyHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
+import fr.lordfinn.steveparty.client.screens.DicePickScreen;
 import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.*;
+import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.getBoardSpaceEntity;
 import static fr.lordfinn.steveparty.particles.ModParticles.ARROW_PARTICLE;
@@ -26,16 +28,14 @@ public class PayloadReceivers {
     public static void initialize() {
 
         // Used to spawn arrow particles from the server
-        ClientPlayNetworking.registerGlobalReceiver(ArrowParticlesPayload.ID,
-                (payload, context) -> context.client().execute(() ->
+        ClientPayloads.receive(ArrowParticlesPayload.ID, (payload, context) ->
                 context.player().getWorld().addImportantParticle(ARROW_PARTICLE,
-                payload.position().x, payload.position().y, payload.position().z,
-                payload.velocity().x, payload.velocity().y, payload.velocity().z)));
+                        payload.position().x, payload.position().y, payload.position().z,
+                        payload.velocity().x, payload.velocity().y, payload.velocity().z));
 
-        ClientPlayNetworking.registerGlobalReceiver(EnchantedCircularParticlePayload.ID,
-                (payload, context) -> context.client().execute(summonEnchanted(context, payload)));
+        ClientPayloads.receive(EnchantedCircularParticlePayload.ID, PayloadReceivers::summonEnchanted);
 
-        ClientPlayNetworking.registerGlobalReceiver(UpdateColoredTilePayload.ID, (payload, context)  -> context.client().execute(() -> {
+        ClientPayloads.receive(UpdateColoredTilePayload.ID, (payload, context) -> {
             BlockPos pos = payload.position();
             World world = context.player().getWorld();
             BoardSpaceBlockEntity tileEntity = getBoardSpaceEntity(world, pos);
@@ -44,51 +44,46 @@ public class PayloadReceivers {
             if (behaviorItemstack == null || behaviorItemstack.isEmpty()) return;
             behaviorItemstack.set(ModComponents.COLOR, payload.color());
             MinecraftClient.getInstance().worldRenderer.updateBlock(world, pos, world.getBlockState(pos), world.getBlockState(pos), 3);
-        }));
+        });
 
-        ClientPlayNetworking.registerGlobalReceiver(PartyDataPayload.ID, (payload, context) -> context.client().execute(() -> PartyHud.onPartyData(payload.partyData())));
-        ClientPlayNetworking.registerGlobalReceiver(PartyLivePayload.ID, (payload, context) -> context.client().execute(() -> PartyHud.onLiveData(payload.data())));
-        ClientPlayNetworking.registerGlobalReceiver(PartyDashboardPayload.ID, (payload, context) -> context.client().execute(() -> {
-            if (context.player().currentScreenHandler instanceof fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler handler
+        ClientPayloads.receive(PartyDataPayload.ID, (payload, context) -> PartyHud.onPartyData(payload.partyData()));
+        ClientPayloads.receive(PartyLivePayload.ID, (payload, context) -> PartyHud.onLiveData(payload.data()));
+        ClientPayloads.receive(PartyDashboardPayload.ID, (payload, context) -> {
+            if (context.player().currentScreenHandler instanceof PartyControllerScreenHandler handler
                     && handler.syncId == payload.syncId())
                 handler.setData(payload.data());
-        }));
+        });
 
-        ClientPlayNetworking.registerGlobalReceiver(FloatingTextPayload.ID, (payload, context) -> context.client().execute(() ->
-        {
+        ClientPayloads.receive(FloatingTextPayload.ID, (payload, context) -> {
             FloatingTextRenderer.spawn(payload.text(), payload.pos(), payload.velocity(), payload.duration(), payload.scale(), payload.color(), payload.fadeStart());
-        }));
+        });
 
-        ClientPlayNetworking.registerGlobalReceiver(SquishAnimationPayload.ID, (payload, context) -> context.client().execute(() ->
-                SquishAnimations.start(context.client().world, payload)));
+        ClientPayloads.receive(SquishAnimationPayload.ID, (payload, context) -> SquishAnimations.start(context.client().world, payload));
 
         // The server accepted a Tokenizer Wand use: open the token spell (size slider), unless another screen is open
-        ClientPlayNetworking.registerGlobalReceiver(OpenTokenSpellPayload.ID, (payload, context) -> context.client().execute(() -> {
+        ClientPayloads.receive(OpenTokenSpellPayload.ID, (payload, context) -> {
             MinecraftClient client = context.client();
             if (client.world == null || client.currentScreen != null) return;
-            if (client.world.getEntityById(payload.entityId()) instanceof net.minecraft.entity.LivingEntity mob) {
+            if (client.world.getEntityById(payload.entityId()) instanceof LivingEntity mob) {
                 client.setScreen(new TokenSpellScreen(mob, payload.currentSize(), payload.resize(), payload.currentColor()));
             }
-        }));
+        });
 
         // A dice prompt (Choice / Lucky / Reroll / swap picker), or its end
-        ClientPlayNetworking.registerGlobalReceiver(fr.lordfinn.steveparty.payloads.custom.DicePromptPayload.ID, (payload, context) ->
-                context.client().execute(() -> fr.lordfinn.steveparty.client.screens.DicePickScreen.onPayload(context.client(), payload)));
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(
-                fr.lordfinn.steveparty.client.screens.DicePickScreen::showWaiting);
+        ClientPayloads.receive(DicePromptPayload.ID, (payload, context) -> DicePickScreen.onPayload(context.client(), payload));
+        ClientTickEvents.END_CLIENT_TICK.register(
+                DicePickScreen::showWaiting);
     }
 
-    private static Runnable summonEnchanted(ClientPlayNetworking.Context context, EnchantedCircularParticlePayload payload) {
-        return () -> {
-            if (context.player() == null) return;
-            World world = context.player().getWorld();
-            double distance = payload.distance();
-            for (int i = 0; i < payload.count(); i++) {
-                // EnchantedCircularParticle: (x, y, z) = circle center, velocity = (radius, color, angular speed)
-                world.addImportantParticle(ENCHANTED_CIRCULAR_PARTICLE,
-                        payload.position().x, payload.position().y, payload.position().z,
-                        distance, ENCHANTED_DEFAULT_COLOR, ENCHANTED_DEFAULT_ANGULAR_SPEED);
-            }
-        };
+    private static void summonEnchanted(EnchantedCircularParticlePayload payload, ClientPlayNetworking.Context context) {
+        if (context.player() == null) return;
+        World world = context.player().getWorld();
+        double distance = payload.distance();
+        for (int i = 0; i < payload.count(); i++) {
+            // EnchantedCircularParticle: (x, y, z) = circle center, velocity = (radius, color, angular speed)
+            world.addImportantParticle(ENCHANTED_CIRCULAR_PARTICLE,
+                    payload.position().x, payload.position().y, payload.position().z,
+                    distance, ENCHANTED_DEFAULT_COLOR, ENCHANTED_DEFAULT_ANGULAR_SPEED);
+        }
     }
 }

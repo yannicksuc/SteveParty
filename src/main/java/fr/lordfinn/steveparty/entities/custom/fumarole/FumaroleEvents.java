@@ -1,9 +1,8 @@
 package fr.lordfinn.steveparty.entities.custom.fumarole;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.payloads.Payloads;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -27,9 +26,7 @@ public final class FumaroleEvents {
     }
 
     public static void initialize() {
-        PayloadTypeRegistry.playC2S().register(RiderClick.ID, RiderClick.CODEC);
-        ServerPlayNetworking.registerGlobalReceiver(RiderClick.ID, (payload, context) -> {
-            PlayerEntity player = context.player();
+        Payloads.c2s(RiderClick.ID, RiderClick.CODEC, (player, payload) -> {
             if (player.getVehicle() instanceof FumaroleEntity fumarole) fumarole.riderClick(player);
         });
         UseItemCallback.EVENT.register(FumaroleEvents::useItem);
