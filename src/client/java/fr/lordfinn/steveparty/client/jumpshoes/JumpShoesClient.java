@@ -36,6 +36,7 @@ import java.util.Map;
  * the players around ({@link #onSeen}) for their effects.
  */
 public final class JumpShoesClient {
+    private static final int BUMP_TICKS = 8;
     private static final TripleJumpChain CHAIN = new TripleJumpChain();
     /** Players around sliding down a wall, by entity id: their wall side. */
     private static final Map<Integer, Direction> REMOTE_SLIDES = new HashMap<>();
@@ -45,6 +46,8 @@ public final class JumpShoesClient {
     private static boolean doubleUsed;
     private static @Nullable Direction slideWall;
     private static int slideTicks;
+    /** Ticks since the player last ran into a wall in the air (he sticks to it once falling). */
+    private static int bumpTicks;
     private static @Nullable Direction graceWall;
     private static int graceTicks;
     /** The wall face of the last kick (side and block coordinate): no second kick off it before the ground or another wall. */
@@ -114,6 +117,8 @@ public final class JumpShoesClient {
             return;
         }
 
+        if (player.horizontalCollision) bumpTicks = BUMP_TICKS;
+        else if (bumpTicks > 0) bumpTicks--;
         if (slideWall != null) {
             if (!JumpShoes.touchesWall(player, slideWall, JumpShoes.CLIENT_REACH)) {
                 graceWall = slideWall;
@@ -123,7 +128,7 @@ public final class JumpShoesClient {
         } else if (player.getVelocity().y < 0) {
             Vec3d toward = intent(player);
             Direction wall = JumpShoes.wallSide(player, JumpShoes.CLIENT_REACH, toward);
-            if (wall != null && (player.horizontalCollision
+            if (wall != null && (bumpTicks > 0
                     || toward.x * wall.getOffsetX() + toward.z * wall.getOffsetZ() > 0.1)) {
                 startSlide(player, wall);
             }
@@ -246,6 +251,10 @@ public final class JumpShoesClient {
         switch (action) {
             case JUMP_2 -> {
                 dust(world, ground, x, y, z, 6, 0.3);
+                for (int i = 0; i < 2; i++) {
+                    world.addParticle(ParticleTypes.POOF, x + (random.nextDouble() - 0.5) * 0.4, y + 0.05,
+                            z + (random.nextDouble() - 0.5) * 0.4, 0, 0.02, 0);
+                }
                 sound(world, player, ModSounds.JUMP_SHOES_HOP);
             }
             case JUMP_3 -> {
