@@ -13,6 +13,7 @@
     "minecraft:emerald",
     "minecraft:lapis_lazuli",
     "minecraft:redstone",
-    "minecraft:amethyst_shard"
+    "minecraft:amethyst_shard",
+    "steveparty:coin"
   ]
 }
