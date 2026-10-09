@@ -9,6 +9,7 @@ import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.TexturedRenderLayers;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -86,7 +87,7 @@ public final class StarSpaceRenderer {
                 matrices.scale(SCALE, SCALE, SCALE);
                 // No display transform (the item's "fixed" one shifts it off its centre): the model's box centred on
                 // the beam's axis, so that it turns on the spot
-                client.getItemRenderer().renderItem(star, ModelTransformationMode.NONE, false, matrices, opaque, 0xF000F0,
+                client.getItemRenderer().renderItem(star, ModelTransformationMode.NONE, false, matrices, opaque, LightmapTextureManager.MAX_LIGHT_COORDINATE,
                         OverlayTexture.DEFAULT_UV, model);
                 matrices.pop();
             }
