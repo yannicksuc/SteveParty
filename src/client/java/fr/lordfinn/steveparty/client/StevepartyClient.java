@@ -168,6 +168,7 @@ public class StevepartyClient implements ClientModInitializer {
         StencilGunHud.initialize();
         fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.initialize();
         fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient.initialize();
+        fr.lordfinn.steveparty.client.entity.FumaroleRiderClient.initialize();
         fr.lordfinn.steveparty.client.board.BrushClient.initialize();
         fr.lordfinn.steveparty.client.board.TileOutline.initialize();
         DevClientCommands.initialize();
@@ -254,7 +255,8 @@ public class StevepartyClient implements ClientModInitializer {
         // Every Steve Party egg is drawn per mob (textures/item/*_spawn_egg.png, 1.21.5 style): item/generated gives
         // layer0 tint index 0, so the vanilla spawn-egg tint is replaced by a white one
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG,
-                ModItems.BOXED_TRADER_SPAWN_EGG, ModItems.FROUSSEUX_SPAWN_EGG, ModItems.BOOMCART_SPAWN_EGG, ModItems.MISTIGRI_SPAWN_EGG);
+                ModItems.BOXED_TRADER_SPAWN_EGG, ModItems.FROUSSEUX_SPAWN_EGG, ModItems.BOOMCART_SPAWN_EGG, ModItems.MISTIGRI_SPAWN_EGG,
+                ModItems.FUMAROLE_SPAWN_EGG);
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.GLANDOUILLE_SPAWN_EGGS);
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
@@ -340,6 +342,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.client.entity.GlandouilleRenderer::new);
         EntityRendererRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.client.entity.FrousseuxRenderer::new);
+        EntityRendererRegistry.register(ModEntities.FUMAROLE, fr.lordfinn.steveparty.client.entity.FumaroleRenderer::new);
         EntityRendererRegistry.register(ModEntities.BOOMCART, fr.lordfinn.steveparty.client.entity.BoomcartRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI, fr.lordfinn.steveparty.client.entity.MistigriRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI_DIE, fr.lordfinn.steveparty.client.entity.MistigriDieRenderer::new);
@@ -376,6 +379,9 @@ public class StevepartyClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.MULA_SPARKLE, MulaSparkleParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.MAGIC_SHAPE, MagicShapeParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.STAR_FLARE, StarFlareParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.THERMAL_PLUME, fr.lordfinn.steveparty.client.particle.ThermalSteamParticle::plume);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.THERMAL_BASE, fr.lordfinn.steveparty.client.particle.ThermalSteamParticle::base);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.THERMAL_POOF, fr.lordfinn.steveparty.client.particle.ThermalSteamParticle::poof);
     }
 
     private static void initScreens() {
@@ -383,6 +389,8 @@ public class StevepartyClient implements ClientModInitializer {
         
         //Initialize Screens
         HandledScreens.register(TILE_SCREEN_HANDLER, BoardSpaceScreen::new);
+        HandledScreens.register(fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.FUMAROLE_SCREEN_HANDLER,
+                fr.lordfinn.steveparty.client.screens.FumaroleScreen::new);
         HandledScreens.register(ROUTER_SCREEN_HANDLER, RouterScreen::new);
         HandledScreens.register(HOP_SWITCH_SCREEN_HANDLER, HopSwitchScreen::new);
         HandledScreens.register(BOXED_TRADER_SCREEN_HANDLER, BoxedTraderScreen::new);

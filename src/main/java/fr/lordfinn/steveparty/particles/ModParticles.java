@@ -25,6 +25,11 @@ public class ModParticles {
     public static final ParticleType<StarFlareEffect> STAR_FLARE =
             FabricParticleTypes.complex(StarFlareEffect.CODEC, StarFlareEffect.PACKET_CODEC);
 
+    /** The Fumarole's steam (sprites from vanilla 26.2's geyser): its blast's plume, its vent's wisps, the puffs. */
+    public static final SimpleParticleType THERMAL_PLUME = FabricParticleTypes.simple();
+    public static final SimpleParticleType THERMAL_BASE = FabricParticleTypes.simple();
+    public static final SimpleParticleType THERMAL_POOF = FabricParticleTypes.simple();
+
     public static void initialize() {
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("here"),
                 HERE_PARTICLE);
@@ -36,5 +41,8 @@ public class ModParticles {
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("mula_sparkle"), MULA_SPARKLE);
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("magic_shape"), MAGIC_SHAPE);
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("star_flare"), STAR_FLARE);
+        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("thermal_plume"), THERMAL_PLUME);
+        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("thermal_base"), THERMAL_BASE);
+        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("thermal_poof"), THERMAL_POOF);
     }
 }
