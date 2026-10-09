@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -14,7 +14,7 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 
 /** Tokens are game pieces: they do not lay eggs or drop items on their own (regular mobs still do). */
-public class TokenDropsGameTests implements FabricGameTest {
+public class TokenDropsGameTests implements SteveGameTest {
     private static final BlockPos MOB_POS = new BlockPos(2, 2, 2);
 
     private static <T extends MobEntity> T spawn(TestContext context, EntityType<T> type, boolean token) {

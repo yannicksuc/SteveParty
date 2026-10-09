@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -21,7 +22,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
 import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
 import fr.lordfinn.steveparty.service.TileInfos;
 import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.entity.passive.PigEntity;
@@ -45,7 +45,7 @@ import java.util.List;
  * The game info of the board spaces (TileInfos): what each role tells, computed from the space's state and following
  * its changes, a Trap set on a space, the codec, and where a token is heading (the end of its way).
  */
-public class TileInfoGameTests implements FabricGameTest {
+public class TileInfoGameTests implements SteveGameTest {
     private static final String KEY = "hud.steveparty.tile_info.";
 
     /** A tile at (1, 1, 1) on stone holding {@code cartridge}. */

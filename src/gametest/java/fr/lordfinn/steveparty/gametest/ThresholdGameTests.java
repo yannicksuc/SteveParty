@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -20,7 +21,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.Operator;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.service.TurnMoves;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -43,7 +43,7 @@ import java.util.function.Consumer;
  * The Threshold obstacle Cartridge: every condition, a token stopped (its steps lost, a landing) or getting over, the
  * next move leaving the obstacle without a new test, a check point obstacle, a token stopping on it untested.
  */
-public class ThresholdGameTests implements FabricGameTest {
+public class ThresholdGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(0, 1, 7);
     /** Board spaces 2 blocks apart along x. */
     private static final List<BlockPos> PATH = List.of(new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1),

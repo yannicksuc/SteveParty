@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.loot.ModLootTableModifiers;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.enchantment.Enchantment;
@@ -15,7 +15,7 @@ import net.minecraft.registry.tag.EnchantmentTags;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 
-public class LootAndBrewingGameTests implements FabricGameTest {
+public class LootAndBrewingGameTests implements SteveGameTest {
 
     /** Awkward potion + any star fragment = Luck (vanilla has no Luck recipe; rabbit foot stays Leaping). */
     @GameTest(templateName = EMPTY_STRUCTURE)

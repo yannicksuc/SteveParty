@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.hud.HudPlacements;
 import fr.lordfinn.steveparty.hud.HudPlacements.Anchor;
 import fr.lordfinn.steveparty.hud.HudPlacements.Hud;
 import fr.lordfinn.steveparty.hud.HudPlacements.Placement;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 
@@ -12,7 +12,7 @@ import net.minecraft.test.TestContext;
  * Where the party HUDs sit ({@link HudPlacements}): nine anchors, an offset kept in GUI pixels through screen and
  * size changes, the new defaults, the file and the migration of the first format.
  */
-public class PartyHudPlacementsGameTests implements FabricGameTest {
+public class PartyHudPlacementsGameTests implements SteveGameTest {
     /** The anchor decides which point of the HUD sticks to which point of the screen. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void anchorsKeepTheirPoint(TestContext context) {

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
 import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudTexts;
@@ -9,7 +10,6 @@ import fr.lordfinn.steveparty.hud.TurnStripLayout.El;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Kind;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Step;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Type;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 
@@ -25,7 +25,7 @@ import java.util.UUID;
  * mini-game always visible, « toi » under my chips, « toi dans N » under « +N », the big chip's fixed name width, one
  * axis, no overlap) and the standings' (the collapse past eight players, ties, the names' column).
  */
-public class PartyHudLayoutGameTests implements FabricGameTest {
+public class PartyHudLayoutGameTests implements SteveGameTest {
     /** A font of 5 px glyphs and 1 px apart: « Tom » is 17 px, like the game's. */
     private static final HudTexts TEXTS = new HudTexts() {
         @Override

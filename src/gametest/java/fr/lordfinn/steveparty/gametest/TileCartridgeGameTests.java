@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.compat.CartridgeApplications;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
@@ -18,7 +19,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload;
 import fr.lordfinn.steveparty.recipes.TileCartridgeRecipe;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.DyedColorComponent;
 import net.minecraft.entity.player.PlayerEntity;
@@ -52,7 +52,7 @@ import java.util.Optional;
  * linking equipped tiles without spare cartridges, a cartridge clicked on another swapping their destinations, and the
  * pipette of the tile screens.
  */
-public class TileCartridgeGameTests implements FabricGameTest {
+public class TileCartridgeGameTests implements SteveGameTest {
     private static final ItemStack EMPTY = ItemStack.EMPTY;
 
     private static ItemStack plain() {

@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.CowEntity;
@@ -27,7 +27,7 @@ import net.minecraft.util.math.Vec3d;
  * A token is a static pawn: no AI (no wandering, no looking around, no behaviours), silent, and it only turns to face
  * where the board moves it. Back to a mob, it gets its AI and its voice back.
  */
-public class TokenPawnGameTests implements FabricGameTest {
+public class TokenPawnGameTests implements SteveGameTest {
     private static final int STILL_TICKS = 100;
 
     private static TokenizedEntityInterface token(MobEntity mob) {

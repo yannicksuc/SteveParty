@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
@@ -10,7 +11,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSupport;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.recipes.TileSizeRecipe;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StairsBlock;
 import net.minecraft.entity.ItemEntity;
@@ -38,7 +38,7 @@ import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SUPPORT;
 
 /** The 3 tile sizes: standard (2 wide, centred), small (1x1) and large (2x2 blocks: the tile + 3 parts). */
-public class TileSizeGameTests implements FabricGameTest {
+public class TileSizeGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(2, 2, 2);
 
     private static ItemStack sized(ItemStack stack, TileSize size) {

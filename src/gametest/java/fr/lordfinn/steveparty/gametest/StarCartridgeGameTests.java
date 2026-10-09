@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
@@ -31,7 +32,6 @@ import fr.lordfinn.steveparty.service.DiceRollEffects;
 import fr.lordfinn.steveparty.service.PartyStars;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
@@ -62,7 +62,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
  * by side, so another test's star spaces would be found. Each test also takes its star spaces away when it ends, for
  * the batches after it.
  */
-public class StarCartridgeGameTests implements FabricGameTest {
+public class StarCartridgeGameTests implements SteveGameTest {
     /** The board: tile → star tile → tile, and two more star tiles off the path. */
     private static final BlockPos START = new BlockPos(1, 1, 1), STAR = new BlockPos(3, 1, 1), END = new BlockPos(5, 1, 1);
     private static final BlockPos OTHER = new BlockPos(1, 1, 5), ANOTHER = new BlockPos(5, 1, 5);

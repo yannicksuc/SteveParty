@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -14,7 +15,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.powerups.effects.GoldenPipeEffect;
 import fr.lordfinn.steveparty.powerups.effects.StarLocator;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -38,7 +38,7 @@ import java.util.function.Consumer;
  * through check points), on the Star itself when no space leads there; no Star: nothing happens and it is not used up.
  * The Star is given by a test {@link StarLocator}.
  */
-public class GoldenPipeGameTests implements FabricGameTest {
+public class GoldenPipeGameTests implements SteveGameTest {
     private static final int WAIT = TileTeleport.TOTAL_TICKS + 6;
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 7);
     /** Start, then three tiles, then the Star's tile: 2 blocks apart along x on z = 1, then on to z = 3. */

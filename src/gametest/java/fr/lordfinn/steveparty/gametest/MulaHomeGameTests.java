@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -9,7 +10,6 @@ import fr.lordfinn.steveparty.entities.custom.MulaRebirths;
 import fr.lordfinn.steveparty.entities.custom.MulaStarEntity;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
 import fr.lordfinn.steveparty.entities.custom.goals.SimpleFlyingMoveControl;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -32,7 +32,7 @@ import java.util.UUID;
  * after a burst; without a core it holds none; its core exploding sends them all away. Each test in its own batch: a
  * forge takes in the Mulas of neighbouring tests.
  */
-public class MulaHomeGameTests implements FabricGameTest {
+public class MulaHomeGameTests implements SteveGameTest {
     private static final BlockPos FORGE_POS = new BlockPos(4, 1, 4);
 
     /**

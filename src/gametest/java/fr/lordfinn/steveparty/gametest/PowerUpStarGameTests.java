@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -17,7 +18,6 @@ import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.powerups.PowerUps;
 import fr.lordfinn.steveparty.powerups.effects.PartyStarRelocator;
 import fr.lordfinn.steveparty.powerups.effects.PowerUpStar;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.CowEntity;
@@ -37,7 +37,7 @@ import java.util.List;
  * the pipe brings the pawn just before the star, the whistle sends the star to another star space. Each test in its
  * own batch: a party's star sees the star spaces of the boards around it.
  */
-public class PowerUpStarGameTests implements FabricGameTest {
+public class PowerUpStarGameTests implements SteveGameTest {
     private static final BlockPos START = new BlockPos(1, 1, 1), STAR = new BlockPos(3, 1, 1), END = new BlockPos(5, 1, 1);
     private static final BlockPos OTHER = new BlockPos(1, 1, 5), ANOTHER = new BlockPos(5, 1, 5);
     private static final BlockPos CONTROLLER = new BlockPos(8, 1, 8);

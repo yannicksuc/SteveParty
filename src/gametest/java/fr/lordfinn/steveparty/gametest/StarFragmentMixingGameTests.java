@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.inventory.SimpleInventory;
@@ -40,7 +40,7 @@ import static net.minecraft.util.DyeColor.*;
  * The 16 colours of star fragments: 6 are dropped by the Mulas, the 10 others are mixed from them like dyes (as many
  * fragments out as in), and each colour packs into its block.
  */
-public class StarFragmentMixingGameTests implements FabricGameTest {
+public class StarFragmentMixingGameTests implements SteveGameTest {
 
     private record Mix(DyeColor result, DyeColor... inputs) {
         /** The ingredients whatever their order. */

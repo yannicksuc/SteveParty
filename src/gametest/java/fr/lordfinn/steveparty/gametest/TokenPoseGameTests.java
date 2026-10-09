@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombieEntity;
@@ -24,7 +24,7 @@ import net.minecraft.util.math.BlockPos;
  * Mob pawn poses, server side: a right click with an empty hand gives the pawn its next pose number (saved, synced);
  * the other clicks keep their use.
  */
-public class TokenPoseGameTests implements FabricGameTest {
+public class TokenPoseGameTests implements SteveGameTest {
     private static final BlockPos MOB_POS = new BlockPos(2, 2, 2);
 
     private static ServerPlayerEntity player(TestContext context) {

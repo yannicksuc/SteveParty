@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.tooltip.ItemTips;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /** Every item's tooltip, with and without Shift, is written in both languages, its tags on one line under the name. */
-public class TooltipGameTests implements FabricGameTest {
+public class TooltipGameTests implements SteveGameTest {
 
     private static JsonObject lang(String code) {
         try (InputStream in = TooltipGameTests.class.getResourceAsStream("/assets/steveparty/lang/" + code + ".json")) {

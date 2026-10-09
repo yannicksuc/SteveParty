@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -23,7 +24,6 @@ import fr.lordfinn.steveparty.podium.PodiumGroup;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
 import fr.lordfinn.steveparty.podium.PodiumSignal;
 import fr.lordfinn.steveparty.podium.Podiums;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * left, taken over and emptied as a whole, by a player or by a team whose members stand one per column. Out of a
  * mini-game, and for the podiums linked to no page, every column stays on its own.
  */
-public class PodiumSharedPlaceGameTests implements FabricGameTest {
+public class PodiumSharedPlaceGameTests implements SteveGameTest {
     private static final AtomicInteger SERIAL = new AtomicInteger();
     private static final BlockPos CONTROLLER = new BlockPos(0, 1, 7);
 

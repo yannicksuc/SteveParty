@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
 import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlockEntity;
@@ -14,7 +15,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.recipes.CandleSaucerRecipe;
 import java.util.List;
 import java.util.UUID;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
@@ -41,7 +41,7 @@ import net.minecraft.world.GameMode;
  * The Frousseux's second step: what it steals (the shiny tag, one item of one stack), its melee dodge, taming it
  * (what it stole given back), what it drops, and the cobwebs its owner walks through.
  */
-public class FrousseuxGameTests implements FabricGameTest {
+public class FrousseuxGameTests implements SteveGameTest {
 
     private static FrousseuxEntity frousseux(TestContext context, BlockPos at) {
         FrousseuxEntity one = context.spawnEntity(ModEntities.FROUSSEUX, at);

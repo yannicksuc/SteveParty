@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
@@ -36,7 +37,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.StairsBlock;
@@ -83,7 +83,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * board check warns); on arrival the token stays, or is pushed one space on (the owner chooses at a fork), that space
  * triggering its effect or not; no chains; the settings survive saving and are only changed by a player allowed to.
  */
-public class TileTeleportGameTests implements FabricGameTest {
+public class TileTeleportGameTests implements SteveGameTest {
     private static final int WAIT = TileTeleport.TOTAL_TICKS + 6;
     private static final BlockPos CONTROLLER = new BlockPos(7, 1, 7);
     /** Tiles 2 blocks apart: along x on z = 1, then back along x on z = 3. */

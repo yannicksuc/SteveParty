@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
@@ -41,7 +42,6 @@ import fr.lordfinn.steveparty.minigame.PartyMiniGameSession;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
 import fr.lordfinn.steveparty.podium.Podiums;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -74,7 +74,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * the flow up to the podiums with results and no payout, what stops it (its button, a linked step controller, its
  * players leaving, a party drawing the page), and why a page can't be tested.
  */
-public class MiniGameTestGameTests implements FabricGameTest {
+public class MiniGameTestGameTests implements SteveGameTest {
     private static final int WHITE = 0, YELLOW = 4, BLUE = 11, GREEN = 13, RED = 14;
     private static final AtomicInteger SERIAL = new AtomicInteger();
 

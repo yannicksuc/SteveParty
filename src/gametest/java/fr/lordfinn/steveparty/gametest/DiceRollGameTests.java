@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -15,7 +16,6 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
 import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.PigEntity;
@@ -39,7 +39,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * The special dice faces: the face 0 (the tile lands again), the coin and debt faces (the roller's coins), the swap
  * face (two tokens swap places), in a party and outside, alone and with other dice.
  */
-public class DiceRollGameTests implements FabricGameTest {
+public class DiceRollGameTests implements SteveGameTest {
     private static final String BATCH = "dice_rolls";
 
     // ---------------------------------------------------------------- the faces themselves

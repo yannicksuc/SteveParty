@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -37,7 +38,6 @@ import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -88,7 +88,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * the pipes of their team in order (positive players team A, negative ones team B), a party sends its players out of
  * them and brings them back, entry and exit pipes work out of a party, and nothing warps beyond 100 blocks.
  */
-public class MiniGamePipeGameTests implements FabricGameTest {
+public class MiniGamePipeGameTests implements SteveGameTest {
     private static final int WHITE = 0, ORANGE = 1, YELLOW = 4, CYAN = 9, PURPLE = 10, BLUE = 11, GREEN = 13, RED = 14, BLACK = 15;
     private static final String PARTY_BATCH = "mini_game_pipes_party";
 

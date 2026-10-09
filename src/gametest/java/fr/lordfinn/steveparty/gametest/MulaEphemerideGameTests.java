@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
@@ -7,7 +8,6 @@ import fr.lordfinn.steveparty.entities.custom.MulaEphemeride;
 import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -23,7 +23,7 @@ import net.minecraft.world.Heightmap;
 import java.util.List;
 
 /** The ephemeride: its chance by moon phase, the guarantee by a max-level forge, the Mula spawn sites. */
-public class MulaEphemerideGameTests implements FabricGameTest {
+public class MulaEphemerideGameTests implements SteveGameTest {
 
     /** 0 at new moon, rising to the maximum at full moon, symmetric round the cycle. */
     @GameTest(templateName = EMPTY_STRUCTURE)

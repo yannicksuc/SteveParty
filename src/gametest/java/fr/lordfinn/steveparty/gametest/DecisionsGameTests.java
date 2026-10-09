@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
@@ -12,7 +12,7 @@ import net.minecraft.util.math.GlobalPos;
 
 import java.util.UUID;
 
-public class DecisionsGameTests implements FabricGameTest {
+public class DecisionsGameTests implements SteveGameTest {
 
     /** Like a wolf, a sitting Mula stands up when hurt. */
     @GameTest(templateName = EMPTY_STRUCTURE)

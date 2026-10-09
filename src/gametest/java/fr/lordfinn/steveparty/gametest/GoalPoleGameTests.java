@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleFlags;
@@ -33,7 +34,6 @@ import net.minecraft.recipe.book.CraftingRecipeCategory;
 import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.ComparatorBlock;
 import net.minecraft.block.ComposterBlock;
@@ -64,7 +64,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntPredicate;
 
-public class GoalPoleGameTests implements FabricGameTest {
+public class GoalPoleGameTests implements SteveGameTest {
     private static final BlockPos BASE = new BlockPos(2, 1, 2);
 
     private static BlockState pole(boolean onBase, boolean top) {

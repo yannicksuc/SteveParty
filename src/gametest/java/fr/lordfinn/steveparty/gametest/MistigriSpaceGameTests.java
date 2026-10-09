@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -14,7 +15,6 @@ import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.MistigriSentences;
 import fr.lordfinn.steveparty.service.MistigriSentences.Sentence;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -39,7 +39,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * back and holds the turn, the Mistigri and his die are board actors removed at the end (or when the party ends in the
  * middle), the draw follows the cartridge's weights, and the cartridge's settings.
  */
-public class MistigriSpaceGameTests implements FabricGameTest {
+public class MistigriSpaceGameTests implements SteveGameTest {
     private static final String BATCH = "mistigri_space";
     private static final BlockPos TILE = new BlockPos(3, 1, 3);
     private static final int WHOLE = MistigriSentences.WHOLE + 20;

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestAsserts;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -22,7 +23,6 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.ChestBlockEntity;
@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * the order of the places (the 1st first, the participants last), partially when the chest runs short, never
  * created; the results card says what was really paid; the dashboard says what the chest holds.
  */
-public class PartyBankGameTests implements FabricGameTest {
+public class PartyBankGameTests implements SteveGameTest {
     private static final AtomicInteger SERIAL = new AtomicInteger();
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 6);
     private static final BlockPos CHEST = new BlockPos(3, 1, 6);

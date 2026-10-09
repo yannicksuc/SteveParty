@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.ItemEntity;
@@ -30,7 +30,7 @@ import java.util.List;
  * The blocks a game is built with ({@code steveparty:board_infrastructure}) are not broken by explosions, withers nor
  * the dragon, and are mined as before.
  */
-public class BoardExplosionGameTests implements FabricGameTest {
+public class BoardExplosionGameTests implements SteveGameTest {
     private static final TagKey<Block> BOARD = TagKey.of(RegistryKeys.BLOCK, Steveparty.id("board_infrastructure"));
 
     /** Every block of the list: bedrock's explosion resistance, and immune to withers and the dragon. */

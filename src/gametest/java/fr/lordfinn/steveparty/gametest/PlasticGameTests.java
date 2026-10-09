@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PlasticBlock;
 import fr.lordfinn.steveparty.blocks.custom.PlotBlock;
@@ -7,7 +8,6 @@ import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -29,7 +29,7 @@ import net.minecraft.util.math.RotationPropertyHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
-public class PlasticGameTests implements FabricGameTest {
+public class PlasticGameTests implements SteveGameTest {
     private static final int X = 3, Z = 3, BOTTOM = 1, TOP = 5;
     /** Most ticks a bubble column takes to move a piece one block (the slowest is 0.6 blocks per tick, down). */
     private static final int COLUMN_TICKS = 2;

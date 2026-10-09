@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.board.ExplorerHelmet;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 /** The Explorer's Helmet: its recipe, worn on the head without armour, and who sees the board view. */
-public class ExplorerHelmetGameTests implements FabricGameTest {
+public class ExplorerHelmetGameTests implements SteveGameTest {
 
     private static ItemStack craft(TestContext context, ItemStack... grid) {
         CraftingRecipeInput input = CraftingRecipeInput.create(3, 2, List.of(grid));
