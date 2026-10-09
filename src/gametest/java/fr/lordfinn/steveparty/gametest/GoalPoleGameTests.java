@@ -1096,7 +1096,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE);
         BlockState first = context.getBlockState(BASE.up());
         context.assertTrue(first.get(GoalPoleBlock.FLAG) && first.get(GoalPoleBlock.TOP), "a new pole has its flag at the top");
-        context.assertTrue(first.get(GoalPoleBlock.FACING) == Direction.SOUTH.rotateYClockwise(), "facing the player, got " + first.get(GoalPoleBlock.FACING));
+        context.assertTrue(first.get(GoalPoleBlock.FACING) == Direction.SOUTH, "its cloth towards the player, got " + first.get(GoalPoleBlock.FACING));
         context.assertTrue(poleEntity(context, BASE.up()).getFlagColor() == FlagItem.NO_COLOR, "the classic red flag");
         context.assertTrue(GoalPoleBlock.showsGoal(first), "the goal shows above it");
 

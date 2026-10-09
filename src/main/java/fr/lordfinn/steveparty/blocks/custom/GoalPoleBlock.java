@@ -80,8 +80,8 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     @Override
     public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
         return getDefaultState()
-                // As a flag hung from the player's side (see flagFacing): the new pole's flag faces them
-                .with(FACING, ctx.getHorizontalPlayerFacing().getOpposite().rotateYClockwise())
+                // A new pole's flag shows its cloth to the player (not its edge)
+                .with(FACING, ctx.getHorizontalPlayerFacing().getOpposite())
                 .with(FLAG, !columnFlagged(ctx.getWorld(), ctx.getBlockPos().up())
                         && !columnFlagged(ctx.getWorld(), ctx.getBlockPos().down()))
                 .with(ON_BASE, isOnBase(ctx.getWorld(), ctx.getBlockPos()))
