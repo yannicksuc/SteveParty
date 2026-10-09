@@ -3,7 +3,9 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [64, 64],
 	"textures": {
-		"1": "steveparty:item/party_star"
+		"1": "steveparty:item/party_star",
+		"front": "steveparty:item/party_star_front",
+		"back": "steveparty:item/party_star_back"
 	},
 	"elements": [
 		{
@@ -226,6 +228,18 @@
 				"up": {"uv": [4, 5, 3.5, 4], "texture": "#1"},
 				"down": {"uv": [2.5, 7, 2, 8], "texture": "#1"}
 			}
+		},
+		{
+			"name": "glint_front",
+			"from": [0, 0, 5.98],
+			"to": [16, 16, 5.98],
+			"faces": {"north": {"uv": [0, 0, 16, 16], "texture": "#front"}}
+		},
+		{
+			"name": "glint_back",
+			"from": [0, 0, 10.02],
+			"to": [16, 16, 10.02],
+			"faces": {"south": {"uv": [0, 0, 16, 16], "texture": "#back"}}
 		}
 	],
 	"display": {
