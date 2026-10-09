@@ -8,7 +8,7 @@ import net.minecraft.network.codec.PacketCodecs;
 
 /**
  * The settings of a Teleport Cartridge, edited in its menu (see
- * {@link fr.lordfinn.steveparty.payloads.custom.TeleportSettingsPayload}).
+ * {@code TeleportCartridgeItem}).
  *
  * @param network      its network: a token landing on the tile is sent to another Teleport tile of this colour
  * @param cycle        several other tiles in the network: in turn (true) or at random (false, the default)
