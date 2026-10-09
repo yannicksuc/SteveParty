@@ -156,25 +156,25 @@ public class ModSounds {
     public static final SoundEvent MISTIGRI_TRANSFORM = register("mistigri.transform");
     /** Bad luck strikes (crossing his path, a monster's blow missing). */
     public static final SoundEvent MISTIGRI_BAD_LUCK = register("mistigri.bad_luck");
-    // Fumarole (Fumerolle): vanilla sounds for now (assets/steveparty/sounds.json)
+    // Trichaudron (EN: Tricauldron): vanilla sounds for now (assets/steveparty/sounds.json)
     /** Its low rumble and the crackle of its tank. */
-    public static final SoundEvent FUMAROLE_AMBIENT = register("fumarole.ambient");
-    public static final SoundEvent FUMAROLE_HURT = register("fumarole.hurt");
-    public static final SoundEvent FUMAROLE_DEATH = register("fumarole.death");
+    public static final SoundEvent TRICHAUDRON_AMBIENT = register("trichaudron.ambient");
+    public static final SoundEvent TRICHAUDRON_HURT = register("trichaudron.hurt");
+    public static final SoundEvent TRICHAUDRON_DEATH = register("trichaudron.death");
     /** Its heavy steps. */
-    public static final SoundEvent FUMAROLE_STEP = register("fumarole.step");
+    public static final SoundEvent TRICHAUDRON_STEP = register("trichaudron.step");
     /** A gulp of lava pumped from a source. */
-    public static final SoundEvent FUMAROLE_PUMP = register("fumarole.pump");
+    public static final SoundEvent TRICHAUDRON_PUMP = register("trichaudron.pump");
     /** Its tank gurgles (a bucket taken or poured). */
-    public static final SoundEvent FUMAROLE_GURGLE = register("fumarole.gurgle");
+    public static final SoundEvent TRICHAUDRON_GURGLE = register("trichaudron.gurgle");
     /** The warning second before a blast: steam hisses in its vent. */
-    public static final SoundEvent FUMAROLE_CHARGE = register("fumarole.charge");
+    public static final SoundEvent TRICHAUDRON_CHARGE = register("trichaudron.charge");
     /** The thermal blast. */
-    public static final SoundEvent FUMAROLE_BLAST = register("fumarole.blast");
+    public static final SoundEvent TRICHAUDRON_BLAST = register("trichaudron.blast");
     /** The weak puff of an empty tank. */
-    public static final SoundEvent FUMAROLE_PUFF = register("fumarole.puff");
+    public static final SoundEvent TRICHAUDRON_PUFF = register("trichaudron.puff");
     /** Its tank spilling as it dies. */
-    public static final SoundEvent FUMAROLE_SPILL = register("fumarole.spill");
+    public static final SoundEvent TRICHAUDRON_SPILL = register("trichaudron.spill");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

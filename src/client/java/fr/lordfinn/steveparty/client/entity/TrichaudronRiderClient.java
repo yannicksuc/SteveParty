@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
-import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity;
-import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEvents;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
@@ -10,19 +10,19 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.Hand;
 
 /**
- * A player riding a Fumarole: his attack and use keys fire the head he holds (or grab a wall in the air) instead of
- * attacking or using; his arms are held forward on the reins (PlayerEntityModelFumaroleRiderMixin).
+ * A player riding a Trichaudron: his attack and use keys fire the head he holds (or grab a wall in the air) instead of
+ * attacking or using; his arms are held forward on the reins (PlayerEntityModelTrichaudronRiderMixin).
  */
-public final class FumaroleRiderClient {
+public final class TrichaudronRiderClient {
     /** The use key, held last tick (a press is its edge: some inputs hold it without counting a press). */
     private static boolean useHeld;
 
-    private FumaroleRiderClient() {
+    private TrichaudronRiderClient() {
     }
 
-    /** Whether this entity rides a Fumarole. */
+    /** Whether this entity rides a Trichaudron. */
     public static boolean riding(Entity entity) {
-        return entity.getVehicle() instanceof FumaroleEntity;
+        return entity.getVehicle() instanceof TrichaudronEntity;
     }
 
     public static void initialize() {
@@ -43,7 +43,7 @@ public final class FumaroleRiderClient {
     }
 
     private static void click() {
-        if (ClientPlayNetworking.canSend(FumaroleEvents.RiderClick.ID)) ClientPlayNetworking.send(new FumaroleEvents.RiderClick());
+        if (ClientPlayNetworking.canSend(TrichaudronEvents.RiderClick.ID)) ClientPlayNetworking.send(new TrichaudronEvents.RiderClick());
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player != null) client.player.swingHand(Hand.MAIN_HAND);
     }

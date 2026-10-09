@@ -178,9 +178,9 @@ public class ModItems {
     /** The Boomcart's egg: iron grey, TNT red. */
     public static final Item BOOMCART_SPAWN_EGG = spawnEgg("boomcart_spawn_egg",
             ModEntities.BOOMCART, 0x8C8C90, 0xDB2F1F);
-    /** The Fumarole's egg: drawn per mob (textures/item/fumarole_spawn_egg.png), basalt and lava. */
-    public static final Item FUMAROLE_SPAWN_EGG = spawnEgg("fumarole_spawn_egg",
-            ModEntities.FUMAROLE, 0x3A2A28, 0xE0601C);
+    /** The Trichaudron's egg: drawn per mob (textures/item/trichaudron_spawn_egg.png), basalt and lava. */
+    public static final Item TRICHAUDRON_SPAWN_EGG = spawnEgg("trichaudron_spawn_egg",
+            ModEntities.TRICHAUDRON, 0x3A2A28, 0xE0601C);
     /**
      * The Candle Saucer, a little gold tray for the Frousseux candle holder to stand on: a block of its own
      * (ModBlocks.CANDLE_SAUCER), crafted onto the candle holder too (CandleSaucerRecipe).
@@ -490,7 +490,7 @@ public class ModItems {
             itemGroup.add(FROUSSEUX_SPAWN_EGG);
             itemGroup.add(BOOMCART_SPAWN_EGG);
             itemGroup.add(MISTIGRI_SPAWN_EGG);
-            itemGroup.add(FUMAROLE_SPAWN_EGG);
+            itemGroup.add(TRICHAUDRON_SPAWN_EGG);
             itemGroup.add(CANDLE_SAUCER);
             itemGroup.add(ACORN);
             itemGroup.add(ACORN_HAT);

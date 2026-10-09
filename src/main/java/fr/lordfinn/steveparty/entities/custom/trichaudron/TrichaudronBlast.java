@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.entities.custom.fumarole;
+package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
 import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -43,11 +43,11 @@ import java.util.List;
  *     <li><b>The shove</b>: very hard, away from the head and a little up, whatever the armour.</li>
  *     <li><b>A shield</b> raised toward the jet stops it: its bearer takes nothing (no damage, no fire, no shove) and
  *     the steam goes no further than the shield (whoever stands behind is spared too).</li>
- *     <li>Spared always: the Fumarole itself, other Fumaroles, its riders, and the players this head trusts.</li>
+ *     <li>Spared always: the Trichaudron itself, other Trichaudrons, its riders, and the players this head trusts.</li>
  *     <li><b>The weak puff</b> of an empty tank: short, {@link #PUFF_DAMAGE} physical damage, no fire, a small shove.</li>
  * </ul>
  */
-public final class FumaroleBlast {
+public final class TrichaudronBlast {
     public static final double RANGE = 30.0, RADIUS = 1.5;
     public static final float FIRE_DAMAGE = 4.0f, PHYSICAL_DAMAGE = 2.0f, FIRE_SECONDS = 4.0f;
     public static final double PUSH = 2.2, LIFT = 0.5;
@@ -59,7 +59,7 @@ public final class FumaroleBlast {
     /** A shield counts when its bearer looks at least this much toward the jet (cosine). */
     private static final double SHIELD_FACING = 0.2;
 
-    private FumaroleBlast() {
+    private TrichaudronBlast() {
     }
 
     /** Whether this entity's armour spares it the physical part: heavy enchanted armour (players only). */
@@ -102,25 +102,25 @@ public final class FumaroleBlast {
      * Fires a head's jet from {@code from} toward {@code aim}: with lava in the tank the blast (a bucket), else the puff.
      * Returns the entities it hurt or shoved.
      */
-    public static List<LivingEntity> fire(FumaroleEntity fumarole, int head, Vec3d from, Vec3d aim) {
+    public static List<LivingEntity> fire(TrichaudronEntity trichaudron, int head, Vec3d from, Vec3d aim) {
         List<LivingEntity> hit = new ArrayList<>();
-        if (!(fumarole.getWorld() instanceof ServerWorld world)) return hit;
-        boolean full = fumarole.getTank() > 0;
+        if (!(trichaudron.getWorld() instanceof ServerWorld world)) return hit;
+        boolean full = trichaudron.getTank() > 0;
         double range = full ? RANGE : PUFF_RANGE, radius = full ? RADIUS : PUFF_RADIUS;
         Vec3d dir = aim.subtract(from);
-        if (dir.lengthSquared() < 1.0e-6) dir = fumarole.getRotationVector();
+        if (dir.lengthSquared() < 1.0e-6) dir = trichaudron.getRotationVector();
         dir = dir.normalize();
         Vec3d to = from.add(dir.multiply(range));
         BlockHitResult block = world.raycast(new RaycastContext(from, to, RaycastContext.ShapeType.COLLIDER,
-                RaycastContext.FluidHandling.NONE, fumarole));
+                RaycastContext.FluidHandling.NONE, trichaudron));
         boolean impact = block.getType() != HitResult.Type.MISS;
         double length = impact ? block.getPos().distanceTo(from) : range;
-        if (full) fumarole.setTank(fumarole.getTank() - 1);
+        if (full) trichaudron.setTank(trichaudron.getTank() - 1);
 
         // who is in the jet, nearest first; a raised shield ends it there
         List<LivingEntity> inJet = new ArrayList<>();
         Box box = new Box(from, from.add(dir.multiply(length))).expand(radius + 1);
-        for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, box, e -> spared(fumarole, head, e) == null)) {
+        for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, box, e -> spared(trichaudron, head, e) == null)) {
             if (along(entity, from, dir, length, radius) >= 0) inJet.add(entity);
         }
         Vec3d fromFinal = from, dirFinal = dir;
@@ -128,7 +128,7 @@ public final class FumaroleBlast {
                 along(b, fromFinal, dirFinal, Double.MAX_VALUE, Double.MAX_VALUE)));
         boolean blocked = false;
         DamageSource steam = new DamageSource(world.getRegistryManager().get(RegistryKeys.DAMAGE_TYPE)
-                .entryOf(FumaroleEntity.THERMAL_STEAM), fumarole);
+                .entryOf(TrichaudronEntity.THERMAL_STEAM), trichaudron);
         for (LivingEntity entity : inJet) {
             if (shields(entity, dir)) {
                 length = Math.max(0.5, along(entity, from, dir, Double.MAX_VALUE, Double.MAX_VALUE) - entity.getWidth() * 0.5);
@@ -150,16 +150,16 @@ public final class FumaroleBlast {
             }
             hit.add(entity);
         }
-        effects(fumarole, world, from, dir, length, impact || blocked, full);
+        effects(trichaudron, world, from, dir, length, impact || blocked, full);
         return hit;
     }
 
     /** Why the jet spares this entity, or null if it doesn't. */
-    static @Nullable String spared(FumaroleEntity fumarole, int head, Entity entity) {
-        if (entity == fumarole || entity instanceof FumaroleEntity) return "a Fumarole";
+    static @Nullable String spared(TrichaudronEntity trichaudron, int head, Entity entity) {
+        if (entity == trichaudron || entity instanceof TrichaudronEntity) return "a Trichaudron";
         if (!entity.isAlive() || entity.isSpectator()) return "gone";
-        if (fumarole.hasPassenger(entity)) return "a rider";
-        if (entity instanceof PlayerEntity player && fumarole.trusts(head, player)) return "trusted";
+        if (trichaudron.hasPassenger(entity)) return "a rider";
+        if (entity instanceof PlayerEntity player && trichaudron.trusts(head, player)) return "trusted";
         return null;
     }
 
@@ -173,10 +173,10 @@ public final class FumaroleBlast {
         return from.add(dir.multiply(clamped)).squaredDistanceTo(center) <= reach * reach ? Math.max(0, t) : -1;
     }
 
-    private static void effects(FumaroleEntity fumarole, ServerWorld world, Vec3d from, Vec3d dir, double length,
+    private static void effects(TrichaudronEntity trichaudron, ServerWorld world, Vec3d from, Vec3d dir, double length,
                                 boolean impact, boolean full) {
-        var random = fumarole.getRandom();
-        fumarole.playSound(full ? ModSounds.FUMAROLE_BLAST : ModSounds.FUMAROLE_PUFF, full ? 3.0f : 1.2f, 0.9f + random.nextFloat() * 0.2f);
+        var random = trichaudron.getRandom();
+        trichaudron.playSound(full ? ModSounds.TRICHAUDRON_BLAST : ModSounds.TRICHAUDRON_PUFF, full ? 3.0f : 1.2f, 0.9f + random.nextFloat() * 0.2f);
         double step = full ? 0.8 : 0.6;
         for (double d = 0; d <= length; d += step) {
             Vec3d at = from.add(dir.multiply(d));

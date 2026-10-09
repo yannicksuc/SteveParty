@@ -1121,8 +1121,8 @@
       }
     ]
   },
-  "fumarole.ambient": {
-    "subtitle": "subtitles.steveparty.fumarole.ambient",
+  "trichaudron.ambient": {
+    "subtitle": "subtitles.steveparty.trichaudron.ambient",
     "sounds": [
       {
         "name": "minecraft:entity.turtle.ambient_land",
@@ -1144,8 +1144,8 @@
       }
     ]
   },
-  "fumarole.hurt": {
-    "subtitle": "subtitles.steveparty.fumarole.hurt",
+  "trichaudron.hurt": {
+    "subtitle": "subtitles.steveparty.trichaudron.hurt",
     "sounds": [
       {
         "name": "minecraft:block.basalt.break",
@@ -1161,8 +1161,8 @@
       }
     ]
   },
-  "fumarole.death": {
-    "subtitle": "subtitles.steveparty.fumarole.death",
+  "trichaudron.death": {
+    "subtitle": "subtitles.steveparty.trichaudron.death",
     "sounds": [
       {
         "name": "minecraft:entity.turtle.death",
@@ -1172,8 +1172,8 @@
       }
     ]
   },
-  "fumarole.step": {
-    "subtitle": "subtitles.steveparty.fumarole.step",
+  "trichaudron.step": {
+    "subtitle": "subtitles.steveparty.trichaudron.step",
     "sounds": [
       {
         "name": "minecraft:entity.ravager.step",
@@ -1183,8 +1183,8 @@
       }
     ]
   },
-  "fumarole.pump": {
-    "subtitle": "subtitles.steveparty.fumarole.pump",
+  "trichaudron.pump": {
+    "subtitle": "subtitles.steveparty.trichaudron.pump",
     "sounds": [
       {
         "name": "minecraft:item.bucket.fill_lava",
@@ -1194,8 +1194,8 @@
       }
     ]
   },
-  "fumarole.gurgle": {
-    "subtitle": "subtitles.steveparty.fumarole.gurgle",
+  "trichaudron.gurgle": {
+    "subtitle": "subtitles.steveparty.trichaudron.gurgle",
     "sounds": [
       {
         "name": "minecraft:block.lava.pop",
@@ -1211,8 +1211,8 @@
       }
     ]
   },
-  "fumarole.charge": {
-    "subtitle": "subtitles.steveparty.fumarole.charge",
+  "trichaudron.charge": {
+    "subtitle": "subtitles.steveparty.trichaudron.charge",
     "sounds": [
       {
         "name": "minecraft:block.fire.extinguish",
@@ -1222,8 +1222,8 @@
       }
     ]
   },
-  "fumarole.blast": {
-    "subtitle": "subtitles.steveparty.fumarole.blast",
+  "trichaudron.blast": {
+    "subtitle": "subtitles.steveparty.trichaudron.blast",
     "sounds": [
       {
         "name": "minecraft:entity.blaze.shoot",
@@ -1239,8 +1239,8 @@
       }
     ]
   },
-  "fumarole.puff": {
-    "subtitle": "subtitles.steveparty.fumarole.puff",
+  "trichaudron.puff": {
+    "subtitle": "subtitles.steveparty.trichaudron.puff",
     "sounds": [
       {
         "name": "minecraft:block.fire.extinguish",
@@ -1250,8 +1250,8 @@
       }
     ]
   },
-  "fumarole.spill": {
-    "subtitle": "subtitles.steveparty.fumarole.spill",
+  "trichaudron.spill": {
+    "subtitle": "subtitles.steveparty.trichaudron.spill",
     "sounds": [
       {
         "name": "minecraft:item.bucket.empty_lava",

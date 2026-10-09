@@ -54,7 +54,7 @@
     "PlayerEntityModelMixin",
     "PlayerEntityModelBoxCostumeMixin",
     "PlayerEntityModelGlandouilleCarryMixin",
-    "PlayerEntityModelFumaroleRiderMixin",
+    "PlayerEntityModelTrichaudronRiderMixin",
     "PlayerEntityModelStencilHammerMixin",
     "PlayerEntityRenderStateBoxCostumeMixin",
     "PlayerEntityRendererBoxCostumeMixin",

@@ -15,8 +15,8 @@ import fr.lordfinn.steveparty.client.config.ClientOptions;
 import fr.lordfinn.steveparty.client.entity.BoomcartRenderer;
 import fr.lordfinn.steveparty.client.entity.DeferredGlows;
 import fr.lordfinn.steveparty.client.entity.FrousseuxRenderer;
-import fr.lordfinn.steveparty.client.entity.FumaroleRenderer;
-import fr.lordfinn.steveparty.client.entity.FumaroleRiderClient;
+import fr.lordfinn.steveparty.client.entity.TrichaudronRenderer;
+import fr.lordfinn.steveparty.client.entity.TrichaudronRiderClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleRenderer;
 import fr.lordfinn.steveparty.client.entity.MagpieRenderer;
@@ -53,7 +53,7 @@ import fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer;
 import fr.lordfinn.steveparty.client.pipe.PipeModelPlugin;
 import fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer;
 import fr.lordfinn.steveparty.client.screens.CartridgeScreen;
-import fr.lordfinn.steveparty.client.screens.FumaroleScreen;
+import fr.lordfinn.steveparty.client.screens.TrichaudronScreen;
 import fr.lordfinn.steveparty.client.screens.MiniGameControllerScreen;
 import fr.lordfinn.steveparty.client.screens.ShopStopScreen;
 import fr.lordfinn.steveparty.client.screens.StencilGunScreen;
@@ -236,7 +236,7 @@ public class StevepartyClient implements ClientModInitializer {
         StencilGunHud.initialize();
         ToolWheel.initialize();
         GlandouilleCarryClient.initialize();
-        FumaroleRiderClient.initialize();
+        TrichaudronRiderClient.initialize();
         BrushClient.initialize();
         TileOutline.initialize();
         DevClientCommands.initialize();
@@ -410,7 +410,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.GLANDOUILLE, GlandouilleRenderer::new);
         EntityRendererRegistry.register(ModEntities.FROUSSEUX, FrousseuxRenderer::new);
-        EntityRendererRegistry.register(ModEntities.FUMAROLE, FumaroleRenderer::new);
+        EntityRendererRegistry.register(ModEntities.TRICHAUDRON, TrichaudronRenderer::new);
         EntityRendererRegistry.register(ModEntities.BOOMCART, BoomcartRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI, MistigriRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI_DIE, MistigriDieRenderer::new);
@@ -458,8 +458,8 @@ public class StevepartyClient implements ClientModInitializer {
         
         //Initialize Screens
         HandledScreens.register(TILE_SCREEN_HANDLER, BoardSpaceScreen::new);
-        HandledScreens.register(ModScreensHandlers.FUMAROLE_SCREEN_HANDLER,
-                FumaroleScreen::new);
+        HandledScreens.register(ModScreensHandlers.TRICHAUDRON_SCREEN_HANDLER,
+                TrichaudronScreen::new);
         HandledScreens.register(ROUTER_SCREEN_HANDLER, RouterScreen::new);
         HandledScreens.register(HOP_SWITCH_SCREEN_HANDLER, HopSwitchScreen::new);
         HandledScreens.register(BOXED_TRADER_SCREEN_HANDLER, BoxedTraderScreen::new);
