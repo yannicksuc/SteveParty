@@ -26,10 +26,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class HeldItemRendererGlandouilleCarryMixin {
     /** The stack's size in the hand, against its real one. */
     @Unique
-    private static final float STEVEPARTY$SCALE = 0.42f;
+    private static final float STEVEPARTY$SCALE = 0.38f;
     /** From where an item is held to the stack's feet (screen units), and how far it turns its face to the middle. */
     @Unique
-    private static final float STEVEPARTY$DOWN = 0.2f, STEVEPARTY$IN = 0.06f, STEVEPARTY$TURN = 30f;
+    private static final float STEVEPARTY$DOWN = -0.16f, STEVEPARTY$IN = 0.14f, STEVEPARTY$TURN = 30f;
 
     @Shadow
     private void applyEquipOffset(MatrixStack matrices, Arm arm, float equipProgress) {

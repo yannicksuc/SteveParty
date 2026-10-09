@@ -65,9 +65,9 @@ public final class GlandouilleInHand {
      */
     public static final class Feature extends FeatureRenderer<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>> {
         /** From the shoulder pivot to the top of the hand, along the arm (model pixels). */
-        private static final float HAND_DOWN = 11f, HAND_UP = 1.5f;
+        private static final float HAND_DOWN = 11f, HAND_UP = 2f;
         /** The stack's size in the hand, against its real one. */
-        private static final float SCALE = 0.55f;
+        private static final float SCALE = 0.75f;
 
         public Feature(FeatureRendererContext<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>> context) {
             super(context);
