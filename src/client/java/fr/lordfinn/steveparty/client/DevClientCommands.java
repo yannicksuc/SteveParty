@@ -58,6 +58,23 @@ public final class DevClientCommands {
                                             net.minecraft.client.option.Perspective.values()[IntegerArgumentType.getInteger(context, "view")]);
                                     return 1;
                                 })))
+                        // The mouse wheel turned (vertical notches, + up), through Mouse#onMouseScroll like a real one
+                        .then(ClientCommandManager.literal("scroll")
+                                .then(ClientCommandManager.argument("notches", IntegerArgumentType.integer(-10, 10)).executes(context -> {
+                                    var client = context.getSource().getClient();
+                                    int notches = IntegerArgumentType.getInteger(context, "notches");
+                                    client.execute(() -> {
+                                        try {
+                                            java.lang.reflect.Method scroll = net.minecraft.client.Mouse.class.getDeclaredMethod(
+                                                    "onMouseScroll", long.class, double.class, double.class);
+                                            scroll.setAccessible(true);
+                                            scroll.invoke(client.mouse, client.getWindow().getHandle(), 0.0, (double) notches);
+                                        } catch (ReflectiveOperationException e) {
+                                            throw new IllegalStateException(e);
+                                        }
+                                    });
+                                    return 1;
+                                })))
                         // The Stencil Hammer in hand: its refill screen
                         .then(ClientCommandManager.literal("hammer").executes(context -> {
                             net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
