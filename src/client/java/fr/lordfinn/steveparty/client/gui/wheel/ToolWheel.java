@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.gui.wheel;
 
 import fr.lordfinn.steveparty.utils.Argb;
-import com.mojang.blaze3d.systems.RenderSystem;
+import fr.lordfinn.steveparty.client.gui.GuiItems;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -454,12 +454,7 @@ public final class ToolWheel {
      * its pixels down right. Drawn before the item, so the item covers it.
      */
     public static void drawItemShadow(DrawContext context, ItemStack stack, int x, int y) {
-        // Items are drawn in batches: flushed before and after, so that the darkening applies to the shadow only
-        context.draw();
-        RenderSystem.setShaderColor(0.16f, 0.06f, 0.08f, 1f);
-        context.drawItem(stack, x + 1, y + 1);
-        context.draw();
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        GuiItems.tinted(context, stack, x + 1, y + 1, 0.16f, 0.06f, 0.08f, 1f);
     }
 
     /** Where the middle of {@code sector} is drawn (from the centre), or null. */

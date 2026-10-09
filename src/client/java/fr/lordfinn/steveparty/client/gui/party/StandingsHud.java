@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import fr.lordfinn.steveparty.hud.StandingsLayout;
 import fr.lordfinn.steveparty.utils.Easing;
+import fr.lordfinn.steveparty.client.gui.GuiItems;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
@@ -166,7 +167,7 @@ final class StandingsHud {
                 boolean has = k < player.bonuses.size();
                 HudPaint.draw(context, HudPaint.shape(Form.PILL, StandingsLayout.SLOT, StandingsLayout.SLOT, has ? HudPaint.NEUTRAL : HudPaint.EMPTY_SLOT,
                         HudPaint.OUTLINE), sx - PAD, sy - PAD, alpha);
-                if (has && alpha > 0.6f) smallItem(context, player.bonuses.get(k), sx + 1, sy + 1);
+                if (has && alpha > 0.6f) GuiItems.scaled(context, player.bonuses.get(k), sx + 1, sy + 1, 0.5f);
             }
         }
     }
@@ -195,15 +196,5 @@ final class StandingsHud {
     /** An item at its full size, 16 x 16 (any item, block items too). */
     private static void icon(DrawContext context, ItemStack stack, int x, int y) {
         if (!stack.isEmpty()) context.drawItem(stack, x, y);
-    }
-
-    /** An item at half size, 8 x 8 (a bonus in its slot). */
-    private static void smallItem(DrawContext context, ItemStack stack, int x, int y) {
-        MatrixStack matrices = context.getMatrices();
-        matrices.push();
-        matrices.translate(x + 4, y + 4, 0);
-        matrices.scale(0.5f, 0.5f, 1);
-        context.drawItem(stack, -8, -8);
-        matrices.pop();
     }
 }
