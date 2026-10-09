@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.datagen;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.block.Block;
 import net.minecraft.registry.tag.ItemTags;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
@@ -35,18 +36,18 @@ public class StevepartyReferenceItemTagProvider  extends FabricTagProvider<Item>
         for (Item diceFace : ModItems.DICE_FACES)
             getOrCreateTagBuilder(DICE_FACES_TAG).add(diceFace);
         for (Item item : net.minecraft.registry.Registries.ITEM) {
-            if (item instanceof fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem
+            if (item instanceof CartridgeItem
                     && Steveparty.MOD_ID.equals(net.minecraft.registry.Registries.ITEM.getId(item).getNamespace()))
                 getOrCreateTagBuilder(CARTRIDGES_TAG).add(item);
         }
         for (Item fragment : ModItems.STAR_FRAGMENTS)
             getOrCreateTagBuilder(STAR_FRAGMENTS_TAG).add(fragment);
-        for (net.minecraft.block.Block fence : fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_FENCES)
+        for (net.minecraft.block.Block fence : ModBlocks.PLASTIC_FENCES)
             getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.FENCES).add(fence.asItem());
-        for (int i = 0; i < fr.lordfinn.steveparty.blocks.ModBlocks.COLORS.length; i++) {
-            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.SLABS).add(fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_SLABS[i].asItem());
-            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.STAIRS).add(fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_STAIRS[i].asItem());
-            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.WALLS).add(fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_WALLS[i].asItem());
+        for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.SLABS).add(ModBlocks.PLASTIC_SLABS[i].asItem());
+            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.STAIRS).add(ModBlocks.PLASTIC_STAIRS[i].asItem());
+            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.WALLS).add(ModBlocks.PLASTIC_WALLS[i].asItem());
         }
         // Polished concrete and terracotta shapes, like their block tags
         addShapes(ModBlocks.POLISHED_CONCRETE_SLABS, ModBlocks.POLISHED_CONCRETE_STAIRS, ModBlocks.POLISHED_CONCRETE_WALLS);

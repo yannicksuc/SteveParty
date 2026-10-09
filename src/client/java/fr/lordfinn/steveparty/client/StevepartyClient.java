@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.client.entity.FumaroleRenderer;
 import fr.lordfinn.steveparty.client.entity.FumaroleRiderClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleRenderer;
+import fr.lordfinn.steveparty.client.entity.MagpieRenderer;
 import fr.lordfinn.steveparty.client.entity.MistigriDieRenderer;
 import fr.lordfinn.steveparty.client.entity.MistigriRenderer;
 import fr.lordfinn.steveparty.client.entity.MulaFoodTooltip;
@@ -352,7 +353,7 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.ADVANCED_TILE_ENTITY, TileBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
         // A check point has no face: only what a board rule cartridge shows over it (a Threshold obstacle's condition...)
-        BlockEntityRendererFactories.register(ModBlockEntities.CHECK_POINT_ENTITY, context -> fr.lordfinn.steveparty.client.blockentity.BoardRuleOverlays::renderCheckPoint);
+        BlockEntityRendererFactories.register(ModBlockEntities.CHECK_POINT_ENTITY, context -> BoardRuleOverlays::renderCheckPoint);
         TileStampTooltipComponent.register();
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
@@ -415,7 +416,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.BOOMCART, BoomcartRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI, MistigriRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI_DIE, MistigriDieRenderer::new);
-        EntityRendererRegistry.register(ModEntities.MAGPIE, fr.lordfinn.steveparty.client.entity.MagpieRenderer::new);
+        EntityRendererRegistry.register(ModEntities.MAGPIE, MagpieRenderer::new);
         EntityRendererRegistry.register(ModEntities.PLAYER_PAWN, PlayerPawnRenderer::new);
         PawnPossessionClient.initialize();
         PawnPoseFeedback.initialize();

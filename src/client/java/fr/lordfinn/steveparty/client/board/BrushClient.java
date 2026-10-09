@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.board.BrushAim;
@@ -85,7 +86,7 @@ public final class BrushClient {
         BlockPos aimed = BrushAim.aimed(client.player, client.world, 1f);
         if (aimed == null) return false;
         var container = BoardLinks.container(client.world, aimed);
-        return container instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity
+        return container instanceof BoardSpaceBlockEntity
                 && container.getStack(BoardLinks.slotOf(container, TileLinkerBrush.level(brush))).isEmpty();
     }
 }

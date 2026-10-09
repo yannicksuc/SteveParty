@@ -5,6 +5,8 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import fr.lordfinn.steveparty.client.access.BoxCostumeRenderState;
 import fr.lordfinn.steveparty.client.entity.costume.BoxCostumeAnimatable;
 import fr.lordfinn.steveparty.client.pipe.PipeTravellerPose;
+import fr.lordfinn.steveparty.items.custom.BoxCostumeBlock;
+import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,8 +24,8 @@ public abstract class EntityRendererNameTagMixin {
         if (PipeTravellerPose.hidesNameTag(entity)) return false;
         // Hidden in the box (or a block of the grid): straight from the synced state, whatever the box animation
         if (entity instanceof net.minecraft.entity.player.PlayerEntity player
-                && (fr.lordfinn.steveparty.items.custom.BoxCostumeItem.isHiddenInBox(player)
-                || fr.lordfinn.steveparty.items.custom.BoxCostumeBlock.isBlockAligned(player))) return false;
+                && (BoxCostumeItem.isHiddenInBox(player)
+                || BoxCostumeBlock.isBlockAligned(player))) return false;
         if (entity instanceof BoxCostumeRenderState costume) {
             BoxCostumeAnimatable box = costume.steveparty$getBoxCostume();
             if (box != null && box.isHidden()) return false;

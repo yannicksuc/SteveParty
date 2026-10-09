@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.client.gui;
 
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
+import fr.lordfinn.steveparty.minigame.MiniGamePageData;
+import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
@@ -168,11 +170,11 @@ public final class FormatChips {
      *
      * @param shortfall format index, role ordinal (-1: the teams are not of the same size), count, min, max (255: no limit)
      */
-    public static Text shortfallText(fr.lordfinn.steveparty.minigame.MiniGamePageData page, int[] shortfall) {
+    public static Text shortfallText(MiniGamePageData page, int[] shortfall) {
         MiniGameFormat format = page.format(shortfall[0]);
         Text name = format == null ? Text.empty() : format.name();
         if (shortfall[1] < 0) return Text.translatable("format.steveparty.shortfall.size", name);
-        fr.lordfinn.steveparty.minigame.MiniGamePipeRole role = fr.lordfinn.steveparty.minigame.MiniGamePipeRole.byOrdinal(shortfall[1]);
+        MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(shortfall[1]);
         MiniGameFormat.Side range = new MiniGameFormat.Side(shortfall[3], shortfall[4] >= 255 ? MiniGameFormat.Side.INFINITE : shortfall[4]);
         return Text.translatable("format.steveparty.shortfall.count", name, role == null ? Text.empty() : role.text(), shortfall[2], range.rangeText());
     }

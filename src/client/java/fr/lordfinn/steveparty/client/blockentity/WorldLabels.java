@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
+import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -85,7 +86,7 @@ public final class WorldLabels {
         PlayerEntity player = MinecraftClient.getInstance().player;
         if (player == null) return false;
         for (ItemStack stack : player.getHandItems()) {
-            if (stack.getItem() instanceof WrenchItem || stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem) return true;
+            if (stack.getItem() instanceof WrenchItem || stack.getItem() instanceof TileLinkerBrushItem) return true;
         }
         return false;
     }

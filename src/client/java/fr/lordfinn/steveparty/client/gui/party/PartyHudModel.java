@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
+import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.MinecraftClient;
@@ -318,7 +319,7 @@ final class PartyHudModel {
     /** "+5 coins", "−3 coins", "+1 coin". */
     private static String coinsBadge(int coins) {
         return Text.translatable(Math.abs(coins) == 1 ? "hud.steveparty.party.coins.one" : "hud.steveparty.party.coins",
-                fr.lordfinn.steveparty.dice.DiceOutcome.signed(coins)).getString();
+                DiceOutcome.signed(coins)).getString();
     }
 
     private void set(Action action, Identifier icon, Text text) {

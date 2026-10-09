@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
@@ -46,7 +47,7 @@ final class BrushWheel implements ToolWheel.Provider {
     private static final ItemStack LASSO = new ItemStack(Items.LEAD);
     private static final ItemStack WRENCH = new ItemStack(ModItems.WRENCH);
     private static final ItemStack DUST = new ItemStack(Items.REDSTONE);
-    private static final ItemStack KEEP = new ItemStack(fr.lordfinn.steveparty.blocks.ModBlocks.TILE);
+    private static final ItemStack KEEP = new ItemStack(ModBlocks.TILE);
     private static final Identifier UNDO = Steveparty.id("wheel/undo"), REDO = Steveparty.id("wheel/redo"), BACK = Steveparty.id("wheel/back");
 
     @Override

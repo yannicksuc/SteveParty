@@ -1,8 +1,10 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
+import fr.lordfinn.steveparty.client.gui.FormatChips;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
+import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.utils.Argb;
@@ -112,8 +114,8 @@ public final class MiniGameCardHud {
             width = pictureWidth + 2 * PAD;
             description = page.description().isEmpty() ? List.of()
                     : MiniGamePageTooltipComponent.wrap(font, MiniGameText.parse(page.description()), pictureWidth, MAX_DESCRIPTION_LINES);
-            int chipsHeight = fr.lordfinn.steveparty.client.gui.FormatChips.flow(font, page.formats(),
-                    i -> fr.lordfinn.steveparty.client.gui.FormatChips.Look.READ_ONLY, pictureWidth, 3).getLast()[1] + 13;
+            int chipsHeight = FormatChips.flow(font, page.formats(),
+                    i -> FormatChips.Look.READ_ONLY, pictureWidth, 3).getLast()[1] + 13;
             height = PAD + 12 + (hasPicture ? pictureHeight + 2 + 4 : 0) + chipsHeight + (description.isEmpty() ? 0 : 3 + 10 * description.size()) + PAD;
             if (width <= screenWidth - 16 && height <= screenHeight - ROOM_ABOVE - ROOM_BELOW) break;
         }
@@ -142,14 +144,14 @@ public final class MiniGameCardHud {
         }
 
         // How it is played: its formats (pawn chips), the one played gold rimmed; once faded in (the chips don't fade)
-        java.util.List<fr.lordfinn.steveparty.minigame.MiniGameFormat> formats = page.formats();
-        java.util.function.IntFunction<fr.lordfinn.steveparty.client.gui.FormatChips.Look> look =
-                i -> new fr.lordfinn.steveparty.client.gui.FormatChips.Look(false, i == played, false, false, 13);
-        java.util.List<int[]> at = fr.lordfinn.steveparty.client.gui.FormatChips.flow(font, formats, look, pictureWidth, 3);
+        java.util.List<MiniGameFormat> formats = page.formats();
+        java.util.function.IntFunction<FormatChips.Look> look =
+                i -> new FormatChips.Look(false, i == played, false, false, 13);
+        java.util.List<int[]> at = FormatChips.flow(font, formats, look, pictureWidth, 3);
         int rowWidth = 0;
         for (int[] chip : at) if (chip[1] == 0) rowWidth = chip[0] + chip[2];
         if (alpha > 0.6f) {
-            fr.lordfinn.steveparty.client.gui.FormatChips.drawFlow(context, font, formats, look, x + (width - rowWidth) / 2, top, pictureWidth, 3);
+            FormatChips.drawFlow(context, font, formats, look, x + (width - rowWidth) / 2, top, pictureWidth, 3);
         }
         top += at.getLast()[1] + 13;
 
