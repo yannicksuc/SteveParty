@@ -1,17 +1,15 @@
 package fr.lordfinn.steveparty.entities.custom.boomcart;
 
+import fr.lordfinn.steveparty.entities.MobSpawns;
 import fr.lordfinn.steveparty.entities.ModEntities;
-import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.SpawnLocationTypes;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
-import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.gen.structure.StructureKeys;
@@ -33,10 +31,8 @@ public final class BoomcartSpawns {
     }
 
     public static void initialize() {
-        SpawnRestriction.register(ModEntities.BOOMCART, SpawnLocationTypes.ON_GROUND,
-                Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, BoomcartSpawns::canSpawn);
-        BiomeModifications.addSpawn(BiomeSelectors.foundInOverworld(), SpawnGroup.MONSTER, ModEntities.BOOMCART,
-                WEIGHT, 1, 1);
+        MobSpawns.register(ModEntities.BOOMCART, SpawnLocationTypes.ON_GROUND, BoomcartSpawns::canSpawn,
+                BiomeSelectors.foundInOverworld(), SpawnGroup.MONSTER, WEIGHT, 1, 1);
     }
 
     private static boolean canSpawn(EntityType<BoomcartEntity> type, ServerWorldAccess world, SpawnReason reason,

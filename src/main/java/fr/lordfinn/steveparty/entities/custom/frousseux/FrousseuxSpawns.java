@@ -1,20 +1,18 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
+import fr.lordfinn.steveparty.entities.MobSpawns;
 import fr.lordfinn.steveparty.entities.ModEntities;
-import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.SpawnLocationTypes;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
@@ -50,10 +48,8 @@ public final class FrousseuxSpawns {
     }
 
     public static void initialize() {
-        SpawnRestriction.register(ModEntities.FROUSSEUX, SpawnLocationTypes.UNRESTRICTED,
-                Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, FrousseuxSpawns::canSpawn);
-        BiomeModifications.addSpawn(BiomeSelectors.foundInOverworld(), SpawnGroup.AMBIENT, ModEntities.FROUSSEUX,
-                WEIGHT, 1, 2);
+        MobSpawns.register(ModEntities.FROUSSEUX, SpawnLocationTypes.UNRESTRICTED, FrousseuxSpawns::canSpawn,
+                BiomeSelectors.foundInOverworld(), SpawnGroup.AMBIENT, WEIGHT, 1, 2);
         ServerTickEvents.END_WORLD_TICK.register(FrousseuxSpawns::nearPlayers);
     }
 
