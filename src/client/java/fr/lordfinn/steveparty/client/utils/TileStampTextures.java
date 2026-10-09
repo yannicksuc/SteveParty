@@ -566,35 +566,6 @@ public final class TileStampTextures {
             ".........."};
     private static final Map<Character, Float> KEY_GATE_SHADES = Map.of('#', FEATURE, 'o', -0.6f);
 
-    /** The Trap: open jaws seen from above, their teeth inward, a trigger plate in the middle. */
-    private static final String[] TRAP = {
-            "..............",
-            ".############.",
-            ".#.#.#.#.#.##.",
-            ".#..........#.",
-            ".#..........#.",
-            ".#...oooo...#.",
-            ".#...oooo...#.",
-            ".#...oooo...#.",
-            ".#...oooo...#.",
-            ".#..........#.",
-            ".#..........#.",
-            ".##.#.#.#.#.#.",
-            ".############.",
-            ".............."};
-    private static final String[] SMALL_TRAP = {
-            "..........",
-            ".########.",
-            ".#.#.#.##.",
-            ".#......#.",
-            ".#..oo..#.",
-            ".#..oo..#.",
-            ".#......#.",
-            ".##.#.#.#.",
-            ".########.",
-            ".........."};
-    private static final Map<Character, Float> TRAP_SHADES = Map.of('#', FEATURE, 'o', -0.7f);
-
     /** The Mistigri: a cat's head, pointed ears (one notched), one slit eye open, the other shut, a nose, whiskers. */
     private static final String[] MISTIGRI = {
             "..o.......o.o.",
@@ -643,7 +614,6 @@ public final class TileStampTextures {
             BoardSpaceType.TILE_THRESHOLD, new Pictogram("threshold", THRESHOLD, SMALL_THRESHOLD, THRESHOLD_SHADES),
             BoardSpaceType.TILE_POT, new Pictogram("pot", POT, SMALL_POT, POT_SHADES),
             BoardSpaceType.TILE_KEY_GATE, new Pictogram("key_gate", KEY_GATE, SMALL_KEY_GATE, KEY_GATE_SHADES),
-            BoardSpaceType.TILE_TRAP, new Pictogram("trap", TRAP, SMALL_TRAP, TRAP_SHADES),
             BoardSpaceType.TILE_MISTIGRI, new Pictogram("mistigri", MISTIGRI, SMALL_MISTIGRI, MISTIGRI_SHADES));
 
     /**
