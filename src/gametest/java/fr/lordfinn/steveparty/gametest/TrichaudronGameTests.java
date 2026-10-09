@@ -37,6 +37,7 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
@@ -385,6 +386,31 @@ public class TrichaudronGameTests implements FabricGameTest {
         TestPlayers.remove(context, owner);
         trichaudron.discard();
         context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_steady", tickLimit = 260)
+    public void ridenStillItHoldsItsHeadingAndItsBodyFacesIt(TestContext context) {
+        strip(context, 30);
+        TrichaudronEntity trichaudron = facingEast(context, new BlockPos(6, 1, 8));
+        trichaudron.setAiDisabled(false); // its goals (wandering, looking around) on
+        ServerPlayerEntity owner = player(context, ItemStack.EMPTY);
+        tame(trichaudron, owner);
+        trichaudron.setTank(TrichaudronEntity.TANK_MAX);
+        trichaudron.inventory.setStack(0, new ItemStack(Items.SADDLE));
+        owner.startRiding(trichaudron);
+        float heading = trichaudron.getYaw();
+        float[] worst = {0, 0};
+        context.runAtEveryTick(() -> {
+            worst[0] = Math.max(worst[0], Math.abs(MathHelper.wrapDegrees(trichaudron.getYaw() - heading)));
+            worst[1] = Math.max(worst[1], Math.abs(MathHelper.wrapDegrees(trichaudron.bodyYaw - trichaudron.getYaw())));
+        });
+        context.runAtTick(240, () -> {
+            context.assertTrue(worst[0] < 0.5f, "no input: its heading holds, drift " + worst[0]);
+            context.assertTrue(worst[1] < 0.5f, "its body faces its heading, off by " + worst[1]);
+            TestPlayers.remove(context, owner);
+            trichaudron.discard();
+            context.complete();
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_fuel")
