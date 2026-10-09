@@ -21,6 +21,8 @@ public class ModPayloads {
         s2c(SquishAnimationPayload.ID, SquishAnimationPayload.CODEC);
         s2c(StencilHammerStrikePayload.ID, StencilHammerStrikePayload.CODEC);
         s2c(OpenTokenSpellPayload.ID, OpenTokenSpellPayload.CODEC);
+        s2c(TrapSetupPayloads.Open.ID, TrapSetupPayloads.Open.CODEC);
+        c2s(TrapSetupPayloads.Sign.ID, TrapSetupPayloads.Sign.CODEC);
         s2c(DicePromptPayload.ID, DicePromptPayload.CODEC);
 
         // Client → server

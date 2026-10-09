@@ -18,6 +18,7 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
+import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
 import fr.lordfinn.steveparty.powerups.effects.TrapState;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
@@ -266,7 +267,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         flow.loaded();
     }
 
-    /** What the clients get: everything saved but the hidden traps (Trap power-up), which only their owner may know. */
+    /** What the clients get: everything saved but the traps (Trap power-up): the board spaces show them. */
     @Override
     public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
         NbtCompound nbt = super.toInitialChunkDataNbt(registries);
@@ -594,6 +595,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
 
     private void getTokenFromStartTiles(ServerWorld serverWorld) {
         Map<UUID, BlockPos> tokens = findStartTokenTiles(serverWorld);
+        TrapEffect.clearAll(this);
         partyData.reset();
         tokenHomes.startFrom(tokens);
         for (UUID tokenUUID : tokens.keySet()) partyData.addToken(tokenUUID);
@@ -645,6 +647,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             if (home != null) tokenHomes.sendHome(serverWorld, tokenUUID, home);
             releaseToken(serverWorld, tokenUUID);
         }
+        TrapEffect.clearAll(this);
         partyData.reset();
         tokenHomes.forgetStartTiles();
         setStarSpace(null);
