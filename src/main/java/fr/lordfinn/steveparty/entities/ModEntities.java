@@ -205,7 +205,6 @@ public class ModEntities {
     );
 
     public static void initialize() {
-        //FabricDefaultAttributeRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.DICE_ENTITY, DiceEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.MULA_ENTITY, MulaEntity.setAttributes());
