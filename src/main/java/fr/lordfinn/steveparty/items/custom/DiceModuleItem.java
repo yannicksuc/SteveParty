@@ -28,12 +28,11 @@ public class DiceModuleItem extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.DICE_MODULE);
+        Tooltips tips = Tooltips.of(tooltip);
         if (module.negative()) tips.tags(Tooltips.Tag.NEGATIVE);
         tips.summary(module.itemDescription());
         tips.more(more -> {
             if (module.stacks()) more.note("tooltip.steveparty.dice_module.stacks", Tooltips.value("×" + module.maxCount()));
-            more.craft("tooltip.steveparty.dice_module.usage");
         });
     }
 }

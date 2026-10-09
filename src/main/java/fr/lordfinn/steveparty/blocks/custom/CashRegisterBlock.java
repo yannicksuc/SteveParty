@@ -73,7 +73,7 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        Tooltips.of(tooltip).tags(Tooltips.Tag.SHOP).summary("tooltip.steveparty.cash_register.till");
+        Tooltips.of(tooltip).summary("tooltip.steveparty.cash_register.till");
     }
 
     @Override

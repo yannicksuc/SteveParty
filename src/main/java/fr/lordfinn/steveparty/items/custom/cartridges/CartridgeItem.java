@@ -147,14 +147,13 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
     @Override
     public final void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         TileStampComponent stamp = stack.get(ModComponents.TILE_STAMP);
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.CARTRIDGE, Tooltips.Tag.CONFIGURABLE);
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.CONFIGURABLE);
         if (stamp != null) tips.tags(Tooltips.Tag.STAMPED);
         appendState(stack, tips);
         appendDestinations(stack, tips);
-        if (stamp != null) tips.state("tooltip.steveparty.look", Tooltips.look(stamp.describe()));
-        tips.summary("tooltip.steveparty.cartridge." + Registries.ITEM.getId(this).getPath());
+        if (hasSummary()) tips.summary("tooltip.steveparty.cartridge." + Registries.ITEM.getId(this).getPath());
         tips.more(more -> {
-            more.detail("tooltip.steveparty.cartridge.what");
+            appendDestinationList(stack, more);
             more.use(Tooltips.Keys.use(), "tooltip.steveparty.cartridge.use.tile");
             more.use(Tooltips.Keys.use(), "tooltip.steveparty.cartridge.use.air");
             more.use(Tooltips.Keys.use(), "tooltip.steveparty.cartridge.use.block");
@@ -163,7 +162,12 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
         });
     }
 
-    /** This stack's settings, first lines of its tooltip: a neutral label, a coloured value. */
+    /** Whether its name doesn't say it all: a one-line « what it does » under its settings. */
+    protected boolean hasSummary() {
+        return true;
+    }
+
+    /** This stack's settings, first lines of its tooltip: a neutral label, a coloured value; none at their default. */
     protected void appendState(ItemStack stack, Tooltips tips) {
     }
 

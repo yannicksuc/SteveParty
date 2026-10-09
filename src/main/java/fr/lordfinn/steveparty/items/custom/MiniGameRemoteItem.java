@@ -151,7 +151,7 @@ public class MiniGameRemoteItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         GlobalPos link = stack.get(ModComponents.MINI_GAME_REMOTE_LINK);
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME);
+        Tooltips tips = Tooltips.of(tooltip);
         if (link == null) {
             tips.warn(Text.translatable("tooltip.steveparty.mini_game_remote.not_linked"));
         } else {

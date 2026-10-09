@@ -104,14 +104,18 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem 
     protected void appendState(ItemStack stack, Tooltips tips) {
         tips.state("tooltip.steveparty.shop_cartridge.purchases", Tooltips.value(purchases(stack)));
         ShopLinkComponent link = stack.get(ModComponents.SHOP_LINK);
-        tips.state("tooltip.steveparty.shop_cartridge.shop", link != null
-                ? Tooltips.setting(BoardText.pos(link.anchor()))
-                : Tooltips.value(Text.translatable("tooltip.steveparty.shop_cartridge.nearest")));
+
     }
 
     @Override
     protected void appendMore(ItemStack stack, Tooltips.More more) {
         more.use(Tooltips.Keys.sneakScroll(), "tooltip.steveparty.shop_cartridge.scroll");
         more.note("tooltip.steveparty.shop_cartridge.brush");
+    }
+
+    /** Its name says what it does. */
+    @Override
+    protected boolean hasSummary() {
+        return false;
     }
 }

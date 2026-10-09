@@ -146,14 +146,7 @@ public class MistigriCartridgeItem extends CartridgeItem {
     @Override
     protected void appendState(ItemStack stack, Tooltips tips) {
         int total = 0;
-        for (Sentence sentence : Sentence.values()) {
-            int weight = weight(stack, sentence);
-            total += weight;
-            if (weight == 0) continue;
-            tips.state(Text.translatable("tooltip.steveparty.mistigri_cartridge.sentence",
-                    Tooltips.rgb(Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack)), 0xC9A2F0),
-                    chance(stack, sentence)));
-        }
+        for (Sentence sentence : Sentence.values()) total += weight(stack, sentence);
         if (total == 0) tips.warn(Text.translatable("tooltip.steveparty.mistigri_cartridge.none"));
     }
 }

@@ -21,7 +21,7 @@ public class GateKeyItem extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        Tooltips.of(tooltip).tags(Tooltips.Tag.CONSUMED).summary("tooltip.steveparty.gate_key");
+        Tooltips.of(tooltip).summary("tooltip.steveparty.gate_key");
         super.appendTooltip(stack, context, tooltip, type);
     }
 }

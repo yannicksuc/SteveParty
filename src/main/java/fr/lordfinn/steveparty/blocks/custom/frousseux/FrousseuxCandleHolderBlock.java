@@ -332,7 +332,7 @@ public class FrousseuxCandleHolderBlock extends BlockWithEntity {
                 // an unreadable name: the candle alone
             }
         }
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.CREATURE);
+        Tooltips tips = Tooltips.of(tooltip);
         tips.state(name != null ? Text.translatable("tooltip.steveparty.frousseux_candle_holder.named", Tooltips.value(name), Tooltips.value(candle))
                 : Text.translatable("tooltip.steveparty.frousseux_candle_holder.kept", Tooltips.value(candle)));
         if (isOnSaucer(stack)) tips.state(Text.translatable("tooltip.steveparty.frousseux_candle_holder.saucer"));

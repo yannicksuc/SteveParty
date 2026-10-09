@@ -163,15 +163,17 @@ public class InventoryCartridgeItem extends CartridgeItem {
         }
         tips.state("tooltip.steveparty.linked_containers",
                 Tooltips.value(Text.translatable("tooltip.steveparty.count_of", containers.size(), CartridgeContainers.MAX)));
-        for (int i = 0; i < containers.size(); i++) {
-            BlockPos pos = containers.get(i).pos();
-            tips.state(Text.translatable("tooltip.steveparty.container_entry_indexed", i + 1, pos.getX(), pos.getY(), pos.getZ())
-                    .formatted(Tooltips.DIM));
-        }
     }
 
     @Override
     protected void appendMore(ItemStack stack, Tooltips.More more) {
+        Entity viewer = stack.getHolder();
+        List<GlobalPos> containers = CartridgeContainers.of(stack, viewer == null ? World.OVERWORLD : viewer.getWorld().getRegistryKey());
+        for (int i = 0; i < containers.size(); i++) {
+            BlockPos pos = containers.get(i).pos();
+            more.detail(Text.translatable("tooltip.steveparty.container_entry_indexed", i + 1, pos.getX(), pos.getY(), pos.getZ())
+                    .formatted(Tooltips.DIM));
+        }
         more.use(Tooltips.Keys.use(), "tooltip.steveparty.controls.container_click");
         more.note("tooltip.steveparty.containers_order");
     }

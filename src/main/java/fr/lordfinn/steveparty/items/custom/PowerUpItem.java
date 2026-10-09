@@ -66,19 +66,18 @@ public class PowerUpItem extends Item {
     }
 
     /**
-     * Tagged [Power-up] [Consumed]; then this stack's state ({@link #appendState}), what it does; behind Shift when
-     * and how to use it, the rules, its default price.
+     * Tagged [Power-up] (always used up: no other tag); then this stack's state ({@link #appendState}), what it does; behind Shift when
+     * and how to use it, the one-per-turn rule.
      */
     @Override
     public final void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.POWER_UP, Tooltips.Tag.CONSUMED);
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.POWER_UP);
         appendState(stack, tips);
         for (Text line : powerUp.effectLines()) tips.summary(line);
         tips.more(more -> {
             howToUse(more, powerUp.target());
             appendMore(stack, more);
             more.note(KEY + "one_per_turn");
-            more.note(KEY + "price", Tooltips.coins(Text.translatable("tooltip.steveparty.coins", powerUp.defaultPrice())));
         });
     }
 
