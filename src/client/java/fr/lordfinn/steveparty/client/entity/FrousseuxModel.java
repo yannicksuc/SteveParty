@@ -33,7 +33,7 @@ public class FrousseuxModel extends DefaultedEntityGeoModel<FrousseuxEntity> {
 
     @Override
     public RenderLayer getRenderType(FrousseuxEntity animatable, Identifier texture) {
-        return RenderLayer.getEntityTranslucentCull(texture);
+        return animatable.isFaded() ? FrousseuxGhostLayers.cull(texture) : RenderLayer.getEntityTranslucentCull(texture);
     }
 
     @Override
