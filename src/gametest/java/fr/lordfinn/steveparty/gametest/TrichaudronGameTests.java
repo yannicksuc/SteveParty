@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronSpawns;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronGoals;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronBlast;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronScreenHandler;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronPumping;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronRiding;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
@@ -44,8 +45,8 @@ import java.util.List;
 
 /**
  * The Trichaudron: born at least half full; buckets take lava from its tank and pour some in (lava only); pumping drinks
- * without taking the source; emptied it becomes tamable, each head trusts whoever fed it a magma cream, the three by
- * one player tame it; tamed and saddled it is ridden, the riders' keys added up; an untamed one throws its rider off;
+ * without taking the source; whoever empties it can tame it like a horse, riding it (the emptier its tank, the likelier);
+ * tamed and saddled it is ridden, the riders' keys added up; an untamed one throws its rider off;
  * it swims in lava; the charged jump; the blast (fire mostly, armour and shields); the spill on death; its save.
  */
 public class TrichaudronGameTests implements FabricGameTest {
@@ -94,7 +95,7 @@ public class TrichaudronGameTests implements FabricGameTest {
         return context.getAbsolutePos(new BlockPos(0, 1, 0)).getY();
     }
 
-    /** Empties its tank with a bucket in this player's hands: tamable. */
+    /** Empties its tank with a bucket in this player's hands: he is one who emptied it. */
     private static void empty(TrichaudronEntity trichaudron, ServerPlayerEntity player) {
         trichaudron.setTank(1);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.BUCKET));
@@ -103,8 +104,7 @@ public class TrichaudronGameTests implements FabricGameTest {
 
     private static void tame(TrichaudronEntity trichaudron, ServerPlayerEntity player) {
         empty(trichaudron, player);
-        ItemStack cream = new ItemStack(Items.MAGMA_CREAM, 8);
-        for (int head = 0; head < TrichaudronEntity.HEADS.length; head++) trichaudron.feedHead(player, head, cream);
+        trichaudron.tame(player); // what a successful ride does
     }
 
     // ---------------------------------------------------------------- spawn, tank
@@ -122,7 +122,7 @@ public class TrichaudronGameTests implements FabricGameTest {
             context.assertTrue(trichaudron.getTank() >= TrichaudronEntity.TANK_MAX / 2, "at least half full: " + trichaudron.getTank());
             context.assertEquals(trichaudron.getMaxHealth(), (float) TrichaudronEntity.MAX_HEALTH, "80 HP");
             context.assertTrue(trichaudron.isFireImmune(), "fire immune");
-            context.assertFalse(trichaudron.isTamed() || trichaudron.isTamable(), "wild");
+            context.assertFalse(trichaudron.isTamed(), "wild");
         }
         context.complete();
     }
@@ -177,51 +177,111 @@ public class TrichaudronGameTests implements FabricGameTest {
     // ---------------------------------------------------------------- taming
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void emptyingItMakesItTamable(TestContext context) {
+    public void emptyingItMarksTheEmptierWithoutAnger(TestContext context) {
         TestBoards.floor(context, 8);
         TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
-        ServerPlayerEntity player = player(context, new ItemStack(Items.BUCKET));
+        ServerPlayerEntity player = player(context, new ItemStack(Items.BUCKET)), other = player(context, ItemStack.EMPTY);
         trichaudron.setTank(2);
         player.interact(trichaudron, Hand.MAIN_HAND);
-        context.assertFalse(trichaudron.isTamable(), "not yet: a bucket left");
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.BUCKET));
         player.interact(trichaudron, Hand.MAIN_HAND);
         context.assertEquals(trichaudron.getTank(), 0, "emptied");
-        context.assertTrue(trichaudron.isTamable(), "emptied: tamable");
+        context.assertTrue(trichaudron.isEmptier(player), "he emptied it");
+        context.assertFalse(trichaudron.isEmptier(other), "not the other");
+        context.assertFalse(trichaudron.hasGrudge(player), "it doesn't mind");
         context.assertFalse(trichaudron.isTamed(), "not tamed yet");
-        TestPlayers.remove(context, player);
+        TestPlayers.remove(context, player, other);
         trichaudron.discard();
         context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void eachHeadTrustsWhoFedIt(TestContext context) {
+    public void itsTamingChanceGrowsAsItsTankEmptiesAndWithItsTemper(TestContext context) {
+        context.assertEquals(TrichaudronEntity.tameChance(0, 0), TrichaudronEntity.TAME_EMPTY, "empty: its best chance");
+        context.assertEquals(TrichaudronEntity.tameChance(TrichaudronEntity.TANK_MAX, 0), 0, "full: none");
+        int half = TrichaudronEntity.tameChance(TrichaudronEntity.TANK_MAX / 2, 0);
+        context.assertTrue(half > 0 && half < TrichaudronEntity.TAME_EMPTY, "half full: in between, " + half);
+        context.assertEquals(TrichaudronEntity.tameChance(TrichaudronEntity.TANK_MAX, TrichaudronEntity.TEMPER_STEP),
+                TrichaudronEntity.TEMPER_STEP, "every failed try a little more");
+        context.assertEquals(TrichaudronEntity.tameChance(0, 100), 100, "at most certain");
+        context.complete();
+    }
+
+    /** A wild one with this temper (a save's), its tank empty. */
+    private static TrichaudronEntity withTemper(TestContext context, BlockPos at, int temper) {
+        TrichaudronEntity trichaudron = spawn(context, at);
+        NbtCompound nbt = new NbtCompound();
+        trichaudron.writeNbt(nbt);
+        nbt.putInt("Temper", temper);
+        trichaudron.readNbt(nbt);
+        return trichaudron;
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_tame_ride", tickLimit = 200)
+    public void onlyWhoEmptiedItTamesItByRiding(TestContext context) {
         TestBoards.floor(context, 8);
-        TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
-        ServerPlayerEntity a = player(context, ItemStack.EMPTY), b = player(context, ItemStack.EMPTY);
-        ItemStack cream = new ItemStack(Items.MAGMA_CREAM, 16);
-        trichaudron.feedHead(a, 1, cream);
-        context.assertTrue(trichaudron.trusts(1, a), "head 1 trusts A");
-        context.assertFalse(trichaudron.trusts(0, a) || trichaudron.trusts(2, a), "the others don't");
-        context.assertFalse(trichaudron.mayShoot(1, a), "head 1 never shoots A");
-        context.assertTrue(trichaudron.mayShoot(0, a), "head 0 still may");
-        context.assertTrue(trichaudron.mayShoot(1, b), "head 1 may shoot B");
-        trichaudron.feedHead(a, 0, cream);
-        trichaudron.feedHead(a, 2, cream);
-        context.assertFalse(trichaudron.isTamed(), "trusted by all, but not tamable (full tank): not tamed");
-        // tamable, three heads shared between two players: not tamed
-        TrichaudronEntity other = spawn(context, new BlockPos(2, 1, 2));
-        empty(other, a);
-        other.feedHead(a, 0, cream);
-        other.feedHead(a, 1, cream);
-        other.feedHead(b, 2, cream);
-        context.assertFalse(other.isTamed(), "two players: not tamed");
-        other.feedHead(a, 2, cream);
-        context.assertTrue(other.isTamed() && other.isOwner(a), "the three by A: tamed, A its owner");
-        context.assertEquals(cream.getCount(), 16 - 7, "a cream a feed");
-        TestPlayers.remove(context, a, b);
+        TrichaudronEntity trichaudron = withTemper(context, new BlockPos(4, 1, 4), 100); // a sure success for an emptier
+        ServerPlayerEntity emptier = player(context, ItemStack.EMPTY);
+        empty(trichaudron, emptier);
+        emptier.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+        emptier.interact(trichaudron, Hand.MAIN_HAND);
+        context.assertTrue(emptier.getVehicle() == trichaudron, "on its back");
+        context.assertFalse(trichaudron.hasGrudge(emptier), "no anger at the one who emptied it");
+        context.waitAndRun(TrichaudronEntity.THROW_MIN + TrichaudronEntity.THROW_SPREAD + 5, () -> {
+            context.assertTrue(trichaudron.isTamed() && trichaudron.isOwner(emptier), "it gave in: tamed, him its owner");
+            context.assertTrue(emptier.getVehicle() == trichaudron, "and he is still on");
+            TestPlayers.remove(context, emptier);
+            trichaudron.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_tame_stranger", tickLimit = 200)
+    public void aStrangerOnItsBackIsThrownAndProvokesIt(TestContext context) {
+        TestBoards.floor(context, 8);
+        TrichaudronEntity trichaudron = withTemper(context, new BlockPos(4, 1, 4), 100); // even its surest temper
+        trichaudron.setTank(0);
+        ServerPlayerEntity stranger = player(context, ItemStack.EMPTY);
+        stranger.interact(trichaudron, Hand.MAIN_HAND);
+        context.assertTrue(stranger.getVehicle() == trichaudron, "it lets him climb on");
+        context.assertTrue(trichaudron.hasGrudge(stranger), "a stranger on its back: provoked");
+        context.waitAndRun(TrichaudronEntity.THROW_MIN + TrichaudronEntity.THROW_SPREAD + 5, () -> {
+            context.assertFalse(stranger.hasVehicle(), "thrown off");
+            context.assertFalse(trichaudron.isTamed(), "and still wild");
+            TestPlayers.remove(context, stranger);
+            trichaudron.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itsScreenOpensLikeAHorses(TestContext context) {
+        TestBoards.floor(context, 8);
+        TrichaudronEntity wild = spawn(context, new BlockPos(2, 1, 2));
+        ServerPlayerEntity owner = player(context, ItemStack.EMPTY), other = player(context, ItemStack.EMPTY);
+        wild.openInventory(owner);
+        context.assertFalse(owner.currentScreenHandler instanceof TrichaudronScreenHandler, "wild: no screen");
+        TrichaudronEntity trichaudron = spawn(context, new BlockPos(5, 1, 5));
+        tame(trichaudron, owner);
+        owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SADDLE));
+        owner.interact(trichaudron, Hand.MAIN_HAND);
+        owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+        owner.interact(trichaudron, Hand.MAIN_HAND);
+        context.assertTrue(owner.getVehicle() == trichaudron, "the owner rides it");
+        trichaudron.openInventory(owner); // what the inventory key sends while riding
+        context.assertTrue(owner.currentScreenHandler instanceof TrichaudronScreenHandler, "its rider's inventory key: its screen");
+        owner.closeHandledScreen();
+        trichaudron.openInventory(other);
+        context.assertFalse(other.currentScreenHandler instanceof TrichaudronScreenHandler, "ridden by someone else: not for a passer-by");
+        owner.stopRiding();
+        other.setSneaking(true);
+        other.interact(trichaudron, Hand.MAIN_HAND);
+        context.assertTrue(other.currentScreenHandler instanceof TrichaudronScreenHandler, "nobody on: a sneaking click opens it");
+        context.assertFalse(other.hasVehicle(), "and doesn't climb on");
+        other.closeHandledScreen();
+        TestPlayers.remove(context, owner, other);
+        wild.discard();
         trichaudron.discard();
-        other.discard();
         context.complete();
     }
 
@@ -234,7 +294,7 @@ public class TrichaudronGameTests implements FabricGameTest {
         context.assertTrue(trichaudron.isTamed(), "tamed");
         owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
         owner.interact(trichaudron, Hand.MAIN_HAND);
-        context.assertFalse(owner.hasVehicle(), "no saddle: no ride (its saddle slot opens)");
+        context.assertFalse(owner.hasVehicle(), "no saddle: no ride");
         owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SADDLE));
         owner.interact(trichaudron, Hand.MAIN_HAND);
         context.assertTrue(trichaudron.isSaddled(), "saddled");
@@ -313,6 +373,7 @@ public class TrichaudronGameTests implements FabricGameTest {
         trichaudron.setAiDisabled(false);
         ServerPlayerEntity owner = player(context, ItemStack.EMPTY);
         tame(trichaudron, owner);
+        trichaudron.setTank(TrichaudronEntity.TANK_MAX); // full of fuel
         trichaudron.inventory.setStack(0, new ItemStack(Items.SADDLE));
         owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
         owner.startRiding(trichaudron);
@@ -324,6 +385,81 @@ public class TrichaudronGameTests implements FabricGameTest {
         TestPlayers.remove(context, owner);
         trichaudron.discard();
         context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_fuel")
+    public void lavaIsItsFuel(TestContext context) {
+        strip(context, 30);
+        TrichaudronEntity trichaudron = facingEast(context, new BlockPos(2, 1, 8));
+        trichaudron.setAiDisabled(false);
+        ServerPlayerEntity owner = player(context, ItemStack.EMPTY);
+        tame(trichaudron, owner);
+        trichaudron.inventory.setStack(0, new ItemStack(Items.SADDLE));
+        owner.startRiding(trichaudron);
+        owner.forwardSpeed = 1;
+        double[] moved = new double[3];
+        int[] tanks = {0, TrichaudronEntity.TANK_MAX / 2, TrichaudronEntity.TANK_MAX};
+        for (int k = 0; k < 3; k++) {
+            trichaudron.setTank(tanks[k]);
+            trichaudron.setVelocity(Vec3d.ZERO);
+            double startX = trichaudron.getX();
+            for (int tick = 0; tick < 20; tick++) trichaudron.travel(Vec3d.ZERO);
+            moved[k] = trichaudron.getX() - startX;
+        }
+        context.assertTrue(Math.abs(moved[0]) < 0.25, "empty: it isn't driven, " + moved[0]);
+        context.assertTrue(moved[1] > 0.5 && moved[1] < moved[2], "half full: slower than full, " + moved[1] + " < " + moved[2]);
+        // a lava bucket from the saddle: poured in, not fired
+        trichaudron.setTank(5);
+        owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LAVA_BUCKET));
+        trichaudron.riderClick(owner);
+        context.assertEquals(trichaudron.getTank(), 6, "a bucket more in its tank");
+        context.assertTrue(owner.getMainHandStack().isOf(Items.BUCKET), "the bucket left empty");
+        TestPlayers.remove(context, owner);
+        trichaudron.discard();
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itsRidersHoldTheCentreThenLeftThenRightHead(TestContext context) {
+        TestBoards.floor(context, 8);
+        TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
+        context.assertTrue(TrichaudronEntity.HEADS[0].suffix().equals("_c") && TrichaudronEntity.HEADS[1].suffix().equals("_l")
+                && TrichaudronEntity.HEADS[2].suffix().equals("_r"), "heads: centre, left, right");
+        ServerPlayerEntity[] riders = {player(context, ItemStack.EMPTY), player(context, ItemStack.EMPTY), player(context, ItemStack.EMPTY)};
+        for (int i = 0; i < 3; i++) {
+            riders[i].startRiding(trichaudron, true);
+            context.assertEquals(trichaudron.headOf(riders[i]), i, "rider " + (i + 1) + " holds head " + TrichaudronEntity.HEADS[i].suffix());
+        }
+        TestPlayers.remove(context, riders);
+        trichaudron.discard();
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_lava_leap", tickLimit = 140)
+    public void theChargedJumpLeapsOutOfTheLava(TestContext context) {
+        // a pool 8 x 8, 2 deep, its rim one block over the lava (low: the test's room is only so high)
+        for (int x = -1; x <= 8; x++) for (int z = -1; z <= 8; z++) for (int y = 0; y <= 4; y++) {
+            boolean wall = x < 0 || x > 7 || z < 0 || z > 7 || y == 0;
+            context.setBlockState(new BlockPos(x, y, z), wall ? (y <= 3 ? Blocks.STONE.getDefaultState() : Blocks.AIR.getDefaultState())
+                    : y <= 2 ? Blocks.LAVA.getDefaultState() : Blocks.AIR.getDefaultState());
+        }
+        TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
+        trichaudron.setAiDisabled(false);
+        trichaudron.setTank(10);
+        double surface = context.getAbsolutePos(new BlockPos(0, 2, 0)).getY() + 0.9;
+        double[] top = {Double.NEGATIVE_INFINITY};
+        context.runAtEveryTick(() -> top[0] = Math.max(top[0], trichaudron.getY()));
+        context.waitAndRun(40, () -> {
+            context.assertTrue(trichaudron.isSwimmingInLava(), "deep in the lava");
+            top[0] = Double.NEGATIVE_INFINITY;
+            context.assertTrue(trichaudron.thrusterJump(TrichaudronRiding.CHARGE_MAX), "it leaps from the lava");
+            context.waitAndRun(20, () -> {
+                context.assertTrue(top[0] > surface + 1.5, "out of the lava, over its rim: " + (top[0] - surface));
+                trichaudron.discard();
+                for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) for (int y = 1; y <= 2; y++) context.setBlockState(new BlockPos(x, y, z), Blocks.AIR);
+                context.complete();
+            });
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_swim", tickLimit = 140)
@@ -565,7 +701,7 @@ public class TrichaudronGameTests implements FabricGameTest {
         TestBoards.floor(context, 8);
         TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
         ServerPlayerEntity owner = player(context, ItemStack.EMPTY), friend = player(context, ItemStack.EMPTY);
-        trichaudron.feedHead(friend, 2, new ItemStack(Items.MAGMA_CREAM));
+        empty(trichaudron, friend);
         tame(trichaudron, owner);
         trichaudron.inventory.setStack(0, new ItemStack(Items.SADDLE));
         trichaudron.setTank(17);
@@ -577,7 +713,7 @@ public class TrichaudronGameTests implements FabricGameTest {
         context.assertEquals(copy.getTank(), 17, "17 buckets back");
         context.assertTrue(copy.isTamed() && copy.isOwner(owner), "tamed, its owner back");
         context.assertTrue(copy.isSaddled(), "its saddle back");
-        context.assertTrue(copy.trusts(2, friend) && !copy.trusts(0, friend), "its heads' trust back");
+        context.assertTrue(copy.isEmptier(friend) && copy.isEmptier(owner), "who emptied it, back");
         TestPlayers.remove(context, owner, friend);
         trichaudron.discard();
         context.complete();
@@ -639,35 +775,30 @@ public class TrichaudronGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_provoked")
-    public void takingItsLavaOrClimbingOnAWildOneProvokesIt(TestContext context) {
+    public void takingItsLavaDoesntProvokeItAStrangerClimbingOnDoes(TestContext context) {
         TestBoards.floor(context, 8);
         TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
         trichaudron.setTank(10);
-        ServerPlayerEntity thief = player(context, new ItemStack(Items.BUCKET));
-        thief.interact(trichaudron, Hand.MAIN_HAND);
-        context.assertTrue(trichaudron.getTank() == 9 && trichaudron.hasGrudge(thief), "a bucket of its lava taken: a grudge");
-        context.assertTrue(trichaudron.getTarget() == thief, "and the thief its target");
+        ServerPlayerEntity emptier = player(context, new ItemStack(Items.BUCKET));
+        emptier.interact(trichaudron, Hand.MAIN_HAND);
+        context.assertTrue(trichaudron.getTank() == 9 && !trichaudron.hasGrudge(emptier), "a bucket of its lava taken: no grudge");
         ServerPlayerEntity rider = player(context, ItemStack.EMPTY);
         rider.interact(trichaudron, Hand.MAIN_HAND);
-        context.assertTrue(rider.getVehicle() == trichaudron && trichaudron.hasGrudge(rider), "climbing on a wild one: a grudge");
-        ServerPlayerEntity feeder = player(context, ItemStack.EMPTY);
-        trichaudron.feedHead(feeder, 0, new ItemStack(Items.MAGMA_CREAM, 4));
-        context.assertFalse(trichaudron.hasGrudge(feeder), "feeding it a cream: none");
-        TestPlayers.remove(context, thief, rider, feeder);
+        context.assertTrue(rider.getVehicle() == trichaudron && trichaudron.hasGrudge(rider), "a stranger climbing on: a grudge");
+        TestPlayers.remove(context, emptier, rider);
         trichaudron.discard();
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_provoked_trusted", tickLimit = 140)
-    public void aPlayerAllItsHeadsTrustNeverProvokesIt(TestContext context) {
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_provoked_owner", tickLimit = 140)
+    public void itsOwnerNeverProvokesIt(TestContext context) {
         strip(context, 22);
         TrichaudronEntity trichaudron = facingEast(context, new BlockPos(1, 1, 8));
         ServerPlayerEntity player = standOff(context, trichaudron, 10, 0);
-        ItemStack cream = new ItemStack(Items.MAGMA_CREAM, 8);
-        for (int head = 0; head < TrichaudronEntity.HEADS.length; head++) trichaudron.feedHead(player, head, cream);
-        context.assertTrue(trichaudron.trustedByAll(player), "all its heads trust him");
+        trichaudron.tame(player);
+        trichaudron.setTank(10);
         trichaudron.damage(trichaudron.getDamageSources().playerAttack(player), 1);
-        context.assertFalse(trichaudron.hasGrudge(player), "hitting it: no grudge");
+        context.assertFalse(trichaudron.hasGrudge(player), "its owner hitting it: no grudge");
         context.runAtTick(120, () -> {
             leftAlone(context, trichaudron, player);
             TestPlayers.remove(context, player);
