@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaLift;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -20,7 +20,7 @@ import net.minecraft.world.GameMode;
  * Carried by Mulas at night (MulaLift): the lift rule, only at night, the effects that move the player, letting go and
  * the dawn giving slow falling, and no damage to anyone. The night tests set the time: each in its own batch.
  */
-public class MulaLiftGameTests implements FabricGameTest {
+public class MulaLiftGameTests implements SteveGameTest {
 
     private static List<MulaEntity> leashed(TestContext context, ServerPlayerEntity player, int... hungers) {
         List<MulaEntity> mulas = new ArrayList<>();

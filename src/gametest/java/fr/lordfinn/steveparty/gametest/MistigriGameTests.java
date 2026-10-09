@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.effect.ModEffects;
@@ -13,7 +14,6 @@ import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
@@ -53,7 +53,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
  * or a 0), the Bad Luck of crossing his path, taming him with fish, his owner's Luck, the monsters missing, the chests
  * he sits on, what he knocks off, his die (cursed 1 to 3 only), and saving him.
  */
-public class MistigriGameTests implements FabricGameTest {
+public class MistigriGameTests implements SteveGameTest {
     private static final String HUT = "mistigri_hut", NO_HUT = "mistigri_no_hut";
     private static final BlockPos CAT = new BlockPos(3, 1, 3);
 

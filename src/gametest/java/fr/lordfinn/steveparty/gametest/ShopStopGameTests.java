@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -30,7 +31,6 @@ import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.registry.ModGameRules;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -66,7 +66,7 @@ import java.util.function.Consumer;
  * and the tests of a batch stand side by side, so another test's merchant would be found (or be busy with its own
  * stop), and {@code timeRunsOut} changes a game rule of the whole world.
  */
-public class ShopStopGameTests implements FabricGameTest {
+public class ShopStopGameTests implements SteveGameTest {
     /** The board: tile → shop space (a check point or a tile) → tile → tile. */
     private static final BlockPos START = new BlockPos(1, 1, 1), SHOP = new BlockPos(3, 1, 1),
             MIDDLE = new BlockPos(5, 1, 1), END = new BlockPos(7, 1, 1);

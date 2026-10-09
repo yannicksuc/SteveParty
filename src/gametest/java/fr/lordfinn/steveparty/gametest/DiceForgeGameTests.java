@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlock;
@@ -12,7 +13,6 @@ import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
@@ -40,7 +40,7 @@ import java.util.List;
 
 import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 
-public class DiceForgeGameTests implements FabricGameTest {
+public class DiceForgeGameTests implements SteveGameTest {
     private static final BlockPos FORGE_POS = new BlockPos(1, 1, 1);
     private static final int TICK_LIMIT = 400;
 

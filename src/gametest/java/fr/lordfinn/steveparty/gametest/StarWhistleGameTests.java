@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.powerups.effects.StarRelocator;
 import fr.lordfinn.steveparty.powerups.effects.StarWhistleEffect;
 import fr.lordfinn.steveparty.powerups.effects.StarWhistleEffect.Outcome;
 import fr.lordfinn.steveparty.powerups.effects.StarWhistleEffect.Result;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -24,7 +24,7 @@ import java.util.Set;
  * The Star Whistle power-up's effect: the Star leaves its space for another active Star space (never the same one),
  * stays put when there is no other one, and nothing happens without a Star; only a move uses the power-up up.
  */
-public class StarWhistleGameTests implements FabricGameTest {
+public class StarWhistleGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 1);
 
     /** A Star kept in memory: the active Star spaces and the one carrying the Star (the Star cartridge's stand-in). */

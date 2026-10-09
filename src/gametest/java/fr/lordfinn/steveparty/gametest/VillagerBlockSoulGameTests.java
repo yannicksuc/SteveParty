@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerSoul;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PistonBlock;
@@ -33,7 +33,7 @@ import java.util.List;
  * experience, name), a sticky piston pulling the block gives back the same villager, and the villager stays inside
  * when the block falls, is pushed, or is broken (by hand, no tool) and placed again.
  */
-public class VillagerBlockSoulGameTests implements FabricGameTest {
+public class VillagerBlockSoulGameTests implements SteveGameTest {
     private static final BlockPos FEET = new BlockPos(2, 2, 2);
     private static final String NAME = "Hmmbert";
 

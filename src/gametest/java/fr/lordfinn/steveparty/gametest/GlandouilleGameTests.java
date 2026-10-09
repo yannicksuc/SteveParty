@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
@@ -22,7 +23,6 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
 import fr.lordfinn.steveparty.service.GlandouillePushes;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -62,7 +62,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
  * mossy one anchored and never charging, the frosty one sliding off a wall, the cap never lost under a tower, the
  * planted acorn hatching, and the Glandouille board space.
  */
-public class GlandouilleGameTests implements FabricGameTest {
+public class GlandouilleGameTests implements SteveGameTest {
 
     // ---------------------------------------------------------------- set-up
 

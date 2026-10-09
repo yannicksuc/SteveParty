@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.StarFragmentsBlock;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.test.GameTest;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 /** The star fragments blocks are glowing glass: full-cube collision, see-through, never suffocating. */
-public class StarFragmentsBlockGameTests implements FabricGameTest {
+public class StarFragmentsBlockGameTests implements SteveGameTest {
 
     /** The 16 colours, in dye order. */
     private static final List<Block> BLOCKS = ModBlocks.STAR_FRAGMENTS_BLOCKS;

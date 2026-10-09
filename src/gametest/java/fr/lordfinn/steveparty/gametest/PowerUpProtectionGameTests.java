@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -8,7 +9,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.powerups.effects.PowerUpProtection;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.test.GameTest;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 /** The Padlock power-up's protection: given, used up by one attack, ended by the next turn, saved with the party. */
-public class PowerUpProtectionGameTests implements FabricGameTest {
+public class PowerUpProtectionGameTests implements SteveGameTest {
 
     private static PartyControllerEntity placeController(TestContext context, BlockPos pos) {
         context.setBlockState(pos.down(), Blocks.STONE);

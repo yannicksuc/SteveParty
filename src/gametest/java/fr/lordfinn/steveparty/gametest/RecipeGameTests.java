@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -8,7 +9,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -38,7 +38,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Recipes: every one reachable from the recipe book, and the crafts that used to be missing or lossy. */
-public class RecipeGameTests implements FabricGameTest {
+public class RecipeGameTests implements SteveGameTest {
 
     /** @return what the crafting grid gives (empty if no recipe matches). */
     private static ItemStack result(TestContext context, int width, int height, ItemStack... grid) {

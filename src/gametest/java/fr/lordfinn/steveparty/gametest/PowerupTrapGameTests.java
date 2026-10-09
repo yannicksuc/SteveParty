@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -19,7 +20,6 @@ import fr.lordfinn.steveparty.powerups.effects.TrapKind;
 import fr.lordfinn.steveparty.powerups.effects.TrapState;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.CowEntity;
@@ -46,7 +46,7 @@ import java.util.function.BiConsumer;
  * Players: {@code a} sets the traps, {@code b} is the victim. Each test runs in a batch of its own (mock players, the
  * coins they hold).
  */
-public class PowerupTrapGameTests implements FabricGameTest {
+public class PowerupTrapGameTests implements SteveGameTest {
     private static final TrapSetupComponent.Effect COINS = TrapSetupComponent.DEFAULT;
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 5);
     /** The board: T0 → T1 → T2 → T3. */

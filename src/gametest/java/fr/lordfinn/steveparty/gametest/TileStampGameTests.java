@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -12,7 +13,6 @@ import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.items.custom.StencilHammerStrike;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Optional;
 
 /** Stamping a look on a tile: on the tile while it holds no cartridge, else on its cartridge (which carries it away). */
-public class TileStampGameTests implements FabricGameTest {
+public class TileStampGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(2, 2, 2);
 
     private static BoardSpaceBlockEntity tile(TestContext context) {

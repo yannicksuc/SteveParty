@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
@@ -9,7 +10,6 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -68,7 +68,7 @@ import java.util.UUID;
  * Every test plays in a zone of 4x5x4 blocks, from (1,1,1) to (4,5,4), on a stone floor: x = 5 and beyond is
  * the world outside. The tests that touch the whole server (crash, stop, settings) each have a batch of their own.
  */
-public class ZoneBubbleGameTests implements FabricGameTest {
+public class ZoneBubbleGameTests implements SteveGameTest {
     private static final String BATCH = "zone_bubble";
     private static final String STASH_TAG = "steveparty.zone_bubble";
     /** The time of day each running test began at. */
@@ -78,10 +78,10 @@ public class ZoneBubbleGameTests implements FabricGameTest {
 
     /** A test that fails ends its session all the same: a zone left in session would spoil the tests that follow. */
     @Override
-    public void invokeTestMethod(TestContext context, Method method) {
+    public void invokeWhenReady(TestContext context, Method method) {
         STARTED_AT.put(context, context.getWorld().getTimeOfDay());
         try {
-            FabricGameTest.super.invokeTestMethod(context, method);
+            SteveGameTest.super.invokeWhenReady(context, method);
         } catch (RuntimeException | Error e) {
             endLeftSession(context);
             throw e;

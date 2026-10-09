@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
@@ -13,7 +14,6 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
@@ -42,7 +42,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * end into the wall capped (the pipe placed against the wall first), a mouth facing the wall (the run built first, the
  * pipe placed against it), or the pipe in the middle of the run. Nobody is brought out of a mouth with a block in front.
  */
-public class MiniGamePipeBuildOrderGameTests implements FabricGameTest {
+public class MiniGamePipeBuildOrderGameTests implements SteveGameTest {
     private static final int GREEN = 13;
 
     private static Block green() {

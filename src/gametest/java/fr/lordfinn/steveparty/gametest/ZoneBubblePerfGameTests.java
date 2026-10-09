@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -49,7 +49,7 @@ import java.util.function.IntConsumer;
  *   <li>beginning (and ending) a session at the caps: 1024 full chests and 1024 entities.</li>
  * </ul>
  */
-public class ZoneBubblePerfGameTests implements FabricGameTest {
+public class ZoneBubblePerfGameTests implements SteveGameTest {
     private static final int ROUNDS = 4;
     private static final int CALLS = 1_000_000;
 

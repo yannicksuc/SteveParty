@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -10,7 +11,6 @@ import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
@@ -41,7 +41,7 @@ import net.minecraft.util.math.GlobalPos;
  * when a creeper does), lightning leaves tokens as they are, the vanilla actions that would turn it into something
  * else do nothing (a horse token can still be ridden), and its memories (a villager's job site) are kept.
  */
-public class TokenSafetyGameTests implements FabricGameTest {
+public class TokenSafetyGameTests implements SteveGameTest {
 
     private static <T extends MobEntity> T token(T mob) {
         ((TokenizedEntityInterface) mob).steveparty$setTokenized(true);

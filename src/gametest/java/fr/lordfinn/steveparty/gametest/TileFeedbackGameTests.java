@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
@@ -28,7 +29,6 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /** Tile feedback: a pop when passing, a themed landing where a token stops, only a soft pop outside a game. */
-public class TileFeedbackGameTests implements FabricGameTest {
+public class TileFeedbackGameTests implements SteveGameTest {
 
     private static BoardSpaceBlockEntity placeTile(TestContext context, BlockPos pos) {
         context.setBlockState(pos.down(), Blocks.STONE);

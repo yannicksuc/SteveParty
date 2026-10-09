@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageSources;
@@ -23,7 +23,7 @@ import java.util.Map;
  * Mulas died of falls (coming down from the night sky, pulled down by a lead) and were solid boxes shoving each other:
  * now nothing of their own flying life hurts them, they pass through each other, and a lead pulls them gently.
  */
-public class MulaSafetyGameTests implements FabricGameTest {
+public class MulaSafetyGameTests implements SteveGameTest {
 
     /** Falls, crashes, walls, water, fire, lava, hot floors, cramming, another Mula: 0 damage. A player still hurts. */
     @GameTest(templateName = EMPTY_STRUCTURE)

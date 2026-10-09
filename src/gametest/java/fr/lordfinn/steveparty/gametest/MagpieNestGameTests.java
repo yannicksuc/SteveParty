@@ -7,7 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.MagpieNestPile;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieEntity;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.HopperBlock;
@@ -40,7 +40,7 @@ import java.util.function.BooleanSupplier;
  * around and nothing else. The tests with wild Pies have batches of their own (any loaded nest is theirs, any shiny
  * thing lying around).
  */
-public class MagpieNestGameTests implements FabricGameTest {
+public class MagpieNestGameTests implements SteveGameTest {
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("MagpieNestGameTests");
 
     private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
@@ -180,6 +180,16 @@ public class MagpieNestGameTests implements FabricGameTest {
 
     // ---------------------------------------------------------------- wild Pies
 
+    /**
+     * Fences on the far half of the template, for a magpie looking for a perch to fly to. The test's barrier box
+     * (walls and a ceiling) keeps it in, but a column's top there is the ceiling: only the favourites it looks for
+     * a little lower, at random, are perches it can reach; with one fence alone it found none in 30 tries one run
+     * in two.
+     */
+    private static void perches(TestContext context) {
+        for (int x = 4; x < 8; x++) for (int z = 4; z < 8; z++) context.setBlockState(new BlockPos(x, 1, z), Blocks.OAK_FENCE.getDefaultState());
+    }
+
     private static WildMagpieEntity perchedPie(TestContext context, BlockPos fence) {
         context.setBlockState(fence, Blocks.OAK_FENCE.getDefaultState());
         WildMagpieEntity magpie = context.spawnEntity(ModEntities.WILD_MAGPIE, Vec3d.ofBottomCenter(fence).add(0, 1.2, 0));
@@ -205,6 +215,7 @@ public class MagpieNestGameTests implements FabricGameTest {
                 context.assertEquals(magpie.getNest(), abs, "its nest now");
                 magpie.setNightOverride(false);
                 when(context, () -> magpie.getFlightState() != WildMagpieEntity.ASLEEP, 20, () -> "awake at dawn" + state(magpie), () -> {
+                    perches(context);
                     boolean off = false;
                     for (int i = 0; i < 30 && !off; i++) off = magpie.takeOff(context.getWorld(), null) && magpie.isInFlight();
                     context.assertTrue(off, "and off");

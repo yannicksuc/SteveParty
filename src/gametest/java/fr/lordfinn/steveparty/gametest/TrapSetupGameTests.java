@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TrapSetupComponent;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -7,7 +8,6 @@ import fr.lordfinn.steveparty.items.custom.TrapPowerUpItem;
 import fr.lordfinn.steveparty.payloads.custom.TrapSetupPayloads;
 import fr.lordfinn.steveparty.powerups.PowerUps;
 import fr.lordfinn.steveparty.powerups.effects.TrapKind;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.CraftingRecipe;
@@ -28,7 +28,7 @@ import java.util.UUID;
  * The Trap item, like a book and quill: unsigned it steals 10 coins; signed (the setup screen's payload), it does what
  * its signer chose, for good. Traps alike stack; a signed Trap is copied in the crafting grid with unsigned ones.
  */
-public class TrapSetupGameTests implements FabricGameTest {
+public class TrapSetupGameTests implements SteveGameTest {
     private static ItemStack trap() {
         return new ItemStack(PowerUps.TRAP.item());
     }

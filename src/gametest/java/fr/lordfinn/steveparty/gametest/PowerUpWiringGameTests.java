@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
@@ -19,7 +20,6 @@ import fr.lordfinn.steveparty.powerups.effects.PowerUpStar;
 import fr.lordfinn.steveparty.powerups.effects.StarRelocator;
 import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -51,7 +51,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * the Thief Bells (a picked player, kept against an empty target, parried by a Padlock), the Star Whistle and the
  * Golden Pipe (kept with no Star; the Pipe holds the roll until the pawn has arrived).
  */
-public class PowerUpWiringGameTests implements FabricGameTest {
+public class PowerUpWiringGameTests implements SteveGameTest {
     private static final String BATCH = "powerups_wiring";
     /** The Star power-ups change the mod's Star ({@link PowerUpStar}): alone in their batch. */
     private static final String STAR_BATCH = "powerups_wiring_star";

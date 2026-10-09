@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.DiceModule;
@@ -8,7 +9,6 @@ import fr.lordfinn.steveparty.dice.DiceModulesComponent;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.recipes.DiceModuleRecipe;
 import fr.lordfinn.steveparty.recipes.MultiDiceRecipe;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -37,7 +37,7 @@ import static fr.lordfinn.steveparty.gametest.DiceTestKit.with;
  * The recipes of the special dice faces and of the dice modules, the modules added to a die at the crafting table,
  * and the Double / Triple Dice keeping what their dice carry.
  */
-public class DiceRecipeGameTests implements FabricGameTest {
+public class DiceRecipeGameTests implements SteveGameTest {
 
     private static Optional<RecipeEntry<CraftingRecipe>> recipe(TestContext context, ItemStack... grid) {
         CraftingRecipeInput input = CraftingRecipeInput.create(grid.length, 1, List.of(grid));

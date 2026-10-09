@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -16,7 +17,6 @@ import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * copied when a page is unlinked), only builders write on them, their pictures are checked and stored, and a page
  * says which teams its mini-game accepts.
  */
-public class MiniGamePageGameTests implements FabricGameTest {
+public class MiniGamePageGameTests implements SteveGameTest {
     /** Counts the changes told to {@link MiniGamePages#CHANGED} (registered once for the whole run). */
     private static final AtomicInteger CHANGES = new AtomicInteger();
     private static volatile UUID lastChanged;

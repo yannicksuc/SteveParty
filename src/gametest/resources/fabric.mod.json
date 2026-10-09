@@ -130,6 +130,9 @@
       "fr.lordfinn.steveparty.gametest.TrichaudronGameTests"
     ]
   },
+  "mixins": [
+    "steveparty-gametest.mixins.json"
+  ],
   "depends": {
     "steveparty": "*",
     "fabric-gametest-api-v1": "*"

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
@@ -9,7 +10,6 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.minigame.zone.ZoneForbidden;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
@@ -48,17 +48,17 @@ import java.util.UUID;
  * The zone of every test goes from (1, 1, 1) to (4, 5, 4). Each test has a batch of its own: the settings are the
  * server's.
  */
-public class ZoneForbiddenGameTests implements FabricGameTest {
+public class ZoneForbiddenGameTests implements SteveGameTest {
     private long hour;
 
     // ------------------------------------------------------------------ helpers
 
     /** A test that fails ends its session and forbids nothing more all the same. */
     @Override
-    public void invokeTestMethod(TestContext context, Method method) {
+    public void invokeWhenReady(TestContext context, Method method) {
         hour = context.getWorld().getTimeOfDay();
         try {
-            FabricGameTest.super.invokeTestMethod(context, method);
+            SteveGameTest.super.invokeWhenReady(context, method);
         } finally {
             for (ZoneBubble left : ZoneBubbles.all()) left.endNow();
             forbid(List.of(), List.of(), List.of());

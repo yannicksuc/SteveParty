@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.service.BoardActors;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -23,7 +23,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
  * The mobs board spaces summon (BoardActors): nothing hurts them but commands and the void, a creative player
  * included; they go when their sequence ends; a stray one (tagged, unknown) is removed as it loads.
  */
-public class BoardActorsGameTests implements FabricGameTest {
+public class BoardActorsGameTests implements SteveGameTest {
     private static final String BATCH = "board_actors";
 
     private static <T extends Entity> T spawn(TestContext context, T entity, UUID sequence) {

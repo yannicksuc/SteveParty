@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
@@ -14,7 +15,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BellBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -46,7 +46,7 @@ import net.minecraft.world.event.GameEvent;
  * mobs) wait until the reaction has started at least once ({@link VillagerBlockEntity#timesStarted}), since other
  * tests' players may make it react to something else in between.
  */
-public class VillagerBlockGameTests implements FabricGameTest {
+public class VillagerBlockGameTests implements SteveGameTest {
     private static final BlockPos POS = new BlockPos(3, 2, 3);
 
     private static VillagerBlockEntity place(TestContext context) {

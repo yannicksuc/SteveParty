@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartFuse;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DetectorRailBlock;
@@ -40,7 +40,7 @@ import java.util.UUID;
  * rocket's own stars or a default one for a plain rocket, and the rocket is saved with it), and the rails (it
  * follows a curve, a detector rail sees it).
  */
-public class BoomcartGameTests implements FabricGameTest {
+public class BoomcartGameTests implements SteveGameTest {
     /** mobGriefing is changed for the whole server: these tests run alone in their batch. */
     private static final String GRIEFING_BATCH = "boomcart_griefing";
 

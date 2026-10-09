@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
 import fr.lordfinn.steveparty.dice.DiceModules;
@@ -16,7 +17,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.DiceRevealPayload;
 import fr.lordfinn.steveparty.service.TurnMoves;
 import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
@@ -43,7 +43,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * as they make it, then the total; {@link DiceThrowRevealed} is fired once, and only then the token moves. A single die
  * is revealed at once, as before.
  */
-public class DiceRevealGameTests implements FabricGameTest {
+public class DiceRevealGameTests implements SteveGameTest {
     private static final String BATCH = "dice_reveal";
     private static final BlockPos DICE = new BlockPos(2, 1, 2);
     /** The throws revealed, by lead die. */
