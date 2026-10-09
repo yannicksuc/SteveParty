@@ -23,7 +23,7 @@ public class ModParticles {
     public static final ParticleType<StarFlareEffect> STAR_FLARE =
             FabricParticleTypes.complex(StarFlareEffect.CODEC, StarFlareEffect.PACKET_CODEC);
 
-    /** The Fumarole's steam (sprites from vanilla 26.2's geyser): its blast's plume, its vent's wisps, the puffs. */
+    /** The Trichaudron's steam (sprites from vanilla 26.2's geyser): its blast's plume, its vent's wisps, the puffs. */
     public static final SimpleParticleType THERMAL_PLUME = FabricParticleTypes.simple();
     public static final SimpleParticleType THERMAL_BASE = FabricParticleTypes.simple();
     public static final SimpleParticleType THERMAL_POOF = FabricParticleTypes.simple();
