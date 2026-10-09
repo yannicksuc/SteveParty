@@ -8,12 +8,8 @@ import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.BoardRuleCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -21,23 +17,19 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationAxis;
-import org.joml.Matrix4f;
 import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * What the board rule cartridges show over their space, drawn by the tile's renderer: the condition of a Threshold
- * obstacle (« 7 or more », « DOUBLE »), what a Common pot holds; always facing the camera, readable from all around.
+ * What the board rule cartridges put in the world over their space, drawn by the tile's renderer: the gates of a Key
+ * gate. What a space tells (a Threshold's condition, what a Common pot holds...) is its game info panel, see
+ * fr.lordfinn.steveparty.client.board.TileInfoClient.
  */
 public final class BoardRuleOverlays {
-    /** Height of the label's middle above the tile's block. */
-    private static final double LABEL_Y = 1.7;
-    private static final float LABEL_SCALE = 0.03f;
     /** Half the width of the jaws of a Trap set on a check point (around its floating cube). */
     private static final float CHECK_POINT_HALF = 0.3f;
 
@@ -47,12 +39,7 @@ public final class BoardRuleOverlays {
     public static void render(BoardSpaceBlockEntity entity, BoardSpaceType tileType, ItemStack stack, double centreX, double centreZ,
                               float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
         if (stack.isEmpty()) return;
-        if (tileType == BoardSpaceType.TILE_THRESHOLD && stack.getItem() instanceof ThresholdCartridgeItem) {
-            label(ThresholdCartridgeItem.label(stack), centreX, centreZ, 0xFFFFFF, matrices, consumers);
-        } else if (tileType == BoardSpaceType.TILE_POT && stack.getItem() instanceof PotCartridgeItem) {
-            // What the pot holds, in coin gold
-            label(Text.translatable("gui.steveparty.pot.label", PotCartridgeItem.coins(stack)), centreX, centreZ, 0xFFD54A, matrices, consumers);
-        } else if (tileType == BoardSpaceType.TILE_KEY_GATE && stack.getItem() instanceof KeyGateCartridgeItem) {
+        if (tileType == BoardSpaceType.TILE_KEY_GATE && stack.getItem() instanceof KeyGateCartridgeItem) {
             gates(entity, stack, centreX, centreZ, tickDelta, matrices, consumers);
         }
     }
@@ -73,22 +60,6 @@ public final class BoardRuleOverlays {
         if (type == BoardSpaceType.DEFAULT || type == BoardSpaceType.TILE_START) return;
         render(entity, type, BoardSpaceClientUtils.getDisplayedCartridge(entity),
                 0.5, 0.5, tickDelta, matrices, consumers, light);
-    }
-
-    /** A line of text over the space, facing the camera, lit whatever the light (a sign of the board). */
-    static void label(Text text, double centreX, double centreZ, int color, MatrixStack matrices, VertexConsumerProvider consumers) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        TextRenderer font = client.textRenderer;
-        matrices.push();
-        matrices.translate(centreX, LABEL_Y, centreZ);
-        matrices.multiply(client.getEntityRenderDispatcher().getRotation());
-        matrices.scale(LABEL_SCALE, -LABEL_SCALE, LABEL_SCALE);
-        Matrix4f matrix = matrices.peek().getPositionMatrix();
-        float x = -font.getWidth(text) / 2f;
-        // Shadowed, no backdrop (a backdrop fights with the glyphs for the same depth)
-        font.draw(text, x, -4, color, true, matrix, consumers, TextRenderer.TextLayerType.NORMAL, 0,
-                LightmapTextureManager.MAX_LIGHT_COORDINATE);
-        matrices.pop();
     }
 
     // ---------------------------------------------------------------- the Key gate's holograms

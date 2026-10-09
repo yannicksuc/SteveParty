@@ -289,6 +289,28 @@ public final class HelmetView {
         consumers.draw();
     }
 
+    /**
+     * How high (blocks, from {@code anchor}) the board view and the helmet's details of the space at {@code anchor}
+     * reach, seen from {@code distance} blocks: what is drawn above a space goes higher (the game info panel). 0 when
+     * no board view is shown.
+     */
+    static double heightAbove(Vec3d anchor, double distance) {
+        if (!BoardView.view().shown()) return 0;
+        float grow = (float) Math.clamp(distance / 7.0, 1.0, 3.0);
+        double plate = 16 * LABEL_SCALE * grow;
+        // The step plate, a warning above it, the shop's plate on top
+        double height = 0.25 + plate * 3.2;
+        for (int i = 0, n = details.size(); i < n; i++) {
+            Detail detail = details.get(i);
+            if (detail.anchor().equals(anchor)) {
+                double bottom = 0.25 + plate * (detail.shop() ? 3.15 : 2.1);
+                height = Math.max(height, bottom + plate * DETAIL_SCALE * 1.1 * detail.lines().size());
+                break;
+            }
+        }
+        return height;
+    }
+
     private static void renderFrames(WorldRenderContext context) {
         if (outFrames.isEmpty() && inFrames.isEmpty() && chestFrames.isEmpty()) return;
         MinecraftClient client = MinecraftClient.getInstance();

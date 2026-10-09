@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
@@ -119,5 +120,12 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
         serverPlayer.sendMessage(Text.translatable("message.steveparty.teleport_cartridge.network", network.displayName()), true);
         world.playSound(null, pos, SoundEvents.ITEM_DYE_USE, SoundCategory.BLOCKS, 1.0F, 1.0F);
         return ActionResult.SUCCESS;
+    }
+
+    /** Its network (the tiles it may send to). */
+    @Override
+    public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
+        if (stack.getItem() instanceof TeleportCartridgeItem)
+            info.line(TileInfo.line("teleport", TeleportCartridgeItem.settings(stack).network().displayName()));
     }
 }
