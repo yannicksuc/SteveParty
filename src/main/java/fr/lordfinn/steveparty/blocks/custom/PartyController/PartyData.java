@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.powerups.effects.TrapState;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -30,7 +31,7 @@ public class PartyData {
     /** Tokens whose next turn is lost (a Trap): saved with the party, see TokenTurnPartyStep#start. */
     private final Set<UUID> skippedTokens = new LinkedHashSet<>();
     /** The hidden traps of the Trap power-up: saved with the party, never sent to the clients. */
-    private final fr.lordfinn.steveparty.powerups.effects.TrapState traps = new fr.lordfinn.steveparty.powerups.effects.TrapState();
+    private final TrapState traps = new TrapState();
 
     // Constructor
     public PartyData() {
@@ -237,7 +238,7 @@ public class PartyData {
     }
 
     /** The hidden traps set with the Trap power-up during this party (see {@code TrapEffect}). */
-    public fr.lordfinn.steveparty.powerups.effects.TrapState getTraps() {
+    public TrapState getTraps() {
         return traps;
     }
 
