@@ -532,7 +532,7 @@ public final class TileStampTextures {
 
     /** The Threshold obstacle's face: a striped hurdle on the blank tile face, in the ramp of {@code rgb} (steel blue). */
     public static Identifier thresholdFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("threshold", rgb, small),
+        return TEXTURES.get(new Key("threshold", rgb, small),
                 key -> register(glyphValues(small ? SMALL_THRESHOLD : THRESHOLD, small, THRESHOLD_SHADES), rgb, small));
     }
 
@@ -567,7 +567,7 @@ public final class TileStampTextures {
 
     /** The Common pot's face: a nest full of coins on the blank tile face, in the ramp of {@code rgb} (straw). */
     public static Identifier potFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("pot", rgb, small),
+        return TEXTURES.get(new Key("pot", rgb, small),
                 key -> register(glyphValues(small ? SMALL_POT : POT, small, POT_SHADES), rgb, small));
     }
 
@@ -602,7 +602,7 @@ public final class TileStampTextures {
 
     /** The Key gate's face: a gate with a keyhole on the blank tile face, in the ramp of {@code rgb} (teal). */
     public static Identifier keyGateFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("key_gate", rgb, small),
+        return TEXTURES.get(new Key("key_gate", rgb, small),
                 key -> register(glyphValues(small ? SMALL_KEY_GATE : KEY_GATE, small, KEY_GATE_SHADES), rgb, small));
     }
 
@@ -637,7 +637,7 @@ public final class TileStampTextures {
 
     /** The Trap's face: open jaws on the blank tile face, in the ramp of {@code rgb} (moss green). */
     public static Identifier trapFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("trap", rgb, small),
+        return TEXTURES.get(new Key("trap", rgb, small),
                 key -> register(glyphValues(small ? SMALL_TRAP : TRAP, small, TRAP_SHADES), rgb, small));
     }
 
