@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
-
 /**
  * What a Glandouille space does (see GlandouilleTileBehavior): a tower of invulnerable Glandouilles pops up behind the
  * token that stopped there and walks the path {@code distance} spaces on, pushing that token and every token it meets
