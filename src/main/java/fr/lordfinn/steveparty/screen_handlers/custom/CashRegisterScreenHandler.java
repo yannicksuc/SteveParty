@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlockEntity;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -32,7 +33,7 @@ public class CashRegisterScreenHandler extends ScreenHandler {
             }
         }
 
-        addPlayerSlots(playerInventory, 8, 86);
+        PlayerSlots.add(this::addSlot, playerInventory, 8, 86);
     }
 
     public CashRegisterScreenHandler(int i, PlayerInventory playerInventory, BlockPosPayload blockPosPayload) {
@@ -69,17 +70,5 @@ public class CashRegisterScreenHandler extends ScreenHandler {
     public boolean canUse(PlayerEntity player) {
         // The block still there and in reach (the inventory alone always said yes)
         return ScreenHandlerChecks.canUseInventory(this.inventory, player);
-    }
-
-    /** The player's inventory (3 rows) at (left, top) and its hotbar 58 pixels under it. */
-    private void addPlayerSlots(PlayerInventory playerInventory, int left, int top) {
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, left + col * 18, top + row * 18));
-            }
-        }
-        for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, left + col * 18, top + 58));
-        }
     }
 }

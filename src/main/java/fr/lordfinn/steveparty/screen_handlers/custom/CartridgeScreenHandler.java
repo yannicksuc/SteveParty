@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -64,14 +65,7 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
             }
             int invX = (backgroundWidth - CartridgeLayout.INVENTORY_W) / 2;
             int invY = CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP;
-            for (int row = 0; row < 3; row++) {
-                for (int col = 0; col < 9; col++) {
-                    addSlot(new Slot(playerInventory, col + row * 9 + 9, invX + 8 + col * 18, invY + 17 + row * 18));
-                }
-            }
-            for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(playerInventory, col, invX + 8 + col * 18, invY + 75));
-            }
+            PlayerSlots.add(this::addSlot, playerInventory, invX + 8, invY + 17);
         }
     }
 
