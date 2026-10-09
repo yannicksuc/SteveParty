@@ -9,6 +9,8 @@ import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Players;
 
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Source;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleSearch;
+import fr.lordfinn.steveparty.client.gui.GuiText;
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
@@ -342,7 +344,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             if (textRenderer.getWidth(value) <= width) return value;
             text = value;
         }
-        return textRenderer.trimToWidth(text, width - textRenderer.getWidth("…")).stripTrailing() + "…";
+        return GuiText.cut(textRenderer, text, width);
     }
 
     private record CycleButton(PartyButton button, String name, java.util.function.Supplier<Enum<?>> value) {}
@@ -533,7 +535,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         for (int i = 0; i < rows; i++) {
             int index = first + i, rowY = top + 1 + i * COMPLETION_ROW;
             GoalPoleSearch.Entry<Goal> goal = completions.get(index);
-            boolean hovered = mouseX >= left && mouseX < left + width && mouseY >= rowY && mouseY < rowY + COMPLETION_ROW;
+            boolean hovered = HitArea.contains(mouseX, mouseY, left, rowY, width, COMPLETION_ROW);
             if (index == completion || hovered) context.fill(left + 1, rowY, left + width - 1, rowY + COMPLETION_ROW, 0x50FFFFFF);
             drawSmallItem(context, goal.data().icon(), left + 2, rowY, 0.625f);
             String shown = fit(textRenderer, goal.label(), width - 17, false);
@@ -714,7 +716,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     }
 
     private static boolean isOverStatus(int mouseX, int mouseY, int iconX, int iconY) {
-        return mouseX >= iconX - 1 && mouseX < iconX + 9 && mouseY >= iconY - 1 && mouseY < iconY + 9;
+        return HitArea.contains(mouseX, mouseY, iconX - 1, iconY - 1, 10, 10);
     }
 
     /** Three lines of a list, for the presets button. */

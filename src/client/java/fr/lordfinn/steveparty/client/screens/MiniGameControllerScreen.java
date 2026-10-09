@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
@@ -183,7 +184,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
             if (format != null) context.drawTooltip(textRenderer, List.of(format.name(), format.meaning().formatted(Formatting.GRAY)), mouseX, mouseY);
         } else {
             // The zone's line: whole, and where it is drawn
-            if (mouseX >= x + CX && mouseX < x + CX + CW - BUTTON_W - 4 && mouseY >= y + ROW2_Y && mouseY < y + ROW2_Y + 18) {
+            if (HitArea.contains(mouseX, mouseY, x + CX, y + ROW2_Y, CW - BUTTON_W - 4, 18)) {
                 MiniGamePageData data = page();
                 boolean restore = data != null && data.restores(), adventure = data != null && data.adventure();
                 context.drawOrderedTooltip(textRenderer, textRenderer.wrapLines(Text.empty().append(zoneText()).append("\n")
@@ -290,7 +291,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
 
     private int chipAt(int mouseX, int mouseY) {
         for (int[] chip : chipsShown) {
-            if (mouseX >= chip[0] && mouseX < chip[0] + chip[2] && mouseY >= chip[1] && mouseY < chip[1] + 13) return chip[3];
+            if (HitArea.contains(mouseX, mouseY, chip[0], chip[1], chip[2], 13)) return chip[3];
         }
         return -1;
     }

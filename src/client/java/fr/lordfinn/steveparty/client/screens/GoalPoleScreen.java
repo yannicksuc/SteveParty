@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity.Comparator;
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -303,8 +304,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         int fieldX = x + 16;
-        if (verticalAmount != 0 && mouseX >= fieldX && mouseX < x + WIDTH - 16
-                && mouseY >= y + valueY && mouseY < y + valueY + FIELD_HEIGHT) {
+        if (verticalAmount != 0 && HitArea.contains(mouseX, mouseY, fieldX, y + valueY, x + WIDTH - 16 - fieldX, FIELD_HEIGHT)) {
             nudge(verticalAmount > 0 ? 1 : -1);
             return true;
         }

@@ -63,7 +63,7 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         for (int i = 0; i < wrapped.size() && i < max; i++) {
             StringVisitable line = wrapped.get(i);
             if (i == max - 1 && wrapped.size() > max) {
-                line = StringVisitable.concat(textRenderer.trimToWidth(line, Math.max(0, width - textRenderer.getWidth("…"))), StringVisitable.plain("…"));
+                line = GuiText.cut(textRenderer, line, width);
             }
             lines.add(Language.getInstance().reorder(line));
         }

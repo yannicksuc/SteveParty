@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.board.Pipette;
 import fr.lordfinn.steveparty.client.gui.HandCursor;
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.payloads.custom.PipettePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeContainerScreenHandler;
@@ -83,8 +84,7 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
     }
 
     private boolean overPipetteButton(double mouseX, double mouseY) {
-        return hasPipette() && mouseX >= pipetteX() && mouseX < pipetteX() + PIPETTE_BUTTON
-                && mouseY >= pipetteY() && mouseY < pipetteY() + PIPETTE_BUTTON;
+        return hasPipette() && HitArea.contains(mouseX, mouseY, pipetteX(), pipetteY(), PIPETTE_BUTTON, PIPETTE_BUTTON);
     }
 
     public boolean pipetteOn() {

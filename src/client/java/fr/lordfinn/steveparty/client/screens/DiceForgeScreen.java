@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.client.gui.HandCursor;
+import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.Status;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
@@ -265,7 +266,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     private static boolean isOverSlot(double px, double py, int slotX, int slotY) {
-        return px >= slotX - 1 && px < slotX + 17 && py >= slotY - 1 && py < slotY + 17;
+        return HitArea.contains(px, py, slotX - 1, slotY - 1, 18, 18);
     }
 
     private float getSmoothProgress(float delta) {
