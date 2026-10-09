@@ -60,8 +60,9 @@ import java.util.UUID;
  * <ul>
  *     <li><b>Bad luck</b>: crossing in front of him (his path, a few blocks ahead) gives Bad Luck for a while
  *     ({@link MistigriBadLuck}). He never hurts anyone himself.</li>
- *     <li><b>A cat</b>: knocks the items off item frames and the books out of chiseled bookshelves, sits on chests
- *     (they won't open under him), follows a player about staring at them, grooms, stretches, yawns, naps.</li>
+ *     <li><b>A cat</b>: knocks the items off item frames and the books out of chiseled bookshelves, falls asleep
+ *     sprawled on chests (they won't open under him; he sleeps there until woken: raw fish, a blow, his owner's hand),
+ *     follows a player about staring at them, grooms, stretches, yawns, naps.</li>
  *     <li><b>Angry</b> ({@link #isAngry}): hit, or a wolf too close. Arched back, hackles and tail bristling, he hisses;
  *     whoever hit him gets a long Bad Luck. Raw fish calms him.</li>
  *     <li><b>Fish</b>: each raw fish fed to a wild one counts; enough of them ({@link #fishToTame}) tame him.</li>
@@ -112,6 +113,9 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
             DataTracker.registerData(MistigriEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** Lying in a loaf (on a chest, napping). */
     private static final TrackedData<Boolean> LOAFING =
+            DataTracker.registerData(MistigriEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    /** Asleep on a chest (it won't open under him), sprawled: until woken (fish, a blow, his owner's hand). */
+    private static final TrackedData<Boolean> ON_CHEST =
             DataTracker.registerData(MistigriEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** Staring at someone (following them about). */
     private static final TrackedData<Boolean> STARING =
@@ -191,6 +195,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         builder.add(ACTION, 0);
         builder.add(ANGRY, false);
         builder.add(LOAFING, false);
+        builder.add(ON_CHEST, false);
         builder.add(STARING, false);
     }
 
@@ -236,13 +241,30 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
 
     public void setLoafing(boolean loafing) {
         this.dataTracker.set(LOAFING, loafing);
-        if (!loafing) chest = null;
+        if (!loafing) {
+            chest = null;
+            this.dataTracker.set(ON_CHEST, false);
+        }
     }
 
-    /** Loafs on top of the chest at {@code pos} (it won't open under him: MistigriBadLuck). */
+    /**
+     * Lies down: a loaf where he is ({@code pos} null, a nap), or asleep sprawled on the chest at {@code pos} (it won't
+     * open under him: MistigriBadLuck), until woken.
+     */
     public void loafOn(@Nullable BlockPos pos) {
         setLoafing(true);
         chest = pos == null ? null : pos.toImmutable();
+        this.dataTracker.set(ON_CHEST, pos != null);
+    }
+
+    /** Asleep on a chest (both sides). */
+    public boolean isAsleepOnChest() {
+        return isLoafing() && this.dataTracker.get(ON_CHEST);
+    }
+
+    /** Whether he stands on the block at {@code pos} (a chest is lower than a block: his feet are in its cell). */
+    public boolean standsOn(BlockPos pos) {
+        return BlockPos.ofFloored(getX(), getY() - 0.3, getZ()).equals(pos);
     }
 
     /** The chest he sits on (null if none). */
@@ -258,9 +280,9 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         this.dataTracker.set(STARING, staring);
     }
 
-    /** Free to do as he likes: alive, not the board's, not angry, not acting, not told to sit. */
+    /** Free to do as he likes: alive, not the board's, not angry, not acting, not told to sit, not asleep on a chest. */
     public boolean isFree() {
-        return isAlive() && !boardActor && !isAngry() && !isActing() && !isSitting() && !isLeashed();
+        return isAlive() && !boardActor && !isAngry() && !isActing() && !isSitting() && !isLeashed() && !isAsleepOnChest();
     }
 
     public int fishFed() {
@@ -319,7 +341,12 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
             if (!isAngry() && wolfNearby(world)) setAngry(ANGRY_TICKS);
         }
         // got off his chest (pushed, the chest broken): no longer sitting on it
-        if (chest != null && (!getBlockPos().down().equals(chest) && !getBlockPos().equals(chest.up()))) chest = null;
+        if (chest != null && !standsOn(chest)) chest = null;
+        // asleep on his chest: a slow purr and a note now and then, his snore
+        if (chest != null && age % 50 == 0) {
+            playSound(ModSounds.MISTIGRI_PURR, 0.35f, 0.85f);
+            world.spawnParticles(ParticleTypes.NOTE, getX(), getY() + 0.9, getZ(), 1, 0.2, 0.1, 0.2, 0.0);
+        }
         if (isAngry() && age % 32 == 0) playSound(ModSounds.MISTIGRI_HISS, 1.0f, 0.95f + random.nextFloat() * 0.1f);
         if (isAngry() && age % 4 == 0) {
             world.spawnParticles(ParticleTypes.SMOKE, getX(), getY() + HEIGHT + 0.1, getZ(), 1, 0.3, 0.05, 0.3, 0.005);
@@ -369,7 +396,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         ItemStack stack = player.getStackInHand(hand);
         if (boardActor || !isAlive()) return ActionResult.PASS;
         if (isFish(stack)) {
-            boolean useful = isAngry() || !isTamed() || getHealth() < getMaxHealth();
+            boolean useful = isAngry() || !isTamed() || isLoafing() || getHealth() < getMaxHealth();
             if (!useful) return ActionResult.PASS;
             if (getWorld() instanceof ServerWorld world) {
                 stack.decrementUnlessCreative(1, player);
@@ -534,6 +561,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     private static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
     private static final RawAnimation SIT = RawAnimation.begin().thenLoop("sit");
     private static final RawAnimation LOAF = RawAnimation.begin().thenLoop("loaf");
+    private static final RawAnimation SLEEP = RawAnimation.begin().thenLoop("sleep");
     private static final RawAnimation STARE = RawAnimation.begin().thenLoop("stare");
     private static final RawAnimation ANGRY_ANIM = RawAnimation.begin().thenPlay("angry_in").thenLoop("angry");
     private static final Map<Action, RawAnimation> ACTS = new java.util.EnumMap<>(Action.class);
@@ -554,6 +582,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         if (action != Action.NONE) return state.setAndContinue(ACTS.get(action));
         if (isAngry()) return state.setAndContinue(ANGRY_ANIM);
         if (isInSittingPose()) return state.setAndContinue(SIT);
+        if (isAsleepOnChest()) return state.setAndContinue(SLEEP);
         if (isLoafing()) return state.setAndContinue(LOAF);
         if (state.isMoving()) return state.setAndContinue(WALK);
         if (isStaring()) return state.setAndContinue(STARE);

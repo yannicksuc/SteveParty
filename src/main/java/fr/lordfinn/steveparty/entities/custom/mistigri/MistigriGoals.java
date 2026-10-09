@@ -262,13 +262,13 @@ public final class MistigriGoals {
     }
 
     /**
-     * Sits on a chest (or a barrel), as cats do: walks to it, hops on, and loafs there a long while; it won't open under
-     * him (MistigriBadLuck).
+     * Sleeps on a chest (or a barrel), as cats do: walks to it, hops on, and falls asleep there sprawled like a pasha,
+     * until woken (raw fish, a blow, his owner's hand: they make him get up); it won't open under him (MistigriBadLuck).
      */
     static final class SitOnChest extends Goal {
         private final MistigriEntity mistigri;
         private @Nullable BlockPos chest;
-        private int ticks, stay;
+        private int ticks;
         private boolean seated;
 
         SitOnChest(MistigriEntity mistigri) {
@@ -288,14 +288,13 @@ public final class MistigriGoals {
         public boolean shouldContinue() {
             if (chest == null || mistigri.isAngry() || mistigri.isSitting() || mistigri.isActing() && !seated) return false;
             if (!MistigriBadLuck.isSeat(mistigri.getWorld().getBlockState(chest).getBlock())) return false;
-            return seated ? ticks < stay && mistigri.chest() != null : ticks < 200;
+            return seated ? mistigri.chest() != null : ticks < 200; // asleep there until woken
         }
 
         @Override
         public void start() {
             ticks = 0;
             seated = false;
-            stay = MathHelper.nextInt(mistigri.getRandom(), 600, 1600);
             mistigri.getNavigation().startMovingTo(chest.getX() + 0.5, chest.getY() + 1, chest.getZ() + 0.5, 0.9);
         }
 
@@ -311,7 +310,7 @@ public final class MistigriGoals {
             ticks++;
             if (seated || chest == null) return;
             Vec3d top = new Vec3d(chest.getX() + 0.5, chest.getY() + 1, chest.getZ() + 0.5);
-            if (mistigri.getBlockPos().down().equals(chest) && mistigri.isOnGround()) {
+            if (mistigri.standsOn(chest) && mistigri.isOnGround()) {
                 mistigri.getNavigation().stop();
                 mistigri.loafOn(chest);
                 seated = true;
@@ -322,7 +321,7 @@ public final class MistigriGoals {
             if (distance < 2.4 && mistigri.isOnGround()) { // a hop up
                 mistigri.getNavigation().stop();
                 Vec3d to = top.subtract(mistigri.getPos());
-                mistigri.setVelocity(to.x * 0.22, 0.48, to.z * 0.22);
+                mistigri.setVelocity(to.x * 0.16, 0.5, to.z * 0.16);
                 mistigri.velocityDirty = true;
             } else if (ticks % 20 == 0) {
                 mistigri.getNavigation().startMovingTo(top.x, top.y, top.z, 0.9);

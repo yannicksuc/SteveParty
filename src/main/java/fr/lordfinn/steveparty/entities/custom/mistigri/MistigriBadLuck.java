@@ -97,7 +97,7 @@ public final class MistigriBadLuck {
                 MistigriEntity::isAlive)) {
             BlockPos chest = mistigri.chest();
             if (chest == null && !mistigri.isLoafing()) continue;
-            if (chest == null) chest = mistigri.getBlockPos().down();
+            if (chest == null) chest = BlockPos.ofFloored(mistigri.getX(), mistigri.getY() - 0.3, mistigri.getZ());
             if (chest.equals(pos)) return mistigri;
             for (Direction side : Direction.Type.HORIZONTAL) {
                 if (chest.equals(pos.offset(side)) && world.getBlockState(chest).getBlock() == world.getBlockState(pos).getBlock()

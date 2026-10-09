@@ -304,7 +304,7 @@ public class MistigriGameTests implements FabricGameTest {
     // ---------------------------------------------------------------- a cat's life
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void aChestHeSitsOnWontOpen(TestContext context) {
+    public void aChestHeSleepsOnWontOpen(TestContext context) {
         floor(context);
         BlockPos chest = new BlockPos(3, 1, 3);
         context.setBlockState(chest, Blocks.CHEST);
@@ -313,6 +313,10 @@ public class MistigriGameTests implements FabricGameTest {
         mistigri.loafOn(context.getAbsolutePos(chest));
         context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), context.getAbsolutePos(chest)) == mistigri, "he sits on it");
         context.assertTrue(MistigriBadLuck.isSeat(Blocks.BARREL) && MistigriBadLuck.isSeat(Blocks.ENDER_CHEST), "barrels and ender chests too");
+        context.assertTrue(mistigri.isAsleepOnChest() && !mistigri.isFree(), "asleep on it, until woken");
+        mistigri.feed(context.getWorld(), player(context));
+        context.assertFalse(mistigri.isAsleepOnChest(), "a raw fish wakes him");
+        context.assertTrue(MistigriBadLuck.sitter(context.getWorld(), context.getAbsolutePos(chest)) == null, "the chest opens again");
         context.complete();
     }
 
