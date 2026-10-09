@@ -2579,6 +2579,8 @@
   "subtitles.steveparty.frousseux.laugh": "Un Frousseux ricane",
   "subtitles.steveparty.frousseux.relight": "La flamme d'un Frousseux se rallume",
   "subtitles.steveparty.frousseux.blown_out": "La flamme d'un Frousseux est soufflée",
+  "message.steveparty.frousseux.off_to": "Le Frousseux file chez %s avec ton %s !",
+  "message.steveparty.frousseux.gift_coming": "Le Frousseux t'apporte un cadeau…",
   "entity.steveparty.boomcart": "Pétaroule",
   "item.steveparty.boomcart_spawn_egg": "Œuf d'apparition de Pétaroule",
   "subtitles.steveparty.boomcart.ambient": "Un Pétaroule ronchonne",

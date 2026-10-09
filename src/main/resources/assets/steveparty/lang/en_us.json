@@ -2579,6 +2579,8 @@
   "subtitles.steveparty.frousseux.laugh": "Wickling giggles",
   "subtitles.steveparty.frousseux.relight": "Wickling's flame relights",
   "subtitles.steveparty.frousseux.blown_out": "Wickling's flame is blown out",
+  "message.steveparty.frousseux.off_to": "The Wickling is off to %s with your %s!",
+  "message.steveparty.frousseux.gift_coming": "A Wickling is bringing you a present…",
   "entity.steveparty.boomcart": "Boomcart",
   "item.steveparty.boomcart_spawn_egg": "Boomcart Spawn Egg",
   "subtitles.steveparty.boomcart.ambient": "Boomcart grumbles",
