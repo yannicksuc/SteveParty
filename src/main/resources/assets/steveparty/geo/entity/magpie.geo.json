@@ -1,0 +1,263 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.magpie",
+        "texture_width": 64,
+        "texture_height": 32,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2,
+        "visible_bounds_offset": [
+          0,
+          0.5,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "body",
+          "pivot": [
+            0,
+            5,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2.5,
+                3,
+                -3
+              ],
+              "size": [
+                5.0,
+                5,
+                7
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "head",
+          "pivot": [
+            0,
+            8,
+            -3
+          ],
+          "parent": "body",
+          "cubes": [
+            {
+              "origin": [
+                -2,
+                7,
+                -7
+              ],
+              "size": [
+                4,
+                4,
+                4
+              ],
+              "uv": [
+                40,
+                10
+              ]
+            }
+          ]
+        },
+        {
+          "name": "beak",
+          "pivot": [
+            0,
+            8.5,
+            -7
+          ],
+          "parent": "head",
+          "cubes": [
+            {
+              "origin": [
+                -0.5,
+                8,
+                -9
+              ],
+              "size": [
+                1.0,
+                1,
+                2
+              ],
+              "uv": [
+                0,
+                12
+              ]
+            }
+          ]
+        },
+        {
+          "name": "coin",
+          "pivot": [
+            0,
+            8.5,
+            -9
+          ],
+          "parent": "beak",
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                7,
+                -10
+              ],
+              "size": [
+                2,
+                2,
+                1
+              ],
+              "uv": [
+                6,
+                12
+              ]
+            }
+          ]
+        },
+        {
+          "name": "wing_left",
+          "pivot": [
+            -2.5,
+            7.5,
+            -2
+          ],
+          "parent": "body",
+          "cubes": [
+            {
+              "origin": [
+                -3.5,
+                5,
+                -2
+              ],
+              "size": [
+                1.0,
+                3,
+                7
+              ],
+              "uv": [
+                46,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "wing_right",
+          "pivot": [
+            2.5,
+            7.5,
+            -2
+          ],
+          "parent": "body",
+          "cubes": [
+            {
+              "origin": [
+                2.5,
+                5,
+                -2
+              ],
+              "size": [
+                1.0,
+                3,
+                7
+              ],
+              "uv": [
+                24,
+                10
+              ]
+            }
+          ]
+        },
+        {
+          "name": "tail",
+          "pivot": [
+            0,
+            6,
+            4
+          ],
+          "parent": "body",
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                5,
+                4
+              ],
+              "size": [
+                2,
+                1,
+                9
+              ],
+              "uv": [
+                24,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "leg_left",
+          "pivot": [
+            -1,
+            3,
+            0.5
+          ],
+          "parent": "body",
+          "cubes": [
+            {
+              "origin": [
+                -1.5,
+                0,
+                0
+              ],
+              "size": [
+                1.0,
+                3,
+                1
+              ],
+              "uv": [
+                56,
+                10
+              ]
+            }
+          ]
+        },
+        {
+          "name": "leg_right",
+          "pivot": [
+            1,
+            3,
+            0.5
+          ],
+          "parent": "body",
+          "cubes": [
+            {
+              "origin": [
+                0.5,
+                0,
+                0
+              ],
+              "size": [
+                1.0,
+                3,
+                1
+              ],
+              "uv": [
+                60,
+                10
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

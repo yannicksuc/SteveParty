@@ -101,13 +101,14 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     }
 
     /**
-     * Only board spaces whose role animates something tick (the start tile animates its bound token), server side.
+     * Only board spaces whose role animates something tick (the start tile animates its bound token, a Common pot
+     * looks after its nest and its Pie), server side.
      * The ticker is re-evaluated by the chunk whenever the block state (and so the tile type) changes.
      */
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        if (world.isClient || state.get(TILE_TYPE) != BoardSpaceType.TILE_START) return null;
+        if (world.isClient || state.get(TILE_TYPE) != BoardSpaceType.TILE_START && state.get(TILE_TYPE) != BoardSpaceType.TILE_POT) return null;
         return TickableBlockEntity.getTicker(world);
     }
     /**

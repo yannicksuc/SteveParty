@@ -222,6 +222,12 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .input(Items.GOLD_NUGGET)
                 .criterion(hasItem(Items.GOLD_NUGGET), conditionsFromItem(Items.GOLD_NUGGET))
                 .offerTo(exporter, id("coin"));
+        // The Pie's nest: woven twigs and a feather
+        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.MAGPIE_NEST, 1)
+                .input(Items.STICK, 3)
+                .input(Items.FEATHER)
+                .criterion(hasItem(Items.FEATHER), conditionsFromItem(Items.FEATHER))
+                .offerTo(exporter, id("magpie_nest"));
 
         generatePolishedConcrete();
         generatePolishedTerracotta();
@@ -357,6 +363,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.MISTIGRI_CARTRIDGE, ModItems.LOADED_DIE);
         // Iron bars: the Threshold obstacle, a wall on the path
         offerCartridge(ModItems.THRESHOLD_CARTRIDGE, Items.IRON_BARS);
+        // The Pie's nest: the Common pot, kept by the Pie
+        offerCartridge(ModItems.POT_CARTRIDGE, ModItems.MAGPIE_NEST);
 
         // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
         // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)

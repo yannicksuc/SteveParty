@@ -133,6 +133,16 @@
           }
         ]
       }
+    },
+    "pot": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:pot_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -171,6 +181,9 @@
     ],
     [
       "threshold"
+    ],
+    [
+      "pot"
     ]
   ],
   "rewards": {

@@ -88,6 +88,8 @@ public class ThresholdGameTests implements FabricGameTest {
         controller.setPartyData(data);
         controller.nextStep();
         controller.nextStep();
+        // A party left running would go on looking for star spaces around it (other tests' boards)
+        atEnd(context, () -> context.removeBlock(CONTROLLER));
         return controller;
     }
 

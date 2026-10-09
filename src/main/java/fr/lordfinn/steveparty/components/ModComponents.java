@@ -127,6 +127,9 @@ public class ModComponents {
      */
     public static final ComponentType<java.util.Map<String, Integer>> BOARD_CARTRIDGE_STATE =
             registerComponent("board-cartridge-state", Codec.unboundedMap(Codec.STRING, Codec.INT));
+    /** The items the Pie stole into a Common pot (kept in its cartridge, given to the pot's winner). */
+    public static final ComponentType<java.util.List<ItemStack>> POT_ITEMS =
+            registerComponent("pot-items", ItemStack.CODEC.listOf());
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =
