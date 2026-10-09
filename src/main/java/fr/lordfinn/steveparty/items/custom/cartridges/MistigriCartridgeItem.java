@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
@@ -143,18 +144,16 @@ public class MistigriCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+    protected void appendState(ItemStack stack, Tooltips tips) {
         int total = 0;
         for (Sentence sentence : Sentence.values()) {
             int weight = weight(stack, sentence);
             total += weight;
             if (weight == 0) continue;
-            tooltip.add(Text.translatable("tooltip.steveparty.mistigri_cartridge.sentence",
-                            Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack)),
-                            chance(stack, sentence))
-                    .styled(tint(0xC9A2F0)));
+            tips.state(Text.translatable("tooltip.steveparty.mistigri_cartridge.sentence",
+                    Tooltips.rgb(Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack)), 0xC9A2F0),
+                    chance(stack, sentence)));
         }
-        if (total == 0) tooltip.add(Text.translatable("tooltip.steveparty.mistigri_cartridge.none").formatted(Formatting.GRAY));
-        super.appendTooltip(stack, context, tooltip, type);
+        if (total == 0) tips.warn(Text.translatable("tooltip.steveparty.mistigri_cartridge.none"));
     }
 }

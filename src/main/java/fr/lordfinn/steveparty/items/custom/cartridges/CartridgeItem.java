@@ -20,6 +20,7 @@ import net.minecraft.world.World;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
 import net.minecraft.item.tooltip.TooltipType;
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
@@ -162,21 +163,34 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
         return stamp == null ? Optional.empty() : Optional.of(stamp);
     }
 
+    /**
+     * The same layout for every cartridge (see Tooltips): its tags, its settings ({@link #appendState}), its
+     * destinations and look, what it does; behind Shift what a cartridge is, its controls ({@link #appendMore}).
+     */
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        // What a cartridge is, what this one does, how to use it
-        String id = Registries.ITEM.getId(this).getPath();
-        addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge.what"), Formatting.GRAY);
-        addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge." + id), Formatting.GRAY);
-        // A tag: it has settings, and where to find them
-        tooltip.add(Text.translatable("tooltip.steveparty.cartridge.configurable.tag").setStyle(Style.EMPTY.withColor(CONFIGURABLE_COLOR).withBold(true))
-                .append(Text.translatable("tooltip.steveparty.cartridge.configurable").setStyle(Style.EMPTY.withColor(Formatting.GRAY).withBold(false))));
-        addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge.use"), Formatting.DARK_GRAY);
-        super.appendTooltip(stack, context, tooltip, type);
+    public final void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         TileStampComponent stamp = stack.get(ModComponents.TILE_STAMP);
-        if (stamp != null) {
-            tooltip.add(Text.translatable("tooltip.steveparty.stamped").formatted(Formatting.LIGHT_PURPLE));
-            tooltip.add(stamp.describe().copy().formatted(Formatting.GRAY));
-        }
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.CARTRIDGE, Tooltips.Tag.CONFIGURABLE);
+        if (stamp != null) tips.tags(Tooltips.Tag.STAMPED);
+        appendState(stack, tips);
+        appendDestinations(stack, tips);
+        if (stamp != null) tips.state("tooltip.steveparty.look", Tooltips.look(stamp.describe()));
+        tips.summary("tooltip.steveparty.cartridge." + Registries.ITEM.getId(this).getPath());
+        tips.more(more -> {
+            more.detail("tooltip.steveparty.cartridge.what");
+            more.use(Tooltips.Keys.use(), "tooltip.steveparty.cartridge.use.tile");
+            more.use(Tooltips.Keys.use(), "tooltip.steveparty.cartridge.use.air");
+            more.use(Tooltips.Keys.use(), "tooltip.steveparty.cartridge.use.block");
+            more.use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.cartridge.use.destination");
+            appendMore(stack, more);
+        });
+    }
+
+    /** This stack's settings, first lines of its tooltip: a neutral label, a coloured value. */
+    protected void appendState(ItemStack stack, Tooltips tips) {
+    }
+
+    /** Its own controls and rules, behind Shift. */
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
     }
 }

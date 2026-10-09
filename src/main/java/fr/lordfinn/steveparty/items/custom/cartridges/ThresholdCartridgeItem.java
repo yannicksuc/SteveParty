@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
@@ -143,9 +144,7 @@ public class ThresholdCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("tooltip.steveparty.threshold_cartridge.condition", label(stack))
-                .styled(tint(0xA9C6E3)));
-        super.appendTooltip(stack, context, tooltip, type);
+    protected void appendState(ItemStack stack, Tooltips tips) {
+        tips.state("tooltip.steveparty.threshold_cartridge.condition", Tooltips.rgb(label(stack), 0xA9C6E3));
     }
 }

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -118,9 +119,14 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(settingText(steps(stack)));
-        super.appendTooltip(stack, context, tooltip, type);
-        addWrapped(tooltip, Text.translatable("tooltip.steveparty.advance_back.controls"), Formatting.DARK_GRAY);
+    protected void appendState(ItemStack stack, Tooltips tips) {
+        int steps = steps(stack);
+        tips.state(Text.translatable(steps < 0 ? "tooltip.steveparty.advance_back.back" : "tooltip.steveparty.advance_back.forward",
+                Tooltips.rgb(Math.abs(steps), steps < 0 ? 0xF07ABB : 0x6FE38A)));
+    }
+
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        more.use(Tooltips.Keys.sneakScroll(), "tooltip.steveparty.advance_back.controls");
     }
 }

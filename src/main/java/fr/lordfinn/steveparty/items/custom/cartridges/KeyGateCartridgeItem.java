@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
@@ -116,18 +117,21 @@ public class KeyGateCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+    protected void appendState(ItemStack stack, Tooltips tips) {
         MutableText sides = Text.empty();
         for (Direction side : SIDES) {
             if (!isLocked(stack, side)) continue;
             if (!sides.getSiblings().isEmpty()) sides.append(", ");
             sides.append(Text.translatable(K + "side." + side.asString() + ".tooltip"));
         }
-        tooltip.add(Text.translatable("tooltip.steveparty.key_gate_cartridge.locked", sides)
-                .styled(tint(0x6FD6C8)));
+        tips.state("tooltip.steveparty.key_gate_cartridge.locked", Tooltips.rgb(sides, 0x6FD6C8));
         int open = stayOpen(stack);
-        if (open > 0) tooltip.add(Text.translatable(open >= FOREVER ? "tooltip.steveparty.key_gate_cartridge.forever"
-                : "tooltip.steveparty.key_gate_cartridge.rounds", open).styled(tint(0x6FD6C8)));
-        super.appendTooltip(stack, context, tooltip, type);
+        if (open > 0) tips.state(open >= FOREVER ? Text.translatable("tooltip.steveparty.key_gate_cartridge.forever")
+                : Text.translatable("tooltip.steveparty.key_gate_cartridge.rounds", Tooltips.rgb(open, 0x6FD6C8)));
+    }
+
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        more.note("tooltip.steveparty.cartridge.key_gate_cartridge.rules");
     }
 }
