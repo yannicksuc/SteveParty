@@ -312,7 +312,7 @@ public final class MistigriGoals {
             Vec3d top = new Vec3d(chest.getX() + 0.5, chest.getY() + 1, chest.getZ() + 0.5);
             if (mistigri.standsOn(chest) && mistigri.isOnGround()) {
                 mistigri.getNavigation().stop();
-                mistigri.loafOn(chest);
+                mistigri.napOn(chest);
                 seated = true;
                 ticks = 0;
                 return;
