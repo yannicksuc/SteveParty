@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.entities.custom.magpie;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
@@ -169,7 +170,7 @@ public class MagpieEntity extends Entity implements GeoEntity {
         Leg current = leg;
         legTick++;
         double p = Math.min(1, legTick / (double) current.ticks);
-        double eased = p * p * (3 - 2 * p);
+        double eased = Easing.smoothstep(p);
         Vec3d at = legFrom.lerp(legTo, eased).add(0, Math.sin(Math.PI * p) * current.arc, 0);
         Vec3d delta = at.subtract(getPos());
         if (delta.horizontalLengthSquared() > 1.0E-5) {

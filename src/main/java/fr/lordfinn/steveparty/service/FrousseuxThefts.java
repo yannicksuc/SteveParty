@@ -5,16 +5,14 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.entities.ModEntities;
-import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.powerups.effects.ThiefBellEffect;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.Easing;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import fr.lordfinn.steveparty.utils.ServerMemory;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -28,17 +26,14 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
+import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
 
 /**
  * What a Frousseux space does (see FrousseuxTileBehavior): a Frousseux pops up next to the tile, the token's player
@@ -83,38 +78,36 @@ public final class FrousseuxThefts {
     /** How a theft started (or why not). */
     public enum Start { STARTED, NO_PLAYER, NOBODY }
 
-    /** The running thefts, by the UUID of the token that landed. */
-    private static final Map<UUID, Theft> RUNNING = ServerMemory.forgetOnStop(new HashMap<>());
+    /** The running thefts, by the token that landed. */
+    private static final BoardSequences<Theft> RUNNING = new BoardSequences<>();
 
     private FrousseuxThefts() {
     }
 
     public static void initialize() {
         // Stopping in the middle: the loot is settled (the Frousseux is never saved)
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            for (Theft theft : new ArrayList<>(RUNNING.values())) theft.abort();
-        });
+        RUNNING.stopWithServer(Theft::abort);
     }
 
     public static boolean isRunning(MobEntity token) {
-        return RUNNING.containsKey(token.getUuid());
+        return RUNNING.isRunning(token);
     }
 
     /** The phase of the theft of {@code token}'s landing, null if none. */
     public static @Nullable Phase phase(MobEntity token) {
-        Theft theft = RUNNING.get(token.getUuid());
+        Theft theft = RUNNING.get(token);
         return theft == null ? null : theft.phase;
     }
 
     /** The Frousseux of {@code token}'s landing, null if none. */
     public static @Nullable FrousseuxEntity actor(MobEntity token) {
-        Theft theft = RUNNING.get(token.getUuid());
+        Theft theft = RUNNING.get(token);
         return theft == null ? null : theft.actor;
     }
 
     /** What the Frousseux of {@code token}'s landing carries now (0 if none). */
     public static int carried(MobEntity token) {
-        Theft theft = RUNNING.get(token.getUuid());
+        Theft theft = RUNNING.get(token);
         return theft == null ? 0 : theft.carried;
     }
 
@@ -126,10 +119,9 @@ public final class FrousseuxThefts {
      */
     public static Start start(ServerWorld world, BlockPos tile, MobEntity token, PartyControllerEntity party,
                               boolean stars, int amount, Runnable onDone) {
-        if (RUNNING.containsKey(token.getUuid())) return Start.STARTED;
-        UUID senderId = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getTokenOwner() : null;
-        ServerPlayerEntity sender = senderId == null ? null : world.getServer().getPlayerManager().getPlayer(senderId);
-        if (sender == null || sender.isDisconnected()) {
+        if (RUNNING.isRunning(token)) return Start.STARTED;
+        ServerPlayerEntity sender = BoardSequences.tokenPlayer(world, token);
+        if (sender == null) {
             tell(party, null, null, Text.translatable("message.steveparty.frousseux_space.no_player").formatted(Formatting.GRAY));
             return Start.NO_PLAYER;
         }
@@ -141,36 +133,23 @@ public final class FrousseuxThefts {
         PartyCurrency currency = stars ? PartyCurrency.STAR : PartyCurrency.COIN;
         Theft theft = new Theft(world, tile.toImmutable(), token, sender.getUuid(), party, currency, Math.max(1, amount), onDone);
         if (!theft.spawn()) return Start.NOBODY;
-        RUNNING.put(token.getUuid(), theft);
+        RUNNING.run(theft, theft::tick);
         theft.ask(sender, candidates);
-        SCHEDULER.repeat(theft.task, 1, theft::tick, () -> !theft.done, () -> {
-        });
         return Start.STARTED;
     }
 
     /** To the party's audience, and to these players. */
     private static void tell(PartyControllerEntity party, @Nullable ServerPlayerEntity a, @Nullable ServerPlayerEntity b, Text message) {
-        List<ServerPlayerEntity> audience = new ArrayList<>(party.getPartyAudience());
-        if (a != null && !audience.contains(a)) audience.add(a);
-        if (b != null && !audience.contains(b)) audience.add(b);
-        MessageUtils.sendToPlayers(audience, message, MessageUtils.MessageType.CHAT);
-    }
-
-    private static float yawToward(Vec3d from, Vec3d to) {
-        return (float) (MathHelper.atan2(to.z - from.z, to.x - from.x) * MathHelper.DEGREES_PER_RADIAN) - 90f;
+        BoardSequences.tell(party, message, a, b);
     }
 
     /** One theft: its Frousseux, its victim, what it carries. */
-    private static final class Theft {
-        final UUID task = UUID.randomUUID();
-        final ServerWorld world;
+    private static final class Theft extends BoardSequences.Sequence {
         final BlockPos tile;
-        final MobEntity token;
         final UUID senderId;
         final PartyControllerEntity party;
         final PartyCurrency currency;
         final int wanted;
-        final Runnable onDone;
         FrousseuxEntity actor;
         Phase phase = Phase.APPEAR;
         int tick, phaseTick;
@@ -187,18 +166,15 @@ public final class FrousseuxThefts {
         /** Who it gives the loot to on its way back. */
         @Nullable UUID recipientId;
         Vec3d appearAt = Vec3d.ZERO;
-        boolean done;
 
         Theft(ServerWorld world, BlockPos tile, MobEntity token, UUID senderId, PartyControllerEntity party,
               PartyCurrency currency, int wanted, Runnable onDone) {
-            this.world = world;
+            super(world, token, onDone);
             this.tile = tile;
-            this.token = token;
             this.senderId = senderId;
             this.party = party;
             this.currency = currency;
             this.wanted = wanted;
-            this.onDone = onDone;
         }
 
         boolean stars() {
@@ -224,8 +200,7 @@ public final class FrousseuxThefts {
             FrousseuxEntity one = ModEntities.FROUSSEUX.create(world);
             if (one == null) return false;
             one.setColor(FrousseuxColor.random(world.getRandom()));
-            one.makeBoardActor();
-            BoardActors.join(task, one);
+            cast(one);
             Vec3d stand = BoardSpaces.standPos(world, tile);
             Vec3d side = Vec3d.fromPolar(0, token.getYaw() + 90).multiply(0.9);
             appearAt = stand.add(side);
@@ -295,7 +270,7 @@ public final class FrousseuxThefts {
         /** It rises beside the tile, its flame flaring up, then bobs there until the victim is picked. */
         void tickAppear() {
             float rise = Math.min(1f, phaseTick / 14f);
-            double eased = rise * rise * (3 - 2 * rise);
+            double eased = Easing.smoothstep(rise);
             double bob = Math.sin(tick * 0.2) * 0.06;
             place(appearAt.add(0, -0.5 + eased * 1.4 + (rise >= 1 ? bob : 0), 0), actor.getYaw());
             if (phaseTick == 8) {
@@ -599,13 +574,10 @@ public final class FrousseuxThefts {
         }
 
         void finish() {
-            if (done) return;
-            done = true;
-            SCHEDULER.cancel(task);
-            RUNNING.remove(token.getUuid());
+            if (!close()) return;
             if (carried > 0) dropLoot();
             if (actor != null) actor.onBoardHit(null);
-            BoardActors.end(task);
+            dismissActors();
             onDone.run();
         }
     }

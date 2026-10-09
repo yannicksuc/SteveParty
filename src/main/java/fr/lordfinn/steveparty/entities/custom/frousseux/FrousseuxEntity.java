@@ -1,9 +1,10 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
-import fr.lordfinn.steveparty.entities.PetTeleports;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
@@ -84,7 +85,7 @@ import java.util.UUID;
  * The board's Frousseux ({@link #isBoardActor()}) do none of the above: invulnerable, moved by the board, never
  * saved, no light.
  */
-public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, FollowsOwnerAnywhere {
+public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, FollowsOwnerAnywhere, BoardActor {
     /** Its body: 8x8 pixels, 10 high. */
     public static final float WIDTH = 0.5f, HEIGHT = 0.625f;
     public static final double MAX_HEALTH = 8.0;
@@ -344,17 +345,19 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     // ---------------------------------------------------------------- board actors
 
     /** A Frousseux of a board space: invulnerable, no will of its own, never saved, no light. */
+    @Override
     public boolean isBoardActor() {
         return boardActor;
     }
 
-    public void makeBoardActor() {
+    @Override
+    public void setBoardActor() {
         this.boardActor = true;
-        setAiDisabled(true);
-        if (!getWorld().isClient) {
-            fr.lordfinn.steveparty.service.BoardActors.mark(this); // invulnerable, never kept
-            light.clear(getWorld());
-        }
+    }
+
+    @Override
+    public void onBoardActor() {
+        if (!getWorld().isClient) light.clear(getWorld());
     }
 
     /** A board actor: shows {@code carried} under itself (empty: nothing), once any item flight is over. */
@@ -500,7 +503,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (age % 4 == 0) tickShy(world);
         if (age % 20 == 7) tickLightMode(world);
         if (age % 20 == 0) updateFlameStage();
-        if (age % 20 == 3 && isTamed()) PetTeleports.remember(this); // its greatest health may change (effects, attributes)
+        tickFollow(isTamed());
         if (age % 2 == 0) light.update(world, BlockPos.ofFloored(getBoundingBox().getCenter()), getFlame().light);
         if (age % 10 == 0 && !flight.isMovingTo()) {
             Vec3d out = FrousseuxFlight.escape(this);
@@ -724,7 +727,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         Vec3d me = getLerpedPos(partialTick);
         Vec3d them = who.getLerpedPos(partialTick).add(0, who.getHeight() * 0.55, 0).subtract(me);
         float t = MathHelper.clamp(progress, 0, 1);
-        t = t * t * (3 - 2 * t);
+        t = Easing.smoothstep(t);
         if (flight < 0) t = 1 - t; // given back: from it to them
         Vec3d at = them.lerp(UNDER_BODY, t);
         return at.add(0, MathHelper.sin(t * MathHelper.PI) * 0.6, 0);
@@ -944,7 +947,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** Going along: tamed by them, following (not sitting, not on a lead or riding), not a board actor. */
     @Override
     public boolean goesWithOwner(ServerPlayerEntity owner) {
-        return isAlive() && isOwner(owner) && !isSitting() && !boardActor && !isLeashed() && !hasVehicle();
+        return followsFreely(owner) && !isSitting() && !boardActor;
     }
 
     @Override

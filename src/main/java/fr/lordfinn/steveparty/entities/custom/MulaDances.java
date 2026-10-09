@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -359,11 +360,6 @@ public final class MulaDances {
         out[o + 3] = face;
     }
 
-    private static double ease(double u) {
-        u = MathHelper.clamp(u, 0, 1);
-        return u * u * (3 - 2 * u);
-    }
-
     /** The figure of one slot / count at this time, blended from the previous dance just after a change of dance. */
     private static void figure(BlockPos forge, int slot, int count, long worldTime, float partialTick,
                                double[] out, int o, double[] tmp) {
@@ -373,7 +369,7 @@ public final class MulaDances {
         offset(dance, slot, count, sinceStart / 20.0, out, o);
         if (sinceStart >= BLEND_TICKS) return;
         offset(danceAt(start - 1, forge), slot, count, (worldTime - (start - DANCE_TICKS) + partialTick) / 20.0, tmp, 0);
-        double k = ease(sinceStart / BLEND_TICKS);
+        double k = Easing.smoothstep(MathHelper.clamp(sinceStart / BLEND_TICKS, 0, 1));
         for (int i = 0; i < 3; i++) out[o + i] = tmp[i] + (out[o + i] - tmp[i]) * k;
         if (k < 0.5) out[o + 3] = tmp[3];
     }
@@ -390,7 +386,7 @@ public final class MulaDances {
         double sinceSlot = worldTime - slotChangeTick + partialTick;
         if (prevCount <= 0 || sinceSlot >= BLEND_TICKS) return;
         figure(forge, prevSlot, prevCount, worldTime, partialTick, tmp, 4, tmp);
-        double k = ease(sinceSlot / BLEND_TICKS);
+        double k = Easing.smoothstep(MathHelper.clamp(sinceSlot / BLEND_TICKS, 0, 1));
         for (int i = 0; i < 3; i++) out[i] = tmp[4 + i] + (out[i] - tmp[4 + i]) * k;
         if (k < 0.5) out[3] = tmp[7];
     }

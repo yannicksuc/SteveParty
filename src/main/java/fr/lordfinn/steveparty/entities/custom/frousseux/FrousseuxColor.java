@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.StringIdentifiable;
@@ -67,9 +68,9 @@ public enum FrousseuxColor implements StringIdentifiable {
         this.candle = candle;
         this.flame = flame;
         this.wax = wax;
-        this.accent = mix(IVORY, wax, ACCENT_STRENGTH);
+        this.accent = Argb.lerp(IVORY, wax, ACCENT_STRENGTH);
         this.flameEdge = saturated(flame);
-        this.flameHeart = mix(flame, 0xFFFFFF, 0.55f);
+        this.flameHeart = Argb.lerp(flame, 0xFFFFFF, 0.55f);
         this.weight = weight;
     }
 
@@ -85,15 +86,6 @@ public enum FrousseuxColor implements StringIdentifiable {
         else hue = (4 + (r - g) / (max - min)) / 6f;
         if (hue < 0) hue += 1;
         return net.minecraft.util.math.MathHelper.hsvToRgb(hue, Math.min(1f, saturation * 1.35f + 0.15f), value * 0.95f) & 0xFFFFFF;
-    }
-
-    private static int mix(int from, int to, float amount) {
-        int rgb = 0;
-        for (int shift = 16; shift >= 0; shift -= 8) {
-            int a = (from >> shift) & 0xFF, b = (to >> shift) & 0xFF;
-            rgb |= Math.round(a + (b - a) * amount) << shift;
-        }
-        return rgb;
     }
 
     /** Its name in its entity data ("Color"), its loot table conditions and the candle holder's block state. */
