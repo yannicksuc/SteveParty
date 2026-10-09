@@ -6,6 +6,15 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaStarEntity;
+import fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity;
+import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
+import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
+import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
+import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity;
+import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
+import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
@@ -59,10 +68,10 @@ public class ModEntities {
 
     /** A burst Mula flying away as a shooting star (a show: never saved, its path is a formula). */
     public static final RegistryKey<EntityType<?>> MULA_STAR_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mula_star"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.MulaStarEntity> MULA_STAR = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<MulaStarEntity> MULA_STAR = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("mula_star"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.MulaStarEntity>create(fr.lordfinn.steveparty.entities.custom.MulaStarEntity::new, SpawnGroup.MISC)
+                    .<MulaStarEntity>create(MulaStarEntity::new, SpawnGroup.MISC)
                     .dimensions(0.25f, 0.25f)
                     .disableSaving()
                     .disableSummon()
@@ -88,10 +97,10 @@ public class ModEntities {
 
     /** What carries a traveller through a travel pipe (invisible, ridden). */
     public static final RegistryKey<EntityType<?>> PIPE_CARRIER_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("pipe_carrier"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity> PIPE_CARRIER = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<PipeCarrierEntity> PIPE_CARRIER = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("pipe_carrier"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity>create(fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity::new, SpawnGroup.MISC)
+                    .<PipeCarrierEntity>create(PipeCarrierEntity::new, SpawnGroup.MISC)
                     .dimensions(0.25f, 0.25f)
                     .disableSummon()
                     .makeFireImmune()
@@ -102,25 +111,25 @@ public class ModEntities {
 
     /** The Glandouille, a grumpy little acorn (see GlandouilleEntity). Its hitbox scales with its variant. */
     public static final RegistryKey<EntityType<?>> GLANDOUILLE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("glandouille"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity> GLANDOUILLE = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<GlandouilleEntity> GLANDOUILLE = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("glandouille"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity>create(fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity::new, SpawnGroup.CREATURE)
-                    .dimensions(fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.MODEL_WIDTH,
-                            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.MODEL_HEIGHT)
-                    .eyeHeight(0.55f * fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.SIZE)
+                    .<GlandouilleEntity>create(GlandouilleEntity::new, SpawnGroup.CREATURE)
+                    .dimensions(GlandouilleEntity.MODEL_WIDTH,
+                            GlandouilleEntity.MODEL_HEIGHT)
+                    .eyeHeight(0.55f * GlandouilleEntity.SIZE)
                     .maxTrackingRange(10)
                     .build(GLANDOUILLE_KEY.getValue().toString())
     );
 
     /** The Frousseux (Wickling), a little candle ghost of the caves (see FrousseuxEntity). */
     public static final RegistryKey<EntityType<?>> FROUSSEUX_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("frousseux"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity> FROUSSEUX = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<FrousseuxEntity> FROUSSEUX = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("frousseux"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity>create(fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity::new, SpawnGroup.AMBIENT)
-                    .dimensions(fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.WIDTH,
-                            fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.HEIGHT)
+                    .<FrousseuxEntity>create(FrousseuxEntity::new, SpawnGroup.AMBIENT)
+                    .dimensions(FrousseuxEntity.WIDTH,
+                            FrousseuxEntity.HEIGHT)
                     .eyeHeight(0.32f)
                     .makeFireImmune()
                     .maxTrackingRange(10)
@@ -129,12 +138,12 @@ public class ModEntities {
 
     /** The Boomcart (Pétaroule), a grumpy living mine cart loaded with TNT (see BoomcartEntity). */
     public static final RegistryKey<EntityType<?>> BOOMCART_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("boomcart"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity> BOOMCART = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<BoomcartEntity> BOOMCART = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("boomcart"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity>create(fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity::new, SpawnGroup.MONSTER)
-                    .dimensions(fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.WIDTH,
-                            fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.HEIGHT)
+                    .<BoomcartEntity>create(BoomcartEntity::new, SpawnGroup.MONSTER)
+                    .dimensions(BoomcartEntity.WIDTH,
+                            BoomcartEntity.HEIGHT)
                     .eyeHeight(0.45f)
                     .maxTrackingRange(10)
                     .build(BOOMCART_KEY.getValue().toString())
@@ -142,13 +151,13 @@ public class ModEntities {
 
     /** The Fumarole (Fumerolle), a huge tortoise of the Nether with a tank of lava on its back (see FumaroleEntity). */
     public static final RegistryKey<EntityType<?>> FUMAROLE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("fumarole"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity> FUMAROLE = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<FumaroleEntity> FUMAROLE = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("fumarole"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity>create(fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity::new, SpawnGroup.MONSTER)
-                    .dimensions(fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity.WIDTH,
-                            fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity.HEIGHT)
-                    .eyeHeight(fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity.EYE_HEIGHT)
+                    .<FumaroleEntity>create(FumaroleEntity::new, SpawnGroup.MONSTER)
+                    .dimensions(FumaroleEntity.WIDTH,
+                            FumaroleEntity.HEIGHT)
+                    .eyeHeight(FumaroleEntity.EYE_HEIGHT)
                     .makeFireImmune()
                     .maxTrackingRange(12)
                     .trackingTickInterval(1) // ridden, it moves server side: every tick keeps the riders smooth
@@ -157,13 +166,13 @@ public class ModEntities {
 
     /** A player turned into a pawn: a statue of the player on a token base (see PlayerPawnEntity). */
     public static final RegistryKey<EntityType<?>> PLAYER_PAWN_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("player_pawn"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity> PLAYER_PAWN = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<PlayerPawnEntity> PLAYER_PAWN = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("player_pawn"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity>create(fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity::new, SpawnGroup.MISC)
-                    .dimensions(fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.WIDTH,
-                            fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.HEIGHT)
-                    .eyeHeight(fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.EYE_HEIGHT)
+                    .<PlayerPawnEntity>create(PlayerPawnEntity::new, SpawnGroup.MISC)
+                    .dimensions(PlayerPawnEntity.WIDTH,
+                            PlayerPawnEntity.HEIGHT)
+                    .eyeHeight(PlayerPawnEntity.EYE_HEIGHT)
                     .makeFireImmune()
                     .maxTrackingRange(10)
                     .build(PLAYER_PAWN_KEY.getValue().toString())
@@ -171,12 +180,12 @@ public class ModEntities {
 
     /** The Mistigri, the big black witch's cat of bad luck (see MistigriEntity). */
     public static final RegistryKey<EntityType<?>> MISTIGRI_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mistigri"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity> MISTIGRI = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<MistigriEntity> MISTIGRI = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("mistigri"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity>create(fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity::new, SpawnGroup.CREATURE)
-                    .dimensions(fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.WIDTH,
-                            fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.HEIGHT)
+                    .<MistigriEntity>create(MistigriEntity::new, SpawnGroup.CREATURE)
+                    .dimensions(MistigriEntity.WIDTH,
+                            MistigriEntity.HEIGHT)
                     .eyeHeight(1.2f)
                     .maxTrackingRange(10)
                     .build(MISTIGRI_KEY.getValue().toString())
@@ -184,10 +193,10 @@ public class ModEntities {
 
     /** The Mistigri's giant loaded die, a prop of his board space (see MistigriSentences). */
     public static final RegistryKey<EntityType<?>> MISTIGRI_DIE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mistigri_die"));
-    public static final EntityType<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity> MISTIGRI_DIE = Registry.register(Registries.ENTITY_TYPE,
+    public static final EntityType<MistigriDieEntity> MISTIGRI_DIE = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("mistigri_die"),
             EntityType.Builder
-                    .<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity>create(fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity::new, SpawnGroup.MISC)
+                    .<MistigriDieEntity>create(MistigriDieEntity::new, SpawnGroup.MISC)
                     .dimensions(1.5f, 1.5f)
                     .makeFireImmune()
                     .maxTrackingRange(10)
@@ -200,11 +209,11 @@ public class ModEntities {
         FabricDefaultAttributeRegistry.register(ModEntities.DICE_ENTITY, DiceEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.MULA_ENTITY, MulaEntity.setAttributes());
-        FabricDefaultAttributeRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.setAttributes());
-        FabricDefaultAttributeRegistry.register(ModEntities.PLAYER_PAWN, fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity.setAttributes());
-        FabricDefaultAttributeRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.setAttributes());
-        FabricDefaultAttributeRegistry.register(ModEntities.BOOMCART, fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.setAttributes());
-        FabricDefaultAttributeRegistry.register(ModEntities.MISTIGRI, fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.setAttributes());
-        FabricDefaultAttributeRegistry.register(ModEntities.FUMAROLE, fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.GLANDOUILLE, GlandouilleEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.PLAYER_PAWN, PlayerPawnEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.FROUSSEUX, FrousseuxEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.BOOMCART, BoomcartEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.MISTIGRI, MistigriEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.FUMAROLE, FumaroleEntity.setAttributes());
     }
 }

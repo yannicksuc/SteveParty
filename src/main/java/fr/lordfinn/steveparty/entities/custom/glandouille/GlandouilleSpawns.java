@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.SpawnLocationTypes;
 import net.minecraft.entity.SpawnReason;
@@ -47,7 +48,7 @@ public final class GlandouilleSpawns {
     }
 
     /** On soil or snow, in daylight-ish, under leaves (a tree's canopy). */
-    private static boolean canSpawn(net.minecraft.entity.EntityType<GlandouilleEntity> type, ServerWorldAccess world,
+    private static boolean canSpawn(EntityType<GlandouilleEntity> type, ServerWorldAccess world,
                                     SpawnReason reason, BlockPos pos, Random random) {
         BlockState ground = world.getBlockState(pos.down());
         boolean soil = ground.isIn(BlockTags.DIRT) || ground.isIn(BlockTags.SNOW) || ground.isIn(BlockTags.ANIMALS_SPAWNABLE_ON);
