@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.client.board;
 
+import net.minecraft.entity.player.PlayerEntity;
+import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
+import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
@@ -105,6 +108,8 @@ public final class TileInfoClient {
     private static List<BlockPos> focus = List.of();
     private static @Nullable BlockPos far;
     private static @Nullable ClientWorld knownWorld;
+    /** How the space looked at and the destinations are shown: with the helmet's details, a building tool's. */
+    private static TilePanel.View view = TilePanel.View.PLAY;
     private static boolean fresh = true;
     private static long askedAt = Long.MIN_VALUE;
 
@@ -148,6 +153,7 @@ public final class TileInfoClient {
             return;
         }
         Vec3d eye = viewer.getCameraPosVec(1f);
+        view = TilePanel.View.of(ExplorerHelmet.view(client.player).details(), building(client.player));
         List<Shown> next = new ArrayList<>();
         List<BlockPos> asked = new ArrayList<>();
         far = null;
@@ -168,6 +174,14 @@ public final class TileInfoClient {
         if (ExplorerHelmet.view(client.player).details()) nearby(world, viewer, eye, next, asked);
         shown = next;
         ask(world, asked);
+    }
+
+    /** A building tool in either hand: the Tile Linker Brush, the Wrench, a cartridge. */
+    private static boolean building(PlayerEntity player) {
+        for (ItemStack stack : player.getHandItems()) {
+            if (stack.getItem() instanceof TileLinkerBrushItem || stack.getItem() instanceof AbstractDestinationsSelectorItem) return true;
+        }
+        return false;
     }
 
     /** With the helmet: the spaces around (the nearest first), reduced. */
@@ -258,12 +272,13 @@ public final class TileInfoClient {
         for (int i = 0, n = current.size(); i < n; i++) {
             Shown space = current.get(i);
             TilePanel.Layout layout = LAYOUTS.get(space.pos);
-            if (layout == null || layout.info.isEmpty() || frustum != null && !frustum.isVisible(space.bounds)) continue;
+            TilePanel.View shownAs = space.kind.full ? view : TilePanel.View.COMPACT;
+            if (layout == null || !layout.hasContent(shownAs) || frustum != null && !frustum.isVisible(space.bounds)) continue;
             double distance = Math.sqrt(space.anchor.squaredDistanceTo(eye));
             float scale = SCALE * (float) Math.clamp(distance / 7.0, 1.0, MAX_GROW);
             double bottom = Math.max(space.bottom, space.anchor.y + HelmetView.heightAbove(space.anchor, distance) + 0.1);
             TilePanel.draw(matrices, consumers, camera, client.world, space.anchor.x, bottom, space.anchor.z, layout,
-                    space.kind.full, space.kind.plate, scale);
+                    shownAs, space.kind.plate, scale);
             if (space.kind.full && !layout.info.ring().isEmpty()) {
                 ItemRing.render(matrices, consumers, camera, client.world, space.anchor.x, space.ringY, space.anchor.z,
                         space.ringRadius, layout.info.ring(), layout.ringLabels, time);
@@ -278,26 +293,7 @@ public final class TileInfoClient {
         BlockPos pos = far;
         if (pos == null || client.options.hudHidden || client.currentScreen != null) return;
         TilePanel.Layout layout = LAYOUTS.get(pos);
-        if (layout == null || layout.info.isEmpty()) return;
-        TextRenderer font = client.textRenderer;
-        int width = layout.width(true), height = layout.height(true);
-        int x = context.getScaledWindowWidth() / 2 - width / 2, y = context.getScaledWindowHeight() / 2 + 14;
-        ToolHud.plate(context, x, y, width, height, ToolHud.Plate.TEAL);
-        int textY = y + TilePanel.PAD;
-        context.drawText(font, layout.title, x + TilePanel.PAD, textY, ToolHud.TEXT, false);
-        for (int i = 0; i < layout.lines.length; i++) {
-            textY += TilePanel.ROW;
-            int textX = x + TilePanel.PAD;
-            ItemStack icon = layout.icons[i];
-            if (!icon.isEmpty()) {
-                context.getMatrices().push();
-                context.getMatrices().translate(textX, textY - 1, 0);
-                context.getMatrices().scale(TilePanel.ICON / 16f, TilePanel.ICON / 16f, 1);
-                context.drawItem(icon, 0, 0);
-                context.getMatrices().pop();
-                textX += TilePanel.ICON + TilePanel.ICON_GAP;
-            }
-            context.drawText(font, layout.lines[i], textX, textY, ToolHud.TEXT, false);
-        }
+        if (layout == null || !layout.hasContent(view)) return;
+        TilePanel.drawHud(context, layout, view, context.getScaledWindowWidth() / 2, context.getScaledWindowHeight() / 2 + 14);
     }
 }
