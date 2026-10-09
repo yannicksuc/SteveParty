@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.payloads.custom.TileInfoPayloads;
 import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
 import fr.lordfinn.steveparty.powerups.effects.TrapState;
 import fr.lordfinn.steveparty.utils.ServerMemory;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.mob.MobEntity;
@@ -23,7 +24,6 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,6 +50,8 @@ public final class TileInfos {
         RegistryKey<World> world;
         final Map<BlockPos, TileInfo> sent = new HashMap<>();
         List<BlockPos> focus = List.of();
+        /** The token {@link #focus} is for. */
+        UUID focusToken;
     }
 
     private static final Map<UUID, Seen> SEEN = ServerMemory.forgetOnStop(new HashMap<>());
@@ -62,6 +64,14 @@ public final class TileInfos {
         Payloads.s2c(TileInfoPayloads.Info.ID, TileInfoPayloads.Info.CODEC);
         Payloads.s2c(TileInfoPayloads.Focus.ID, TileInfoPayloads.Focus.CODEC);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> SEEN.remove(handler.player.getUuid()));
+        // A token gone in the middle of its move (killed, picked up, its chunk unloaded): nothing to point at any more
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
+            if (entity instanceof MobEntity token && token instanceof TokenizedEntityInterface tokenized
+                    && tokenized.steveparty$getTokenOwner() != null) {
+                Seen seen = SEEN.get(tokenized.steveparty$getTokenOwner());
+                if (seen != null && token.getUuid().equals(seen.focusToken)) focus(world, token, List.of());
+            }
+        });
     }
 
     // ---------------------------------------------------------------- what a space tells
@@ -75,13 +85,14 @@ public final class TileInfos {
             info.title(cartridge.getName(), item.menuColor(cartridge));
             space.getBoardSpaceBehavior(cartridge).describe(world, space, cartridge, info);
         }
-        trap(world, space, info);
-        if (!info.isEmpty() && !info.hasTitle()) info.title(space.getCachedState().getBlock().getName(), 0xFFFFFF);
+        // A role with nothing to tell (a plain space): a trap set on it is what it is
+        boolean told = !info.isEmpty();
+        trap(world, space, info, told);
         return info.build();
     }
 
     /** A Trap set on the space: what it does, and who set it (in their colour). */
-    private static void trap(ServerWorld world, BoardSpaceBlockEntity space, TileInfo.Builder info) {
+    private static void trap(ServerWorld world, BoardSpaceBlockEntity space, TileInfo.Builder info, boolean told) {
         if (space.getTrapMark() == null) return;
         for (PartyControllerEntity party : PartyControllerEntity.getActivePartyControllers()) {
             if (party.getWorld() != world) continue;
@@ -89,7 +100,9 @@ public final class TileInfos {
             if (trap == null) continue;
             Text setter = world.getServer().getUserCache() == null ? null : world.getServer().getUserCache().getByUuid(trap.placer())
                     .map(GameProfile::getName).<Text>map(Text::literal).orElse(null);
-            info.line(TileInfo.line("trap", TileInfo.bad(trap.effect().describe())));
+            // Titled « Trap » on a space with nothing else to tell: its effect alone, else « Trap: its effect »
+            if (!told) info.title(TileInfo.line("trap.title"), trap.color());
+            info.line(told ? TileInfo.line("trap", TileInfo.bad(trap.effect().describe())) : TileInfo.bad(trap.effect().describe()));
             if (setter != null) info.line(TileInfo.line("trap.setter", TileInfo.rgb(setter, darker(trap.color()))));
             return;
         }
@@ -190,18 +203,7 @@ public final class TileInfos {
         Seen seen = SEEN.computeIfAbsent(player.getUuid(), uuid -> new Seen());
         if (Objects.equals(seen.focus, spaces)) return;
         seen.focus = List.copyOf(spaces);
+        seen.focusToken = spaces.isEmpty() ? null : token.getUuid();
         ServerPlayNetworking.send(player, new TileInfoPayloads.Focus(seen.focus));
-    }
-
-    /** For the tests: the spaces last pointed at for {@code player}. */
-    public static List<BlockPos> focusOf(UUID player) {
-        Seen seen = SEEN.get(player);
-        return seen == null ? List.of() : seen.focus;
-    }
-
-    /** For the tests: whether a space's info was sent to {@code player}, and which. */
-    public static @Nullable TileInfo sentTo(UUID player, BlockPos pos) {
-        Seen seen = SEEN.get(player);
-        return seen == null ? null : seen.sent.get(pos);
     }
 }

@@ -8,7 +8,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.ExplorerHelmet;
-import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer;
@@ -130,12 +129,6 @@ public final class TileInfoClient {
         far = null;
         knownWorld = null;
         fresh = true;
-    }
-
-    /** The info last received for {@code pos} (tests, other views), or null. */
-    public static @Nullable TileInfo infoAt(BlockPos pos) {
-        TilePanel.Layout layout = LAYOUTS.get(pos);
-        return layout == null ? null : layout.info;
     }
 
     // ---------------------------------------------------------------- per tick

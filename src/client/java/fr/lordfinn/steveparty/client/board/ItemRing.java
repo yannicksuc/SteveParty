@@ -25,7 +25,7 @@ import java.util.List;
 public final class ItemRing {
     /** Degrees per tick: the ring turns once in 30 seconds, each item on itself in 9. */
     private static final float ORBIT_SPEED = 0.6f, SPIN_SPEED = 2f;
-    private static final float ITEM_SCALE = 0.42f, LABEL_SCALE = 1f / 70f;
+    private static final float ITEM_SCALE = 0.8f, LABEL_SCALE = 1f / 50f;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
 
     private ItemRing() {
@@ -61,7 +61,7 @@ public final class ItemRing {
             matrices.pop();
             OrderedText label = labels == null || i >= labels.size() ? null : labels.get(i);
             if (label != null) {
-                matrices.translate(0, -0.3, 0);
+                matrices.translate(0, -0.42, 0);
                 matrices.multiply(camera.getRotation());
                 matrices.scale(LABEL_SCALE, -LABEL_SCALE, LABEL_SCALE);
                 float width = font.getWidth(label);

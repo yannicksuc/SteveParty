@@ -186,8 +186,11 @@ public class TokenMovementService {
             PartyControllerEntity.onFreeTokenArrived(serverWorld, mob);
         TileReachedEvent.EVENT.invoker().onTileReached(mob, boardSpace);
         AdvanceBackMoves.afterArrival(mob);
-        // The move is over: the modules of its die no longer apply
-        if (token.steveparty$getNbSteps() == 0) DiceRollEffects.clearMoveModules(mob.getUuid());
+        // The move is over: the modules of its die no longer apply, its player no longer sees where it is heading
+        if (token.steveparty$getNbSteps() == 0) {
+            DiceRollEffects.clearMoveModules(mob.getUuid());
+            if (mob.getWorld() instanceof ServerWorld world) TileInfos.arrived(world, mob);
+        }
     }
 
     /** True if a token reaching this board space must end its move there (a Stop space), steps left or not. */

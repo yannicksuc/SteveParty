@@ -2958,6 +2958,7 @@
   "tooltip.steveparty.stencil_maker.summary": "Dessine et découpe des pochoirs",
   "tooltip.steveparty.check_point.summary": "Un point de passage du plateau, qui ne compte pas comme un pas ; 16 cartouches",
   "tooltip.steveparty.tile.contents.count": "%s cartouches",
+  "hud.steveparty.tile_info.trap.title": "Piège",
   "hud.steveparty.tile_info.trap": "Piège : %s",
   "hud.steveparty.tile_info.trap.setter": "Posé par %s",
   "hud.steveparty.tile_info.threshold": "Pour passer : %s",
