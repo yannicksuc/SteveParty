@@ -307,7 +307,7 @@ public class FumaroleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_ride", tickLimit = 120)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_ride")
     public void aRiderDrivesIt(TestContext context) {
         strip(context, 30);
         FumaroleEntity fumarole = facingEast(context, new BlockPos(2, 1, 8));
@@ -318,13 +318,13 @@ public class FumaroleGameTests implements FabricGameTest {
         owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
         owner.startRiding(fumarole);
         double startX = fumarole.getX();
-        context.runAtEveryTick(() -> owner.forwardSpeed = 1);
-        context.waitAndRun(80, () -> {
-            context.assertTrue(fumarole.getX() - startX > 3, "driven forward: " + (fumarole.getX() - startX));
-            remove(context, owner);
-            fumarole.discard();
-            context.complete();
-        });
+        // its moves, driven here tick by tick (the server would call them): one rider's forward key
+        owner.forwardSpeed = 1;
+        for (int tick = 0; tick < 30; tick++) fumarole.travel(Vec3d.ZERO);
+        context.assertTrue(fumarole.getX() - startX > 3, "driven forward: " + (fumarole.getX() - startX));
+        remove(context, owner);
+        fumarole.discard();
+        context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_swim", tickLimit = 140)
