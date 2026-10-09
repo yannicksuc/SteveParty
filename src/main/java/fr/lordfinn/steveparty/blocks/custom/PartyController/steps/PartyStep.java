@@ -150,7 +150,7 @@ public class PartyStep {
         boardSpaceEntity.onTileReached(token, partyControllerEntity);
         if (boardSpaceEntity.getWorld() instanceof ServerWorld world && partyControllerEntity.getWorld() instanceof ServerWorld) {
             if ((ABoardSpaceBlock.countsAsStep(world.getBlockState(boardSpaceEntity.getPos()).getBlock())
-                    || fr.lordfinn.steveparty.service.TokenMovementService.isForcedStop(world, boardSpaceEntity))
+                    || fr.lordfinn.steveparty.service.TokenMovementService.isForcedStop(world, boardSpaceEntity, token))
                     && ((TokenizedEntityInterface) token).steveparty$isTokenized()
                     && ((TokenizedEntityInterface) token).steveparty$getNbSteps() == 0) {
                 boardSpaceEntity.onDestinationReached(token, partyControllerEntity);

@@ -123,6 +123,16 @@
           }
         ]
       }
+    },
+    "threshold": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:threshold_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -158,6 +168,9 @@
     ],
     [
       "mistigri"
+    ],
+    [
+      "threshold"
     ]
   ],
   "rewards": {

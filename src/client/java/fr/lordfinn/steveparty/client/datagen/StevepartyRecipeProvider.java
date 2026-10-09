@@ -355,6 +355,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.FROUSSEUX_CARTRIDGE, Items.CANDLE);
         // The Loaded Die (the Mistigri's loot): the black cat of bad luck and his sentences
         offerCartridge(ModItems.MISTIGRI_CARTRIDGE, ModItems.LOADED_DIE);
+        // Iron bars: the Threshold obstacle, a wall on the path
+        offerCartridge(ModItems.THRESHOLD_CARTRIDGE, Items.IRON_BARS);
 
         // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
         // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)

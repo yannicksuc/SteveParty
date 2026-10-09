@@ -41,7 +41,11 @@ public class MoveTokenCommand {
                                                 return 0; // Échec
                                             }
 
-                                            // Appel de la méthode du service
+                                            // A roll of one die showing rollNumber (what the board spaces of the move read)
+                                            fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity from =
+                                                    fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(mob);
+                                            fr.lordfinn.steveparty.service.TurnMoves.record(mob, rollNumber, List.of(rollNumber),
+                                                    from == null ? null : from.getPos());
                                             TokenMovementService.moveEntityOnBoard(mob, rollNumber);
                                             source.sendFeedback(() -> Text.translatable("command.steveparty.move_token.moved", tokenName, rollNumber), false);
                                             return 1; // Succès
