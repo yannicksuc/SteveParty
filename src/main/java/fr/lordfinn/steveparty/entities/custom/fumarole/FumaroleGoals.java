@@ -6,6 +6,9 @@ import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -70,21 +73,28 @@ public final class FumaroleGoals {
     }
 
     /**
-     * One blast at a time, the heads taking turns: the next head in turn that can reach an enemy turns to it, a second
-     * of warning (its vent charging, a hiss, its spit animation drawing the neck back), then the steam leaves as the
-     * neck whips forward (FumaroleEntity#blast, a bucket). The heads share out the enemies about (its target first,
+     * One blast at a time, the heads taking turns, a strong ranged attack you see coming: the next head in turn that
+     * can reach an enemy slowly turns its neck to it ({@link #TURN_TICKS}, FumaroleEntity#BLAST_TURN) and locks on,
+     * following it; then {@link #CHARGE_TICKS} of warning (its vent glowing, smoke thicker and thicker, a rising hiss,
+     * its spit animation drawing the neck back); {@link #LOCK_TICKS} before the shot its aim freezes on where the
+     * enemy stood, and the steam leaves straight there as the neck whips forward (FumaroleEntity#blastAt, a bucket):
+     * a step aside in that last half second dodges it. The heads share out the enemies about (its target first,
      * whoever last hurt it, players in its territory: head n prefers the n-th), with one enemy they all focus it. Then
      * one shared rest of {@link #COOLDOWN_MIN} to {@link #COOLDOWN_MIN} + {@link #COOLDOWN_SPREAD} ticks: three heads
      * shoot no more often than one would.
      */
     static final class Blast extends Goal {
-        /** A head's warning second, then its vent spitting this long. */
-        static final int CHARGE_TICKS = 20, SPIT_TICKS = 12;
+        /** A head's warning (the spit animation's wind-up: its whip lands on the shot), then its vent spitting. */
+        static final int CHARGE_TICKS = 36, SPIT_TICKS = 12;
         /** A head turns to its target this many ticks before its warning. */
-        static final int TURN_TICKS = 10;
+        static final int TURN_TICKS = 20;
+        /** Its aim freezes this many ticks before the shot: the window to dodge. */
+        static final int LOCK_TICKS = 9;
         static final int COOLDOWN_MIN = 80, COOLDOWN_SPREAD = 40;
         private final FumaroleEntity fumarole;
         private final LivingEntity[] targets = new LivingEntity[FumaroleEntity.HEADS.length];
+        /** Where each head's aim froze (null until {@link #LOCK_TICKS} before its shot). */
+        private final Vec3d[] locked = new Vec3d[FumaroleEntity.HEADS.length];
         /** When each head fires in this volley (ticks from its start), -1: it sits this one out. */
         private final int[] fireAt = new int[FumaroleEntity.HEADS.length];
         private int ticks, end;
@@ -122,6 +132,7 @@ public final class FumaroleGoals {
             List<LivingEntity> enemies = enemies();
             Arrays.fill(fireAt, -1);
             Arrays.fill(targets, null);
+            Arrays.fill(locked, null);
             if (enemies.isEmpty()) return false;
             for (int k = 0; k < fireAt.length; k++) {
                 int head = (nextHead + k) % fireAt.length;
@@ -129,7 +140,7 @@ public final class FumaroleGoals {
                     LivingEntity enemy = enemies.get((head + j) % enemies.size());
                     if (fumarole.mayShoot(head, enemy) && fumarole.getVisibilityCache().canSee(enemy) && fumarole.inRange(head, enemy)) {
                         targets[head] = enemy;
-                        fireAt[head] = TURN_TICKS + CHARGE_TICKS;
+                        fireAt[head] = 1 + TURN_TICKS + CHARGE_TICKS; // tick() counts from 1: its turn starts there
                         end = fireAt[head] + SPIT_TICKS;
                         nextHead = (head + 1) % fireAt.length;
                         return true;
@@ -178,17 +189,26 @@ public final class FumaroleGoals {
                     fumarole.setHeadTarget(head, null);
                     continue;
                 }
-                if (ticks >= charge - TURN_TICKS && ticks <= fireAt[head]) fumarole.aimHead(head, target, false);
+                int lock = fireAt[head] - LOCK_TICKS;
+                if (ticks == lock) { // the aim freezes where the enemy stands now: no homing from here
+                    locked[head] = fumarole.aimPoint(target);
+                    fumarole.setHeadTarget(head, null);
+                }
+                if (ticks >= charge - TURN_TICKS && ticks <= fireAt[head]) {
+                    fumarole.aimHeadAt(head, locked[head] != null ? locked[head] : fumarole.aimPoint(target), FumaroleEntity.BLAST_TURN);
+                }
                 if (ticks == charge - TURN_TICKS) fumarole.setHeadTarget(head, target);
                 if (ticks == charge) {
                     fumarole.setVent(head, FumaroleEntity.VENT_CHARGING);
-                    fumarole.playSound(ModSounds.FUMAROLE_CHARGE, 2.0f, 0.9f + 0.1f * head);
+                    fumarole.playSound(ModSounds.FUMAROLE_CHARGE, 2.0f, 0.8f + 0.1f * head);
                     fumarole.playSpit(head);
                 }
+                if (ticks > charge && ticks < fireAt[head]) chargeEffects(head, (ticks - charge) / (float) CHARGE_TICKS);
                 if (ticks == fireAt[head]) {
-                    if (fumarole.inRange(head, target)) {
+                    Vec3d point = locked[head] != null ? locked[head] : fumarole.aimPoint(target);
+                    if (fumarole.inRange(head, point)) {
                         fumarole.setVent(head, FumaroleEntity.VENT_SPITTING);
-                        fumarole.blast(head, target);
+                        fumarole.blastAt(head, point);
                     } else {
                         fumarole.setVent(head, FumaroleEntity.VENT_IDLE);
                     }
@@ -204,8 +224,24 @@ public final class FumaroleGoals {
                 fumarole.setHeadTarget(head, null);
                 fumarole.restHead(head);
                 targets[head] = null;
+                locked[head] = null;
             }
             nextVolley = fumarole.getWorld().getTime() + COOLDOWN_MIN + fumarole.getRandom().nextInt(COOLDOWN_SPREAD + 1);
+        }
+
+        /** The charge building up ({@code progress} 0..1): smoke thicker and thicker at the nozzle, a rising hiss. */
+        private void chargeEffects(int head, float progress) {
+            if (!(fumarole.getWorld() instanceof ServerWorld world)) return;
+            Vec3d nozzle = fumarole.nozzle(head);
+            int puffs = 1 + (int) (progress * 4);
+            world.spawnParticles(ParticleTypes.SMOKE, nozzle.x, nozzle.y, nozzle.z, puffs, 0.15, 0.15, 0.15, 0.01);
+            if (progress > 0.4f && ticks % 2 == 0) {
+                world.spawnParticles(ParticleTypes.LARGE_SMOKE, nozzle.x, nozzle.y, nozzle.z, 1, 0.1, 0.1, 0.1, 0.01);
+            }
+            if (progress > 0.7f) world.spawnParticles(ParticleTypes.FLAME, nozzle.x, nozzle.y, nozzle.z, 1, 0.1, 0.1, 0.1, 0.005);
+            if (ticks % 6 == 0) {
+                fumarole.playSound(SoundEvents.BLOCK_LAVA_EXTINGUISH, 0.4f + 0.8f * progress, 0.6f + 0.9f * progress);
+            }
         }
     }
 
