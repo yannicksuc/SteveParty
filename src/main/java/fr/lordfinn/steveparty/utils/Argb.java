@@ -49,6 +49,12 @@ public final class Argb {
         return (argb & 0xFF000000) | (r << 16) | (g << 8) | b;
     }
 
+    /** How bright the colour looks, 0 (black) to 255 (white): Rec. 601 weights, truncated; alpha ignored. */
+    public static int luminance(int argb) {
+        int r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
+        return (r * 299 + g * 587 + b * 114) / 1000;
+    }
+
     /** From {@code from} (t = 0) to {@code to} (t = 1), each of the four channels on its own. */
     public static int lerp(int from, int to, float t) {
         int argb = 0;

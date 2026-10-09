@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.gui;
 
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -122,7 +123,7 @@ public class ConsoleButton extends PressableWidget {
             return;
         }
         int colour = shown == Kind.SCREEN ? (active ? 0xFFE0EEF3 : 0xFF5E5C88) : light ? 0xFFFFFFFF : shown == Kind.OFF ? 0xFF5E5E5E : ramp.outline();
-        int shade = light ? (colour & 0xFCFCFC) >> 2 | 0xFF000000 : shown == Kind.OFF ? 0xFFC8C8C8 : shown.ramp.hi();
+        int shade = light ? Argb.opaque(Argb.darken(colour, 0.75f)) : shown == Kind.OFF ? 0xFFC8C8C8 : shown.ramp.hi();
         if (icon != null) {
             for (int row = 0; row < icon.rows.length; row++) {
                 for (int col = 0; col < icon.width(); col++) {

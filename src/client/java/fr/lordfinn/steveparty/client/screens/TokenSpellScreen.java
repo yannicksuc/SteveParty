@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import fr.lordfinn.steveparty.particles.SpellPalette;
 import fr.lordfinn.steveparty.payloads.custom.TokenSpellPayload;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.Argb;
 import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -1020,11 +1021,11 @@ public class TokenSpellScreen extends Screen {
                 matrices.push();
                 matrices.translate(offset[0], offset[1], 0);
                 matrices.scale(scale, scale, 1);
-                context.drawText(textRenderer, letter, 0, 0, 0xFF000000 | SpellPalette.SHADOW, false);
+                context.drawText(textRenderer, letter, 0, 0, Argb.opaque(SpellPalette.SHADOW), false);
                 matrices.pop();
             }
             matrices.scale(scale, scale, 1);
-            context.drawText(textRenderer, letter, 0, 0, 0xFF000000 | rgb, false);
+            context.drawText(textRenderer, letter, 0, 0, Argb.opaque(rgb), false);
             matrices.pop();
             x += textRenderer.getWidth(letter) * scale;
         }
@@ -1072,7 +1073,7 @@ public class TokenSpellScreen extends Screen {
                 int x = x0 + column * scale, y = y0 + row * scale;
                 // Thick pixels with a soft shadow, like the letters
                 context.fill(x + 1, y + 1, x + scale + 1, y + scale + 1, 0x60000000);
-                context.fill(x, y, x + scale, y + scale, 0xFF000000 | rgb);
+                context.fill(x, y, x + scale, y + scale, Argb.opaque(rgb));
             }
         }
     }

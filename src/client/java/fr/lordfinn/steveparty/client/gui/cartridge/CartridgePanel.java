@@ -532,13 +532,13 @@ public final class CartridgePanel {
     private void drawLabel(DrawContext context, ItemStack current, int w, int mouseX, int mouseY) {
         int sx = x + 6, sy = y + 5, sw = w - 12, sh = 20;
         CartridgeItem cartridge = CartridgeMenus.cartridge(current);
-        int color = 0xFF000000 | (cartridge == null ? 0x8A8A8A : cartridge.menuColor(current));
+        int color = Argb.opaque(cartridge == null ? 0x8A8A8A : cartridge.menuColor(current));
         context.fill(sx, sy, sx + sw, sy + sh, STICKER_EDGE);
         context.fill(sx + 1, sy + 1, sx + sw - 1, sy + 3, STRIP);
         context.fill(sx + 1, sy + 3, sx + sw - 1, sy + sh - 1, color);
         context.fill(sx + 1, sy + 3, sx + sw - 1, sy + 4, Argb.lighten(color, 0.35F));
         context.fill(sx + 1, sy + sh - 2, sx + sw - 1, sy + sh - 1, Argb.darken(color, 0.35F));
-        boolean dark = luminance(color) > 165;
+        boolean dark = Argb.luminance(color) > 165;
         int textColor = dark ? 0xFF2A2A2A : 0xFFFFFFFF;
         int textX = sx + 4;
         if (cartridge != null) {
@@ -592,7 +592,7 @@ public final class CartridgePanel {
                 int value = value(current, i);
                 if (value >= 0 && value < choice.options().size()) {
                     chosen = optionTexts[i][value];
-                    chosenColor = Argb.lighten(0xFF000000 | choice.options().get(value).color(), 0.3F);
+                    chosenColor = Argb.lighten(Argb.opaque(choice.options().get(value).color()), 0.3F);
                 }
             }
             if (chosen == null) {
@@ -636,7 +636,7 @@ public final class CartridgePanel {
             int push = selected ? 1 : 0;
             ChoiceModule.Option option = choice.options().get(o);
             if (swatches) {
-                int c = 0xFF000000 | option.color();
+                int c = Argb.opaque(option.color());
                 PartyGui.button(context, bx + 4 + push, top + 4 + push, bw - 8, bh - 8,
                         new PartyGui.Theme(Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), false);
             } else {
@@ -674,7 +674,7 @@ public final class CartridgePanel {
     private void drawNumber(DrawContext context, ItemStack current, int i, NumberModule number, int mx, int top,
                             int mouseX, int mouseY, boolean active) {
         int value = value(current, i);
-        int color = 0xFF000000 | number.color(current);
+        int color = Argb.opaque(number.color(current));
         stepButton(context, mx + MINUS_X, top, "-", active && value > number.min(), HitArea.contains(mouseX, mouseY, mx + MINUS_X, top, STEP_W, NumberModule.ROW_H));
         stepButton(context, mx + PLUS_X, top, "+", active && value < number.max(), HitArea.contains(mouseX, mouseY, mx + PLUS_X, top, STEP_W, NumberModule.ROW_H));
         context.fill(mx + FIGURE_X, top, mx + FIGURE_X + FIGURE_W, top + NumberModule.ROW_H, OUTLINE);
@@ -722,14 +722,14 @@ public final class CartridgePanel {
         int value = value(current, i);
         for (int v = 0; v <= ColorModule.DEFAULT; v++) {
             int sx = colorX(mx, v), sy = colorY(top, v);
-            int c = 0xFF000000 | module.colorOf(v);
+            int c = Argb.opaque(module.colorOf(v));
             boolean hovered = active && HitArea.contains(mouseX, mouseY, sx, sy, ColorModule.SWATCH, ColorModule.SWATCH);
             if (v == value) context.fill(sx - 1, sy - 1, sx + ColorModule.SWATCH + 1, sy + ColorModule.SWATCH + 1, 0xFFFFC52E);
             PartyGui.button(context, sx, sy, ColorModule.SWATCH, ColorModule.SWATCH,
                     new PartyGui.Theme(hovered ? 0xFFFFFFFF : Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), v == value);
             if (v == ColorModule.DEFAULT) {
                 // The cartridge's own colour: a small cartridge mark
-                int mark = luminance(c) > 140 ? 0xFF2A2A2A : 0xFFFFFFFF;
+                int mark = Argb.luminance(c) > 140 ? 0xFF2A2A2A : 0xFFFFFFFF;
                 context.fill(sx + 4, sy + 3, sx + 9, sy + 10, mark);
                 context.fill(sx + 5, sy + 4, sx + 8, sy + 6, STRIP);
             }
@@ -1064,12 +1064,5 @@ public final class CartridgePanel {
 
     public boolean isMouseOver(double mouseX, double mouseY) {
         return HitArea.contains(mouseX, mouseY, x, y, width(), shellHeight);
-    }
-
-    // ------------------------------------------------------------------ helpers
-
-    private static int luminance(int argb) {
-        int r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
-        return (r * 299 + g * 587 + b * 114) / 1000;
     }
 }

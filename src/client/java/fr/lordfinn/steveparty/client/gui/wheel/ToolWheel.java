@@ -65,7 +65,7 @@ public final class ToolWheel {
      */
     public record Theme(int outline, int rim, int body, int light, int slot) {
         public static Theme of(int outline, int rim, int body, int light, int slot) {
-            return new Theme(0xFF000000 | outline, 0xFF000000 | rim, 0xFF000000 | body, 0xFF000000 | light, 0xFF000000 | slot);
+            return new Theme(Argb.opaque(outline), Argb.opaque(rim), Argb.opaque(body), Argb.opaque(light), Argb.opaque(slot));
         }
     }
 
@@ -583,7 +583,7 @@ public final class ToolWheel {
 
         /** A pixel of a sector's plate, {@code edge} pixels in from its nearest edge. */
         private static int plate(Theme theme, Sector sector, boolean hovered, boolean featured, boolean dimmed, boolean blink, double edge, boolean lit) {
-            int base = 0xFF000000 | sector.color();
+            int base = Argb.opaque(sector.color());
             if (!sector.enabled()) base = Argb.opaque(Argb.lerp(base, theme.rim(), 0.7f));
             else if (dimmed) base = Argb.opaque(Argb.lerp(base, theme.rim(), 0.55f));
             // A plate of the panel takes its outline, light bevel and dark rim; a coloured one its own colour's
