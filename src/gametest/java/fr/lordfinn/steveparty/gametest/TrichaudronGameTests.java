@@ -345,6 +345,7 @@ public class TrichaudronGameTests implements FabricGameTest {
         trichaudron.setAiDisabled(false);
         ServerPlayerEntity owner = player(context, ItemStack.EMPTY);
         tame(trichaudron, owner);
+        trichaudron.setTank(TrichaudronEntity.TANK_MAX); // full of fuel
         trichaudron.inventory.setStack(0, new ItemStack(Items.SADDLE));
         owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
         owner.startRiding(trichaudron);
@@ -356,6 +357,81 @@ public class TrichaudronGameTests implements FabricGameTest {
         TestPlayers.remove(context, owner);
         trichaudron.discard();
         context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_fuel")
+    public void lavaIsItsFuel(TestContext context) {
+        strip(context, 30);
+        TrichaudronEntity trichaudron = facingEast(context, new BlockPos(2, 1, 8));
+        trichaudron.setAiDisabled(false);
+        ServerPlayerEntity owner = player(context, ItemStack.EMPTY);
+        tame(trichaudron, owner);
+        trichaudron.inventory.setStack(0, new ItemStack(Items.SADDLE));
+        owner.startRiding(trichaudron);
+        owner.forwardSpeed = 1;
+        double[] moved = new double[3];
+        int[] tanks = {0, TrichaudronEntity.TANK_MAX / 2, TrichaudronEntity.TANK_MAX};
+        for (int k = 0; k < 3; k++) {
+            trichaudron.setTank(tanks[k]);
+            trichaudron.setVelocity(Vec3d.ZERO);
+            double startX = trichaudron.getX();
+            for (int tick = 0; tick < 20; tick++) trichaudron.travel(Vec3d.ZERO);
+            moved[k] = trichaudron.getX() - startX;
+        }
+        context.assertTrue(Math.abs(moved[0]) < 0.25, "empty: it isn't driven, " + moved[0]);
+        context.assertTrue(moved[1] > 0.5 && moved[1] < moved[2], "half full: slower than full, " + moved[1] + " < " + moved[2]);
+        // a lava bucket from the saddle: poured in, not fired
+        trichaudron.setTank(5);
+        owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LAVA_BUCKET));
+        trichaudron.riderClick(owner);
+        context.assertEquals(trichaudron.getTank(), 6, "a bucket more in its tank");
+        context.assertTrue(owner.getMainHandStack().isOf(Items.BUCKET), "the bucket left empty");
+        TestPlayers.remove(context, owner);
+        trichaudron.discard();
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itsRidersHoldTheCentreThenLeftThenRightHead(TestContext context) {
+        TestBoards.floor(context, 8);
+        TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
+        context.assertTrue(TrichaudronEntity.HEADS[0].suffix().equals("_c") && TrichaudronEntity.HEADS[1].suffix().equals("_l")
+                && TrichaudronEntity.HEADS[2].suffix().equals("_r"), "heads: centre, left, right");
+        ServerPlayerEntity[] riders = {player(context, ItemStack.EMPTY), player(context, ItemStack.EMPTY), player(context, ItemStack.EMPTY)};
+        for (int i = 0; i < 3; i++) {
+            riders[i].startRiding(trichaudron, true);
+            context.assertEquals(trichaudron.headOf(riders[i]), i, "rider " + (i + 1) + " holds head " + TrichaudronEntity.HEADS[i].suffix());
+        }
+        TestPlayers.remove(context, riders);
+        trichaudron.discard();
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_lava_leap", tickLimit = 140)
+    public void theChargedJumpLeapsOutOfTheLava(TestContext context) {
+        // a pool 8 x 8, 2 deep, its rim one block over the lava (low: the test's room is only so high)
+        for (int x = -1; x <= 8; x++) for (int z = -1; z <= 8; z++) for (int y = 0; y <= 4; y++) {
+            boolean wall = x < 0 || x > 7 || z < 0 || z > 7 || y == 0;
+            context.setBlockState(new BlockPos(x, y, z), wall ? (y <= 3 ? Blocks.STONE.getDefaultState() : Blocks.AIR.getDefaultState())
+                    : y <= 2 ? Blocks.LAVA.getDefaultState() : Blocks.AIR.getDefaultState());
+        }
+        TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
+        trichaudron.setAiDisabled(false);
+        trichaudron.setTank(10);
+        double surface = context.getAbsolutePos(new BlockPos(0, 2, 0)).getY() + 0.9;
+        double[] top = {Double.NEGATIVE_INFINITY};
+        context.runAtEveryTick(() -> top[0] = Math.max(top[0], trichaudron.getY()));
+        context.waitAndRun(40, () -> {
+            context.assertTrue(trichaudron.isSwimmingInLava(), "deep in the lava");
+            top[0] = Double.NEGATIVE_INFINITY;
+            context.assertTrue(trichaudron.thrusterJump(TrichaudronRiding.CHARGE_MAX), "it leaps from the lava");
+            context.waitAndRun(20, () -> {
+                context.assertTrue(top[0] > surface + 1.5, "out of the lava, over its rim: " + (top[0] - surface));
+                trichaudron.discard();
+                for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) for (int y = 1; y <= 2; y++) context.setBlockState(new BlockPos(x, y, z), Blocks.AIR);
+                context.complete();
+            });
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_swim", tickLimit = 140)
