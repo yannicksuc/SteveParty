@@ -2,12 +2,37 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.signs.MaterialSignItems;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
+import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
+import fr.lordfinn.steveparty.compat.CartridgeApplications;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.TeleportNetwork;
+import fr.lordfinn.steveparty.dice.DiceModule;
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
+import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.glandouille.AcornHatItem;
+import fr.lordfinn.steveparty.powerups.PowerUp;
+import fr.lordfinn.steveparty.powerups.PowerUps;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.BlockStateComponent;
+import net.minecraft.component.type.FoodComponent;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.item.AliasedBlockItem;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.util.DyeColor;
 import fr.lordfinn.steveparty.items.custom.*;
@@ -19,9 +44,12 @@ import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.Block;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -31,124 +59,130 @@ import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
 public class ModItems {
-    public static final Item DOUBLE_DICE = register(DoubleDiceItem.class, "double_dice");
+    public static final Item DOUBLE_DICE = register("double_dice", DoubleDiceItem::new);
 
-    public static final Item STENCIL = register(StencilItem.class, "stencil");
-    public static final Item STENCIL_GUN = registerUnstackable(StencilGunItem.class, "stencil_gun");
-    public static final Item WRENCH = registerUnstackable(WrenchItem.class, "wrench");
-    public static final Item TILE_LINKER_BRUSH = registerUnstackable(fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem.class, "tile_linker_brush");
+    public static final Item STENCIL = register("stencil", StencilItem::new);
+    public static final Item STENCIL_GUN = registerUnstackable("stencil_gun", StencilGunItem::new);
+    public static final Item WRENCH = registerUnstackable("wrench", WrenchItem::new);
+    public static final Item TILE_LINKER_BRUSH = registerUnstackable("tile_linker_brush", TileLinkerBrushItem::new);
     /** Worn on the head, its lamp lit: the board view at all times, with the details of each space (see ExplorerHelmet). */
-    public static final Item EXPLORER_HELMET = registerUnstackable(fr.lordfinn.steveparty.items.custom.ExplorerHelmetItem.class, "explorer_helmet");
-    public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
-    public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
+    public static final Item EXPLORER_HELMET = registerUnstackable("explorer_helmet", ExplorerHelmetItem::new);
+    public static final Item BOARD_SPACE_BEHAVIOR = register("board_space_behavior", CartridgeItem::new);
+    public static final Item TILE_BEHAVIOR_START = register("tile_behavior_start", StartCartridgeItem::new);
     /** Its tile's face is anthracite until dyed. */
-    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior.COLOR));
-    public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand", new Item.Settings().maxCount(1));
-    public static final Item PLUNGER = register(PlungerItem.class, "plunger");
-    public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
-    public static final Item TRIPLE_DICE = register(TripleDiceItem.class, "triple_dice");
+    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register("board_space_behavior_stop", StopCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR,
+                    StopBoardSpaceBehavior.COLOR));
+    public static final Item TOKENIZER_WAND = register("tokenizer_wand", TokenizerWandItem::new, new Item.Settings().maxCount(1));
+    public static final Item PLUNGER = register("plunger", PlungerItem::new);
+    public static final Item DEFAULT_DICE = register("default_dice", DefaultDiceItem::new);
+    public static final Item TRIPLE_DICE = register("triple_dice", TripleDiceItem::new);
     /** The dice faces: the blank one first ({@link #blankDiceFace}), then kind by kind. */
     public static final List<Item> DICE_FACES = new ArrayList<>();
     /** The dice module items, one per module of DiceModules. */
     public static final List<Item> DICE_MODULES = new ArrayList<>();
     /** The power-up items, one per power-up of PowerUps. */
     public static final List<Item> POWER_UPS = new ArrayList<>();
+    /**
+     * Every Steve Party spawn egg ({@link #spawnEgg}), in registration order. They are all drawn per mob
+     * (textures/item/*_spawn_egg.png): the client registers them untinted at once.
+     */
+    public static final List<Item> SPAWN_EGGS = new ArrayList<>();
     /** The base every dice module is crafted from, with seven star fragments of the module's colour. */
-    public static final Item BLANK_DICE_MODULE = register(Item.class, "blank_dice_module");
+    public static final Item BLANK_DICE_MODULE = register("blank_dice_module", Item::new);
 
     public static Item blankDiceFace() {
         return DICE_FACES.getFirst();
     }
-    public static final Item LAPIS_CRYSTAL_BALL = register(LapisCrystalBallItem.class,"lapis_crystal_ball");
-    public static final Item MINI_GAMES_CATALOGUE = registerUnstackable(MiniGamesCatalogueItem.class,"mini_games_catalogue");
-    public static final Item TOKEN = register(TokenItem.class, "token");
-    public static final Item INVENTORY_CARTRIDGE = register(InventoryCartridgeItem.class, "inventory_cartridge");
+    public static final Item LAPIS_CRYSTAL_BALL = register("lapis_crystal_ball", LapisCrystalBallItem::new);
+    public static final Item MINI_GAMES_CATALOGUE = registerUnstackable("mini_games_catalogue", MiniGamesCatalogueItem::new);
+    public static final Item TOKEN = register("token", TokenItem::new);
+    public static final Item INVENTORY_CARTRIDGE = register("inventory_cartridge", InventoryCartridgeItem::new);
     /** Shop Cartridge: a shop stop (a check point pauses the passing token, a tile opens the shop on landing). */
-    public static final Item SHOP_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.class, "shop_cartridge",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.COLOR));
-    public static final Item ADVANCE_BACK_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.class, "advance_back_cartridge");
+    public static final Item SHOP_CARTRIDGE = register("shop_cartridge", ShopCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR,
+                    ShopCartridgeItem.COLOR));
+    public static final Item ADVANCE_BACK_CARTRIDGE = register("advance_back_cartridge", AdvanceBackCartridgeItem::new);
     /** Its tile's face is cyan until dyed. */
-    public static final Item REPLAY_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem.class, "replay_cartridge",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior.COLOR));
-    public static final Item TELEPORT_CARTRIDGE = register(TeleportCartridgeItem.class, "teleport_cartridge");
+    public static final Item REPLAY_CARTRIDGE = register("replay_cartridge", ReplayCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR,
+                    ReplayBoardSpaceBehavior.COLOR));
+    public static final Item TELEPORT_CARTRIDGE = register("teleport_cartridge", TeleportCartridgeItem::new);
     /** Star Cartridge: a star space, where the party's star may stand and be bought (yellow, like the star). */
-    public static final Item STAR_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.class, "star_cartridge",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR));
+    public static final Item STAR_CARTRIDGE = register("star_cartridge", StarCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR,
+                    StarCartridgeItem.COLOR));
     /** Its tile's face is brown until dyed; pushes 3 spaces on by default. */
-    public static final Item GLANDOUILLE_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.class, "glandouille_cartridge",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.COLOR));
+    public static final Item GLANDOUILLE_CARTRIDGE = register("glandouille_cartridge", GlandouilleCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR,
+                    GlandouilleCartridgeItem.COLOR));
     /** Its tile's face is night indigo until dyed; steals 15 coins by default. */
-    public static final Item FROUSSEUX_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.class, "frousseux_cartridge",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem.COLOR));
+    public static final Item FROUSSEUX_CARTRIDGE = register("frousseux_cartridge", FrousseuxCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR,
+                    FrousseuxCartridgeItem.COLOR));
     /** Its tile's face is witch plum until dyed; draws the Mistigri's sentences by their weights. */
-    public static final Item MISTIGRI_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.class, "mistigri_cartridge",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.COLOR));
+    public static final Item MISTIGRI_CARTRIDGE = register("mistigri_cartridge", MistigriCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR,
+                    MistigriCartridgeItem.COLOR));
     /** Its tile's face is steel blue until dyed; a token reaching it goes on only if its roll meets the condition. */
-    public static final Item THRESHOLD_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.class, "threshold_cartridge",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.COLOR));
-    /** Its tile's face is amber until dyed; passing tokens feed its pot, the token stopping on it wins it. */
-    public static final Item POT_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem.class, "pot_cartridge",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem.COLOR));
-    /** The Pie's nest (ModBlocks.MAGPIE_NEST): a decorative block, a Common pot's nest when set near its space. */
+    public static final Item THRESHOLD_CARTRIDGE = register("threshold_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.COLOR));
+    /** Its tile's face is straw until dyed; passing tokens feed its pot, the token stopping on it wins it. */
+    public static final Item POT_CARTRIDGE = register("pot_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem.COLOR));
+    /** The Magpie's nest (ModBlocks.MAGPIE_NEST): a decorative block, a Common pot's nest when set near its space. */
     public static final Item MAGPIE_NEST = fr.lordfinn.steveparty.blocks.ModBlocks.MAGPIE_NEST.asItem();
     /** Its tile's face and its gates are teal until dyed; a token leaving it by a locked exit needs a Gate Key. */
-    public static final Item KEY_GATE_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem.class, "key_gate_cartridge",
-            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
-                    fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem.COLOR));
+    public static final Item KEY_GATE_CARTRIDGE = register("key_gate_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem.COLOR));
     /** The Gate Key: opens a Key gate on the board, used up (KeyGates). */
-    public static final Item GATE_KEY = register(fr.lordfinn.steveparty.items.custom.GateKeyItem.class, "gate_key",
+    public static final Item GATE_KEY = register("gate_key", fr.lordfinn.steveparty.items.custom.GateKeyItem::new,
             new Item.Settings().maxCount(16));
-    public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
-    public static final Item MINI_GAME_REMOTE = registerUnstackable(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.class, "mini_game_remote");
-    public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
-    public static final Item FLAG = register(FlagItem.class, "flag");
-    public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
-    public static final Item MULA_SPAWN_EGG = register(MulaSpawnEggItem.class, "mula_spawn_egg");
-    public static final Item BOXED_TRADER_SPAWN_EGG = register(fr.lordfinn.steveparty.items.custom.BoxedTraderSpawnEggItem.class, "boxed_trader_spawn_egg");
+    public static final Item MINI_GAME_PAGE = register("mini_game_page", MiniGamePageItem::new);
+    public static final Item MINI_GAME_REMOTE = registerUnstackable("mini_game_remote", MiniGameRemoteItem::new);
+    public static final Item SHOPKEEPER_KEY = registerUnstackable("shopkeeper_key", ShopkeeperKeyItem::new);
+    public static final Item FLAG = register("flag", FlagItem::new);
+    public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register("triple_jump_shoes", TripleJumpShoesItem::new);
+    public static final Item MULA_SPAWN_EGG = spawnEgg("mula_spawn_egg", ModEntities.MULA_ENTITY,
+            0x77c7fc, 0x2486c7);
+    /** Spawns a Boxed Trader in a random box (see BoxedTraderBoxes). */
+    public static final Item BOXED_TRADER_SPAWN_EGG = spawnEgg("boxed_trader_spawn_egg",
+            ModEntities.BOXED_TRADER_ENTITY, 0xB8945F, 0x3AAFA9);
     // The Glandouille: its acorn (planted on farmland, it hatches into a young one; eaten, half a drumstick), its lost
     // cap (worn on the head), a spawn egg per variant (the egg sets the variant)
     public static final Item ACORN = Registry.register(Registries.ITEM, Steveparty.id("acorn"),
-            new net.minecraft.item.AliasedBlockItem(ModBlocks.ACORN_CROP, new Item.Settings()
-                    .food(new net.minecraft.component.type.FoodComponent.Builder().nutrition(1).saturationModifier(0.1f).build())));
-    public static final Item ACORN_HAT = registerUnstackable(fr.lordfinn.steveparty.items.custom.glandouille.AcornHatItem.class, "acorn_hat");
+            new AliasedBlockItem(ModBlocks.ACORN_CROP, new Item.Settings()
+                    .food(new FoodComponent.Builder().nutrition(1).saturationModifier(0.1f).build())));
+    public static final Item ACORN_HAT = registerUnstackable("acorn_hat", AcornHatItem::new);
     public static final Item GLANDOUILLE_SPAWN_EGG = glandouilleEgg("glandouille_spawn_egg",
-            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.CLASSIC, 0xB86C30, 0x5A3A22);
+            GlandouilleVariant.CLASSIC, 0xB86C30, 0x5A3A22);
     public static final Item YOUNG_GLANDOUILLE_SPAWN_EGG = glandouilleEgg("young_glandouille_spawn_egg",
-            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.YOUNG, 0x8DB84A, 0x4E6B2A);
+            GlandouilleVariant.YOUNG, 0x8DB84A, 0x4E6B2A);
     public static final Item MOSSY_GLANDOUILLE_SPAWN_EGG = glandouilleEgg("mossy_glandouille_spawn_egg",
-            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.MOSSY, 0x7A5A3A, 0x5E8E38);
+            GlandouilleVariant.MOSSY, 0x7A5A3A, 0x5E8E38);
     public static final Item FROSTY_GLANDOUILLE_SPAWN_EGG = glandouilleEgg("frosty_glandouille_spawn_egg",
-            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.FROSTY, 0xA8BCD8, 0xF4F8FF);
+            GlandouilleVariant.FROSTY, 0xA8BCD8, 0xF4F8FF);
     /** The Frousseux's egg: a colour drawn at random, as a wild one's. */
-    public static final Item FROUSSEUX_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("frousseux_spawn_egg"),
-            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.FROUSSEUX, 0xFFF3D6, 0xFFAA3C,
-                    new Item.Settings()));
+    public static final Item FROUSSEUX_SPAWN_EGG = spawnEgg("frousseux_spawn_egg",
+            ModEntities.FROUSSEUX, 0xFFF3D6, 0xFFAA3C);
     /** The Mistigri's egg: drawn per mob (textures/item/mistigri_spawn_egg.png). */
-    public static final Item MISTIGRI_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("mistigri_spawn_egg"),
-            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.MISTIGRI, 0x14111A, 0x9BCB2C,
-                    new Item.Settings()));
+    public static final Item MISTIGRI_SPAWN_EGG = spawnEgg("mistigri_spawn_egg",
+            ModEntities.MISTIGRI, 0x14111A, 0x9BCB2C);
     /** The Loaded Die, the Mistigri's loot: curses the next roll of the player it is used on (1 to 3 only). */
-    public static final Item LOADED_DIE = register(fr.lordfinn.steveparty.items.custom.LoadedDieItem.class, "loaded_die",
+    public static final Item LOADED_DIE = register("loaded_die", LoadedDieItem::new,
             new Item.Settings().maxCount(16));
     /** The Boomcart's egg: iron grey, TNT red. */
-    public static final Item BOOMCART_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("boomcart_spawn_egg"),
-            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.BOOMCART, 0x8C8C90, 0xDB2F1F,
-                    new Item.Settings()));
+    public static final Item BOOMCART_SPAWN_EGG = spawnEgg("boomcart_spawn_egg",
+            ModEntities.BOOMCART, 0x8C8C90, 0xDB2F1F);
+    /** The Fumarole's egg: drawn per mob (textures/item/fumarole_spawn_egg.png), basalt and lava. */
+    public static final Item FUMAROLE_SPAWN_EGG = spawnEgg("fumarole_spawn_egg",
+            ModEntities.FUMAROLE, 0x3A2A28, 0xE0601C);
     /**
      * The Candle Saucer, a little gold tray for the Frousseux candle holder to stand on: a block of its own
      * (ModBlocks.CANDLE_SAUCER), crafted onto the candle holder too (CandleSaucerRecipe).
@@ -156,22 +190,22 @@ public class ModItems {
     public static final Item CANDLE_SAUCER = ModBlocks.CANDLE_SAUCER.asItem();
     public static final Item[] GLANDOUILLE_SPAWN_EGGS = {GLANDOUILLE_SPAWN_EGG, YOUNG_GLANDOUILLE_SPAWN_EGG,
             MOSSY_GLANDOUILLE_SPAWN_EGG, FROSTY_GLANDOUILLE_SPAWN_EGG};
-    public static final Item BLUE_STAR_FRAGMENT = register(Item.class, "blue_star_fragment");
-    public static final Item PURPLE_STAR_FRAGMENT = register(Item.class, "purple_star_fragment");
-    public static final Item RED_STAR_FRAGMENT = register(Item.class, "red_star_fragment");
-    public static final Item YELLOW_STAR_FRAGMENT = register(Item.class, "yellow_star_fragment");
-    public static final Item GREEN_STAR_FRAGMENT = register(Item.class, "green_star_fragment");
-    public static final Item BLACK_STAR_FRAGMENT = register(Item.class, "black_star_fragment");
-    public static final Item WHITE_STAR_FRAGMENT = register(Item.class, "white_star_fragment");
-    public static final Item ORANGE_STAR_FRAGMENT = register(Item.class, "orange_star_fragment");
-    public static final Item MAGENTA_STAR_FRAGMENT = register(Item.class, "magenta_star_fragment");
-    public static final Item LIGHT_BLUE_STAR_FRAGMENT = register(Item.class, "light_blue_star_fragment");
-    public static final Item LIME_STAR_FRAGMENT = register(Item.class, "lime_star_fragment");
-    public static final Item PINK_STAR_FRAGMENT = register(Item.class, "pink_star_fragment");
-    public static final Item GRAY_STAR_FRAGMENT = register(Item.class, "gray_star_fragment");
-    public static final Item LIGHT_GRAY_STAR_FRAGMENT = register(Item.class, "light_gray_star_fragment");
-    public static final Item CYAN_STAR_FRAGMENT = register(Item.class, "cyan_star_fragment");
-    public static final Item BROWN_STAR_FRAGMENT = register(Item.class, "brown_star_fragment");
+    public static final Item BLUE_STAR_FRAGMENT = register("blue_star_fragment", Item::new);
+    public static final Item PURPLE_STAR_FRAGMENT = register("purple_star_fragment", Item::new);
+    public static final Item RED_STAR_FRAGMENT = register("red_star_fragment", Item::new);
+    public static final Item YELLOW_STAR_FRAGMENT = register("yellow_star_fragment", Item::new);
+    public static final Item GREEN_STAR_FRAGMENT = register("green_star_fragment", Item::new);
+    public static final Item BLACK_STAR_FRAGMENT = register("black_star_fragment", Item::new);
+    public static final Item WHITE_STAR_FRAGMENT = register("white_star_fragment", Item::new);
+    public static final Item ORANGE_STAR_FRAGMENT = register("orange_star_fragment", Item::new);
+    public static final Item MAGENTA_STAR_FRAGMENT = register("magenta_star_fragment", Item::new);
+    public static final Item LIGHT_BLUE_STAR_FRAGMENT = register("light_blue_star_fragment", Item::new);
+    public static final Item LIME_STAR_FRAGMENT = register("lime_star_fragment", Item::new);
+    public static final Item PINK_STAR_FRAGMENT = register("pink_star_fragment", Item::new);
+    public static final Item GRAY_STAR_FRAGMENT = register("gray_star_fragment", Item::new);
+    public static final Item LIGHT_GRAY_STAR_FRAGMENT = register("light_gray_star_fragment", Item::new);
+    public static final Item CYAN_STAR_FRAGMENT = register("cyan_star_fragment", Item::new);
+    public static final Item BROWN_STAR_FRAGMENT = register("brown_star_fragment", Item::new);
     /**
      * The 16 star fragments in dye order (index = DyeColor id). Blue, purple, red, yellow, green and black are dropped
      * by the Mulas; the 10 others are crafted by mixing fragments, like dyes (white = red + blue + yellow).
@@ -189,15 +223,15 @@ public class ModItems {
     public static boolean isStarFragment(Item item) {
         return STAR_FRAGMENTS.contains(item);
     }
-    public static final Item PARTY_STAR = register(PartyStarItem.class, "party_star");
+    public static final Item PARTY_STAR = register("party_star", PartyStarItem::new);
     /** The coin: the default Pièce currency of a party, minted from a gold nugget. */
-    public static final Item COIN = register(Item.class, "coin");
-    public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
+    public static final Item COIN = register("coin", Item::new);
+    public static final Item PLASTIC_PELLETS = register("plastic_pellets", Item::new);
     /** Plastic sticks: the plastic fences are made of them, like wooden fences of sticks. */
-    public static final Item PLASTIC_STICK = register(Item.class, "plastic_stick");
+    public static final Item PLASTIC_STICK = register("plastic_stick", Item::new);
     /** The Boxed Trader's bandana (stolen with shears), wearable on the head. */
-    public static final Item BANDANA = register(BandanaItem.class, "bandana", new Item.Settings().maxCount(1));
-    public static final Item BOX_COSTUME = register(fr.lordfinn.steveparty.items.custom.BoxCostumeItem.class, "box_costume", new Item.Settings().maxCount(1));
+    public static final Item BANDANA = register("bandana", BandanaItem::new, new Item.Settings().maxCount(1));
+    public static final Item BOX_COSTUME = register("box_costume", BoxCostumeItem::new, new Item.Settings().maxCount(1));
     public static final Item PARTY_CARD_TURNS = registerCard(PartyCardItem.CardType.TURNS);
     public static final Item PARTY_CARD_MINIGAME = registerCard(PartyCardItem.CardType.MINIGAME);
     public static final Item PARTY_CARD_EVENT = registerCard(PartyCardItem.CardType.EVENT);
@@ -214,40 +248,48 @@ public class ModItems {
      * Registers a stackable item. Items whose state lives in immutable data components (cartridges, stencils,
      * mini game pages...) may stack: only identical stacks (same components) merge, so no state is lost.
      */
-    public static <T extends Item> T register(Class<T> itemClass, String id) {
-        return register(itemClass, id, new Item.Settings());
+    public static <T extends Item> T register(String id, Function<Item.Settings, T> factory) {
+        return register(id, factory, new Item.Settings());
     }
 
     /**
      * Registers an item whose per-stack state is edited in place over time (catalogue, books, wrench, wand...):
      * it must not stack, otherwise editing one item would silently edit the whole stack.
      */
-    public static <T extends Item> T registerUnstackable(Class<T> itemClass, String id) {
-        return register(itemClass, id, new Item.Settings().maxCount(1));
+    public static <T extends Item> T registerUnstackable(String id, Function<Item.Settings, T> factory) {
+        return register(id, factory, new Item.Settings().maxCount(1));
+    }
+
+    /**
+     * Registers a spawn egg of {@code type} and lists it in {@link #SPAWN_EGGS} (drawn untinted). Its two colours stay
+     * the egg's colours for what reads them (e.g. MobTextureColors), not for its icon.
+     */
+    public static Item spawnEgg(String id, EntityType<? extends MobEntity> type, int primary, int secondary) {
+        return spawnEgg(id, type, primary, secondary, new Item.Settings());
+    }
+
+    private static Item spawnEgg(String id, EntityType<? extends MobEntity> type, int primary, int secondary,
+                                 Item.Settings settings) {
+        Item egg = Registry.register(Registries.ITEM, Steveparty.id(id), new SpawnEggItem(type, primary, secondary, settings));
+        SPAWN_EGGS.add(egg);
+        return egg;
     }
 
     /** A Glandouille spawn egg giving {@code variant} (its entity data), in its two colours. */
-    private static Item glandouilleEgg(String id, fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant variant,
+    private static Item glandouilleEgg(String id, GlandouilleVariant variant,
                                        int primary, int secondary) {
-        net.minecraft.nbt.NbtCompound data = new net.minecraft.nbt.NbtCompound();
-        data.putString("id", fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE_KEY.getValue().toString());
+        NbtCompound data = new NbtCompound();
+        data.putString("id", ModEntities.GLANDOUILLE_KEY.getValue().toString());
         data.putInt("Variant", variant.ordinal());
-        Item egg = new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE, primary, secondary,
-                new Item.Settings().component(net.minecraft.component.DataComponentTypes.ENTITY_DATA,
-                        net.minecraft.component.type.NbtComponent.of(data)));
-        return Registry.register(Registries.ITEM, Steveparty.id(id), egg);
+        return spawnEgg(id, ModEntities.GLANDOUILLE, primary, secondary,
+                new Item.Settings().component(DataComponentTypes.ENTITY_DATA,
+                        NbtComponent.of(data)));
     }
 
-    public static <T extends Item> T register(Class<T> itemClass, String id, Item.Settings settings) {
-        try {
-            T item = itemClass.getConstructor(Item.Settings.class).newInstance(settings);
-            Identifier itemID = Steveparty.id(id);
-            RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
-            Registry.register(Registries.ITEM, key, item);
-            return item;
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to create and register item: " + itemClass, e);
-        }
+    public static <T extends Item> T register(String id, Function<Item.Settings, T> factory, Item.Settings settings) {
+        T item = factory.apply(settings);
+        Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(id)), item);
+        return item;
     }
 
     private static Item registerCard(PartyCardItem.CardType type) {
@@ -266,32 +308,29 @@ public class ModItems {
     }
 
     public static void initialize() {
-        // Former ids of renamed items, so the ones already in saved worlds keep loading
-        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("power_star"), Steveparty.id("party_star"));
-        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("garnet_crystal_ball"), Steveparty.id("lapis_crystal_ball"));
         // Register the group.
         Registry.register(Registries.ITEM_GROUP, CUSTOM_ITEM_GROUP_KEY, CUSTOM_ITEM_GROUP);
 
         // The dice faces, the blank one first, then kind by kind in the order of their values:
         // numbers (0 to 10), premium, cursed, coins (+1 to +10), debts (-1 to -10), swap
-        DICE_FACES.add(register(Item.class, "blank_dice_face"));
-        for (int i = 0; i <= 10; i++) DICE_FACES.add(register(Item.class, "dice_face_" + i));
-        for (int i = 1; i <= 10; i++) DICE_FACES.add(register(Item.class, "premium_dice_face_" + i));
-        for (int i = 1; i <= 3; i++) DICE_FACES.add(register(Item.class, "cursed_dice_face_" + i));
-        for (int i = 1; i <= fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace.MAX_COINS; i++)
-            DICE_FACES.add(register(Item.class, "coin_dice_face_" + i));
-        for (int i = 1; i <= fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace.MAX_COINS; i++)
-            DICE_FACES.add(register(Item.class, "debt_dice_face_" + i));
-        DICE_FACES.add(register(Item.class, "swap_dice_face"));
+        DICE_FACES.add(register("blank_dice_face", Item::new));
+        for (int i = 0; i <= 10; i++) DICE_FACES.add(register("dice_face_" + i, Item::new));
+        for (int i = 1; i <= 10; i++) DICE_FACES.add(register("premium_dice_face_" + i, Item::new));
+        for (int i = 1; i <= 3; i++) DICE_FACES.add(register("cursed_dice_face_" + i, Item::new));
+        for (int i = 1; i <= DiceFacesComponent.DiceFace.MAX_COINS; i++)
+            DICE_FACES.add(register("coin_dice_face_" + i, Item::new));
+        for (int i = 1; i <= DiceFacesComponent.DiceFace.MAX_COINS; i++)
+            DICE_FACES.add(register("debt_dice_face_" + i, Item::new));
+        DICE_FACES.add(register("swap_dice_face", Item::new));
 
         // One item per dice module (see DiceModules)
-        for (fr.lordfinn.steveparty.dice.DiceModule module : fr.lordfinn.steveparty.dice.DiceModules.all()) {
-            Item item = new fr.lordfinn.steveparty.items.custom.DiceModuleItem(module, new Item.Settings());
+        for (DiceModule module : DiceModules.all()) {
+            Item item = new DiceModuleItem(module, new Item.Settings());
             DICE_MODULES.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(module.itemPath())), item));
         }
 
         // One item per power-up (see PowerUps)
-        for (fr.lordfinn.steveparty.powerups.PowerUp powerUp : fr.lordfinn.steveparty.powerups.PowerUps.all()) {
+        for (PowerUp powerUp : PowerUps.all()) {
             Item item = new PowerUpItem(powerUp, new Item.Settings());
             POWER_UPS.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(powerUp.itemPath())), item));
         }
@@ -303,7 +342,7 @@ public class ModItems {
             }
             itemGroup.add(new ItemStack(BOX_COSTUME));
             // The tiles: plain, one per cartridge, then their other sizes (same order as in REI)
-            itemGroup.addAll(fr.lordfinn.steveparty.compat.CartridgeApplications.tileEntries());
+            itemGroup.addAll(CartridgeApplications.tileEntries());
             itemGroup.add(CHECK_POINT);
             itemGroup.add(BOARD_SPACE_REDSTONE_ROUTER);
             itemGroup.add(WRENCH);
@@ -315,12 +354,12 @@ public class ModItems {
             itemGroup.add(INVENTORY_CARTRIDGE);
             itemGroup.add(SHOP_CARTRIDGE);
             itemGroup.add(ADVANCE_BACK_CARTRIDGE);
-            itemGroup.add(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.withSteps(-3));
+            itemGroup.add(AdvanceBackCartridgeItem.withSteps(-3));
             itemGroup.add(REPLAY_CARTRIDGE);
             itemGroup.add(TELEPORT_CARTRIDGE);
-            for (fr.lordfinn.steveparty.components.TeleportNetwork network : fr.lordfinn.steveparty.components.TeleportNetwork.values()) {
-                if (network == fr.lordfinn.steveparty.components.TeleportNetwork.VIOLET) continue;
-                itemGroup.add(fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem.withNetwork(new ItemStack(TELEPORT_CARTRIDGE), network));
+            for (TeleportNetwork network : TeleportNetwork.values()) {
+                if (network == TeleportNetwork.VIOLET) continue;
+                itemGroup.add(TeleportCartridgeItem.withNetwork(new ItemStack(TELEPORT_CARTRIDGE), network));
             }
             itemGroup.add(STAR_CARTRIDGE);
             itemGroup.add(GLANDOUILLE_CARTRIDGE);
@@ -443,7 +482,7 @@ public class ModItems {
                     itemGroup.add(block);
                 }
             }
-            for (fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock tiles : ModBlocks.POLISHED_TILES) {
+            for (PolishedTilesBlock tiles : ModBlocks.POLISHED_TILES) {
                 for (ItemStack stack : tiles.creativeStacks()) itemGroup.add(stack);
             }
             itemGroup.add(LOOTING_BOX);
@@ -454,6 +493,7 @@ public class ModItems {
             itemGroup.add(BOOMCART_SPAWN_EGG);
             itemGroup.add(MISTIGRI_SPAWN_EGG);
             itemGroup.add(LOADED_DIE);
+            itemGroup.add(FUMAROLE_SPAWN_EGG);
             itemGroup.add(CANDLE_SAUCER);
             itemGroup.add(ACORN);
             itemGroup.add(ACORN_HAT);

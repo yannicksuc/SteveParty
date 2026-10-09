@@ -6,7 +6,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.NbtCompound;
-import fr.lordfinn.steveparty.registry.RegistryAliases;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
@@ -14,7 +13,7 @@ import net.minecraft.util.math.BlockPos;
  * Worlds saved before the tiles were renamed: {@code simple_tile} is now {@code tile}, and {@code tile} is now
  * {@code advanced_tile}.
  * <ul>
- *     <li>ids of the old Tile ({@code simple_tile}, its block entity {@code simple_tile_entity}) are aliases of the new;</li>
+ *     <li>ids of the old Tile ({@code simple_tile}, its block entity {@code simple_tile_entity}) are aliases of the new (LegacyIds);</li>
  *     <li>the old Advanced Tile's block id is now the Tile's, but its block entity ({@code tile_entity}, an alias of
  *     {@code advanced_tile}) still says what it was: such a Tile holding an Advanced Tile's block entity is turned back
  *     into an Advanced Tile as soon as it loads, with all its cartridges and data.</li>
@@ -26,9 +25,6 @@ public final class TileMigration {
     }
 
     public static void initialize() {
-        RegistryAliases.add(Steveparty.id("simple_tile"), Steveparty.id("tile")); // block and item
-        RegistryAliases.add(Steveparty.id("simple_tile_entity"), Steveparty.id("tile"));
-        RegistryAliases.add(Steveparty.id("tile_entity"), Steveparty.id("advanced_tile"));
         ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register((blockEntity, world) -> {
             if (blockEntity instanceof AdvancedTileBlockEntity && blockEntity.getCachedState().isOf(ModBlocks.TILE)) {
                 BlockPos pos = blockEntity.getPos().toImmutable();

@@ -16,10 +16,9 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
+import fr.lordfinn.steveparty.registry.ModGameRules;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
-import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
@@ -35,7 +34,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameRules;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -52,7 +50,7 @@ import java.util.UUID;
  * </ul>
  * The token's owner gets the shop's trade screen wherever they are, with « Buy nothing » and a countdown; the merchant
  * glows meanwhile. The stop ends when the purchases allowed by the cartridge are made, on « Buy nothing » or when the
- * screen is closed, when the time runs out (game rule {@code stevepartyShopStopSeconds}, {@value #DEFAULT_SECONDS} s
+ * screen is closed, when the time runs out (game rule {@code stevepartyShopStopSeconds}, {@value ModGameRules#DEFAULT_SHOP_STOP_SECONDS} s
  * by default) or when the owner leaves: a paused token walks its remaining steps, a landing ends the turn.
  * <p>
  * The shop is the merchant chosen with the Tile Linker Brush (cartridge {@link ModComponents#SHOP_LINK}), else the nearest one
@@ -61,10 +59,6 @@ import java.util.UUID;
  * owner shops; the players around get a notice. Stops live in memory (a server stop ends them).
  */
 public final class ShopStops {
-    public static final int DEFAULT_SECONDS = 60;
-    /** Seconds a player gets to shop at a shop stop. */
-    public static final GameRules.Key<GameRules.IntRule> SHOP_SECONDS = GameRuleRegistry.register(
-            "stevepartyShopStopSeconds", GameRules.Category.MISC, GameRuleFactory.createIntRule(DEFAULT_SECONDS, 5, 600));
     /** The nearest merchant is looked for this far from the space (to him or to one of his trading stalls). */
     public static final int SHOP_RADIUS = 32;
     /** The players this far from the space hear about the stop. */
@@ -226,7 +220,7 @@ public final class ShopStops {
                     MessageUtils.MessageType.ACTION_BAR);
             return false;
         }
-        int seconds = world.getGameRules().getInt(SHOP_SECONDS);
+        int seconds = world.getGameRules().getInt(ModGameRules.SHOP_STOP_SECONDS);
         int limit = ShopCartridgeItem.purchases(cartridge);
         Text tokenName = mob.getDisplayName();
         Stop stop = new Stop(mob.getUuid(), ownerUuid, world, space.getPos().toImmutable(), trader.getUuid(), limit,
