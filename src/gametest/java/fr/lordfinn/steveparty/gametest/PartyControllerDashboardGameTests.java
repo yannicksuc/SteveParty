@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.mojang.serialization.JsonOps;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
@@ -26,7 +27,6 @@ import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.inventory.SimpleInventory;
@@ -59,7 +59,7 @@ import static fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScree
  * The Party Controller's dashboard: its settings (the Star and Coin items, the rounds), who may change them, when a
  * party may be started from it, and the state it shows (sent to the player only when it changed).
  */
-public class PartyControllerDashboardGameTests implements FabricGameTest {
+public class PartyControllerDashboardGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 1);
 
     private static PartyControllerEntity place(TestContext context) {
@@ -579,7 +579,9 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             var hit = new BlockHitResult(pos.toCenterPos(), Direction.UP, pos, false);
             var hand = Hand.MAIN_HAND;
 
-            // Powered: a second catalogue does not replace the first
+            // Powered: a second catalogue does not replace the first. (Marked powered first: a rising edge would boot a
+            // party, with the tokens on whatever start tiles other tests left within its reach, and lock it for good.)
+            context.setBlockState(CONTROLLER, context.getBlockState(CONTROLLER).with(PartyController.POWERED, true));
             context.setBlockState(CONTROLLER.east(), Blocks.REDSTONE_BLOCK);
             player.changeGameMode(GameMode.SURVIVAL);
             player.setStackInHand(hand, new ItemStack(ModItems.MINI_GAMES_CATALOGUE));
