@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.pipe;
 
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix3f;
@@ -117,7 +118,7 @@ public final class PipePose {
     /** Smoothstep. */
     public static float ease(double t) {
         float x = (float) MathHelper.clamp(t, 0, 1);
-        return x * x * (3 - 2 * x);
+        return Easing.smoothstep(x);
     }
 
     /** Is a body of this size long (on four legs: snout first) rather than tall (head first)? */

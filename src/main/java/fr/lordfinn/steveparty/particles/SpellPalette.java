@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.particles;
 
-import net.minecraft.util.math.MathHelper;
+import fr.lordfinn.steveparty.utils.Argb;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.util.math.random.Random;
 
 /**
@@ -41,13 +42,10 @@ public final class SpellPalette {
         if (p > steps) p = 2 * steps - p;
         int index = Math.min(steps - 1, (int) p);
         float blend = p - index;
-        return lerp(GRADIENT[index], GRADIENT[index + 1], blend * blend * (3 - 2 * blend));
+        return lerp(GRADIENT[index], GRADIENT[index + 1], Easing.smoothstep(blend));
     }
 
     public static int lerp(int from, int to, float t) {
-        int r = (int) MathHelper.lerp(t, (from >> 16) & 0xFF, (to >> 16) & 0xFF);
-        int g = (int) MathHelper.lerp(t, (from >> 8) & 0xFF, (to >> 8) & 0xFF);
-        int b = (int) MathHelper.lerp(t, from & 0xFF, to & 0xFF);
-        return (r << 16) | (g << 8) | b;
+        return Argb.lerp(from, to, t) & 0xFFFFFF;
     }
 }

@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.gui.party;
 import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import fr.lordfinn.steveparty.hud.StandingsLayout;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
@@ -179,7 +180,7 @@ final class StandingsHud {
             TurnBarHud.darkText(context, s, tx, y, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
             return;
         }
-        float scale = 1 + 0.5f * (1 - HudDraw.easeOutBack(pop));
+        float scale = 1 + 0.5f * (1 - Easing.easeOutBack(pop));
         MatrixStack matrices = context.getMatrices();
         matrices.push();
         float cx = tx + w / 2f, cy = y + 4;

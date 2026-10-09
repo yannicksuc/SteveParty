@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
-import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
 import fr.lordfinn.steveparty.client.pawn.PlayerStatue;
+import fr.lordfinn.steveparty.client.utils.DynamicTextureCache;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnPose;
 import fr.lordfinn.steveparty.components.TileStampComponent;
@@ -22,8 +22,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import fr.lordfinn.steveparty.stencil.StencilShape;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
@@ -36,15 +35,11 @@ import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * What a podium column shows, drawn on its top block (the column's bottom block keeps it):
@@ -77,14 +72,7 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
     private record Key(ByteBuffer shape, int rgb, boolean slab) {
     }
 
-    private static final Map<Key, Identifier> TEXTURES = new LinkedHashMap<>(16, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<Key, Identifier> eldest) {
-            if (size() <= MAX_CACHED) return false;
-            ClientTextures.destroy(eldest.getValue());
-            return true;
-        }
-    };
+    private static final DynamicTextureCache<Key> TEXTURES = new DynamicTextureCache<>(MAX_CACHED);
 
     public PodiumRenderer(BlockEntityRendererFactory.Context context) {
         this.wide = context.getLayerModelPart(EntityModelLayers.PLAYER);
@@ -109,7 +97,7 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
         PodiumOccupant.Figure figure = occupant == null ? null : occupant.figure();
         if (figure != null) {
             float age = (float) (world.getTime() - occupant.since()) + tickDelta;
-            float pop = age < 0 || age >= POP_TICKS ? 1f : easeOutBack(age / POP_TICKS);
+            float pop = age < 0 || age >= POP_TICKS ? 1f : Easing.easeOutBack(age / POP_TICKS);
             float time = world.getTime() + tickDelta + (entity.getPos().getX() * 7 + entity.getPos().getZ() * 13) % 40;
             float bob = MathHelper.sin(time * 0.12f) * 0.025f;
             SkinTextures skin = SkinUtils.getSkinTextures(figure.player());
@@ -152,24 +140,8 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
         }
     }
 
-    private static float easeOutBack(float t) {
-        float c1 = 1.70158f, c3 = c1 + 1, u = t - 1;
-        return 1 + c3 * u * u * u + c1 * u * u;
-    }
-
     public static void registerReloadListener() {
-        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
-            @Override
-            public Identifier getFabricId() {
-                return Steveparty.id("podium_banner_textures");
-            }
-
-            @Override
-            public void reload(ResourceManager manager) {
-                TEXTURES.values().forEach(id -> ClientTextures.destroy(id));
-                TEXTURES.clear();
-            }
-        });
+        DynamicTextureCache.onResourceReload("podium_banner_textures", TEXTURES::clear);
     }
 
     @Override
@@ -213,7 +185,7 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
     private static Identifier texture(TileStampComponent stamp, boolean slab) {
         byte[] shape = stamp.shapeArray();
         int rgb = stamp.color().getEntityColor();
-        return TEXTURES.computeIfAbsent(new Key(ByteBuffer.wrap(shape), rgb, slab), key -> register(shape, rgb, slab));
+        return TEXTURES.get(new Key(ByteBuffer.wrap(shape), rgb, slab), key -> register(shape, rgb, slab));
     }
 
     /** A 16x16 texture of the front face, transparent but for the pattern shrunk into the banner's middle. */

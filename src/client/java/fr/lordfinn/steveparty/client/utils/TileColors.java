@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.utils;
 
+import net.minecraft.util.math.MathHelper;
+
 /**
  * Colour ramps for the tiles: shades of a colour that keep it vivid, like hand-made pixel-art palettes. Darker shades
  * don't just darken (tinting a grey texture makes everything greyish): they gain saturation and turn their hue
@@ -66,8 +68,8 @@ public final class TileColors {
     }
 
     private static int fromHsv(float h, float s, float v) {
-        s = Math.max(0, Math.min(1, s));
-        v = Math.max(0, Math.min(1, v));
+        s = MathHelper.clamp(s, 0, 1);
+        v = MathHelper.clamp(v, 0, 1);
         float c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
         float r, g, b;
         if (h < 60) { r = c; g = x; b = 0; }

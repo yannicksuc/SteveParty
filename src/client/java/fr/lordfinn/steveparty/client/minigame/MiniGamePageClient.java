@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.client.minigame;
 
-import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud;
 import fr.lordfinn.steveparty.client.screens.MiniGamePageEditorScreen;
+import fr.lordfinn.steveparty.client.utils.DynamicTextureCache;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImage;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImages;
@@ -17,6 +17,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.image.BufferedImage;
@@ -70,14 +71,7 @@ public final class MiniGamePageClient {
             return true;
         }
     };
-    private static final Map<TextureKey, Identifier> TEXTURES = new LinkedHashMap<>(16, 0.75F, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<TextureKey, Identifier> eldest) {
-            if (size() <= MAX_TEXTURES) return false;
-            ClientTextures.destroy(eldest.getValue());
-            return true;
-        }
-    };
+    private static final DynamicTextureCache<TextureKey> TEXTURES = new DynamicTextureCache<>(MAX_TEXTURES);
     private static int textureSerial;
 
     private MiniGamePageClient() {
@@ -128,7 +122,6 @@ public final class MiniGamePageClient {
         ASKED_IMAGES.clear();
         INCOMING.clear();
         IMAGES.clear();
-        TEXTURES.values().forEach(texture -> ClientTextures.destroy(texture));
         TEXTURES.clear();
         MiniGameCardHud.clear();
         MiniGameResultsHud.clear();
@@ -167,16 +160,11 @@ public final class MiniGamePageClient {
             return null;
         }
         double ratio = Math.min(boxWidth / (double) source.getWidth(), boxHeight / (double) source.getHeight());
-        int width = Math.max(1, Math.min(boxWidth, (int) Math.round(source.getWidth() * ratio)));
-        int height = Math.max(1, Math.min(boxHeight, (int) Math.round(source.getHeight() * ratio)));
+        int width = MathHelper.clamp((int) Math.round(source.getWidth() * ratio), 1, boxWidth);
+        int height = MathHelper.clamp((int) Math.round(source.getHeight() * ratio), 1, boxHeight);
         double scale = MinecraftClient.getInstance().getWindow().getScaleFactor();
         TextureKey key = new TextureKey(image.hash(), Math.max(1, (int) Math.round(width * scale)), Math.max(1, (int) Math.round(height * scale)));
-        Identifier texture = TEXTURES.get(key);
-        if (texture == null) {
-            texture = createTexture(source, key);
-            TEXTURES.put(key, texture);
-        }
-        return new Picture(texture, width, height);
+        return new Picture(TEXTURES.get(key, k -> createTexture(source, k)), width, height);
     }
 
     /** A picture this client just made (picked in the editor): shown right away, without asking the server for it. */

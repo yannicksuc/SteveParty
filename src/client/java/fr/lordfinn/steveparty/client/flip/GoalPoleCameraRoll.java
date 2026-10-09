@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.flip;
 
+import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.MathHelper;
@@ -42,14 +43,9 @@ public final class GoalPoleCameraRoll {
         return MathHelper.clamp(MathHelper.lerp(tickDelta, prev, current), 0, 1);
     }
 
-    /** Smoothstep: slow start, slow end. */
-    private static float eased(float t) {
-        return t * t * (3 - 2 * t);
-    }
-
     /** The roll of the view, degrees (0 upright, 180 upside down). */
     public static float rollDegrees(float tickDelta) {
-        return 180F * eased(progress(tickDelta));
+        return 180F * Easing.smoothstep(progress(tickDelta));
     }
 
     /** The factor the field of view is multiplied by: a little wider half way through the roll. */

@@ -12,6 +12,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -259,7 +260,7 @@ public class RichTextBox extends ClickableWidget {
     private void replaceSelection(RichText inserted, boolean typed) {
         if (!editable) return;
         int room = maxVisible - (text.length() - (to() - from()));
-        RichText fitting = inserted.sub(0, Math.max(0, Math.min(inserted.length(), room)));
+        RichText fitting = inserted.sub(0, MathHelper.clamp(room, 0, inserted.length()));
         // Lines: the line breaks beyond the most become spaces
         int lineRoom = maxLines - (text.lines() - countBreaks(text, from(), to()));
         for (int i = 0; i < fitting.length(); i++) {
@@ -348,7 +349,7 @@ public class RichTextBox extends ClickableWidget {
     }
 
     private void moveCaret(int position, boolean select) {
-        caret = Math.max(0, Math.min(text.length(), position));
+        caret = MathHelper.clamp(position, 0, text.length());
         if (!select) anchor = caret;
         typing = null;
         typingRun = false;
@@ -540,7 +541,7 @@ public class RichTextBox extends ClickableWidget {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (!isMouseOver(mouseX, mouseY) || verticalAmount == 0) return false;
         layout();
-        scroll = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.signum(verticalAmount)));
+        scroll = MathHelper.clamp(scroll - (int) Math.signum(verticalAmount), 0, maxScroll());
         return true;
     }
 
@@ -687,7 +688,7 @@ public class RichTextBox extends ClickableWidget {
 
     private void scrollTo(double mouseY) {
         float t = (float) ((mouseY - getY() - padTop) / (shownLines() * LINE_H));
-        scroll = Math.max(0, Math.min(maxScroll(), Math.round(t * maxScroll())));
+        scroll = MathHelper.clamp(Math.round(t * maxScroll()), 0, maxScroll());
     }
 
     // ------------------------------------------------------------------ drawing
