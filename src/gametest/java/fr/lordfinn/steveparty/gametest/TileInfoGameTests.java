@@ -14,6 +14,7 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.BoardRuleCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
@@ -60,6 +61,16 @@ public class TileInfoGameTests implements FabricGameTest {
         return space;
     }
 
+    /** Whether {@code text} is written with {@code key}. */
+    private static boolean is(Text text, String key) {
+        return text.getContent() instanceof TranslatableTextContent content && content.getKey().equals(KEY + key);
+    }
+
+    /** The lines of {@code layer}. */
+    private static List<TileInfo.Line> lines(TileInfo info, TileInfo.Layer layer) {
+        return info.lines().stream().filter(line -> line.layer() == layer).toList();
+    }
+
     /** The line written with {@code key}, or null. */
     private static @Nullable TranslatableTextContent line(TileInfo info, String key) {
         for (TileInfo.Line line : info.lines()) {
@@ -83,13 +94,13 @@ public class TileInfoGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** The Threshold tells its condition, titled by its cartridge; a new condition changes it. */
+    /** The Threshold tells its condition, titled by its role (not its cartridge); a new condition changes it. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theThresholdTellsItsCondition(TestContext context) {
         BoardSpaceBlockEntity space = tile(context, ThresholdCartridgeItem.with(ModItems.THRESHOLD_CARTRIDGE, ThresholdCartridgeItem.Operator.AT_LEAST, 7));
         TileInfo info = TileInfos.of(space);
         context.assertTrue(line(info, "threshold") != null, "the condition line");
-        context.assertEquals(info.title().getString(), space.getActiveCartridgeItemStack().getName().getString(), "titled by its cartridge");
+        context.assertTrue(is(info.title(), "role.tile_threshold"), "titled by its role");
         space.setStack(0, ThresholdCartridgeItem.with(ModItems.THRESHOLD_CARTRIDGE, ThresholdCartridgeItem.Operator.AT_LEAST, 9));
         context.assertTrue(!TileInfos.of(space).sameAs(info), "a new condition: a new info");
         context.assertTrue(TileInfos.of(space).sameAs(TileInfos.of(space)), "unchanged: the same info");
@@ -130,12 +141,18 @@ public class TileInfoGameTests implements FabricGameTest {
         CartridgeContainers.set(cartridge, List.of(GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(chestPos))));
         BoardSpaceBlockEntity space = tile(context, cartridge);
         TileInfo info = TileInfos.of(space);
-        context.assertEquals(info.ring().size(), 2, "both items circle it");
-        context.assertTrue(Boolean.TRUE.equals(info.ring().get(1).get(ModComponents.IS_NEGATIVE)), "the dirt as taken");
-        context.assertTrue(line(info, "inventory.random") != null, "one at random (its default)");
-        context.assertEquals(arg(info, "inventory.left", 0), "5", "5 diamonds left");
+        List<String> play = lines(info, TileInfo.Layer.PLAY).stream().map(line -> line.text().getString()).toList();
+        context.assertTrue(play.contains("+3") && play.contains("−2"), "each item as what it does: " + play);
+        context.assertTrue(info.ring().isEmpty(), "a few items: lines, no ring");
+        context.assertTrue(line(info, "inventory.random") != null, "two items: one at random (its default) is told");
+        context.assertEquals(arg(info, "inventory.left", 0), "5", "the helmet: 5 diamonds left");
+        context.assertTrue(lines(info, TileInfo.Layer.DETAIL).size() == 1, "the stock is the helmet's");
         chest.setStack(0, new ItemStack(Items.DIAMOND, 1));
-        context.assertEquals(arg(TileInfos.of(space), "inventory.left", 0), "1", "1 left once taken");
+        context.assertTrue(line(TileInfos.of(space), "inventory.empty") != null, "+0 once its chests ran out");
+        // One item only: how it picks changes nothing, not told
+        cartridge = space.getActiveCartridgeItemStack();
+        cartridge.set(ModComponents.INVENTORY_COMPONENT, new InventoryComponent(List.of(new ItemStack(Items.DIAMOND, 1))));
+        context.assertTrue(line(TileInfos.of(space), "inventory.random") == null, "one item: no « at random »");
         context.complete();
     }
 
@@ -145,15 +162,12 @@ public class TileInfoGameTests implements FabricGameTest {
         BoardSpaceBlockEntity space = tile(context, new ItemStack(ModItems.KEY_GATE_CARTRIDGE));
         ItemStack gate = space.getActiveCartridgeItemStack();
         TileInfo closed = TileInfos.of(space);
-        TranslatableTextContent state = line(closed, "key_gate");
-        context.assertTrue(state != null && ((Text) state.getArgs()[0]).getContent() instanceof TranslatableTextContent value
-                && value.getKey().equals(KEY + "key_gate.closed"), "closed");
+        context.assertTrue(line(closed, "key_gate.closed") != null, "closed");
+        context.assertTrue(lines(closed, TileInfo.Layer.BUILD).stream().anyMatch(line -> is(line.text(), "key_gate.locks")),
+                "the locked ways are building info");
         BoardRuleCartridgeItem.putState(gate, KeyGateCartridgeItem.OPENED, -1);
         TileInfo open = TileInfos.of(space);
-        state = line(open, "key_gate");
-        context.assertTrue(state != null && ((Text) state.getArgs()[0]).getContent() instanceof TranslatableTextContent value
-                && value.getKey().equals(KEY + "key_gate.open"), "open once a key opened it");
-        context.assertTrue(line(open, "key_gate.locks") == null, "open: no way locked");
+        context.assertTrue(line(open, "key_gate.open") != null, "open once a key opened it");
         context.complete();
     }
 
@@ -166,8 +180,19 @@ public class TileInfoGameTests implements FabricGameTest {
             BoardSpaceBlockEntity space = tile(context, new ItemStack(item));
             TileInfo info = TileInfos.of(space);
             context.assertTrue(!info.lines().isEmpty(), item + " tells something");
-            context.assertEquals(info.title().getString(), new ItemStack(item).getName().getString(), item + " titled by its cartridge");
+            context.assertTrue(is(info.title(), "role." + ((CartridgeItem) item).getBoardSpaceType().asString()), item + " titled by its role");
         }
+        context.complete();
+    }
+
+    /** On a check point the role plays in passing: the title says Checkpoint. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aCheckPointSaysSo(TestContext context) {
+        context.setBlockState(new BlockPos(1, 0, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(1, 1, 1), ModBlocks.CHECK_POINT);
+        BoardSpaceBlockEntity space = context.getBlockEntity(new BlockPos(1, 1, 1));
+        space.setStack(0, new ItemStack(ModItems.POT_CARTRIDGE));
+        context.assertTrue(is(TileInfos.of(space).title(), "check_point"), "Checkpoint Common Pot");
         context.complete();
     }
 
@@ -187,9 +212,9 @@ public class TileInfoGameTests implements FabricGameTest {
             context.assertTrue(TileInfos.of(trapped).isEmpty(), "nothing before the trap");
             TrapEffect.place(party, context.getAbsolutePos(t1), player.getUuid(), token.getUuid());
             TileInfo info = TileInfos.of(trapped);
-            context.assertTrue(info.title().getContent() instanceof TranslatableTextContent title && title.getKey().equals(KEY + "trap.title"),
+            context.assertTrue(is(info.title(), "role.trap"),
                     "a plain space with a trap: titled Trap");
-            context.assertTrue(!info.lines().isEmpty() && line(info, "trap") == null, "its effect alone (the title says Trap)");
+            context.assertTrue(line(info, "trap.coins") != null && line(info, "trap") == null, "its effect alone (the title says Trap)");
             TrapEffect.clearAll(party);
             context.assertTrue(TileInfos.of(trapped).isEmpty(), "nothing once the trap is gone");
             context.removeBlock(new BlockPos(1, 1, 4));

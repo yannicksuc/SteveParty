@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.service.TileInfos;
+import net.minecraft.item.Items;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -66,12 +68,20 @@ public class PotTileBehavior extends ABoardSpaceBehavior {
         return Status.GOOD;
     }
 
-    /** What the pot holds (its coins, the items stolen into it) and what passing costs. */
+    /**
+     * In game: what stopping wins, what passing costs (when it costs). Building: the pot's start, its cap, the Pie's
+     * theft, the winner paying too (only when set).
+     */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof PotCartridgeItem)) return;
-        info.line(new ItemStack(ModItems.COIN), TileInfo.line("pot", TileInfo.coins(PotCartridgeItem.coins(stack))));
-        info.line(TileInfo.line("pot.stake", TileInfo.coins(PotCartridgeItem.stake(stack))));
+        ItemStack coin = TileInfos.coin(space);
+        info.line(coin, TileInfo.line("pot", TileInfo.coins(PotCartridgeItem.coins(stack))));
+        if (PotCartridgeItem.stake(stack) > 0) info.line(coin, TileInfo.bad(TileInfo.line("pot.stake", PotCartridgeItem.stake(stack))));
         for (ItemStack item : PotCartridgeItem.items(stack)) info.item(item);
+        if (PotCartridgeItem.start(stack) > 0) info.build(coin, TileInfo.line("pot.start", TileInfo.value(PotCartridgeItem.start(stack))));
+        if (PotCartridgeItem.cap(stack) > 0) info.build(coin, TileInfo.line("pot.cap", TileInfo.value(PotCartridgeItem.cap(stack))));
+        if (PotCartridgeItem.thief(stack) > 0) info.build(TileInfo.line("pot.thief", TileInfo.value(PotCartridgeItem.thief(stack))));
+        if (PotCartridgeItem.landerPays(stack)) info.build(TileInfo.line("pot.lander_pays"));
     }
 }
