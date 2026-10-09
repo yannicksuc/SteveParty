@@ -100,12 +100,10 @@ public class TileLinkerBrushItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         Item cartridge = TileLinkerBrush.cartridge(stack);
-        Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL)
-                .state("tooltip.steveparty.tile_linker_brush.level", Tooltips.value(TileLinkerBrush.levelText(TileLinkerBrush.level(stack))))
-                .state("tooltip.steveparty.tile_linker_brush.cartridge", cartridge == null
-                        ? Tooltips.value(Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge.keep"))
-                        : Tooltips.value(new ItemStack(cartridge).getName()))
-                .summary("tooltip.steveparty.tile_linker_brush")
+        Tooltips tips = Tooltips.of(tooltip);
+        // The painted tiles keep their cartridge unless one is chosen in the wheel
+        if (cartridge != null) tips.state("tooltip.steveparty.tile_linker_brush.cartridge", Tooltips.value(new ItemStack(cartridge).getName()));
+        tips.summary("tooltip.steveparty.tile_linker_brush")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.tile_linker_brush.controls.paint")
                         .use(Tooltips.Keys.attack(), "tooltip.steveparty.tile_linker_brush.controls.wheel")

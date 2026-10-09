@@ -85,9 +85,6 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
         tips.state(distance == 0 ? Text.translatable("tooltip.steveparty.glandouille_cartridge.none")
                 : Text.translatable(distance < 0 ? "tooltip.steveparty.glandouille_cartridge.distance_back"
                 : "tooltip.steveparty.glandouille_cartridge.distance", Tooltips.rgb(Math.abs(distance), 0xD9A066)));
-        if (lone(stack)) tips.state(Text.translatable("tooltip.steveparty.glandouille_cartridge.lone"));
-        else if (distance > 0) tips.state(Text.translatable("tooltip.steveparty.glandouille_cartridge.tower",
-                Tooltips.rgb(tower(stack), 0xD9A066)));
     }
 
     @Override

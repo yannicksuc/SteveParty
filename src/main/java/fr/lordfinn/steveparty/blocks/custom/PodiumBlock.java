@@ -284,7 +284,7 @@ public class PodiumBlock extends Block implements BlockEntityProvider {
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME)
+        Tooltips.of(tooltip)
                 .summary("tooltip.steveparty.podium.places")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.podium.register")

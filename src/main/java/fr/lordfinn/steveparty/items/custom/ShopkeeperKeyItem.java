@@ -181,14 +181,13 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         boolean linked = stack.contains(ModComponents.SHOPKEEPER_UUID);
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.SHOP);
+        Tooltips tips = Tooltips.of(tooltip);
         if (linked) tips.state(Tooltips.good(Text.translatable("tooltip.steveparty.shopkeeper_key.linked")));
         tips.summary("tooltip.steveparty.shopkeeper_key.summary");
         tips.more(more -> {
             more.use(Tooltips.Keys.use(), "tooltip.steveparty.shopkeeper_key.unlinked");
             more.use(Tooltips.Keys.use(), "tooltip.steveparty.shopkeeper_key.toggle");
             more.note("tooltip.steveparty.shopkeeper_key.blocks");
-            for (String line : List.of("stall", "stock", "register")) more.note("tooltip.steveparty.shopkeeper_key." + line);
         });
         if (linked) super.appendTooltip(stack, context, tooltip, type);
     }

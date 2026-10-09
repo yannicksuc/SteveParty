@@ -200,7 +200,7 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME)
+        Tooltips.of(tooltip)
                 .summary("tooltip.steveparty.mini_game_controller.play")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.mini_game_controller.page")

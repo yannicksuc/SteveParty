@@ -125,9 +125,6 @@ public class KeyGateCartridgeItem extends BoardRuleCartridgeItem {
             sides.append(Text.translatable(K + "side." + side.asString() + ".tooltip"));
         }
         tips.state("tooltip.steveparty.key_gate_cartridge.locked", Tooltips.rgb(sides, 0x6FD6C8));
-        int open = stayOpen(stack);
-        if (open > 0) tips.state(open >= FOREVER ? Text.translatable("tooltip.steveparty.key_gate_cartridge.forever")
-                : Text.translatable("tooltip.steveparty.key_gate_cartridge.rounds", Tooltips.rgb(open, 0x6FD6C8)));
     }
 
     @Override

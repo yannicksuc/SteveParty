@@ -129,4 +129,10 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
     protected void appendMore(ItemStack stack, Tooltips.More more) {
         more.use(Tooltips.Keys.sneakScroll(), "tooltip.steveparty.advance_back.controls");
     }
+
+    /** Its name says what it does. */
+    @Override
+    protected boolean hasSummary() {
+        return false;
+    }
 }

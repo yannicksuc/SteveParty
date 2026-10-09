@@ -134,7 +134,8 @@ public class TeleportCartridgeItem extends CartridgeItem {
 
     @Override
     protected void appendState(ItemStack stack, Tooltips tips) {
-        for (Text line : describe(settings(stack))) tips.state(line);
+        TeleportSettingsComponent settings = settings(stack);
+        tips.state(Text.translatable("tooltip.steveparty.teleport_cartridge.network", settings.network().displayName()));
     }
 
     @Override

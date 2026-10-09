@@ -255,7 +255,7 @@ public class StencilGunItem extends Item {
         Load load = selectedLoad(stack);
         List<ItemStack> contents = contents(stack);
         StencilGunSelection selection = validSelection(contents, selection(stack));
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL);
+        Tooltips tips = Tooltips.of(tooltip);
         if (load.shape() != null) {
             StencilPatterns.Pattern pattern = StencilPatterns.byShape(load.shape());
             tips.state("tooltip.steveparty.stencil_gun.stencil", Tooltips.look(pattern != null ? pattern.name()
@@ -271,7 +271,6 @@ public class StencilGunItem extends Item {
             value.append(Text.translatable("tooltip.steveparty.stencil_gun.dye_left", contents.get(load.dyeSlot()).getCount()).formatted(Tooltips.DIM));
         }
         tips.state("tooltip.steveparty.stencil_gun.color", value);
-        tips.summary("tooltip.steveparty.stencil_gun.summary");
         tips.more(more -> more
                 .use(Tooltips.Keys.use(), "tooltip.steveparty.stencil_gun.usage")
                 .use(Tooltips.Keys.attack(), "tooltip.steveparty.stencil_gun.wheel")

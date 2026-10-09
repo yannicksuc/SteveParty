@@ -58,7 +58,7 @@ public class PartyCardItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        Tooltips.of(tooltip).tags(Tooltips.Tag.PARTY)
+        Tooltips.of(tooltip)
                 .summary("item.steveparty.party_card_" + cardType.getName() + ".tooltip", Tooltips.value(stack.getCount()))
                 .more(more -> more.use("tooltip.steveparty.party_card.use"));
     }

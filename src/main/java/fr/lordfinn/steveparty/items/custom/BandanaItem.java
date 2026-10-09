@@ -61,7 +61,7 @@ public class BandanaItem extends ArmorItem {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        Tooltips.of(tooltip).tags(Tooltips.Tag.COSTUME)
+        Tooltips.of(tooltip)
                 .state("tooltip.steveparty.colour", Tooltips.value(Text.translatable("item.steveparty.bandana.color." + COLOR_NAMES[getColor(stack)])));
         super.appendTooltip(stack, context, tooltip, type);
     }

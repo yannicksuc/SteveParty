@@ -99,9 +99,8 @@ public class MiniGamePageItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         MiniGamePageRef ref = stack.get(ModComponents.MINI_GAME_PAGE);
-        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME);
+        Tooltips tips = Tooltips.of(tooltip);
         if (ref != null && ref.linked()) tips.tags(Tooltips.Tag.LINKED_COPY);
-        tips.summary("tooltip.steveparty.mini_game_page.summary");
         tips.more(more -> more
                 .use(Tooltips.Keys.use(), ref == null ? "tooltip.steveparty.mini_game_page.blank" : "tooltip.steveparty.mini_game_page.open")
                 .use(Tooltips.Keys.use(), "tooltip.steveparty.mini_game_page.link"));

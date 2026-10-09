@@ -45,6 +45,6 @@ public class AcornHatItem extends Item implements Equipment {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        Tooltips.of(tooltip).tags(Tooltips.Tag.COSTUME).summary("item.steveparty.acorn_hat.tooltip");
+        Tooltips.of(tooltip).summary("item.steveparty.acorn_hat.tooltip");
     }
 }

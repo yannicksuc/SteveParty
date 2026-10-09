@@ -19,9 +19,10 @@ import java.util.function.Consumer;
  *     <li>{@link #tags}: a line of badges just under the name, always shown ({@link Tag});</li>
  *     <li>{@link #state}: what this very stack holds or is set to, a neutral label and a coloured value;</li>
  *     <li>{@link #summary}: one short grey line, what it is for;</li>
- *     <li>{@link #more}: everything else (controls, crafting, rules), shown while Shift is held, else a dim hint.</li>
+ *     <li>{@link #more}: the controls and the rules a player can't guess, shown while Shift is held, else a dim hint.</li>
  * </ol>
- * Long lines are cut at {@link #WIDTH} characters, colours kept. Common code (appendTooltip runs on the client only,
+ * No crafting in a tooltip: recipes are REI's (special ones are added to its plugin). Long lines are cut at
+ * {@link #WIDTH} characters, colours kept. Common code (appendTooltip runs on the client only,
  * but lives in classes a dedicated server loads): the Shift key is read through {@link #setShiftProbe}, set by the client.
  */
 public final class Tooltips {
@@ -66,8 +67,13 @@ public final class Tooltips {
 
     /** Tests: show the Shift part (true), the hint (false), or read the key again (null); no line cut (keys kept). */
     public static void forTests(@Nullable Boolean more) {
+        forTests(more, more == null);
+    }
+
+    /** Tests: as {@link #forTests(Boolean)}, the lines cut as in game (to count them) or not (to read their keys). */
+    public static void forTests(@Nullable Boolean more, boolean cut) {
         forcedMore = more;
-        wrapping = more == null;
+        wrapping = cut;
     }
 
     public static boolean showsMore() {
@@ -76,12 +82,13 @@ public final class Tooltips {
 
     // ------------------------------------------------------------------ tags
 
-    /** The badges of an item, always shown on one line under its name. */
+    /**
+     * The badges of an item, always shown on one line under its name. Only what the name and the other tags don't
+     * already say: no category (a Cartridge is named so), never a tag another implies (a power-up is always used up).
+     */
     public enum Tag {
-        CARTRIDGE(0xE89A3C), BOARD_SPACE(0x6EC6F0), POWER_UP(0xFF77FF), CONSUMED(0xFF5555), DIE(0xF0F0F0),
-        DICE_FACE(0xD8D8D8), DICE_MODULE(0x7FA8FF), NEGATIVE(0xFF5555), PREMIUM(0xFFC94A), CURSED(0xB04CE0),
-        MINI_GAME(0x6FE38A), SHOP(0xF2C230), TOOL(0xA9C6E3), PARTY(0xC79BFF), CONFIGURABLE(0xFCB017),
-        STAMPED(0xFF77FF), SWITCHABLE(0x55FFFF), LINKED_COPY(0x55FFFF), COSTUME(0xD9A066), CREATURE(0x9BCB2C);
+        POWER_UP(0xFF77FF), NEGATIVE(0xFF5555), CONFIGURABLE(0xFCB017), STAMPED(0xFF77FF), SWITCHABLE(0x55FFFF),
+        LINKED_COPY(0x55FFFF);
 
         public final int color;
 
@@ -179,7 +186,6 @@ public final class Tooltips {
     public static final class More {
         private final List<Text> details = new ArrayList<>();
         private final List<Text> use = new ArrayList<>();
-        private final List<Text> craft = new ArrayList<>();
         private final List<Text> notes = new ArrayList<>();
 
         /** A longer description, first, without a title. */
@@ -209,11 +215,6 @@ public final class Tooltips {
             return this;
         }
 
-        public More craft(String key, Object... args) {
-            craft.add(Text.translatable(key, args));
-            return this;
-        }
-
         public More note(String key, Object... args) {
             notes.add(Text.translatable(key, args));
             return this;
@@ -225,13 +226,12 @@ public final class Tooltips {
         }
 
         boolean isEmpty() {
-            return details.isEmpty() && use.isEmpty() && craft.isEmpty() && notes.isEmpty();
+            return details.isEmpty() && use.isEmpty() && notes.isEmpty();
         }
 
         void writeTo(List<Text> lines) {
             for (Text line : details) add(lines, line, TEXT, "");
             section(lines, "use", use);
-            section(lines, "craft", craft);
             section(lines, "notes", notes);
         }
 

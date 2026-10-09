@@ -136,8 +136,8 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
     private static final int LISTED_DESTINATIONS = 4;
 
     /**
-     * Its destinations, as state lines of its tooltip: their count (and their dimension, if not the viewer's), then
-     * each one; one where no board space is any more (for {@link #showsMissingDestinations()}) in red, then how to fix it.
+     * Its destinations, as state lines of its tooltip: their count (and their dimension, if not the viewer's); if one
+     * leads where no board space is any more (for {@link #showsMissingDestinations()}), how to fix it, in red.
      */
     protected void appendDestinations(ItemStack stack, Tooltips tips) {
         DestinationsComponent component = getBoardSpaceBehaviorComponent(stack);
@@ -149,21 +149,33 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
         tips.state("tooltip.steveparty.destinations", Tooltips.value(destinations.size()));
         if (elsewhere) tips.state("tooltip.steveparty.bound_to", Tooltips.setting(component.world()));
         boolean missing = false;
-        for (int i = 0; i < destinations.size(); i++) {
+        for (BoardSpaceDestination destination : destinations) missing |= gone(destination, world, elsewhere);
+        if (missing) tips.warn(Text.translatable("tooltip.steveparty.destination_missing.hint"));
+    }
+
+    /** Behind Shift: where its destinations are, the missing ones in red. */
+    protected void appendDestinationList(ItemStack stack, Tooltips.More more) {
+        DestinationsComponent component = getBoardSpaceBehaviorComponent(stack);
+        Entity holder = stack.getHolder();
+        World world = holder == null ? null : holder.getWorld();
+        List<BoardSpaceDestination> destinations = getDestinationsStatus(component.destinations(), world);
+        boolean elsewhere = world != null && !getWorldName(world).equals(component.world());
+        for (int i = 0; i < Math.min(destinations.size(), LISTED_DESTINATIONS); i++) {
             BlockPos pos = destinations.get(i).position();
-            // Only where the client knows the world (same dimension, chunk loaded): never a false alarm
-            boolean gone = showsMissingDestinations() && !destinations.get(i).isTile() && world != null
-                    && !elsewhere && world.isChunkLoaded(pos);
-            missing |= gone;
-            if (i >= LISTED_DESTINATIONS) continue;
+            boolean gone = gone(destinations.get(i), world, elsewhere);
             MutableText entry = Text.translatable("tooltip.steveparty.destination_entry", pos.getX(), pos.getY(), pos.getZ());
             if (gone) entry.append(Text.translatable("tooltip.steveparty.destination_missing"));
-            tips.state(entry.formatted(gone ? Tooltips.BAD : Tooltips.DIM));
+            more.detail(entry.formatted(gone ? Tooltips.BAD : Tooltips.DIM));
         }
         if (destinations.size() > LISTED_DESTINATIONS) {
-            tips.state(Text.translatable("tooltip.steveparty.destination_more", destinations.size() - LISTED_DESTINATIONS)
+            more.detail(Text.translatable("tooltip.steveparty.destination_more", destinations.size() - LISTED_DESTINATIONS)
                     .formatted(Tooltips.DIM));
         }
-        if (missing) tips.warn(Text.translatable("tooltip.steveparty.destination_missing.hint"));
+    }
+
+    /** No board space where it leads any more: only where the client knows the world (never a false alarm). */
+    private boolean gone(BoardSpaceDestination destination, @Nullable World world, boolean elsewhere) {
+        return showsMissingDestinations() && !destination.isTile() && world != null && !elsewhere
+                && world.isChunkLoaded(destination.position());
     }
 }

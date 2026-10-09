@@ -6,7 +6,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
-import net.minecraft.util.DyeColor;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,12 +53,11 @@ public final class ItemTips {
         // --- Items
         map.put(item("coin"), simple("coin"));
         map.put(item("party_star"), simple("party_star"));
-        map.put(item("plunger"), (stack, tips) -> tips.tags(Tooltips.Tag.TOOL)
+        map.put(item("plunger"), (stack, tips) -> tips
                 .summary(KEY + "plunger.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "plunger.use")));
-        map.put(item("triple_jump_shoes"), (stack, tips) -> tips.tags(Tooltips.Tag.COSTUME).summary(KEY + "triple_jump_shoes.summary"));
-        map.put(item("lapis_crystal_ball"), simple("lapis_crystal_ball"));
-        map.put(item("mini_games_catalogue"), (stack, tips) -> tips.tags(Tooltips.Tag.MINI_GAME)
+        map.put(item("triple_jump_shoes"), (stack, tips) -> tips.summary(KEY + "triple_jump_shoes.summary"));
+        map.put(item("mini_games_catalogue"), (stack, tips) -> tips
                 .summary(KEY + "mini_games_catalogue.summary")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), KEY + "mini_games_catalogue.use")
@@ -67,60 +65,46 @@ public final class ItemTips {
         map.put(item("acorn"), (stack, tips) -> tips
                 .summary(KEY + "acorn.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "acorn.use")));
-        map.put(item("blank_dice_module"), (stack, tips) -> tips.tags(Tooltips.Tag.DICE_MODULE)
-                .summary(KEY + "blank_dice_module.summary"));
-        for (DyeColor color : DyeColor.values()) {
-            map.put(item(color.getName() + "_star_fragment"), simple("star_fragment"));
-            map.put(item(color.getName() + "_star_fragments_block"), simple("star_fragments_block"));
-        }
         // --- Dice faces: only for the Dice Forge
-        BiConsumer<ItemStack, Tooltips> face = (stack, tips) -> tips.tags(Tooltips.Tag.DICE_FACE)
-                .summary(KEY + "dice_face.summary")
-                .more(more -> more.craft(KEY + "dice_face.craft"));
+        BiConsumer<ItemStack, Tooltips> face = (stack, tips) -> tips.summary(KEY + "dice_face.summary");
         map.put(item("blank_dice_face"), face);
-        for (int i = 0; i <= 10; i++) map.put(item("dice_face_" + i), face);
-        map.put(item("dice_face_0"), (stack, tips) -> tips.tags(Tooltips.Tag.DICE_FACE)
-                .summary(KEY + "dice_face_0.summary")
-                .more(more -> more.craft(KEY + "dice_face.craft")));
-        for (int i = 1; i <= 10; i++) map.put(item("premium_dice_face_" + i), (stack, tips) -> tips
-                .tags(Tooltips.Tag.DICE_FACE, Tooltips.Tag.PREMIUM)
-                .summary(KEY + "dice_face.summary")
-                .more(more -> more.craft(KEY + "dice_face.craft")));
-        for (int i = 1; i <= 3; i++) map.put(item("cursed_dice_face_" + i), (stack, tips) -> tips
-                .tags(Tooltips.Tag.DICE_FACE, Tooltips.Tag.CURSED)
-                .summary(KEY + "dice_face.summary")
-                .more(more -> more.craft(KEY + "dice_face.craft")));
+        for (int i = 1; i <= 10; i++) {
+            map.put(item("dice_face_" + i), face);
+            map.put(item("premium_dice_face_" + i), face);
+        }
+        for (int i = 1; i <= 3; i++) map.put(item("cursed_dice_face_" + i), face);
+        map.put(item("dice_face_0"), (stack, tips) -> tips.summary(KEY + "dice_face_0.summary"));
         for (int i = 1; i <= 10; i++) {
             int value = i;
-            map.put(item("coin_dice_face_" + i), (stack, tips) -> tips.tags(Tooltips.Tag.DICE_FACE)
+            map.put(item("coin_dice_face_" + i), (stack, tips) -> tips
                     .summary(KEY + "coin_dice_face.summary", Tooltips.coins(value))
-                    .more(more -> more.craft(KEY + "dice_face.craft").note(KEY + "dice_face.no_move")));
-            map.put(item("debt_dice_face_" + i), (stack, tips) -> tips.tags(Tooltips.Tag.DICE_FACE, Tooltips.Tag.NEGATIVE)
+                    .more(more -> more.note(KEY + "dice_face.no_move")));
+            map.put(item("debt_dice_face_" + i), (stack, tips) -> tips
                     .summary(KEY + "debt_dice_face.summary", Tooltips.bad(value))
-                    .more(more -> more.craft(KEY + "dice_face.craft").note(KEY + "dice_face.no_move")));
+                    .more(more -> more.note(KEY + "dice_face.no_move")));
         }
-        map.put(item("swap_dice_face"), (stack, tips) -> tips.tags(Tooltips.Tag.DICE_FACE)
+        map.put(item("swap_dice_face"), (stack, tips) -> tips
                 .summary(KEY + "swap_dice_face.summary")
-                .more(more -> more.craft(KEY + "dice_face.craft").note(KEY + "dice_face.no_move")));
+                .more(more -> more.note(KEY + "dice_face.no_move")));
         // --- Blocks
         map.put(item("hop_switch"), (stack, tips) -> tips
                 .summary(KEY + "hop_switch.summary")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), KEY + "hop_switch.use")
                         .note(KEY + "hop_switch.brush")));
-        map.put(item("piggy_bank"), (stack, tips) -> tips.tags(Tooltips.Tag.PARTY)
+        map.put(item("piggy_bank"), (stack, tips) -> tips
                 .summary(KEY + "piggy_bank.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "piggy_bank.use")));
-        map.put(item("party_bell"), (stack, tips) -> tips.tags(Tooltips.Tag.PARTY)
+        map.put(item("party_bell"), (stack, tips) -> tips
                 .summary(KEY + "party_bell.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "party_bell.use")));
-        map.put(item("party_controller"), (stack, tips) -> tips.tags(Tooltips.Tag.PARTY)
+        map.put(item("party_controller"), (stack, tips) -> tips
                 .summary(KEY + "party_controller.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "party_controller.use")));
-        map.put(item("step_controller"), (stack, tips) -> tips.tags(Tooltips.Tag.MINI_GAME)
+        map.put(item("step_controller"), (stack, tips) -> tips
                 .summary(KEY + "step_controller.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "step_controller.use")));
-        map.put(item("goal_pole_base"), (stack, tips) -> tips.tags(Tooltips.Tag.MINI_GAME)
+        map.put(item("goal_pole_base"), (stack, tips) -> tips
                 .summary(KEY + "goal_pole_base.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "goal_pole_base.use")));
         map.put(item("dice_forge"), simple("dice_forge"));
@@ -131,7 +115,7 @@ public final class ItemTips {
                         .note(KEY + "looting_box.rules")));
         map.put(item("magpie_nest"), simple("magpie_nest"));
         map.put(item("stencil_maker"), simple("stencil_maker"));
-        map.put(item("check_point"), (stack, tips) -> tips.tags(Tooltips.Tag.BOARD_SPACE).summary(KEY + "check_point.summary"));
+        map.put(item("check_point"), (stack, tips) -> tips.summary(KEY + "check_point.summary"));
         return map;
     }
 }
