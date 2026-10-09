@@ -15,9 +15,11 @@ import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.powerups.PowerUpLimit;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TrichaudronTileBehavior;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleTypes;
@@ -44,9 +46,9 @@ import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
 /**
  * What a Trichaudron space does (see TrichaudronTileBehavior): the Trichaudron rises from the ground beside the token
  * in a cloud of steam, its three heads dive into its tank and each comes out with a hidden prize drawn from the
- * cartridge's stock (empty heads once the stock runs short of three). A slow die rolls under the heads, cycling 1, 2, 3
+ * cartridge's linked chests (what they really hold, filtered by its menu; empty heads once fewer than three). A slow die rolls under the heads, cycling 1, 2, 3
  * (left, centre, right head; the head its face points to glows); the token's player hits it to stop it (left alone it
- * stops by itself). The chosen head turns to the player and gives its prize, which leaves the stock; the other heads
+ * stops by itself). The chosen head turns to the player and gives its prize, taken out of the chests; the other heads
  * show what they held, then the Trichaudron sinks back into a puff of steam and the turn goes on.
  * <p>
  * The Trichaudron and its die are board actors: invulnerable, never saved, always removed at the end
@@ -122,19 +124,21 @@ public final class TrichaudronPrizes {
     /**
      * {@code token} stopped on the Trichaudron space {@code tile} of {@code party}: the show starts, its prizes drawn
      * from the tile's cartridge. {@code onDone} runs when it is over. Nothing happens (and {@code onDone} is not called)
-     * without the token's player online, or with an empty stock.
+     * without the token's player online, or with nothing to give in its chests.
      */
     public static Start start(ServerWorld world, BlockPos tile, MobEntity token, PartyControllerEntity party, Runnable onDone) {
         if (RUNNING.isRunning(token)) return Start.STARTED;
         BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, tile);
-        List<ItemStack> stock = space == null ? List.of() : TrichaudronCartridgeItem.prizes(space.getActiveCartridgeItemStack());
+        // What its chests really hold (never anything made from nothing)
+        List<ItemStack> stock = space == null ? List.of() : TrichaudronCartridgeItem.available(space.getActiveCartridgeItemStack(), world);
+        if (space != null) TrichaudronTileBehavior.refreshSleep(space, !stock.isEmpty());
         if (stock.isEmpty()) return Start.EMPTY;
         ServerPlayerEntity player = BoardSequences.tokenPlayer(world, token);
         if (player == null) {
             BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.no_player").formatted(Formatting.GRAY));
             return Start.NO_PLAYER;
         }
-        // Three heads, each a prize drawn from the stock (never the same one twice), empty past it
+        // Three heads, each a prize drawn from the stock (never the same one twice), empty past them
         java.util.Random random = new java.util.Random(world.getRandom().nextLong());
         List<ItemStack> drawn = new ArrayList<>(stock);
         Collections.shuffle(drawn, random);
@@ -334,8 +338,9 @@ public final class TrichaudronPrizes {
             Vec3d from = actor.nozzle(head);
             Text name = player == null ? Text.literal("?") : player.getDisplayName();
             boolean given = false;
-            if (!prize.isEmpty() && player != null && takeFromStock(prize)) {
-                hand(player, prize);
+            int moved = prize.isEmpty() || player == null ? 0 : handFromChests(player, prize);
+            if (moved > 0) {
+                prize = prize.copyWithCount(moved);
                 given = true;
                 Vec3d them = player.getPos().add(0, player.getHeight() * 0.6, 0);
                 Vec3d way = them.subtract(from);
@@ -357,7 +362,7 @@ public final class TrichaudronPrizes {
                 BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.empty_head_of", name)
                         .formatted(Formatting.GRAY), player);
             }
-            // The other heads show what they held (still in stock)
+            // The other heads show what they held (left in the chests)
             List<Text> others = new ArrayList<>();
             for (int value = 1; value <= 3; value++) {
                 if (value == face) continue;
@@ -370,30 +375,35 @@ public final class TrichaudronPrizes {
             BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.others", others.get(0), others.get(1))
                     .formatted(Formatting.GRAY), player);
             if (!given && !prize.isEmpty() && player != null) {
-                // the stock changed under it (set again meanwhile): nothing given, nothing taken
+                // its chests emptied meanwhile: nothing given
                 MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.trichaudron_space.gone")
                         .formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
             }
         }
 
-        /** {@code prize} leaves the space's stock (its tile then shows it): false if it is no longer there. */
-        boolean takeFromStock(ItemStack prize) {
+        /**
+         * The prize taken out of the space's chests into the player's inventory (what doesn't fit falls at their feet):
+         * the party's coins as coins (Double Coins: the extra taken from the chests too), power-ups within the party's
+         * limit; never more than the chests hold. How many were given (0: none left).
+         */
+        int handFromChests(ServerPlayerEntity player, ItemStack prize) {
             BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, tile);
-            if (space == null) return false;
+            if (space == null) return 0;
             ItemStack cartridge = space.getActiveCartridgeItemStack();
-            if (!(cartridge.getItem() instanceof TrichaudronCartridgeItem) || !TrichaudronCartridgeItem.take(cartridge, prize)) return false;
-            space.markDirty();
-            space.update();
-            return true;
-        }
-
-        /** The prize into the player's inventory (what doesn't fit falls at their feet): the party's coins as coins. */
-        void hand(ServerPlayerEntity player, ItemStack prize) {
+            Inventory chests = cartridge.getItem() instanceof TrichaudronCartridgeItem ? TrichaudronCartridgeItem.chests(cartridge, world) : null;
+            if (chests == null) return 0;
             int count = PowerUpService.itemsGained(player, prize, prize.getCount()); // Double Coins
             int allowed = PowerUpLimit.allowed(player, prize.copyWithCount(count));
             if (allowed < count) PowerUpLimit.tellFull(player);
-            if (allowed > 0) InventoryUtils.giveOrDrop(player, prize.copyWithCount(1), allowed);
+            if (allowed <= 0) return 0;
+            int moved = InventoryInteractorTileBehavior.extractMatching(prize.copyWithCount(allowed), chests, toMove -> {
+                int given = toMove.getCount();
+                player.getInventory().offerOrDrop(toMove);
+                return given;
+            });
             player.getInventory().markDirty();
+            TrichaudronTileBehavior.refreshSleep(world, space);
+            return moved;
         }
 
         MutableText prizeText(ItemStack prize) {
