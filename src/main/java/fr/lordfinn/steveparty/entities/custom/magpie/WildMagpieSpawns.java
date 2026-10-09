@@ -22,8 +22,9 @@ import net.minecraft.world.biome.Biome;
  * Where wild Pies live (biome tags in data/steveparty/tags/worldgen/biome): in the woods, {@link #BIOMES} (every
  * forest, birch, dark and flower forests and the grove included, every taiga, the cherry grove and the windswept
  * forest), among the animals ({@link SpawnGroup#CREATURE}), weight {@link #WEIGHT}, by 1 to 3, born on the ground in
- * daylight then off to the trees. A wild one far from every player (beyond 64 blocks) may go away, as a monster does,
- * unless it has a name (WildMagpieEntity#canImmediatelyDespawn).
+ * daylight then off to the trees; more are born with the nests in the trees (MagpieNestFeature), their nest their own.
+ * A wild one far from every player (beyond 64 blocks) may go away, as a monster does, unless it has a name, a nest of
+ * its own or something in its beak (WildMagpieEntity#canImmediatelyDespawn).
  * <p>
  * Its colour comes from where it is born ({@link #variantFor}): mostly azure in the birch woods and the cherry grove,
  * golden in the flower forest, rusty in the taigas, pale in the snowy ones, dark in the dark forest; classic

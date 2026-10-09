@@ -19,6 +19,7 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -27,6 +28,8 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.biome.BiomeKeys;
+import fr.lordfinn.steveparty.world.MagpieNestFeature;
 
 import java.util.function.BooleanSupplier;
 
@@ -267,5 +270,51 @@ public class MagpieNestGameTests implements FabricGameTest {
             dirt.discard();
             context.complete();
         });
+    }
+
+    // ---------------------------------------------------------------- nests in the trees
+
+    /** The nests in the trees are a feature of the woods of the wild Pies, not of the plains or the desert. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void nestsGrowInTheWoodsOnly(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        net.minecraft.world.gen.feature.PlacedFeature nests = registries.get(net.minecraft.registry.RegistryKeys.PLACED_FEATURE)
+                .get(MagpieNestFeature.PLACED);
+        context.assertTrue(nests != null, "the placed feature");
+        var biomes = registries.get(net.minecraft.registry.RegistryKeys.BIOME);
+        for (var forest : java.util.List.of(BiomeKeys.FOREST, BiomeKeys.BIRCH_FOREST, BiomeKeys.DARK_FOREST, BiomeKeys.TAIGA,
+                BiomeKeys.FLOWER_FOREST, BiomeKeys.CHERRY_GROVE)) {
+            context.assertTrue(biomes.get(forest).getGenerationSettings().isFeatureAllowed(nests), "nests in " + forest.getValue());
+        }
+        for (var bare : java.util.List.of(BiomeKeys.PLAINS, BiomeKeys.DESERT, BiomeKeys.OCEAN)) {
+            context.assertFalse(biomes.get(bare).getGenerationSettings().isFeatureAllowed(nests), "none in " + bare.getValue());
+        }
+        context.complete();
+    }
+
+    /** A nest goes on a tree's crown (leaves or a log under it, air above), with its Pies, their nest their own. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "magpie_nest_gen")
+    public void aNestInATreeComesWithItsPies(TestContext context) {
+        for (int y = 1; y <= 3; y++) context.setBlockState(new BlockPos(3, y, 3), Blocks.OAK_LOG);
+        for (int x = 2; x <= 4; x++) {
+            for (int z = 2; z <= 4; z++) {
+                context.setBlockState(new BlockPos(x, 4, z), Blocks.OAK_LEAVES.getDefaultState().with(net.minecraft.block.LeavesBlock.PERSISTENT, true));
+            }
+        }
+        context.setBlockState(new BlockPos(6, 1, 6), Blocks.STONE);
+        net.minecraft.util.math.random.Random random = net.minecraft.util.math.random.Random.create(42);
+        context.assertFalse(MagpieNestFeature.place(context.getWorld(), context.getAbsolutePos(new BlockPos(6, 2, 6)), random), "not on stone");
+        BlockPos at = context.getAbsolutePos(new BlockPos(3, 5, 3));
+        context.assertTrue(MagpieNestFeature.place(context.getWorld(), at, random), "on the crown");
+        context.assertTrue(context.getWorld().getBlockState(at).isOf(ModBlocks.MAGPIE_NEST), "a nest");
+        context.assertTrue(context.getWorld().isAir(at.up()), "air above it");
+        context.assertTrue(context.getWorld().getBlockState(at.down()).isIn(BlockTags.LEAVES), "on the leaves");
+        java.util.List<WildMagpieEntity> pies = context.getWorld().getEntitiesByType(ModEntities.WILD_MAGPIE,
+                new net.minecraft.util.math.Box(at).expand(4), pie -> at.equals(pie.getNest()));
+        context.assertTrue(!pies.isEmpty() && pies.size() <= 3, "1 to 3 Pies, its own: " + pies.size());
+        context.assertTrue(!pies.getFirst().canImmediatelyDespawn(1.0E6), "a Pie with a nest stays");
+        pies.forEach(WildMagpieEntity::discard);
+        context.getWorld().removeBlock(at, false);
+        context.complete();
     }
 }
