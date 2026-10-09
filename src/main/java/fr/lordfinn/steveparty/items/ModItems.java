@@ -164,6 +164,9 @@ public class ModItems {
     /** The Trichaudron's egg: drawn per mob (textures/item/trichaudron_spawn_egg.png), basalt and lava. */
     public static final Item TRICHAUDRON_SPAWN_EGG = spawnEgg("trichaudron_spawn_egg",
             ModEntities.TRICHAUDRON, 0x3A2A28, 0xE0601C);
+    /** The wild Pie's egg: a colour drawn at random (textures/item/magpie_spawn_egg.png). */
+    public static final Item MAGPIE_SPAWN_EGG = spawnEgg("magpie_spawn_egg",
+            ModEntities.WILD_MAGPIE, 0x1C1E29, 0xE9E7E1);
     /**
      * The Candle Saucer, a little gold tray for the Frousseux candle holder to stand on: a block of its own
      * (ModBlocks.CANDLE_SAUCER), crafted onto the candle holder too (CandleSaucerRecipe).
