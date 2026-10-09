@@ -162,7 +162,8 @@ public final class DiceRollSequence {
     public void start() {
         if (started) return;
         started = true;
-        cursed = CursedRolls.isCursed(lead.getWorld().getServer(), lead.getOwner().orElse(null));
+        // A board show's die (a Trichaudron space's choice) is no roll of the roller's: no curse on it
+        cursed = !lead.isShowDie() && CursedRolls.isCursed(lead.getWorld().getServer(), lead.getOwner().orElse(null));
         ServerPlayerEntity roller = cursed ? lead.getOnlineOwner() : null;
         if (roller != null) MessageUtils.sendToPlayer(roller, Text.translatable("message.steveparty.dice.cursed")
                 .formatted(Formatting.DARK_PURPLE), MessageUtils.MessageType.ACTION_BAR);
