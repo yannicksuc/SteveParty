@@ -28,6 +28,7 @@ import net.minecraft.entity.mob.AbstractPiglinEntity;
 import net.minecraft.entity.mob.PiglinBrain;
 import net.minecraft.entity.mob.PiglinBruteEntity;
 import net.minecraft.entity.mob.PiglinEntity;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.entity.damage.DamageSource;
@@ -961,15 +962,28 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         super.travel(input);
     }
 
-    /** Floats in lava, its tank out, and moves along {@code input} at {@code speed} (blocks a tick, steady). */
+    /**
+     * Floats in lava, its tank out, and moves along {@code input} at {@code speed} (blocks a tick, steady). Not vanilla's
+     * up-and-down kicks: its vertical speed eases toward what brings it back to its depth (a damped spring, no
+     * overshoot), its depth swaying only by {@link TrichaudronRiding#SWIM_BOB} over {@link TrichaudronRiding#SWIM_BOB_TICKS}:
+     * a heavy, steady float, a few operations a tick.
+     */
     void swim(Vec3d input, float speed) {
         float drag = 0.8f;
         updateVelocity(speed * TrichaudronRiding.SWIM_FACTOR * (1 - drag), input);
-        double depth = getFluidHeight(FluidTags.LAVA);
-        double vy = getVelocity().y + (depth > TrichaudronRiding.SWIM_DEPTH ? 0.04 : -0.03);
-        vy = MathHelper.clamp(vy, -0.25, 0.15) * 0.85;
+        double target = TrichaudronRiding.SWIM_DEPTH
+                + TrichaudronRiding.SWIM_BOB * MathHelper.sin(age * MathHelper.TAU / TrichaudronRiding.SWIM_BOB_TICKS);
+        double error = getFluidHeight(FluidTags.LAVA) - target; // positive: too deep, it rises
+        double wanted = MathHelper.clamp(error * TrichaudronRiding.SWIM_SPRING, -TrichaudronRiding.SWIM_MAX_VY, TrichaudronRiding.SWIM_MAX_VY);
+        double vy = MathHelper.lerp(TrichaudronRiding.SWIM_DAMPING, getVelocity().y, wanted);
         setVelocity(getVelocity().x * drag, vy, getVelocity().z * drag);
         move(MovementType.SELF, getVelocity());
+    }
+
+    /** Swimming, it never kicks up like a mob jumping in lava: its float holds it. */
+    @Override
+    protected void swimUpward(TagKey<Fluid> fluid) {
+        if (!isSwimmingInLava()) super.swimUpward(fluid);
     }
 
     private void rideTravel() {
