@@ -152,10 +152,11 @@ public class BoomcartRenderer extends GeoEntityRenderer<BoomcartEntity> {
 
         /**
          * From the load bone's frame (the model's: blocks, x as in Blockbench, facing -z) to v13's: pixels, the body
-         * on x 0..16, z 0..18, facing +z. Half a turn around y: v13 (x, y, z) is the model's (8 - x, y, 10 - z).
+         * on x 0..16, z 0..18, facing +z. Half a turn around y: v13 (x, y, z) is the model's (8 - x, y - LIFT, 10 - z),
+         * the cart standing on its wheels.
          */
         static void toV13(MatrixStack poseStack) {
-            poseStack.translate(0.5f, 0, 0.625f);
+            poseStack.translate(0.5f, BoomcartModel.LIFT / 16f, 0.625f);
             poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180));
             poseStack.scale(1 / 16f, 1 / 16f, 1 / 16f);
         }
