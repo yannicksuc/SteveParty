@@ -3,7 +3,7 @@
   "tooltip": "book.steveparty.guide.tooltip",
   "model": "modonomicon:modonomicon_purple",
   "generate_book_item": true,
-  "creative_tab": "steveparty:item_group",
+  "creative_tab": "steveparty:1_board",
   "display_mode": "node",
   "auto_add_read_conditions": false,
   "allow_open_book_with_invalid_links": true

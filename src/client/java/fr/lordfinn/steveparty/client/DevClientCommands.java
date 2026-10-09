@@ -2,19 +2,25 @@ package fr.lordfinn.steveparty.client;
 
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
 import fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.itemgroup.v1.FabricCreativeInventoryScreen;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
+import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.registry.Registries;
 import org.lwjgl.glfw.GLFW;
 
 import java.lang.reflect.Field;
@@ -147,6 +153,23 @@ public final class DevClientCommands {
                                     }
                                     double end = 1.08 * Math.PI * 2;
                                     screen.mouseReleased(cx + radius * Math.cos(end), cy + radius * Math.sin(end), 0);
+                                    return 1;
+                                })))
+                        // The creative inventory open on one of the mod's tabs (its id path: 1_board, 2_mini_games...)
+                        .then(ClientCommandManager.literal("creative")
+                                .then(ClientCommandManager.argument("tab", StringArgumentType.word()).executes(context -> {
+                                    var client = context.getSource().getClient();
+                                    ItemGroup group = Registries.ITEM_GROUP.get(
+                                            Steveparty.id(StringArgumentType.getString(context, "tab")));
+                                    if (group == null || client.player == null) return 0;
+                                    // After the chat screen closed
+                                    client.send(() -> {
+                                        CreativeInventoryScreen screen = new CreativeInventoryScreen(client.player,
+                                                client.player.networkHandler.getEnabledFeatures(),
+                                                client.options.getOperatorItemsTab().getValue());
+                                        client.setScreen(screen);
+                                        ((FabricCreativeInventoryScreen) screen).setSelectedItemGroup(group);
+                                    });
                                     return 1;
                                 })))
                         // The wheel of the tool in hand, open, its cursor at (x, y) from its centre (GUI pixels)
