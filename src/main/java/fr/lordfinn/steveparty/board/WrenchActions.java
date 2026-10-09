@@ -24,6 +24,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -444,7 +445,7 @@ public final class WrenchActions {
 
     private static void playChainSound(World world, ServerPlayerEntity player, int length) {
         // From half pitch (the first space) up two octaves of the pentatonic scale, then it stays on the top note
-        int step = Math.min(Math.max(length - 1, 0), 10);
+        int step = MathHelper.clamp(length - 1, 0, 10);
         int semitones = 12 * (step / 5) + PENTATONIC[step % 5] - 12;
         float pitch = (float) Math.pow(2, semitones / 12.0);
         world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.45f, pitch);

@@ -58,6 +58,7 @@ import fr.lordfinn.steveparty.utils.GravityPull;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import java.util.UUID;
@@ -318,7 +319,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             inventory.set(CENTER_SLOT, ItemStack.EMPTY);
         }
         this.running = nbt.getBoolean("Running");
-        this.progress = Math.max(0, Math.min(CRAFT_TIME, nbt.getInt("Progress")));
+        this.progress = MathHelper.clamp(nbt.getInt("Progress"), 0, CRAFT_TIME);
         this.powered = nbt.getBoolean("Powered");
         this.manualStop = nbt.getBoolean("ManualStop");
         // Missing from very old saves: an activated forge got its core long ago
@@ -1036,7 +1037,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     public float getCraftProgress(float partialTick) {
         if (!running) return 0f;
         float value = progress < CRAFT_TIME ? progress + partialTick : progress;
-        return Math.min(1f, Math.max(0f, value / CRAFT_TIME));
+        return MathHelper.clamp(value / CRAFT_TIME, 0f, 1f);
     }
 
     public boolean isCrafting() {

@@ -17,6 +17,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.image.BufferedImage;
@@ -167,8 +168,8 @@ public final class MiniGamePageClient {
             return null;
         }
         double ratio = Math.min(boxWidth / (double) source.getWidth(), boxHeight / (double) source.getHeight());
-        int width = Math.max(1, Math.min(boxWidth, (int) Math.round(source.getWidth() * ratio)));
-        int height = Math.max(1, Math.min(boxHeight, (int) Math.round(source.getHeight() * ratio)));
+        int width = MathHelper.clamp((int) Math.round(source.getWidth() * ratio), 1, boxWidth);
+        int height = MathHelper.clamp((int) Math.round(source.getHeight() * ratio), 1, boxHeight);
         double scale = MinecraftClient.getInstance().getWindow().getScaleFactor();
         TextureKey key = new TextureKey(image.hash(), Math.max(1, (int) Math.round(width * scale)), Math.max(1, (int) Math.round(height * scale)));
         Identifier texture = TEXTURES.get(key);
