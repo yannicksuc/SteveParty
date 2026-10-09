@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * A die item (one, two or three dice) drawn as dice that keep rolling over: every {@link #STEP} ticks each die rolls a
  * quarter turn, alternately forward and sideways, and the face that lands underneath takes another of the die's faces
- * (its forged faces, or 1 to 10 for a plain die), each painted like the thrown die paints it. Everything follows from
+ * (its forged faces but the blank ones, or 1 to 10 for a plain die), each painted like the thrown die paints it. Everything follows from
  * the time (nothing kept between frames); the dice sit where the item models used to put their cubes, the models keep
  * their display transforms.
  */
@@ -98,7 +98,7 @@ public final class DiceItemRenderer implements BuiltinItemRendererRegistry.Dynam
     public void render(ItemStack stack, ModelTransformationMode mode, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int light, int overlay) {
         DiceFacesComponent component = stack.get(DiceFacesComponent.TYPE);
-        List<DiceFace> faces = component == null || component.faces().isEmpty() ? PLAIN : component.faces();
+        List<DiceFace> faces = component == null || component.faces().isEmpty() ? PLAIN : shownFaces(component);
         double time = time();
         for (int i = 0; i < dice.length; i++) {
             float[] die = dice[i];
@@ -109,6 +109,18 @@ public final class DiceItemRenderer implements BuiltinItemRendererRegistry.Dynam
             drawDie(faces, i, time - i * LAG, matrices, vertexConsumers, light, overlay);
             matrices.pop();
         }
+    }
+
+    /** The faces a die rolls through: its blank faces left out (unless it only has blank ones), last result kept. */
+    private DiceFacesComponent lastComponent;
+    private List<DiceFace> lastShown;
+
+    private List<DiceFace> shownFaces(DiceFacesComponent component) {
+        if (component.equals(lastComponent)) return lastShown;
+        List<DiceFace> shown = component.faces().stream().filter(face -> face.kind() != Kind.BLANK).toList();
+        lastComponent = component;
+        lastShown = shown.isEmpty() ? component.faces() : shown;
+        return lastShown;
     }
 
     /** The world ticks with the partial tick (the time since start up with no world). */
