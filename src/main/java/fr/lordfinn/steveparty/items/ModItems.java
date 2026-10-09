@@ -100,6 +100,12 @@ public class ModItems {
     public static final Item THRESHOLD_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.class, "threshold_cartridge",
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.COLOR));
+    /** Its tile's face is amber until dyed; passing tokens feed its pot, the token stopping on it wins it. */
+    public static final Item POT_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem.class, "pot_cartridge",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem.COLOR));
+    /** The Pie's nest (ModBlocks.MAGPIE_NEST): a decorative block, a Common pot's nest when set near its space. */
+    public static final Item MAGPIE_NEST = fr.lordfinn.steveparty.blocks.ModBlocks.MAGPIE_NEST.asItem();
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item MINI_GAME_REMOTE = registerUnstackable(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.class, "mini_game_remote");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
@@ -314,6 +320,8 @@ public class ModItems {
             itemGroup.add(FROUSSEUX_CARTRIDGE);
             itemGroup.add(MISTIGRI_CARTRIDGE);
             itemGroup.add(THRESHOLD_CARTRIDGE);
+            itemGroup.add(POT_CARTRIDGE);
+            itemGroup.add(MAGPIE_NEST);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);

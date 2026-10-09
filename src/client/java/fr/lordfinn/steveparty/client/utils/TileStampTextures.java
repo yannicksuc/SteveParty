@@ -557,6 +557,41 @@ public final class TileStampTextures {
                 key -> register(glyphValues(small ? SMALL_THRESHOLD : THRESHOLD, small, THRESHOLD_SHADES), rgb, small));
     }
 
+    /** The Common pot: a woven nest full of coins. */
+    private static final String[] POT = {
+            "..............",
+            ".....oooo.....",
+            "...oooooooo...",
+            "..oo-oo-oo-o..",
+            "..oooooooooo..",
+            ".############.",
+            "#-#-#-#-#-#-##",
+            "##-#-#-#-#-#-#",
+            "#-#-#-#-#-#-##",
+            ".############.",
+            "..##########..",
+            "....######....",
+            "..............",
+            ".............."};
+    private static final String[] SMALL_POT = {
+            "..........",
+            "...oooo...",
+            ".oooooooo.",
+            ".o-o-o-oo.",
+            "##########",
+            "#-#-#-#-##",
+            "##-#-#-#-#",
+            ".########.",
+            "..######..",
+            ".........."};
+    private static final Map<Character, Float> POT_SHADES = Map.of('#', FEATURE, 'o', -0.8f, '-', 0.25f);
+
+    /** The Common pot's face: a nest full of coins on the blank tile face, in the ramp of {@code rgb} (straw). */
+    public static Identifier potFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("pot", rgb, small),
+                key -> register(glyphValues(small ? SMALL_POT : POT, small, POT_SHADES), rgb, small));
+    }
+
     /** The Mistigri: a cat's head, pointed ears (one notched), one slit eye open, the other shut, a nose, whiskers. */
     private static final String[] MISTIGRI = {
             "..o.......o.o.",

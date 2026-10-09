@@ -22,6 +22,7 @@ public class BoardSpaceBehaviorFactory {
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_FROUSSEUX, new FrousseuxTileBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_MISTIGRI, new MistigriTileBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_THRESHOLD, new ThresholdTileBehavior());
+            BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_POT, new PotTileBehavior());
         }
 
         public static ABoardSpaceBehavior get(BoardSpaceType type) {

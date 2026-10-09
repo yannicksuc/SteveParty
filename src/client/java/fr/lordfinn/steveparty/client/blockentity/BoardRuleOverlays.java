@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -14,7 +15,7 @@ import org.joml.Matrix4f;
 
 /**
  * What the board rule cartridges show over their space, drawn by the tile's renderer: the condition of a Threshold
- * obstacle (« ≥ 7 », « DOUBLE »), always facing the camera, readable from all around.
+ * obstacle (« 7 or more », « DOUBLE »), what a Common pot holds; always facing the camera, readable from all around.
  */
 public final class BoardRuleOverlays {
     /** Height of the label's middle above the tile's block. */
@@ -29,6 +30,9 @@ public final class BoardRuleOverlays {
         if (stack.isEmpty()) return;
         if (tileType == BoardSpaceType.TILE_THRESHOLD && stack.getItem() instanceof ThresholdCartridgeItem) {
             label(ThresholdCartridgeItem.label(stack), centreX, centreZ, 0xFFFFFF, matrices, consumers);
+        } else if (tileType == BoardSpaceType.TILE_POT && stack.getItem() instanceof PotCartridgeItem) {
+            // What the pot holds, in coin gold
+            label(Text.translatable("gui.steveparty.pot.label", PotCartridgeItem.coins(stack)), centreX, centreZ, 0xFFD54A, matrices, consumers);
         }
     }
 
