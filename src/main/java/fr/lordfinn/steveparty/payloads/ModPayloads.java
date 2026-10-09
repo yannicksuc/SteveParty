@@ -26,6 +26,7 @@ public class ModPayloads {
         s2c(DicePromptPayload.ID, DicePromptPayload.CODEC);
         s2c(DiceRevealPayload.ID, DiceRevealPayload.CODEC);
         s2c(SixSevenPayload.ID, SixSevenPayload.CODEC);
+        s2c(JumpShoesPayloads.Seen.ID, JumpShoesPayloads.Seen.CODEC);
 
         // Client → server
         c2s(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
@@ -42,5 +43,6 @@ public class ModPayloads {
         c2s(TokenSpellPayload.ID, TokenSpellPayload.CODEC);
         c2s(VillagerBlockPunchPayload.ID, VillagerBlockPunchPayload.CODEC);
         c2s(DicePromptAnswerPayload.ID, DicePromptAnswerPayload.CODEC);
+        c2s(JumpShoesPayloads.Move.ID, JumpShoesPayloads.Move.CODEC);
     }
 }
