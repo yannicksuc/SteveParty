@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -14,7 +15,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import fr.lordfinn.steveparty.utils.ServerMemory;
-import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
@@ -45,8 +45,9 @@ import java.util.UUID;
  * party). Several pots are independent: each cartridge holds its own (saved with its tile).
  * <p>
  * The Pie ({@link MagpieEntity}) lives on the nest ({@link MagpieNestBlock}) nearest to the space, within
- * {@link #NEST_RADIUS} blocks: it flies to fetch the stakes and brings the pot to its winner, and the nest shows the
- * coins. No nest: the pot works the same, without its keeper. Server thread only.
+ * {@link #NEST_RADIUS} blocks: it flies to fetch the stakes and brings the pot to its winner. The nest is linked to
+ * the space ({@link MagpieNestBlockEntity#link}): its coins are the pot's (kept in the cartridge only), piled up in
+ * it; coins put in the nest go into the pot. No nest: the pot works the same, without its keeper. Server thread only.
  */
 public final class CommonPots {
     /** A nest this close to a pot space (any direction) is its nest. */
@@ -226,11 +227,6 @@ public final class CommonPots {
 
     // ---------------------------------------------------------------- the nest and the Pie
 
-    /** How full the nest looks for {@code coins}: 0 empty, 1 a few (1-4), 2 a pile (5-14), 3 a heap. */
-    public static int nestLevel(int coins) {
-        return coins <= 0 ? 0 : coins < 5 ? 1 : coins < 15 ? 2 : 3;
-    }
-
     /** The nest of the pot space at {@code space} (the nearest one within {@link #NEST_RADIUS} not kept by another pot's Pie), or null. */
     public static @Nullable BlockPos nestOf(ServerWorld world, BlockPos space) {
         GlobalPos key = GlobalPos.create(world.getRegistryKey(), space.toImmutable());
@@ -253,6 +249,8 @@ public final class CommonPots {
     }
 
     private static boolean isKeptByAnother(ServerWorld world, BlockPos nest, BlockPos space) {
+        MagpieNestBlockEntity linked = MagpieNestBlockEntity.at(world, nest);
+        if (linked != null && linked.getPot() != null && !linked.getPot().equals(space) && linked.isLinked()) return true;
         for (MagpieEntity magpie : magpiesAround(world, nest)) {
             if (nest.equals(magpie.getNest()) && magpie.getHome() != null && !magpie.getHome().equals(space)) return true;
         }
@@ -274,7 +272,8 @@ public final class CommonPots {
     }
 
     /**
-     * Every {@link #CARE_INTERVAL} ticks, by the pot space: a nest without its Pie gets one, the nest shows the pot.
+     * Every {@link #CARE_INTERVAL} ticks, by the pot space: the nest is linked to it (its coins are the pot), a nest
+     * without its Pie gets one.
      * The Pie leaves by itself when the cartridge or the nest goes (MagpieEntity).
      */
     public static void care(ServerWorld world, BoardSpaceBlockEntity space, ItemStack pot) {
@@ -287,12 +286,11 @@ public final class CommonPots {
         world.spawnParticles(ParticleTypes.CLOUD, magpie.getX(), magpie.getY() + 0.3, magpie.getZ(), 5, 0.2, 0.2, 0.2, 0.01);
     }
 
+    /** The nest of the space linked to it, showing the pot's coins. */
     private static void updateNest(ServerWorld world, BoardSpaceBlockEntity space, ItemStack pot) {
         BlockPos nest = nestOf(world, space.getPos());
-        if (nest == null) return;
-        BlockState state = world.getBlockState(nest);
-        int level = nestLevel(PotCartridgeItem.coins(pot));
-        if (state.get(MagpieNestBlock.COINS) != level) world.setBlockState(nest, state.with(MagpieNestBlock.COINS, level));
+        MagpieNestBlockEntity entity = nest == null ? null : MagpieNestBlockEntity.at(world, nest);
+        if (entity != null) entity.link(space.getPos());
     }
 
     private static Vec3d above(Entity entity) {

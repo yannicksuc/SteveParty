@@ -226,6 +226,8 @@ public class StevepartyClient implements ClientModInitializer {
         ModelLoadingPlugin.register(new PipeModelPlugin());
         PipeBulgeRenderer.register();
         BlockEntityRendererFactories.register(ModBlockEntities.MINIGAME_PIPE_ENTITY, MiniGamePipeNotchRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.MAGPIE_NEST_ENTITY, fr.lordfinn.steveparty.client.blockentity.MagpieNestRenderer::new);
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAGPIE_NEST, fr.lordfinn.steveparty.client.blockentity.MagpieNestRenderer.ITEM);
         MiniGamePipeNotchRenderer.registerHint();
         // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
         for (PipeKind kind : PipeKind.values()) {
@@ -272,6 +274,7 @@ public class StevepartyClient implements ClientModInitializer {
         CartridgeClickGuard.initialize();
         BandanaArmorRenderer.register();
         ExplorerHelmetRenderer.register();
+        fr.lordfinn.steveparty.client.jumpshoes.JumpShoesClient.initialize();
         MiniGamePageTooltipComponent.register();
         Tooltips.setShiftProbe(net.minecraft.client.gui.screen.Screen::hasShiftDown);
         net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register((stack, context, type, lines) ->
@@ -522,6 +525,7 @@ public class StevepartyClient implements ClientModInitializer {
         GoalPoleFlipTracker.clear();
         GoalPoleCameraRoll.clear();
         SquishAnimations.clear();
+        fr.lordfinn.steveparty.client.jumpshoes.JumpShoesClient.clear();
         DestinationsRenderer.clear();
         // The carriers of the last world, else kept (with their world) until a world renders again
         PipeCarrierEntity.CLIENT_CARRIERS.clear();
