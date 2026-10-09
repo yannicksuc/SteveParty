@@ -1,6 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.entities.ModEntities;
+import net.minecraft.entity.mob.PiglinEntity;
+import net.minecraft.entity.mob.MagmaCubeEntity;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.Entity;
+import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleSpawns;
+import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleGoals;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleBlast;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumarolePumping;
@@ -674,7 +680,7 @@ public class FumaroleGameTests implements FabricGameTest {
     public void itCalmsDownOnceTheAngerIsOverAndThePlayerAway(TestContext context) {
         strip(context, 22);
         FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
-        ServerPlayerEntity player = standOff(context, fumarole, FumaroleEntity.CALM_DISTANCE + 2, 0);
+        ServerPlayerEntity player = standOff(context, fumarole, FumaroleEntity.CALM_DISTANCE + 8, 0);
         fumarole.setTank(0); // a weak puff out of reach: it only frets
         fumarole.provoke(player, 20);
         context.assertTrue(fumarole.hasGrudge(player) && fumarole.getTarget() == player, "provoked: his target");
@@ -770,12 +776,137 @@ public class FumaroleGameTests implements FabricGameTest {
         context.runAtEveryTick(() -> {
             if (done[0]) return;
             if (pig.getHealth() < health) {
-                    context.assertTrue(fumarole.faces(pig), "it turned round before it shot");
+                context.assertTrue(fumarole.faces(pig), "it turned round before it shot");
                 done[0] = true;
                 pig.discard();
                 fumarole.discard();
                 context.complete();
             }
+        });
+    }
+
+    // ---------------------------------------------------------------- the Nether: prey and piglin riders
+
+    /** Piglins on its rim, their AI off (they would shoot the players themselves). */
+    private static void piglins(TestContext context, FumaroleEntity fumarole, int count) {
+        for (int i = 0; i < count; i++) {
+            PiglinEntity piglin = context.spawnEntity(EntityType.PIGLIN, new BlockPos(1, 1, 8));
+            piglin.setBaby(false);
+            piglin.setAiDisabled(true);
+            piglin.startRiding(fumarole, true);
+        }
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_prey", tickLimit = 600)
+    public void aWildOneHuntsNetherMobsNotOthers(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        fumarole.setAiDisabled(false);
+        fumarole.setTank(10);
+        double edge = fumarole.getBoundingBox().maxX;
+        PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(1, 1, 8));
+        pig.setAiDisabled(true);
+        pig.refreshPositionAndAngles(edge + 4, fumarole.getY(), fumarole.getZ() - 3, 0, 0);
+        MagmaCubeEntity cube = context.spawnEntity(EntityType.MAGMA_CUBE, new BlockPos(1, 1, 8));
+        cube.setAiDisabled(true);
+        cube.setSize(2, true);
+        cube.refreshPositionAndAngles(edge + 10, fumarole.getY(), fumarole.getZ(), 0, 0);
+        context.assertTrue(fumarole.findPrey() == cube, "the magma cube is its prey, not the pig");
+        boolean[] done = {false};
+        context.runAtEveryTick(() -> {
+            if (done[0] || fumarole.getTarget() != cube) return;
+            done[0] = true;
+            context.assertTrue(pig.getHealth() >= pig.getMaxHealth(), "the pig is left alone");
+            for (var e : List.of(pig, cube, fumarole)) e.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_piglins")
+    public void piglinRidersMakeItFasterAndQuickerToShoot(TestContext context) {
+        TestBoards.floor(context, 8);
+        FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
+        double base = fumarole.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+        context.assertTrue(Math.abs(base - FumaroleEntity.SPEED) < 1.0e-6, "no piglin: its own speed");
+        for (int n = 1; n <= 3; n++) {
+            piglins(context, fumarole, 1);
+            context.assertEquals(fumarole.piglinRiders(), n, "piglins on");
+            double speed = fumarole.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+            context.assertTrue(Math.abs(speed - FumaroleEntity.SPEED * (1 + FumaroleEntity.PIGLIN_SPEED[n])) < 1.0e-6, n + " piglins: faster, " + speed);
+            context.assertTrue(FumaroleEntity.PIGLIN_RANGE[n] > FumaroleEntity.PIGLIN_RANGE[n - 1], n + " piglins: spots farther");
+            context.assertTrue(FumaroleGoals.cooldownFactor(n) < FumaroleGoals.cooldownFactor(n - 1), n + " piglins: shoots more often");
+        }
+        context.assertTrue(fumarole.findPrey() == null, "ridden by piglins: no hunting");
+        List<Entity> riders = List.copyOf(fumarole.getPassengerList());
+        riders.forEach(Entity::stopRiding);
+        double back = fumarole.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+        context.assertTrue(Math.abs(back - FumaroleEntity.SPEED) < 1.0e-6, "piglins off: its own speed again");
+        riders.forEach(Entity::discard);
+        fumarole.discard();
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_piglins_hostile", tickLimit = 300)
+    public void ridenByPiglinsItBlastsPlayersNotInGold(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        piglins(context, fumarole, 2);
+        ServerPlayerEntity foe = standOff(context, fumarole, 10, 0);
+        ServerPlayerEntity golden = standOff(context, fumarole, 9, 3);
+        golden.equipStack(EquipmentSlot.HEAD, new ItemStack(Items.GOLDEN_HELMET));
+        context.assertTrue(fumarole.ridersHostileTo(foe), "its piglins hate him");
+        context.assertFalse(fumarole.ridersHostileTo(golden), "not the one in gold");
+        boolean[] done = {false};
+        context.runAtEveryTick(() -> {
+            if (done[0] || fumarole.getTarget() != foe || !foe.isOnFire()) return;
+            done[0] = true;
+            leftAlone(context, fumarole, golden);
+            for (Entity rider : fumarole.getPassengerList()) {
+                context.assertFalse(rider.isOnFire() || ((LivingEntity) rider).getHealth() < ((LivingEntity) rider).getMaxHealth(),
+                        "never its own riders");
+            }
+            List<Entity> riders = List.copyOf(fumarole.getPassengerList());
+            riders.forEach(Entity::discard);
+            TestPlayers.remove(context, foe, golden);
+            fumarole.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_piglins_off", tickLimit = 140)
+    public void itsPiglinsOffItIsNeutralAgain(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        piglins(context, fumarole, 1);
+        ServerPlayerEntity player = standOff(context, fumarole, 10, 0);
+        List<Entity> riders = List.copyOf(fumarole.getPassengerList());
+        riders.forEach(Entity::stopRiding);
+        riders.forEach(Entity::discard);
+        context.assertFalse(fumarole.ridersHostileTo(player), "no piglin on: no hostility");
+        context.runAtTick(120, () -> {
+            leftAlone(context, fumarole, player);
+            TestPlayers.remove(context, player);
+            fumarole.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_piglins_stay", tickLimit = 140)
+    public void itsPiglinsStayOn(TestContext context) {
+        TestBoards.floor(context, 8);
+        FumaroleEntity fumarole = context.spawnEntity(ModEntities.FUMAROLE, new BlockPos(4, 1, 4));
+        fumarole.mountPiglins(context.getWorld(), context.getWorld().getLocalDifficulty(fumarole.getBlockPos()), 3);
+        context.assertEquals(fumarole.piglinRiders(), 3, "three piglins seated");
+        for (Entity rider : fumarole.getPassengerList()) context.getWorld().spawnEntity(rider);
+        context.assertEquals(FumaroleSpawns.riderCount(0.2f), 1, "one piglin half the time");
+        context.assertEquals(FumaroleSpawns.riderCount(0.6f), 2, "two a third of the time");
+        context.assertEquals(FumaroleSpawns.riderCount(0.9f), 3, "three the rest");
+        context.runAtTick(120, () -> {
+            context.assertEquals(fumarole.piglinRiders(), 3, "still on after a while (their AI on)");
+            List<Entity> riders = List.copyOf(fumarole.getPassengerList());
+            riders.forEach(Entity::discard);
+            fumarole.discard();
+            context.complete();
         });
     }
 }

@@ -21,6 +21,14 @@ import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.PathNodeType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.mob.AbstractPiglinEntity;
+import net.minecraft.entity.mob.PiglinBrain;
+import net.minecraft.entity.mob.PiglinBruteEntity;
+import net.minecraft.entity.mob.PiglinEntity;
+import net.minecraft.registry.tag.TagKey;
+import net.minecraft.util.Identifier;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.data.DataTracker;
@@ -107,6 +115,13 @@ import java.util.UUID;
  *     and only him, for {@link #ANGER_TICKS} ticks, and calms down once that is over and he keeps
  *     {@link #CALM_DISTANCE} blocks from its shell. Its owner and players all its heads trust never provoke it. Mobs
  *     that hurt it are fought back (FumaroleGoals.Revenge).</li>
+ *     <li><b>A hunter in the Nether</b>: wild and without piglins on, now and then it hunts a mob of
+ *     {@code #steveparty:fumarole_prey} close by ({@link #findPrey}), never a player.</li>
+ *     <li><b>Piglin riders</b>: near a bastion some are born with 1 to 3 piglins sat on its rim (FumaroleSpawns).
+ *     Ridden by piglins it is hostile to the players its piglins are hostile to (a piglin spares a player in gold, a
+ *     brute nobody), and the more piglins, the faster it walks ({@link #PIGLIN_SPEED}), the farther it spots players
+ *     ({@link #PIGLIN_RANGE}) and the more often it shoots (FumaroleGoals.Blast#cooldownFactor); the piglins drive it
+ *     toward its target. Once they are off, it is neutral again (unless provoked).</li>
  *     <li><b>In lava</b> it swims, floating with its tank out ({@link FumaroleRiding#SWIM_DEPTH}); it is born on the
  *     shores of the Nether's lava lakes or in them.</li>
  *     <li><b>Its death</b>: its lava spills (with mobGriefing, up to {@link #SPILL_MAX} sources), it drops its saddle and
@@ -146,6 +161,14 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     /** How long a provocation lasts (ticks), and how far (blocks from its shell) the player must keep to calm it. */
     public static final int ANGER_TICKS = 600;
     public static final double CALM_DISTANCE = 16.0;
+    /** The prey it hunts (wild, no piglins on): within this range of its shell, one look every so often. */
+    public static final TagKey<EntityType<?>> PREY = TagKey.of(RegistryKeys.ENTITY_TYPE, Steveparty.id("fumarole_prey"));
+    public static final double HUNT_RANGE = 20.0;
+    public static final int HUNT_PERIOD = 20, HUNT_CHANCE = 4;
+    /** With 0 to 3 piglins on: its walking speed bonus (share of its base), how far (from its shell) it spots players. */
+    public static final double[] PIGLIN_SPEED = {0, 0.3, 0.6, 0.9};
+    public static final double[] PIGLIN_RANGE = {0, 16, 24, 32};
+    private static final Identifier PIGLIN_SPEED_ID = Steveparty.id("fumarole_piglin_riders");
     /** Lava sources spilt on death: one per this many buckets, at most {@link #SPILL_MAX}. */
     public static final int SPILL_PER = 9, SPILL_MAX = 3;
     /** An untamed one throws its rider off after this many ticks (and up to this many more), fidgeting before. */
@@ -196,6 +219,8 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     private final Map<UUID, Long> grudges = new HashMap<>();
     /** Until when (age) it stays angry with a mob that hurt it. */
     private int angryUntil;
+    /** The prey it hunts, while it is its target (given up beyond its hunting range). */
+    private @Nullable LivingEntity hunted;
     /** Server: each head's aim (world yaw; degrees), and when it may fire again (ridden). */
     private final float[] aimYaw = new float[HEADS.length];
     private final long[] headReady = new long[HEADS.length];
@@ -277,7 +302,12 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     public @Nullable EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason,
                                            @Nullable EntityData entityData) {
         setTank(SPAWN_TANK_MIN + world.getRandom().nextInt(SPAWN_TANK_MAX - SPAWN_TANK_MIN + 1));
-        return super.initialize(world, difficulty, spawnReason, entityData);
+        EntityData data = super.initialize(world, difficulty, spawnReason, entityData);
+        if (spawnReason == SpawnReason.NATURAL || spawnReason == SpawnReason.CHUNK_GENERATION) {
+            int piglins = FumaroleSpawns.piglinRiders(world, getBlockPos(), world.getRandom());
+            if (piglins > 0) mountPiglins(world, difficulty, piglins);
+        }
+        return data;
     }
 
     /** Born on the shore or in the lava itself: only other mobs and blocks keep it from a spot, not lava. */
@@ -595,7 +625,70 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     protected void removePassenger(Entity passenger) {
         super.removePassenger(passenger);
-        if (!isTamed() && !hasPassengers()) throwAt = -1;
+        if (!isTamed() && !hasPlayerRider()) throwAt = -1;
+        updatePiglinSpeed();
+    }
+
+    @Override
+    protected void addPassenger(Entity passenger) {
+        super.addPassenger(passenger);
+        updatePiglinSpeed();
+    }
+
+    /** Its piglins ride, they don't drive: its own goals keep walking and aiming it (FumaroleGoals.Approach). */
+    @Override
+    public @Nullable LivingEntity getControllingPassenger() {
+        return null;
+    }
+
+    /** Whether a player rides it. */
+    public boolean hasPlayerRider() {
+        for (Entity rider : getPassengerList()) if (rider instanceof PlayerEntity) return true;
+        return false;
+    }
+
+    /** How many piglins (brutes too) ride it. */
+    public int piglinRiders() {
+        int n = 0;
+        for (Entity rider : getPassengerList()) if (rider instanceof AbstractPiglinEntity) n++;
+        return Math.min(n, PIGLIN_SPEED.length - 1);
+    }
+
+    /** Whether one of its piglins is hostile to this player: a brute always, a piglin unless he wears gold. */
+    public boolean ridersHostileTo(PlayerEntity player) {
+        for (Entity rider : getPassengerList()) {
+            if (rider instanceof PiglinBruteEntity) return true;
+            if (rider instanceof PiglinEntity piglin && !piglin.isBaby() && !PiglinBrain.wearsGoldArmor(player)) return true;
+        }
+        return false;
+    }
+
+    private void updatePiglinSpeed() {
+        if (getWorld() == null || getWorld().isClient) return;
+        EntityAttributeInstance speed = getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+        if (speed == null) return;
+        speed.removeModifier(PIGLIN_SPEED_ID);
+        int piglins = piglinRiders();
+        if (piglins > 0) {
+            speed.addTemporaryModifier(new EntityAttributeModifier(PIGLIN_SPEED_ID, PIGLIN_SPEED[piglins],
+                    EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+        }
+    }
+
+    /**
+     * Seats {@code count} piglins on its rim (one in ten a brute), adults armed as vanilla arms them; they are spawned
+     * with it (spawnEntityAndPassengers).
+     */
+    public void mountPiglins(ServerWorldAccess world, LocalDifficulty difficulty, int count) {
+        for (int i = 0; i < count && getPassengerList().size() < FumaroleRiding.MAX_RIDERS; i++) {
+            EntityType<? extends AbstractPiglinEntity> type = random.nextInt(10) == 0 ? EntityType.PIGLIN_BRUTE : EntityType.PIGLIN;
+            AbstractPiglinEntity piglin = type.create(world.toServerWorld());
+            if (piglin == null) return;
+            piglin.refreshPositionAndAngles(getX(), getY(), getZ(), getYaw(), 0);
+            piglin.initialize(world, difficulty, SpawnReason.JOCKEY, null);
+            if (piglin instanceof PiglinEntity adult) adult.setBaby(false);
+            piglin.startRiding(this, true);
+        }
     }
 
     /**
@@ -921,10 +1014,32 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
             PlayerEntity player = getWorld().getPlayerByUuid(grudge.getKey());
             return player == null || distanceFromShell(player) > CALM_DISTANCE;
         });
-        if (getTarget() instanceof PlayerEntity player && !hasGrudge(player)) setTarget(null); // calmed down
-        if ((getTarget() == null || !getTarget().isAlive()) && !grudges.isEmpty() && age % 10 == 0) {
+        if (getTarget() instanceof PlayerEntity player && !hasGrudge(player) && !ridersHostileTo(player)) setTarget(null); // calmed down
+        if (hunted != null) { // a hunt given up: its prey gone, too far, piglins on or tamed
+            if (getTarget() != hunted) {
+                hunted = null;
+            } else if (!hunted.isAlive() || distanceFromShell(hunted) > HUNT_RANGE + 8 || piglinRiders() > 0 || isTamed()) {
+                setTarget(null);
+                hunted = null;
+            }
+        }
+        boolean free = getTarget() == null || !getTarget().isAlive();
+        if (free && !grudges.isEmpty() && age % 10 == 0) {
             PlayerEntity foe = nearestGrudge();
             if (foe != null) setTarget(foe);
+        }
+        free = getTarget() == null || !getTarget().isAlive();
+        if (free && piglinRiders() > 0 && age % 10 == 0) {
+            PlayerEntity foe = piglinsFoe();
+            if (foe != null) setTarget(foe);
+        }
+        free = getTarget() == null || !getTarget().isAlive();
+        if (free && age % HUNT_PERIOD == 0 && random.nextInt(HUNT_CHANCE) == 0) {
+            LivingEntity prey = findPrey();
+            if (prey != null) {
+                setTarget(prey);
+                hunted = prey;
+            }
         }
     }
 
@@ -958,9 +1073,10 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     /** An untamed one with a rider: fidgets, its heads turning to look, then throws him off. */
     private void tickUntamedRider(long now) {
-        if (isTamed() || !hasPassengers()) return;
+        if (isTamed() || !hasPlayerRider()) return;
         if (throwAt < 0) scheduleThrow();
-        Entity rider = getFirstPassenger();
+        Entity rider = null;
+        for (Entity passenger : getPassengerList()) if (passenger instanceof PlayerEntity) rider = rider == null ? passenger : rider;
         if (rider == null) return;
         if (now >= throwAt - FIDGET_TICKS) {
             for (int head = 0; head < HEADS.length; head++) setHeadTarget(head, rider);
@@ -972,7 +1088,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         if (now >= throwAt) {
             for (int head = 0; head < HEADS.length; head++) setHeadTarget(head, null);
             sprayOff(rider);
-            throwAt = hasPassengers() ? now + THROW_MIN / 2 : -1;
+            throwAt = hasPlayerRider() ? now + THROW_MIN / 2 : -1;
         }
     }
 
@@ -1011,9 +1127,41 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         return best;
     }
 
+    /** With piglins on: the nearest player they are hostile to, within its piglin range of its shell, in sight. */
+    private @Nullable PlayerEntity piglinsFoe() {
+        double range = PIGLIN_RANGE[piglinRiders()];
+        PlayerEntity best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (PlayerEntity player : getWorld().getPlayers()) {
+            if (!player.isAlive() || player.isSpectator() || player.getAbilities().creativeMode || hasPassenger(player)) continue;
+            double d = distanceFromShell(player);
+            if (d <= range && d < bestDistance && ridersHostileTo(player) && getVisibilityCache().canSee(player)) {
+                best = player;
+                bestDistance = d;
+            }
+        }
+        return best;
+    }
+
+    /** Wild, no piglins on: the nearest mob of {@link #PREY} within {@link #HUNT_RANGE} of its shell, in sight. */
+    public @Nullable LivingEntity findPrey() {
+        if (isTamed() || piglinRiders() > 0 || hasPlayerRider()) return null;
+        LivingEntity best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (LivingEntity mob : getWorld().getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(HUNT_RANGE),
+                mob -> mob.getType().isIn(PREY) && mob.isAlive() && !(mob instanceof FumaroleEntity) && !hasPassenger(mob))) {
+            double d = distanceFromShell(mob);
+            if (d <= HUNT_RANGE && d < bestDistance && getVisibilityCache().canSee(mob)) {
+                best = mob;
+                bestDistance = d;
+            }
+        }
+        return best;
+    }
+
     /** Whether it has calmed down about {@code target}: no grudge left (players), or the anger over and them away. */
     public boolean calmAbout(LivingEntity target) {
-        if (target instanceof PlayerEntity player) return !hasGrudge(player);
+        if (target instanceof PlayerEntity player) return !hasGrudge(player) && !ridersHostileTo(player);
         return age >= angryUntil && distanceFromShell(target) > CALM_DISTANCE;
     }
 
@@ -1252,7 +1400,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     public boolean canImmediatelyDespawn(double distanceSquared) {
-        return !isTamed() && !hasPassengers() && super.canImmediatelyDespawn(distanceSquared);
+        return !isTamed() && !hasPlayerRider() && super.canImmediatelyDespawn(distanceSquared);
     }
 
     // ---------------------------------------------------------------- save
