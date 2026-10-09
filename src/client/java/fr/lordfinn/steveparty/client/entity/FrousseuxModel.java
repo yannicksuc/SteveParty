@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.render.geo.Blink;
+import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
@@ -54,19 +56,10 @@ public class FrousseuxModel extends DefaultedEntityGeoModel<FrousseuxEntity> {
                 flame.setRotZ(swayZ + frousseux.flameLeanZ(partial));
             }
         }
-        for (String name : OVERLAY_BONES) {
-            GeoBone overlay = getAnimationProcessor().getBone(name);
-            if (overlay != null) overlay.setHidden(true);
-        }
-        GeoBone body = getAnimationProcessor().getBone("body");
-        if (body != null) {
-            body.setHidden(true);
-            body.setChildrenHidden(false);
-        }
-        GeoBone lids = getAnimationProcessor().getBone("lids");
-        if (lids != null) {
-            boolean blink = Math.floorMod((int) time, BLINK_EVERY) < BLINK_TICKS;
-            lids.setHidden(!(blink || frousseux.isShy()));
-        }
+        GeoBones.hide(getAnimationProcessor(), OVERLAY_BONES, true);
+        GeoBones.hideOnlyItself(getAnimationProcessor(), "body");
+        boolean blink = Blink.closed((int) (frousseux.age + animationState.getPartialTick()), frousseux.getId(), 13,
+                BLINK_EVERY, BLINK_TICKS);
+        GeoBones.hide(getAnimationProcessor(), "lids", !(blink || frousseux.isShy()));
     }
 }
