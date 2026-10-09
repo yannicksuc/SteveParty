@@ -5,12 +5,14 @@ import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.SneakScrollItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -29,7 +31,7 @@ import java.util.List;
  * with the Tile Linker Brush. The cartridge sets how many items may be bought per stop ({@link #purchases}): its menu, or sneak +
  * mouse wheel with it in the main hand.
  */
-public class ShopCartridgeItem extends CartridgeItem {
+public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem {
     public static final int DEFAULT_PURCHASES = 1;
     public static final int MAX_PURCHASES = 9;
     /** The shop cartridge's colour: the tile, the check point and the landing burst. */
@@ -54,6 +56,11 @@ public class ShopCartridgeItem extends CartridgeItem {
     /** How many items a player may buy during one stop. */
     public static int purchases(ItemStack stack) {
         return stack.getOrDefault(ModComponents.SHOP_PURCHASES, DEFAULT_PURCHASES);
+    }
+
+    @Override
+    public void onSneakScroll(ServerPlayerEntity player, ItemStack stack, int direction) {
+        scroll(player, stack, direction);
     }
 
     /** Sneak + mouse wheel (server side): one more / one less purchase allowed per stop, from 1 to {@value #MAX_PURCHASES}. */

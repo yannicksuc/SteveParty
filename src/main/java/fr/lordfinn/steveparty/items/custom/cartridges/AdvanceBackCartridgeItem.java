@@ -3,12 +3,16 @@ package fr.lordfinn.steveparty.items.custom.cartridges;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.SneakScrollItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
@@ -21,7 +25,7 @@ import java.util.List;
  * (1..6) or back (-1..-6). Its menu has the direction and the number; sneak + mouse wheel with it in the main hand
  * changes them too.
  */
-public class AdvanceBackCartridgeItem extends CartridgeItem {
+public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScrollItem {
     public static final int MAX_STEPS = 6;
     public static final int DEFAULT_STEPS = 3;
     /** The tile's colours (face, sides, landing particles): green forward, pink-magenta back. */
@@ -92,9 +96,19 @@ public class AdvanceBackCartridgeItem extends CartridgeItem {
         return Math.max(-MAX_STEPS, Math.min(MAX_STEPS, next));
     }
 
-    /** Sneak + wheel (see AdvanceBackScrollPayload): changes the setting of the cartridge. Server side. */
+    /** Changes the setting of the cartridge by one notch of the wheel. Server side. */
     public static void scroll(ItemStack stack, int direction) {
         stack.set(ModComponents.ADVANCE_BACK_STEPS, scrolled(steps(stack), direction));
+    }
+
+    /** Sneak + wheel: the new setting, shown in the action bar with a click pitched by the number of spaces. */
+    @Override
+    public void onSneakScroll(ServerPlayerEntity player, ItemStack stack, int direction) {
+        scroll(stack, Integer.signum(direction));
+        int steps = steps(stack);
+        player.sendMessage(settingText(steps), true);
+        player.playSoundToPlayer(SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.PLAYERS, 0.4F,
+                (float) Math.pow(2, steps / 12.0));
     }
 
     /** "⏩ Moves forward: 3" in green, or "⏪ Moves back: 2" in purple-red. */
