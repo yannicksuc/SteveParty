@@ -1062,6 +1062,78 @@ public class GlandouilleGameTests implements FabricGameTest {
         });
     }
 
+    /** A frosty one thrown by a player looking down {@code pitch} degrees along +x; {@code then} gets it once thrown. */
+    private static void throwFrosty(TestContext context, float pitch, Consumer<GlandouilleEntity> then) {
+        GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 1));
+        ServerPlayerEntity player = player(context, new BlockPos(0, 1, 3), -90f); // facing +x
+        player.setPitch(pitch);
+        context.assertTrue(GlandouilleTowers.pickUp(player, frosty), "carried");
+        context.waitAndRun(2, () -> {
+            context.assertTrue(GlandouilleTowers.throwCarried(player), "thrown");
+            then.accept(frosty);
+        });
+    }
+
+    /** Thrown at a grazing angle (about 25 degrees), a frosty one lands and slides on, slowing like a block on ice. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aFrostyOneThrownGrazingSlidesOn(TestContext context) {
+        TestBoards.floor(context, 8);
+        throwFrosty(context, 25f, frosty -> {
+            double[] landedX = {Double.NaN};
+            double[] speed = {0};
+            context.runAtEveryTick(() -> {
+                if (Double.isNaN(landedX[0]) && frosty.iceLanding()) {
+                    landedX[0] = frosty.getX();
+                    speed[0] = frosty.slideVelocity().horizontalLength();
+                }
+            });
+            context.waitAndRun(14, () -> {
+                context.assertFalse(Double.isNaN(landedX[0]), "it landed sliding: " + frosty.getMood());
+                context.assertTrue(speed[0] > 0.2, "with its throw's speed: " + speed[0]);
+                context.assertTrue(frosty.getX() - landedX[0] > 1.5 || frosty.getMood() == Mood.SLIDING,
+                        "slid on: " + (frosty.getX() - landedX[0]) + " " + frosty.getMood());
+                context.complete();
+            });
+        });
+    }
+
+    /** Thrown almost straight down (75 degrees), a frosty one stops dizzy where it lands, like the others. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aFrostyOneThrownDownStopsDizzy(TestContext context) {
+        TestBoards.floor(context, 8);
+        throwFrosty(context, 75f, frosty -> {
+            boolean[] slid = {false};
+            context.runAtEveryTick(() -> slid[0] |= frosty.getMood() == Mood.SLIDING);
+            context.waitAndRun(12, () -> {
+                context.assertFalse(slid[0], "never slid");
+                context.assertEquals(frosty.getMood(), Mood.STUNNED, "dizzy where it landed");
+                double x = frosty.getX();
+                context.waitAndRun(10, () -> {
+                    context.assertTrue(Math.abs(frosty.getX() - x) < 0.3, "stays there: " + (frosty.getX() - x));
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    /** Thrown grazing toward a wall, a frosty one slides into it and stops there dizzy (no bounce). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aFrostyOneSlidingIntoAWallStopsDizzy(TestContext context) {
+        TestBoards.floor(context, 8);
+        for (int z = 0; z < 8; z++) for (int y = 1; y < 3; y++) context.setBlockState(new BlockPos(6, y, z), Blocks.STONE);
+        throwFrosty(context, 25f, frosty -> {
+            boolean[] slid = {false};
+            context.runAtEveryTick(() -> slid[0] |= frosty.iceLanding());
+            context.waitAndRun(30, () -> {
+                context.assertTrue(slid[0], "it slid first");
+                context.assertEquals(frosty.getMood(), Mood.STUNNED, "dizzy against the wall");
+                BlockPos wall = context.getAbsolutePos(new BlockPos(6, 1, 0));
+                context.assertTrue(wall.getX() - frosty.getX() < 1, "at the wall: " + (wall.getX() - frosty.getX()));
+                context.complete();
+            });
+        });
+    }
+
     // ---------------------------------------------------------------- hat
 
     /** Its cap never flies off while it carries a tower; alone, it does (the Acorn Hat drops). */
