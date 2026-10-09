@@ -3,13 +3,15 @@ package fr.lordfinn.steveparty.client.entity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
 import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
+import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Hand;
 
 /**
- * A player carrying Glandouilles (held in his main hand, see {@link GlandouilleTowers#heldPos}): that arm raised, and
- * his left click throws the bottom one instead of attacking or breaking.
+ * A player carrying Glandouilles: drawn in his main hand, that arm raised ({@link GlandouilleInHand}), and his left
+ * click throws the bottom one instead of attacking or breaking.
  */
 public final class GlandouilleCarryClient {
     private GlandouilleCarryClient() {
@@ -24,6 +26,9 @@ public final class GlandouilleCarryClient {
     }
 
     public static void initialize() {
+        LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
+            if (renderer instanceof PlayerEntityRenderer player) helper.register(new GlandouilleInHand.Feature(player));
+        });
         ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> {
             if (client.currentScreen != null || !carrying(player)) return false;
             if (clickCount > 0 && ClientPlayNetworking.canSend(GlandouilleTowers.ThrowCarried.ID)) {
