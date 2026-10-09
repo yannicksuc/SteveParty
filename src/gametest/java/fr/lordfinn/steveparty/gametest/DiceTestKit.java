@@ -188,6 +188,30 @@ final class DiceTestKit {
         return dice;
     }
 
+    /**
+     * {@code roller} threw {@code count} dice of {@code die} together (a Double / Triple Dice) a moment ago, over
+     * {@code at}: the lead first. They roll.
+     */
+    static List<DiceEntity> thrownTogether(TestContext context, ServerPlayerEntity roller, ItemStack die, int count, BlockPos at) {
+        List<DiceEntity> dice = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            DiceEntity one = context.spawnEntity(ModEntities.DICE_ENTITY, at.up(2 + i));
+            one.age = DiceEntity.THROW_GRACE_TICKS;
+            one.setNoGravity(true);
+            one.setOwner(roller.getUuid());
+            if (i == 0) one.setItemReference(die.copyWithCount(1));
+            else one.follow(die.copyWithCount(1));
+            dice.add(one);
+            atEnd(context, () -> {
+                if (!one.isRemoved()) one.discard();
+            });
+        }
+        List<java.util.UUID> ids = dice.stream().map(DiceEntity::getUuid).toList();
+        for (DiceEntity one : dice) one.setLinkedDice(ids);
+        dice.getFirst().startRoll();
+        return dice;
+    }
+
     /** {@code player} hits the die (not sneaking). */
     static void hit(TestContext context, DiceEntity dice, ServerPlayerEntity player) {
         ServerWorld world = context.getWorld();
