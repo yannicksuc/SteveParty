@@ -11,9 +11,8 @@ import net.minecraft.util.math.random.Random;
  *     <li>Bored (no enemy, nobody riding, not pumping): each head looks around on its own ({@link Mood#LOOK}),
  *     yawns a puff of steam now and then ({@link Mood#YAWN}).</li>
  *     <li>Ridden: a head sniffs its rider ({@link Mood#SNIFF}).</li>
- *     <li>Fed magma cream: the head wiggles happily ({@link Mood#WIGGLE}); refused (no cream to take, or a rider
- *     thrown off): it sulks, drooping and looking away ({@link Mood#SULK}); a rider on an untamed one makes the
- *     heads fidget ({@link Mood#FIDGET}).</li>
+ *     <li>Tamed: the heads wiggle happily ({@link Mood#WIGGLE}); emptied, or a rider thrown off: they sulk, drooping
+ *     and looking away ({@link Mood#SULK}); a rider on an untamed one makes the heads fidget ({@link Mood#FIDGET}).</li>
  *     <li>The body shakes the lava off when it leaves a lake ({@link #shakeOff}); a full tank sloshes and burps steam
  *     ({@link #slosh}).</li>
  * </ul>
