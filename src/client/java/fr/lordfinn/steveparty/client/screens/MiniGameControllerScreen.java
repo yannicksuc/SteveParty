@@ -15,13 +15,9 @@ import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler.State;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -54,7 +50,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     private static final int MONITOR_Y = CY + 12, MONITOR_H = BEZEL + 4 + 47 + 4 + BEZEL;
     private static final int SX = CX + BEZEL + 4, SY = MONITOR_Y + BEZEL + 4, SW = CW - 2 * (BEZEL + 4);
     private static final int TX = SX + 82 + 6, TW = SW - 88;
-    private static final int SWITCH_W = 24, BUTTON_W = 80, BUTTON_H = 18;
+    private static final int BUTTON_W = 80, BUTTON_H = 18;
     private static final int LABEL_X = CX + 22;
 
     // The colours of the mock-up

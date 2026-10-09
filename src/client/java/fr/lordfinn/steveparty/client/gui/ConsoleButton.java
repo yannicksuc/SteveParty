@@ -75,11 +75,6 @@ public class ConsoleButton extends PressableWidget {
     private Kind kind;
     private @Nullable Icon icon;
 
-    public void setKind(Kind kind, @Nullable Icon icon) {
-        this.kind = kind;
-        this.icon = icon;
-    }
-
     public ConsoleButton(int x, int y, int width, int height, Text message, Kind kind, @Nullable Icon icon, Runnable onPress) {
         super(x, y, width, height, message);
         this.kind = kind;

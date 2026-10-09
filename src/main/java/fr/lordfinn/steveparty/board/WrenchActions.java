@@ -13,7 +13,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
@@ -38,8 +37,6 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.MathHelper;
@@ -480,10 +477,5 @@ public final class WrenchActions {
 
     private static void playSound(World world, ServerPlayerEntity player, SoundEvent sound, float pitch) {
         world.playSound(null, player.getBlockPos(), sound, SoundCategory.PLAYERS, 0.6f, pitch);
-    }
-
-    /** @return whether {@code stack} is a wrench */
-    public static boolean isWrench(ItemStack stack) {
-        return stack.getItem() instanceof WrenchItem;
     }
 }

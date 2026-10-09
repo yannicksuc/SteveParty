@@ -32,9 +32,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
@@ -199,11 +196,6 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         return type.isInstance(stack.getItem()) ? stack : null;
     }
 
-    public void setActiveCartridgeItemStack(ItemStack stack) {
-        if (this.world == null) return;
-        this.setStack(getActiveSlot(), stack);
-    }
-
     // ---------------------------------------------------------------- links kept when the cartridge is replaced
 
     /**
@@ -305,17 +297,6 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         super.markDirty();
         // The active cartridge may have been edited in place (colour, destinations...)
         if (world instanceof ServerWorld) updateBoardSpaceColor();
-    }
-
-    public static Boolean toggleDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder) {
-        if (world == null) return null;
-        List<DirectionDisplayEntity> e = getSpawnedDestinations(world, pos);
-        if (e.isEmpty()) {
-            searchAndDisplayDestinations(world, pos, holder);
-            return true;
-        }
-        hideDestinations(world, pos);
-        return false;
     }
 
     public static void displayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder, List<BoardSpaceDestination> destinations) {

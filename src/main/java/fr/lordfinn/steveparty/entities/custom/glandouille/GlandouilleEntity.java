@@ -867,10 +867,6 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         playSound(ModSounds.GLANDOUILLE_FLICK, 1f, 1f);
     }
 
-    public Vec3d flyDirection() {
-        return flyDir;
-    }
-
     private void tickFlight(ServerWorld world) {
         int flown = flightTicks - moodTicks;
         if (flown < straightTicks) {

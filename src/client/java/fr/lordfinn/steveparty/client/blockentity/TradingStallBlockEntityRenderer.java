@@ -89,10 +89,6 @@ public class TradingStallBlockEntityRenderer implements BlockEntityRenderer<Trad
         };
     }
 
-    private double getYOffsetForScale(float scale) {
-        return 0.8 / scale;
-    }
-
     private List<Vec3d> getLayoutPositions(int count) {
         List<Vec3d> positions = new ArrayList<>();
 

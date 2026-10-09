@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -64,15 +63,6 @@ public final class MulaFood {
         SEEDS.put(Items.PUMPKIN_SEEDS, MulaEntity.MulaVariant.YELLOW);
         SEEDS.put(Items.BEETROOT_SEEDS, MulaEntity.MulaVariant.RED);
         SEEDS.put(Items.PITCHER_POD, MulaEntity.MulaVariant.RED);
-    }
-
-    /** The seeds of this colour (for tests and the test scene). */
-    public static Set<Item> seedsOf(MulaEntity.MulaVariant variant) {
-        Set<Item> seeds = new HashSet<>();
-        SEEDS.forEach((item, v) -> {
-            if (v == variant) seeds.add(item);
-        });
-        return seeds;
     }
 
     /** What a seed gives: a melon slice's nutrition. */

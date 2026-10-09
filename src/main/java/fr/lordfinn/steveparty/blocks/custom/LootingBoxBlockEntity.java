@@ -5,11 +5,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockE
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
-import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.LootingBoxScreenHandler;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
@@ -163,20 +161,8 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     // -------------------------
     // Getters and Setters
     // -------------------------
-    public int getCooldownTime() {
-        return cooldownTime;
-    }
-
-    public void setCooldownTime(int cooldownTime) {
-        this.cooldownTime = cooldownTime;
-    }
-
     public int getRepeatTime() {
         return repeatTime;
-    }
-
-    public void setRepeatTime(int repeatTime) {
-        this.repeatTime = repeatTime;
     }
 
     private int getCycleIndex() {

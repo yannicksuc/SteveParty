@@ -209,8 +209,4 @@ public class StencilGunScreenHandler extends ScreenHandler {
             return getIndex() != gunSlot && super.canInsert(stack);
         }
     }
-
-    public boolean isGunSlot(Slot slot) {
-        return slot instanceof LockableSlot && slot.getIndex() == gunSlot;
-    }
 }
