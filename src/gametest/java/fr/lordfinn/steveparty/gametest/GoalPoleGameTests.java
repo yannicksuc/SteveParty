@@ -45,6 +45,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -1058,6 +1059,110 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.setBlockState(BASE.up(2), pole(false, true));
         context.assertTrue(GoalPoleBlock.useOf(world, top, player, ItemStack.EMPTY, west) == GoalPoleBlock.Use.GOAL, "no flag: the goal");
         context.complete();
+    }
+
+    /** Places a goal pole item on top of {@code below}, as a player would. */
+    private static void placePole(TestContext context, PlayerEntity player, ItemStack stack, BlockPos below) {
+        BlockPos abs = context.getAbsolutePos(below);
+        player.setStackInHand(Hand.MAIN_HAND, stack);
+        ActionResult result = stack.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND,
+                new BlockHitResult(Vec3d.ofCenter(abs).add(0, 0.5, 0), Direction.UP, abs, false)));
+        context.assertTrue(result.isAccepted(), "pole placed on " + below);
+    }
+
+    private static List<ItemEntity> droppedFlags(TestContext context) {
+        return context.getWorld().getEntitiesByClass(ItemEntity.class, new Box(context.getAbsolutePos(BASE)).expand(6),
+                e -> e.getStack().isOf(ModItems.FLAG));
+    }
+
+    /** A mock player standing three blocks south of the base, looking north. */
+    private static PlayerEntity builder(TestContext context) {
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        Vec3d standing = context.getAbsolute(Vec3d.ofBottomCenter(BASE.south(3)));
+        player.refreshPositionAndAngles(standing.x, standing.y, standing.z, 180f, 0f);
+        return player;
+    }
+
+    /**
+     * A crafted pole comes with its flag: the first segment shows the classic red flag at the top, facing the player;
+     * segments stacked on it take the flag up (still one flag, none dropped); a dye colours it and an empty hand on a
+     * side turns it, and both are kept with the pole.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aCraftedPoleComesWithItsFlagAtTheTop(TestContext context) {
+        context.setBlockState(BASE, base());
+        ServerWorld world = context.getWorld();
+        PlayerEntity player = builder(context);
+        placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE);
+        BlockState first = context.getBlockState(BASE.up());
+        context.assertTrue(first.get(GoalPoleBlock.FLAG) && first.get(GoalPoleBlock.TOP), "a new pole has its flag at the top");
+        context.assertTrue(first.get(GoalPoleBlock.FACING) == Direction.SOUTH, "facing the player, got " + first.get(GoalPoleBlock.FACING));
+        context.assertTrue(poleEntity(context, BASE.up()).getFlagColor() == FlagItem.NO_COLOR, "the classic red flag");
+        context.assertTrue(GoalPoleBlock.showsGoal(first), "the goal shows above it");
+
+        placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE.up());
+        placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE.up(2));
+        context.assertTrue(context.getBlockState(BASE.up(3)).get(GoalPoleBlock.FLAG), "the flag went up to the new top");
+        context.assertTrue(!context.getBlockState(BASE.up()).get(GoalPoleBlock.FLAG) && !context.getBlockState(BASE.up(2)).get(GoalPoleBlock.FLAG),
+                "one flag per pole");
+
+        // Colour and side
+        BlockPos low = context.getAbsolutePos(BASE.up());
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LIME_DYE));
+        context.assertTrue(world.getBlockState(low).onUse(world, player,
+                new BlockHitResult(Vec3d.ofCenter(low).add(0, 0, 0.1), Direction.SOUTH, low, false)).isAccepted(), "dyed");
+        player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+        BlockHitResult east = new BlockHitResult(Vec3d.ofCenter(low).add(0.1, 0, 0), Direction.EAST, low, false);
+        context.assertTrue(world.getBlockState(low).onUse(world, player, east).isAccepted(), "turned");
+        Direction turned = context.getBlockState(BASE.up(3)).get(GoalPoleBlock.FACING);
+        context.assertTrue(turned == GoalPoleBlock.flagFacing(east, player) && turned != Direction.SOUTH, "turned towards the east, got " + turned);
+        GoalPoleBlockEntity top = poleEntity(context, BASE.up(3));
+        context.assertTrue(top.getFlagColor() == FlagItem.dyeColor(DyeColor.LIME), "lime");
+
+        // Saved and sent to clients
+        var registries = world.getRegistryManager();
+        GoalPoleBlockEntity copy = new GoalPoleBlockEntity(top.getPos(), top.getCachedState());
+        copy.read(top.createNbt(registries), registries);
+        context.assertTrue(copy.getFlagColor() == FlagItem.dyeColor(DyeColor.LIME) && copy.getCachedState().get(GoalPoleBlock.FACING) == turned,
+                "colour and side read back");
+        context.assertTrue(top.toInitialChunkDataNbt(registries).getInt("FlagColor") == FlagItem.dyeColor(DyeColor.LIME), "colour sent to clients");
+        context.waitAndRun(1, () -> {
+            context.assertTrue(droppedFlags(context).isEmpty(), "no flag dropped while building");
+            removeBase(context);
+            context.complete();
+        });
+    }
+
+    /**
+     * A broken segment drops without its flag (the flag drops beside it, with its colour): placed again, it brings
+     * none, so breaking and placing never makes flags. A crafted one put on a pole whose flag was taken off brings one.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aBrokenPoleComesBackWithoutItsFlag(TestContext context) {
+        ServerWorld world = context.getWorld();
+        PlayerEntity player = builder(context);
+        context.setBlockState(BASE, Blocks.STONE);
+        placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE);
+        poleEntity(context, BASE.up()).setFlagColor(FlagItem.dyeColor(DyeColor.BLUE));
+        world.breakBlock(context.getAbsolutePos(BASE.up()), true);
+        context.waitAndRun(2, () -> {
+            List<ItemEntity> items = world.getEntitiesByClass(ItemEntity.class, new Box(context.getAbsolutePos(BASE)).expand(6), e -> true);
+            ItemStack pole = items.stream().map(ItemEntity::getStack).filter(stack -> stack.isOf(ModBlocks.GOAL_POLE.asItem()))
+                    .findFirst().orElse(ItemStack.EMPTY).copy();
+            List<ItemEntity> flags = droppedFlags(context);
+            context.assertTrue(flags.size() == 1 && FlagItem.getColor(flags.getFirst().getStack()) == FlagItem.dyeColor(DyeColor.BLUE),
+                    "the blue flag dropped");
+            context.assertTrue(GoalPoleBlock.isFlagless(pole), "the pole dropped without its flag");
+            context.assertTrue(!GoalPoleBlock.isFlagless(new ItemStack(ModBlocks.GOAL_POLE)), "a crafted pole has its flag");
+            items.forEach(ItemEntity::discard);
+
+            placePole(context, player, pole, BASE);
+            context.assertTrue(!context.getBlockState(BASE.up()).get(GoalPoleBlock.FLAG), "placed again: no flag");
+            placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE.up());
+            context.assertTrue(context.getBlockState(BASE.up(2)).get(GoalPoleBlock.FLAG) && !context.getBlockState(BASE.up()).get(GoalPoleBlock.FLAG),
+                    "a crafted one on a pole without a flag brings its flag to the top");
+            context.complete();
+        });
     }
 
     /** No flag, no goal: nothing shows above the top of a pole without a flag; with it, the goal shows there only. */

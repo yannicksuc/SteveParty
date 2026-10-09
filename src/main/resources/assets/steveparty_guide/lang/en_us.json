@@ -302,7 +302,7 @@
   "book.steveparty.guide.party.flow.page1.title": "Hiccups & HUD",
   "book.steveparty.guide.party.goal_pole.description": "Jump to the top and score",
   "book.steveparty.guide.party.goal_pole.name": "Goal Pole",
-  "book.steveparty.guide.party.goal_pole.page0.text": "Place a **Goal Pole Base**, stack **Goal Pole** segments on it and hang one **Flag**: it goes to the top. Land on top of the pole: **+1 ♥**, an extra life: a golden heart, no fall damage, and a point for the base.\n\nThe base counts landings (or any scoreboard criterion) for the party players, everyone, nearby players or a selector. Set it up with the Wrench.",
+  "book.steveparty.guide.party.goal_pole.page0.text": "Place a **Goal Pole Base**, stack **Goal Pole** segments on it: the pole comes with its red **Flag**, at the top. Land on top of the pole: **+1 ♥**, an extra life: a golden heart, no fall damage, and a point for the base.\n\nThe base counts landings (or any scoreboard criterion) for the party players, everyone, nearby players or a selector. Set it up with the Wrench.",
   "book.steveparty.guide.party.goal_pole.page0.title": "Goal Pole",
   "book.steveparty.guide.party.goal_pole.page1.text": "Right-click the pole: its goal (at least 1 by default). The flag stays up until it is reached, then comes down, or a notch per point. No flag: no goal shown.\n\nEmpty hand on a side: the flag turns that way. A dye colours it, shears take it off, a flag hangs it back.",
   "book.steveparty.guide.party.goal_pole.page1.title": "The Flag",

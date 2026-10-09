@@ -9,6 +9,10 @@ import net.minecraft.loot.LootPool;
 import net.minecraft.loot.LootTable;
 import net.minecraft.loot.entry.ItemEntry;
 import net.minecraft.loot.function.CopyStateLootFunction;
+import net.minecraft.loot.function.SetComponentsLootFunction;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.BlockStateComponent;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
 import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
 import net.minecraft.registry.RegistryWrapper;
 
@@ -37,7 +41,11 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
             addDrop(ModBlocks.PLASTIC_WALLS[i]);
         }
         addDrop(ModBlocks.GOAL_POLE_BASE);
-        addDrop(ModBlocks.GOAL_POLE);
+        // A broken segment comes back without its flag (the flag drops beside it): see GoalPoleBlock#isFlagless
+        addDrop(ModBlocks.GOAL_POLE, LootTable.builder().pool(addSurvivesExplosionCondition(ModBlocks.GOAL_POLE,
+                LootPool.builder().rolls(ConstantLootNumberProvider.create(1)).with(ItemEntry.builder(ModBlocks.GOAL_POLE)
+                        .apply(SetComponentsLootFunction.builder(DataComponentTypes.BLOCK_STATE,
+                                BlockStateComponent.DEFAULT.with(GoalPoleBlock.FLAG, false)))))));
         addDrop(ModBlocks.LOOTING_BOX);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BLOCKS)
             addDrop(block);
