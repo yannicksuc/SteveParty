@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.utils.DynamicTextureCache;
 import fr.lordfinn.steveparty.client.utils.TileColors;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
@@ -11,8 +12,6 @@ import net.minecraft.util.Identifier;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -20,26 +19,40 @@ import java.util.Optional;
  * dull chevrons; instead, each value level of the sprite is mapped onto a hand-style ramp of the colour
  * ({@link TileColors#shade}, like the tiles): its lightest pixels a highlight, the darker ones more saturated and
  * hue-shifted (yellow toward orange, blue toward deep indigo, green toward teal, red toward crimson). One small texture
- * per colour, made on first use and kept.
+ * per colour, made on first use and kept while used (the least recently used freed past {@link #MAX_CACHED}), all
+ * remade after a resource reload, from the sprite read again.
  */
-final class ChevronSprites {
+public final class ChevronSprites {
     /** How dark the darkest level of the sprite gets (TileColors darkness), and how light the lightest. */
     private static final float DARKEST = 0.9f, LIGHTEST = -0.45f;
 
-    private static final Map<Integer, Identifier> TEXTURES = new HashMap<>();
+    private static final int MAX_CACHED = 64;
+
+    private static final DynamicTextureCache<Integer> TEXTURES = new DynamicTextureCache<>(MAX_CACHED);
     private static NativeImage source;
     private static boolean failed;
 
     private ChevronSprites() {
     }
 
+    /** Frees the chevrons and the sprite read on each resource reload: a resource pack may change the sprite. */
+    public static void registerReloadListener() {
+        DynamicTextureCache.onResourceReload("chevron_textures", () -> {
+            TEXTURES.clear();
+            if (source != null) source.close();
+            source = null;
+            failed = false;
+        });
+    }
+
     /** The chevron texture in {@code rgb} (alpha ignored), or the plain sprite if it could not be read. */
     static Identifier of(int rgb) {
-        int key = rgb & 0xFFFFFF;
-        Identifier cached = TEXTURES.get(key);
-        if (cached != null) return cached;
         NativeImage sprite = source();
         if (sprite == null) return WorldDraw.CHEVRON;
+        return TEXTURES.get(rgb & 0xFFFFFF, key -> make(sprite, key));
+    }
+
+    private static Identifier make(NativeImage sprite, int key) {
         NativeImage image = new NativeImage(sprite.getWidth(), sprite.getHeight(), true);
         float min = 1, max = 0;
         for (int x = 0; x < sprite.getWidth(); x++) {
@@ -65,10 +78,8 @@ final class ChevronSprites {
                 image.setColor(x, y, ColorHelper.Abgr.toAbgr((alpha << 24) | TileColors.shade(key, darkness)));
             }
         }
-        Identifier id = MinecraftClient.getInstance().getTextureManager()
+        return MinecraftClient.getInstance().getTextureManager()
                 .registerDynamicTexture(Steveparty.MOD_ID + "_chevron_" + Integer.toHexString(key), new NativeImageBackedTexture(image));
-        TEXTURES.put(key, id);
-        return id;
     }
 
     private static float value(int argb) {
