@@ -576,4 +576,73 @@ public class FumaroleGameTests implements FabricGameTest {
         fumarole.discard();
         context.complete();
     }
+
+    // ---------------------------------------------------------------- territory
+
+    /**
+     * A wild one, its AI on, facing east, its tank part full, and a survival player standing {@code fromShell} blocks
+     * east of its shell (its hitbox's edge).
+     */
+    private static ServerPlayerEntity standOff(TestContext context, FumaroleEntity fumarole, double fromShell) {
+        fumarole.setAiDisabled(false);
+        fumarole.setTank(10);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
+        double edge = fumarole.getBoundingBox().maxX;
+        Vec3d at = new Vec3d(edge + fromShell + player.getWidth() / 2, fumarole.getY(), fumarole.getZ());
+        player.refreshPositionAndAngles(at.x, at.y, at.z, 90, 0);
+        return player;
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_territory_in", tickLimit = 240)
+    public void aPlayerTenBlocksFromItsShellGetsBlasted(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        ServerPlayerEntity player = standOff(context, fumarole, 10);
+        context.assertTrue(fumarole.inTerritory(player), "10 blocks from its shell: in its territory");
+        context.assertFalse(fumarole.squaredDistanceTo(player) <= 8 * 8, "and well beyond 8 blocks of its centre");
+        float health = player.getHealth();
+        boolean[] done = {false};
+        context.runAtEveryTick(() -> {
+            // the steam sets him on fire (a mock player is never ticked: still join-invulnerable, no damage to count on)
+            if (done[0] || fumarole.getTarget() != player || !(player.isOnFire() || player.getHealth() < health)) return;
+            done[0] = true;
+            TestPlayers.remove(context, player);
+            fumarole.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_territory_out", tickLimit = 140)
+    public void aPlayerBeyondItsTerritoryIsLeftAlone(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        ServerPlayerEntity player = standOff(context, fumarole, FumaroleEntity.TERRITORY + 3);
+        context.assertFalse(fumarole.inTerritory(player), "beyond its territory");
+        float health = player.getHealth();
+        context.runAtTick(120, () -> {
+            context.assertFalse(fumarole.getTarget() == player, "never targeted");
+            context.assertTrue(player.getHealth() >= health && !player.isOnFire(), "never blasted");
+            TestPlayers.remove(context, player);
+            fumarole.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_territory_trusted", tickLimit = 140)
+    public void aPlayerAllItsHeadsTrustIsNeverBlasted(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        ServerPlayerEntity player = standOff(context, fumarole, 10);
+        ItemStack cream = new ItemStack(Items.MAGMA_CREAM, 8);
+        for (int head = 0; head < FumaroleEntity.HEADS.length; head++) fumarole.feedHead(player, head, cream);
+        context.assertTrue(fumarole.trustedByAll(player), "all its heads trust him");
+        float health = player.getHealth();
+        context.runAtTick(120, () -> {
+            context.assertFalse(fumarole.getTarget() == player, "never targeted");
+            context.assertTrue(player.getHealth() >= health && !player.isOnFire(), "never blasted");
+            TestPlayers.remove(context, player);
+            fumarole.discard();
+            context.complete();
+        });
+    }
 }

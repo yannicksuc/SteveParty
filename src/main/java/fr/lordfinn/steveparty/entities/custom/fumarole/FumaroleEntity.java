@@ -101,7 +101,7 @@ import java.util.UUID;
  *     ({@link FumaroleGoals.Blast}); ridden, each rider fires his own head.</li>
  *     <li><b>The thermal blast</b>: see {@link FumaroleBlast}.</li>
  *     <li><b>Neutral, territorial</b>: it fights back whoever hurts it, and a player coming within {@link #TERRITORY}
- *     blocks makes it angry for {@link #ANGER_TICKS} ticks (unless all its heads trust him). Tamed, it only fights
+ *     blocks of its shell ({@link #inTerritory}) makes it angry for {@link #ANGER_TICKS} ticks (unless all its heads trust him). Tamed, it only fights
  *     back.</li>
  *     <li><b>In lava</b> it swims, floating with its tank out ({@link FumaroleRiding#SWIM_DEPTH}); it is born on the
  *     shores of the Nether's lava lakes or in them.</li>
@@ -137,7 +137,8 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     public static final float BODY_TURN = 3, LOOK_TURN = 4;
 
     public static final double PUMP_MIN = 2.0, PUMP_MAX = 9.0, PUMP_DOWN = 6.0, PUMP_UP = 1.0;
-    public static final double TERRITORY = 8.0;
+    /** Its territory: this many blocks out from its shell (its hitbox's edge, not its centre: it is huge). */
+    public static final double TERRITORY = 12.0;
     public static final int ANGER_TICKS = 600;
     /** Lava sources spilt on death: one per this many buckets, at most {@link #SPILL_MAX}. */
     public static final int SPILL_PER = 9, SPILL_MAX = 3;
@@ -669,6 +670,20 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         aimYaw[head] = bodyYaw + HEADS[head].restYaw();
     }
 
+    /** How far {@code entity} stands from its shell: hitbox to hitbox (0: touching it). */
+    public double distanceFromShell(Entity entity) {
+        Box shell = getBoundingBox(), other = entity.getBoundingBox();
+        double dx = Math.max(0, Math.max(shell.minX - other.maxX, other.minX - shell.maxX));
+        double dy = Math.max(0, Math.max(shell.minY - other.maxY, other.minY - shell.maxY));
+        double dz = Math.max(0, Math.max(shell.minZ - other.maxZ, other.minZ - shell.maxZ));
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    /** Whether {@code entity} is within its territory: {@link #TERRITORY} blocks of its shell. */
+    public boolean inTerritory(Entity entity) {
+        return distanceFromShell(entity) <= TERRITORY;
+    }
+
     public boolean inRange(int head, Entity target) {
         double range = getTank() > 0 ? FumaroleBlast.RANGE : FumaroleBlast.PUFF_RANGE;
         return blastOrigin(head).squaredDistanceTo(aimPoint(target)) <= range * range;
@@ -854,7 +869,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     protected void mobTick() {
         super.mobTick();
         LivingEntity target = getTarget();
-        if (target != null && squaredDistanceTo(target) <= TERRITORY * TERRITORY && !isTamed()) provoke();
+        if (target != null && inTerritory(target) && !isTamed()) provoke();
         if (target instanceof PlayerEntity player && trustedByAll(player)) setTarget(null);
     }
 

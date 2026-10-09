@@ -26,10 +26,10 @@ public final class FumaroleGoals {
     /** Whether it has calmed down about {@code target}: no longer angry, they keep out of its territory. */
     static boolean calm(FumaroleEntity fumarole, @Nullable LivingEntity target) {
         return target != null && !fumarole.isAngry()
-                && fumarole.squaredDistanceTo(target) > FumaroleEntity.TERRITORY * FumaroleEntity.TERRITORY;
+                && !fumarole.inTerritory(target);
     }
 
-    /** A player coming within {@link FumaroleEntity#TERRITORY} blocks becomes its target, until it calms down. */
+    /** A player coming within {@link FumaroleEntity#TERRITORY} blocks of its shell becomes its target, until it calms down. */
     static final class Territory extends ActiveTargetGoal<PlayerEntity> {
         private final FumaroleEntity fumarole;
 
@@ -37,7 +37,7 @@ public final class FumaroleGoals {
             super(fumarole, PlayerEntity.class, 10, true, false,
                     player -> !fumarole.isTamed() && !fumarole.hasPassenger(player)
                             && !(player instanceof PlayerEntity p && fumarole.trustedByAll(p))
-                            && player.squaredDistanceTo(fumarole) <= FumaroleEntity.TERRITORY * FumaroleEntity.TERRITORY);
+                            && fumarole.inTerritory(player));
             this.fumarole = fumarole;
         }
 
@@ -110,7 +110,7 @@ public final class FumaroleGoals {
             for (PlayerEntity player : fumarole.getWorld().getPlayers()) {
                 if (enemies.size() >= FumaroleEntity.HEADS.length) break;
                 if (!fumarole.isTamed() && !enemies.contains(player) && player.isAlive() && !player.isSpectator() && !player.isCreative()
-                        && player.squaredDistanceTo(fumarole) <= FumaroleEntity.TERRITORY * FumaroleEntity.TERRITORY) {
+                        && fumarole.inTerritory(player)) {
                     enemies.add(player);
                 }
             }
