@@ -24,6 +24,7 @@ public class ModPayloads {
         s2c(TrapSetupPayloads.Open.ID, TrapSetupPayloads.Open.CODEC);
         c2s(TrapSetupPayloads.Sign.ID, TrapSetupPayloads.Sign.CODEC);
         s2c(DicePromptPayload.ID, DicePromptPayload.CODEC);
+        s2c(DiceRevealPayload.ID, DiceRevealPayload.CODEC);
 
         // Client → server
         c2s(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
