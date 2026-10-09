@@ -84,9 +84,12 @@ public class TrichaudronModel extends DefaultedEntityGeoModel<TrichaudronEntity>
         }
         if (trichaudron.deathTime > 0) return;
         GeoBone body = getAnimationProcessor().getBone("body");
-        if (body != null) body.setRotZ(body.getRotZ() + trichaudron.moods.bodyRoll);
+        // Its rolls are set from the bones' rest, never added to their current rotation: GeckoLib leaves a bone no
+        // animation rotates as it was (our own setRot marks it as changed, so it is never reset), and an added roll
+        // piled up frame after frame into a lasting lean of its shell and tank.
+        if (body != null) body.setRotZ(body.getInitialSnapshot().getRotZ() + trichaudron.moods.bodyRoll);
         GeoBone shell = getAnimationProcessor().getBone("shell");
-        if (shell != null) shell.setRotZ(shell.getRotZ() + trichaudron.moods.shellRoll);
+        if (shell != null) shell.setRotZ(shell.getInitialSnapshot().getRotZ() + trichaudron.moods.shellRoll);
         GeoBone[][] bones = aimBones();
         for (TrichaudronHead head : TrichaudronEntity.HEADS) {
             int i = head.index();
@@ -99,11 +102,11 @@ public class TrichaudronModel extends DefaultedEntityGeoModel<TrichaudronEntity>
             float yawShare = -yaw * MathHelper.RADIANS_PER_DEGREE / turning.length;
             float pitchShare = -pitch * MathHelper.RADIANS_PER_DEGREE / turning.length;
             for (GeoBone bone : turning) {
-                bone.setRotY(bone.getRotY() + yawShare);
-                bone.setRotX(bone.getRotX() + pitchShare);
+                GeoBones.addRotY(bone, yawShare);
+                GeoBones.addRotX(bone, pitchShare);
             }
             GeoBone skull = turning[turning.length - 1];
-            skull.setRotZ(skull.getRotZ() + trichaudron.moods.roll[i]);
+            GeoBones.addRotZ(skull, trichaudron.moods.roll[i]);
         }
     }
 }
