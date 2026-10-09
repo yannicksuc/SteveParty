@@ -5,6 +5,8 @@ import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
+import fr.lordfinn.steveparty.utils.Argb;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -80,8 +82,8 @@ public final class MiniGameCardHud {
         if (data == null) return;
         double now = PartyHud.now();
         if (hidingAt < 0 && now > leaveAt) hidingAt = now;
-        float in = HudDraw.easeOutCubic((float) ((now - shownAt) / IN_TICKS));
-        float out = hidingAt < 0 ? 1 : 1 - HudDraw.clamp01((float) ((now - hidingAt) / OUT_TICKS));
+        float in = Easing.easeOutCubic((float) ((now - shownAt) / IN_TICKS));
+        float out = hidingAt < 0 ? 1 : 1 - Easing.clamp01((float) ((now - hidingAt) / OUT_TICKS));
         if (out <= 0) {
             clear();
             return;
@@ -133,7 +135,7 @@ public final class MiniGameCardHud {
 
         // Picture, in a dark frame
         if (hasPicture) {
-            context.fill(x + PAD - 1, top, x + PAD + pictureWidth + 1, top + pictureHeight + 2, HudDraw.fade(HudDraw.OUTLINE, alpha));
+            context.fill(x + PAD - 1, top, x + PAD + pictureWidth + 1, top + pictureHeight + 2, Argb.fade(HudDraw.OUTLINE, alpha));
             MiniGamePageClient.Picture picture = MiniGamePageClient.picture(page.image(), pictureWidth, pictureHeight);
             if (picture != null) picture.draw(context, x + PAD, top + 1, pictureWidth, pictureHeight, HudDraw.white(alpha));
             top += pictureHeight + 2 + 4;
@@ -161,7 +163,7 @@ public final class MiniGameCardHud {
 
         // Countdown: a gold badge on the corner of the card, popping at each second
         if (countdown > 0) {
-            float pop = HudDraw.easeOutBack((float) ((now - countdownAt) / COUNT_POP_TICKS));
+            float pop = Easing.easeOutBack((float) ((now - countdownAt) / COUNT_POP_TICKS));
             float scale = 0.6f + 0.4f * pop;
             matrices.push();
             matrices.translate(x + width - 3, y + 3, 0);

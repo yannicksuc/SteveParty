@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.gui;
 import fr.lordfinn.steveparty.client.utils.ClientTextures;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
@@ -145,7 +146,7 @@ public final class TitleScreenBackground {
         double targetY = mouseY / Math.max(1, window.getHeight()) * 2 - 1;
         // Idle drift: a slow figure of two incommensurate sines, faded in once the mouse rests.
         double idle = MathHelper.clamp(((now - lastMoveNanos) / 1e9 - IDLE_DELAY) / IDLE_FADE, 0, 1);
-        idle = idle * idle * (3 - 2 * idle);
+        idle = Easing.smoothstep(idle);
         targetX = MathHelper.clamp(targetX + idle * 0.45 * Math.sin(t * Math.PI * 2 / 23), -1, 1);
         targetY = MathHelper.clamp(targetY + idle * 0.3 * Math.sin(t * Math.PI * 2 / 17 + 1.3), -1, 1);
         double k = 1 - Math.exp(-EASE_RATE * dt);
@@ -184,7 +185,7 @@ public final class TitleScreenBackground {
                     introFrame = -1;
                 } else if (over >= 0) {
                     loopAlpha = (float) (over / INTRO_CROSSFADE);
-                    loopAlpha = loopAlpha * loopAlpha * (3 - 2 * loopAlpha);
+                    loopAlpha = Easing.smoothstep(loopAlpha);
                 } else {
                     loopAlpha = 0;
                 }
@@ -192,7 +193,7 @@ public final class TitleScreenBackground {
         }
         // Gentle bob and breath, out of phase so it floats rather than pulses, faded in once the loop starts.
         double settle = introFrame >= 0 && loopAlpha == 0 ? 0 : MathHelper.clamp((now - loopStartNanos) / 1e9 / SETTLE, 0, 1);
-        settle = settle * settle * (3 - 2 * settle);
+        settle = Easing.smoothstep(settle);
         float bob = (float) (Math.sin(t * Math.PI * 2 / 4.2) * settle) * height * 0.005f;
         float breath = 1 + (float) (Math.sin(t * Math.PI * 2 / 5.6 + 0.8) * settle) * 0.008f;
         float centerX = width / 2f - (float) posX * LOGO_DEPTH * travel;

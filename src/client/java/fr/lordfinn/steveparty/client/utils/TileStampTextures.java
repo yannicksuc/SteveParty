@@ -3,15 +3,11 @@ package fr.lordfinn.steveparty.client.utils;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.stencil.StencilShape;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
@@ -21,7 +17,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,14 +55,7 @@ public final class TileStampTextures {
     private record Key(Object source, int rgb, boolean small) {
     }
 
-    private static final Map<Key, Identifier> TEXTURES = new LinkedHashMap<>(32, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<Key, Identifier> eldest) {
-            if (size() <= MAX_CACHED) return false;
-            ClientTextures.destroy(eldest.getValue());
-            return true;
-        }
-    };
+    private static final DynamicTextureCache<Key> TEXTURES = new DynamicTextureCache<>(MAX_CACHED);
     /** Value maps (darkness per pixel, NaN transparent) of the face textures, and their own base colour. */
     private static final Map<Identifier, Template> TEMPLATES = new HashMap<>();
 
@@ -80,18 +68,9 @@ public final class TileStampTextures {
     }
 
     public static void registerReloadListener() {
-        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
-            @Override
-            public Identifier getFabricId() {
-                return Steveparty.id("tile_face_textures");
-            }
-
-            @Override
-            public void reload(ResourceManager manager) {
-                TEXTURES.values().forEach(id -> ClientTextures.destroy(id));
-                TEXTURES.clear();
-                TEMPLATES.clear();
-            }
+        DynamicTextureCache.onResourceReload("tile_face_textures", () -> {
+            TEXTURES.clear();
+            TEMPLATES.clear();
         });
     }
 
@@ -104,7 +83,7 @@ public final class TileStampTextures {
     public static Identifier get(TileStampComponent stamp, boolean small) {
         byte[] shape = stamp.shapeArray();
         int rgb = stamp.color().getEntityColor();
-        return TEXTURES.computeIfAbsent(new Key(ByteBuffer.wrap(shape), rgb, small), key -> register(stampValues(shape, small), rgb, small));
+        return TEXTURES.get(new Key(ByteBuffer.wrap(shape), rgb, small), key -> register(stampValues(shape, small), rgb, small));
     }
 
     private static float[] stampValues(byte[] shape, boolean small) {
@@ -187,7 +166,7 @@ public final class TileStampTextures {
      */
     public static Identifier advanceBack(int steps, boolean small) {
         int rgb = fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.color(steps);
-        return TEXTURES.computeIfAbsent(new Key("advance_back:" + steps, rgb, small), key -> register(advanceBackValues(steps, small), rgb, small));
+        return TEXTURES.get(new Key("advance_back:" + steps, rgb, small), key -> register(advanceBackValues(steps, small), rgb, small));
     }
 
     private static float[] advanceBackValues(int steps, boolean small) {
@@ -241,7 +220,7 @@ public final class TileStampTextures {
     public static @Nullable Identifier face(Identifier texture, int rgb, boolean small) {
         Template template = template(texture);
         if (template == null) return null;
-        return TEXTURES.computeIfAbsent(new Key(texture, rgb, small), key -> register(small ? template.small : template.big, rgb, small));
+        return TEXTURES.get(new Key(texture, rgb, small), key -> register(small ? template.small : template.big, rgb, small));
     }
 
     /** The face {@code texture} in its own colours (the angry, excited... faces). */
@@ -261,7 +240,7 @@ public final class TileStampTextures {
      * (its rounded bevel) of a standard tile, 10 px on a small one, all in the ramp of {@code rgb}.
      */
     public static Identifier stopFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("stop", rgb, small), key -> register(stopValues(rgb, small), rgb, small));
+        return TEXTURES.get(new Key("stop", rgb, small), key -> register(stopValues(rgb, small), rgb, small));
     }
 
     /** The barred disc, drawn by hand for each size (smooth 4-2-1-2-4 and 4-2-2-4 stair steps): '#' disc, 'o' bar. */
@@ -356,7 +335,7 @@ public final class TileStampTextures {
      * on the blank tile face (its rounded bevel), in the ramp of {@code rgb} (cyan by default).
      */
     public static Identifier replayFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("replay", rgb, small), key -> {
+        return TEXTURES.get(new Key("replay", rgb, small), key -> {
             boolean dark = TileColors.isDark(rgb);
             return register(glyphValues(small ? SMALL_REPLAY_ARROW : REPLAY_ARROW, small, dark ? LIGHT_INK : FEATURE, FEATURE), rgb, small);
         });
@@ -407,7 +386,7 @@ public final class TileStampTextures {
 
     /** The shop tile's face, in the ramp of {@code rgb} (the Shop Cartridge's lime green). */
     public static Identifier shopFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("shop", rgb, small),
+        return TEXTURES.get(new Key("shop", rgb, small),
                 key -> register(glyphValues(small ? SMALL_SHOP_BOX : SHOP_BOX, small, SHOP_SHADES), rgb, small));
     }
 
@@ -441,7 +420,7 @@ public final class TileStampTextures {
 
     /** The star space's face: a star in the ramp's darkest shade on the blank tile face, in the ramp of {@code rgb} (yellow). */
     public static Identifier starFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("star", rgb, small),
+        return TEXTURES.get(new Key("star", rgb, small),
                 key -> register(glyphValues(small ? SMALL_STAR : STAR, small, FEATURE, -0.6f), rgb, small));
     }
 
@@ -482,7 +461,7 @@ public final class TileStampTextures {
 
     /** The Glandouille space's face: an acorn on the blank tile face, in the ramp of {@code rgb} (brown). */
     public static Identifier glandouilleFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("glandouille", rgb, small),
+        return TEXTURES.get(new Key("glandouille", rgb, small),
                 key -> register(glyphValues(small ? SMALL_ACORN : ACORN, small, ACORN_SHADES), rgb, small));
     }
 
@@ -518,7 +497,7 @@ public final class TileStampTextures {
 
     /** The Frousseux space's face: the little candle ghost on the blank tile face, in the ramp of {@code rgb} (night indigo). */
     public static Identifier frousseuxFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("frousseux", rgb, small),
+        return TEXTURES.get(new Key("frousseux", rgb, small),
                 key -> register(glyphValues(small ? SMALL_FROUSSEUX : FROUSSEUX, small, FROUSSEUX_SHADES), rgb, small));
     }
 
@@ -554,7 +533,7 @@ public final class TileStampTextures {
 
     /** The Mistigri space's face: the black cat's head on the blank tile face, in the ramp of {@code rgb} (witch plum). */
     public static Identifier mistigriFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("mistigri", rgb, small),
+        return TEXTURES.get(new Key("mistigri", rgb, small),
                 key -> register(glyphValues(small ? SMALL_MISTIGRI : MISTIGRI, small, MISTIGRI_SHADES), rgb, small));
     }
 
@@ -584,7 +563,7 @@ public final class TileStampTextures {
     /** The image {@code frame} (0 to {@link #PORTAL_FRAMES} - 1) of the Teleport tile's face. */
     public static Identifier teleportFace(int rgb, boolean small, int frame) {
         int image = Math.floorMod(frame, PORTAL_FRAMES);
-        return TEXTURES.computeIfAbsent(new Key("teleport:" + image, rgb, small), key -> register(portalValues(frame(small), small, image), rgb, small));
+        return TEXTURES.get(new Key("teleport:" + image, rgb, small), key -> register(portalValues(frame(small), small, image), rgb, small));
     }
 
     /**
@@ -651,7 +630,7 @@ public final class TileStampTextures {
      * shade with a light highlight down its rim and body. No tile shows it yet: the face of a pipe cartridge to come.
      */
     public static Identifier pipeFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("pipe", rgb, small), key -> {
+        return TEXTURES.get(new Key("pipe", rgb, small), key -> {
             boolean dark = TileColors.isDark(rgb);
             float[] values = glyphValues(small ? SMALL_PIPE : PIPE, small, dark ? LIGHT_INK : FEATURE, dark ? FEATURE : PIPE_HIGHLIGHT);
             return register(values, rgb, small);

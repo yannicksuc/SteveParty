@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.client.blockentity.PodiumRenderer;
 import fr.lordfinn.steveparty.client.blockentity.StencilCanvasBlockEntityRenderer;
 import fr.lordfinn.steveparty.client.blockentity.VillagerBlockEntityRenderer;
 import fr.lordfinn.steveparty.client.board.BrushClient;
+import fr.lordfinn.steveparty.client.board.ChevronSprites;
 import fr.lordfinn.steveparty.client.board.TileOutline;
 import fr.lordfinn.steveparty.client.config.ClientOptions;
 import fr.lordfinn.steveparty.client.entity.BoomcartRenderer;
@@ -232,6 +233,7 @@ public class StevepartyClient implements ClientModInitializer {
         MaterialSprites.registerReloadListener();
         MobTextureColors.registerReloadListener();
         FlagPalettes.registerReloadListener();
+        ChevronSprites.registerReloadListener();
         StencilGunHud.initialize();
         ToolWheel.initialize();
         GlandouilleCarryClient.initialize();

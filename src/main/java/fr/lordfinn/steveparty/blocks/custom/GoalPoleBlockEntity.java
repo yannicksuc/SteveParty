@@ -25,6 +25,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -526,7 +527,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         legacyGoal = nbt.getInt("Version") < VERSION || nbt.getBoolean("LegacyGoal");
         if (nbt.contains("Comparator")) {
             int compId = nbt.getInt("Comparator");
-            comparator = Comparator.values()[Math.max(0, Math.min(compId, Comparator.values().length - 1))];
+            comparator = Comparator.values()[MathHelper.clamp(compId, 0, Comparator.values().length - 1)];
         }
         if (nbt.contains("Value")) {
             value = nbt.getInt("Value");

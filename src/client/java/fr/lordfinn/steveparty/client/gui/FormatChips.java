@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,7 @@ public final class FormatChips {
         List<MiniGameFormat.Side> sides = format.sides();
         for (int i = 0; i < sides.size(); i++) {
             MiniGameFormat.Side side = sides.get(i);
-            int n = Math.max(1, Math.min(side.min(), 3));
+            int n = MathHelper.clamp(side.min(), 1, 3);
             boolean more = side.infinite() || side.max() > side.min();
             int gw = n * 4 - 1 + (more ? 4 : 0);
             parts.add(new int[]{n, more ? 1 : 0, w});

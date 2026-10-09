@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.wheel;
 
+import fr.lordfinn.steveparty.utils.Argb;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -533,7 +534,7 @@ public final class ToolWheel {
                 double e = hub - d;
                 if (e < 1) return theme.outline();
                 if (e < 2) return x + y < 0 ? theme.light() : theme.rim();
-                return hubHovered ? mix(theme.body(), 0xFFFFFFFF, 0.2f) : theme.body();
+                return hubHovered ? Argb.opaque(Argb.lerp(theme.body(), 0xFFFFFFFF, 0.2f)) : theme.body();
             }
             double angle = Math.toDegrees(Math.atan2(x, -y));
             for (int r = 0; r < layout.rings().size(); r++) {
@@ -588,14 +589,14 @@ public final class ToolWheel {
         /** A pixel of a sector's plate, {@code edge} pixels in from its nearest edge. */
         private static int plate(Theme theme, Sector sector, boolean hovered, boolean featured, boolean dimmed, boolean blink, double edge, boolean lit) {
             int base = 0xFF000000 | sector.color();
-            if (!sector.enabled()) base = mix(base, theme.rim(), 0.7f);
-            else if (dimmed) base = mix(base, theme.rim(), 0.55f);
+            if (!sector.enabled()) base = Argb.opaque(Argb.lerp(base, theme.rim(), 0.7f));
+            else if (dimmed) base = Argb.opaque(Argb.lerp(base, theme.rim(), 0.55f));
             // A plate of the panel takes its outline, light bevel and dark rim; a coloured one its own colour's
             boolean panel = (base & 0xFFFFFF) == (theme.body() & 0xFFFFFF);
-            int outline = panel ? theme.outline() : shade(base, 0.4f);
-            int light = panel ? theme.light() : mix(base, 0xFFFFFFFF, 0.45f);
-            int shadow = panel ? theme.rim() : shade(base, 0.7f);
-            int fill = hovered ? mix(base, 0xFFFFFFFF, 0.2f) : base;
+            int outline = panel ? theme.outline() : Argb.opaque(Argb.scale(base, 0.4f));
+            int light = panel ? theme.light() : Argb.opaque(Argb.lerp(base, 0xFFFFFFFF, 0.45f));
+            int shadow = panel ? theme.rim() : Argb.opaque(Argb.scale(base, 0.7f));
+            int fill = hovered ? Argb.opaque(Argb.lerp(base, 0xFFFFFFFF, 0.2f)) : base;
             if (featured) {
                 if (edge < 2) return blink ? GOLD : GOLD_OUTLINE;
                 if (edge < 3) return lit ? light : shadow;
@@ -610,19 +611,6 @@ public final class ToolWheel {
             if (edge < 1) return outline;
             if (edge < 2) return lit ? light : shadow;
             return fill;
-        }
-
-
-        private static int shade(int argb, float factor) {
-            int r = (int) (((argb >> 16) & 0xFF) * factor), g = (int) (((argb >> 8) & 0xFF) * factor), b = (int) ((argb & 0xFF) * factor);
-            return 0xFF000000 | r << 16 | g << 8 | b;
-        }
-
-        private static int mix(int argb, int other, float t) {
-            int r = (int) MathHelper.lerp(t, (argb >> 16) & 0xFF, (other >> 16) & 0xFF);
-            int g = (int) MathHelper.lerp(t, (argb >> 8) & 0xFF, (other >> 8) & 0xFF);
-            int b = (int) MathHelper.lerp(t, argb & 0xFF, other & 0xFF);
-            return 0xFF000000 | r << 16 | g << 8 | b;
         }
 
     }
