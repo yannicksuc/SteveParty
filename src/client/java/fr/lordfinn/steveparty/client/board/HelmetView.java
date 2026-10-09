@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -222,8 +223,7 @@ public final class HelmetView {
 
     /** A colour readable on the light plates: a white cartridge's square is drawn light grey. */
     private static int visible(int rgb) {
-        int luminance = (((rgb >> 16) & 0xFF) * 299 + ((rgb >> 8) & 0xFF) * 587 + (rgb & 0xFF) * 114) / 1000;
-        return luminance > 215 ? 0xA8A8A8 : rgb & 0xFFFFFF;
+        return Argb.luminance(rgb) > 215 ? 0xA8A8A8 : rgb & 0xFFFFFF;
     }
 
     /** The aimed space's destinations, the spaces leading to it and its chests. */
