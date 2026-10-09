@@ -61,6 +61,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static fr.lordfinn.steveparty.Steveparty.LOGGER;
 import static fr.lordfinn.steveparty.utils.EntitiesUtils.getPlayerNameByUuid;
 import static net.minecraft.component.DataComponentTypes.FIREWORKS;
 
@@ -534,7 +535,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 } catch (IllegalArgumentException ex) {
                     // Log and clear on failure
                     this.setLinkedDice(Collections.emptyList());
-                    System.err.println("Failed to parse LinkedDice UUIDs from NBT: " + ex.getMessage());
+                    LOGGER.warn("Failed to parse LinkedDice UUIDs from NBT: {}", ex.getMessage());
                 }
             } else {
                 this.setLinkedDice(Collections.emptyList());
@@ -547,7 +548,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                     itemReference = ItemStack.fromNbt(
                             this.getRegistryManager(), itemReferenceNbt);
                 } catch (Exception ex) {
-                    System.err.println("Failed to parse ItemReference from NBT: " + ex.getMessage());
+                    LOGGER.warn("Failed to parse ItemReference from NBT: {}", ex.getMessage());
                 }
                 itemReference.ifPresentOrElse(
                         this::setItemReference,
@@ -579,13 +580,12 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                     if (targetEntity instanceof LivingEntity) {
                         simulation.setTarget((LivingEntity) targetEntity);
                     } else {
-                        System.err.println("Target entity UUID does not refer to a LivingEntity");
+                        LOGGER.warn("Target entity UUID does not refer to a LivingEntity");
                     }
                 });
             }
         } catch (Exception e) {
-            System.err.println("Error reading NBT in DiceEntity: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error reading NBT in DiceEntity", e);
         }
     }
 
@@ -612,20 +612,19 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                             this.getRegistryManager()
                     ));
                 } catch (Exception e) {
-                    System.err.println("Failed to write ItemReference to NBT: " + e.getMessage());
+                    LOGGER.warn("Failed to write ItemReference to NBT: {}", e.getMessage());
                 }
             } else if (dieStack != null && !dieStack.isEmpty()) {
                 try {
                     nbt.put("DieStack", dieStack.encode(this.getRegistryManager()));
                 } catch (Exception e) {
-                    System.err.println("Failed to write DieStack to NBT: " + e.getMessage());
+                    LOGGER.warn("Failed to write DieStack to NBT: {}", e.getMessage());
                 }
             }
 
             return super.writeNbt(nbt);
         } catch (Exception e) {
-            System.err.println("Error writing NBT in DiceEntity: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error writing NBT in DiceEntity", e);
             return nbt; // fallback to partial data
         }
     }
