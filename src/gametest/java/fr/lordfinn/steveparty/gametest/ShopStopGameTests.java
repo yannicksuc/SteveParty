@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler;
 import fr.lordfinn.steveparty.service.ShopStops;
 import fr.lordfinn.steveparty.service.TokenMovementService;
+import fr.lordfinn.steveparty.registry.ModGameRules;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -336,7 +337,7 @@ public class ShopStopGameTests implements FabricGameTest {
     /** Nobody chooses: the time runs out and the token goes on by itself. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "shop_stop_timeRunsOut")
     public void timeRunsOut(TestContext context) {
-        var rule = context.getWorld().getGameRules().get(ShopStops.SHOP_SECONDS);
+        var rule = context.getWorld().getGameRules().get(ModGameRules.SHOP_STOP_SECONDS);
         int before = rule.get();
         rule.set(5, context.getWorld().getServer());
         withPlayer(context, owner -> {
