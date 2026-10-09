@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.board.BoardRevision;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import net.minecraft.block.BlockState;
@@ -11,6 +12,9 @@ import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.text.Text;
@@ -20,6 +24,7 @@ import net.minecraft.util.math.BlockPos;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class CartridgeContainerBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory {
     private final int size;
@@ -162,14 +167,14 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     @Override
     public void markDirty() {
         super.markDirty();
-        fr.lordfinn.steveparty.board.BoardRevision.changed(world); // a cartridge shown in an open screen, client side
+        BoardRevision.changed(world); // a cartridge shown in an open screen, client side
     }
 
     /** The block state changed (role, support, size...): the client's board view reads it. */
     @Override
-    public void setCachedState(net.minecraft.block.BlockState state) {
+    public void setCachedState(BlockState state) {
         super.setCachedState(state);
-        fr.lordfinn.steveparty.board.BoardRevision.changed(world);
+        BoardRevision.changed(world);
     }
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
@@ -198,8 +203,8 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     }
 
     @Override
-    public @org.jetbrains.annotations.Nullable net.minecraft.network.packet.Packet<net.minecraft.network.listener.ClientPlayPacketListener> toUpdatePacket() {
-        return net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket.create(this);
+    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
+        return BlockEntityUpdateS2CPacket.create(this);
     }
 
     @Override
@@ -212,7 +217,7 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
         } catch (Exception e) {
             Steveparty.LOGGER.error("Failed to read NBT", e);
         }
-        fr.lordfinn.steveparty.board.BoardRevision.changed(world); // new data from the server (links, cartridges)
+        BoardRevision.changed(world); // new data from the server (links, cartridges)
     }
     public DefaultedList<ItemStack> getHeldStacks() {
         return this.heldStacks;

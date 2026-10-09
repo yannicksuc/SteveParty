@@ -29,7 +29,7 @@ public class AdvanceBackTileBehavior extends ABoardSpaceBehavior {
         if (!(world instanceof ServerWorld serverWorld) || boardSpaceEntity == null) return;
         // No chain: reached by an extra move, this tile is an ordinary space (see AdvanceBackMoves)
         if (AdvanceBackMoves.isExtraMove(token)) {
-            TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, Landing.DEFAULT, Landing.DEFAULT.noticeKey());
+            landPlain(serverWorld, boardSpaceEntity, token, partyController);
             return;
         }
         int steps = AdvanceBackCartridgeItem.steps(boardSpaceEntity.getActiveCartridgeItemStack());

@@ -2,8 +2,8 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior;
+import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TeleportNetwork;
 import fr.lordfinn.steveparty.components.TeleportSettingsComponent;
@@ -404,8 +404,8 @@ public class CartridgeMenuGameTests implements FabricGameTest {
             CartridgeMenus.apply(player, hand, "color", DyeColor.LIME.getId());
             context.assertEquals(stop.get(ModComponents.COLOR), DyeColor.LIME.getEntityColor(), "lime stop");
             CartridgeMenus.apply(player, hand, "color", ColorModule.DEFAULT);
-            context.assertEquals(stop.get(ModComponents.COLOR), StopBoardSpaceBehavior.COLOR & 0xFFFFFF, "its own colour back");
-            context.assertEquals(new ColorModule("c", "c", ReplayBoardSpaceBehavior.COLOR).get(new ItemStack(ModItems.REPLAY_CARTRIDGE)),
+            context.assertEquals(stop.get(ModComponents.COLOR), StopCartridgeItem.COLOR & 0xFFFFFF, "its own colour back");
+            context.assertEquals(new ColorModule("c", "c", ReplayCartridgeItem.COLOR).get(new ItemStack(ModItems.REPLAY_CARTRIDGE)),
                     ColorModule.DEFAULT, "a new Replay Cartridge: its own colour");
 
             // On a tile: the tile takes the changes (its colour follows the network)

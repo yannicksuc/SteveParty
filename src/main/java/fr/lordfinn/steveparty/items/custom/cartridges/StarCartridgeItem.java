@@ -37,13 +37,11 @@ public class StarCartridgeItem extends CartridgeItem {
             new NumberModule("price", K + "price", 0, StarSettingsComponent.MAX_PRICE, stack -> settings(stack).price(),
                     (edit, value) -> write(edit, settings(edit.stack()).withPrice(value)), stack -> COLOR),
             new ChoiceModule("buy", K + "buy",
-                    List.of(new ChoiceModule.Option(K + "on_pass", -1, K + "on_pass.tooltip"),
-                            new ChoiceModule.Option(K + "on_stop", -1, K + "on_stop.tooltip")),
+                    List.of(ChoiceModule.Option.tipped(K + "on_pass"), ChoiceModule.Option.tipped(K + "on_stop")),
                     stack -> settings(stack).onPass() ? 0 : 1,
                     (edit, value) -> write(edit, settings(edit.stack()).withOnPass(value == 0))),
             new ChoiceModule("relocate", K + "relocate",
-                    List.of(new ChoiceModule.Option(K + "relocate.leave", -1, K + "relocate.leave.tooltip"),
-                            new ChoiceModule.Option(K + "relocate.stay", -1, K + "relocate.stay.tooltip")),
+                    List.of(ChoiceModule.Option.tipped(K + "relocate.leave"), ChoiceModule.Option.tipped(K + "relocate.stay")),
                     stack -> settings(stack).relocate() ? 0 : 1,
                     (edit, value) -> write(edit, settings(edit.stack()).withRelocate(value == 0))));
 

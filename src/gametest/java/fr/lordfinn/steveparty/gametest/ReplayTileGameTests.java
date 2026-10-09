@@ -23,6 +23,7 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.SpawnReason;
@@ -81,7 +82,7 @@ public class ReplayTileGameTests implements FabricGameTest {
         BoardSpaceBlockEntity tile = placeTile(context, new BlockPos(2, 1, 2), new ItemStack(ModItems.REPLAY_CARTRIDGE));
         context.assertEquals(tile.getCachedState().get(TILE_TYPE), BoardSpaceType.TILE_REPLAY, "a replay tile");
         context.assertEquals(TileFeedback.landingOf(tile), Landing.REPLAY, "its landing");
-        context.assertEquals(TileFeedback.tileColor(tile), ReplayBoardSpaceBehavior.COLOR, "a cyan face");
+        context.assertEquals(TileFeedback.tileColor(tile), ReplayCartridgeItem.COLOR, "a cyan face");
         context.assertEquals(new ItemStack(ModItems.REPLAY_CARTRIDGE).getMaxCount(), 64, "cartridges stack");
         context.complete();
     }

@@ -6,13 +6,15 @@ import fr.lordfinn.steveparty.components.TrapSetComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * The Trap Cartridge: a space where traps are set. A token of a party stopping on it may set a Trap there (a Trap item
@@ -42,7 +44,7 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
         }
 
         public String id() {
-            return name().toLowerCase(java.util.Locale.ROOT);
+            return name().toLowerCase(Locale.ROOT);
         }
 
         public boolean hasAmount() {
@@ -51,15 +53,16 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     private static final String K = MENU_KEY + "trap.";
+    private static final Setting EFFECT_SETTING = new Setting(EFFECT, 0, 0, Effect.values().length - 1);
+    private static final Setting REPLACE_SETTING = new Setting(REPLACE, 0, 0, 1);
     private static final List<CartridgeModule> MODULES = List.of(
             description("trap_cartridge", 2),
-            new ChoiceModule("effect", K + "effect", java.util.Arrays.stream(Effect.values())
-                    .map(effect -> new ChoiceModule.Option(K + "effect." + effect.id(), -1, K + "effect." + effect.id() + ".tooltip")).toList(),
-                    stack -> effect(stack).ordinal(), (edit, value) -> putSetting(edit.stack(), EFFECT, value)),
+            EFFECT_SETTING.choice("effect", K + "effect", Arrays.stream(Effect.values())
+                    .map(effect -> ChoiceModule.Option.tipped(K + "effect." + effect.id())).toList()),
             new NumberModule("amount", K + "amount", 1, MAX_AMOUNT, TrapCartridgeItem::amount,
                     (edit, value) -> putSetting(edit.stack(), AMOUNT + "_" + effect(edit.stack()).id(), value), stack -> COLOR,
                     stack -> effect(stack).hasAmount()),
-            yesNo("replace", K + "replace", REPLACE, false));
+            REPLACE_SETTING.yesNo("replace", K + "replace"));
 
     public TrapCartridgeItem(Settings settings) {
         super(settings);
@@ -76,12 +79,12 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 
     public static Effect effect(ItemStack stack) {
-        return Effect.values()[setting(stack, EFFECT, 0, 0, Effect.values().length - 1)];
+        return Effect.values()[EFFECT_SETTING.get(stack)];
     }
 
     /** Coins stolen or spaces back, for the current effect (1 for the others). */
@@ -92,11 +95,11 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     public static boolean replaces(ItemStack stack) {
-        return setting(stack, REPLACE, 0, 0, 1) == 1;
+        return REPLACE_SETTING.get(stack) == 1;
     }
 
     /** A cartridge with this effect (tests, commands). */
-    public static ItemStack with(net.minecraft.item.Item item, Effect effect, int amount) {
+    public static ItemStack with(Item item, Effect effect, int amount) {
         ItemStack stack = new ItemStack(item);
         putSetting(stack, EFFECT, effect.ordinal());
         if (effect.hasAmount()) putSetting(stack, AMOUNT + "_" + effect.id(), amount);
@@ -106,7 +109,7 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         tooltip.add(Text.translatable("tooltip.steveparty.trap_cartridge.effect." + effect(stack).id(), amount(stack))
-                .styled(style -> style.withColor(TextColor.fromRgb(0xC9E27A))));
+                .styled(tint(0xC9E27A)));
         if (stack.get(ModComponents.TRAP_SET) instanceof TrapSetComponent) {
             tooltip.add(Text.translatable("tooltip.steveparty.trap_cartridge.set").formatted(Formatting.RED));
         }

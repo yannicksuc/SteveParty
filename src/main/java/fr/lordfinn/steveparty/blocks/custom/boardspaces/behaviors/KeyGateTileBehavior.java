@@ -3,8 +3,6 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
 import fr.lordfinn.steveparty.service.KeyGates;
 import net.minecraft.item.ItemStack;
 
@@ -21,10 +19,5 @@ public class KeyGateTileBehavior extends ABoardSpaceBehavior {
     @Override
     public int comparatorLevel(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return KeyGates.isOpen(boardSpaceEntity, null) ? 15 : BoardSpaceRedstoneRouterBlockEntity.LEVEL_STOP;
-    }
-
-    @Override
-    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
-        if (!stack.contains(ModComponents.COLOR)) setColor(boardSpaceBlockEntity, KeyGateCartridgeItem.COLOR);
     }
 }

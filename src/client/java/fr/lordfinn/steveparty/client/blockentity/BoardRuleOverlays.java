@@ -1,18 +1,34 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.TrapSetComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.BoardRuleCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.RotationAxis;
 import org.joml.Matrix4f;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * What the board rule cartridges show over their space, drawn by the tile's renderer: the condition of a Threshold
@@ -36,8 +52,8 @@ public final class BoardRuleOverlays {
             label(Text.translatable("gui.steveparty.pot.label", PotCartridgeItem.coins(stack)), centreX, centreZ, 0xFFD54A, matrices, consumers);
         } else if (tileType == BoardSpaceType.TILE_KEY_GATE && stack.getItem() instanceof KeyGateCartridgeItem) {
             gates(entity, stack, centreX, centreZ, tickDelta, matrices, consumers);
-        } else if (tileType == BoardSpaceType.TILE_TRAP && stack.get(fr.lordfinn.steveparty.components.ModComponents.TRAP_SET) instanceof
-                fr.lordfinn.steveparty.components.TrapSetComponent trap) {
+        } else if (tileType == BoardSpaceType.TILE_TRAP && stack.get(ModComponents.TRAP_SET) instanceof
+                TrapSetComponent trap) {
             trapPlate(trap.color(), centreX, centreZ, matrices, consumers, light);
         }
     }
@@ -45,11 +61,11 @@ public final class BoardRuleOverlays {
     /** The renderer of the check points: what their role shows over them (they have no face to draw). */
     public static void renderCheckPoint(BoardSpaceBlockEntity entity, float tickDelta, MatrixStack matrices,
                                         VertexConsumerProvider consumers, int light, int overlay) {
-        net.minecraft.block.BlockState state = entity.getCachedState();
-        if (!state.contains(fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE)) return;
-        BoardSpaceType type = state.get(fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE);
+        BlockState state = entity.getCachedState();
+        if (!state.contains(ABoardSpaceBlock.TILE_TYPE)) return;
+        BoardSpaceType type = state.get(ABoardSpaceBlock.TILE_TYPE);
         if (type == BoardSpaceType.DEFAULT || type == BoardSpaceType.TILE_START) return;
-        render(entity, type, fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils.getDisplayedCartridge(entity),
+        render(entity, type, BoardSpaceClientUtils.getDisplayedCartridge(entity),
                 0.5, 0.5, tickDelta, matrices, consumers, light);
     }
 
@@ -71,7 +87,7 @@ public final class BoardRuleOverlays {
 
     // ---------------------------------------------------------------- the Key gate's holograms
 
-    private static final net.minecraft.util.Identifier WHITE = net.minecraft.util.Identifier.ofVanilla("textures/misc/white.png");
+    private static final Identifier WHITE = Identifier.ofVanilla("textures/misc/white.png");
     /** The gate: how far from the space's middle, half its width, its height, its posts' thickness (blocks). */
     private static final float GATE_OUT = 0.9f, GATE_HALF = 0.5f, GATE_H = 1.3f, POST = 0.08f;
     private static final int VEIL_BANDS = 10;
@@ -82,29 +98,29 @@ public final class BoardRuleOverlays {
      */
     private static void gates(BoardSpaceBlockEntity entity, ItemStack stack, double centreX, double centreZ, float tickDelta,
                               MatrixStack matrices, VertexConsumerProvider consumers) {
-        if (fr.lordfinn.steveparty.items.custom.cartridges.BoardRuleCartridgeItem.state(stack, KeyGateCartridgeItem.OPENED,
+        if (BoardRuleCartridgeItem.state(stack, KeyGateCartridgeItem.OPENED,
                 Integer.MIN_VALUE) != Integer.MIN_VALUE) return;
-        fr.lordfinn.steveparty.components.DestinationsComponent destinations = stack.get(fr.lordfinn.steveparty.components.ModComponents.DESTINATIONS_COMPONENT);
+        DestinationsComponent destinations = stack.get(ModComponents.DESTINATIONS_COMPONENT);
         if (destinations == null || entity.getWorld() == null) return;
-        int color = stack.getOrDefault(fr.lordfinn.steveparty.components.ModComponents.COLOR, KeyGateCartridgeItem.COLOR);
+        int color = stack.getOrDefault(ModComponents.COLOR, KeyGateCartridgeItem.COLOR);
         float time = (entity.getWorld().getTime() % 2400) + tickDelta;
-        net.minecraft.client.render.VertexConsumer consumer = consumers.getBuffer(net.minecraft.client.render.RenderLayer.getEntityTranslucent(WHITE));
-        java.util.Set<net.minecraft.util.math.Direction> drawn = java.util.EnumSet.noneOf(net.minecraft.util.math.Direction.class);
-        for (net.minecraft.util.math.BlockPos exit : destinations.destinations()) {
-            net.minecraft.util.math.Direction side = KeyGateCartridgeItem.sideOf(entity.getPos(), exit);
+        VertexConsumer consumer = consumers.getBuffer(RenderLayer.getEntityTranslucent(WHITE));
+        Set<Direction> drawn = EnumSet.noneOf(Direction.class);
+        for (BlockPos exit : destinations.destinations()) {
+            Direction side = KeyGateCartridgeItem.sideOf(entity.getPos(), exit);
             if (!KeyGateCartridgeItem.isLocked(stack, side) || !drawn.add(side)) continue;
             matrices.push();
             matrices.translate(centreX + side.getOffsetX() * GATE_OUT, 0.12, centreZ + side.getOffsetZ() * GATE_OUT);
             // The gate spans across the way out: along x for a north / south exit, along z for east / west
-            if (side.getAxis() == net.minecraft.util.math.Direction.Axis.X)
-                matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(90));
+            if (side.getAxis() == Direction.Axis.X)
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90));
             gate(matrices.peek(), consumer, color, time);
             matrices.pop();
         }
     }
 
     /** One gate in its own frame: x across, y up, z through. */
-    private static void gate(MatrixStack.Entry entry, net.minecraft.client.render.VertexConsumer consumer, int color, float time) {
+    private static void gate(MatrixStack.Entry entry, VertexConsumer consumer, int color, float time) {
         int frame = darken(color, 0.55f);
         int light = LightmapTextureManager.MAX_LIGHT_COORDINATE;
         box(entry, consumer, -GATE_HALF - POST, 0, -POST, -GATE_HALF + POST, GATE_H, POST, frame, 255, light);
@@ -130,7 +146,7 @@ public final class BoardRuleOverlays {
     }
 
     /** A flat quad at z 0 from (x0, y0) to (x1, y1), seen from both sides. */
-    private static void quad(MatrixStack.Entry e, net.minecraft.client.render.VertexConsumer c, float x0, float y0, float x1, float y1,
+    private static void quad(MatrixStack.Entry e, VertexConsumer c, float x0, float y0, float x1, float y1,
                              int rgb, int alpha, int light) {
         vertex(e, c, x0, y0, 0, rgb, alpha, light, 0, 0, 1);
         vertex(e, c, x1, y0, 0, rgb, alpha, light, 0, 0, 1);
@@ -143,7 +159,7 @@ public final class BoardRuleOverlays {
     }
 
     /** An axis-aligned box, its 6 faces. */
-    private static void box(MatrixStack.Entry e, net.minecraft.client.render.VertexConsumer c, float x0, float y0, float z0,
+    private static void box(MatrixStack.Entry e, VertexConsumer c, float x0, float y0, float z0,
                             float x1, float y1, float z1, int rgb, int alpha, int light) {
         float[][] faces = {
                 {x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0, 0, 0, -1},
@@ -157,17 +173,17 @@ public final class BoardRuleOverlays {
         }
     }
 
-    private static void vertex(MatrixStack.Entry e, net.minecraft.client.render.VertexConsumer c, float x, float y, float z,
+    private static void vertex(MatrixStack.Entry e, VertexConsumer c, float x, float y, float z,
                                int rgb, int alpha, int light, float nx, float ny, float nz) {
         c.vertex(e.getPositionMatrix(), x, y, z).color((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, alpha)
-                .texture(0.5f, 0.5f).overlay(net.minecraft.client.render.OverlayTexture.DEFAULT_UV).light(light).normal(e, nx, ny, nz);
+                .texture(0.5f, 0.5f).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(e, nx, ny, nz);
     }
 
     // ---------------------------------------------------------------- a Trap set
 
     /** A trap set on the space: a low plate in its setter's colour, iron jaws open around it, teeth up. */
     private static void trapPlate(int color, double centreX, double centreZ, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
-        net.minecraft.client.render.VertexConsumer consumer = consumers.getBuffer(net.minecraft.client.render.RenderLayer.getEntityTranslucent(WHITE));
+        VertexConsumer consumer = consumers.getBuffer(RenderLayer.getEntityTranslucent(WHITE));
         matrices.push();
         matrices.translate(centreX, 0.13, centreZ);
         MatrixStack.Entry e = matrices.peek();

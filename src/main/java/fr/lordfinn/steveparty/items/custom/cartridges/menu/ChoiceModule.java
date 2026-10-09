@@ -21,6 +21,11 @@ public final class ChoiceModule extends CartridgeModule {
         public Option(String key, int color) {
             this(key, color, null);
         }
+
+        /** A text button whose tooltip is its key + {@code .tooltip}. */
+        public static Option tipped(String key) {
+            return new Option(key, -1, key + ".tooltip");
+        }
     }
 
     public static final int BUTTON_H = 16;

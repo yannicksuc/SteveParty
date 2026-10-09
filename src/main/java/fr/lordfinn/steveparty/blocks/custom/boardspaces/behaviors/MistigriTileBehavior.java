@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
-import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.MistigriSentences;
 import net.minecraft.entity.mob.MobEntity;
@@ -22,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 public class MistigriTileBehavior extends MobTileBehavior {
 
     public MistigriTileBehavior() {
-        super(BoardSpaceType.TILE_MISTIGRI, MistigriCartridgeItem.COLOR);
+        super(BoardSpaceType.TILE_MISTIGRI);
     }
 
     @Override
@@ -36,7 +35,7 @@ public class MistigriTileBehavior extends MobTileBehavior {
         ItemStack cartridge = tile.getActiveCartridgeItemStack();
         MistigriSentences.Start start = MistigriSentences.start(world, pos, token, party, cartridge, null, onDone);
         TileFeedback.Landing landing = start == MistigriSentences.Start.STARTED ? TileFeedback.Landing.MISTIGRI : TileFeedback.Landing.DEFAULT;
-        TileFeedback.land(world, tile, token, party, landing, landing.noticeKey());
+        TileFeedback.land(world, tile, token, party, landing);
     }
 
     @Override
