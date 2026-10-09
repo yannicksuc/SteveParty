@@ -18,4 +18,17 @@ public final class TestWait {
         context.assertTrue(ticks > 0, "timed out: " + what);
         context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
     }
+
+    /**
+     * Gives the server's other threads (chunks loaded, generated, saved; entities read) a few milliseconds. The test
+     * server runs its ticks back to back: a test waiting for them by counting ticks alone loses the race on a busy
+     * machine. Called on each tick a wait for such work comes up empty.
+     */
+    public static void letLoadersWork() {
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 }

@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaDances;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.utils.GravityPull;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -23,7 +23,7 @@ import java.util.Set;
  * The Mulas' dances round a Dice Forge: formulas (growing with the dancers, rings), rotation of the dances, turns
  * beyond {@link MulaDances#CAP} dancers, spectators, the forge conducting its dancers.
  */
-public class MulaDanceGameTests implements FabricGameTest {
+public class MulaDanceGameTests implements SteveGameTest {
 
     private static final BlockPos FORGE_POS = new BlockPos(4, 1, 4);
     /** Closest two dancers may come (centre to centre, blocks): a Mula is 9/16 wide. */

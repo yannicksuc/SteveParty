@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.minigame.RichText;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.GameTestException;
 import net.minecraft.test.TestContext;
@@ -14,7 +14,7 @@ import java.util.Arrays;
  * The page editor's text ({@link RichText}): read from the stored codes and written back, formatted by selection, its
  * characters counted without the codes.
  */
-public class RichTextGameTests implements FabricGameTest {
+public class RichTextGameTests implements SteveGameTest {
     private static void check(TestContext context, boolean condition, String message) {
         if (!condition) throw new GameTestException(message);
     }

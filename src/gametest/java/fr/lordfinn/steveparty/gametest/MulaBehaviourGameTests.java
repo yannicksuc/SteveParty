@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaGoals;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.PigEntity;
@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** The Mula's behaviours: orbiting an idle owner, flock neighbour cache, curiosity distances, night altitude, shyness. */
-public class MulaBehaviourGameTests implements FabricGameTest {
+public class MulaBehaviourGameTests implements SteveGameTest {
 
     /** A tamed Mula starts circling its owner after the owner has stood still for a few seconds. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)

@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import fr.lordfinn.steveparty.blocks.custom.HopSwitchBlock;
 import fr.lordfinn.steveparty.entities.custom.MulaDances;
 import fr.lordfinn.steveparty.entities.custom.MulaFood;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.test.GameTest;
@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /** Player-visible texts come from the lang files, and both languages have every key. */
-public class LangGameTests implements FabricGameTest {
+public class LangGameTests implements SteveGameTest {
 
     private static JsonObject lang(String code) {
         try (InputStream in = LangGameTests.class.getResourceAsStream("/assets/steveparty/lang/" + code + ".json")) {

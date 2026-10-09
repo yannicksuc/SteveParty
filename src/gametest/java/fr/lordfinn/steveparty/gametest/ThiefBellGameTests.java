@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.dice.DicePrompts;
@@ -9,7 +10,6 @@ import fr.lordfinn.steveparty.powerups.effects.ThiefBellEffect.Protection;
 import fr.lordfinn.steveparty.powerups.effects.ThiefBellEffect.Result;
 import fr.lordfinn.steveparty.powerups.effects.ThiefBellEffect.Variant;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -31,7 +31,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * The Thief Bell power-up: coins stolen at random (5 to 15, no more than the target holds), the Golden one steals a
  * star, the default target is the richest player, the Padlock hook cancels the theft.
  */
-public class ThiefBellGameTests implements FabricGameTest {
+public class ThiefBellGameTests implements SteveGameTest {
     private static final String BATCH = "thief_bell";
 
     /** A party of the given players (one token each, in this order), counting gold ingots as coins, emeralds as stars. */

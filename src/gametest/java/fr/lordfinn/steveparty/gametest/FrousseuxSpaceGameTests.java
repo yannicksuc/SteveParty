@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -13,7 +14,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
 import fr.lordfinn.steveparty.service.FrousseuxThefts;
 import fr.lordfinn.steveparty.service.FrousseuxThefts.Phase;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -35,7 +35,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * gives one back, never more than the victim holds, stars stolen with no defence, nothing without another player, the
  * loot settled when the party ends in the middle; and the cartridge's settings.
  */
-public class FrousseuxSpaceGameTests implements FabricGameTest {
+public class FrousseuxSpaceGameTests implements SteveGameTest {
     private static final String BATCH = "frousseux_space";
     private static final BlockPos TILE = new BlockPos(3, 1, 3);
     /** Appearing, flying, the defence, flying back, giving: well under this. */

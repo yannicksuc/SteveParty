@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
@@ -13,7 +14,6 @@ import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.powerups.PowerUpLimit;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.powerups.PowerUps;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.inventory.Inventory;
@@ -40,7 +40,7 @@ import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
  * Power-up module count, any other die does not; a purchase past it is refused with nothing paid; 0 is no limit. A
  * Power-up die thrown is the power-up of the turn.
  */
-public class PowerUpLimitGameTests implements FabricGameTest {
+public class PowerUpLimitGameTests implements SteveGameTest {
     private static final String BATCH = "powerup_limit";
 
     /** A party of {@code player}'s single token, running, at their turn. */

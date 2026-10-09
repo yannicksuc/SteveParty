@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
@@ -11,7 +12,6 @@ import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
@@ -37,7 +37,7 @@ import static fr.lordfinn.steveparty.gametest.BoardLinkingGameTests.withPlayer;
  * teleport spaces, Hop Switches, inventory tiles, Piggy Banks, Looting Boxes, the Party Controller's bank (see
  * BrushLinks). Painting over a target again erases it; the cartridges' limits and the right to build hold.
  */
-public class BrushCartridgeLinksGameTests implements FabricGameTest {
+public class BrushCartridgeLinksGameTests implements SteveGameTest {
 
     /** {@code block} on a stone floor at {@code relative}; its absolute position. */
     static BlockPos place(TestContext context, Block block, BlockPos relative) {

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
@@ -10,7 +11,6 @@ import fr.lordfinn.steveparty.board.BoardPerf;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
@@ -29,7 +29,7 @@ import java.util.List;
  * ({@code [board perf]} lines) to compare a change against the previous code. The asserts only check what must stay
  * true (no work without a change).
  */
-public class BoardPerfGameTests implements FabricGameTest {
+public class BoardPerfGameTests implements SteveGameTest {
     private static final int TILES = 200, ROUTED = 100, SIDE = 8;
     private static final BlockPos ROUTER = new BlockPos(7, 7, 7);
     private static final BlockPos SWITCH = ROUTER.north();

@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestWait;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.config.ServerConfig;
@@ -8,7 +10,6 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -86,15 +87,15 @@ import java.util.stream.Stream;
  * that need a chunk loaded or not play far away, in a chunk of their own. Each test that touches the whole server
  * (crash, recovery) has a batch of its own.
  */
-public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
+public class ZoneBubbleLifecycleGameTests implements SteveGameTest {
     private static final String BATCH = "zone_bubble_life";
 
     // ------------------------------------------------------------------ helpers
 
     @Override
-    public void invokeTestMethod(TestContext context, Method method) {
+    public void invokeWhenReady(TestContext context, Method method) {
         try {
-            FabricGameTest.super.invokeTestMethod(context, method);
+            SteveGameTest.super.invokeWhenReady(context, method);
         } catch (RuntimeException | Error e) {
             endLeftSession(context);
             throw e;
@@ -137,11 +138,17 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
         });
     }
 
-    /** Runs {@code then} once {@code condition} holds, checked every tick; fails after {@code ticks}. */
+    /**
+     * Runs {@code then} once {@code condition} holds, checked every tick; fails after {@code ticks}. What these tests
+     * wait for (chunks loaded, saved, their entities read) is done by other threads: each tick in vain gives them time.
+     */
     private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
         if (condition.getAsBoolean()) then.run();
         else if (ticks <= 0) context.throwGameTestException(what);
-        else later(context, 1, () -> when(context, condition, ticks - 1, what, then));
+        else {
+            TestWait.letLoadersWork();
+            later(context, 1, () -> when(context, condition, ticks - 1, what, then));
+        }
     }
 
     /** A corner far from the test (a chunk nothing else loads), 2 blocks into its chunk. */

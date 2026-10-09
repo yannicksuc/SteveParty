@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaFood;
@@ -11,7 +12,6 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.potion.Potions;
 import java.util.List;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.item.Item;
@@ -35,7 +35,7 @@ import net.minecraft.world.GameMode;
  * the /mula operator command. The rules themselves (food, hunger, taming, sitting) are covered by
  * GameplayRulesGameTests and DecisionsGameTests.
  */
-public class MulaFeedbackGameTests implements FabricGameTest {
+public class MulaFeedbackGameTests implements SteveGameTest {
 
     private static Item foodOf(MulaEntity mula) {
         return MulaFood.foodsOf(mula.getVariant()).iterator().next();

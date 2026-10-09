@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "fr.lordfinn.steveparty.gametest.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ServerChunkManagerTestInvoker",
+    "ServerWorldTestAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

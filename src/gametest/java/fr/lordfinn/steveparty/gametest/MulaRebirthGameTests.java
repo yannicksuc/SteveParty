@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaRebirths;
 import fr.lordfinn.steveparty.entities.custom.MulaStarEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 /** A burst Mula flies away as a shooting star and is reborn far away: once, the same Mula, even after a restart. */
-public class MulaRebirthGameTests implements FabricGameTest {
+public class MulaRebirthGameTests implements SteveGameTest {
 
     /** The higher the arc, the farther: 100 blocks for the lowest, 400 for the highest. */
     @GameTest(templateName = EMPTY_STRUCTURE)

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -25,7 +26,6 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.passive.PigEntity;
@@ -51,7 +51,7 @@ import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.
  * Rejouer / Roll Again: landing on it during one's turn gives the same player another turn right away, then the turn
  * order goes on; the extra turn never gives another one.
  */
-public class ReplayTileGameTests implements FabricGameTest {
+public class ReplayTileGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 5);
 
     private static BoardSpaceBlockEntity placeTile(TestContext context, BlockPos pos, ItemStack cartridge) {

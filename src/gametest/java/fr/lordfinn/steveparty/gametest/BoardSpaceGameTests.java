@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
@@ -11,7 +12,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -31,7 +31,7 @@ import java.util.List;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
 
 /** Board spaces: the active cartridge follows the redstone power, locally or through a router. */
-public class BoardSpaceGameTests implements FabricGameTest {
+public class BoardSpaceGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(2, 1, 2);
 
     private static BoardSpaceBlockEntity placeTile(TestContext context) {

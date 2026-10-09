@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -17,7 +18,6 @@ import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.passive.PigEntity;
@@ -41,7 +41,7 @@ import java.util.UUID;
  * the standings (names, colours, owners, stars, coins, power-ups). Each test in a batch of its own: the mock players
  * share one name.
  */
-public class PartyHudGameTests implements FabricGameTest {
+public class PartyHudGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 5);
 
     private static PartyLiveData capture(TestContext context, PartyControllerEntity controller) {

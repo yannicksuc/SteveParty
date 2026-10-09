@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpiePerches;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpieVariant;
 import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieEntity;
 import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieSpawns;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.SlabBlock;
@@ -32,7 +32,13 @@ import net.minecraft.world.biome.SpawnSettings;
  * perches on (a fence or a wall post at 1.0 not 1.5, a log, a chain, a slab, a stairs' upper step), landing there
  * by itself, its colour saved, and its flight to a perch.
  */
-public class WildMagpieGameTests implements FabricGameTest {
+public class WildMagpieGameTests implements SteveGameTest {
+    /** Beyond the template: a magpie looks for perches 16 blocks around. */
+    @Override
+    public int landAround() {
+        return 16;
+    }
+
     private static boolean spawnsIn(TestContext context, net.minecraft.registry.RegistryKey<Biome> key, net.minecraft.entity.EntityType<?> type) {
         RegistryEntry<Biome> biome = context.getWorld().getRegistryManager().get(RegistryKeys.BIOME).entryOf(key);
         return biome.value().getSpawnSettings().getSpawnEntries(SpawnGroup.CREATURE).getEntries().stream()

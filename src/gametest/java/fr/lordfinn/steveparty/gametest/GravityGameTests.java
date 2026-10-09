@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GravityCoreBlockEntity;
 import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.utils.GravityPull;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -29,7 +29,7 @@ import java.util.List;
 
 import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 
-public class GravityGameTests implements FabricGameTest {
+public class GravityGameTests implements SteveGameTest {
     private static final BlockPos FORGE_POS = new BlockPos(1, 1, 1);
     /** Core insertion, then the core rising to its highest (4 black fragments: 16 blocks). */
     private static final int RISE_TICKS = CORE_INSERT_TICKS + 160;

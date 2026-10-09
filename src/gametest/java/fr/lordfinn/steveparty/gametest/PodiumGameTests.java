@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -37,7 +38,6 @@ import fr.lordfinn.steveparty.podium.PodiumGroup;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
 import fr.lordfinn.steveparty.podium.PodiumSignal;
 import fr.lordfinn.steveparty.podium.Podiums;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -80,7 +80,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * fills the group in order, a per-player goal pole fills it too; everything resets together; the mini-game ends by
  * itself and the party pays the gains of each place.
  */
-public class PodiumGameTests implements FabricGameTest {
+public class PodiumGameTests implements SteveGameTest {
     private static final AtomicInteger SERIAL = new AtomicInteger();
 
     // ------------------------------------------------------------------ helpers

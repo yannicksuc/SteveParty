@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import net.minecraft.entity.mob.PiglinEntity;
 import net.minecraft.entity.mob.MagmaCubeEntity;
@@ -14,7 +15,6 @@ import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronPumping;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronRiding;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
@@ -50,7 +50,13 @@ import java.util.List;
  * tamed and saddled it is ridden, the riders' keys added up; an untamed one throws its rider off;
  * it swims in lava; the charged jump; the blast (fire mostly, armour and shields); the spill on death; its save.
  */
-public class TrichaudronGameTests implements FabricGameTest {
+public class TrichaudronGameTests implements SteveGameTest {
+    /** Beyond the template: its shots and strips reach 22 blocks east of the template's corner. */
+    @Override
+    public int landAround() {
+        return 16;
+    }
+
     /** mobGriefing is changed for the whole server: these tests run alone in their batch. */
     private static final String GRIEFING_BATCH = "trichaudron_griefing";
 

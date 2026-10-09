@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
@@ -11,7 +12,6 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.payloads.custom.SixSevenPayload;
 import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
@@ -36,7 +36,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * The hidden « 6-7 » ({@link SixSeven}): a Double Dice showing a 6 and a 7 makes the players near the dice and the
  * roller's party do it (told to them and to who sees them); any other throw, a single die or a triple, doesn't.
  */
-public class SixSevenGameTests implements FabricGameTest {
+public class SixSevenGameTests implements SteveGameTest {
     private static final String BATCH = "six_seven";
     private static final BlockPos DICE = new BlockPos(2, 1, 2);
 

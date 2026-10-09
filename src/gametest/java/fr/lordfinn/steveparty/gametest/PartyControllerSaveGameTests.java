@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -10,7 +11,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepFacto
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.minigame.MiniGameReturns;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -33,7 +33,7 @@ import java.util.UUID;
  * to release or to send home, start tiles, winners, a party on a mini-game step) loads back and saves exactly the
  * same keys and values, so that the worlds saved before keep loading.
  */
-public class PartyControllerSaveGameTests implements FabricGameTest {
+public class PartyControllerSaveGameTests implements SteveGameTest {
 
     private static UUID uuid(int n) {
         return new UUID(0x5EEDL, n);

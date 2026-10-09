@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
@@ -39,7 +40,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
@@ -71,7 +71,7 @@ import java.util.stream.IntStream;
  * module, which value) then written, each cartridge's settings go and come back through its modules, and the Inventory
  * Cartridge's ghost slots work in hand and in a tile.
  */
-public class CartridgeMenuGameTests implements FabricGameTest {
+public class CartridgeMenuGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(2, 1, 2);
 
     private static final List<Item> CARTRIDGES = List.of(ModItems.BOARD_SPACE_BEHAVIOR, ModItems.TILE_BEHAVIOR_START,

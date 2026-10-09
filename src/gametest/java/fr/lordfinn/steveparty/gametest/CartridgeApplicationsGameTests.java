@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.compat.CartridgeApplications;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Set;
 
 /** What the REI plugin shows of the tiles (its displays are built from CartridgeApplications, plain item logic). */
-public class CartridgeApplicationsGameTests implements FabricGameTest {
+public class CartridgeApplicationsGameTests implements SteveGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void everyRoleHasACartridgeApplicationOnEveryTile(TestContext context) {

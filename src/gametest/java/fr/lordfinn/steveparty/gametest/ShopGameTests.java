@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlock;
 import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlockEntity;
@@ -20,7 +21,6 @@ import net.minecraft.block.ChestBlock;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.enums.ChestType;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
@@ -58,7 +58,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public class ShopGameTests implements FabricGameTest {
+public class ShopGameTests implements SteveGameTest {
 
     /** A plain price only accepts a plain item: a named or enchanted one (extra components) is refused. */
     @GameTest(templateName = EMPTY_STRUCTURE)

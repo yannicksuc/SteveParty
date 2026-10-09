@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlock;
@@ -55,7 +56,6 @@ import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler.State;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -92,7 +92,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * zone mode by clicks and face moves the server decides, shared by the page's copies, read by every reader of the
  * zone, and the zone of an old Zone Cartridge moved into its page.
  */
-public class MiniGameControllerGameTests implements FabricGameTest {
+public class MiniGameControllerGameTests implements SteveGameTest {
     private static final int GREEN = 13;
     private static final AtomicInteger SERIAL = new AtomicInteger();
     private static final BlockPos HOME = new BlockPos(6, 1, 6), PARTY = new BlockPos(0, 1, 7);

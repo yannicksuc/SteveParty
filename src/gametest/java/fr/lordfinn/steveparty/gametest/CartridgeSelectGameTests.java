@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -26,7 +26,7 @@ import java.util.List;
  * then the item) on a board space, sneaking, or on a plain block of the ground: that block is selected as a
  * destination, and a second click removes it.
  */
-public class CartridgeSelectGameTests implements FabricGameTest {
+public class CartridgeSelectGameTests implements SteveGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aCartridgeClickSelectsTheBoardSpaceOrTheGround(TestContext context) {

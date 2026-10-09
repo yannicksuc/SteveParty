@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
@@ -21,7 +22,6 @@ import fr.lordfinn.steveparty.items.custom.DiceModuleItem;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -55,7 +55,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * The dice modules: what a die carries and shows, how each one changes the roll (Slow, Choice, Lucky, Reroll,
  * Reversed, Power-up) or the move (Skeleton Key, Homing), and how they combine.
  */
-public class DiceModulesGameTests implements FabricGameTest {
+public class DiceModulesGameTests implements SteveGameTest {
     private static final String BATCH = "dice_modules";
     private static final BlockPos DICE = new BlockPos(4, 1, 5);
 
