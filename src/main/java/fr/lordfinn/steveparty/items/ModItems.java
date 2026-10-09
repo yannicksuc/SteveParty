@@ -19,9 +19,12 @@ import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.Block;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -60,6 +63,11 @@ public class ModItems {
     public static final List<Item> DICE_MODULES = new ArrayList<>();
     /** The power-up items, one per power-up of PowerUps. */
     public static final List<Item> POWER_UPS = new ArrayList<>();
+    /**
+     * Every Steve Party spawn egg ({@link #spawnEgg}), in registration order. They are all drawn per mob
+     * (textures/item/*_spawn_egg.png): the client registers them untinted at once.
+     */
+    public static final List<Item> SPAWN_EGGS = new ArrayList<>();
     /** The base every dice module is crafted from, with seven star fragments of the module's colour. */
     public static final Item BLANK_DICE_MODULE = register(Item.class, "blank_dice_module");
 
@@ -101,8 +109,11 @@ public class ModItems {
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
     public static final Item FLAG = register(FlagItem.class, "flag");
     public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
-    public static final Item MULA_SPAWN_EGG = register(MulaSpawnEggItem.class, "mula_spawn_egg");
-    public static final Item BOXED_TRADER_SPAWN_EGG = register(fr.lordfinn.steveparty.items.custom.BoxedTraderSpawnEggItem.class, "boxed_trader_spawn_egg");
+    public static final Item MULA_SPAWN_EGG = spawnEgg("mula_spawn_egg", fr.lordfinn.steveparty.entities.ModEntities.MULA_ENTITY,
+            0x77c7fc, 0x2486c7);
+    /** Spawns a Boxed Trader in a random box (see BoxedTraderBoxes). */
+    public static final Item BOXED_TRADER_SPAWN_EGG = spawnEgg("boxed_trader_spawn_egg",
+            fr.lordfinn.steveparty.entities.ModEntities.BOXED_TRADER_ENTITY, 0xB8945F, 0x3AAFA9);
     // The Glandouille: its acorn (planted on farmland, it hatches into a young one; eaten, half a drumstick), its lost
     // cap (worn on the head), a spawn egg per variant (the egg sets the variant)
     public static final Item ACORN = Registry.register(Registries.ITEM, Steveparty.id("acorn"),
@@ -118,24 +129,20 @@ public class ModItems {
     public static final Item FROSTY_GLANDOUILLE_SPAWN_EGG = glandouilleEgg("frosty_glandouille_spawn_egg",
             fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.FROSTY, 0xA8BCD8, 0xF4F8FF);
     /** The Frousseux's egg: a colour drawn at random, as a wild one's. */
-    public static final Item FROUSSEUX_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("frousseux_spawn_egg"),
-            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.FROUSSEUX, 0xFFF3D6, 0xFFAA3C,
-                    new Item.Settings()));
+    public static final Item FROUSSEUX_SPAWN_EGG = spawnEgg("frousseux_spawn_egg",
+            fr.lordfinn.steveparty.entities.ModEntities.FROUSSEUX, 0xFFF3D6, 0xFFAA3C);
     /** The Mistigri's egg: drawn per mob (textures/item/mistigri_spawn_egg.png). */
-    public static final Item MISTIGRI_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("mistigri_spawn_egg"),
-            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.MISTIGRI, 0x14111A, 0x9BCB2C,
-                    new Item.Settings()));
+    public static final Item MISTIGRI_SPAWN_EGG = spawnEgg("mistigri_spawn_egg",
+            fr.lordfinn.steveparty.entities.ModEntities.MISTIGRI, 0x14111A, 0x9BCB2C);
     /** The Loaded Die, the Mistigri's loot: curses the next roll of the player it is used on (1 to 3 only). */
     public static final Item LOADED_DIE = register(fr.lordfinn.steveparty.items.custom.LoadedDieItem.class, "loaded_die",
             new Item.Settings().maxCount(16));
     /** The Boomcart's egg: iron grey, TNT red. */
-    public static final Item BOOMCART_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("boomcart_spawn_egg"),
-            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.BOOMCART, 0x8C8C90, 0xDB2F1F,
-                    new Item.Settings()));
+    public static final Item BOOMCART_SPAWN_EGG = spawnEgg("boomcart_spawn_egg",
+            fr.lordfinn.steveparty.entities.ModEntities.BOOMCART, 0x8C8C90, 0xDB2F1F);
     /** The Fumarole's egg: drawn per mob (textures/item/fumarole_spawn_egg.png), basalt and lava. */
-    public static final Item FUMAROLE_SPAWN_EGG = Registry.register(Registries.ITEM, Steveparty.id("fumarole_spawn_egg"),
-            new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.FUMAROLE, 0x3A2A28, 0xE0601C,
-                    new Item.Settings()));
+    public static final Item FUMAROLE_SPAWN_EGG = spawnEgg("fumarole_spawn_egg",
+            fr.lordfinn.steveparty.entities.ModEntities.FUMAROLE, 0x3A2A28, 0xE0601C);
     /**
      * The Candle Saucer, a little gold tray for the Frousseux candle holder to stand on: a block of its own
      * (ModBlocks.CANDLE_SAUCER), crafted onto the candle holder too (CandleSaucerRecipe).
@@ -213,16 +220,30 @@ public class ModItems {
         return register(itemClass, id, new Item.Settings().maxCount(1));
     }
 
+    /**
+     * Registers a spawn egg of {@code type} and lists it in {@link #SPAWN_EGGS} (drawn untinted). Its two colours stay
+     * the egg's colours for what reads them (e.g. MobTextureColors), not for its icon.
+     */
+    public static Item spawnEgg(String id, EntityType<? extends MobEntity> type, int primary, int secondary) {
+        return spawnEgg(id, type, primary, secondary, new Item.Settings());
+    }
+
+    private static Item spawnEgg(String id, EntityType<? extends MobEntity> type, int primary, int secondary,
+                                 Item.Settings settings) {
+        Item egg = Registry.register(Registries.ITEM, Steveparty.id(id), new SpawnEggItem(type, primary, secondary, settings));
+        SPAWN_EGGS.add(egg);
+        return egg;
+    }
+
     /** A Glandouille spawn egg giving {@code variant} (its entity data), in its two colours. */
     private static Item glandouilleEgg(String id, fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant variant,
                                        int primary, int secondary) {
         net.minecraft.nbt.NbtCompound data = new net.minecraft.nbt.NbtCompound();
         data.putString("id", fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE_KEY.getValue().toString());
         data.putInt("Variant", variant.ordinal());
-        Item egg = new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE, primary, secondary,
+        return spawnEgg(id, fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE, primary, secondary,
                 new Item.Settings().component(net.minecraft.component.DataComponentTypes.ENTITY_DATA,
                         net.minecraft.component.type.NbtComponent.of(data)));
-        return Registry.register(Registries.ITEM, Steveparty.id(id), egg);
     }
 
     public static <T extends Item> T register(Class<T> itemClass, String id, Item.Settings settings) {
