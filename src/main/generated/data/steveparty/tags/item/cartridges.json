@@ -11,6 +11,10 @@
     "steveparty:star_cartridge",
     "steveparty:glandouille_cartridge",
     "steveparty:frousseux_cartridge",
-    "steveparty:mistigri_cartridge"
+    "steveparty:mistigri_cartridge",
+    "steveparty:threshold_cartridge",
+    "steveparty:pot_cartridge",
+    "steveparty:key_gate_cartridge",
+    "steveparty:trap_cartridge"
   ]
 }

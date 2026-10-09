@@ -80,6 +80,15 @@ public abstract class ABoardSpaceBehavior {
         return false;
     }
 
+    /**
+     * A token reached this board space during a move (any token, in a party or not), {@code stepsLeft} steps still to
+     * walk after it (0: it stops here). Called once per arrival, before its landing. Returns true to end its move here
+     * (its steps left are lost and it lands here, check point included: a Threshold obstacle it does not get over).
+     */
+    public boolean onTokenReached(ServerWorld world, BoardSpaceBlockEntity space, MobEntity token, int stepsLeft) {
+        return false;
+    }
+
     /** A token stopped here at the end of its move: the landing feedback of this role (sound, particles, notice). */
     public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyController) {
         if (world instanceof ServerWorld serverWorld && boardSpaceEntity != null)
@@ -102,7 +111,7 @@ public abstract class ABoardSpaceBehavior {
     /**
      * The comparator level of a Router driving this board space when a token stops here (see
      * {@link fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity}): by default the level of its
-     * landing kind. A new role overrides it with a level of its own (2 to 15; 1 is a token passing).
+     * landing kind. A new role overrides it with a level of its own (2 to 15; 1 is a token passing; 0 or less: no pulse).
      */
     public int comparatorLevel(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity.landingSignal(landing(boardSpaceEntity, stack));

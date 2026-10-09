@@ -204,6 +204,19 @@ public class ModEntities {
                     .build(MISTIGRI_DIE_KEY.getValue().toString())
     );
 
+    /** The Pie, the keeper of a Common pot, living on its nest by the space (see MagpieEntity). */
+    public static final RegistryKey<EntityType<?>> MAGPIE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("magpie"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity> MAGPIE = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("magpie"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity>create(fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity::new, SpawnGroup.MISC)
+                    .dimensions(0.5f, 0.6f)
+                    .makeFireImmune()
+                    .maxTrackingRange(8)
+                    .trackingTickInterval(1)
+                    .build(MAGPIE_KEY.getValue().toString())
+    );
+
     public static void initialize() {
         FabricDefaultAttributeRegistry.register(ModEntities.DICE_ENTITY, DiceEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntity.setAttributes());

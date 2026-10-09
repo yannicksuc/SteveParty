@@ -501,6 +501,146 @@ public final class TileStampTextures {
                 key -> register(glyphValues(small ? SMALL_FROUSSEUX : FROUSSEUX, small, FROUSSEUX_SHADES), rgb, small));
     }
 
+    /** The Threshold obstacle: a striped hurdle, two posts and two bars. */
+    private static final String[] THRESHOLD = {
+            "..............",
+            "..##......##..",
+            "..##......##..",
+            "oo--oo--oo--oo",
+            "oo--oo--oo--oo",
+            "..##......##..",
+            "..##......##..",
+            "oo--oo--oo--oo",
+            "oo--oo--oo--oo",
+            "..##......##..",
+            "..##......##..",
+            "..##......##..",
+            ".####....####.",
+            ".............."};
+    private static final String[] SMALL_THRESHOLD = {
+            "..........",
+            ".##....##.",
+            "oo--oo--oo",
+            "oo--oo--oo",
+            ".##....##.",
+            "oo--oo--oo",
+            "oo--oo--oo",
+            ".##....##.",
+            "####..####",
+            ".........."};
+    private static final Map<Character, Float> THRESHOLD_SHADES = Map.of('#', FEATURE, 'o', -0.7f, '-', 0.45f);
+
+    /** The Threshold obstacle's face: a striped hurdle on the blank tile face, in the ramp of {@code rgb} (steel blue). */
+    public static Identifier thresholdFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("threshold", rgb, small),
+                key -> register(glyphValues(small ? SMALL_THRESHOLD : THRESHOLD, small, THRESHOLD_SHADES), rgb, small));
+    }
+
+    /** The Common pot: a woven nest full of coins. */
+    private static final String[] POT = {
+            "..............",
+            ".....oooo.....",
+            "...oooooooo...",
+            "..oo-oo-oo-o..",
+            "..oooooooooo..",
+            ".############.",
+            "#-#-#-#-#-#-##",
+            "##-#-#-#-#-#-#",
+            "#-#-#-#-#-#-##",
+            ".############.",
+            "..##########..",
+            "....######....",
+            "..............",
+            ".............."};
+    private static final String[] SMALL_POT = {
+            "..........",
+            "...oooo...",
+            ".oooooooo.",
+            ".o-o-o-oo.",
+            "##########",
+            "#-#-#-#-##",
+            "##-#-#-#-#",
+            ".########.",
+            "..######..",
+            ".........."};
+    private static final Map<Character, Float> POT_SHADES = Map.of('#', FEATURE, 'o', -0.8f, '-', 0.25f);
+
+    /** The Common pot's face: a nest full of coins on the blank tile face, in the ramp of {@code rgb} (straw). */
+    public static Identifier potFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("pot", rgb, small),
+                key -> register(glyphValues(small ? SMALL_POT : POT, small, POT_SHADES), rgb, small));
+    }
+
+    /** The Key gate: a gate's frame, its veil, a keyhole in the middle. */
+    private static final String[] KEY_GATE = {
+            "..............",
+            ".############.",
+            ".#oooooooooo#.",
+            ".#oooooooooo#.",
+            ".#oooo##oooo#.",
+            ".#ooo####ooo#.",
+            ".#ooo####ooo#.",
+            ".#oooo##oooo#.",
+            ".#oooo##oooo#.",
+            ".#ooo####ooo#.",
+            ".#oooooooooo#.",
+            ".#oooooooooo#.",
+            ".############.",
+            ".............."};
+    private static final String[] SMALL_KEY_GATE = {
+            "..........",
+            ".########.",
+            ".#oooooo#.",
+            ".#oo##oo#.",
+            ".#o####o#.",
+            ".#oo##oo#.",
+            ".#o####o#.",
+            ".#oooooo#.",
+            ".########.",
+            ".........."};
+    private static final Map<Character, Float> KEY_GATE_SHADES = Map.of('#', FEATURE, 'o', -0.6f);
+
+    /** The Key gate's face: a gate with a keyhole on the blank tile face, in the ramp of {@code rgb} (teal). */
+    public static Identifier keyGateFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("key_gate", rgb, small),
+                key -> register(glyphValues(small ? SMALL_KEY_GATE : KEY_GATE, small, KEY_GATE_SHADES), rgb, small));
+    }
+
+    /** The Trap: open jaws seen from above, their teeth inward, a trigger plate in the middle. */
+    private static final String[] TRAP = {
+            "..............",
+            ".############.",
+            ".#.#.#.#.#.##.",
+            ".#..........#.",
+            ".#..........#.",
+            ".#...oooo...#.",
+            ".#...oooo...#.",
+            ".#...oooo...#.",
+            ".#...oooo...#.",
+            ".#..........#.",
+            ".#..........#.",
+            ".##.#.#.#.#.#.",
+            ".############.",
+            ".............."};
+    private static final String[] SMALL_TRAP = {
+            "..........",
+            ".########.",
+            ".#.#.#.##.",
+            ".#......#.",
+            ".#..oo..#.",
+            ".#..oo..#.",
+            ".#......#.",
+            ".##.#.#.#.",
+            ".########.",
+            ".........."};
+    private static final Map<Character, Float> TRAP_SHADES = Map.of('#', FEATURE, 'o', -0.7f);
+
+    /** The Trap's face: open jaws on the blank tile face, in the ramp of {@code rgb} (moss green). */
+    public static Identifier trapFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("trap", rgb, small),
+                key -> register(glyphValues(small ? SMALL_TRAP : TRAP, small, TRAP_SHADES), rgb, small));
+    }
+
     /** The Mistigri: a cat's head, pointed ears (one notched), one slit eye open, the other shut, a nose, whiskers. */
     private static final String[] MISTIGRI = {
             "..o.......o.o.",

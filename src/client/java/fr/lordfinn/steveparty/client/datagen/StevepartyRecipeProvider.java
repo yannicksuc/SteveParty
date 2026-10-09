@@ -222,6 +222,24 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .input(Items.GOLD_NUGGET)
                 .criterion(hasItem(Items.GOLD_NUGGET), conditionsFromItem(Items.GOLD_NUGGET))
                 .offerTo(exporter, id("coin"));
+        // The Pie's nest: woven twigs and a feather
+        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.MAGPIE_NEST, 1)
+                .input(Items.STICK, 3)
+                .input(Items.FEATHER)
+                .criterion(hasItem(Items.FEATHER), conditionsFromItem(Items.FEATHER))
+                .offerTo(exporter, id("magpie_nest"));
+        // The Gate Key: a gold ingot and an amethyst shard (its gem)
+        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.GATE_KEY, 1)
+                .input(Items.GOLD_INGOT)
+                .input(Items.AMETHYST_SHARD)
+                .criterion(hasItem(Items.AMETHYST_SHARD), conditionsFromItem(Items.AMETHYST_SHARD))
+                .offerTo(exporter, id("gate_key"));
+        // The Trap: a tripwire hook on an iron ingot
+        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.BOARD_TRAP, 1)
+                .input(Items.TRIPWIRE_HOOK)
+                .input(Items.IRON_INGOT)
+                .criterion(hasItem(Items.TRIPWIRE_HOOK), conditionsFromItem(Items.TRIPWIRE_HOOK))
+                .offerTo(exporter, id("board_trap"));
 
         generatePolishedConcrete();
         generatePolishedTerracotta();
@@ -355,6 +373,14 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.FROUSSEUX_CARTRIDGE, Items.CANDLE);
         // The Loaded Die (the Mistigri's loot): the black cat of bad luck and his sentences
         offerCartridge(ModItems.MISTIGRI_CARTRIDGE, ModItems.LOADED_DIE);
+        // Iron bars: the Threshold obstacle, a wall on the path
+        offerCartridge(ModItems.THRESHOLD_CARTRIDGE, Items.IRON_BARS);
+        // The Pie's nest: the Common pot, kept by the Pie
+        offerCartridge(ModItems.POT_CARTRIDGE, ModItems.MAGPIE_NEST);
+        // A Gate Key: the Key gate
+        offerCartridge(ModItems.KEY_GATE_CARTRIDGE, ModItems.GATE_KEY);
+        // A Trap: the Trap space
+        offerCartridge(ModItems.TRAP_CARTRIDGE, ModItems.BOARD_TRAP);
 
         // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
         // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)

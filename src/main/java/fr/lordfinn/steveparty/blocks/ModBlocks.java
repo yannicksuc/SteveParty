@@ -476,6 +476,16 @@ public class ModBlocks {
                     .pistonBehavior(PistonBehavior.DESTROY),
             "candle_saucer", true);
 
+    /** The Pie's nest, woven twigs: a Common pot's nest when set near its space (MagpieNestBlock). */
+    public static final Block MAGPIE_NEST = register(fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock::new,
+            Block.Settings.create()
+                    .strength(0.4f)
+                    .nonOpaque()
+                    .sounds(BlockSoundGroup.AZALEA)
+                    .burnable()
+                    .pistonBehavior(PistonBehavior.DESTROY),
+            "magpie_nest", true);
+
     public static final Block CASH_REGISTER = register(CashRegisterBlock::new,
             Block.Settings.create()
                     .strength(2.0f, BOARD_RESISTANCE)

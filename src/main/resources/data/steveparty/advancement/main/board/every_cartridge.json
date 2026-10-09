@@ -123,6 +123,46 @@
           }
         ]
       }
+    },
+    "threshold": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:threshold_cartridge"
+          }
+        ]
+      }
+    },
+    "pot": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:pot_cartridge"
+          }
+        ]
+      }
+    },
+    "key_gate": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:key_gate_cartridge"
+          }
+        ]
+      }
+    },
+    "trap": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:trap_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -158,6 +198,18 @@
     ],
     [
       "mistigri"
+    ],
+    [
+      "threshold"
+    ],
+    [
+      "pot"
+    ],
+    [
+      "key_gate"
+    ],
+    [
+      "trap"
     ]
   ],
   "rewards": {
