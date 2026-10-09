@@ -59,37 +59,84 @@ public final class FumaroleGoals {
     }
 
     /**
-     * The turret blast: its neck aims at its target, a second of warning (vent charging, a hiss, the spit animation
-     * drawing the neck back), then the steam leaves as the neck whips forward (FumaroleEntity#blast). Then a rest of
-     * {@link #COOLDOWN_MIN} to {@link #COOLDOWN_MIN} + {@link #COOLDOWN_SPREAD} ticks.
+     * One blast at a time, the heads taking turns: the next head in turn that can reach an enemy turns to it, a second
+     * of warning (its vent charging, a hiss, its spit animation drawing the neck back), then the steam leaves as the
+     * neck whips forward (FumaroleEntity#blast, a bucket). The heads share out the enemies about (its target first,
+     * whoever last hurt it, players in its territory: head n prefers the n-th), with one enemy they all focus it. Then
+     * one shared rest of {@link #COOLDOWN_MIN} to {@link #COOLDOWN_MIN} + {@link #COOLDOWN_SPREAD} ticks: three heads
+     * shoot no more often than one would.
      */
     static final class Blast extends Goal {
-        /** The warning second, then the spitting vent this long. */
+        /** A head's warning second, then its vent spitting this long. */
         static final int CHARGE_TICKS = 20, SPIT_TICKS = 12;
+        /** A head turns to its target this many ticks before its warning. */
+        static final int TURN_TICKS = 10;
         static final int COOLDOWN_MIN = 80, COOLDOWN_SPREAD = 40;
         private final FumaroleEntity fumarole;
-        private @Nullable LivingEntity target;
-        private int ticks;
-        private long nextShot;
+        private final LivingEntity[] targets = new LivingEntity[FumaroleEntity.HEADS.length];
+        /** When each head fires in this volley (ticks from its start), -1: it sits this one out. */
+        private final int[] fireAt = new int[FumaroleEntity.HEADS.length];
+        private int ticks, end;
+        /** The head whose turn comes next. */
+        private int nextHead;
+        private long nextVolley;
 
         Blast(FumaroleEntity fumarole) {
             this.fumarole = fumarole;
             setControls(EnumSet.of(Control.MOVE, Control.LOOK));
         }
 
+        /** The enemies about, its target first. */
+        private List<LivingEntity> enemies() {
+            List<LivingEntity> enemies = new ArrayList<>();
+            LivingEntity target = fumarole.getTarget();
+            if (target != null && target.isAlive()) enemies.add(target);
+            LivingEntity attacker = fumarole.getAttacker();
+            if (attacker != null && attacker.isAlive() && !enemies.contains(attacker) && !(attacker instanceof FumaroleEntity)) {
+                enemies.add(attacker);
+            }
+            for (PlayerEntity player : fumarole.getWorld().getPlayers()) {
+                if (enemies.size() >= FumaroleEntity.HEADS.length) break;
+                if (!enemies.contains(player) && player.isAlive() && !player.isSpectator() && !player.isCreative()
+                        && player.squaredDistanceTo(fumarole) <= FumaroleEntity.TERRITORY * FumaroleEntity.TERRITORY) {
+                    enemies.add(player);
+                }
+            }
+            return enemies;
+        }
+
+        /** Picks the next head in turn that can reach an enemy (its own preferably); false if none can. */
+        private boolean plan() {
+            List<LivingEntity> enemies = enemies();
+            java.util.Arrays.fill(fireAt, -1);
+            java.util.Arrays.fill(targets, null);
+            if (enemies.isEmpty()) return false;
+            for (int k = 0; k < fireAt.length; k++) {
+                int head = (nextHead + k) % fireAt.length;
+                for (int j = 0; j < enemies.size(); j++) {
+                    LivingEntity enemy = enemies.get((head + j) % enemies.size());
+                    if (fumarole.getVisibilityCache().canSee(enemy) && fumarole.inRange(head, enemy)) {
+                        targets[head] = enemy;
+                        fireAt[head] = TURN_TICKS + CHARGE_TICKS;
+                        end = fireAt[head] + SPIT_TICKS;
+                        nextHead = (head + 1) % fireAt.length;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         @Override
         public boolean canStart() {
-            LivingEntity candidate = fumarole.getTarget();
-            if (candidate == null || !candidate.isAlive() || fumarole.getWorld().getTime() < nextShot) return false;
-            if (!fumarole.getVisibilityCache().canSee(candidate) || !fumarole.inRange(candidate)) return false;
-            target = candidate;
-            return true;
+            LivingEntity target = fumarole.getTarget();
+            if (target == null || !target.isAlive() || fumarole.getWorld().getTime() < nextVolley) return false;
+            return plan();
         }
 
         @Override
         public boolean shouldContinue() {
-            if (ticks >= CHARGE_TICKS + SPIT_TICKS) return false;
-            return ticks >= CHARGE_TICKS || (target != null && target.isAlive() && fumarole.getTarget() == target);
+            return ticks < end;
         }
 
         @Override
@@ -101,33 +148,57 @@ public final class FumaroleGoals {
         public void start() {
             ticks = 0;
             fumarole.getNavigation().stop();
-            fumarole.setVent(FumaroleEntity.VENT_CHARGING);
-            fumarole.playSound(fr.lordfinn.steveparty.sounds.ModSounds.FUMAROLE_CHARGE, 2.0f, 1.0f);
-            fumarole.playSpit();
         }
 
         @Override
         public void tick() {
-            if (target != null) aim(fumarole, target);
             ticks++;
-            if (ticks == CHARGE_TICKS && target != null) {
-                fumarole.setVent(FumaroleEntity.VENT_SPITTING);
-                fumarole.blast(target);
+            LivingEntity primary = fumarole.getTarget();
+            if (primary != null) fumarole.getLookControl().lookAt(primary, fumarole.getMaxLookYawChange(), 40);
+            for (int head = 0; head < fireAt.length; head++) {
+                LivingEntity target = targets[head];
+                if (fireAt[head] < 0 || target == null) continue;
+                int charge = fireAt[head] - CHARGE_TICKS;
+                if (!target.isAlive() && ticks < fireAt[head]) { // gone before its turn: this head rests
+                    fireAt[head] = -1;
+                    fumarole.setVent(head, FumaroleEntity.VENT_IDLE);
+                    fumarole.setHeadTarget(head, null);
+                    continue;
+                }
+                if (ticks >= charge - TURN_TICKS && ticks <= fireAt[head]) fumarole.aimHead(head, target, false);
+                if (ticks == charge - TURN_TICKS) fumarole.setHeadTarget(head, target);
+                if (ticks == charge) {
+                    fumarole.setVent(head, FumaroleEntity.VENT_CHARGING);
+                    fumarole.playSound(fr.lordfinn.steveparty.sounds.ModSounds.FUMAROLE_CHARGE, 2.0f, 0.9f + 0.1f * head);
+                    fumarole.playSpit(head);
+                }
+                if (ticks == fireAt[head]) {
+                    if (fumarole.inRange(head, target)) {
+                        fumarole.setVent(head, FumaroleEntity.VENT_SPITTING);
+                        fumarole.blast(head, target);
+                    } else {
+                        fumarole.setVent(head, FumaroleEntity.VENT_IDLE);
+                    }
+                }
+                if (ticks == fireAt[head] + SPIT_TICKS) fumarole.setVent(head, FumaroleEntity.VENT_IDLE);
             }
         }
 
         @Override
         public void stop() {
-            fumarole.setVent(FumaroleEntity.VENT_IDLE);
-            nextShot = fumarole.getWorld().getTime() + COOLDOWN_MIN + fumarole.getRandom().nextInt(COOLDOWN_SPREAD + 1);
-            target = null;
+            for (int head = 0; head < fireAt.length; head++) {
+                fumarole.setVent(head, FumaroleEntity.VENT_IDLE);
+                fumarole.setHeadTarget(head, null);
+                fumarole.restHead(head);
+                targets[head] = null;
+            }
+            nextVolley = fumarole.getWorld().getTime() + COOLDOWN_MIN + fumarole.getRandom().nextInt(COOLDOWN_SPREAD + 1);
         }
     }
 
-    /** Turns its neck (head yaw and pitch) so that the nozzle, not its eyes, points at the target. */
+    /** Turns its body toward the target (slowly: its body follows its look), its centre head watching it. */
     static void aim(FumaroleEntity fumarole, LivingEntity target) {
-        Vec3d look = fumarole.getEyePos().add(FumaroleEntity.aimPoint(target).subtract(fumarole.nozzle()));
-        fumarole.getLookControl().lookAt(look.x, look.y, look.z, fumarole.getMaxLookYawChange(), 40);
+        fumarole.getLookControl().lookAt(target, fumarole.getMaxLookYawChange(), 40);
     }
 
     /**
@@ -281,6 +352,7 @@ public final class FumaroleGoals {
             LivingEntity target = fumarole.getTarget();
             if (target == null) return;
             aim(fumarole, target);
+            fumarole.setHeadTarget(0, target);
             if (--repath <= 0) {
                 repath = 20;
                 fumarole.getNavigation().startMovingTo(target, 1.0);
@@ -290,6 +362,7 @@ public final class FumaroleGoals {
         @Override
         public void stop() {
             fumarole.getNavigation().stop();
+            fumarole.setHeadTarget(0, null);
         }
     }
 }

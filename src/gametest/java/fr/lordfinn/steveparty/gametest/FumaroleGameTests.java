@@ -185,14 +185,15 @@ public class FumaroleGameTests implements FabricGameTest {
         fumarole.setYaw(-90);
         fumarole.setBodyYaw(-90);
         fumarole.setHeadYaw(-90);
+        fumarole.restHead(0);
         fumarole.setTank(5);
-        Vec3d nozzle = fumarole.nozzle();
+        Vec3d nozzle = fumarole.nozzle(0);
         PigEntity zombie = context.spawnEntity(EntityType.PIG, new BlockPos(1, 1, 8));
         zombie.setAiDisabled(true);
         zombie.refreshPositionAndAngles(nozzle.x + 6, context.getAbsolutePos(new BlockPos(0, 1, 0)).getY(), nozzle.z, 0, 0);
         float before = zombie.getHealth();
-        List<LivingEntity> hurt = fumarole.blast(zombie);
-        context.assertTrue(hurt.contains(zombie), "the pig is hit: origin " + fumarole.blastOrigin() + " nozzle " + nozzle + " pig " + zombie.getPos() + " tank " + fumarole.getTank() + " hurt " + hurt);
+        List<LivingEntity> hurt = fumarole.blast(0, zombie);
+        context.assertTrue(hurt.contains(zombie), "the pig is hit: origin " + fumarole.blastOrigin(0) + " nozzle " + nozzle + " pig " + zombie.getPos() + " tank " + fumarole.getTank() + " hurt " + hurt);
         context.assertTrue(before - zombie.getHealth() >= FumaroleEntity.BLAST_DAMAGE - 1.5f, "about 6 damage: " + (before - zombie.getHealth()));
         context.assertTrue(zombie.isOnFire(), "set on fire");
         Vec3d push = zombie.getVelocity();
@@ -204,7 +205,7 @@ public class FumaroleGameTests implements FabricGameTest {
         near.refreshPositionAndAngles(nozzle.x + 3, context.getAbsolutePos(new BlockPos(0, 1, 0)).getY(), nozzle.z, 0, 0);
         fumarole.setTank(0);
         float nearBefore = near.getHealth();
-        fumarole.blast(near);
+        fumarole.blast(0, near);
         float puffDamage = nearBefore - near.getHealth();
         context.assertTrue(puffDamage > 0 && puffDamage <= FumaroleEntity.PUFF_DAMAGE + 0.01f, "a weak puff: " + puffDamage);
         context.assertFalse(near.isOnFire(), "the puff burns nothing");
@@ -218,7 +219,7 @@ public class FumaroleGameTests implements FabricGameTest {
         for (int dy = -3; dy <= 3; dy++) for (int dz = -3; dz <= 3; dz++) context.getWorld().setBlockState(wall.add(0, dy, dz), Blocks.STONE.getDefaultState());
         fumarole.setTank(3);
         float hiddenBefore = hidden.getHealth();
-        fumarole.blast(hidden);
+        fumarole.blast(0, hidden);
         context.assertEquals(hidden.getHealth(), hiddenBefore, "the wall stops the steam");
         for (int dy = -3; dy <= 3; dy++) for (int dz = -3; dz <= 3; dz++) context.getWorld().setBlockState(wall.add(0, dy, dz), Blocks.AIR.getDefaultState());
         zombie.discard();
@@ -261,6 +262,29 @@ public class FumaroleGameTests implements FabricGameTest {
         } finally {
             griefing.set(before, world.getServer());
         }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void eachHeadHasItsOwnVentAndTarget(TestContext context) {
+        floor(context, 8);
+        FumaroleEntity fumarole = spawn(context, new BlockPos(4, 1, 4));
+        PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(1, 1, 1));
+        int heads = FumaroleEntity.HEADS.length;
+        for (int head = 0; head < heads; head++) {
+            fumarole.setVent(head, (byte) (head % 3));
+            fumarole.setHeadTarget(head, head == heads - 1 ? pig : null);
+        }
+        for (int head = 0; head < heads; head++) {
+            context.assertEquals(fumarole.getVent(head), (byte) (head % 3), "head " + head + "'s vent");
+            context.assertTrue(fumarole.getHeadTarget(head) == (head == heads - 1 ? pig : null), "head " + head + "'s target");
+        }
+        fumarole.setVent(0, FumaroleEntity.VENT_SPITTING);
+        for (int head = 1; head < heads; head++) {
+            context.assertEquals(fumarole.getVent(head), (byte) (head % 3), "head " + head + " unchanged");
+        }
+        pig.discard();
+        fumarole.discard();
         context.complete();
     }
 
