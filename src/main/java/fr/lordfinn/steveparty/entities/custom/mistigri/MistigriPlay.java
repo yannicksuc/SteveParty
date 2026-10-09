@@ -298,7 +298,7 @@ public final class MistigriPlay {
                 }
                 case ON_BACK -> {
                     // held up in his paws, over his belly
-                    Vec3d paws = mistigri.getPos().add(0, 1.05, 0);
+                    Vec3d paws = mistigri.getPos().add(0, 1.25, 0);
                     acorn.setPosition(paws.x, paws.y, paws.z);
                     acorn.setVelocity(Vec3d.ZERO);
                     acorn.velocityDirty = true;
