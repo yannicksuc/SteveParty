@@ -175,7 +175,6 @@ public class ModEntities {
                     .<fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity>create(fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity::new, SpawnGroup.MISC)
                     .dimensions(1.5f, 1.5f)
                     .makeFireImmune()
-                    .disableSummon()
                     .maxTrackingRange(10)
                     .trackingTickInterval(1)
                     .build(MISTIGRI_DIE_KEY.getValue().toString())

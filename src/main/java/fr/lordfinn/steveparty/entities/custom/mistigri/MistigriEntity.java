@@ -71,7 +71,9 @@ import java.util.UUID;
  *     <li><b>Loot</b>: the Loaded Die (loot table entities/mistigri).</li>
  * </ul>
  * A board space's Mistigri ({@link #isBoardActor}) does none of that: invulnerable, moved by the board, never saved.
- * His acts (grooming, a swat...) are a tracked {@link Action} played by the client's animation controller.
+ * His acts (grooming, a swat...) are a tracked {@link Action} played by the client's animation controller; a command
+ * may ask for one ({@code Action:"groom"} in his data: groom, stretch, yawn, swat, eat, leap, summon), as it may set
+ * {@code Angry} (ticks), {@code Loafing} or {@code Sitting}: building blocks for players' mini-games.
  */
 public class MistigriEntity extends TameableEntity implements GeoEntity, FollowsOwnerAnywhere {
     public static final float WIDTH = 1.2f, HEIGHT = 1.5f;
@@ -129,6 +131,26 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     final Map<UUID, Long> badLuckCooldowns = new HashMap<>();
     /** The next time he may knock something off (world time): not every minute. */
     long nextSwatTime;
+    /** What his swat in progress knocks off, and in how many ticks (the paw landing). */
+    private @Nullable net.minecraft.entity.decoration.ItemFrameEntity swatFrame;
+    private @Nullable BlockPos swatShelf;
+    private int swatIn;
+
+    /** His swat knocks {@code frame}'s item (or a book out of {@code shelf}) off in {@code ticks}. */
+    void swatAt(@Nullable net.minecraft.entity.decoration.ItemFrameEntity frame, @Nullable BlockPos shelf, int ticks) {
+        swatFrame = frame;
+        swatShelf = shelf;
+        swatIn = ticks;
+    }
+
+    private void tickSwat(ServerWorld world) {
+        if (swatIn <= 0 || --swatIn > 0) return;
+        if (swatFrame != null && swatFrame.isAlive()) MistigriGoals.knock(world, swatFrame);
+        else if (swatShelf != null) MistigriGoals.knock(world, swatShelf);
+        swatFrame = null;
+        swatShelf = null;
+        nextSwatTime = world.getTime() + MathHelper.nextInt(random, MistigriGoals.SWAT_COOLDOWN_MIN, MistigriGoals.SWAT_COOLDOWN_MAX);
+    }
 
     public MistigriEntity(EntityType<? extends TameableEntity> entityType, World world) {
         super(entityType, world);
@@ -287,6 +309,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         if (actionTicks > 0 && --actionTicks == 0) this.dataTracker.set(ACTION, Action.NONE.ordinal());
         if (angryTicks > 0 && --angryTicks == 0) this.dataTracker.set(ANGRY, false);
         if (boardActor || !isAlive()) return;
+        tickSwat(world);
         if (age % 2 == 0) MistigriBadLuck.tickCrossings(world, this);
         if (age % 20 == 5) {
             if (isTamed()) {
@@ -467,6 +490,12 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         if (nbt.contains("Chest")) loafOn(BlockPos.fromLong(nbt.getLong("Chest")));
         else setLoafing(nbt.getBoolean("Loafing"));
         nextSwatTime = nbt.getLong("NextSwat");
+        // an act asked by a command (never saved): /data merge entity @e[type=steveparty:mistigri,limit=1] {Action:"groom"}
+        if (nbt.contains("Action")) {
+            for (Action action : Action.values()) {
+                if (action != Action.NONE && action.animation.equals(nbt.getString("Action"))) act(action);
+            }
+        }
     }
 
     // ---------------------------------------------------------------- sounds

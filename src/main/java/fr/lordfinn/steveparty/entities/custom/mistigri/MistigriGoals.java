@@ -148,7 +148,7 @@ public final class MistigriGoals {
         @Override
         public boolean shouldContinue() {
             if (ticks > 200 || mistigri.isAngry() || mistigri.isSitting()) return false;
-            if (swatAt > 0) return ticks < swatAt + 12;
+            if (swatAt > 0) return false;
             return frame != null ? frame.isAlive() && !frame.getHeldItemStack().isEmpty() : shelf != null;
         }
 
@@ -185,15 +185,12 @@ public final class MistigriGoals {
                     mistigri.setYaw(yaw);
                     mistigri.setBodyYaw(yaw);
                     mistigri.setHeadYaw(yaw);
-                    mistigri.act(Action.SWAT);
+                    mistigri.act(Action.SWAT); // he stands still for it (Hold): the paw lands mid-swing
+                    mistigri.swatAt(frame, shelf, 10);
                     swatAt = ticks;
                 } else if (ticks % 20 == 0) {
                     mistigri.getNavigation().startMovingTo(target.x, target.y, target.z, 0.9);
                 }
-            } else if (ticks == swatAt + 10 && mistigri.getWorld() instanceof ServerWorld world) {
-                if (frame != null) knock(world, frame);
-                else knock(world, shelf);
-                mistigri.nextSwatTime = world.getTime() + MathHelper.nextInt(mistigri.getRandom(), SWAT_COOLDOWN_MIN, SWAT_COOLDOWN_MAX);
             }
         }
     }
