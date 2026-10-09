@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class PlayerEntityModelGlandouilleCarryMixin {
     /** The main arm raised to a little under horizontal (the hand under the stack), turned a little outward. */
     @Unique
-    private static final float STEVEPARTY$CARRY_PITCH = -1.1F, STEVEPARTY$CARRY_OUTWARD = 0.3F;
+    private static final float STEVEPARTY$CARRY_PITCH = -1.1F, STEVEPARTY$CARRY_OUTWARD = 0.4F;
 
     /** After the biped pose, before the sleeves copy it. */
     @Inject(method = "setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V", at = @At(value = "INVOKE",
@@ -38,7 +38,7 @@ public class PlayerEntityModelGlandouilleCarryMixin {
         float walk = MathHelper.cos(limbAngle * 0.6662F + (right ? MathHelper.PI : 0F)) * 0.3F * limbDistance;
         float swing = MathHelper.sin(MathHelper.sqrt(model.handSwingProgress) * MathHelper.PI) * 0.9F;
         arm.pitch = STEVEPARTY$CARRY_PITCH + walk - swing;
-        arm.yaw = turn + (right ? -STEVEPARTY$CARRY_OUTWARD : STEVEPARTY$CARRY_OUTWARD);
+        arm.yaw = turn + (right ? STEVEPARTY$CARRY_OUTWARD : -STEVEPARTY$CARRY_OUTWARD);
         arm.roll = 0F;
     }
 }
