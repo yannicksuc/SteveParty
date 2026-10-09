@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -128,7 +129,7 @@ public class PowerupTrapGameTests implements FabricGameTest {
             try {
                 step.run();
             } catch (RuntimeException e) {
-                fr.lordfinn.steveparty.Steveparty.LOGGER.error("Trap test failed: {}", e.getMessage());
+                Steveparty.LOGGER.error("Trap test failed: {}", e.getMessage());
                 throw e;
             }
         });

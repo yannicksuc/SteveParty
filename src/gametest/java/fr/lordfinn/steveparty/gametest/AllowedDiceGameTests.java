@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.dice.DiceModules;
@@ -155,7 +156,7 @@ public class AllowedDiceGameTests implements FabricGameTest {
     public void theGhostSlotsListACopyOfTheDieClicked(TestContext context) {
         ServerPlayerEntity player = player(context);
         context.setBlockState(CONTROLLER.down(), net.minecraft.block.Blocks.STONE);
-        context.setBlockState(CONTROLLER, fr.lordfinn.steveparty.blocks.ModBlocks.PARTY_CONTROLLER);
+        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
         PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
         atEnd(context, () -> context.removeBlock(CONTROLLER));
         PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);

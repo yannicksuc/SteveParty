@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.components.MobEntityComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -110,11 +111,11 @@ public class TokenSpellGameTests implements FabricGameTest {
         ServerPlayerEntity player = wandHolder(context);
         try {
             context.assertTrue(TokenizerWandItem.castSpell(player, llama.getId(), 1F, BLUE) == SpellResult.TOKENIZED, "tokenized");
-            player.setStackInHand(Hand.MAIN_HAND, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.TOKEN));
+            player.setStackInHand(Hand.MAIN_HAND, new net.minecraft.item.ItemStack(ModItems.TOKEN));
             ActionResult result = player.interact(llama, Hand.MAIN_HAND);
             context.assertTrue(result.isAccepted(), "the Token takes the click: " + result);
             context.assertTrue(!player.hasVehicle(), "not riding the llama");
-            context.assertTrue(player.getMainHandStack().get(fr.lordfinn.steveparty.components.ModComponents.ENTITY_DATA_COMPONENT) != null,
+            context.assertTrue(player.getMainHandStack().get(ModComponents.ENTITY_DATA_COMPONENT) != null,
                     "the llama is stored in the Token");
         } finally {
             TestPlayers.remove(context, player);

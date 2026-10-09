@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -207,7 +208,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
                 List<ItemStack> states = new java.util.ArrayList<>(List.of(new ItemStack(item)));
                 ItemStack other = new ItemStack(item);
                 other.set(ModComponents.INVENTORY_POS, new BlockPos(-29999999, -64, -29999999));
-                other.set(ModComponents.SHOP_LINK, new fr.lordfinn.steveparty.components.ShopLinkComponent(java.util.UUID.randomUUID(), new BlockPos(-29999999, -64, -29999999)));
+                other.set(ModComponents.SHOP_LINK, new ShopLinkComponent(java.util.UUID.randomUUID(), new BlockPos(-29999999, -64, -29999999)));
                 other.set(ModComponents.TB_START_OWNER, java.util.UUID.randomUUID().toString());
                 other.set(ModComponents.TB_START_BOUND_ENTITY, java.util.UUID.randomUUID().toString());
                 states.add(other);

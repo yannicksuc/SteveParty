@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
@@ -191,8 +192,8 @@ public class ReplayTileGameTests implements FabricGameTest {
         PartyData data = controller.getPartyData();
 
         // The player threw a (named, like a forged one) Power-up die: it was spent
-        ItemStack die = fr.lordfinn.steveparty.dice.DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE),
-                java.util.Map.of(fr.lordfinn.steveparty.dice.DiceModules.POWER_UP, 1));
+        ItemStack die = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE),
+                java.util.Map.of(DiceModules.POWER_UP, 1));
         die.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, net.minecraft.text.Text.literal("Lucky"));
         DiceEntity dice = ModEntities.DICE_ENTITY.create(context.getWorld());
         context.assertTrue(dice != null, "dice created");

@@ -19,6 +19,8 @@ import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
+import fr.lordfinn.steveparty.components.MiniGamePageRef;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -35,7 +37,9 @@ import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
 import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.MiniGameTest.Status;
+import fr.lordfinn.steveparty.minigame.PartyMiniGameSession;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
+import fr.lordfinn.steveparty.podium.PodiumOccupant;
 import fr.lordfinn.steveparty.podium.Podiums;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
@@ -255,7 +259,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
             base.setPlayers(GoalPoleBaseBlockEntity.Players.PARTY, 16);
             MiniGamePages.addPodiumLink(server, id, new MiniGamePodiumLink(global(context, basePos), MiniGamePodiumLink.Kind.COUNTER));
             base.credit("old", 3, null);
-            ((PodiumBlockEntity) context.getBlockEntity(second)).setOccupant(new fr.lordfinn.steveparty.podium.PodiumOccupant(UUID.randomUUID(), "old", -1, 2, 0));
+            ((PodiumBlockEntity) context.getBlockEntity(second)).setOccupant(new PodiumOccupant(UUID.randomUUID(), "old", -1, 2, 0));
 
             context.assertEquals(MiniGameTest.check(server, id).status(), Status.READY, "two players near the players pipe");
             context.assertEquals(MiniGameTest.start(server, id, observer, 0), Status.READY, "the test starts");
@@ -317,7 +321,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
         try {
             alone(context, p1, p2);
             ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
-            stack.set(fr.lordfinn.steveparty.components.ModComponents.MINI_GAME_PAGE, new fr.lordfinn.steveparty.components.MiniGamePageRef(id, "", false));
+            stack.set(ModComponents.MINI_GAME_PAGE, new MiniGamePageRef(id, "", false));
             p1.setStackInHand(Hand.MAIN_HAND, stack);
             p1.changeGameMode(GameMode.ADVENTURE);
             context.assertTrue(MiniGamePageNetworking.testAction(p1, new MiniGamePagePayloads.TestAction(Hand.MAIN_HAND, id, true)) == null, "Adventure: not allowed");
@@ -388,7 +392,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
         data.setStepIndex(1);
         controller.setPartyData(data);
         ItemStack pageStack = new ItemStack(ModItems.MINI_GAME_PAGE);
-        pageStack.set(fr.lordfinn.steveparty.components.ModComponents.MINI_GAME_PAGE, new fr.lordfinn.steveparty.components.MiniGamePageRef(pageId, "", false));
+        pageStack.set(ModComponents.MINI_GAME_PAGE, new MiniGamePageRef(pageId, "", false));
         ItemStack catalogue = new ItemStack(ModItems.MINI_GAMES_CATALOGUE);
         MiniGamesCatalogueItem.setCurrentMiniGamePage(catalogue, pageStack);
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, TeamDisposition.freeForAll(uuids));
@@ -442,7 +446,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
             PartyControllerEntity controller = party(context, id, MiniGamePartyStep.Phase.COUNTDOWN, p1);
             ((MiniGamePartyStep) controller.getPartyData().getCurrentStep()).depart(controller);
             context.assertTrue(MiniGameTest.of(id) == null, "the test was stopped for the party");
-            context.assertTrue(MiniGameSession.playing(List.of(id)) instanceof fr.lordfinn.steveparty.minigame.PartyMiniGameSession, "the page's mini-game is the party's");
+            context.assertTrue(MiniGameSession.playing(List.of(id)) instanceof PartyMiniGameSession, "the page's mini-game is the party's");
             context.assertEquals(MiniGameTest.check(server, id).status(), Status.PARTY_PLAYING, "no test while a party plays the page");
             context.assertEquals(MiniGameTest.start(server, id, null, 0), Status.PARTY_PLAYING, "refused");
             context.removeBlock(CONTROLLER);

@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.compat.CartridgeApplications;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import fr.lordfinn.steveparty.recipes.TileShapedRecipe;
 
 import fr.lordfinn.steveparty.Steveparty;
@@ -55,7 +58,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
 
     private static ItemStack linked(ItemStack cartridge, BlockPos... links) {
         ItemStack copy = cartridge.copy();
-        copy.set(ModComponents.DESTINATIONS_COMPONENT, new fr.lordfinn.steveparty.components.DestinationsComponent(List.of(links), "overworld"));
+        copy.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(List.of(links), "overworld"));
         return copy;
     }
 
@@ -104,7 +107,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
         BlockPos somewhere = context.getAbsolutePos(new BlockPos(1, 1, 1));
         ItemStack shop = linked(new ItemStack(ModItems.SHOP_CARTRIDGE), somewhere);
         shop.set(ModComponents.COLOR, 0x3355FF);
-        ItemStack back = fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.withSteps(-5);
+        ItemStack back = AdvanceBackCartridgeItem.withSteps(-5);
         for (ItemStack cartridge : List.of(shop, back)) {
             ItemStack tile = craft(context, CraftingRecipeInput.create(3, 2, List.of(p, iron, p, p, cartridge, p)));
             List<TileContents.Slot> in = TileContents.cartridges(tile);
@@ -174,7 +177,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
     public void everyCartridgeIsInTheCartridgesTag(TestContext context) {
         net.minecraft.registry.tag.TagKey<net.minecraft.item.Item> tag =
                 net.minecraft.registry.tag.TagKey.of(net.minecraft.registry.RegistryKeys.ITEM, Steveparty.id("cartridges"));
-        for (ItemStack cartridge : fr.lordfinn.steveparty.compat.CartridgeApplications.cartridges())
+        for (ItemStack cartridge : CartridgeApplications.cartridges())
             context.assertTrue(cartridge.isIn(tag), cartridge.getItem() + " is in #steveparty:cartridges");
         context.complete();
     }

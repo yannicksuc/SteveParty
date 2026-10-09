@@ -5,6 +5,11 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleFlags;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleSearch;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
+import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.minecraft.text.Text;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
@@ -770,7 +775,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             context.assertTrue(a.getPoints(name) == 1 && b.getPoints(name) == 1, "landing on B counts for B only");
 
             // B follows the old global criterion: a landing on A counts for both
-            b.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, fr.lordfinn.steveparty.criteria.ModScoreboardCriteria.LANDED_ON_POLE_ID);
+            b.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, ModScoreboardCriteria.LANDED_ON_POLE_ID);
             poleA.onPlayerArrive(player, context.getWorld(), poleA.getPos());
             context.assertTrue(a.getPoints(name) == 2, "A: its own landing, got " + a.getPoints(name));
             context.assertTrue(b.getPoints(name) == 2, "B: the global criterion counts a landing anywhere, got " + b.getPoints(name));
@@ -1150,7 +1155,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         try {
             context.setBlockState(controllerPos.down(), Blocks.STONE);
             context.setBlockState(controllerPos, ModBlocks.PARTY_CONTROLLER);
-            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller = context.getBlockEntity(controllerPos);
+            PartyControllerEntity controller = context.getBlockEntity(controllerPos);
             GoalPoleBaseBlockEntity base = placeBase(context, base());
             base.onPlacedByPlayer();
             context.assertTrue(base.getPlayers() == GoalPoleBaseBlockEntity.Players.PARTY && base.linkedParty() == controller,
@@ -1161,9 +1166,9 @@ public class GoalPoleGameTests implements FabricGameTest {
             context.assertTrue(everyone.getPlayers() == GoalPoleBaseBlockEntity.Players.ALL, "set by a command: everyone");
 
             context.assertTrue(!base.follows(player), "no party running: nobody");
-            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData data = new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData();
-            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep());
-            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep(new java.util.ArrayList<>()));
+            PartyData data = new PartyData();
+            data.addStep(new PartyStep());
+            data.addStep(new EndPartyStep(new java.util.ArrayList<>()));
             controller.setPartyData(data);
             controller.nextStep();
             context.assertTrue(data.isStarted(), "party running");

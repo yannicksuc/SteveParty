@@ -22,6 +22,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem;
 import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.ZoneFaces;
 import fr.lordfinn.steveparty.minigame.PageZoneTool;
@@ -331,17 +332,17 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             alone(context, p1, p2, host);
             home(context, HOME, id);
             ItemStack remote = new ItemStack(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(!fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
                     "not linked: nothing");
             remote.set(ModComponents.MINI_GAME_REMOTE_LINK, global(context, HOME));
-            context.assertTrue(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) != null,
+            context.assertTrue(MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) != null,
                     "linked: Play, from 30 blocks away");
-            context.assertTrue(!fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host), "a second at most between two presses");
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host), "a second at most between two presses");
             host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null, "Stop");
+            context.assertTrue(MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null, "Stop");
             ((MiniGameControllerBlockEntity) context.getBlockEntity(HOME)).setPage(ItemStack.EMPTY);
             host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(!fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
                     "no page in the controller: nothing to play");
         } finally {
             cleanUp(context, id, p1, p2, host);

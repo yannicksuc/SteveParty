@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileStamping;
@@ -137,8 +139,8 @@ public class TileStampGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aLargeTileIsStampedFromAnyOfItsBlocks(TestContext context) {
         context.setBlockState(TILE.down(), Blocks.STONE);
-        context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE,
-                fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout.LARGE_SOUTH_EAST));
+        context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(ATileBlock.SIZE,
+                TileLayout.LARGE_SOUTH_EAST));
         BoardSpaceBlockEntity tile = context.getBlockEntity(TILE);
         use(context, stencilAndDye(context, "coin", Items.ORANGE_DYE, 1), TILE.add(1, 0, 1));
         context.assertTrue(tile.getStamp() != null && tile.getStamp().sameAs(pattern("coin"), DyeColor.ORANGE), "stamped through a part");

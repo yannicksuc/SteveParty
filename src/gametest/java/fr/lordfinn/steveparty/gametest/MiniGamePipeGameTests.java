@@ -19,10 +19,13 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestAsserts;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.minigame.MiniGameArena;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
@@ -30,6 +33,9 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
+import fr.lordfinn.steveparty.minigame.PageZone;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
@@ -692,8 +698,8 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             context.assertTrue(crafted(context, 3, 3, gold, new ItemStack(Items.ENDER_EYE), gold, star, new ItemStack(ModBlocks.IRON_MINIGAME_PIPE), star, gold, none, gold)
                     .isOf(ModBlocks.GOLDEN_MINIGAME_PIPE.asItem()), "programmedPipe mini-game pipe");
             // The names they had: the iron and programmedPipe pipes are still found under them
-            context.assertTrue(net.minecraft.registry.Registries.BLOCK.get(fr.lordfinn.steveparty.Steveparty.id("super_golden_minigame_pipe")) == ModBlocks.IRON_MINIGAME_PIPE
-                    && net.minecraft.registry.Registries.ITEM.get(fr.lordfinn.steveparty.Steveparty.id("mega_golden_minigame_pipe")) == ModBlocks.GOLDEN_MINIGAME_PIPE.asItem(),
+            context.assertTrue(net.minecraft.registry.Registries.BLOCK.get(Steveparty.id("super_golden_minigame_pipe")) == ModBlocks.IRON_MINIGAME_PIPE
+                    && net.minecraft.registry.Registries.ITEM.get(Steveparty.id("mega_golden_minigame_pipe")) == ModBlocks.GOLDEN_MINIGAME_PIPE.asItem(),
                     "the former ids lead to the iron and programmedPipe pipes");
             context.assertEquals(List.of(PipeKind.COPPER.ordinal() + 1, PipeKind.IRON.ordinal() + 1), List.of(PipeKind.IRON.ordinal(), PipeKind.GOLDEN.ordinal()),
                     "copper, iron, golden: the order they are listed in");
@@ -787,13 +793,13 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         }
         // A page that still carries pad positions loses them when the server next looks at it
         ItemStack old = new ItemStack(ModItems.MINI_GAME_PAGE);
-        old.set(fr.lordfinn.steveparty.components.ModComponents.DESTINATIONS_COMPONENT,
-                new fr.lordfinn.steveparty.components.DestinationsComponent(new ArrayList<>(List.of(new BlockPos(1, 2, 3))), ""));
+        old.set(ModComponents.DESTINATIONS_COMPONENT,
+                new DestinationsComponent(new ArrayList<>(List.of(new BlockPos(1, 2, 3))), ""));
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 2, 1.5);
         try {
             long time = context.getWorld().getTime();
             old.getItem().inventoryTick(old, context.getWorld(), player, (int) (20 - time % 20) % 20, false);
-            context.assertTrue(!old.contains(fr.lordfinn.steveparty.components.ModComponents.DESTINATIONS_COMPONENT), "the old pad positions are dropped");
+            context.assertTrue(!old.contains(ModComponents.DESTINATIONS_COMPONENT), "the old pad positions are dropped");
         } finally {
             TestPlayers.leaveMiniGames(context, player);
         }
@@ -814,27 +820,27 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         BlockPos black = mouth(context, BLACK, 5, 5);
         ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
         UUID id = page(context, stack, black);
-        MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(new fr.lordfinn.steveparty.minigame.PageZone(world.getRegistryKey(),
+        MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(new PageZone(world.getRegistryKey(),
                 net.minecraft.util.math.BlockBox.create(context.getAbsolutePos(new BlockPos(3, 1, 3)), context.getAbsolutePos(new BlockPos(7, 5, 7)))))
                 .withRestore(true));
         BlockPos pipePos = miniGamePipe(context, ModBlocks.COPPER_MINIGAME_PIPE, 1, 1, stack);
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
         player.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 3));
-        fr.lordfinn.steveparty.minigame.MiniGameArena arena = new fr.lordfinn.steveparty.minigame.MiniGameArena();
+        MiniGameArena arena = new MiniGameArena();
         Runnable cleanup = () -> {
             arena.end();
-            for (fr.lordfinn.steveparty.minigame.zone.ZoneBubble left : fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.all()) left.endNow();
+            for (ZoneBubble left : ZoneBubbles.all()) left.endNow();
             TestPlayers.leaveMiniGames(context, player);
         };
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
         when(context, () -> TestAsserts.cameOutAt(context, player, black), 40, "never came out of the entry pipe", () -> guarded(context, cleanup, () -> {
-            context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) == null
-                    && fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.all().isEmpty(), "in the arena out of a round: no bubble");
+            context.assertTrue(ZoneBubbles.ofPlayer(player) == null
+                    && ZoneBubbles.all().isEmpty(), "in the arena out of a round: no bubble");
             context.assertTrue(player.getInventory().count(Items.DIAMOND) == 3, "it keeps what it owns");
             // A round of the page, started: its bubble
             context.assertEquals(arena.begin(server, id, List.of(player), List.of(), () -> true),
-                    fr.lordfinn.steveparty.minigame.zone.ZoneBubble.Refusal.NONE, "a round begins");
-            context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) != null && player.getInventory().count(Items.DIAMOND) == 0,
+                    ZoneBubble.Refusal.NONE, "a round begins");
+            context.assertTrue(ZoneBubbles.ofPlayer(player) != null && player.getInventory().count(Items.DIAMOND) == 0,
                     "a started round: in its bubble, with a session inventory");
             arena.end();
             context.assertTrue(player.getInventory().count(Items.DIAMOND) == 3, "the round over: its diamonds back");

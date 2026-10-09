@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
@@ -126,7 +127,7 @@ public class PartyHudGameTests implements FabricGameTest {
             context.assertEquals(live.standings().get(1).stars(), 0, "an unknown owner holds nothing");
 
             // Other items picked: the counts follow
-            controller.setCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.COIN, renamed);
+            controller.setCurrency(PartyCurrency.COIN, renamed);
             context.assertEquals(capture(context, controller).standings().getFirst().coins(), 5, "the renamed nuggets are the coins now");
 
             ItemStack forged = DiceFacesComponent.createDie(List.of(new ItemStack(ModItems.DICE_FACES.get(1))));

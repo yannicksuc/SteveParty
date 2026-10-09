@@ -13,10 +13,12 @@ import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
 import fr.lordfinn.steveparty.dice.DiceRollSequence.Phase;
+import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.DiceModuleItem;
+import fr.lordfinn.steveparty.items.custom.PowerUpItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -109,7 +111,7 @@ public class DiceModulesGameTests implements FabricGameTest {
         List<Text> tooltip = new ArrayList<>();
         die.getItem().appendTooltip(die, Item.TooltipContext.DEFAULT, tooltip, TooltipType.BASIC);
         context.assertEquals(tooltip.size(), 8, "the tags, three points, the faces line and three module lines");
-        context.assertTrue(tooltip.getFirst().equals(fr.lordfinn.steveparty.items.custom.PowerUpItem.tags()),
+        context.assertTrue(tooltip.getFirst().equals(PowerUpItem.tags()),
                 "tagged like the power-ups, got " + tooltip.getFirst().getString());
         List<Text> plainTooltip = new ArrayList<>();
         ItemStack plain = with(die("dice_face_1", "dice_face_6"), DiceModules.LUCKY, 2);
@@ -431,7 +433,7 @@ public class DiceModulesGameTests implements FabricGameTest {
         PigEntity pig = token(context, PATH.get(0), roller.getUuid());
         PartyControllerEntity controller = party(context, roller.getUuid(), pig);
         TokenTurnPartyStep turn = (TokenTurnPartyStep) controller.getPartyData().getCurrentStep();
-        DiceEntity dice = context.spawnEntity(fr.lordfinn.steveparty.entities.ModEntities.DICE_ENTITY, DICE);
+        DiceEntity dice = context.spawnEntity(ModEntities.DICE_ENTITY, DICE);
         dice.setItemReference(die("dice_face_4"));
         turn.onDiceRoll(dice, roller.getUuid(), 4, controller);
         dice.discard();

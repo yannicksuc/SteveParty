@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -228,7 +229,7 @@ public class SwitchableGameTests implements FabricGameTest {
             java.nio.file.Files.createDirectories(old.getParent());
             java.nio.file.Files.writeString(old, "{\"_comment\": \"old\", \"switchable_blocks\": [\"minecraft:stone\", \"#minecraft:wool\"]}");
 
-            var config = fr.lordfinn.steveparty.config.ServerConfig.loadFrom(dir);
+            var config = ServerConfig.loadFrom(dir);
             context.assertTrue(config.switchableBlocks.equals(List.of("minecraft:stone", "#minecraft:wool")), "the old list is taken");
             String merged = java.nio.file.Files.readString(dir.resolve("steveparty.json"));
             context.assertTrue(merged.contains("\"switchableBlocks\"") && merged.contains("#minecraft:wool") && merged.contains("\"miniGameBubble\""),
@@ -236,7 +237,7 @@ public class SwitchableGameTests implements FabricGameTest {
             context.assertTrue(!java.nio.file.Files.exists(old) && java.nio.file.Files.exists(old.resolveSibling("server.json.migrated")),
                     "the old file is renamed");
 
-            var again = fr.lordfinn.steveparty.config.ServerConfig.loadFrom(dir);
+            var again = ServerConfig.loadFrom(dir);
             context.assertTrue(again.switchableBlocks.equals(config.switchableBlocks) && again.mulaMaxSites == 10, "read back the same next time");
         } catch (java.io.IOException e) {
             throw new RuntimeException(e);
