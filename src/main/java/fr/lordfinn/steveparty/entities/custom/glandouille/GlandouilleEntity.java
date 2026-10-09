@@ -119,6 +119,11 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     public static final float BONE_MEAL_ACORN_CHANCE = 0.4f;
     /** A crash or a hit of its charge sends its cap flying, very rarely (never while it carries a tower). */
     public static final float HAT_LOSS_CHANCE = 0.03f;
+    /** A thrown frosty one landing at less than this angle with the ground (degrees) slides on instead of stopping. */
+    public static final double ICE_LANDING_MAX_ANGLE = 60;
+    /** Landed sliding: its speed kept from the throw, at most this (blocks per tick), and what it keeps each tick. */
+    public static final double ICE_LANDING_KEEP = 0.5, ICE_LANDING_MAX_SPEED = 0.6;
+    public static final double ICE_FRICTION = 0.98, ICE_FRICTION_ON_ICE = 0.99;
     /** Room kept above a tower (blocks) when it picks where to walk. */
     public static final double CLEARANCE_MARGIN = 0.1;
     /** How often (ticks) a tower checks that its top ones are not in a block (a ceiling put over it, an overhang). */
@@ -193,6 +198,10 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     /** Its tower's height from its feet (blocks), the bottom one's cache: -1 until computed, again when the tower changes. */
     private double towerHeight = -1;
     private int slideRelaunches;
+    /** Slid on from a throw's landing: a wall stops it dizzy (no bounce), it slows like a block on ice. */
+    private boolean iceLanding;
+    /** Its velocity as it was moved this tick in flight (the landing's angle). */
+    private Vec3d flightVelocity = Vec3d.ZERO;
     /** Hopping off a tower: the tower it lands back on (null: the ground). */
     private @Nullable GlandouilleEntity hopOnto;
     /** Its old tower mates, left alone (never shoved) until {@link #sparedUntil}. */
@@ -975,12 +984,31 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             playSound(ModSounds.GLANDOUILLE_RAM, 1f, 1.2f);
         }
         if (flown % 2 == 0) world.spawnParticles(ParticleTypes.CLOUD, getX(), getY() + 0.3, getZ(), 1, 0, 0, 0, 0);
-        if (--moodTicks <= 0 || (flown > 2 && (this.horizontalCollision || this.verticalCollision || isOnGround()))) {
+        boolean landed = flown > 2 && (this.horizontalCollision || this.verticalCollision || isOnGround());
+        // a thrown frosty one coming down at a grazing angle onto the ground slides on, like a curling stone
+        if (landed && thrown && getVariant() == GlandouilleVariant.FROSTY && isOnGround() && !this.horizontalCollision
+                && grazing(flightVelocity)) {
+            setNoGravity(false);
+            Vec3d flat = new Vec3d(flightVelocity.x, 0, flightVelocity.z).multiply(ICE_LANDING_KEEP);
+            if (flat.length() > ICE_LANDING_MAX_SPEED) flat = flat.normalize().multiply(ICE_LANDING_MAX_SPEED);
+            startSlide(flat, 0.5f);
+            this.iceLanding = true;
+            world.spawnParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 0.1, getZ(), 10, 0.25, 0.05, 0.25, 0.05);
+            return;
+        }
+        this.flightVelocity = getVelocity();
+        if (--moodTicks <= 0 || landed) {
             setNoGravity(false);
             if (this.horizontalCollision) playSound(ModSounds.GLANDOUILLE_BONK, 1f, 1.2f);
             setVelocity(getVelocity().multiply(0.2, 1, 0.2));
             stun();
         }
+    }
+
+    /** Coming down at less than {@link #ICE_LANDING_MAX_ANGLE} with the ground. */
+    private static boolean grazing(Vec3d velocity) {
+        double angle = Math.toDegrees(Math.atan2(Math.abs(velocity.y), velocity.horizontalLength()));
+        return angle < ICE_LANDING_MAX_ANGLE;
     }
 
     // ---------------------------------------------------------------- hopping off a tower
@@ -1057,11 +1085,21 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
      * tower on the old mossy one, it stops and climbs on top ({@link GlandouilleTowers#carryOnImpact}).
      */
     public void startSlide(Vec3d velocity) {
+        startSlide(velocity, 1f);
+    }
+
+    private void startSlide(Vec3d velocity, float volume) {
         if (boardActor) return;
         this.slideVelocity = new Vec3d(velocity.x, 0, velocity.z);
         this.slideRelaunches = 0;
+        this.iceLanding = false;
         setMood(Mood.SLIDING, 200);
-        playSound(ModSounds.GLANDOUILLE_SLIDE, 1f, 1f);
+        playSound(ModSounds.GLANDOUILLE_SLIDE, volume, 1f);
+    }
+
+    /** Slid on from a throw's landing (see {@link #ICE_LANDING_MAX_ANGLE}). */
+    public boolean iceLanding() {
+        return iceLanding && getMood() == Mood.SLIDING;
     }
 
     public Vec3d slideVelocity() {
@@ -1083,6 +1121,14 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
                 bounced = true;
             }
             slideVelocity = new Vec3d(x, 0, z);
+            if (bounced && iceLanding) {
+                // slid on from a throw into a wall: it stops there, dizzy like any other
+                iceLanding = false;
+                playSound(ModSounds.GLANDOUILLE_BONK, 1f, 1.2f);
+                setVelocity(0, v.y, 0);
+                stun();
+                return;
+            }
             if (bounced) {
                 playSound(ModSounds.GLANDOUILLE_BONK, 0.7f, 1.4f);
                 world.spawnParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 0.3, getZ(), 6, 0.2, 0.2, 0.2, 0.05);
@@ -1093,7 +1139,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
                 }
             }
         }
-        slideVelocity = slideVelocity.multiply(0.985);
+        slideVelocity = slideVelocity.multiply(iceLanding ? iceFriction() : 0.985);
         setVelocity(slideVelocity.x, v.y, slideVelocity.z);
         Box reach = getBoundingBox().expand(0.15);
         for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, reach,
@@ -1120,6 +1166,12 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         if (--moodTicks <= 0 || slideVelocity.horizontalLength() < 0.03) {
             setMood(Mood.STUNNED, getVariant().stunTicks / 2);
         }
+    }
+
+    /** Slid on from a throw: like a block on the ground, a little less on ice or packed snow. */
+    private double iceFriction() {
+        float slipperiness = getWorld().getBlockState(getVelocityAffectingPos()).getBlock().getSlipperiness();
+        return slipperiness > 0.6f ? ICE_FRICTION_ON_ICE : ICE_FRICTION;
     }
 
     /** The bottom one of a tower hit something: whoever is up there slides with it (frosty), see GlandouilleTowers. */
