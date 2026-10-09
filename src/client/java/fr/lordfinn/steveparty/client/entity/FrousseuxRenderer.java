@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.entity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -66,22 +67,17 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     /** Its body's opacity: faded out of its owner's way (FrousseuxEntity#bodyAlpha), else whole. */
     @Override
     public Color getRenderColor(FrousseuxEntity frousseux, float partialTick, int packedLight) {
-        return Color.ofARGB(alpha(frousseux.bodyAlpha(partialTick)), 255, 255, 255);
-    }
-
-    static int alpha(float alpha) {
-        return MathHelper.clamp(Math.round(alpha * 255), 0, 255);
+        return Color.ofARGB(Argb.alpha(frousseux.bodyAlpha(partialTick)), 255, 255, 255);
     }
 
     /** {@code rgb} opaque, each channel times {@code brightness} (0 to 1): a flame's colour at its stage. */
     public static int shade(int rgb, float brightness) {
-        return 0xFF000000 | (int) (((rgb >> 16) & 0xFF) * brightness) << 16 | (int) (((rgb >> 8) & 0xFF) * brightness) << 8
-                | (int) ((rgb & 0xFF) * brightness);
+        return Argb.opaque(Argb.scale(rgb, brightness));
     }
 
     /** {@code argb} with the given opacity (0 to 1) over its own. */
     static int withAlpha(int argb, float alpha) {
-        return (alpha((((argb >>> 24) & 0xFF) / 255f) * alpha) << 24) | (argb & 0xFFFFFF);
+        return (Argb.alpha((((argb >>> 24) & 0xFF) / 255f) * alpha) << 24) | (argb & 0xFFFFFF);
     }
 
     /** What it stole: under its body, turning slowly, or flying from the player to it (or back). */

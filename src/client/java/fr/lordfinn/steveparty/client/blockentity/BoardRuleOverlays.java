@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.BoardRuleCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -121,7 +122,7 @@ public final class BoardRuleOverlays {
 
     /** One gate in its own frame: x across, y up, z through. */
     private static void gate(MatrixStack.Entry entry, VertexConsumer consumer, int color, float time) {
-        int frame = darken(color, 0.55f);
+        int frame = Argb.scale(color, 0.55f) & 0xFFFFFF;
         int light = LightmapTextureManager.MAX_LIGHT_COORDINATE;
         box(entry, consumer, -GATE_HALF - POST, 0, -POST, -GATE_HALF + POST, GATE_H, POST, frame, 255, light);
         box(entry, consumer, GATE_HALF - POST, 0, -POST, GATE_HALF + POST, GATE_H, POST, frame, 255, light);
@@ -134,10 +135,6 @@ public final class BoardRuleOverlays {
             int alpha = (int) (150 + 50 * wave);
             quad(entry, consumer, -GATE_HALF + POST, i * band, GATE_HALF - POST, (i + 1) * band, shade, alpha, light);
         }
-    }
-
-    private static int darken(int rgb, float k) {
-        return ((int) (((rgb >> 16) & 255) * k) << 16) | ((int) (((rgb >> 8) & 255) * k) << 8) | (int) ((rgb & 255) * k);
     }
 
     private static int lighten(int rgb, float k) {
