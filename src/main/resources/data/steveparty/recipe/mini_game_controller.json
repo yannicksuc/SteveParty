@@ -3,8 +3,8 @@
   "category": "redstone",
   "pattern": [
     "IGI",
-    "SPS",
-    "IRI"
+    "OPO",
+    "III"
   ],
   "key": {
     "I": {
@@ -13,14 +13,11 @@
     "G": {
       "item": "minecraft:glass"
     },
-    "S": {
-      "item": "minecraft:mushroom_stem"
+    "O": {
+      "item": "minecraft:gold_ingot"
     },
     "P": {
       "item": "minecraft:paper"
-    },
-    "R": {
-      "item": "minecraft:redstone"
     }
   },
   "result": {
