@@ -8,7 +8,10 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriGoals;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
+import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriPlay;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -380,6 +383,105 @@ public class MistigriGameTests implements FabricGameTest {
             frame.discard();
             context.complete();
         });
+    }
+
+    // ---------------------------------------------------------------- play
+
+    private static ItemEntity acorn(TestContext context, BlockPos at) {
+        BlockPos abs = context.getAbsolutePos(at);
+        ItemEntity acorn = new ItemEntity(context.getWorld(), abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5,
+                new ItemStack(ModItems.ACORN));
+        acorn.setVelocity(Vec3d.ZERO);
+        context.getWorld().spawnEntity(acorn);
+        return acorn;
+    }
+
+    // each its own batch: an acorn or a Glandouille next door would catch the other tests' cats' eyes
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "mistigri_acorn", tickLimit = 600)
+    public void aThrownAcornDistractsHimAndHePlaysWithIt(TestContext context) {
+        TestBoards.floor(context, 8);
+        MistigriEntity mistigri = context.spawnEntity(ModEntities.MISTIGRI, new BlockPos(1, 1, 1));
+        mistigri.setAngry(400); // even angry
+        ItemEntity acorn = acorn(context, new BlockPos(6, 1, 6));
+        Vec3d[] reached = {null};
+        context.runAtEveryTick(() -> {
+            context.assertTrue(acorn.isAlive(), "he never takes the acorn");
+            if (reached[0] == null) {
+                if (mistigri.isPlaying() && acorn.squaredDistanceTo(mistigri) < 2.5 * 2.5) {
+                    context.assertFalse(mistigri.isAngry(), "the acorn made him forget his anger");
+                    reached[0] = acorn.getPos();
+                }
+                return;
+            }
+            if (acorn.getPos().squaredDistanceTo(reached[0]) > 0.6 * 0.6) {
+                acorn.discard();
+                context.complete();
+            }
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "mistigri_acorn_picked_up", tickLimit = 400)
+    public void heStopsPlayingWhenTheAcornIsPickedUp(TestContext context) {
+        TestBoards.floor(context, 8);
+        MistigriEntity mistigri = context.spawnEntity(ModEntities.MISTIGRI, new BlockPos(2, 1, 2));
+        ItemEntity acorn = acorn(context, new BlockPos(4, 1, 2));
+        int[] pickedAt = {-1};
+        int[] tick = {0};
+        context.runAtEveryTick(() -> {
+            tick[0]++;
+            if (pickedAt[0] < 0) {
+                if (mistigri.isPlaying()) {
+                    acorn.discard(); // as a player picking it up
+                    pickedAt[0] = tick[0];
+                }
+                return;
+            }
+            if (tick[0] - pickedAt[0] >= 3) {
+                context.assertFalse(mistigri.isPlaying(), "the game ends with the acorn gone");
+                context.complete();
+            }
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "mistigri_cat_and_mouse", tickLimit = 1200)
+    public void hePlaysCatAndMouseWithAGlandouilleWithoutHurtingIt(TestContext context) {
+        TestBoards.floor(context, 8);
+        GlandouilleEntity glandouille = context.spawnEntity(ModEntities.GLANDOUILLE, new BlockPos(6, 1, 6));
+        float health = glandouille.getHealth();
+        MistigriEntity mistigri = context.spawnEntity(ModEntities.MISTIGRI, new BlockPos(1, 1, 1));
+        context.assertTrue(MistigriPlay.findPrey(context.getWorld(), mistigri) == glandouille, "he spots it");
+        boolean[] chased = {false};
+        context.runAtEveryTick(() -> {
+            context.assertTrue(glandouille.isAlive() && glandouille.getHealth() >= health, "never hurt");
+            if (!chased[0] && glandouille.scaredOf() == mistigri) chased[0] = true;
+            if (chased[0] && glandouille.getNavigation().isFollowingPath()) {
+                glandouille.discard();
+                context.complete(); // pounced on, it runs away
+            }
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "mistigri_board_glandouilles")
+    public void heLeavesBoardAndCarriedGlandouillesAlone(TestContext context) {
+        TestBoards.floor(context, 8);
+        MistigriEntity mistigri = mistigri(context, new BlockPos(2, 1, 2));
+        GlandouilleEntity onTheBoard = context.spawnEntity(ModEntities.GLANDOUILLE, new BlockPos(4, 1, 2));
+        onTheBoard.setBoardActor();
+        GlandouilleEntity ofATile = context.spawnEntity(ModEntities.GLANDOUILLE, new BlockPos(5, 1, 3));
+        ofATile.setInvulnerable(true); // a board space's mob
+        GlandouilleEntity carried = context.spawnEntity(ModEntities.GLANDOUILLE, new BlockPos(3, 1, 4));
+        ServerPlayerEntity player = player(context);
+        player.refreshPositionAndAngles(carried.getX(), carried.getY(), carried.getZ(), 0, 0);
+        carried.startRiding(player, true);
+        context.assertFalse(MistigriPlay.isPrey(onTheBoard), "not the board's");
+        context.assertFalse(MistigriPlay.isPrey(ofATile), "not a board space's");
+        context.assertFalse(MistigriPlay.isPrey(carried), "not one in a player's hands");
+        context.assertTrue(MistigriPlay.findPrey(context.getWorld(), mistigri) == null, "none to play with");
+        onTheBoard.scare(mistigri, 100);
+        ofATile.scare(mistigri, 100);
+        context.assertTrue(onTheBoard.scaredOf() == null && ofATile.scaredOf() == null, "a board's one never runs from him");
+        carried.stopRiding();
+        context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
