@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.mistigri;
 
+import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -183,7 +184,7 @@ public final class MistigriBadLuck {
         Long next = mistigri.badLuckCooldowns.get(player.getUuid());
         if (next != null && next > now) return;
         mistigri.badLuckCooldowns.put(player.getUuid(), now + COOLDOWN);
-        player.addStatusEffect(new StatusEffectInstance(StatusEffects.UNLUCK, UNLUCK_TICKS, 0), mistigri);
+        player.addStatusEffect(new StatusEffectInstance(ModEffects.BAD_LUCK, UNLUCK_TICKS, 0), mistigri);
         Vec3d at = player.getPos().add(0, player.getHeight() * 0.6, 0);
         world.spawnParticles(ParticleTypes.WITCH, at.x, at.y, at.z, 12, 0.3, 0.4, 0.3, 0.05);
         world.playSound(null, at.x, at.y, at.z, ModSounds.MISTIGRI_BAD_LUCK, SoundCategory.NEUTRAL, 0.7f, 1.0f);
