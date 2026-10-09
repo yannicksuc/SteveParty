@@ -7,7 +7,10 @@ import fr.lordfinn.steveparty.items.custom.FlagItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.BlockStateComponent;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeItem;
@@ -42,6 +45,10 @@ import java.util.List;
  * and {@link #FACING} there; its colour in the block entity): it stays up there until the goal is met, then goes down
  * (see {@link GoalPoleFlags}). A pole without a flag has no goal shown: nothing above its top.
  * <p>
+ * A pole comes with its flag: a crafted segment starting a pole (or put on a pole without one) brings the classic red
+ * flag, at the top, facing the player. A broken segment drops without its flag ({@link #FLAG} false in the item's
+ * block state, see {@link #isFlagless}): the flag drops beside it, so breaking and placing again never makes flags.
+ * <p>
  * Right-click on any segment (see {@link #useOf}): a flag hangs it at the top, a dye colours it, shears take it off,
  * an empty hand on a side turns it towards that side; otherwise (an empty hand again, sneaking, or a Wrench) the goal
  * screen opens.
@@ -73,10 +80,30 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     @Override
     public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
         return getDefaultState()
+                // A new pole's flag shows its cloth to the player (not its edge)
                 .with(FACING, ctx.getHorizontalPlayerFacing().getOpposite())
-                .with(FLAG, false)
+                .with(FLAG, !columnFlagged(ctx.getWorld(), ctx.getBlockPos().up())
+                        && !columnFlagged(ctx.getWorld(), ctx.getBlockPos().down()))
                 .with(ON_BASE, isOnBase(ctx.getWorld(), ctx.getBlockPos()))
                 .with(TOP, isTop(ctx.getWorld(), ctx.getBlockPos()));
+    }
+
+    /** Whether the pole at {@code pos} (if any) already has its flag: a segment joining it brings none. */
+    private static boolean columnFlagged(BlockView world, BlockPos pos) {
+        return world.getBlockState(pos).getBlock() instanceof GoalPoleBlock && hasFlag(world, pos);
+    }
+
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+        super.onPlaced(world, pos, state, placer, stack);
+        // The flag of a segment put under a pole goes up to its top
+        if (!world.isClient && state.get(FLAG) && !state.get(TOP)) settleFlag(world, pos);
+    }
+
+    /** @return whether this goal pole item was broken off a pole: it brings no flag (its flag dropped beside it). */
+    public static boolean isFlagless(ItemStack stack) {
+        BlockStateComponent states = stack.get(DataComponentTypes.BLOCK_STATE);
+        return states != null && Boolean.FALSE.equals(states.getValue(FLAG));
     }
 
     @Override
@@ -276,6 +303,7 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
+        if (isFlagless(stack)) tooltip.add(Text.translatable("block.steveparty.goal_pole.tooltip.flagless").formatted(Formatting.GRAY));
         Tooltips.of(tooltip)
                 .summary("block.steveparty.goal_pole.tooltip.summary")
                 .more(more -> more

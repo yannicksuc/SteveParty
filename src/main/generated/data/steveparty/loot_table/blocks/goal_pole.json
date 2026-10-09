@@ -11,6 +11,16 @@
       "entries": [
         {
           "type": "minecraft:item",
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "flag": "false"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ],
           "name": "steveparty:goal_pole"
         }
       ],

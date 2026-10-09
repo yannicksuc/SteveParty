@@ -74,6 +74,7 @@
   "block.steveparty.trading_stall": "Trading Stall",
   "block.steveparty.goal_pole_base": "Goal Pole Base",
   "block.steveparty.goal_pole": "Goal Pole",
+  "block.steveparty.goal_pole.tooltip.flagless": "Without its flag",
   "block.steveparty.goal_pole.tooltip.goal": "its goal",
   "block.steveparty.goal_pole.tooltip.turn": "with an empty hand on a side: turn the flag",
   "block.steveparty.goal_pole.tooltip.shears": "with shears: take the flag off",

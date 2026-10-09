@@ -302,7 +302,7 @@
   "book.steveparty.guide.party.flow.page1.title": "Imprévus et interface",
   "book.steveparty.guide.party.goal_pole.description": "Sauter au sommet et marquer",
   "book.steveparty.guide.party.goal_pole.name": "Mât d'arrivée",
-  "book.steveparty.guide.party.goal_pole.page0.text": "Pose un **socle de mât d'arrivée**, empile des segments de **mât d'arrivée** et accroche un **drapeau** : il se place en haut. Atterris au sommet : **+1 ♥**, une vie bonus : un cœur doré, pas de dégâts de chute, et un point pour le socle.\n\nLe socle compte les arrivées (ou un critère de scoreboard) pour les joueurs de la partie, tous, ceux à proximité ou un sélecteur. Réglage à la clé.",
+  "book.steveparty.guide.party.goal_pole.page0.text": "Pose un **socle de mât d'arrivée**, empile des segments de **mât d'arrivée** : le mât arrive avec son **drapeau** rouge, en haut. Atterris au sommet : **+1 ♥**, une vie bonus : un cœur doré, pas de dégâts de chute, et un point pour le socle.\n\nLe socle compte les arrivées (ou un critère de scoreboard) pour les joueurs de la partie, tous, ceux à proximité ou un sélecteur. Réglage à la clé.",
   "book.steveparty.guide.party.goal_pole.page0.title": "Mât d'arrivée",
   "book.steveparty.guide.party.goal_pole.page1.text": "Clic droit sur le mât : son objectif (au moins 1 par défaut). Le drapeau reste en haut jusqu'à l'objectif, puis descend, ou d'un cran par point. Pas de drapeau : pas d'objectif affiché.\n\nMain vide sur une face : le drapeau s'y tourne. Une teinture le colore, les cisailles le retirent, un drapeau le remet.",
   "book.steveparty.guide.party.goal_pole.page1.title": "Le drapeau",
