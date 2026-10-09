@@ -2,14 +2,8 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
-import fr.lordfinn.steveparty.blocks.custom.signs.MaterialSignItems;
-import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
-import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
-import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
-import fr.lordfinn.steveparty.compat.CartridgeApplications;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.TeleportNetwork;
 import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -27,14 +21,11 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.glandouille.AcornHatItem;
 import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.powerups.PowerUps;
-import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.BlockStateComponent;
 import net.minecraft.component.type.FoodComponent;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.item.AliasedBlockItem;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.util.DyeColor;
 import fr.lordfinn.steveparty.items.custom.*;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
@@ -42,27 +33,19 @@ import fr.lordfinn.steveparty.items.custom.cartridges.StartCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.minecraft.block.Block;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.SpawnEggItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
 public class ModItems {
@@ -235,11 +218,6 @@ public class ModItems {
     public static final Item PARTY_CARD_EVENT = registerCard(PartyCardItem.CardType.EVENT);
     public static final Item PARTY_CARD_REPEAT = registerCard(PartyCardItem.CardType.REPEAT);
     public static final Item PARTY_CARD_SEQUENCE_START = registerCard(PartyCardItem.CardType.SEQUENCE_START);
-    public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
-    public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
-            .icon(() -> new ItemStack(PARTY_CONTROLLER))
-            .displayName(Text.translatable("itemgroup.steveparty"))
-            .build();
 
 
     /**
@@ -296,19 +274,7 @@ public class ModItems {
         return Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(id)), item);
     }
 
-    /** Blocks of a sign material kind, from the tags of the running game (modded blocks included). */
-    private static List<Block> blocksOf(RegistryWrapper.WrapperLookup lookup, SignMaterial kind) {
-        List<Block> blocks = new ArrayList<>();
-        lookup.getWrapperOrThrow(RegistryKeys.BLOCK).getOptional(kind.tag())
-                .ifPresent(list -> list.forEach(entry -> blocks.add(entry.value())));
-        if (blocks.isEmpty()) blocks.add(kind.defaultBlock());
-        return blocks;
-    }
-
     public static void initialize() {
-        // Register the group.
-        Registry.register(Registries.ITEM_GROUP, CUSTOM_ITEM_GROUP_KEY, CUSTOM_ITEM_GROUP);
-
         // The dice faces, the blank one first, then kind by kind in the order of their values:
         // numbers (0 to 10), premium, cursed, coins (+1 to +10), debts (-1 to -10), swap
         DICE_FACES.add(register("blank_dice_face", Item::new));
@@ -333,188 +299,7 @@ public class ModItems {
             POWER_UPS.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(powerUp.itemPath())), item));
         }
 
-        // Register items to the custom item group.
-        ItemGroupEvents.modifyEntriesEvent(CUSTOM_ITEM_GROUP_KEY).register(itemGroup -> {
-            for (int color = 0; color < BandanaItem.COLOR_NAMES.length; color++) {
-                itemGroup.add(BandanaItem.create(color));
-            }
-            itemGroup.add(new ItemStack(BOX_COSTUME));
-            // The tiles: plain, one per cartridge, then their other sizes (same order as in REI)
-            itemGroup.addAll(CartridgeApplications.tileEntries());
-            itemGroup.add(CHECK_POINT);
-            itemGroup.add(BOARD_SPACE_REDSTONE_ROUTER);
-            itemGroup.add(WRENCH);
-            itemGroup.add(TILE_LINKER_BRUSH);
-            itemGroup.add(EXPLORER_HELMET);
-            itemGroup.add(BOARD_SPACE_BEHAVIOR);
-            itemGroup.add(BOARD_SPACE_BEHAVIOR_STOP);
-            itemGroup.add(TILE_BEHAVIOR_START);
-            itemGroup.add(INVENTORY_CARTRIDGE);
-            itemGroup.add(SHOP_CARTRIDGE);
-            itemGroup.add(ADVANCE_BACK_CARTRIDGE);
-            itemGroup.add(AdvanceBackCartridgeItem.withSteps(-3));
-            itemGroup.add(REPLAY_CARTRIDGE);
-            itemGroup.add(TELEPORT_CARTRIDGE);
-            for (TeleportNetwork network : TeleportNetwork.values()) {
-                if (network == TeleportNetwork.VIOLET) continue;
-                itemGroup.add(TeleportCartridgeItem.withNetwork(new ItemStack(TELEPORT_CARTRIDGE), network));
-            }
-            itemGroup.add(STAR_CARTRIDGE);
-            itemGroup.add(GLANDOUILLE_CARTRIDGE);
-            itemGroup.add(FROUSSEUX_CARTRIDGE);
-            itemGroup.add(MISTIGRI_CARTRIDGE);
-            itemGroup.add(THRESHOLD_CARTRIDGE);
-            itemGroup.add(POT_CARTRIDGE);
-            itemGroup.add(MAGPIE_NEST);
-            itemGroup.add(KEY_GATE_CARTRIDGE);
-            itemGroup.add(GATE_KEY);
-            itemGroup.add(TOKENIZER_WAND);
-            itemGroup.add(TOKEN);
-            itemGroup.add(PLUNGER);
-            itemGroup.add(LAPIS_CRYSTAL_BALL);
-            itemGroup.add(PARTY_CONTROLLER);
-            itemGroup.add(STEP_CONTROLLER);
-            itemGroup.add(MINI_GAME_CONTROLLER);
-            itemGroup.add(MINI_GAME_REMOTE);
-            itemGroup.add(PARTY_CARD_TURNS);
-            itemGroup.add(PARTY_CARD_MINIGAME);
-            itemGroup.add(PARTY_CARD_EVENT);
-            itemGroup.add(PARTY_CARD_SEQUENCE_START);
-            itemGroup.add(PARTY_CARD_REPEAT);
-            itemGroup.add(PARTY_BELL);
-            itemGroup.add(GOLD_PODIUM);
-            itemGroup.add(SILVER_PODIUM);
-            itemGroup.add(BRONZE_PODIUM);
-            itemGroup.add(PODIUM);
-            itemGroup.add(PIGGY_BANK);
-            itemGroup.add(MINI_GAMES_CATALOGUE);
-            itemGroup.add(MINI_GAME_PAGE);
-            itemGroup.add(VILLAGER_BLOCK);
-            itemGroup.add(TRADING_STALL);
-            itemGroup.add(CASH_REGISTER);
-            itemGroup.add(SHOPKEEPER_KEY);
-            // The 10 fixed-wood easel signs stay in the game for the worlds that have them, but are no longer
-            // listed: the material easel sign covers every planks, modded ones included
-            RegistryWrapper.WrapperLookup lookup = itemGroup.getContext().lookup();
-            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
-                itemGroup.add(MaterialSignItems.withMaterial(EASEL_SIGN, planks));
-            }
-            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
-                itemGroup.add(MaterialSignItems.withMaterial(WOODEN_PANEL, planks));
-            }
-            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
-                itemGroup.add(MaterialSignItems.withMaterial(WOODEN_CUTOUT_PANEL, planks));
-            }
-            for (Block rock : blocksOf(lookup, SignMaterial.ROCK)) {
-                itemGroup.add(MaterialSignItems.withMaterial(ROCK_SIGN, rock));
-            }
-            for (PlasticRoadSignBlock.Plate plate : PlasticRoadSignBlock.Plate.values()) {
-                ItemStack sign = MaterialSignItems.withPlateColor(PLASTIC_ROAD_SIGN, plate == PlasticRoadSignBlock.Plate.ROUND ? DyeColor.RED : DyeColor.YELLOW);
-                sign.set(DataComponentTypes.BLOCK_STATE, BlockStateComponent.DEFAULT.with(PlasticRoadSignBlock.PLATE, plate));
-                itemGroup.add(sign);
-            }
-            for (DyeColor color : DyeColor.values()) {
-                itemGroup.add(MaterialSignItems.withPlateColor(PLASTIC_ROAD_SIGN, color));
-            }
-            itemGroup.add(STENCIL);
-            for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
-                itemGroup.add(StencilItem.of(pattern));
-            }
-            itemGroup.add(STENCIL_GUN);
-            itemGroup.add(STENCIL_MAKER);
-            itemGroup.add(HOP_SWITCH);
-            itemGroup.add(PLASTIC_PELLETS);
-            itemGroup.add(PLASTIC_STICK);
-            for (Block plasticBlock : ModBlocks.PLASTIC_BLOCKS) {
-                itemGroup.add(plasticBlock);
-            }
-            for (Block stud : ModBlocks.PLASTIC_STUDS) {
-                itemGroup.add(stud);
-            }
-            for (Block fence : ModBlocks.PLASTIC_FENCES) {
-                itemGroup.add(fence);
-            }
-            for (Block[] shapes : new Block[][]{ModBlocks.PLASTIC_SLABS, ModBlocks.PLASTIC_STAIRS, ModBlocks.PLASTIC_WALLS}) {
-                for (Block shape : shapes) itemGroup.add(shape);
-            }
-            for (Block[] pipes : ModBlocks.PIPES) {
-                for (Block pipe : pipes) itemGroup.add(pipe);
-            }
-            itemGroup.add(GOAL_POLE_BASE);
-            itemGroup.add(GOAL_POLE);
-            itemGroup.add(FLAG);
-            itemGroup.add(TRIPLE_JUMP_SHOES);
-
-            for (Block polishedTerracottaBlock : POLISHED_TERRACOTTA_BLOCKS) {
-                itemGroup.add(polishedTerracottaBlock);
-            }
-            for (Block polishedTerracottaBricksBlock : POLISHED_TERRACOTTA_BRICKS_BLOCKS) {
-                itemGroup.add(polishedTerracottaBricksBlock);
-            }
-
-            for (Block block : ModBlocks.POLISHED_TERRACOTTA_STAIRS) {
-                itemGroup.add(block);
-            }
-            for (Block block : ModBlocks.POLISHED_TERRACOTTA_SLABS) {
-                itemGroup.add(block);
-            }
-            for (Block block : ModBlocks.POLISHED_TERRACOTTA_WALLS) {
-                itemGroup.add(block);
-            }
-
-            for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_STAIRS) {
-                itemGroup.add(block);
-            }
-            for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_SLABS) {
-                itemGroup.add(block);
-            }
-            for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS) {
-                itemGroup.add(block);
-            }
-
-            for (Block[] blocks : new Block[][]{
-                    ModBlocks.POLISHED_CONCRETE_BLOCKS, ModBlocks.POLISHED_CONCRETE_BRICKS_BLOCKS,
-                    ModBlocks.POLISHED_CONCRETE_STAIRS, ModBlocks.POLISHED_CONCRETE_SLABS, ModBlocks.POLISHED_CONCRETE_WALLS,
-                    ModBlocks.POLISHED_CONCRETE_BRICKS_STAIRS, ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS, ModBlocks.POLISHED_CONCRETE_BRICKS_WALLS}) {
-                for (Block block : blocks) {
-                    itemGroup.add(block);
-                }
-            }
-            for (PolishedTilesBlock tiles : ModBlocks.POLISHED_TILES) {
-                for (ItemStack stack : tiles.creativeStacks()) itemGroup.add(stack);
-            }
-            itemGroup.add(LOOTING_BOX);
-            itemGroup.add(MULA_SPAWN_EGG);
-            itemGroup.add(BOXED_TRADER_SPAWN_EGG);
-            for (Item egg : GLANDOUILLE_SPAWN_EGGS) itemGroup.add(egg);
-            itemGroup.add(FROUSSEUX_SPAWN_EGG);
-            itemGroup.add(BOOMCART_SPAWN_EGG);
-            itemGroup.add(MISTIGRI_SPAWN_EGG);
-            itemGroup.add(FUMAROLE_SPAWN_EGG);
-            itemGroup.add(CANDLE_SAUCER);
-            itemGroup.add(ACORN);
-            itemGroup.add(ACORN_HAT);
-            // The 16 colours, in dye order: the blocks, then the fragments
-            for (Block block : STAR_FRAGMENTS_BLOCKS) itemGroup.add(block);
-            for (Item fragment : STAR_FRAGMENTS) itemGroup.add(fragment);
-            itemGroup.add(PARTY_STAR);
-            itemGroup.add(COIN);
-            itemGroup.add(GRAVITY_CORE);
-            itemGroup.add(DICE_FORGE);
-            itemGroup.add(TELESCOPE);
-            for (Item item : DICE_FACES) {
-                itemGroup.add(item);
-            }
-            itemGroup.add(BLANK_DICE_MODULE);
-            for (Item item : DICE_MODULES) {
-                itemGroup.add(item);
-            }
-            itemGroup.add(DEFAULT_DICE);
-            itemGroup.add(DOUBLE_DICE);
-            itemGroup.add(TRIPLE_DICE);
-            for (Item item : POWER_UPS) {
-                itemGroup.add(item);
-            }
-        });
+        // The creative tabs
+        ModItemGroups.initialize();
     }
 }
