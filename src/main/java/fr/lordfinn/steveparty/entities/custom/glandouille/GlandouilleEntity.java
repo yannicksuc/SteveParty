@@ -209,6 +209,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     /** Thrown by a player: that player and the tower still in his hands, left alone until {@link #sparedUntil}. */
     private @Nullable Entity thrower;
     private long sparedUntil;
+    /** Frightened by (a Mistigri playing cat and mouse with it): it runs from him until {@link #scaredUntil}. */
+    private @Nullable Entity scaredOf;
+    private long scaredUntil;
     /** The height of the players around it last tick, to see them come down on its cap. */
     private final Map<UUID, Double> playerY = new HashMap<>(2);
 
@@ -234,6 +237,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
         this.goalSelector.add(1, new GlandouilleGoals.FleeWithoutHat(this));
+        this.goalSelector.add(1, new GlandouilleGoals.FleeCat(this));
         this.goalSelector.add(2, new GlandouilleGoals.SeekHat(this));
         this.goalSelector.add(3, new GlandouilleGoals.Nap(this));
         this.goalSelector.add(4, new GlandouilleGoals.Climb(this));
@@ -392,6 +396,18 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     }
 
     // ---------------------------------------------------------------- board actors
+
+    /** Frightened by {@code from} for {@code ticks} (a cat playing with it): it runs away. Never a board's one. */
+    public void scare(Entity from, int ticks) {
+        if (boardActor || isInvulnerable()) return;
+        scaredOf = from;
+        scaredUntil = getWorld().getTime() + ticks;
+    }
+
+    /** What it is running from just now (null: nothing). */
+    public @Nullable Entity scaredOf() {
+        return scaredOf != null && scaredOf.isAlive() && getWorld().getTime() < scaredUntil ? scaredOf : null;
+    }
 
     /** A Glandouille of a board space: invulnerable, no will of its own, never saved. */
     @Override
