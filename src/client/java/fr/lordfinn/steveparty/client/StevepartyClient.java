@@ -81,6 +81,7 @@ import fr.lordfinn.steveparty.client.entity.DiceEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
 import fr.lordfinn.steveparty.client.entity.MulaEntityRenderer;
 import fr.lordfinn.steveparty.client.gui.party.PartyHud;
+import fr.lordfinn.steveparty.client.items.DiceItemRenderer;
 import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
 import fr.lordfinn.steveparty.client.model.BrickShadeModelPlugin;
 import fr.lordfinn.steveparty.client.model.ConnectedPlasticModelPlugin;
@@ -274,6 +275,10 @@ public class StevepartyClient implements ClientModInitializer {
 
     private void initItemRenderers() {
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.STENCIL, new StencilItemRenderer());
+        // Dice items: dice rolling over through the faces of the die (one, two or three as the models lay them out)
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.DEFAULT_DICE, DiceItemRenderer.single());
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.DOUBLE_DICE, DiceItemRenderer.pair());
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.TRIPLE_DICE, DiceItemRenderer.trio());
         // Paint can of the stencil gun: colour of the selected dye
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
             if (tintIndex != 1) return 0xFFFFFFFF;
