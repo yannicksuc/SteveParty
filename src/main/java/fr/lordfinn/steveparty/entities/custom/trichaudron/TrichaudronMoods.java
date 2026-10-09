@@ -79,9 +79,9 @@ public final class TrichaudronMoods {
         }
         if (tank >= 20 && slosh == 0 && random.nextInt(1500) == 0) slosh();
         for (int h = 0; h < HEADS; h++) apply(h, age);
-        bodyRoll = shake > 0 ? 0.12f * MathHelper.sin(shake * 0.35f) * shake / 60f : 0;
+        bodyRoll = shake > 0 ? 0.035f * MathHelper.sin(shake * 0.2f) * shake / 60f : 0; // a slow, faint shake: it is heavy
         if (shake > 0) shake--;
-        shellRoll = slosh > 0 ? 0.06f * MathHelper.sin(slosh * 0.25f) * slosh / 70f : 0;
+        shellRoll = slosh > 0 ? 0.025f * MathHelper.sin(slosh * 0.15f) * slosh / 70f : 0;
         if (slosh > 0) slosh--;
     }
 
