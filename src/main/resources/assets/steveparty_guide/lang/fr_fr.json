@@ -345,7 +345,7 @@
   "book.steveparty.guide.pawns_dice.dice.name": "Dés",
   "book.steveparty.guide.pawns_dice.dice.page0.text": "Clic droit : le dé part vers le **mob le plus proche** à 20 blocs (accroupi : le **joueur** le plus proche), flotte au-dessus de sa tête et tourne. **Frappe-le** pour l'arrêter.\n\nLe résultat fait avancer un pion du lanceur à 25 blocs, 1,5 s après. En partie, seul le pion dont c'est le tour bouge.",
   "book.steveparty.guide.pawns_dice.dice.page0.title": "Dés",
-  "book.steveparty.guide.pawns_dice.dice.page1.text": "- **Dé par défaut** : 1 à 10.\n- **Dé double** : deux dés liés, 2 à 20.\n- **Dé triple** : trois, 3 à 30.\n- **Dé forgé** : ses propres faces, sorti de la forge à dés.\n\nUn dé lancé disparaît 2 s après son résultat et te revient (un dé bonus est dépensé).",
+  "book.steveparty.guide.pawns_dice.dice.page1.text": "- **Dé simple** : 1 à 10.\n- **Dé double** : deux dés liés, 2 à 20.\n- **Dé triple** : trois, 3 à 30.\n- **Dé forgé** : ses propres faces, sorti de la forge à dés.\n\nUn dé lancé disparaît 2 s après son résultat et te revient (un dé bonus est dépensé).",
   "book.steveparty.guide.pawns_dice.dice.page1.title": "Les dés",
   "book.steveparty.guide.pawns_dice.dice.page2.text": "Les dés sortent de la **forge à dés**. Combine-les pour en faire de plus gros ; ils se défont.",
   "book.steveparty.guide.pawns_dice.faces.description": "De quoi graver des dés",
