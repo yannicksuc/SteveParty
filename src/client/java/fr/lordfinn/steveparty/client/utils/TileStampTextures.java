@@ -552,7 +552,7 @@ public final class TileStampTextures {
     private static final Map<Character, Float> MISTIGRI_SHADES =
             Map.of('#', FEATURE, '-', 0.3f, 'n', 0.1f, 'o', -0.7f, 'w', 0.2f);
 
-    /** The Mistigri space's face: the black cat's head on the blank tile face, in the ramp of {@code rgb} (witch purple). */
+    /** The Mistigri space's face: the black cat's head on the blank tile face, in the ramp of {@code rgb} (witch plum). */
     public static Identifier mistigriFace(int rgb, boolean small) {
         return TEXTURES.computeIfAbsent(new Key("mistigri", rgb, small),
                 key -> register(glyphValues(small ? SMALL_MISTIGRI : MISTIGRI, small, MISTIGRI_SHADES), rgb, small));

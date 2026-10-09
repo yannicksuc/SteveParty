@@ -199,7 +199,7 @@ public final class MistigriGoals {
     }
 
     /** An item frame holding something, at most a paw's reach above his feet (2.5 blocks), the nearest. */
-    static @Nullable ItemFrameEntity findFrame(ServerWorld world, MistigriEntity mistigri) {
+    public static @Nullable ItemFrameEntity findFrame(ServerWorld world, MistigriEntity mistigri) {
         ItemFrameEntity best = null;
         double bestDistance = Double.MAX_VALUE;
         for (ItemFrameEntity frame : world.getEntitiesByClass(ItemFrameEntity.class, mistigri.getBoundingBox().expand(SEARCH),

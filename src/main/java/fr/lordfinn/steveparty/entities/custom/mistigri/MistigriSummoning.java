@@ -47,9 +47,9 @@ public final class MistigriSummoning {
     /** Within this many blocks of a witch hut's walls. */
     public static final int HUT_RANGE = 16;
 
-    /** For the GameTests (no witch hut in a test structure): a box counting as a witch hut, null in game. */
+    /** For the GameTests (no witch hut in a test structure): boxes counting as witch huts, none in game. */
     @VisibleForTesting
-    public static @Nullable Box testHut;
+    public static final java.util.Set<Box> TEST_HUTS = new java.util.HashSet<>();
 
     private MistigriSummoning() {
     }
@@ -82,7 +82,7 @@ public final class MistigriSummoning {
 
     /** Whether {@code pos} is in a witch hut or within {@link #HUT_RANGE} blocks of one (its loaded chunks). */
     public static boolean nearWitchHut(ServerWorld world, BlockPos pos) {
-        if (testHut != null && testHut.expand(HUT_RANGE).contains(Vec3d.ofCenter(pos))) return true;
+        for (Box hut : TEST_HUTS) if (hut.expand(HUT_RANGE).contains(Vec3d.ofCenter(pos))) return true;
         Structure hut = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(StructureKeys.SWAMP_HUT);
         if (hut == null) return false;
         ChunkPos center = new ChunkPos(pos);

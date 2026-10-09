@@ -159,7 +159,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.4F, 1.26F, 6),
                 new Layer(SoundEvents.ITEM_FIRECHARGE_USE, 0.25F, 1.6F, 8))),
         /** A Mistigri space: a sour minor fall on the bass and a low, heavy cat's hiss (see MistigriTileBehavior). */
-        MISTIGRI("mistigri", 0x6B2FA0, List.of(
+        MISTIGRI("mistigri", 0x8A2A6E, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.943F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.794F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.63F, 8),
