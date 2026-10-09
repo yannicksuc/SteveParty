@@ -169,8 +169,8 @@
   "message.steveparty.teleport_cartridge.network": "Case Téléportation : réseau %s",
   "message.steveparty.teleport_cartridge.dye_none": "Ce colorant n'est pas une couleur de réseau (violet, vert, orange ou bleu)",
   "tooltip.steveparty.tile.stamp.hint": "tamponner un look (ou le Marteau à pochoirs)",
-  "tooltip.steveparty.tile.contents.one": "Cartouche",
-  "tooltip.steveparty.tile.contents": "Cartouches",
+  "tooltip.steveparty.tile.contents.one": "Contient",
+  "tooltip.steveparty.tile.contents": "Contient",
   "tooltip.steveparty.tile.contents.slot": "n°%s %s",
   "tooltip.steveparty.tile.contents.steps": "%s cases",
   "tooltip.steveparty.tile.contents.links": "liens : %s",
@@ -3015,5 +3015,6 @@
   "tooltip.steveparty.looting_box.rules": "Deux coups, puis elle se repose 3 s. Laisse 2 ou 3 blocs d'air dessous",
   "tooltip.steveparty.magpie_nest.summary": "Près d'une case Pot commun (6 blocs) : montre le pot, et sa pie va chercher les mises",
   "tooltip.steveparty.stencil_maker.summary": "Dessine et découpe des pochoirs",
-  "tooltip.steveparty.check_point.summary": "Un point de passage du plateau, qui ne compte pas comme un pas ; 16 cartouches"
+  "tooltip.steveparty.check_point.summary": "Un point de passage du plateau, qui ne compte pas comme un pas ; 16 cartouches",
+  "tooltip.steveparty.tile.contents.count": "%s cartouches"
 }

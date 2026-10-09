@@ -766,8 +766,8 @@
   "message.steveparty.teleport_cartridge.network": "Teleport tile: %s network",
   "message.steveparty.teleport_cartridge.dye_none": "This dye is no network colour (violet, green, orange or blue)",
   "tooltip.steveparty.tile.stamp.hint": "stamp a new look (or the Stencil Hammer)",
-  "tooltip.steveparty.tile.contents.one": "Cartridge",
-  "tooltip.steveparty.tile.contents": "Cartridges",
+  "tooltip.steveparty.tile.contents.one": "Holds",
+  "tooltip.steveparty.tile.contents": "Holds",
   "tooltip.steveparty.tile.contents.slot": "#%s %s",
   "tooltip.steveparty.tile.contents.steps": "%s spaces",
   "tooltip.steveparty.tile.contents.links": "links: %s",
@@ -3015,5 +3015,6 @@
   "tooltip.steveparty.looting_box.rules": "Two hits, then it rests 3 s. Leave 2 or 3 blocks of air below it",
   "tooltip.steveparty.magpie_nest.summary": "Near a Common Pot space (6 blocks): shows the pot, and its Magpie fetches the stakes",
   "tooltip.steveparty.stencil_maker.summary": "Draws and cuts stencils",
-  "tooltip.steveparty.check_point.summary": "A waypoint of the board, not counted as a step; holds 16 cartridges"
+  "tooltip.steveparty.check_point.summary": "A waypoint of the board, not counted as a step; holds 16 cartridges",
+  "tooltip.steveparty.tile.contents.count": "%s cartridges"
 }
