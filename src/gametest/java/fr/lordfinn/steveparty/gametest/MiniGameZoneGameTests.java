@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -46,7 +47,6 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler.State;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.entity.Entity;
@@ -85,7 +85,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * (0, 1, 0) to (6, 6, 6); x = 7 and z = 7 are out of it. Each test has a batch of its own: the rounds are the
  * server's.
  */
-public class MiniGameZoneGameTests implements FabricGameTest {
+public class MiniGameZoneGameTests implements SteveGameTest {
     private static final int GREEN = 13;
     private static final AtomicInteger SERIAL = new AtomicInteger();
     private static final BlockPos HOME = new BlockPos(6, 1, 6), PARTY = new BlockPos(0, 1, 7);
@@ -99,10 +99,10 @@ public class MiniGameZoneGameTests implements FabricGameTest {
 
     /** A test that fails ends the rounds it left going all the same. */
     @Override
-    public void invokeTestMethod(TestContext context, Method method) {
+    public void invokeWhenReady(TestContext context, Method method) {
         hour = context.getWorld().getTimeOfDay();
         try {
-            FabricGameTest.super.invokeTestMethod(context, method);
+            SteveGameTest.super.invokeWhenReady(context, method);
         } catch (RuntimeException | Error e) {
             for (ZoneBubble left : ZoneBubbles.all()) left.endNow();
             throw e;

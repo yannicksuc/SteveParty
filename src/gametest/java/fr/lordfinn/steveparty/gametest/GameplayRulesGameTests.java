@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -9,7 +10,6 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantment;
@@ -37,7 +37,7 @@ import java.util.UUID;
 import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
 
 /** Gameplay rules: stacking, villager fall, Game Master wand, Mula taming, squish end scale. */
-public class GameplayRulesGameTests implements FabricGameTest {
+public class GameplayRulesGameTests implements SteveGameTest {
 
     // ---------------------------------------------------------------- stacking
 

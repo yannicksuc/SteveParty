@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -15,7 +16,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.KeyGateCartridgeItem;
 import fr.lordfinn.steveparty.service.KeyGates;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.service.TurnMoves;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
@@ -41,7 +41,7 @@ import java.util.function.BooleanSupplier;
  * Board: S (a start tile) → T0 → G (the gate) → T2 → T3 along x, and G → F (south of G, the free branch of the fork
  * tests) → F2.
  */
-public class KeyGateGameTests implements FabricGameTest {
+public class KeyGateGameTests implements SteveGameTest {
     private static final BlockPos S = new BlockPos(1, 1, 1), T0 = new BlockPos(3, 1, 1), G = new BlockPos(5, 1, 1),
             T2 = new BlockPos(7, 1, 1), T3 = new BlockPos(9, 1, 1), F = new BlockPos(5, 1, 3), F2 = new BlockPos(5, 1, 5);
 

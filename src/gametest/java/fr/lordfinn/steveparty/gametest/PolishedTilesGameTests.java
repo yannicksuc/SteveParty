@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -39,7 +39,7 @@ import static fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor.*;
  * Polished Concrete / Terracotta Tiles: the checker recipe gives the colours (in its order), the item keeps them when
  * the block is mined, and gives them back when placed.
  */
-public class PolishedTilesGameTests implements FabricGameTest {
+public class PolishedTilesGameTests implements SteveGameTest {
     private static final PolishedTilesBlock CONCRETE = (PolishedTilesBlock) ModBlocks.POLISHED_CONCRETE_TILES;
     private static final PolishedTilesBlock TERRACOTTA = (PolishedTilesBlock) ModBlocks.POLISHED_TERRACOTTA_TILES;
 

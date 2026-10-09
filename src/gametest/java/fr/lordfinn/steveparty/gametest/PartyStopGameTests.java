@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyChunkHolds;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -16,7 +17,6 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import java.util.List;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
@@ -37,7 +37,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
  * Stopping a party: the dashboard's button / the command ({@link PartyControllerEntity#stopParty}) and a broken
  * controller. The pawns go back to their start tiles, out of the game, and nothing of the party is left.
  */
-public class PartyStopGameTests implements FabricGameTest {
+public class PartyStopGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(3, 1, 6);
     private static final BlockPos START_A = new BlockPos(1, 1, 1), START_B = new BlockPos(1, 1, 3);
     private static final BlockPos SPACE_A = new BlockPos(5, 1, 1), SPACE_B = new BlockPos(5, 1, 3);

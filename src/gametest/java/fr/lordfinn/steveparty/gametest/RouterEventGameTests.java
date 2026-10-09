@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -9,7 +10,6 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ComparatorBlock;
 import net.minecraft.block.entity.ComparatorBlockEntity;
@@ -30,7 +30,7 @@ import java.util.Set;
  * The Router as a sensor: a comparator reading it pulses when a token stops on one of its board spaces (the strength
  * tells the role) and weakly when a token goes over one, while its redstone input keeps routing.
  */
-public class RouterEventGameTests implements FabricGameTest {
+public class RouterEventGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(1, 1, 1);
     private static final BlockPos ROUTER = new BlockPos(5, 1, 5);
     /** Reads the router (its input is on its south side, the router's north). */

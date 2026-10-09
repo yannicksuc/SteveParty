@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.ModItemGroups;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -25,7 +25,7 @@ import java.util.TreeSet;
  * The creative tabs ({@link ModItemGroups}): every item of the mod is listed in exactly one tab, except the ones kept
  * only for the worlds that hold them (never listed).
  */
-public class CreativeTabsGameTests implements FabricGameTest {
+public class CreativeTabsGameTests implements SteveGameTest {
     /**
      * Items left out of the creative tabs on purpose: the 10 fixed-wood easel signs (kept for the worlds that have
      * them; the material easel sign covers every planks) and the Frousseux candle holder (a tamed Frousseux asleep).

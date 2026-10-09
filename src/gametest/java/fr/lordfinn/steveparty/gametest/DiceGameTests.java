@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
@@ -10,7 +11,6 @@ import fr.lordfinn.steveparty.gametest.kit.TestWait;
 import fr.lordfinn.steveparty.items.ModItems;
 import java.util.List;
 import java.util.Map;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.PigEntity;
@@ -28,7 +28,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
 /** Dice: /kill and the void remove them, players hitting them still stop / restart / explode them. */
-public class DiceGameTests implements FabricGameTest {
+public class DiceGameTests implements SteveGameTest {
     private static final BlockPos DICE_POS = new BlockPos(2, 3, 2);
 
     private static DiceEntity spawnDice(TestContext context) {

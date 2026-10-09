@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.mojang.serialization.DataResult;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.config.ServerConfig;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -37,7 +37,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-public class SwitchableGameTests implements FabricGameTest {
+public class SwitchableGameTests implements SteveGameTest {
     private static final BlockPos POS = new BlockPos(1, 2, 1);
 
     private static Block redPlastic() {

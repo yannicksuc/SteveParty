@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.dice.AllowedDice;
@@ -8,7 +9,6 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.passive.PigEntity;
@@ -36,7 +36,7 @@ import static fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScree
  * the same item with the same faces and modules; on, in a party listing dice, any other die is refused (nothing thrown,
  * nothing spent), an empty list allows every die; off or outside a party, every die is thrown. Its ghost slots list a copy of the die clicked, an empty hand takes it off.
  */
-public class AllowedDiceGameTests implements FabricGameTest {
+public class AllowedDiceGameTests implements SteveGameTest {
     private static final String BATCH = "allowed_dice";
 
     /** A party of {@code player}'s single token, running, at their turn. */

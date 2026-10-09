@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.TelescopeBlock;
 import fr.lordfinn.steveparty.blocks.custom.TelescopeBlockEntity;
@@ -10,7 +11,6 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.payloads.custom.TelescopePayloads;
 import fr.lordfinn.steveparty.telescope.TelescopeMath;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.enums.DoubleBlockHalf;
@@ -35,7 +35,7 @@ import java.util.UUID;
  * The Telescope: the nights it lists (in range, not yet found, per player), what a find changes (that player's guide
  * stars and nothing else), the tracking gauge and the numbers of the replay and of the guide star.
  */
-public class TelescopeGameTests implements FabricGameTest {
+public class TelescopeGameTests implements SteveGameTest {
 
     /** Held well centred the gauge fills fast, at the edge slowly, off the star it drains slowly; it stays in 0..1. */
     @GameTest(templateName = EMPTY_STRUCTURE)

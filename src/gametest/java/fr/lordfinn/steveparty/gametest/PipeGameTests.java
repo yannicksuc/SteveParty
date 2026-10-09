@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeGeometry;
@@ -13,7 +14,6 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -62,7 +62,7 @@ import java.util.WeakHashMap;
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /** Travel pipes: shapes and connections, the Wrench, going in, travelling, warps. */
-public class PipeGameTests implements FabricGameTest {
+public class PipeGameTests implements SteveGameTest {
 
     private static final Block RED = ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][14];
     private static final Block GLASS = ModBlocks.GLASS_PIPE;

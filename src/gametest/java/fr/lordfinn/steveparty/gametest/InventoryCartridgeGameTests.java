@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
@@ -15,7 +16,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ContainersModule;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.inventory.Inventory;
@@ -40,7 +40,7 @@ import java.util.List;
  * The Inventory Cartridge's containers: a list in order (at most 8), chosen by a click read by its target, used in
  * order by board spaces and by a Party Controller's bank, and edited from its menu.
  */
-public class InventoryCartridgeGameTests implements FabricGameTest {
+public class InventoryCartridgeGameTests implements SteveGameTest {
 
     private static ServerPlayerEntity player(TestContext context) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
@@ -13,7 +14,6 @@ import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.recipes.TileSizeRecipe;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantments;
@@ -48,7 +48,7 @@ import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE;
  * A broken tile drops one item holding its cartridges, its look and its size (with Silk Touch their links too); placed,
  * it has them back.
  */
-public class TileContentsGameTests implements FabricGameTest {
+public class TileContentsGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(2, 2, 2);
     /** Where the dropped item is placed again: its ground block. */
     private static final BlockPos ELSEWHERE = new BlockPos(6, 1, 2);

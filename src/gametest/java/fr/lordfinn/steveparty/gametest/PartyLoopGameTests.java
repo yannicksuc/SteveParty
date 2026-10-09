@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlock;
@@ -13,7 +14,6 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.PartyCardItem;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
@@ -27,7 +27,7 @@ import net.minecraft.util.math.BlockPos;
 import java.util.*;
 
 /** Party loop: bells, waiting bells, program cards, controller phase, piggy bank (the podiums: PodiumGameTests). */
-public class PartyLoopGameTests implements FabricGameTest {
+public class PartyLoopGameTests implements SteveGameTest {
 
     private static PartyControllerEntity placeController(TestContext context, BlockPos pos) {
         context.setBlockState(pos.down(), Blocks.STONE);

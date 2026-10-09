@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
@@ -7,7 +8,6 @@ import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.slot.Slot;
@@ -23,7 +23,7 @@ import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.face;
 
 /** The module slots of the Dice Forge: what they accept, what the forged dice carry, and that they are saved. */
-public class DiceForgeModulesGameTests implements FabricGameTest {
+public class DiceForgeModulesGameTests implements SteveGameTest {
     private static final BlockPos FORGE_POS = new BlockPos(1, 1, 1);
 
     private static DiceForgeBlockEntity placeActivatedForge(TestContext context) {

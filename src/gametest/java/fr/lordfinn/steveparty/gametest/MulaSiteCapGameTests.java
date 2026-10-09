@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
@@ -7,7 +8,6 @@ import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.payloads.custom.TelescopePayloads;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.NbtCompound;
@@ -31,7 +31,7 @@ import java.util.UUID;
  * The tests that change the cap or the world's list do it within one tick (and put the cap back), so that no other
  * test sees it.
  */
-public class MulaSiteCapGameTests implements FabricGameTest {
+public class MulaSiteCapGameTests implements SteveGameTest {
 
     private static MulaEntity mula(ServerWorld world, BlockPos at) {
         MulaEntity mula = ModEntities.MULA_ENTITY.create(world);

@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.items.custom.jumpshoes.JumpShoesState;
 import fr.lordfinn.steveparty.items.custom.jumpshoes.TripleJumpChain;
 import fr.lordfinn.steveparty.items.tooltip.ItemTips;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LadderBlock;
 import net.minecraft.enchantment.Enchantment;
@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 /** The Triple Jump Shoes: the jump chain, the Double Jump enchantment, the wall kick direction, no unfair fall damage. */
-public class JumpShoesGameTests implements FabricGameTest {
+public class JumpShoesGameTests implements SteveGameTest {
 
     private static RegistryEntry<Enchantment> doubleJump(TestContext context) {
         return context.getWorld().getRegistryManager().getWrapperOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(JumpShoes.DOUBLE_JUMP);

@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EntityAttachmentType;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
@@ -14,7 +14,7 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 
 /** Tokens stand on a base: their hitbox is {@link TokenBase#baseHeight} higher, feet on the ground. */
-public class TokenBaseGameTests implements FabricGameTest {
+public class TokenBaseGameTests implements SteveGameTest {
     private static final float EPSILON = 1.0E-4F;
     private static final float PIG_HEIGHT = EntityType.PIG.getDimensions().height();
     private static final float PIG_EYE_HEIGHT = EntityType.PIG.getDimensions().eyeHeight();

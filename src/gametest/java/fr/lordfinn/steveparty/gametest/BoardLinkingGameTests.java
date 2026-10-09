@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -29,7 +30,6 @@ import fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilGunScreenHandler;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ComparatorBlock;
@@ -69,7 +69,7 @@ import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.
  * Linking board spaces: painted with the Tile Linker Brush (chains, loops, forks, joins, levels, cartridges supplied,
  * its wheel's picks), the Wrench opening the spaces and swapping their cartridge, links kept.
  */
-public class BoardLinkingGameTests implements FabricGameTest {
+public class BoardLinkingGameTests implements SteveGameTest {
 
     /** Tiles on a stone floor at y = 1, returned in absolute positions. */
     static List<BlockPos> tiles(TestContext context, Block block, BlockPos... relative) {

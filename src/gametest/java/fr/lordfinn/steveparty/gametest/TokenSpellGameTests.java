@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.components.MobEntityComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenStatus;
@@ -10,7 +11,6 @@ import fr.lordfinn.steveparty.items.custom.TokenizerFlare;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem.SpellResult;
 import fr.lordfinn.steveparty.utils.DominantColorPicker;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
@@ -59,7 +59,7 @@ import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
 import static fr.lordfinn.steveparty.utils.MessageUtils.getColorFromText;
 
 /** Tokenizer Wand spell: size chosen with a slider (validated server side), token colour, no more moving. */
-public class TokenSpellGameTests implements FabricGameTest {
+public class TokenSpellGameTests implements SteveGameTest {
     private static final BlockPos MOB_POS = new BlockPos(2, 2, 2);
     private static final int BLUE = 0x3366CC;
     private static final int ORANGE = 0xE08020;

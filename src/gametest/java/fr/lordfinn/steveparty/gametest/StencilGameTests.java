@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PlasticBlock;
@@ -33,7 +34,6 @@ import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import fr.lordfinn.steveparty.stencil.StencilUnlocks;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.Waterloggable;
@@ -80,7 +80,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Stencils, stencil maker, stencil signs, sprayed paint, stencil gun. */
-public class StencilGameTests implements FabricGameTest {
+public class StencilGameTests implements SteveGameTest {
     private static final BlockPos SIGN = new BlockPos(1, 2, 1);
 
     private static byte[] pattern(String id) {

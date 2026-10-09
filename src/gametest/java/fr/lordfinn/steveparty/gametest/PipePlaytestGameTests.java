@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
 import fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -29,7 +29,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * rides at most {@link PipeTravel#MAX_SPEED}; thrown out of a pipe straight into another one (a loop of pipes without a
  * way out), it gains nothing from the throw. A pipe placed over items lying there does not swallow them (#77).
  */
-public class PipePlaytestGameTests implements FabricGameTest {
+public class PipePlaytestGameTests implements SteveGameTest {
     private static Block pipe() {
         return ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][5];
     }

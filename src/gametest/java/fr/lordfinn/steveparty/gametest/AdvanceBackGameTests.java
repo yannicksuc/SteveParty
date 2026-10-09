@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -22,7 +23,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.TokenMovementService;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
@@ -46,7 +46,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * The Move Forward / Back tile: forward N, back N the way it came, a fork asking the owner, no chain, a start tile
  * stopping a token going back, and the cartridge's setting.
  */
-public class AdvanceBackGameTests implements FabricGameTest {
+public class AdvanceBackGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(0, 1, 7);
     /** A path of tiles 2 blocks apart: along x on z = 1, back along x on z = 3, then along x on z = 5. */
     private static final List<BlockPos> PATH = List.of(

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -22,7 +23,6 @@ import fr.lordfinn.steveparty.service.CommonPots;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.service.TurnMoves;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
@@ -46,7 +46,7 @@ import java.util.function.BooleanSupplier;
  * tile, the nest showing it and the Pie coming and going with its cartridge. Each test has its own batch (a mock
  * player and their coins).
  */
-public class PotGameTests implements FabricGameTest {
+public class PotGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(0, 1, 7);
     private static final List<BlockPos> PATH = List.of(new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1),
             new BlockPos(7, 1, 1), new BlockPos(9, 1, 1), new BlockPos(11, 1, 1));

@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpiePerches;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpieVariant;
 import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieEntity;
 import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieSpawns;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.SlabBlock;
@@ -33,7 +33,13 @@ import net.minecraft.world.biome.SpawnSettings;
  * by itself, its colour saved, and its flight to a perch. The flights have a batch of their own: a wild Pie flies to
  * the shiny things lying around (WildMagpieEntity#fetchShiny), those of the other tests too.
  */
-public class WildMagpieGameTests implements FabricGameTest {
+public class WildMagpieGameTests implements SteveGameTest {
+    /** Beyond the template: a magpie looks for perches 16 blocks around. */
+    @Override
+    public int landAround() {
+        return 16;
+    }
+
     private static boolean spawnsIn(TestContext context, net.minecraft.registry.RegistryKey<Biome> key, net.minecraft.entity.EntityType<?> type) {
         RegistryEntry<Biome> biome = context.getWorld().getRegistryManager().get(RegistryKeys.BIOME).entryOf(key);
         return biome.value().getSpawnSettings().getSpawnEntries(SpawnGroup.CREATURE).getEntries().stream()
@@ -132,7 +138,7 @@ public class WildMagpieGameTests implements FabricGameTest {
     public void itFliesToAnotherPerch(TestContext context) {
         BlockPos from = new BlockPos(0, 1, 0), to = new BlockPos(7, 1, 7);
         context.setBlockState(from, Blocks.OAK_FENCE.getDefaultState());
-        context.setBlockState(to, Blocks.OAK_FENCE.getDefaultState());
+        perches(context); // (7, 1, 7) among them
         WildMagpieEntity magpie = context.spawnEntity(ModEntities.WILD_MAGPIE, new Vec3d(0.5, 2.0, 0.5));
         BlockPos target = context.getAbsolutePos(to);
         context.waitAndRun(3, () -> {
@@ -142,6 +148,16 @@ public class WildMagpieGameTests implements FabricGameTest {
             context.assertTrue(off, "it finds a perch to fly to");
             waitLanding(context, magpie, 0);
         });
+    }
+
+    /**
+     * Fences on the far half of the template, for a magpie looking for a perch to fly to. The test's barrier box
+     * (walls and a ceiling) keeps it in, but a column's top there is the ceiling: only the favourites it looks for
+     * a little lower, at random, are perches it can reach; with one fence alone it found none in 30 tries one run
+     * in two.
+     */
+    private static void perches(TestContext context) {
+        for (int x = 4; x < 8; x++) for (int z = 4; z < 8; z++) context.setBlockState(new BlockPos(x, 1, z), Blocks.OAK_FENCE.getDefaultState());
     }
 
     private static void waitLanding(TestContext context, WildMagpieEntity magpie, int waited) {

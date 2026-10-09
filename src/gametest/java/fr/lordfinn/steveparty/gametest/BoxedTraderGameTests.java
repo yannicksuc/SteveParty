@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
@@ -14,7 +15,6 @@ import fr.lordfinn.steveparty.items.custom.BandanaItem;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeBlock;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BarrelBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -53,7 +53,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 /** Boxed Trader: bandana and box theft, Box Costume, wearable Bandana, who he pays attention to, wandering, grid alignment. */
-public class BoxedTraderGameTests implements FabricGameTest {
+public class BoxedTraderGameTests implements SteveGameTest {
 
     private static BoxedTraderEntity trader(TestContext context) {
         return context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(3, 1, 3));

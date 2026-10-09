@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
@@ -15,7 +16,6 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
@@ -41,7 +41,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * page (the last one taken in range, else the nearest in range, else a pipe like any other), out of its mouth of the
  * colour of the linked pipe taken; and the index of the mini-game pipes it relies on.
  */
-public class LinkedPipeGameTests implements FabricGameTest {
+public class LinkedPipeGameTests implements SteveGameTest {
     private static final int GREEN = 13, BLUE = 11;
 
     private static Block pipe(PipeKind kind, int color) {

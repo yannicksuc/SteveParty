@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
@@ -13,7 +14,6 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.nbt.NbtCompound;
@@ -43,7 +43,7 @@ import java.util.UUID;
  * matching a party's teams (any order, given to the sides deterministically) and out of a party (in order), the most
  * specific of several, the pipes each needs; then the round's name colours and the ways out by the linked pipes.
  */
-public class MiniGameFormatGameTests implements FabricGameTest {
+public class MiniGameFormatGameTests implements SteveGameTest {
     private static final MiniGameFormat ONE_V_THREE = MiniGameFormat.teams(false, Side.exactly(1), Side.exactly(3));
     private static final MiniGameFormat TWO_V_TWO = MiniGameFormat.teams(false, Side.exactly(2), Side.exactly(2));
 

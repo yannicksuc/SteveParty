@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEscorts;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.minecraft.block.Blocks;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
@@ -29,7 +29,13 @@ import java.util.List;
  * <p>
  * (Test batches run side by side: these tests change neither the config nor what other tests share.)
  */
-public class MulaPerfGameTests implements FabricGameTest {
+public class MulaPerfGameTests implements SteveGameTest {
+    /** Beyond the template: the owner walks round 14 blocks from the template's corner, his followers with him. */
+    @Override
+    public int landAround() {
+        return 16;
+    }
+
     private static final int MULAS = 180;
     private static final int ROUNDS = Integer.getInteger("steveparty.mulaPerfRounds", 300);
 

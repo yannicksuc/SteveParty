@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
@@ -14,7 +15,6 @@ import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.powerups.PowerUpTurn;
 import fr.lordfinn.steveparty.powerups.PowerUps;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -37,7 +37,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * The power-ups: used at the start of their player's turn (before the roll, one per turn, consumed), the Mushroom
  * (+3 to the roll) and Double Coins (gains doubled, not losses), their default price on a stall.
  */
-public class PowerUpGameTests implements FabricGameTest {
+public class PowerUpGameTests implements SteveGameTest {
     private static final String BATCH = "powerups";
 
     private static ServerPlayerEntity survivalPlayer(TestContext context) {

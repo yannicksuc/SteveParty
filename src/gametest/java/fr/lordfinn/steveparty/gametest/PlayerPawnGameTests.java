@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -10,7 +11,6 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem.SpellResult;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
@@ -34,7 +34,7 @@ import java.util.function.BiConsumer;
  * stored or removed, the player leaving or dying) the player comes out at their size and the pawn stays. The statue's
  * held item is never copied nor lost.
  */
-public class PlayerPawnGameTests implements FabricGameTest {
+public class PlayerPawnGameTests implements SteveGameTest {
     private static final BlockPos TARGET_POS = new BlockPos(3, 2, 3);
     private static final int BLUE = 0x3366CC;
     /** First tick at which the pawn exists and holds its player, camera included. */
