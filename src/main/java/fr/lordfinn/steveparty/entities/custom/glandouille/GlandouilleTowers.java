@@ -60,7 +60,7 @@ public final class GlandouilleTowers {
      * A carried stack stands in the main hand: this high up the player (his hand), this far in front of his body and
      * this far to the main hand's side (blocks).
      */
-    public static final double HOLD_HEIGHT = 0.38, HOLD_FORWARD = 0.15, HOLD_SIDE = 0.62;
+    public static final double HOLD_HEIGHT = 0.55, HOLD_FORWARD = 0.25, HOLD_SIDE = 0.45;
     /** A throw goes to what the crosshair aims at, or this far along the look if nothing (blocks). */
     public static final double AIM_RANGE = 64;
     /** Aimed closer than this (blocks), a throw goes the way he looks rather than from the hand to the aimed point. */
