@@ -131,8 +131,11 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.EASEL_SIGN,
                         ModBlocks.WOODEN_PANEL,
                         ModBlocks.WOODEN_CUTOUT_PANEL,
-                        ModBlocks.TRADING_STALL
+                        ModBlocks.TRADING_STALL,
+                        ModBlocks.MAGPIE_NEST
                 );
+        // the Magpie Nest, woven twigs: an axe or a hoe (by hand too, slower)
+        getOrCreateTagBuilder(BlockTags.HOE_MINEABLE).add(ModBlocks.MAGPIE_NEST);
         getOrCreateTagBuilder(BlockTags.NEEDS_STONE_TOOL)
                 .add(
                         ModBlocks.ADVANCED_TILE

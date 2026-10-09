@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.magpie;
 
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.utils.Easing;
@@ -76,7 +77,7 @@ public class MagpieEntity extends Entity implements GeoEntity {
         MagpieEntity magpie = new MagpieEntity(type, world);
         magpie.home = home.toImmutable();
         magpie.nest = nest.toImmutable();
-        Vec3d perch = perchOf(nest);
+        Vec3d perch = perchOf(world, nest);
         magpie.refreshPositionAndAngles(perch.x, perch.y, perch.z, world.random.nextFloat() * 360, 0);
         return magpie;
     }
@@ -104,9 +105,11 @@ public class MagpieEntity extends Entity implements GeoEntity {
         return nest;
     }
 
-    /** Where it stands on its nest: the middle of the nest, on its rim. */
-    public static Vec3d perchOf(BlockPos nest) {
-        return new Vec3d(nest.getX() + 0.5, nest.getY() + MagpieNestBlock.HEIGHT / 16.0, nest.getZ() + 0.5);
+    /** Where it stands on its nest: in the middle of an empty nest, on the free corner of the rim beside a pile of coins. */
+    public static Vec3d perchOf(World world, BlockPos nest) {
+        MagpieNestBlockEntity entity = MagpieNestBlockEntity.at(world, nest);
+        return entity != null ? entity.perch()
+                : new Vec3d(nest.getX() + 0.5, nest.getY() + MagpieNestBlock.HEIGHT / 16.0, nest.getZ() + 0.5);
     }
 
     // ---------------------------------------------------------------- flights
@@ -123,7 +126,7 @@ public class MagpieEntity extends Entity implements GeoEntity {
     public void flyHome(int ticks, boolean carrying, @Nullable Runnable onArrival) {
         if (nest == null) return;
         BlockPos at = nest;
-        flyTo(() -> perchOf(at), ticks, 1.2, carrying, onArrival);
+        flyTo(() -> perchOf(getWorld(), at), ticks, 1.2, carrying, onArrival);
     }
 
     /** True while it is on a flight (or about to start one). */
@@ -147,7 +150,7 @@ public class MagpieEntity extends Entity implements GeoEntity {
         }
         // Perched: on its nest (pushed off or loaded elsewhere: it hops back)
         if (nest != null) {
-            Vec3d perch = perchOf(nest);
+            Vec3d perch = perchOf(world, nest);
             if (getPos().squaredDistanceTo(perch) > 0.01) {
                 if (getPos().squaredDistanceTo(perch) > LEASH * LEASH) setPosition(perch);
                 else if (!isBusy()) flyHome(20, false, null);

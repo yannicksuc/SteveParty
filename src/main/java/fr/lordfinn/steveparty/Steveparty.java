@@ -185,6 +185,7 @@ public class Steveparty implements ModInitializer {
         TrichaudronEvents.initialize();
         BoomcartSpawns.initialize();
         WildMagpieSpawns.initialize();
+        fr.lordfinn.steveparty.world.MagpieNestFeature.initialize();
         PetTeleports.initialize();
         JumpShoesServer.initialize();
         // the Frousseux candle holder burns as planks do: fire catches it and burns it away, the Frousseux gone with it
