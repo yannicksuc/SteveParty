@@ -1120,5 +1120,151 @@
         "pitch": 0.8
       }
     ]
+  },
+  "fumarole.ambient": {
+    "subtitle": "subtitles.steveparty.fumarole.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.ambient_land",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:block.furnace.fire_crackle",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.7
+      },
+      {
+        "name": "minecraft:block.lava.ambient",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 0.8
+      }
+    ]
+  },
+  "fumarole.hurt": {
+    "subtitle": "subtitles.steveparty.fumarole.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:block.basalt.break",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.7
+      },
+      {
+        "name": "minecraft:entity.turtle.hurt",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.55
+      }
+    ]
+  },
+  "fumarole.death": {
+    "subtitle": "subtitles.steveparty.fumarole.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.death",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.45
+      }
+    ]
+  },
+  "fumarole.step": {
+    "subtitle": "subtitles.steveparty.fumarole.step",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.step",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.6
+      }
+    ]
+  },
+  "fumarole.pump": {
+    "subtitle": "subtitles.steveparty.fumarole.pump",
+    "sounds": [
+      {
+        "name": "minecraft:item.bucket.fill_lava",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.7
+      }
+    ]
+  },
+  "fumarole.gurgle": {
+    "subtitle": "subtitles.steveparty.fumarole.gurgle",
+    "sounds": [
+      {
+        "name": "minecraft:block.lava.pop",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.6
+      },
+      {
+        "name": "minecraft:block.lava.ambient",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.6
+      }
+    ]
+  },
+  "fumarole.charge": {
+    "subtitle": "subtitles.steveparty.fumarole.charge",
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.extinguish",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.6
+      }
+    ]
+  },
+  "fumarole.blast": {
+    "subtitle": "subtitles.steveparty.fumarole.blast",
+    "sounds": [
+      {
+        "name": "minecraft:entity.blaze.shoot",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:entity.wind_charge.wind_burst",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.6
+      }
+    ]
+  },
+  "fumarole.puff": {
+    "subtitle": "subtitles.steveparty.fumarole.puff",
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.extinguish",
+        "type": "event",
+        "volume": 0.7,
+        "pitch": 1.2
+      }
+    ]
+  },
+  "fumarole.spill": {
+    "subtitle": "subtitles.steveparty.fumarole.spill",
+    "sounds": [
+      {
+        "name": "minecraft:item.bucket.empty_lava",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.6
+      },
+      {
+        "name": "minecraft:block.lava.extinguish",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.7
+      }
+    ]
   }
 }

@@ -140,6 +140,21 @@ public class ModEntities {
                     .build(BOOMCART_KEY.getValue().toString())
     );
 
+    /** The Fumarole (Fumerolle), a huge tortoise of the Nether with a tank of lava on its back (see FumaroleEntity). */
+    public static final RegistryKey<EntityType<?>> FUMAROLE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("fumarole"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity> FUMAROLE = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("fumarole"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity>create(fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity::new, SpawnGroup.MONSTER)
+                    .dimensions(fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity.WIDTH,
+                            fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity.HEIGHT)
+                    .eyeHeight(fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity.EYE_HEIGHT)
+                    .makeFireImmune()
+                    .maxTrackingRange(12)
+                    .trackingTickInterval(1) // ridden, it moves server side: every tick keeps the riders smooth
+                    .build(FUMAROLE_KEY.getValue().toString())
+    );
+
     /** A player turned into a pawn: a statue of the player on a token base (see PlayerPawnEntity). */
     public static final RegistryKey<EntityType<?>> PLAYER_PAWN_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("player_pawn"));
     public static final EntityType<fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity> PLAYER_PAWN = Registry.register(Registries.ENTITY_TYPE,
@@ -193,5 +208,6 @@ public class ModEntities {
         FabricDefaultAttributeRegistry.register(ModEntities.FROUSSEUX, fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOOMCART, fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.MISTIGRI, fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.FUMAROLE, fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity.setAttributes());
     }
 }
