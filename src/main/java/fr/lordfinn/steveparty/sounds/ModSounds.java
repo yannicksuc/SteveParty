@@ -15,6 +15,8 @@ public class ModSounds {
     public static final SoundEvent SELECT_SOUND_EVENT = register("select");
     public static final SoundEvent CANCEL_SOUND_EVENT = register("cancel");
     public static final SoundEvent POP_SOUND_EVENT = register("pop");
+    /** The wild Pie's call, "piou piou piou" (sounds/magpie/chirp1-4.ogg). */
+    public static final SoundEvent MAGPIE_CHIRP = register("magpie.chirp");
     public static final SoundEvent PLUNGER_SUCK_IN_SOUND_EVENT = register("plunger_suck_in");
     public static final SoundEvent PLUNGER_SUCK_OUT_SOUND_EVENT = register("plunger_suck_out");
     public static final SoundEvent GOAL_POLE_REACH = register("goal_pole_reach");
