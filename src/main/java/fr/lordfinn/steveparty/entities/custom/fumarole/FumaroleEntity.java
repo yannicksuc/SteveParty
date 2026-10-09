@@ -14,6 +14,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
@@ -112,7 +113,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     /** Its shell and legs: 52 px wide, the tank's rim 61 px high. The necks reach far beyond (not in the box). */
     public static final float WIDTH = 3.2f, HEIGHT = 3.8125f, EYE_HEIGHT = 2.76f;
     public static final int TANK_MAX = 27, SPAWN_TANK_MIN = 14, SPAWN_TANK_MAX = 20;
-    public static final double MAX_HEALTH = 80, ARMOR = 10, SPEED = 0.12;
+    public static final double MAX_HEALTH = 80, ARMOR = 10, SPEED = 0.09;
     /** The tank's front rim, where the riders sit: its height, how far ahead of the middle. */
     public static final double RIM_HEIGHT = 3.75, RIM_FORWARD = 1.06;
 
@@ -127,8 +128,13 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     };
     /** The head that dips into the lava to pump. */
     public static final int PUMP_HEAD = 0;
-    /** A head turns at most this far (degrees) from its rest, this fast (degrees a tick). */
-    public static final float HEAD_YAW_MAX = 75, HEAD_TURN = 25;
+    /**
+     * A head turns at most this far (degrees) from its rest, this fast (degrees a tick) when it aims (a blast, a jump's
+     * thrusters), and only {@link #HEAD_EASE} a tick otherwise (moods, a rider's look, back to rest): a heavy beast.
+     */
+    public static final float HEAD_YAW_MAX = 75, HEAD_TURN = 15, HEAD_EASE = 3;
+    /** Its body turns at most this fast (degrees a tick) walking, and its look (so its idle body) {@link #LOOK_TURN}. */
+    public static final float BODY_TURN = 3, LOOK_TURN = 4;
 
     public static final double PUMP_MIN = 2.0, PUMP_MAX = 9.0, PUMP_DOWN = 6.0, PUMP_UP = 1.0;
     public static final double TERRITORY = 8.0;
@@ -165,6 +171,8 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     public static final String ANIM_IDLE = "animation.nether_turtle.idle", ANIM_WALK = "animation.nether_turtle.walk",
             ANIM_PUMP = "animation.nether_turtle.pump", ANIM_SPIT = "animation.nether_turtle.spit";
+    /** The idle and walk animations' playing speed (1: as authored). */
+    static final double IDLE_PACE = 0.6, WALK_PACE = 0.75;
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop(ANIM_IDLE);
     private static final RawAnimation WALK = RawAnimation.begin().thenLoop(ANIM_WALK);
     private static final RawAnimation PUMP = RawAnimation.begin().thenLoop(ANIM_PUMP);
@@ -206,6 +214,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     public FumaroleEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
         this.experiencePoints = 15;
+        this.moveControl = new HeavyMoveControl(this);
         setPathfindingPenalty(PathNodeType.LAVA, 0.0f);
         setPathfindingPenalty(PathNodeType.DANGER_FIRE, 0.0f);
         setPathfindingPenalty(PathNodeType.DAMAGE_FIRE, 0.0f);
@@ -993,7 +1002,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         prevClientYaw[head] = clientYaw[head];
         prevClientPitch[head] = clientPitch[head];
         FumaroleHead rest = HEADS[head];
-        float yaw = rest.restYaw(), pitch = rest.restPitch();
+        float yaw = rest.restYaw(), pitch = rest.restPitch(), turn = HEAD_TURN;
         Entity target = getHeadTarget(head);
         Entity rider = head < getPassengerList().size() ? getPassengerList().get(head) : null;
         if (target != null && !hasPassenger(target)) {
@@ -1008,33 +1017,58 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         } else if (isSteered() && rider != null) {
             yaw = MathHelper.wrapDegrees(rider.getHeadYaw() - bodyYaw);
             pitch = rider.getPitch();
+            turn = HEAD_EASE;
         } else if (!Float.isNaN(moods.yaw[head]) || !Float.isNaN(moods.pitch[head])) {
             if (!Float.isNaN(moods.yaw[head])) yaw = moods.yaw[head];
             if (!Float.isNaN(moods.pitch[head])) pitch = moods.pitch[head];
+            turn = HEAD_EASE;
         } else if (head == 0 && !isPumping()) {
             yaw = MathHelper.wrapDegrees(headYaw - bodyYaw);
             pitch = rest.restPitch() + getPitch() * 0.5f;
+            turn = HEAD_EASE;
+        } else {
+            turn = HEAD_EASE;
         }
         yaw = rest.restYaw() + MathHelper.clamp(MathHelper.wrapDegrees(yaw - rest.restYaw()), -HEAD_YAW_MAX, HEAD_YAW_MAX);
-        clientYaw[head] += MathHelper.clamp(MathHelper.wrapDegrees(yaw - clientYaw[head]), -HEAD_TURN, HEAD_TURN);
-        clientPitch[head] += MathHelper.clamp(pitch - clientPitch[head], -HEAD_TURN, HEAD_TURN);
+        clientYaw[head] += MathHelper.clamp(MathHelper.wrapDegrees(yaw - clientYaw[head]), -turn, turn);
+        clientPitch[head] += MathHelper.clamp(pitch - clientPitch[head], -turn, turn);
+    }
+
+    /**
+     * Vanilla's move control, but its body turns at most {@link #BODY_TURN} a tick (vanilla: 90), and while it still
+     * has far to turn it barely moves: it turns on the spot, slowly, before it walks off.
+     */
+    static final class HeavyMoveControl extends MoveControl {
+        HeavyMoveControl(MobEntity entity) {
+            super(entity);
+        }
+
+        @Override
+        public void tick() {
+            float before = entity.getYaw();
+            super.tick();
+            float wanted = MathHelper.wrapDegrees(entity.getYaw() - before);
+            if (Math.abs(wanted) <= BODY_TURN) return;
+            entity.setYaw(before + Math.copySign(BODY_TURN, wanted));
+            if (Math.abs(wanted) > 45) entity.setMovementSpeed(entity.getMovementSpeed() * 0.3f);
+        }
     }
 
     @Override
     public void handleStatus(byte status) {
         if (status >= STATUS_FED && status < STATUS_FED + HEADS.length) {
-            moods.trigger(status - STATUS_FED, FumaroleMoods.Mood.WIGGLE, 30);
+            moods.trigger(status - STATUS_FED, FumaroleMoods.Mood.WIGGLE, 60);
             Vec3d at = nozzle(status - STATUS_FED);
             for (int k = 0; k < 4; k++) getWorld().addParticle(ParticleTypes.HEART, at.x + random.nextGaussian() * 0.4, at.y + 0.6, at.z + random.nextGaussian() * 0.4, 0, 0.1, 0);
             return;
         }
         if (status >= STATUS_SULK && status < STATUS_SULK + HEADS.length) {
-            moods.trigger(status - STATUS_SULK, FumaroleMoods.Mood.SULK, 60);
+            moods.trigger(status - STATUS_SULK, FumaroleMoods.Mood.SULK, 100);
             return;
         }
         if (status == STATUS_TAMED) {
             for (int head = 0; head < HEADS.length; head++) {
-                moods.trigger(head, FumaroleMoods.Mood.WIGGLE, 40);
+                moods.trigger(head, FumaroleMoods.Mood.WIGGLE, 70);
                 Vec3d at = nozzle(head);
                 for (int k = 0; k < 6; k++) getWorld().addParticle(ParticleTypes.HEART, at.x + random.nextGaussian() * 0.5, at.y + 0.8, at.z + random.nextGaussian() * 0.5, 0, 0.1, 0);
             }
@@ -1042,7 +1076,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         }
         if (status == STATUS_TAMABLE) {
             for (int head = 0; head < HEADS.length; head++) {
-                moods.trigger(head, FumaroleMoods.Mood.SULK, 50);
+                moods.trigger(head, FumaroleMoods.Mood.SULK, 90);
                 Vec3d at = nozzle(head);
                 getWorld().addParticle(ParticleTypes.LARGE_SMOKE, at.x, at.y, at.z, 0, 0.05, 0);
             }
@@ -1105,7 +1139,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     public int getMaxLookYawChange() {
-        return 25;
+        return (int) LOOK_TURN;
     }
 
     @Override
@@ -1204,10 +1238,19 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         }
     }
 
+    /**
+     * Pumping plays at its authored pace (its gulp is timed, FumaroleGoals.Pump); the idle breath and the walk are
+     * slowed down: {@link #IDLE_PACE}, {@link #WALK_PACE} (the walk's stride follows {@link #SPEED}).
+     */
     private PlayState animate(AnimationState<FumaroleEntity> state) {
-        if (isPumping()) return state.setAndContinue(PUMP);
+        if (isPumping()) {
+            state.getController().setAnimationSpeed(1);
+            return state.setAndContinue(PUMP);
+        }
         double dx = getX() - prevX, dz = getZ() - prevZ;
-        return state.setAndContinue(dx * dx + dz * dz > 1.0e-5 ? WALK : IDLE);
+        boolean walking = dx * dx + dz * dz > 1.0e-5;
+        state.getController().setAnimationSpeed(walking ? WALK_PACE : IDLE_PACE);
+        return state.setAndContinue(walking ? WALK : IDLE);
     }
 
     @Override

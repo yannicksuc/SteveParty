@@ -37,7 +37,7 @@ public final class FumaroleRiding {
     /** One rider's speed (movement attribute units; the wild turtle crawls at 0.12), and each extra agreeing rider's share. */
     public static final float RIDE_SPEED = 0.25f, EXTRA_RIDER_SPEED = 0.6f;
     /** Degrees a tick per rider turning. */
-    public static final float TURN_PER_RIDER = 4.0f;
+    public static final float TURN_PER_RIDER = 2.5f;
     public static final int FIRE_COOLDOWN = 30;
     public static final int CHARGE_MIN = 8, CHARGE_MAX = 40;
     /** The leap: upward speed at the least and at a full charge, forward push at a full charge. */
