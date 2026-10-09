@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.powerups.PowerUps;
@@ -65,55 +66,33 @@ public class PowerUpItem extends Item {
     }
 
     /**
-     * Like the Dice Forge's guides: its tags ([Power-up] [Consumed]), then short points, the key words in colour: what
-     * it does, when to use it, what it aims at; its default price last.
+     * Tagged [Power-up] [Consumed]; then this stack's state ({@link #appendState}), what it does; behind Shift when
+     * and how to use it, the rules, its default price.
      */
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(tags());
-        for (Text line : powerUp.effectLines()) tooltip.add(point(line));
-        tooltip.add(point(when()));
-        switch (powerUp.target()) {
-            case PLAYER -> tooltip.add(point(Text.translatable(KEY + "target.player",
-                    Text.translatable(KEY + "target.player.word").formatted(Formatting.AQUA)).formatted(Formatting.GRAY)));
-            case TILE -> tooltip.add(point(Text.translatable(KEY + "target.tile",
-                    Text.translatable(KEY + "target.tile.word").formatted(Formatting.AQUA)).formatted(Formatting.GRAY)));
-            default -> {
-            }
-        }
-        tooltip.add(point(onePerTurn()));
-        tooltip.add(Text.translatable(KEY + "price",
-                Text.translatable(KEY + "coins", powerUp.defaultPrice()).formatted(Formatting.GOLD)).formatted(Formatting.DARK_GRAY));
-        super.appendTooltip(stack, context, tooltip, type);
+    public final void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.POWER_UP, Tooltips.Tag.CONSUMED);
+        appendState(stack, tips);
+        for (Text line : powerUp.effectLines()) tips.summary(line);
+        tips.more(more -> {
+            howToUse(more, powerUp.target());
+            appendMore(stack, more);
+            more.note(KEY + "one_per_turn");
+            more.note(KEY + "price", Tooltips.coins(Text.translatable("tooltip.steveparty.coins", powerUp.defaultPrice())));
+        });
     }
 
-    /** The tags of a power-up's tooltip: [Power-up] [Consumed] (a die carrying the Power-up module shows them too). */
-    public static MutableText tags() {
-        return tag("tag.power_up", Formatting.LIGHT_PURPLE).append(" ").append(tag("tag.consumed", Formatting.RED));
+    /** This stack's own state (a signed trap...), under the tags. */
+    protected void appendState(ItemStack stack, Tooltips tips) {
     }
 
-    /** "Right-click during your turn, before your roll". */
-    public static Text when() {
-        return Text.translatable(KEY + "when",
-                Text.translatable(KEY + "when.turn").formatted(Formatting.AQUA),
-                Text.translatable(KEY + "when.before_roll").formatted(Formatting.AQUA)).formatted(Formatting.GRAY);
+    /** Its own controls and rules, behind Shift. */
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
     }
 
-    /** "One power-up per turn". */
-    public static Text onePerTurn() {
-        return Text.translatable(KEY + "one_per_turn").formatted(Formatting.GRAY);
-    }
-
-    /** A point of the tooltip, its bullet in {@code colour}. */
-    public static MutableText point(Text line, Formatting colour) {
-        return Text.literal("• ").formatted(colour).append(line);
-    }
-
-    private static MutableText tag(String key, Formatting colour) {
-        return Text.literal("[").append(Text.translatable(KEY + key)).append("]").formatted(colour);
-    }
-
-    private MutableText point(Text line) {
-        return point(line, powerUp.color());
+    /** When to use a power-up (a die carrying the Power-up module too), and on what. */
+    public static void howToUse(Tooltips.More more, PowerUp.Target target) {
+        more.use(Tooltips.Keys.use(), KEY + (target == PowerUp.Target.TILE ? "use.tile" : "use"));
+        if (target == PowerUp.Target.PLAYER) more.use(KEY + "target.player");
     }
 }

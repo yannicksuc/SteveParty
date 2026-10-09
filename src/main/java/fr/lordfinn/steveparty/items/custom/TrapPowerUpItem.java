@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TrapSetupComponent;
 import fr.lordfinn.steveparty.payloads.custom.TrapSetupPayloads;
@@ -42,20 +43,16 @@ public class TrapPowerUpItem extends PowerUpItem {
         return TrapSetupComponent.isSigned(stack) || super.hasGlint(stack);
     }
 
-    /** What it does (its signed effect), who signed it, how to sign it; then the power-up's lines. */
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+    protected void appendState(ItemStack stack, Tooltips tips) {
         TrapSetupComponent setup = stack.get(ModComponents.TRAP_SETUP);
-        TrapSetupComponent.Effect effect = TrapSetupComponent.effectOf(stack);
-        tooltip.add(Text.translatable("tooltip.steveparty.trap.effect", effect.describe().formatted(Formatting.RED))
-                .formatted(Formatting.GRAY));
-        if (setup != null) {
-            tooltip.add(Text.translatable("tooltip.steveparty.trap.signed", Text.literal(setup.signer()).formatted(Formatting.WHITE))
-                    .formatted(Formatting.GRAY, Formatting.ITALIC));
-            tooltip.add(Text.translatable("tooltip.steveparty.trap.copy").formatted(Formatting.DARK_GRAY));
-        } else {
-            tooltip.add(Text.translatable("tooltip.steveparty.trap.unsigned").formatted(Formatting.DARK_GRAY));
-        }
-        super.appendTooltip(stack, context, tooltip, type);
+        tips.state("tooltip.steveparty.trap.effect", Tooltips.bad(TrapSetupComponent.effectOf(stack).describe()));
+        if (setup != null) tips.state("tooltip.steveparty.trap.signed", Tooltips.value(setup.signer()));
+    }
+
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        if (TrapSetupComponent.isSigned(stack)) more.craft("tooltip.steveparty.trap.copy");
+        else more.use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.trap.unsigned");
     }
 }
