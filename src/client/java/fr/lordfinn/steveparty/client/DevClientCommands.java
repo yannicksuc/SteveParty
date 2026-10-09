@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.client;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
+import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
+import fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
@@ -78,8 +80,8 @@ public final class DevClientCommands {
                         // The Stencil Hammer in hand: its refill screen
                         .then(ClientCommandManager.literal("hammer").executes(context -> {
                             net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
-                                    new fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload(
-                                            fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload.Action.HAMMER_OPEN, 0));
+                                    new ToolWheelPayload(
+                                            ToolWheelPayload.Action.HAMMER_OPEN, 0));
                             return 1;
                         }))
                         // The mouse pinned at (x, y) in GUI pixels of the window, as if it hovered there ("off": released)
@@ -125,7 +127,7 @@ public final class DevClientCommands {
                         .then(ClientCommandManager.literal("circle")
                                 .then(ClientCommandManager.argument("percent", IntegerArgumentType.integer(1, 100)).executes(context -> {
                                     var client = context.getSource().getClient();
-                                    if (!(client.currentScreen instanceof fr.lordfinn.steveparty.client.screens.TokenSpellScreen screen)) return 0;
+                                    if (!(client.currentScreen instanceof TokenSpellScreen screen)) return 0;
                                     double radius = IntegerArgumentType.getInteger(context, "percent") / 100.0
                                             * Math.max(40, Math.min(screen.width, screen.height) / 2.0 - 6);
                                     double cx = screen.width / 2.0, cy = screen.height / 2.0;

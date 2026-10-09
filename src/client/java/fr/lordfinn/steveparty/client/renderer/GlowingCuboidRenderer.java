@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.renderer;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
@@ -59,8 +61,8 @@ public class GlowingCuboidRenderer {
         net.minecraft.client.world.ClientWorld world = MinecraftClient.getInstance().world;
         Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
         if (world != null && camera.isReady()) {
-            BlockPos tile = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.resolve(world, pos);
-            var shape = fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape.of(world, tile);
+            BlockPos tile = BoardSpaces.resolve(world, pos);
+            var shape = TileShape.of(world, tile);
             if (shape != null) {
                 drawTile(matrices, vertexConsumers, shape, camera.getPos(), red, green, blue, alpha);
                 return;
@@ -89,11 +91,11 @@ public class GlowingCuboidRenderer {
     }
 
     /**
-     * A tile highlighted where it is drawn ({@link fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape}): its
+     * A tile highlighted where it is drawn ({@link TileShape}): its
      * slab, turned and tilted as it is, filled see-through and its 12 edges glowing like {@link #drawEdges}.
      */
     public static void drawTile(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
-                                fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape shape, Vec3d cam,
+                                TileShape shape, Vec3d cam,
                                 float red, float green, float blue, float alpha) {
         Vec3d[] c = shape.corners();
         Vec3d centre = Vec3d.ZERO;

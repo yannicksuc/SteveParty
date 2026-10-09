@@ -7,7 +7,9 @@ import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.recipes.DiceModuleRecipe;
+import fr.lordfinn.steveparty.recipes.TileCartridgeRecipe;
 import fr.lordfinn.steveparty.recipes.TileShapedRecipe;
+import fr.lordfinn.steveparty.recipes.UnmirroredShapedRecipe;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
@@ -405,7 +407,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         // two cartridges (slots 0 and 15); more cartridges may go in the row under it (TileShapedRecipe)
         Identifier advanced = Steveparty.id("advanced_tile");
         Item yellowSlab = ModBlocks.PLASTIC_SLABS[DyeColor.YELLOW.getId()].asItem();
-        ItemStack shownAdvanced = fr.lordfinn.steveparty.recipes.TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE),
+        ItemStack shownAdvanced = TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE),
                 List.of(new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR)));
         exporter.accept(advanced, new TileShapedRecipe("", CraftingRecipeCategory.REDSTONE, RawShapedRecipe.create(Map.of(
                         'P', Ingredient.ofItems(yellowSlab),
@@ -594,7 +596,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 for (PolishedTilesColor b : tiles.colors()) {
                     if (a == b) continue;
                     Identifier checker = polishedTilesRecipe(name + "_" + a.asString() + "_" + b.asString());
-                    exporter.accept(checker, new fr.lordfinn.steveparty.recipes.UnmirroredShapedRecipe(name + "_" + a.asString(), CraftingRecipeCategory.BUILDING,
+                    exporter.accept(checker, new UnmirroredShapedRecipe(name + "_" + a.asString(), CraftingRecipeCategory.BUILDING,
                             RawShapedRecipe.create(Map.of('A', Ingredient.ofItems(polished), 'B', Ingredient.ofItems(tiles.polished(b))), "AB", "BA"),
                             tiles.stack(a, b, 4), true), null);
                     unlocked.addRecipe(checker).addRecipe(polishedTilesRecipe(name + "_" + b.asString() + "_" + a.asString()));

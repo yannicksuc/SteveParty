@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.mixin;
 
+import fr.lordfinn.steveparty.client.token.MobPoses;
 import fr.lordfinn.steveparty.client.token.TokenBaseRenderState;
 import net.minecraft.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,15 +18,15 @@ public class TokenBaseRenderStateMixin implements TokenBaseRenderState {
     @Unique
     private float steveparty$baseRadius;
     @Unique
-    private fr.lordfinn.steveparty.client.token.MobPoses.Frame steveparty$poseFrame;
+    private MobPoses.Frame steveparty$poseFrame;
 
     @Override
-    public fr.lordfinn.steveparty.client.token.MobPoses.Frame steveparty$getPoseFrame() {
+    public MobPoses.Frame steveparty$getPoseFrame() {
         return this.steveparty$poseFrame;
     }
 
     @Override
-    public void steveparty$setPoseFrame(fr.lordfinn.steveparty.client.token.MobPoses.Frame frame) {
+    public void steveparty$setPoseFrame(MobPoses.Frame frame) {
         this.steveparty$poseFrame = frame;
     }
 

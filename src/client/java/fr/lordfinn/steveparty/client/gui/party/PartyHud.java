@@ -2,8 +2,12 @@ package fr.lordfinn.steveparty.client.gui.party;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
+import fr.lordfinn.steveparty.client.gui.ToolHud;
+import fr.lordfinn.steveparty.client.mixin.ChatHudAccessor;
+import fr.lordfinn.steveparty.client.mixin.InGameHudAccessor;
 import fr.lordfinn.steveparty.hud.HudPlacements.Hud;
 import fr.lordfinn.steveparty.client.mixin.BossBarHudAccessor;
+import fr.lordfinn.steveparty.hud.HudPlacements;
 import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -171,7 +175,7 @@ public final class PartyHud {
         if (turnBar && standings && !dragging) separate(screenWidth, screenHeight);
         // The notice: under the turn bar while attached to it (and away with it under the player list), else where
         // the player put it; never over the standings
-        fr.lordfinn.steveparty.hud.HudPlacements.Placement noticePlace = PartyHudLayout.get(Hud.NOTICE);
+        HudPlacements.Placement noticePlace = PartyHudLayout.get(Hud.NOTICE);
         boolean attached = noticePlace.attached;
         boolean notice = placeHud(Hud.NOTICE, drawn, on && drawn.action != PartyHudModel.Action.NONE && (turnBarShown || noticePlace.anchor.fy > 0.5f),
                 preview, NOTICE_ALPHA, delta, now, screenWidth, screenHeight, screenWidth - 2 * PartyHudLayout.MARGIN);
@@ -232,7 +236,7 @@ public final class PartyHud {
         net.minecraft.client.gui.hud.ChatHud chat = client.inGameHud.getChatHud();
         int ticks = client.inGameHud.getTicks(), lines = 0;
         boolean open = chat.isChatFocused();
-        for (net.minecraft.client.gui.hud.ChatHudLine.Visible line : ((fr.lordfinn.steveparty.client.mixin.ChatHudAccessor) chat).steveparty$getVisibleMessages()) {
+        for (net.minecraft.client.gui.hud.ChatHudLine.Visible line : ((ChatHudAccessor) chat).steveparty$getVisibleMessages()) {
             if (!open && ticks - line.addedTime() >= 200) break;
             if (++lines >= chat.getVisibleLineCount()) break;
         }
@@ -247,7 +251,7 @@ public final class PartyHud {
     static float[] practiceSpot(int screenWidth) {
         for (Hud hud : new Hud[]{Hud.NOTICE, Hud.TURN_BAR}) {
             float[] b = BOUNDS[hud.ordinal()];
-            fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
+            HudPlacements.Placement placement = PartyHudLayout.get(hud);
             float[] alpha = hud == Hud.NOTICE ? NOTICE_ALPHA : TURN_BAR_ALPHA;
             if (model() != null && alpha[0] > 0.02f && b[2] > 0 && b[1] < 80 && placement.anchor.fy < 0.5f)
                 return new float[]{b[0] + b[2] / 2, b[1] + b[3] + 4};
@@ -299,7 +303,7 @@ public final class PartyHud {
     }
 
     private static void drawHud(DrawContext context, Hud hud, float alpha, boolean preview, double now) {
-        fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
+        HudPlacements.Placement placement = PartyHudLayout.get(hud);
         float[] bounds = BOUNDS[hud.ordinal()];
         // Sliding in from its edge while fading in
         float slide = preview ? 0 : (1 - Easing.easeOutCubic(alpha)) * 6 * (placement.anchor.fy > 0.5f ? 1 : -1);
@@ -318,7 +322,7 @@ public final class PartyHud {
     /** Fades a HUD, lays it out and places it (in {@link #BOUNDS}): false if it is not drawn. */
     private static boolean placeHud(Hud hud, PartyHudModel drawn, boolean wanted, boolean preview,
                                     float[] alpha, float delta, double now, int screenWidth, int screenHeight, float room) {
-        fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
+        HudPlacements.Placement placement = PartyHudLayout.get(hud);
         float scale = placement.scale;
         if (preview) {
             alpha[0] = placement.visible ? 1 : 0.35f;
@@ -367,14 +371,14 @@ public final class PartyHud {
      *
      * @param bottom the notice's bottom where the layout puts it
      */
-    private static float noticeLift(fr.lordfinn.steveparty.hud.HudPlacements.Placement placement, float bottom, boolean preview, float delta) {
+    private static float noticeLift(HudPlacements.Placement placement, float bottom, boolean preview, float delta) {
         float target = 0;
-        if (!preview && placement.anchor == fr.lordfinn.steveparty.hud.HudPlacements.Anchor.BOTTOM) {
+        if (!preview && placement.anchor == HudPlacements.Anchor.BOTTOM) {
             MinecraftClient client = MinecraftClient.getInstance();
-            int toolTop = fr.lordfinn.steveparty.client.gui.ToolHud.occupiedTop();
+            int toolTop = ToolHud.occupiedTop();
             // The held item's name goes over the tools' HUD: room for it
             if (toolTop >= 0) target = Math.max(0, bottom - (toolTop - 14));
-            if (((fr.lordfinn.steveparty.client.mixin.InGameHudAccessor) client.inGameHud).steveparty$getOverlayRemaining() > 0)
+            if (((InGameHudAccessor) client.inGameHud).steveparty$getOverlayRemaining() > 0)
                 target += 14;
         }
         noticeLift = HudDraw.approach(noticeLift, target, 0.4f, delta);

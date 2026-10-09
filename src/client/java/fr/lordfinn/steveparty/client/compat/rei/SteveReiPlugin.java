@@ -127,7 +127,7 @@ public class SteveReiPlugin implements REIClientPlugin {
                 List.of(EntryIngredients.ofItemStacks(results)),
                 Optional.of(Steveparty.id("tile_cartridge/tile"))));
         ItemStack stop = CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
-        ItemStack filled = fr.lordfinn.steveparty.recipes.TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE),
+        ItemStack filled = TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE),
                 List.of(plain, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP)));
         if (filled != null) registry.add(DefaultCustomShapelessDisplay.simple(
                 List.of(EntryIngredients.of(ModBlocks.ADVANCED_TILE), EntryIngredients.of(tile), EntryIngredients.of(stop)),

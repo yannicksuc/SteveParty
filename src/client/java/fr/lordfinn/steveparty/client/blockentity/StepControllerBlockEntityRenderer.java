@@ -2,6 +2,9 @@ package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
+import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
@@ -31,7 +34,7 @@ public class StepControllerBlockEntityRenderer extends GeoBlockRenderer<StepCont
                 || !WorldLabels.lookingAtColumn(entity.getPos().getX(), entity.getPos().getZ(), entity.getPos().getY(), entity.getPos().getY() + 1)) return;
         float line = 0;
         for (java.util.UUID id : pages) {
-            fr.lordfinn.steveparty.minigame.MiniGamePageData page = fr.lordfinn.steveparty.client.minigame.MiniGamePageClient.page(id);
+            MiniGamePageData page = MiniGamePageClient.page(id);
             net.minecraft.text.Text name = page != null && page.hasTitle() ? net.minecraft.text.Text.literal(page.title())
                     : net.minecraft.text.Text.translatable("item.steveparty.mini_game_page");
             WorldLabels.draw(matrices, bufferSource, dispatcher, 0.5, 1.45, 0.5,
@@ -46,7 +49,7 @@ public class StepControllerBlockEntityRenderer extends GeoBlockRenderer<StepCont
         net.minecraft.entity.player.PlayerEntity player = net.minecraft.client.MinecraftClient.getInstance().player;
         if (player == null) return false;
         for (net.minecraft.item.ItemStack stack : player.getHandItems()) {
-            if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.MiniGamePageItem) return true;
+            if (stack.getItem() instanceof MiniGamePageItem) return true;
         }
         return false;
     }

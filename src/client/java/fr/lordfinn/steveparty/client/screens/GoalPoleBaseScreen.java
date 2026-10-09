@@ -15,6 +15,8 @@ import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
+import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -225,8 +227,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             } else if (value instanceof EntityType<?> entity) {
                 name = entity.getName();
                 // the classic Glandouille's egg, not the last one registered for its type
-                SpawnEggItem egg = entity == fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE
-                        ? (SpawnEggItem) fr.lordfinn.steveparty.items.ModItems.GLANDOUILLE_SPAWN_EGG : SpawnEggItem.forEntity(entity);
+                SpawnEggItem egg = entity == ModEntities.GLANDOUILLE
+                        ? (SpawnEggItem) ModItems.GLANDOUILLE_SPAWN_EGG : SpawnEggItem.forEntity(entity);
                 icon = egg != null ? egg : Items.PAPER;
             } else {
                 continue;

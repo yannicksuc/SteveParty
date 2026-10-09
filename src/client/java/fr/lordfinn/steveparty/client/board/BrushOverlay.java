@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.BrushLinkable;
 import fr.lordfinn.steveparty.board.BrushLinks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
+import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -110,7 +111,7 @@ final class BrushOverlay {
         MatrixStack matrices = context.matrixStack();
         if (player == null || world == null || matrices == null) return;
         ItemStack brush = player.getMainHandStack();
-        if (!TileLinkerBrush.isBrush(brush) || fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.isOpen()) return;
+        if (!TileLinkerBrush.isBrush(brush) || ToolWheel.isOpen()) return;
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
         Camera camera = context.camera();
         ghosts(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));
