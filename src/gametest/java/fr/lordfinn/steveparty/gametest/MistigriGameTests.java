@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.CursedRolls;
+import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
@@ -14,6 +15,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.passive.CatEntity;
@@ -185,11 +187,13 @@ public class MistigriGameTests implements FabricGameTest {
         ServerPlayerEntity player = survival(context);
         moveTo(context, player, new Vec3d(2.0, 1, 4.0)); // ahead, on one side
         MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
-        context.assertFalse(player.hasStatusEffect(StatusEffects.UNLUCK), "standing in front of him is fine");
+        context.assertFalse(player.hasStatusEffect(ModEffects.BAD_LUCK), "standing in front of him is fine");
         moveTo(context, player, new Vec3d(5.0, 1, 4.0)); // across his line
         MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
-        context.assertTrue(player.hasStatusEffect(StatusEffects.UNLUCK), "crossing his path: Bad Luck");
-        context.assertTrue(player.getStatusEffect(StatusEffects.UNLUCK).getDuration() > MistigriBadLuck.UNLUCK_TICKS - 5, "a whole minute");
+        context.assertTrue(player.hasStatusEffect(ModEffects.BAD_LUCK), "crossing his path: Bad Luck");
+        context.assertTrue(player.getStatusEffect(ModEffects.BAD_LUCK).getDuration() > MistigriBadLuck.UNLUCK_TICKS - 5, "a whole minute");
+        context.assertFalse(player.hasStatusEffect(StatusEffects.UNLUCK), "the mod's Bad Luck (a black cat icon), not vanilla's");
+        context.assertTrue(player.getAttributeValue(EntityAttributes.GENERIC_LUCK) == -1.0, "luck -1, as vanilla's Bad Luck");
         context.complete();
     }
 
@@ -204,7 +208,7 @@ public class MistigriGameTests implements FabricGameTest {
         MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
         moveTo(context, player, new Vec3d(5.0, 1, 4.0));
         MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
-        context.assertFalse(player.hasStatusEffect(StatusEffects.UNLUCK), "behind him: no bad luck");
+        context.assertFalse(player.hasStatusEffect(ModEffects.BAD_LUCK), "behind him: no bad luck");
         context.complete();
     }
 
@@ -220,7 +224,7 @@ public class MistigriGameTests implements FabricGameTest {
         MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
         moveTo(context, owner, new Vec3d(5.0, 1, 4.0));
         MistigriBadLuck.tickCrossings(context.getWorld(), mistigri);
-        context.assertFalse(owner.hasStatusEffect(StatusEffects.UNLUCK), "his owner: no bad luck");
+        context.assertFalse(owner.hasStatusEffect(ModEffects.BAD_LUCK), "his owner: no bad luck");
         context.complete();
     }
 
@@ -232,7 +236,7 @@ public class MistigriGameTests implements FabricGameTest {
         moveTo(context, player, new Vec3d(3.5, 1, 5.5));
         mistigri.damage(context.getWorld().getDamageSources().playerAttack(player), 1f);
         context.assertTrue(mistigri.isAngry(), "angry");
-        context.assertTrue(player.hasStatusEffect(StatusEffects.UNLUCK), "whoever hit him: Bad Luck");
+        context.assertTrue(player.hasStatusEffect(ModEffects.BAD_LUCK), "whoever hit him: Bad Luck");
         ItemStack fish = new ItemStack(Items.COD, 3);
         player.setStackInHand(Hand.MAIN_HAND, fish);
         mistigri.interactMob(player, Hand.MAIN_HAND);

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.mistigri;
 
+import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
 import fr.lordfinn.steveparty.entities.PetTeleports;
@@ -21,7 +22,6 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.PassiveEntity;
@@ -370,7 +370,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
             setAngry(ANGRY_TICKS);
             setSitting(false);
             if (source.getAttacker() instanceof LivingEntity attacker && !isOwner(attacker)) {
-                attacker.addStatusEffect(new StatusEffectInstance(StatusEffects.UNLUCK, HIT_UNLUCK_TICKS, 0), this);
+                attacker.addStatusEffect(new StatusEffectInstance(ModEffects.BAD_LUCK, HIT_UNLUCK_TICKS, 0), this);
                 getLookControl().lookAt(attacker);
             }
         }
