@@ -15,7 +15,7 @@ import java.util.List;
  * every few seconds (a player joining or changing world gets it then).
  */
 public record StarSpacesPayload(List<BlockPos> spaces) implements CustomPayload {
-    public static final CustomPayload.Id<StarSpacesPayload> ID = new CustomPayload.Id<>(Steveparty.id("star-spaces"));
+    public static final CustomPayload.Id<StarSpacesPayload> ID = new CustomPayload.Id<>(Steveparty.id("star_spaces"));
     public static final PacketCodec<RegistryByteBuf, StarSpacesPayload> CODEC = PacketCodec.tuple(
             BlockPos.PACKET_CODEC.collect(PacketCodecs.toList()), StarSpacesPayload::spaces,
             StarSpacesPayload::new);

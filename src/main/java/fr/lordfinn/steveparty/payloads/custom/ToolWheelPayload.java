@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.payloads.custom;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
+import fr.lordfinn.steveparty.payloads.ServerboundPayload;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -18,7 +19,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
  * @param action what the sector does (see {@link Action})
  * @param value  its value: a level (-1: powered), a cartridge's raw item id, a hammer slot (-1: engrave)...
  */
-public record ToolWheelPayload(int action, int value) implements CustomPayload {
+public record ToolWheelPayload(int action, int value) implements ServerboundPayload {
     public static final Id<ToolWheelPayload> ID = new Id<>(Steveparty.id("tool_wheel"));
     public static final PacketCodec<RegistryByteBuf, ToolWheelPayload> CODEC = PacketCodec.tuple(
             PacketCodecs.VAR_INT, ToolWheelPayload::action,
@@ -54,12 +55,17 @@ public record ToolWheelPayload(int action, int value) implements CustomPayload {
         return ID;
     }
 
+    @Override
+    public void handle(ServerPlayerEntity player) {
+        apply(player);
+    }
+
     /**
      * Server side.
      *
      * @return whether the selection was applied
      */
-    public boolean handle(ServerPlayerEntity player) {
+    public boolean apply(ServerPlayerEntity player) {
         if (action < 0 || action >= Action.values().length || player.isSpectator()) return false;
         ItemStack tool = player.getMainHandStack();
         Action picked = Action.values()[action];

@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.payloads.custom;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImages;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import fr.lordfinn.steveparty.payloads.Payloads;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
@@ -28,27 +28,17 @@ public final class MiniGamePagePayloads {
     private MiniGamePagePayloads() {
     }
 
+    /** The server → client payloads (the client → server ones are registered with their handlers by MiniGamePageNetworking). */
     public static void register() {
-        PayloadTypeRegistry.playS2C().register(Open.ID, Open.CODEC);
-        PayloadTypeRegistry.playS2C().register(Data.ID, Data.CODEC);
-        PayloadTypeRegistry.playS2C().register(ImageChunk.ID, ImageChunk.CODEC);
-        PayloadTypeRegistry.playS2C().register(Status.ID, Status.CODEC);
-        PayloadTypeRegistry.playS2C().register(Preview.ID, Preview.CODEC);
-        PayloadTypeRegistry.playS2C().register(Results.ID, Results.CODEC);
-        PayloadTypeRegistry.playS2C().register(TestLabel.ID, TestLabel.CODEC);
-        PayloadTypeRegistry.playS2C().register(TestStatus.ID, TestStatus.CODEC);
-        PayloadTypeRegistry.playS2C().register(Practice.ID, Practice.CODEC);
-        PayloadTypeRegistry.playC2S().register(Ready.ID, Ready.CODEC);
-        PayloadTypeRegistry.playC2S().register(TestQuery.ID, TestQuery.CODEC);
-        PayloadTypeRegistry.playC2S().register(TestAction.ID, TestAction.CODEC);
-        PayloadTypeRegistry.playC2S().register(PodiumUnlink.ID, PodiumUnlink.CODEC);
-        PayloadTypeRegistry.playC2S().register(Edit.ID, Edit.CODEC);
-        PayloadTypeRegistry.playC2S().register(Action.ID, Action.CODEC);
-        PayloadTypeRegistry.playC2S().register(Upload.ID, Upload.CODEC);
-        PayloadTypeRegistry.playC2S().register(PipeRole.ID, PipeRole.CODEC);
-        PayloadTypeRegistry.playC2S().register(PipeOrder.ID, PipeOrder.CODEC);
-        PayloadTypeRegistry.playC2S().register(Request.ID, Request.CODEC);
-        PayloadTypeRegistry.playC2S().register(ImageRequest.ID, ImageRequest.CODEC);
+        Payloads.s2c(Open.ID, Open.CODEC);
+        Payloads.s2c(Data.ID, Data.CODEC);
+        Payloads.s2c(ImageChunk.ID, ImageChunk.CODEC);
+        Payloads.s2c(Status.ID, Status.CODEC);
+        Payloads.s2c(Preview.ID, Preview.CODEC);
+        Payloads.s2c(Results.ID, Results.CODEC);
+        Payloads.s2c(TestLabel.ID, TestLabel.CODEC);
+        Payloads.s2c(TestStatus.ID, TestStatus.CODEC);
+        Payloads.s2c(Practice.ID, Practice.CODEC);
     }
 
     private static <T extends CustomPayload> CustomPayload.Id<T> id(String name) {

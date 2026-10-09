@@ -5,8 +5,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import fr.lordfinn.steveparty.payloads.Payloads;
 import net.minecraft.component.ComponentType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
@@ -53,8 +52,7 @@ public final class ExplorerHelmet {
     }
 
     public static void initialize() {
-        PayloadTypeRegistry.playC2S().register(ToggleLamp.ID, ToggleLamp.CODEC);
-        ServerPlayNetworking.registerGlobalReceiver(ToggleLamp.ID, (payload, context) -> toggle(context.player()));
+        Payloads.c2s(ToggleLamp.ID, ToggleLamp.CODEC, (player, payload) -> toggle(player));
     }
 
     public static boolean isHelmet(ItemStack stack) {

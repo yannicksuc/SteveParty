@@ -3,11 +3,10 @@ package fr.lordfinn.steveparty.entities.custom.glandouille;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.payloads.Payloads;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
@@ -295,8 +294,7 @@ public final class GlandouilleTowers {
      * by anyone drops it; his left click throws one ({@link ThrowCarried}, sent by the client).
      */
     public static void initialize() {
-        PayloadTypeRegistry.playC2S().register(ThrowCarried.ID, ThrowCarried.CODEC);
-        ServerPlayNetworking.registerGlobalReceiver(ThrowCarried.ID, (payload, context) -> throwCarried(context.player()));
+        Payloads.c2s(ThrowCarried.ID, ThrowCarried.CODEC, (player, payload) -> throwCarried(player));
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
             if (entity instanceof PlayerEntity player && !blocked && (source.getAttacker() != null || source.getSource() != null)) {
                 drop(player);

@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.client;
 
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
+import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.payloads.custom.SwitchableBlocksPayload;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.item.BlockItem;
 import net.minecraft.registry.Registries;
@@ -19,11 +19,10 @@ public final class SwitchableClient {
     }
 
     public static void initialize() {
-        ClientPlayNetworking.registerGlobalReceiver(SwitchableBlocksPayload.ID, (payload, context) -> context.client().execute(() ->
-                Switchables.setConfigBlocks(payload.blocks().stream()
+        ClientPayloads.receive(SwitchableBlocksPayload.ID, (payload, context) -> Switchables.setConfigBlocks(payload.blocks().stream()
                         .map(id -> Registries.BLOCK.getOrEmpty(id).orElse(null))
                         .filter(Objects::nonNull)
-                        .collect(Collectors.<Block>toSet()))));
+                        .collect(Collectors.<Block>toSet())));
 
         ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipType, lines) -> {
             if (stack.getItem() instanceof BlockItem blockItem && Switchables.isSwitchable(blockItem.getBlock().getDefaultState())) {
