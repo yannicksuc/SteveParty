@@ -272,8 +272,6 @@ public class StencilGunItem extends Item {
         }
         tips.state("tooltip.steveparty.stencil_gun.color", value);
         tips.more(more -> more
-                .use(Tooltips.Keys.use(), "tooltip.steveparty.stencil_gun.usage")
-                .use(Tooltips.Keys.attack(), "tooltip.steveparty.stencil_gun.wheel")
                 .note("tooltip.steveparty.stencil_gun.no_tool")
                 .note("tooltip.steveparty.stencil.remove"));
     }

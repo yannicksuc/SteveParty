@@ -105,11 +105,8 @@ public class TileLinkerBrushItem extends Item {
         if (cartridge != null) tips.state("tooltip.steveparty.tile_linker_brush.cartridge", Tooltips.value(new ItemStack(cartridge).getName()));
         tips.summary("tooltip.steveparty.tile_linker_brush")
                 .more(more -> more
-                        .use(Tooltips.Keys.use(), "tooltip.steveparty.tile_linker_brush.controls.paint")
-                        .use(Tooltips.Keys.attack(), "tooltip.steveparty.tile_linker_brush.controls.wheel")
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.tile_linker_brush.controls.chest")
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.tile_linker_brush.controls.shop")
-                        .use(Tooltips.Keys.of("tooltip.steveparty.key.offhand"), "tooltip.steveparty.tile_linker_brush.controls.offhand")
-                        .note("tooltip.steveparty.tile_linker_brush.controls.erase"));
+                        .use(Tooltips.Keys.of("tooltip.steveparty.key.offhand"), "tooltip.steveparty.tile_linker_brush.controls.offhand"));
     }
 }
