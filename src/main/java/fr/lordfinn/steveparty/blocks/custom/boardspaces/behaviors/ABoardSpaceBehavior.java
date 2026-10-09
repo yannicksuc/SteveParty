@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
+import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.payloads.custom.UpdateColoredTilePayload;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -168,6 +169,14 @@ public abstract class ABoardSpaceBehavior {
         if (stack.getItem() instanceof CartridgeItem cartridge && cartridge.tileColor() >= 0 && !stack.contains(ModComponents.COLOR)) {
             setColor(boardSpaceBlockEntity, cartridge.tileColor());
         }
+    }
+
+    /**
+     * What this space tells the players in game (see {@link TileInfo}): a few short lines and the items it lists, from
+     * its cartridge {@code stack} and its state. Server side, only when a player looks at it (never per tick). Its
+     * title (the cartridge's name) is already set; roles with nothing to tell add nothing.
+     */
+    public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
     }
 
     public Status getStatus(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {

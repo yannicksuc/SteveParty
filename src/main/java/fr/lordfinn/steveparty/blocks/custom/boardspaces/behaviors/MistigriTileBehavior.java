@@ -1,5 +1,11 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import java.util.List;
+import java.util.Comparator;
+import java.util.ArrayList;
+import net.minecraft.text.Text;
+import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
@@ -46,5 +52,21 @@ public class MistigriTileBehavior extends MobTileBehavior {
     @Override
     public Status getStatus(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
         return Status.BAD;
+    }
+
+    /** His sentences, the likeliest first, and their chances. */
+    @Override
+    public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
+        if (!(stack.getItem() instanceof MistigriCartridgeItem)) return;
+        List<MistigriSentences.Sentence> sentences = new ArrayList<>();
+        for (MistigriSentences.Sentence sentence : MistigriSentences.Sentence.values()) {
+            if (MistigriCartridgeItem.chance(stack, sentence) > 0) sentences.add(sentence);
+        }
+        sentences.sort(Comparator.comparingInt((MistigriSentences.Sentence sentence) -> -MistigriCartridgeItem.chance(stack, sentence)));
+        for (MistigriSentences.Sentence sentence : sentences) {
+            info.line(TileInfo.line("mistigri", TileInfo.rgb(MistigriCartridgeItem.chance(stack, sentence) + "%",
+                            sentence.harsh ? TileInfo.BAD : TileInfo.GOOD),
+                    Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack))));
+        }
     }
 }
