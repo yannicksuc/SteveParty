@@ -92,7 +92,7 @@ public final class ModItemGroups {
             entries.add(TeleportCartridgeItem.withNetwork(new ItemStack(TELEPORT_CARTRIDGE), network));
         }
         addAll(entries, STAR_CARTRIDGE, GLANDOUILLE_CARTRIDGE, FROUSSEUX_CARTRIDGE, MISTIGRI_CARTRIDGE,
-                THRESHOLD_CARTRIDGE, POT_CARTRIDGE, KEY_GATE_CARTRIDGE, GATE_KEY);
+                THRESHOLD_CARTRIDGE, POT_CARTRIDGE, KEY_GATE_CARTRIDGE, GATE_KEY, TRICHAUDRON_CARTRIDGE);
         addAll(entries, TOKENIZER_WAND, LAPIS_CRYSTAL_BALL, TOKEN, PLUNGER);
         addAll(entries, TRADING_STALL, CASH_REGISTER, SHOPKEEPER_KEY);
         addAll(entries, COIN, PARTY_STAR);

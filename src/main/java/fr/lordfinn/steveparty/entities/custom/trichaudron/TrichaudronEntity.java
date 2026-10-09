@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.mixin.LivingEntityJumpingAccessor;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -131,7 +132,7 @@ import java.util.UUID;
  *     0 to 2 magma cream.</li>
  * </ul>
  */
-public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, RideableInventory {
+public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, RideableInventory, BoardActor {
     /** Its shell and legs: 52 px wide, the tank's rim 61 px high. The necks reach far beyond (not in the box). */
     public static final float WIDTH = 3.2f, HEIGHT = 3.8125f, EYE_HEIGHT = 2.76f;
     public static final int TANK_MAX = 27, SPAWN_TANK_MIN = 14, SPAWN_TANK_MAX = 20;
@@ -253,6 +254,8 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     /** Client only: its personality. */
     public final TrichaudronMoods moods = new TrichaudronMoods();
     private boolean wasSwimming;
+    /** Server: summoned by a Trichaudron space for its show (see TrichaudronPrizes), not a wild one. */
+    private boolean boardActor;
 
     public TrichaudronEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -452,6 +455,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
         ItemStack stack = player.getStackInHand(hand);
+        if (boardActor) return ActionResult.PASS; // a board space's: no bucket, no ride, no screen
         if (!isAlive()) return super.interactMob(player, hand);
         boolean client = getWorld().isClient;
         if (stack.isOf(Items.BUCKET)) {
@@ -1363,7 +1367,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     @Override
     public void onDeath(DamageSource damageSource) {
         super.onDeath(damageSource);
-        if (getWorld() instanceof ServerWorld world && !isRemoved()) spill(world);
+        if (getWorld() instanceof ServerWorld world && !isRemoved() && !boardActor) spill(world);
     }
 
     @Override
@@ -1423,6 +1427,46 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     @Override
     public boolean canImmediatelyDespawn(double distanceSquared) {
         return !isTamed() && !hasPlayerRider() && super.canImmediatelyDespawn(distanceSquared);
+    }
+
+    // ---------------------------------------------------------------- board actor
+
+    /** A Trichaudron of a board space (TrichaudronPrizes): invulnerable, no will of its own, never saved, no loot. */
+    @Override
+    public boolean isBoardActor() {
+        return boardActor;
+    }
+
+    @Override
+    public void setBoardActor() {
+        this.boardActor = true;
+    }
+
+    /** Moved by its show only: no gravity, through the floor (it rises from it and sinks back into it). */
+    @Override
+    public void onBoardActor() {
+        setNoGravity(true);
+        noClip = true;
+    }
+
+    /** A board actor: its heads dive into its tank (the pumping gulp), or come back out. */
+    public void setDiving(boolean diving) {
+        setPumping(diving);
+    }
+
+    @Override
+    public boolean shouldSave() {
+        return !boardActor && super.shouldSave();
+    }
+
+    @Override
+    protected boolean shouldDropLoot() {
+        return !boardActor && super.shouldDropLoot();
+    }
+
+    @Override
+    public boolean isPushable() {
+        return !boardActor && super.isPushable();
     }
 
     // ---------------------------------------------------------------- save

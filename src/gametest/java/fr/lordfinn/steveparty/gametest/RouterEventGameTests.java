@@ -123,6 +123,8 @@ public class RouterEventGameTests implements FabricGameTest {
             // A spent Replay tile is still a Replay tile: same level; the Mistigri's space is a malus space (no level left)
             if (landing == TileFeedback.Landing.MISTIGRI) {
                 context.assertEquals(level, BoardSpaceRedstoneRouterBlockEntity.LEVEL_MALUS, "the Mistigri: a malus");
+            } else if (landing == TileFeedback.Landing.TRICHAUDRON) {
+                context.assertEquals(level, BoardSpaceRedstoneRouterBlockEntity.LEVEL_BONUS, "the Trichaudron: a bonus");
             } else if (landing != TileFeedback.Landing.REPLAY_SPENT) {
                 context.assertTrue(levels.add(level), landing + " has a level of its own");
             }

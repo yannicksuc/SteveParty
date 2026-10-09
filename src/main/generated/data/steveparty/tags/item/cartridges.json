@@ -14,6 +14,7 @@
     "steveparty:mistigri_cartridge",
     "steveparty:threshold_cartridge",
     "steveparty:pot_cartridge",
-    "steveparty:key_gate_cartridge"
+    "steveparty:key_gate_cartridge",
+    "steveparty:trichaudron_cartridge"
   ]
 }

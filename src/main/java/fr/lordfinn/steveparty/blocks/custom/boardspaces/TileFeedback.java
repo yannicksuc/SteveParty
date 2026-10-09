@@ -168,7 +168,13 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.943F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.794F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.63F, 8),
-                new Layer(SoundEvents.ENTITY_CAT_HISS, 0.35F, 0.7F, 10)));
+                new Layer(SoundEvents.ENTITY_CAT_HISS, 0.35F, 0.7F, 10))),
+        /** A Trichaudron space: a deep bubbling rise on the bass and a pop of lava (see TrichaudronTileBehavior). */
+        TRICHAUDRON("trichaudron", 0x64200C, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.63F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.84F, 4),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 1.0F, 8),
+                new Layer(SoundEvents.BLOCK_LAVA_POP, 0.6F, 0.8F, 10)));
 
         private final String key;
         /** Particle colour when the tile's own colour doesn't fit (plain white tile, or a themed burst). */
@@ -457,6 +463,10 @@ public final class TileFeedback {
             }
             case MISTIGRI -> {
                 world.spawnParticles(ParticleTypes.WITCH, at.x, y + 0.2, at.z, 12, 0.35, 0.15, 0.35, 0.02);
+                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
+            }
+            case TRICHAUDRON -> {
+                world.spawnParticles(ParticleTypes.LAVA, at.x, y + 0.2, at.z, 6, 0.3, 0.1, 0.3, 0.0);
                 world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
             }
             case ITEM, DEFAULT -> world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE),
