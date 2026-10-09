@@ -20,9 +20,12 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -72,7 +75,7 @@ public class AcornCropBlock extends CropBlock {
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         // Shifted a little within its block, like grass and flowers (see the block's offset settings)
-        net.minecraft.util.math.Vec3d offset = state.getModelOffset(world, pos);
+        Vec3d offset = state.getModelOffset(world, pos);
         return SHAPES[Math.min(MAX_AGE, state.get(AGE))].offset(offset.x, offset.y, offset.z);
     }
 
@@ -93,18 +96,18 @@ public class AcornCropBlock extends CropBlock {
 
     /** Bone meal always takes: one stage per dose while it grows; ripe, it may hatch. */
     @Override
-    public boolean isFertilizable(net.minecraft.world.WorldView world, BlockPos pos, BlockState state) {
+    public boolean isFertilizable(WorldView world, BlockPos pos, BlockState state) {
         return true;
     }
 
     @Override
-    public boolean canGrow(net.minecraft.world.World world, Random random, BlockPos pos, BlockState state) {
+    public boolean canGrow(World world, Random random, BlockPos pos, BlockState state) {
         return !isMature(state) || random.nextInt(HATCH_DOSES) == 0;
     }
 
     /** Exactly one stage per dose of bone meal (no jump to ripe). */
     @Override
-    protected int getGrowthAmount(net.minecraft.world.World world) {
+    protected int getGrowthAmount(World world) {
         return 1;
     }
 

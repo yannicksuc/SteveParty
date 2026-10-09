@@ -9,8 +9,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,7 +46,7 @@ public final class MulaFood {
     }
 
     private static final Map<MulaEntity.MulaVariant, Set<Item>> FOODS = new EnumMap<>(MulaEntity.MulaVariant.class);
-    private static final Map<Item, MulaEntity.MulaVariant> SEEDS = new java.util.HashMap<>();
+    private static final Map<Item, MulaEntity.MulaVariant> SEEDS = new HashMap<>();
 
     static {
         FOODS.put(MulaEntity.MulaVariant.BLUE, Set.of(Items.COD, Items.COOKED_COD, Items.TROPICAL_FISH));
@@ -65,7 +68,7 @@ public final class MulaFood {
 
     /** The seeds of this colour (for tests and the test scene). */
     public static Set<Item> seedsOf(MulaEntity.MulaVariant variant) {
-        Set<Item> seeds = new java.util.HashSet<>();
+        Set<Item> seeds = new HashSet<>();
         SEEDS.forEach((item, v) -> {
             if (v == variant) seeds.add(item);
         });
@@ -79,7 +82,7 @@ public final class MulaFood {
     }
 
     /** The colour of Mula that eats this (food, seed or potion), or null if none does (for the tooltip). */
-    public static @org.jetbrains.annotations.Nullable MulaEntity.MulaVariant eatenBy(ItemStack stack) {
+    public static @Nullable MulaEntity.MulaVariant eatenBy(ItemStack stack) {
         for (MulaEntity.MulaVariant v : MulaEntity.MulaVariant.values()) {
             if (value(v, stack) > 0) return v;
         }

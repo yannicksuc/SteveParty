@@ -19,6 +19,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
@@ -95,7 +96,7 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
     /** Amplifier matching a size (drives the spin speed of the client animation). */
     public static int amplifierForSize(float sizeInBlocks) {
         // (sent to the clients as a byte: a big pawn stays at its top)
-        return net.minecraft.util.math.MathHelper.clamp(Math.round(sizeInBlocks * 10), 1, Byte.MAX_VALUE);
+        return MathHelper.clamp(Math.round(sizeInBlocks * 10), 1, Byte.MAX_VALUE);
     }
 
     /**

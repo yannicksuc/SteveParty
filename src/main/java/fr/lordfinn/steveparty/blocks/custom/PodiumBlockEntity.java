@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -84,7 +85,7 @@ public class PodiumBlockEntity extends SyncedBlockEntity implements TickableBloc
         UUID before = this.occupant == null || this.occupant.figure() == null ? null : this.occupant.figure().player();
         UUID after = occupant == null || occupant.figure() == null ? null : occupant.figure().player();
         if (after != null && !after.equals(before)) {
-            figurePose = PlayerPawnPose.podiumPose(world != null ? world.getRandom().nextInt() : new java.util.Random().nextInt());
+            figurePose = PlayerPawnPose.podiumPose(world != null ? world.getRandom().nextInt() : new Random().nextInt());
         }
         this.occupant = occupant;
         sync();

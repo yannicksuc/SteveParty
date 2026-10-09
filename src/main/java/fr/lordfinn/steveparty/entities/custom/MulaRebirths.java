@@ -10,6 +10,7 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.chunk.WorldChunk;
@@ -116,7 +117,7 @@ public class MulaRebirths extends PersistentState {
         for (int i = 0; i < 32 && !world.isSpaceEmpty(mula); i++) {
             mula.refreshPositionAndAngles(mula.getX(), mula.getY() + 0.5, mula.getZ(), mula.getYaw(), 0);
         }
-        mula.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
+        mula.setVelocity(Vec3d.ZERO);
         mula.onReborn();
         if (world.spawnEntity(mula)) world.sendEntityStatus(mula, REBORN_STATUS);
     }

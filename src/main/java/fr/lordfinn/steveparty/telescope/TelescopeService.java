@@ -18,6 +18,7 @@ import net.minecraft.util.math.GlobalPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -172,7 +173,7 @@ public final class TelescopeService {
             // right on it: any way will do
             float dirX = length < 1 ? 1 : (float) (dx / length), dirZ = length < 1 ? 0 : (float) (dz / length);
             int[] colours = site.colours.length > TelescopePayloads.MAX_COLOURS
-                    ? java.util.Arrays.copyOf(site.colours, TelescopePayloads.MAX_COLOURS) : site.colours.clone();
+                    ? Arrays.copyOf(site.colours, TelescopePayloads.MAX_COLOURS) : site.colours.clone();
             nights.add(new TelescopePayloads.Night(site.id, site.day, dirX, dirZ, colours));
         }
         return nights;

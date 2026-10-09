@@ -16,6 +16,7 @@ import net.minecraft.world.World;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Party bell: gives a redstone pulse when its moment of the party happens (see {@link PartyMoment}), and remembers
@@ -102,7 +103,7 @@ public class PartyBellBlockEntity extends BlockEntity {
         this.inputPowered = powered;
     }
 
-    private java.util.Optional<PartyControllerEntity> getListenedController(ServerWorld world) {
+    private Optional<PartyControllerEntity> getListenedController(ServerWorld world) {
         return PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, this.pos, RANGE, true);
     }
 

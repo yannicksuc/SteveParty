@@ -12,7 +12,9 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlockEntity;
+import java.util.Arrays;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -83,7 +85,7 @@ public class ModBlockEntities {
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "pipe"),
             FabricBlockEntityTypeBuilder.create(PipeBlockEntity::new,
-                    java.util.Arrays.stream(ModBlocks.PIPES).flatMap(java.util.Arrays::stream).toArray(net.minecraft.block.Block[]::new)).build(null)
+                    Arrays.stream(ModBlocks.PIPES).flatMap(Arrays::stream).toArray(Block[]::new)).build(null)
     );
     /** The mini-game pipe's: it shows the page it holds. */
     public static final BlockEntityType<MiniGamePipeBlockEntity> MINIGAME_PIPE_ENTITY = Registry.register(

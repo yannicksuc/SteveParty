@@ -31,6 +31,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
@@ -194,7 +195,7 @@ public class TokenMovementService {
     }
 
     /** True if a token reaching this board space must end its move there (a Stop space), steps left or not. */
-    public static boolean isForcedStop(net.minecraft.world.World world, BoardSpaceBlockEntity boardSpace) {
+    public static boolean isForcedStop(World world, BoardSpaceBlockEntity boardSpace) {
         ABoardSpaceBehavior behavior = boardSpace.getBoardSpaceBehavior();
         return behavior != null && behavior.needToStop(world, boardSpace.getPos());
     }
@@ -203,7 +204,7 @@ public class TokenMovementService {
      * Same for this token: also true where its move was ended early ({@link #halt}: a Threshold obstacle, waiting at a
      * Key gate), a check point included.
      */
-    public static boolean isForcedStop(net.minecraft.world.World world, BoardSpaceBlockEntity boardSpace, @Nullable MobEntity token) {
+    public static boolean isForcedStop(World world, BoardSpaceBlockEntity boardSpace, @Nullable MobEntity token) {
         return isForcedStop(world, boardSpace) || token != null && TurnMoves.isHaltedOn(token, boardSpace.getPos());
     }
 

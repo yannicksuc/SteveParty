@@ -11,7 +11,10 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
+import net.minecraft.world.World;
 
 /**
  * The mini-game pipe's block entity: its slot holds the mini-game page it is programmed with (only pages go
@@ -42,15 +45,15 @@ public class MiniGamePipeBlockEntity extends PipeBlockEntity {
     }
 
     @Override
-    public void setWorld(net.minecraft.world.World world) {
+    public void setWorld(World world) {
         super.setWorld(world);
         index();
     }
 
     /** Tells the server's index which page it is programmed with. */
     private void index() {
-        if (!(world instanceof net.minecraft.server.world.ServerWorld server) || !server.getServer().isOnThread()) return;
-        MiniGamePipeIndex.set(server.getServer(), net.minecraft.util.math.GlobalPos.create(server.getRegistryKey(), pos),
+        if (!(world instanceof ServerWorld server) || !server.getServer().isOnThread()) return;
+        MiniGamePipeIndex.set(server.getServer(), GlobalPos.create(server.getRegistryKey(), pos),
                 MiniGamePages.idOf(getPage()), MiniGamePipeBlock.reachOf(getCachedState()));
     }
 

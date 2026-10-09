@@ -46,7 +46,11 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -501,7 +505,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     public static Status checkResources(Inventory inventory) {
         int faces = countFaces(inventory);
         if (faces < MIN_FACES) return Status.NOT_ENOUGH_FACES;
-        Set<Item> colours = new java.util.HashSet<>();
+        Set<Item> colours = new HashSet<>();
         for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
             ItemStack stack = inventory.getStack(i);
             if (!isStarFragment(stack)) return Status.MISSING_FRAGMENT;
@@ -542,8 +546,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     }
 
     /** The modules in the module slots and how many of each (a slot's count; the same module adds up, capped). */
-    public static java.util.Map<DiceModule, Integer> modulesOf(Inventory inventory) {
-        java.util.Map<DiceModule, Integer> modules = new java.util.LinkedHashMap<>();
+    public static Map<DiceModule, Integer> modulesOf(Inventory inventory) {
+        Map<DiceModule, Integer> modules = new LinkedHashMap<>();
         for (int i = FIRST_MODULE_SLOT; i < FIRST_MODULE_SLOT + MODULE_SLOTS; i++) {
             ItemStack stack = inventory.getStack(i);
             DiceModule module = DiceModules.fromItem(stack);
@@ -748,12 +752,12 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     private void conductMulas() {
         double r = MulaHome.RADIUS;
         double cx = pos.getX() + 0.5, cz = pos.getZ() + 0.5;
-        java.util.List<MulaEntity> around = world.getEntitiesByClass(MulaEntity.class,
-                new net.minecraft.util.math.Box(pos).expand(r, MulaHome.ABOVE, r),
+        List<MulaEntity> around = world.getEntitiesByClass(MulaEntity.class,
+                new Box(pos).expand(r, MulaHome.ABOVE, r),
                 m -> m.isAlive() && !m.isToken() && !m.isBursting() && !m.isLedByOwner() && !m.isLeashed()
                         && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= r * r);
         if (around.isEmpty()) return;
-        java.util.List<MulaEntity> dancers = new java.util.ArrayList<>();
+        List<MulaEntity> dancers = new ArrayList<>();
         for (var m : around) {
             if (m.homeForge() != null && !m.homeForge().equals(pos) && MulaHome.holds(world, m.homeForge())) continue;
             m.setHomeForge(pos);
@@ -761,7 +765,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
                 dancers.add(m);
             }
         }
-        dancers.sort(java.util.Comparator.comparingInt(net.minecraft.entity.Entity::getId));
+        dancers.sort(Comparator.comparingInt(Entity::getId));
         int eligible = dancers.size();
         int count = Math.min(MulaDances.CAP, eligible);
         int start = MulaDances.turnStart(world.getTime(), eligible);
@@ -779,18 +783,18 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
      */
     private void burstMulas(Vec3d center) {
         double r = MulaHome.RADIUS + 2;
-        java.util.List<MulaEntity> mulas = world.getEntitiesByClass(
+        List<MulaEntity> mulas = world.getEntitiesByClass(
                 MulaEntity.class,
-                new net.minecraft.util.math.Box(pos).expand(r, MulaHome.ABOVE + 2, r),
+                new Box(pos).expand(r, MulaHome.ABOVE + 2, r),
                 m -> m.isAlive() && !m.isToken() && pos.equals(m.homeForge()) && !m.isBursting());
         if (mulas.isEmpty()) return;
-        mulas.sort(java.util.Comparator.comparingDouble(m -> m.squaredDistanceTo(center)));
+        mulas.sort(Comparator.comparingDouble(m -> m.squaredDistanceTo(center)));
         int n = mulas.size();
-        double start = world.getRandom().nextDouble() * net.minecraft.util.math.MathHelper.TAU;
+        double start = world.getRandom().nextDouble() * MathHelper.TAU;
         for (int i = 0; i < n; i++) {
             MulaEntity m = mulas.get(i);
             // spread round the compass, a little randomness on each
-            double angle = start + net.minecraft.util.math.MathHelper.TAU * i / n + (world.getRandom().nextDouble() - 0.5) * (net.minecraft.util.math.MathHelper.TAU / n) * 0.6;
+            double angle = start + MathHelper.TAU * i / n + (world.getRandom().nextDouble() - 0.5) * (MathHelper.TAU / n) * 0.6;
             int delay = 2 + i * 4 + (int) (Math.sqrt(m.squaredDistanceTo(center)) * 0.8);
             m.burstFromCore(delay, angle);
         }

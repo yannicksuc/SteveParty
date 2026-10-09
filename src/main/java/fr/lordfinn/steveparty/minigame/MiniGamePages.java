@@ -11,9 +11,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
 
@@ -235,7 +237,7 @@ public final class MiniGamePages {
     }
 
     /** The ids of the pages the block at {@code pos} is linked to (a podium, a goal pole base, a step controller...). */
-    public static List<UUID> pageIdsAt(net.minecraft.server.world.ServerWorld world, net.minecraft.util.math.BlockPos pos) {
+    public static List<UUID> pageIdsAt(ServerWorld world, BlockPos pos) {
         List<UUID> ids = new ArrayList<>();
         for (MiniGamePageData page : pagesAt(world.getServer(), GlobalPos.create(world.getRegistryKey(), pos))) ids.add(page.id());
         return ids;

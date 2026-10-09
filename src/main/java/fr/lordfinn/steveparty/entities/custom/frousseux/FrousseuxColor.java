@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Random;
 
 /**
@@ -85,7 +86,7 @@ public enum FrousseuxColor implements StringIdentifiable {
         else if (max == g) hue = (2 + (b - r) / (max - min)) / 6f;
         else hue = (4 + (r - g) / (max - min)) / 6f;
         if (hue < 0) hue += 1;
-        return net.minecraft.util.math.MathHelper.hsvToRgb(hue, Math.min(1f, saturation * 1.35f + 0.15f), value * 0.95f) & 0xFFFFFF;
+        return MathHelper.hsvToRgb(hue, Math.min(1f, saturation * 1.35f + 0.15f), value * 0.95f) & 0xFFFFFF;
     }
 
     /** Its name in its entity data ("Color"), its loot table conditions and the candle holder's block state. */

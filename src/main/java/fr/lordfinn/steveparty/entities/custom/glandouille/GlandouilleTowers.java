@@ -21,6 +21,7 @@ import net.minecraft.util.Arm;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -253,7 +254,7 @@ public final class GlandouilleTowers {
         Vec3d target = hit.getPos();
         // aimed at the top of a block (the ground), its feet go there; else its middle
         boolean ground = hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK
-                && blockHit.getSide() == net.minecraft.util.math.Direction.UP;
+                && blockHit.getSide() == Direction.UP;
         Vec3d aim = target.subtract(at.add(0, ground ? 0 : thrown.getHeight() * 0.5, 0));
         boolean tooClose = target.squaredDistanceTo(player.getEyePos()) < AIM_MIN_DISTANCE * AIM_MIN_DISTANCE;
         thrown.launchThrown(tooClose || aim.lengthSquared() < 1.0E-4 ? player.getRotationVec(1f) : aim);

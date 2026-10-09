@@ -22,7 +22,9 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -158,11 +160,11 @@ public final class BoardBlueprint {
             }
             // Its containers follow too (those that fall outside are dropped), in the world it is pasted in
             if (!CartridgeContainers.isEmpty(cartridge)) {
-                var dimension = container.getWorld() == null ? net.minecraft.world.World.OVERWORLD : container.getWorld().getRegistryKey();
-                List<net.minecraft.util.math.GlobalPos> chests = new ArrayList<>();
-                for (net.minecraft.util.math.GlobalPos chest : CartridgeContainers.of(cartridge, dimension)) {
+                var dimension = container.getWorld() == null ? World.OVERWORLD : container.getWorld().getRegistryKey();
+                List<GlobalPos> chests = new ArrayList<>();
+                for (GlobalPos chest : CartridgeContainers.of(cartridge, dimension)) {
                     BlockPos target = follow.apply(chest.pos());
-                    if (target != null) chests.add(net.minecraft.util.math.GlobalPos.create(dimension, target));
+                    if (target != null) chests.add(GlobalPos.create(dimension, target));
                 }
                 CartridgeContainers.set(cartridge, chests);
             }
@@ -203,12 +205,12 @@ public final class BoardBlueprint {
                     moved += changed;
                 }
                 // Its containers that were in the former area follow it
-                List<net.minecraft.util.math.GlobalPos> chests = CartridgeContainers.of(cartridge, world.getRegistryKey());
-                List<net.minecraft.util.math.GlobalPos> followed = new ArrayList<>();
+                List<GlobalPos> chests = CartridgeContainers.of(cartridge, world.getRegistryKey());
+                List<GlobalPos> followed = new ArrayList<>();
                 int chestsMoved = 0;
-                for (net.minecraft.util.math.GlobalPos chest : chests) {
+                for (GlobalPos chest : chests) {
                     boolean inside = chest.dimension().equals(world.getRegistryKey()) && former.contains(chest.pos());
-                    followed.add(inside ? net.minecraft.util.math.GlobalPos.create(chest.dimension(), chest.pos().add(offset)) : chest);
+                    followed.add(inside ? GlobalPos.create(chest.dimension(), chest.pos().add(offset)) : chest);
                     if (inside) chestsMoved++;
                 }
                 if (chestsMoved > 0) {

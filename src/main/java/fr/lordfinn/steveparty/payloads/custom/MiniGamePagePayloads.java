@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.minigame.MiniGamePageImages;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.payloads.Payloads;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.registry.RegistryKey;
@@ -14,6 +15,8 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.GlobalPos;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -145,7 +148,7 @@ public final class MiniGamePagePayloads {
     /** The results of the mini-game that just ended: the places, and what the party paid. */
     public record Results(MiniGameResults results) implements CustomPayload {
         public static final Id<Results> ID = id("results");
-        public static final PacketCodec<net.minecraft.network.RegistryByteBuf, Results> CODEC = PacketCodec.of(
+        public static final PacketCodec<RegistryByteBuf, Results> CODEC = PacketCodec.of(
                 (payload, buf) -> MiniGameResults.PACKET_CODEC.encode(buf, payload.results),
                 buf -> new Results(MiniGameResults.PACKET_CODEC.decode(buf)));
 
@@ -163,7 +166,7 @@ public final class MiniGamePagePayloads {
      * @param title  the page's title, empty if it has none
      * @param voters the connected players of the mini-game, in the play order
      */
-    public record Practice(boolean show, String title, java.util.List<Voter> voters) implements CustomPayload {
+    public record Practice(boolean show, String title, List<Voter> voters) implements CustomPayload {
         public static final int MAX_VOTERS = 64;
 
         /** A player of the practice round, and whether he said he is ready. */
@@ -174,7 +177,7 @@ public final class MiniGamePagePayloads {
         public static final PacketCodec<PacketByteBuf, Practice> CODEC = PacketCodec.of((payload, buf) -> {
             buf.writeBoolean(payload.show);
             buf.writeString(payload.title, MiniGamePageData.MAX_TITLE_LENGTH);
-            java.util.List<Voter> voters = payload.voters.size() > MAX_VOTERS ? payload.voters.subList(0, MAX_VOTERS) : payload.voters;
+            List<Voter> voters = payload.voters.size() > MAX_VOTERS ? payload.voters.subList(0, MAX_VOTERS) : payload.voters;
             buf.writeVarInt(voters.size());
             for (Voter voter : voters) {
                 buf.writeString(voter.name, 64);
@@ -184,7 +187,7 @@ public final class MiniGamePagePayloads {
             boolean show = buf.readBoolean();
             String title = buf.readString(MiniGamePageData.MAX_TITLE_LENGTH);
             int count = Math.min(buf.readVarInt(), MAX_VOTERS);
-            java.util.List<Voter> voters = new java.util.ArrayList<>(count);
+            List<Voter> voters = new ArrayList<>(count);
             for (int i = 0; i < count; i++) voters.add(new Voter(buf.readString(64), buf.readBoolean()));
             return new Practice(show, title, voters);
         });
@@ -314,7 +317,7 @@ public final class MiniGamePagePayloads {
     }
 
     /** The texts and settings written in the editor, for the page {@code page} held in {@code hand}. */
-    public record Edit(Hand hand, UUID page, String title, String description, java.util.List<MiniGameFormat> formats)
+    public record Edit(Hand hand, UUID page, String title, String description, List<MiniGameFormat> formats)
             implements CustomPayload {
         public static final Id<Edit> ID = id("edit");
         public static final PacketCodec<PacketByteBuf, Edit> CODEC = PacketCodec.of((payload, buf) -> {

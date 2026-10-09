@@ -8,6 +8,7 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -55,17 +56,17 @@ public class TeamDisposition {
 
     /** Team A: the positive players (empty in free for all). */
     public Set<UUID> getTeamA() {
-        return java.util.Collections.unmodifiableSet(teamA);
+        return Collections.unmodifiableSet(teamA);
     }
 
     /** Team B: the negative players (everyone in free for all). */
     public Set<UUID> getTeamB() {
-        return java.util.Collections.unmodifiableSet(teamB);
+        return Collections.unmodifiableSet(teamB);
     }
 
     /** The four teams, A to D (the unused ones empty). */
     public List<Set<UUID>> teams() {
-        return List.of(getTeamA(), getTeamB(), java.util.Collections.unmodifiableSet(teamC), java.util.Collections.unmodifiableSet(teamD));
+        return List.of(getTeamA(), getTeamB(), Collections.unmodifiableSet(teamC), Collections.unmodifiableSet(teamD));
     }
 
     /** Number of teams with players. */

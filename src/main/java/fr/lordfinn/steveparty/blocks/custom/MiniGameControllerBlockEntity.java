@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -20,14 +21,21 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -77,13 +85,13 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     }
 
     @Override
-    public void setWorld(net.minecraft.world.World world) {
+    public void setWorld(World world) {
         super.setWorld(world);
         if (world.isClient) CLIENT_LOADED.add(this);
     }
 
     /** Client side: the controllers loaded in {@code world}. */
-    public static List<MiniGameControllerBlockEntity> clientLoaded(net.minecraft.world.World world) {
+    public static List<MiniGameControllerBlockEntity> clientLoaded(World world) {
         synchronized (CLIENT_LOADED) {
             CLIENT_LOADED.removeIf(BlockEntity::isRemoved);
             return CLIENT_LOADED.stream().filter(controller -> controller.getWorld() == world).toList();
@@ -181,7 +189,7 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     public Activity activity() {
         UUID id = getPageId();
         if (id == null) return Activity.IDLE;
-        java.util.Optional<PartyControllerEntity> party =
+        Optional<PartyControllerEntity> party =
                 PartyControllerEntity.getPartyPlayingPage(List.of(id));
         if (party.isPresent() && party.get().getPartyData().getCurrentStep()
                 instanceof MiniGamePartyStep step) {
@@ -212,7 +220,7 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
         if (!(state.getBlock() instanceof MiniGameControllerBlock)) return;
         Activity now = activity();
         BlockState wanted = state.with(MiniGameControllerBlock.PAGE, !page.isEmpty()).with(MiniGameControllerBlock.SIGNAL, now.signal);
-        if (wanted != state) world.setBlockState(pos, wanted, net.minecraft.block.Block.NOTIFY_LISTENERS);
+        if (wanted != state) world.setBlockState(pos, wanted, Block.NOTIFY_LISTENERS);
         if (now != activity) {
             activity = now;
             world.updateComparators(pos, wanted.getBlock());
@@ -329,7 +337,7 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
         super.readNbt(nbt, wrapper);
         page = nbt.contains("Page") ? ItemStack.fromNbt(wrapper, nbt.get("Page")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
         // The Zone Cartridge an earlier version kept here: an item that no longer exists, only its zone is read
-        if (nbt.contains("ZoneCartridge", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) oldZone = oldZone(nbt.getCompound("ZoneCartridge"));
+        if (nbt.contains("ZoneCartridge", NbtElement.COMPOUND_TYPE)) oldZone = oldZone(nbt.getCompound("ZoneCartridge"));
         oldAdventure = nbt.getBoolean("Adventure");
         powered = nbt.getBoolean("Powered");
     }
@@ -337,10 +345,10 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     /** The zone drawn on a saved Zone Cartridge (its {@code steveparty:zone-selection} component), null for none. */
     public static @Nullable PageZone oldZone(NbtCompound cartridge) {
         NbtCompound selection = cartridge.getCompound("components").getCompound("steveparty:zone-selection");
-        net.minecraft.util.Identifier dimension = net.minecraft.util.Identifier.tryParse(selection.getString("dimension"));
+        Identifier dimension = Identifier.tryParse(selection.getString("dimension"));
         if (dimension == null || !selection.contains("box")) return null;
-        return net.minecraft.util.math.BlockBox.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, selection.get("box")).result()
-                .map(box -> new PageZone(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.WORLD, dimension), box))
+        return BlockBox.CODEC.parse(NbtOps.INSTANCE, selection.get("box")).result()
+                .map(box -> new PageZone(RegistryKey.of(RegistryKeys.WORLD, dimension), box))
                 .filter(zone -> !zone.tooBig()).orElse(null);
     }
 

@@ -13,6 +13,7 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
@@ -119,8 +120,8 @@ public final class FumaroleGoals {
         /** Picks the next head in turn that can reach an enemy (its own preferably); false if none can. */
         private boolean plan() {
             List<LivingEntity> enemies = enemies();
-            java.util.Arrays.fill(fireAt, -1);
-            java.util.Arrays.fill(targets, null);
+            Arrays.fill(fireAt, -1);
+            Arrays.fill(targets, null);
             if (enemies.isEmpty()) return false;
             for (int k = 0; k < fireAt.length; k++) {
                 int head = (nextHead + k) % fireAt.length;

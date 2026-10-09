@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.board;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.service.ShopStops;
 import fr.lordfinn.steveparty.utils.MessageUtils;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.ClickEvent;
@@ -54,7 +55,7 @@ public final class BoardValidator {
         List<BlockPos> noShop = new ArrayList<>();
         for (BoardGraph.Node node : graph.nodes()) {
             if (!(world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space)) continue;
-            net.minecraft.item.ItemStack cartridge = ShopStops.shopCartridge(space);
+            ItemStack cartridge = ShopStops.shopCartridge(space);
             if (cartridge != null && ShopStops.findShop(world, node.pos(), cartridge) == null) noShop.add(node.pos());
         }
         if (noShop.isEmpty()) return report;

@@ -10,6 +10,7 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Riding a tamed, saddled Fumarole: up to three riders side by side on the tank's front rim, each holding the reins of
@@ -63,7 +64,7 @@ public final class FumaroleRiding {
     }
 
     /** Adds up the riders' keys (each clamped to -1..1, as the client sends them). */
-    public static Steer combine(List<? extends Entity> riders, java.util.function.Predicate<LivingEntity> jumping) {
+    public static Steer combine(List<? extends Entity> riders, Predicate<LivingEntity> jumping) {
         float forward = 0, turn = 0;
         boolean jump = false;
         for (Entity rider : riders) {

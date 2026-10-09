@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -47,7 +48,7 @@ public final class MiniGamePipeIndex extends PersistentState {
         MiniGamePipeIndex index = get(server);
         Entry entry = page == null ? null : new Entry(page, reach);
         Entry before = entry == null ? index.pipes.remove(pos) : index.pipes.put(pos, entry);
-        if (!java.util.Objects.equals(before, entry)) index.markDirty();
+        if (!Objects.equals(before, entry)) index.markDirty();
     }
 
     /** The mini-game pipe at {@code pos} is no more, or holds no page. */

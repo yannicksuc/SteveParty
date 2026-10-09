@@ -156,7 +156,7 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     @Override
-    public net.minecraft.text.Text getDisplayName() {
+    public Text getDisplayName() {
         return Text.empty();
     }
 

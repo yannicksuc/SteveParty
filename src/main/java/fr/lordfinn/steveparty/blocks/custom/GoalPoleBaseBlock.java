@@ -10,6 +10,7 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
@@ -22,6 +23,7 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -59,7 +61,7 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
 
     /** Placed by a player: the base follows the party's players when a party controller is near, else everyone. */
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack itemStack) {
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
         if (!world.isClient && placer instanceof PlayerEntity && world.getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity base) {
             base.onPlacedByPlayer();
@@ -95,7 +97,7 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
         if (world.isClient) return mainHandStack.getItem() instanceof WrenchItem || page ? ActionResult.SUCCESS : ActionResult.PASS;
         // A mini-game page: the base is one of its counters (reset with its podiums, its goals give their places)
         if (page) {
-            Podiums.clickLink((ServerPlayerEntity) player, net.minecraft.util.Hand.MAIN_HAND, (ServerWorld) world, pos,
+            Podiums.clickLink((ServerPlayerEntity) player, Hand.MAIN_HAND, (ServerWorld) world, pos,
                     MiniGamePodiumLink.Kind.COUNTER);
             return ActionResult.SUCCESS;
         }

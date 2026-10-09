@@ -33,7 +33,9 @@ import net.minecraft.util.Hand;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -165,7 +167,7 @@ public final class MiniGamePageNetworking {
     /** A linked podium (or goal pole base) unlinked in the editor. @return true if it was done */
     public static boolean podiumUnlink(ServerPlayerEntity player, PodiumUnlink payload) {
         if (editable(player, payload.hand(), payload.page()) == null) return false;
-        return MiniGamePages.removePodiumLinks(player.server, payload.page(), java.util.List.of(payload.pos()));
+        return MiniGamePages.removePodiumLinks(player.server, payload.page(), List.of(payload.pos()));
     }
 
     private static MiniGamePagePayloads.TestStatus testStatus(UUID page, MiniGameTest.Plan plan) {
@@ -322,7 +324,7 @@ public final class MiniGamePageNetworking {
         for (int index = 0; index < total; index++) {
             int from = index * MiniGamePagePayloads.CHUNK_SIZE;
             int to = Math.min(bytes.length, from + MiniGamePagePayloads.CHUNK_SIZE);
-            send(player, new ImageChunk(hash, index, total, java.util.Arrays.copyOfRange(bytes, from, to)));
+            send(player, new ImageChunk(hash, index, total, Arrays.copyOfRange(bytes, from, to)));
         }
     }
 }

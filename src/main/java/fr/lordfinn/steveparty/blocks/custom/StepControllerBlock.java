@@ -10,7 +10,10 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
@@ -71,8 +74,8 @@ public class StepControllerBlock extends BlockWithEntity {
         if (world.isClient) return page ? ActionResult.SUCCESS : ActionResult.PASS;
         StepControllerBlockEntity blockEntity = (StepControllerBlockEntity) world.getBlockEntity(pos);
         if (page) {
-            Podiums.clickLink((net.minecraft.server.network.ServerPlayerEntity) player, net.minecraft.util.Hand.MAIN_HAND,
-                    (net.minecraft.server.world.ServerWorld) world, pos, MiniGamePodiumLink.Kind.STEP_CONTROLLER);
+            Podiums.clickLink((ServerPlayerEntity) player, Hand.MAIN_HAND,
+                    (ServerWorld) world, pos, MiniGamePodiumLink.Kind.STEP_CONTROLLER);
             if (blockEntity != null) blockEntity.refreshLinkedPages();
             return ActionResult.SUCCESS;
         }

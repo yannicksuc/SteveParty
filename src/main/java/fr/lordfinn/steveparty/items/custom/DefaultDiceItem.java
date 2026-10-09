@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -23,6 +24,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -74,13 +76,13 @@ public class DefaultDiceItem extends Item {
     }
 
     /** The mob the die being thrown is bound to ({@link #throwAt}), null for an ordinary throw. Server thread. */
-    private static @org.jetbrains.annotations.Nullable net.minecraft.entity.LivingEntity aimedAt;
+    private static @Nullable LivingEntity aimedAt;
 
     /**
      * Throws the die in {@code player}'s hand at {@code target}, bound to it: it floats to it and rolls above it rather
      * than at the nearest mob (a die used on a cat: see MistigriSummoning). The usual rules of a throw apply.
      */
-    public static ActionResult throwAt(PlayerEntity player, Hand hand, net.minecraft.entity.LivingEntity target) {
+    public static ActionResult throwAt(PlayerEntity player, Hand hand, LivingEntity target) {
         ItemStack stack = player.getStackInHand(hand);
         if (!(stack.getItem() instanceof DefaultDiceItem item)) return ActionResult.PASS;
         aimedAt = target;
