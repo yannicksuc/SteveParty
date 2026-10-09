@@ -9,7 +9,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.Arrays;
@@ -108,7 +107,7 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         tooltip.add(Text.translatable("tooltip.steveparty.trap_cartridge.effect." + effect(stack).id(), amount(stack))
-                .styled(style -> style.withColor(TextColor.fromRgb(0xC9E27A))));
+                .styled(tint(0xC9E27A)));
         if (stack.get(ModComponents.TRAP_SET) instanceof TrapSetComponent) {
             tooltip.add(Text.translatable("tooltip.steveparty.trap_cartridge.set").formatted(Formatting.RED));
         }

@@ -10,7 +10,6 @@ import fr.lordfinn.steveparty.service.MistigriSentences.Sentence;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.ArrayList;
@@ -153,7 +152,7 @@ public class MistigriCartridgeItem extends CartridgeItem {
             tooltip.add(Text.translatable("tooltip.steveparty.mistigri_cartridge.sentence",
                             Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack)),
                             chance(stack, sentence))
-                    .styled(style -> style.withColor(TextColor.fromRgb(0xC9A2F0))));
+                    .styled(tint(0xC9A2F0)));
         }
         if (total == 0) tooltip.add(Text.translatable("tooltip.steveparty.mistigri_cartridge.none").formatted(Formatting.GRAY));
         super.appendTooltip(stack, context, tooltip, type);

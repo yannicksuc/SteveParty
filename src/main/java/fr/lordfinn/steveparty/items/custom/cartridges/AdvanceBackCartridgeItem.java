@@ -15,7 +15,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.List;
@@ -114,7 +113,7 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
     public static MutableText settingText(int steps) {
         return Text.translatable(steps < 0 ? "tooltip.steveparty.advance_back.back" : "tooltip.steveparty.advance_back.forward",
                         Math.abs(steps))
-                .styled(style -> style.withColor(TextColor.fromRgb(steps < 0 ? 0xF07ABB : 0x6FE38A)).withBold(true));
+                .styled(headline(steps < 0 ? 0xF07ABB : 0x6FE38A));
     }
 
     @Override

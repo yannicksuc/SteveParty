@@ -8,7 +8,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.List;
@@ -80,7 +79,7 @@ public class FrousseuxCartridgeItem extends CartridgeItem {
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         boolean stars = stealsStars(stack);
         tooltip.add(Text.translatable("tooltip.steveparty.frousseux_cartridge." + (stars ? "stars" : "coins"), amount(stack))
-                .styled(style -> style.withColor(TextColor.fromRgb(0xFFD27A)).withBold(true)));
+                .styled(headline(0xFFD27A)));
         tooltip.add(Text.translatable("tooltip.steveparty.frousseux_cartridge." + (stars ? "no_defence" : "defence"))
                 .formatted(Formatting.GRAY));
         super.appendTooltip(stack, context, tooltip, type);

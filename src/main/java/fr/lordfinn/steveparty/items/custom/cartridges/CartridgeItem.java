@@ -20,10 +20,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 import static fr.lordfinn.steveparty.utils.RaycastUtils.isTargetingBlock;
 
@@ -137,6 +139,16 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
             line.append(word);
         }
         if (line.length() > 0) tooltip.add(Text.literal(line.toString()).formatted(formatting));
+    }
+
+    /** A tooltip line's style in {@code rgb} (its settings in a few words). */
+    public static UnaryOperator<Style> tint(int rgb) {
+        return style -> style.withColor(TextColor.fromRgb(rgb));
+    }
+
+    /** The style of the tooltip's first line, what it is set to: {@code rgb}, bold. */
+    public static UnaryOperator<Style> headline(int rgb) {
+        return style -> style.withColor(TextColor.fromRgb(rgb)).withBold(true);
     }
 
     /** A stamped cartridge shows its look (drawn by the client's tooltip component). */
