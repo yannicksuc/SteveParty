@@ -159,7 +159,7 @@ public final class TrichaudronBlast {
         if (entity == trichaudron || entity instanceof TrichaudronEntity) return "a Trichaudron";
         if (!entity.isAlive() || entity.isSpectator()) return "gone";
         if (trichaudron.hasPassenger(entity)) return "a rider";
-        if (entity instanceof PlayerEntity player && trichaudron.trusts(head, player)) return "trusted";
+        if (entity instanceof PlayerEntity player && trichaudron.isOwner(player)) return "its owner";
         return null;
     }
 

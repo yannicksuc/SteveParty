@@ -47,7 +47,7 @@ public final class TrichaudronGoals {
         @Override
         public boolean canStart() {
             LivingEntity attacker = trichaudron.getAttacker();
-            if (attacker instanceof PlayerEntity player && (trichaudron.isOwner(player) || trichaudron.trustedByAll(player))) return false;
+            if (attacker instanceof PlayerEntity player && (trichaudron.isOwner(player))) return false;
             return !trichaudron.isSteered() && super.canStart();
         }
 
