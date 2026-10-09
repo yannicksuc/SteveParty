@@ -22,6 +22,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BuiltBuffer;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderTickCounter;
@@ -446,7 +447,7 @@ public final class TelescopeClient {
 
     private static void vertex(VertexConsumer vertices, float x, float y, float z, float u, float v, int r, int g, int b, int alpha) {
         vertices.vertex(VIEW, x, y, z).color(r, g, b, Math.min(255, alpha)).texture(u, v)
-                .overlay(OverlayTexture.DEFAULT_UV).light(0xF000F0).normal(0f, 1f, 0f);
+                .overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(0f, 1f, 0f);
     }
 
     // ---------------------------------------------------------------- the view
