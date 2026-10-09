@@ -102,12 +102,12 @@ public class GlandouilleTileBehavior extends MobTileBehavior {
         return GlandouilleCartridgeItem.distance(stack) == 0 ? TileFeedback.Landing.DEFAULT : TileFeedback.Landing.GLANDOUILLE;
     }
 
-    /** How far its tower pushes the tokens. */
+    /** In game: how far its tower pushes the tokens. Building: its tower's height. */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         int distance = GlandouilleCartridgeItem.distance(stack);
-        if (distance == 0) return;
-        info.line(distance > 0 ? TileInfo.line("glandouille", TileInfo.value(distance))
-                : TileInfo.line("glandouille.back", TileInfo.bad(-distance)));
+        if (distance != 0) info.line(distance > 0 ? TileInfo.Glyph.FORWARD : TileInfo.Glyph.BACK, distance > 0 ? TileInfo.value(TileInfo.line("glandouille", distance))
+                : TileInfo.bad(TileInfo.line("glandouille.back", -distance)));
+        if (!GlandouilleCartridgeItem.lone(stack)) info.build(TileInfo.line("glandouille.tower", TileInfo.value(GlandouilleCartridgeItem.tower(stack))));
     }
 }

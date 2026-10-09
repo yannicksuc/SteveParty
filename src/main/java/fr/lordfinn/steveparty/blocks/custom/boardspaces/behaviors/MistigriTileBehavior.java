@@ -54,7 +54,7 @@ public class MistigriTileBehavior extends MobTileBehavior {
         return Status.BAD;
     }
 
-    /** His sentences, the likeliest first, and their chances. */
+    /** In game: his three likeliest sentences and their chances. Helmet: the others. */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof MistigriCartridgeItem)) return;
@@ -63,10 +63,12 @@ public class MistigriTileBehavior extends MobTileBehavior {
             if (MistigriCartridgeItem.chance(stack, sentence) > 0) sentences.add(sentence);
         }
         sentences.sort(Comparator.comparingInt((MistigriSentences.Sentence sentence) -> -MistigriCartridgeItem.chance(stack, sentence)));
-        for (MistigriSentences.Sentence sentence : sentences) {
-            info.line(TileInfo.line("mistigri", TileInfo.rgb(MistigriCartridgeItem.chance(stack, sentence) + "%",
+        for (int i = 0; i < sentences.size(); i++) {
+            MistigriSentences.Sentence sentence = sentences.get(i);
+            Text line = TileInfo.line("mistigri", TileInfo.rgb(MistigriCartridgeItem.chance(stack, sentence) + "%",
                             sentence.harsh ? TileInfo.BAD : TileInfo.GOOD),
-                    Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack))));
+                    Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack)));
+            info.line(ItemStack.EMPTY, line, i < 3 ? TileInfo.Layer.PLAY : TileInfo.Layer.DETAIL);
         }
     }
 }

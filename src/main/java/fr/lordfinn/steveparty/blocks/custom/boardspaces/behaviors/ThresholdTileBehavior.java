@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import net.minecraft.item.Items;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -109,10 +110,23 @@ public class ThresholdTileBehavior extends ABoardSpaceBehavior {
         return comparatorLevel(boardSpaceEntity, stack) == 0 ? TileFeedback.Landing.STOP : TileFeedback.Landing.DEFAULT;
     }
 
-    /** The condition a roll must meet to get over. */
+    /** In game: the condition a roll must meet to get over. */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (stack.getItem() instanceof ThresholdCartridgeItem)
-            info.line(TileInfo.line("threshold", TileInfo.value(ThresholdCartridgeItem.label(stack))));
+            info.line(TileInfo.Glyph.CONDITION, TileInfo.line("threshold", TileInfo.value(condition(stack))));
+    }
+
+    /** The condition, short: « ≥ 7 », « DOUBLE ». */
+    private static Text condition(ItemStack stack) {
+        ThresholdCartridgeItem.Operator operator = ThresholdCartridgeItem.operator(stack);
+        return switch (operator) {
+            case AT_LEAST -> Text.literal("≥ " + ThresholdCartridgeItem.value(stack));
+            case AT_MOST -> Text.literal("≤ " + ThresholdCartridgeItem.value(stack));
+            case MORE -> Text.literal("> " + ThresholdCartridgeItem.value(stack));
+            case LESS -> Text.literal("< " + ThresholdCartridgeItem.value(stack));
+            case EXACTLY -> Text.literal("= " + ThresholdCartridgeItem.value(stack));
+            default -> ThresholdCartridgeItem.label(stack);
+        };
     }
 }
