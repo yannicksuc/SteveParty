@@ -1,32 +1,26 @@
 {
   "type": "minecraft:crafting_shaped",
-  "fabric:type": "minecraft:crafting_shaped",
+  "category": "redstone",
   "pattern": [
-    "EGT",
-    "SCS",
-    "IRI"
+    "M T",
+    "GCG",
+    "III"
   ],
   "key": {
-    "I": {
-      "item": "minecraft:iron_ingot"
-    },
-    "R": {
-      "item": "minecraft:redstone"
-    },
-    "E": {
+    "M": {
       "item": "minecraft:map"
     },
     "T": {
       "item": "minecraft:redstone_torch"
     },
-    "S": {
-      "item": "minecraft:mushroom_stem"
+    "G": {
+      "item": "minecraft:gold_ingot"
     },
     "C": {
-      "item": "minecraft:crafter"
+      "item": "minecraft:chest"
     },
-    "G": {
-      "item": "minecraft:tinted_glass"
+    "I": {
+      "item": "minecraft:iron_ingot"
     }
   },
   "result": {
