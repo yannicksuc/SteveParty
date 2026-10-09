@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.particles.ParticleUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.particle.*;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.SimpleParticleType;
 import org.joml.Vector3d;
@@ -40,7 +41,7 @@ public class ArrowParticle extends SpriteBillboardParticle {
 
     @Override
     public int getBrightness(float tint) {
-        return 15728880; // Full brightness, equivalent to sunlight
+        return LightmapTextureManager.MAX_LIGHT_COORDINATE; // full brightness, equivalent to sunlight
     }
 
     private double calculateMaxAge(double distanceX, double distanceY, double distanceZ, double speed) {
