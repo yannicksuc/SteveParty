@@ -17,6 +17,7 @@
       "fr.lordfinn.steveparty.gametest.GlandouilleGameTests",
       "fr.lordfinn.steveparty.gametest.BoomcartGameTests",
       "fr.lordfinn.steveparty.gametest.WildMagpieGameTests",
+      "fr.lordfinn.steveparty.gametest.MagpieNestGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpWiringGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpStarGameTests",
