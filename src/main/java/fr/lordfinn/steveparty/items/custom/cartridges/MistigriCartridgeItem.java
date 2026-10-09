@@ -10,11 +10,9 @@ import fr.lordfinn.steveparty.service.MistigriSentences.Sentence;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -111,18 +109,16 @@ public class MistigriCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 
     private static Map<String, Integer> settings(ItemStack stack) {
-        return stack == null ? Map.of() : stack.getOrDefault(ModComponents.MISTIGRI_SETTINGS, Map.of());
+        return IntMaps.of(stack, ModComponents.MISTIGRI_SETTINGS);
     }
 
     private static void put(ItemStack stack, String key, int value) {
-        Map<String, Integer> settings = new HashMap<>(settings(stack));
-        settings.put(key, value);
-        stack.set(ModComponents.MISTIGRI_SETTINGS, Map.copyOf(settings));
+        IntMaps.put(stack, ModComponents.MISTIGRI_SETTINGS, key, value);
     }
 
     /** How likely {@code sentence} is: 0 (never) to {@link #MAX_WEIGHT}. */
@@ -156,7 +152,7 @@ public class MistigriCartridgeItem extends CartridgeItem {
             tooltip.add(Text.translatable("tooltip.steveparty.mistigri_cartridge.sentence",
                             Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack)),
                             chance(stack, sentence))
-                    .styled(style -> style.withColor(TextColor.fromRgb(0xC9A2F0))));
+                    .styled(tint(0xC9A2F0)));
         }
         if (total == 0) tooltip.add(Text.translatable("tooltip.steveparty.mistigri_cartridge.none").formatted(Formatting.GRAY));
         super.appendTooltip(stack, context, tooltip, type);

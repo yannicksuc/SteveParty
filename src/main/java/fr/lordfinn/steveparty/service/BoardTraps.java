@@ -66,8 +66,7 @@ public final class BoardTraps {
     }
 
     public static @Nullable ItemStack trapCartridge(BoardSpaceBlockEntity space) {
-        ItemStack stack = space.getActiveCartridgeItemStack();
-        return stack.getItem() instanceof TrapCartridgeItem ? stack : null;
+        return space.getActiveCartridge(TrapCartridgeItem.class);
     }
 
     public static @Nullable TrapSetComponent trapAt(BoardSpaceBlockEntity space) {

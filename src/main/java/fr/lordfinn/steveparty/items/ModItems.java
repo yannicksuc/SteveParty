@@ -2,8 +2,6 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.signs.MaterialSignItems;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
@@ -78,7 +76,7 @@ public class ModItems {
     /** Its tile's face is anthracite until dyed. */
     public static final Item BOARD_SPACE_BEHAVIOR_STOP = register("board_space_behavior_stop", StopCartridgeItem::new,
             new Item.Settings().component(ModComponents.COLOR,
-                    StopBoardSpaceBehavior.COLOR));
+                    StopCartridgeItem.COLOR));
     public static final Item TOKENIZER_WAND = register("tokenizer_wand", TokenizerWandItem::new, new Item.Settings().maxCount(1));
     public static final Item PLUNGER = register("plunger", PlungerItem::new);
     public static final Item DEFAULT_DICE = register("default_dice", DefaultDiceItem::new);
@@ -112,7 +110,7 @@ public class ModItems {
     /** Its tile's face is cyan until dyed. */
     public static final Item REPLAY_CARTRIDGE = register("replay_cartridge", ReplayCartridgeItem::new,
             new Item.Settings().component(ModComponents.COLOR,
-                    ReplayBoardSpaceBehavior.COLOR));
+                    ReplayCartridgeItem.COLOR));
     public static final Item TELEPORT_CARTRIDGE = register("teleport_cartridge", TeleportCartridgeItem::new);
     /** Star Cartridge: a star space, where the party's star may stand and be bought (yellow, like the star). */
     public static final Item STAR_CARTRIDGE = register("star_cartridge", StarCartridgeItem::new,

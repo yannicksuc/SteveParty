@@ -15,7 +15,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.List;
@@ -44,8 +43,7 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
                     (edit, value) -> edit.stack().set(ModComponents.ADVANCE_BACK_STEPS,
                             (steps(edit.stack()) < 0 ? -1 : 1) * value),
                     stack -> color(steps(stack))),
-            new InfoModule("hint", null, 1, context -> List.of(
-                    new InfoModule.Line(Text.translatable(K + "hint"), InfoModule.Tone.SOFT))));
+            InfoModule.hint("hint", K + "hint", 1));
 
     public AdvanceBackCartridgeItem(Settings settings) {
         super(settings);
@@ -115,7 +113,7 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
     public static MutableText settingText(int steps) {
         return Text.translatable(steps < 0 ? "tooltip.steveparty.advance_back.back" : "tooltip.steveparty.advance_back.forward",
                         Math.abs(steps))
-                .styled(style -> style.withColor(TextColor.fromRgb(steps < 0 ? 0xF07ABB : 0x6FE38A)).withBold(true));
+                .styled(headline(steps < 0 ? 0xF07ABB : 0x6FE38A));
     }
 
     @Override

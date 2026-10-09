@@ -15,6 +15,7 @@ import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import fr.lordfinn.steveparty.client.utils.TileColors;
 import fr.lordfinn.steveparty.client.utils.TileStampTextures;
 import fr.lordfinn.steveparty.components.TileStampComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.ResourceReloadListenerKeys;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
@@ -41,6 +42,7 @@ import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -142,42 +144,29 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
      * its stamped look ({@code stamp}, the tile's own or its cartridge's) or its role's pictogram. Also the face of the
      * tile items (TileItemFace).
      */
-    public static @org.jetbrains.annotations.Nullable Identifier faceTexture(BoardSpaceType tileType, ItemStack stack,
-                                                                            @org.jetbrains.annotations.Nullable TileStampComponent stamp,
-                                                                            int color, boolean small) {
+    public static @Nullable Identifier faceTexture(BoardSpaceType tileType, ItemStack stack,
+                                                   @Nullable TileStampComponent stamp,
+                                                   int color, boolean small) {
         Identifier face;
         if (stamp != null) face = TileStampTextures.get(stamp, small);
         // An item tile: excited (bonus), angry (malus) or blowing (nothing yet) face, in the cartridge's colour
         else if (tileType == BoardSpaceType.TILE_INVENTORY_INTERACTOR) face = TileStampTextures.face(inventoryFace(stack), color, small);
         // A Stop tile: a barred "no entry" disc in the cartridge's colour (anthracite by default)
         else if (tileType == BoardSpaceType.BOARD_SPACE_STOP) face = TileStampTextures.stopFace(color, small);
-        // A shop tile: the Boxed Trader peeking out of his open cardboard box (the box alone on a small tile)
-        else if (tileType == BoardSpaceType.BOARD_SPACE_SHOP) face = TileStampTextures.shopFace(color, small);
         // A Move Forward / Back tile: a double arrow and the number of spaces, green forward, pink-magenta back
         else if (tileType == BoardSpaceType.TILE_ADVANCE_BACK)
-            face = TileStampTextures.advanceBack(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.steps(stack), small);
+            face = TileStampTextures.advanceBack(AdvanceBackCartridgeItem.steps(stack), small);
         // A Replay tile: a circular arrow in the cartridge's colour (cyan by default)
         else if (tileType == BoardSpaceType.TILE_REPLAY) face = TileStampTextures.replayFace(color, small);
         // A Teleport tile: a portal (its rings drifting) in the colour of its network (violet by default)
         else if (tileType == BoardSpaceType.TILE_TELEPORT) face = TileStampTextures.teleportFace(color, small);
-        // A star space: a star in the cartridge's yellow
-        else if (tileType == BoardSpaceType.TILE_STAR) face = TileStampTextures.starFace(color, small);
-        // A Glandouille space: an acorn in the cartridge's brown
-        else if (tileType == BoardSpaceType.TILE_GLANDOUILLE) face = TileStampTextures.glandouilleFace(color, small);
-        // A Frousseux space: the little candle ghost in the cartridge's night indigo
-        else if (tileType == BoardSpaceType.TILE_FROUSSEUX) face = TileStampTextures.frousseuxFace(color, small);
-        // A Mistigri space: the black cat's head, one eye open, in the cartridge's witch plum
-        else if (tileType == BoardSpaceType.TILE_MISTIGRI) face = TileStampTextures.mistigriFace(color, small);
-        // A Threshold obstacle: a striped hurdle in the cartridge's steel blue
-        else if (tileType == BoardSpaceType.TILE_THRESHOLD) face = TileStampTextures.thresholdFace(color, small);
-        // A Common pot: a nest full of coins in the cartridge's straw
-        else if (tileType == BoardSpaceType.TILE_POT) face = TileStampTextures.potFace(color, small);
-        // A Key gate: a gate with a keyhole in the cartridge's teal
-        else if (tileType == BoardSpaceType.TILE_KEY_GATE) face = TileStampTextures.keyGateFace(color, small);
-        // A Trap space: open jaws in the cartridge's moss green
-        else if (tileType == BoardSpaceType.TILE_TRAP) face = TileStampTextures.trapFace(color, small);
-        // The neutral face in the cartridge's colour (dyes), white by default
-        else face = TileStampTextures.face(textureNeutral, color, small);
+        // A shop, a star space, Glandouille, Frousseux, Mistigri, a Threshold obstacle, a Common pot, a Key gate, a Trap:
+        // its pictogram in the cartridge's colour
+        else {
+            face = TileStampTextures.pictogramFace(tileType, color, small);
+            // The neutral face in the cartridge's colour (dyes), white by default
+            if (face == null) face = TileStampTextures.face(textureNeutral, color, small);
+        }
         return face;
     }
 

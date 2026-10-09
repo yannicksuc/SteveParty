@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.ServerTask;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
@@ -29,7 +30,7 @@ public final class TileMigration {
             if (blockEntity instanceof AdvancedTileBlockEntity && blockEntity.getCachedState().isOf(ModBlocks.TILE)) {
                 BlockPos pos = blockEntity.getPos().toImmutable();
                 // Not while the chunk is loading: queued (execute() would run it right away on the server thread)
-                world.getServer().send(new net.minecraft.server.ServerTask(world.getServer().getTicks(), () -> migrate(world, pos)));
+                world.getServer().send(new ServerTask(world.getServer().getTicks(), () -> migrate(world, pos)));
             }
         });
     }

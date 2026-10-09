@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
-import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.TurnMoves;
@@ -24,6 +24,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -83,15 +84,14 @@ public class ThresholdTileBehavior extends ABoardSpaceBehavior {
 
     /** Stopped by the obstacle: a « Stop » landing that says why; else a plain one. */
     @Override
-    public void onDestinationReached(net.minecraft.world.World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity,
-                                     fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity partyController) {
+    public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity,
+                                     PartyControllerEntity partyController) {
         if (!(world instanceof ServerWorld serverWorld) || boardSpaceEntity == null) return;
         if (TurnMoves.isHaltedOn(token, pos)) {
             TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.STOP,
                     "message.steveparty.tile_landed.threshold", ThresholdCartridgeItem.label(boardSpaceEntity.getActiveCartridgeItemStack()));
         } else {
-            TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.DEFAULT,
-                    TileFeedback.Landing.DEFAULT.noticeKey());
+            landPlain(serverWorld, boardSpaceEntity, token, partyController);
         }
     }
 
@@ -106,10 +106,5 @@ public class ThresholdTileBehavior extends ABoardSpaceBehavior {
     @Override
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return comparatorLevel(boardSpaceEntity, stack) == 0 ? TileFeedback.Landing.STOP : TileFeedback.Landing.DEFAULT;
-    }
-
-    @Override
-    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
-        if (!stack.contains(ModComponents.COLOR)) setColor(boardSpaceBlockEntity, ThresholdCartridgeItem.COLOR);
     }
 }

@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.client.utils;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.TileStampComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
@@ -165,7 +167,7 @@ public final class TileStampTextures {
      * arrow in the darkest shade and the number of spaces almost white ("3 ⏩", "⏪ 2").
      */
     public static Identifier advanceBack(int steps, boolean small) {
-        int rgb = fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.color(steps);
+        int rgb = AdvanceBackCartridgeItem.color(steps);
         return TEXTURES.get(new Key("advance_back:" + steps, rgb, small), key -> register(advanceBackValues(steps, small), rgb, small));
     }
 
@@ -384,12 +386,6 @@ public final class TileStampTextures {
     private static final Map<Character, Float> SHOP_SHADES = Map.of(
             '#', FEATURE, 'b', 0.2f, 's', -0.5f, 'o', NUMBER, 'n', 0.5f, '+', 0.3f, 't', -0.3f, '-', 0.08f, 'm', 0.12f);
 
-    /** The shop tile's face, in the ramp of {@code rgb} (the Shop Cartridge's lime green). */
-    public static Identifier shopFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("shop", rgb, small),
-                key -> register(glyphValues(small ? SMALL_SHOP_BOX : SHOP_BOX, small, SHOP_SHADES), rgb, small));
-    }
-
     // ---------------------------------------------------------------- the Star face
 
     /** A five-pointed star, by hand for each size: '#' the ramp's darkest shade, 'o' a light glint on its top point. */
@@ -417,12 +413,6 @@ public final class TileStampTextures {
             "..######..",
             ".###..###.",
             ".##....##."};
-
-    /** The star space's face: a star in the ramp's darkest shade on the blank tile face, in the ramp of {@code rgb} (yellow). */
-    public static Identifier starFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("star", rgb, small),
-                key -> register(glyphValues(small ? SMALL_STAR : STAR, small, FEATURE, -0.6f), rgb, small));
-    }
 
     // ---------------------------------------------------------------- the Glandouille face
 
@@ -459,12 +449,6 @@ public final class TileStampTextures {
     private static final Map<Character, Float> ACORN_SHADES =
             Map.of('#', FEATURE, 'c', 0.55f, 'o', 0.3f, 'h', 0.06f, 'd', 0.45f);
 
-    /** The Glandouille space's face: an acorn on the blank tile face, in the ramp of {@code rgb} (brown). */
-    public static Identifier glandouilleFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("glandouille", rgb, small),
-                key -> register(glyphValues(small ? SMALL_ACORN : ACORN, small, ACORN_SHADES), rgb, small));
-    }
-
     /** The Frousseux: a little ghost with its wick and flame on its head, two eyes, a ragged sheet hem. */
     private static final String[] FROUSSEUX = {
             "......ff......",
@@ -495,12 +479,6 @@ public final class TileStampTextures {
     private static final Map<Character, Float> FROUSSEUX_SHADES =
             Map.of('#', FEATURE, 'w', FEATURE, 'o', -0.55f, 'f', -0.9f);
 
-    /** The Frousseux space's face: the little candle ghost on the blank tile face, in the ramp of {@code rgb} (night indigo). */
-    public static Identifier frousseuxFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("frousseux", rgb, small),
-                key -> register(glyphValues(small ? SMALL_FROUSSEUX : FROUSSEUX, small, FROUSSEUX_SHADES), rgb, small));
-    }
-
     /** The Threshold obstacle: a striped hurdle, two posts and two bars. */
     private static final String[] THRESHOLD = {
             "..............",
@@ -529,12 +507,6 @@ public final class TileStampTextures {
             "####..####",
             ".........."};
     private static final Map<Character, Float> THRESHOLD_SHADES = Map.of('#', FEATURE, 'o', -0.7f, '-', 0.45f);
-
-    /** The Threshold obstacle's face: a striped hurdle on the blank tile face, in the ramp of {@code rgb} (steel blue). */
-    public static Identifier thresholdFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("threshold", rgb, small),
-                key -> register(glyphValues(small ? SMALL_THRESHOLD : THRESHOLD, small, THRESHOLD_SHADES), rgb, small));
-    }
 
     /** The Common pot: a woven nest full of coins. */
     private static final String[] POT = {
@@ -565,12 +537,6 @@ public final class TileStampTextures {
             ".........."};
     private static final Map<Character, Float> POT_SHADES = Map.of('#', FEATURE, 'o', -0.8f, '-', 0.25f);
 
-    /** The Common pot's face: a nest full of coins on the blank tile face, in the ramp of {@code rgb} (straw). */
-    public static Identifier potFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("pot", rgb, small),
-                key -> register(glyphValues(small ? SMALL_POT : POT, small, POT_SHADES), rgb, small));
-    }
-
     /** The Key gate: a gate's frame, its veil, a keyhole in the middle. */
     private static final String[] KEY_GATE = {
             "..............",
@@ -600,12 +566,6 @@ public final class TileStampTextures {
             ".........."};
     private static final Map<Character, Float> KEY_GATE_SHADES = Map.of('#', FEATURE, 'o', -0.6f);
 
-    /** The Key gate's face: a gate with a keyhole on the blank tile face, in the ramp of {@code rgb} (teal). */
-    public static Identifier keyGateFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("key_gate", rgb, small),
-                key -> register(glyphValues(small ? SMALL_KEY_GATE : KEY_GATE, small, KEY_GATE_SHADES), rgb, small));
-    }
-
     /** The Trap: open jaws seen from above, their teeth inward, a trigger plate in the middle. */
     private static final String[] TRAP = {
             "..............",
@@ -634,12 +594,6 @@ public final class TileStampTextures {
             ".########.",
             ".........."};
     private static final Map<Character, Float> TRAP_SHADES = Map.of('#', FEATURE, 'o', -0.7f);
-
-    /** The Trap's face: open jaws on the blank tile face, in the ramp of {@code rgb} (moss green). */
-    public static Identifier trapFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("trap", rgb, small),
-                key -> register(glyphValues(small ? SMALL_TRAP : TRAP, small, TRAP_SHADES), rgb, small));
-    }
 
     /** The Mistigri: a cat's head, pointed ears (one notched), one slit eye open, the other shut, a nose, whiskers. */
     private static final String[] MISTIGRI = {
@@ -671,10 +625,36 @@ public final class TileStampTextures {
     private static final Map<Character, Float> MISTIGRI_SHADES =
             Map.of('#', FEATURE, '-', 0.3f, 'n', 0.1f, 'o', -0.7f, 'w', 0.2f);
 
-    /** The Mistigri space's face: the black cat's head on the blank tile face, in the ramp of {@code rgb} (witch plum). */
-    public static Identifier mistigriFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("mistigri", rgb, small),
-                key -> register(glyphValues(small ? SMALL_MISTIGRI : MISTIGRI, small, MISTIGRI_SHADES), rgb, small));
+    // ---------------------------------------------------------------- the pictograms of the roles
+
+    /**
+     * A role's pictogram: a glyph drawn by hand for each size, each character painted with its shade, on the blank tile
+     * face. {@code id} names its textures.
+     */
+    private record Pictogram(String id, String[] big, String[] small, Map<Character, Float> shades) {
+    }
+
+    /** The roles whose face is a pictogram in the ramp of their tile's colour (the others are drawn their own way). */
+    private static final Map<BoardSpaceType, Pictogram> PICTOGRAMS = Map.of(
+            BoardSpaceType.BOARD_SPACE_SHOP, new Pictogram("shop", SHOP_BOX, SMALL_SHOP_BOX, SHOP_SHADES),
+            BoardSpaceType.TILE_STAR, new Pictogram("star", STAR, SMALL_STAR, Map.of('#', FEATURE, 'o', -0.6f)),
+            BoardSpaceType.TILE_GLANDOUILLE, new Pictogram("glandouille", ACORN, SMALL_ACORN, ACORN_SHADES),
+            BoardSpaceType.TILE_FROUSSEUX, new Pictogram("frousseux", FROUSSEUX, SMALL_FROUSSEUX, FROUSSEUX_SHADES),
+            BoardSpaceType.TILE_THRESHOLD, new Pictogram("threshold", THRESHOLD, SMALL_THRESHOLD, THRESHOLD_SHADES),
+            BoardSpaceType.TILE_POT, new Pictogram("pot", POT, SMALL_POT, POT_SHADES),
+            BoardSpaceType.TILE_KEY_GATE, new Pictogram("key_gate", KEY_GATE, SMALL_KEY_GATE, KEY_GATE_SHADES),
+            BoardSpaceType.TILE_TRAP, new Pictogram("trap", TRAP, SMALL_TRAP, TRAP_SHADES),
+            BoardSpaceType.TILE_MISTIGRI, new Pictogram("mistigri", MISTIGRI, SMALL_MISTIGRI, MISTIGRI_SHADES));
+
+    /**
+     * The face of a tile of role {@code type} when it is a pictogram (a shop, a star, an acorn, a ghost, a hurdle, a nest,
+     * a gate, a trap, a cat) in the ramp of {@code rgb} (its tile's colour); null for the other roles.
+     */
+    public static @Nullable Identifier pictogramFace(BoardSpaceType type, int rgb, boolean small) {
+        Pictogram pictogram = PICTOGRAMS.get(type);
+        if (pictogram == null) return null;
+        return TEXTURES.get(new Key(pictogram.id(), rgb, small),
+                key -> register(glyphValues(small ? pictogram.small() : pictogram.big(), small, pictogram.shades()), rgb, small));
     }
 
     // ---------------------------------------------------------------- the Teleport face

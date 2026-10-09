@@ -4,8 +4,13 @@ import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
+import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
+import fr.lordfinn.steveparty.service.TurnMoves;
+import fr.lordfinn.steveparty.utils.Argb;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
@@ -104,7 +109,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.55F, 1.498F, 9),
                 new Layer(SoundEvents.ENTITY_FIREWORK_ROCKET_TWINKLE_FAR, 0.3F, 1.2F, 9))),
         /** A stop tile: a firm two-tone halt, slate grey dust. */
-        STOP("stop", 0x454B5A, List.of(
+        STOP("stop", StopCartridgeItem.COLOR, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 0.749F, 4))),
@@ -123,7 +128,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 0.749F, 6))),
         /** A Replay tile giving another turn: a bright rising arpeggio, then an "en-core!" two-note call; a cyan swirl. */
-        REPLAY("replay", 0x1CC6D6, List.of(
+        REPLAY("replay", ReplayCartridgeItem.COLOR, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),
@@ -225,11 +230,11 @@ public final class TileFeedback {
      * over (same rules as in a game: see {@link BoardSpaceBlockEntity#onTileReached}).
      */
     private static void freePlayRouterSignal(ServerWorld world, MobEntity token, BoardSpaceBlockEntity tile) {
-        int steps = token instanceof fr.lordfinn.steveparty.entities.TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
+        int steps = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
         ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
         boolean stops = steps == 0 && (ABoardSpaceBlock.countsAsStep(tile.getCachedState().getBlock())
                 || behavior != null && behavior.needToStop(world, tile.getPos())
-                || fr.lordfinn.steveparty.service.TurnMoves.isHaltedOn(token, tile.getPos()));
+                || TurnMoves.isHaltedOn(token, tile.getPos()));
         if (stops) BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, tile);
         else BoardSpaceRedstoneRouterBlockEntity.onTokenPassed(world, tile.getPos());
     }
@@ -309,7 +314,12 @@ public final class TileFeedback {
      * the party's players (none without a party).
      */
     public static void land(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token, @Nullable PartyControllerEntity party) {
-        Landing landing = landingOf(tile);
+        land(world, tile, token, party, landingOf(tile));
+    }
+
+    /** A landing of the given kind (not necessarily the tile's own) with its own notice. */
+    public static void land(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token, @Nullable PartyControllerEntity party,
+                            Landing landing) {
         land(world, tile, token, party, landing, landing.noticeKey());
     }
 
@@ -334,7 +344,7 @@ public final class TileFeedback {
         int tileColor = tileColor(tile);
         int color = tileColor == 0xFFFFFF ? landing.accent() : tileColor;
         // Lighter than the face, so the ring and the sparkles read over it
-        int light = lighten(color, 0.45F);
+        int light = Argb.lighten(color, 0.45F) & 0xFFFFFF;
         double radius = ringRadius(world, pos);
         burst(world, landing, at, color, light);
         ring(world, at, light, radius);
@@ -378,16 +388,7 @@ public final class TileFeedback {
     public static int noticeColor(int color) {
         int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
         boolean dark = 0.299F * r + 0.587F * g + 0.114F * b < 100;
-        return lighten(color, dark ? 0.6F : 0.2F);
-    }
-
-    /** {@code color} moved toward white by {@code amount} (0..1). */
-    public static int lighten(int color, float amount) {
-        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
-        r += (int) ((255 - r) * amount);
-        g += (int) ((255 - g) * amount);
-        b += (int) ((255 - b) * amount);
-        return (r << 16) | (g << 8) | b;
+        return Argb.lighten(color, dark ? 0.6F : 0.2F) & 0xFFFFFF;
     }
 
     /** A thin ring of dust just around the tile's edge: the tile "pulses". */
@@ -410,7 +411,7 @@ public final class TileFeedback {
                 world.spawnParticles(ParticleTypes.WAX_OFF, at.x, y + 0.3, at.z, 5, 0.3, 0.3, 0.3, 0.3);
             }
             case BAD -> {
-                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(lighten(landing.accent(), 0.25F)).toVector3f(), 1.8F), at.x, y + 0.2, at.z, 14, 0.35, 0.2, 0.35, 0.0);
+                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(Argb.lighten(landing.accent(), 0.25F) & 0xFFFFFF).toVector3f(), 1.8F), at.x, y + 0.2, at.z, 14, 0.35, 0.2, 0.35, 0.0);
                 world.spawnParticles(ParticleTypes.SMOKE, at.x, y, at.z, 5, 0.3, 0.05, 0.3, 0.01);
                 world.spawnParticles(ParticleTypes.ANGRY_VILLAGER, at.x, y + 0.6, at.z, 1, 0.1, 0.1, 0.1, 0.0);
             }

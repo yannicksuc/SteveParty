@@ -2,12 +2,9 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
-import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.items.custom.cartridges.TrapCartridgeItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.BoardTraps;
 import net.minecraft.entity.mob.MobEntity;
@@ -37,9 +34,8 @@ public class TrapTileBehavior extends ABoardSpaceBehavior {
     public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity,
                                      @Nullable PartyControllerEntity partyController) {
         if (!(world instanceof ServerWorld serverWorld) || boardSpaceEntity == null) return;
-        if (partyController == null || partyController.isRemoved() || !partyController.getPartyData().isStarted()) {
-            TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.DEFAULT,
-                    TileFeedback.Landing.DEFAULT.noticeKey());
+        if (!isPartyRunning(partyController)) {
+            landPlain(serverWorld, boardSpaceEntity, token, partyController);
             return;
         }
         BoardTraps.Outcome outcome = BoardTraps.spring(serverWorld, boardSpaceEntity, token, partyController);
@@ -48,12 +44,7 @@ public class TrapTileBehavior extends ABoardSpaceBehavior {
         TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing,
                 sprung ? "message.steveparty.tile_landed.trap" : landing.noticeKey());
         if (sprung || outcome == BoardTraps.Outcome.DISARMED) return;
-        PartyStep step = partyController.getPartyData().getCurrentStep();
-        BoardTraps.offer(serverWorld, boardSpaceEntity, token, () -> {
-            if (!partyController.isRemoved() && step != null && partyController.getPartyData().getCurrentStep() == step) {
-                partyController.nextStep();
-            }
-        });
+        BoardTraps.offer(serverWorld, boardSpaceEntity, token, resumeTurn(partyController));
     }
 
     @Override
@@ -63,10 +54,5 @@ public class TrapTileBehavior extends ABoardSpaceBehavior {
             return BoardSpaceRedstoneRouterBlockEntity.LEVEL_MALUS;
         }
         return BoardSpaceRedstoneRouterBlockEntity.LEVEL_DEFAULT;
-    }
-
-    @Override
-    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
-        if (!stack.contains(ModComponents.COLOR)) setColor(boardSpaceBlockEntity, TrapCartridgeItem.COLOR);
     }
 }

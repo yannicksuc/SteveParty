@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 public class FrousseuxTileBehavior extends MobTileBehavior {
 
     public FrousseuxTileBehavior() {
-        super(BoardSpaceType.TILE_FROUSSEUX, FrousseuxCartridgeItem.COLOR);
+        super(BoardSpaceType.TILE_FROUSSEUX);
     }
 
     @Override
@@ -37,7 +37,7 @@ public class FrousseuxTileBehavior extends MobTileBehavior {
         FrousseuxThefts.Start start = FrousseuxThefts.start(world, pos, token, party, stars,
                 FrousseuxCartridgeItem.amount(cartridge), onDone);
         TileFeedback.Landing landing = start == FrousseuxThefts.Start.STARTED ? TileFeedback.Landing.FROUSSEUX : TileFeedback.Landing.DEFAULT;
-        TileFeedback.land(world, tile, token, party, landing, landing.noticeKey());
+        TileFeedback.land(world, tile, token, party, landing);
     }
 
     @Override

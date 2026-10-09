@@ -2,12 +2,17 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.EntityShapeContext;
 import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.loot.context.LootContextParameterSet;
+import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.IntProperty;
@@ -28,6 +33,7 @@ import net.minecraft.world.WorldView;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileStampComponent;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import net.minecraft.text.MutableText;
 import org.jetbrains.annotations.Nullable;
@@ -140,10 +146,10 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
      * unless it is broken with Silk Touch, which moves the tile with its links.
      */
     @Override
-    protected List<ItemStack> getDroppedStacks(BlockState state, net.minecraft.loot.context.LootContextParameterSet.Builder builder) {
+    protected List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
         List<ItemStack> drops = super.getDroppedStacks(state, builder);
-        net.minecraft.block.entity.BlockEntity blockEntity = builder.getOptional(net.minecraft.loot.context.LootContextParameters.BLOCK_ENTITY);
-        ItemStack tool = builder.getOptional(net.minecraft.loot.context.LootContextParameters.TOOL);
+        BlockEntity blockEntity = builder.getOptional(LootContextParameters.BLOCK_ENTITY);
+        ItemStack tool = builder.getOptional(LootContextParameters.TOOL);
         boolean keepLinks = tool != null && TileContents.hasSilkTouch(builder.getWorld(), tool);
         for (ItemStack drop : drops) {
             if (!drop.isOf(asItem())) continue;
@@ -270,7 +276,7 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
         if (world.isClient || !was.isLarge() || was == now) return;
         for (BlockPos part : was.parts(pos)) {
             if (TilePartBlock.isPartOf(world.getBlockState(part), part, pos)) {
-                world.setBlockState(part, net.minecraft.block.Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL | Block.SKIP_DROPS);
+                world.setBlockState(part, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL | Block.SKIP_DROPS);
             }
         }
     }
@@ -300,8 +306,8 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
     }
 
     private static boolean isToken(ShapeContext context) {
-        return context instanceof net.minecraft.block.EntityShapeContext entityContext
-                && entityContext.getEntity() instanceof fr.lordfinn.steveparty.entities.TokenizedEntityInterface token
+        return context instanceof EntityShapeContext entityContext
+                && entityContext.getEntity() instanceof TokenizedEntityInterface token
                 && token.steveparty$isTokenized();
     }
 

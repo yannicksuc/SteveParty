@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.*;
@@ -22,6 +21,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemActionResult;
 import fr.lordfinn.steveparty.blocks.ItemResults;
+import fr.lordfinn.steveparty.board.WrenchActions;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -46,7 +46,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
 
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        return BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onUse(state, world, pos, player, hit);
+        return state.get(TILE_TYPE).behavior().onUse(state, world, pos, player, hit);
     }
 
     @Override
@@ -56,7 +56,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         if (stamped != null) return ItemResults.of(stamped);
         // Client prediction: every behavior only handles dyes (and returns PASS otherwise)
         if (world.isClient) return ItemResults.of(stack != null && stack.getItem() instanceof DyeItem ? SUCCESS : PASS);
-        return ItemResults.of(BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onUseWithItem(stack, state, world, pos, player, hit));
+        return ItemResults.of(state.get(TILE_TYPE).behavior().onUseWithItem(stack, state, world, pos, player, hit));
     }
 
     @Override
@@ -87,7 +87,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity) {
             tileEntity.onPlaced();
             // Placed with the Tile Linker Brush in the off hand: linked from its anchor
-            fr.lordfinn.steveparty.board.WrenchActions.onBoardSpacePlaced(world, pos, placer, itemStack);
+            WrenchActions.onBoardSpacePlaced(world, pos, placer, itemStack);
         }
     }
 
@@ -134,12 +134,12 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     @Override
     protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
         if (!world.isClient) {
-            BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onSteppedOn(world, pos, state, entity);
+            state.get(TILE_TYPE).behavior().onSteppedOn(world, pos, state, entity);
         }
     }
 
     @Override
-    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {
+    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         return new SimpleNamedScreenHandlerFactory((syncId, inventory, player) ->
                 new BoardSpaceScreenHandler(syncId, inventory, (BoardSpaceBlockEntity) blockEntity), Text.empty());

@@ -1,10 +1,13 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.payloads.custom.UpdateColoredTilePayload;
@@ -22,6 +25,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import static net.minecraft.util.ActionResult.PASS;
 import static net.minecraft.util.ActionResult.SUCCESS;
@@ -95,6 +99,30 @@ public abstract class ABoardSpaceBehavior {
             TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController);
     }
 
+    /** A plain landing: the default jingle and notice, nothing of its role (outside a party, a role that did not play...). */
+    protected static void landPlain(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token,
+                                    @Nullable PartyControllerEntity party) {
+        TileFeedback.land(world, tile, token, party, TileFeedback.Landing.DEFAULT);
+    }
+
+    /** {@code party} is there and its party runs (a role playing only in a party). */
+    protected static boolean isPartyRunning(@Nullable PartyControllerEntity party) {
+        return party != null && !party.isRemoved() && party.getPartyData().isStarted();
+    }
+
+    /**
+     * The party's next step once a role holding the turn ({@link #keepsTurn}) is done, if the landing's step is still
+     * the current one (no party: nothing). Taken at the landing.
+     */
+    protected static Runnable resumeTurn(@Nullable PartyControllerEntity party) {
+        PartyStep step = party == null ? null : party.getPartyData().getCurrentStep();
+        return () -> {
+            if (party != null && !party.isRemoved() && step != null && party.getPartyData().getCurrentStep() == step) {
+                party.nextStep();
+            }
+        };
+    }
+
     /**
      * After {@link #onDestinationReached}: true if this role holds the turn (a shop stop) and moves the party on itself
      * later; false (the default) and the next step comes right away.
@@ -114,7 +142,7 @@ public abstract class ABoardSpaceBehavior {
      * landing kind. A new role overrides it with a level of its own (2 to 15; 1 is a token passing; 0 or less: no pulse).
      */
     public int comparatorLevel(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
-        return fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity.landingSignal(landing(boardSpaceEntity, stack));
+        return BoardSpaceRedstoneRouterBlockEntity.landingSignal(landing(boardSpaceEntity, stack));
     }
 
     public static void setColor(BoardSpaceBlockEntity tileEntity, int color) {
@@ -131,7 +159,15 @@ public abstract class ABoardSpaceBehavior {
         }
     }
 
+    /**
+     * The tile's colour follows its cartridge {@code stack} (just put in, or edited): by default a cartridge with a
+     * tile colour of its own ({@link CartridgeItem#tileColor}) shows it until dyed. A role whose colour depends on its
+     * settings overrides it.
+     */
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
+        if (stack.getItem() instanceof CartridgeItem cartridge && cartridge.tileColor() >= 0 && !stack.contains(ModComponents.COLOR)) {
+            setColor(boardSpaceBlockEntity, cartridge.tileColor());
+        }
     }
 
     public Status getStatus(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {

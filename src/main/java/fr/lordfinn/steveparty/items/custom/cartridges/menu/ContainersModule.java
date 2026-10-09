@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The containers of an Inventory Cartridge in their order, two per row (index, coordinates, red when it is not there:
@@ -17,7 +18,7 @@ public final class ContainersModule extends CartridgeModule {
     public static final int OPS = 4;
     public static final int REMOVE = 0, UP = 1, DOWN = 2;
 
-    public ContainersModule(String id, @org.jetbrains.annotations.Nullable String labelKey) {
+    public ContainersModule(String id, @Nullable String labelKey) {
         super(id, labelKey);
     }
 

@@ -78,8 +78,7 @@ public final class CommonPots {
 
     /** The Common pot cartridge of {@code space}, or null. */
     public static @Nullable ItemStack potOf(BoardSpaceBlockEntity space) {
-        ItemStack stack = space.getActiveCartridgeItemStack();
-        return stack.getItem() instanceof PotCartridgeItem ? stack : null;
+        return space.getActiveCartridge(PotCartridgeItem.class);
     }
 
     /** The coin of the token's party, the mod's coin outside a party. */

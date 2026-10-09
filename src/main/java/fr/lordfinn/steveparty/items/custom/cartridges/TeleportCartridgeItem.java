@@ -19,6 +19,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -56,14 +58,13 @@ public class TeleportCartridgeItem extends CartridgeItem {
 
     private static final List<CartridgeModule> MODULES = List.of(
             new ChoiceModule("network", K + "network",
-                    java.util.Arrays.stream(TeleportNetwork.values())
+                    Arrays.stream(TeleportNetwork.values())
                             .map(network -> new ChoiceModule.Option("teleport_network.steveparty." + network.asString(), network.color()))
                             .toList(),
                     stack -> settings(stack).network().ordinal(),
                     (edit, value) -> write(edit, settings(edit.stack()).withNetwork(TeleportNetwork.values()[value]))),
             new ChoiceModule("arrival", K + "arrival",
-                    List.of(new ChoiceModule.Option(K + "stay", -1, K + "stay.tooltip"),
-                            new ChoiceModule.Option(K + "push", -1, K + "push.tooltip")),
+                    List.of(ChoiceModule.Option.tipped(K + "stay"), ChoiceModule.Option.tipped(K + "push")),
                     stack -> settings(stack).push() ? 1 : 0,
                     (edit, value) -> write(edit, settings(edit.stack()).withPush(value == 1))),
             new ChoiceModule("triggers", K + "triggers",
@@ -118,7 +119,7 @@ public class TeleportCartridgeItem extends CartridgeItem {
 
     /** The settings in plain words, one line each (the tooltip, the menu's summary). */
     public static List<Text> describe(TeleportSettingsComponent settings) {
-        List<Text> lines = new java.util.ArrayList<>();
+        List<Text> lines = new ArrayList<>();
         lines.add(Text.translatable("tooltip.steveparty.teleport_cartridge.network", settings.network().displayName()));
         lines.add(Text.translatable(settings.push() ? "tooltip.steveparty.teleport_cartridge.arrival.push"
                 : "tooltip.steveparty.teleport_cartridge.arrival.stay"));

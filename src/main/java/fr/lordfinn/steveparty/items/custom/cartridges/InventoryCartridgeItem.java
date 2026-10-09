@@ -7,28 +7,19 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ContainersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
-import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.GlobalPos;
 import org.jetbrains.annotations.Nullable;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.tooltip.TooltipType;
-import net.minecraft.item.Items;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
@@ -38,6 +29,7 @@ import net.minecraft.world.World;
 import java.util.List;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.board.BoardLinks;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity.getDestinationsStatus;
 import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT;
@@ -110,7 +102,7 @@ public class InventoryCartridgeItem extends CartridgeItem {
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         World world = context.getWorld();
-        if (fr.lordfinn.steveparty.board.BoardLinks.container(world, context.getBlockPos()) == null) return super.useOnBlock(context);
+        if (BoardLinks.container(world, context.getBlockPos()) == null) return super.useOnBlock(context);
         return toggleDestination(context);
     }
 

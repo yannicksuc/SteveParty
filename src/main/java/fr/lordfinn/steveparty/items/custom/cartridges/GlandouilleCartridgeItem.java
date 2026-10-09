@@ -9,7 +9,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 import java.util.List;
@@ -31,19 +30,18 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
     /** How many Glandouilles in its tower. */
     public static final int MIN_TOWER = 1, MAX_TOWER = 25, DEFAULT_TOWER = 5;
 
+    private static final IntSetting DISTANCE = new IntSetting(ModComponents.GLANDOUILLE_DISTANCE, MIN_DISTANCE, MAX_DISTANCE, DEFAULT_DISTANCE);
+    private static final IntSetting TOWER = new IntSetting(ModComponents.GLANDOUILLE_TOWER, MIN_TOWER, MAX_TOWER, DEFAULT_TOWER);
+    private static final BoolSetting LONE = new BoolSetting(ModComponents.GLANDOUILLE_LONE);
+
     private static final String K = MENU_KEY + "glandouille.";
     private static final List<CartridgeModule> MODULES = List.of(
             description("glandouille_cartridge", 3),
             new NumberModule("distance", K + "distance", MIN_DISTANCE, MAX_DISTANCE, GlandouilleCartridgeItem::distance,
-                    (edit, value) -> edit.stack().set(ModComponents.GLANDOUILLE_DISTANCE, value), stack -> COLOR),
-            new InfoModule("hint", null, 1, context -> List.of(
-                    new InfoModule.Line(Text.translatable(K + "hint"), InfoModule.Tone.SOFT))),
-            new NumberModule("tower", K + "tower_size", MIN_TOWER, MAX_TOWER, GlandouilleCartridgeItem::tower,
-                    (edit, value) -> edit.stack().set(ModComponents.GLANDOUILLE_TOWER, value), stack -> COLOR),
-            new ChoiceModule("crew", K + "crew",
-                    List.of(new ChoiceModule.Option(K + "tower"), new ChoiceModule.Option(K + "lone")),
-                    stack -> lone(stack) ? 1 : 0,
-                    (edit, value) -> edit.stack().set(ModComponents.GLANDOUILLE_LONE, value == 1)));
+                    (edit, value) -> DISTANCE.set(edit.stack(), value), stack -> COLOR),
+            InfoModule.hint("hint", K + "hint", 1),
+            TOWER.module("tower", K + "tower_size", stack -> COLOR),
+            LONE.choice("crew", K + "crew", new ChoiceModule.Option(K + "tower"), new ChoiceModule.Option(K + "lone")));
 
     public GlandouilleCartridgeItem(Settings settings) {
         super(settings);
@@ -60,25 +58,24 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
     }
 
     @Override
-    public int menuColor(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.COLOR, COLOR) & 0xFFFFFF;
+    public int tileColor() {
+        return COLOR;
     }
 
     /** Spaces ahead its tower pushes the tokens, back if negative: {@link #MIN_DISTANCE} to {@link #MAX_DISTANCE}, 0 none. */
     public static int distance(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return 0;
-        return Math.max(MIN_DISTANCE, Math.min(MAX_DISTANCE, stack.getOrDefault(ModComponents.GLANDOUILLE_DISTANCE, DEFAULT_DISTANCE)));
+        // No cartridge: no push (an unset one pushes back by default)
+        return stack == null || stack.isEmpty() ? 0 : DISTANCE.get(stack);
     }
 
     /** Glandouilles in its tower: {@link #MIN_TOWER} to {@link #MAX_TOWER}. */
     public static int tower(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return DEFAULT_TOWER;
-        return Math.max(MIN_TOWER, Math.min(MAX_TOWER, stack.getOrDefault(ModComponents.GLANDOUILLE_TOWER, DEFAULT_TOWER)));
+        return TOWER.get(stack);
     }
 
     /** The lone Glandouille (it can't push) rather than the tower. */
     public static boolean lone(ItemStack stack) {
-        return stack != null && stack.getOrDefault(ModComponents.GLANDOUILLE_LONE, false);
+        return LONE.get(stack);
     }
 
     @Override
@@ -87,7 +84,7 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
         tooltip.add((distance == 0 ? Text.translatable("tooltip.steveparty.glandouille_cartridge.none")
                 : distance < 0 ? Text.translatable("tooltip.steveparty.glandouille_cartridge.distance_back", -distance)
                 : Text.translatable("tooltip.steveparty.glandouille_cartridge.distance", distance))
-                .styled(style -> style.withColor(TextColor.fromRgb(0xD9A066)).withBold(true)));
+                .styled(headline(0xD9A066)));
         if (lone(stack)) tooltip.add(Text.translatable("tooltip.steveparty.glandouille_cartridge.lone").formatted(Formatting.GRAY));
         else if (distance > 0) tooltip.add(Text.translatable("tooltip.steveparty.glandouille_cartridge.tower", tower(stack)).formatted(Formatting.GRAY));
         super.appendTooltip(stack, context, tooltip, type);
