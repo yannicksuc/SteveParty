@@ -1,9 +1,7 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BrushLinkable;

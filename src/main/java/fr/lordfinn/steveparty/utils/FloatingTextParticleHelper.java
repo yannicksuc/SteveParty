@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TextColor;
-import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
 
 public class FloatingTextParticleHelper {

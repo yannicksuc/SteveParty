@@ -28,7 +28,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;

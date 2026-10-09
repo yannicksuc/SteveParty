@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlockEntity;
