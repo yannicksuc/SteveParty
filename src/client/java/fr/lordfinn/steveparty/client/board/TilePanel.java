@@ -165,8 +165,8 @@ public final class TilePanel {
     static int readable(int rgb) {
         int r = (rgb >> 16) & 255, g = (rgb >> 8) & 255, b = rgb & 255;
         float luminance = Argb.luminance(rgb) / 255f;
-        if (luminance <= 0.5f) return rgb & 0xFFFFFF;
-        float k = 0.5f / luminance;
+        if (luminance <= 0.4f) return rgb & 0xFFFFFF;
+        float k = 0.4f / luminance;
         return ((int) (r * k) << 16) | ((int) (g * k) << 8) | (int) (b * k);
     }
 

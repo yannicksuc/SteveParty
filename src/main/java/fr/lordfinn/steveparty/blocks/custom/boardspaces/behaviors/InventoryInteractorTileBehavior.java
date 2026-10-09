@@ -240,7 +240,9 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             } else {
                 info.line(item, TileInfo.bad(TileInfo.line("inventory.empty")));
             }
-            if (!taken && linked != null) info.detail(item, TileInfo.line("inventory.left", TileInfo.value(left)));
+            // The stock, for the helmet; an item run out already says so
+            if (!taken && linked != null && left >= item.getCount())
+                info.detail(item, TileInfo.line("inventory.left", TileInfo.value(left)));
         }
         if (gives && linked == null) info.line(new ItemStack(Items.CHEST), TileInfo.bad(TileInfo.line("inventory.no_chest")));
     }
