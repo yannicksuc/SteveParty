@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.particle;
 
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Quaternionf;
@@ -94,7 +95,7 @@ public class FloatingText {
                 vertexConsumers,
                 TextRenderer.TextLayerType.NORMAL,
                 0,
-                0xF000F0
+                LightmapTextureManager.MAX_LIGHT_COORDINATE
         );
 
         matrices.pop();

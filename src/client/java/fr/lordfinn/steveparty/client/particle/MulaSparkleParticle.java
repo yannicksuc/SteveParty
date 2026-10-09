@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.particle.*;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
 
@@ -88,7 +89,7 @@ public class MulaSparkleParticle extends SpriteBillboardParticle {
 
     @Override
     protected int getBrightness(float tint) {
-        return 0xF000F0;
+        return LightmapTextureManager.MAX_LIGHT_COORDINATE;
     }
 
     @Environment(EnvType.CLIENT)

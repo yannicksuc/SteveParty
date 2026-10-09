@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.MulaStarEntity;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -89,6 +90,6 @@ public class MulaStarRenderer extends EntityRenderer<MulaStarEntity> {
     private static void vertex(VertexConsumer vertices, MatrixStack.Entry entry, float x, float y, float u, float v,
                                int r, int g, int b, int alpha) {
         vertices.vertex(entry.getPositionMatrix(), x, y, 0f).color(r, g, b, alpha).texture(u, v)
-                .overlay(OverlayTexture.DEFAULT_UV).light(0xF000F0).normal(entry, 0f, 1f, 0f);
+                .overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(entry, 0f, 1f, 0f);
     }
 }
