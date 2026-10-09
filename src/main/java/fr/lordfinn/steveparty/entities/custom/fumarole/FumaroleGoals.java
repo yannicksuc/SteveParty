@@ -33,7 +33,9 @@ public final class FumaroleGoals {
 
         Territory(FumaroleEntity fumarole) {
             super(fumarole, PlayerEntity.class, 10, true, false,
-                    player -> player.squaredDistanceTo(fumarole) <= FumaroleEntity.TERRITORY * FumaroleEntity.TERRITORY);
+                    player -> !fumarole.isTamed() && !fumarole.hasPassenger(player)
+                            && !(player instanceof PlayerEntity p && fumarole.trustedByAll(p))
+                            && player.squaredDistanceTo(fumarole) <= FumaroleEntity.TERRITORY * FumaroleEntity.TERRITORY);
             this.fumarole = fumarole;
         }
 
@@ -50,6 +52,13 @@ public final class FumaroleGoals {
         Revenge(FumaroleEntity fumarole) {
             super(fumarole, FumaroleEntity.class);
             this.fumarole = fumarole;
+        }
+
+        @Override
+        public boolean canStart() {
+            LivingEntity attacker = fumarole.getAttacker();
+            if (attacker instanceof PlayerEntity player && (fumarole.isOwner(player) || fumarole.trustedByAll(player))) return false;
+            return !fumarole.isSteered() && super.canStart();
         }
 
         @Override
@@ -92,12 +101,13 @@ public final class FumaroleGoals {
             LivingEntity target = fumarole.getTarget();
             if (target != null && target.isAlive()) enemies.add(target);
             LivingEntity attacker = fumarole.getAttacker();
-            if (attacker != null && attacker.isAlive() && !enemies.contains(attacker) && !(attacker instanceof FumaroleEntity)) {
+            if (attacker != null && attacker.isAlive() && !enemies.contains(attacker) && !(attacker instanceof FumaroleEntity)
+                    && !fumarole.hasPassenger(attacker)) {
                 enemies.add(attacker);
             }
             for (PlayerEntity player : fumarole.getWorld().getPlayers()) {
                 if (enemies.size() >= FumaroleEntity.HEADS.length) break;
-                if (!enemies.contains(player) && player.isAlive() && !player.isSpectator() && !player.isCreative()
+                if (!fumarole.isTamed() && !enemies.contains(player) && player.isAlive() && !player.isSpectator() && !player.isCreative()
                         && player.squaredDistanceTo(fumarole) <= FumaroleEntity.TERRITORY * FumaroleEntity.TERRITORY) {
                     enemies.add(player);
                 }
@@ -115,7 +125,7 @@ public final class FumaroleGoals {
                 int head = (nextHead + k) % fireAt.length;
                 for (int j = 0; j < enemies.size(); j++) {
                     LivingEntity enemy = enemies.get((head + j) % enemies.size());
-                    if (fumarole.getVisibilityCache().canSee(enemy) && fumarole.inRange(head, enemy)) {
+                    if (fumarole.mayShoot(head, enemy) && fumarole.getVisibilityCache().canSee(enemy) && fumarole.inRange(head, enemy)) {
                         targets[head] = enemy;
                         fireAt[head] = TURN_TICKS + CHARGE_TICKS;
                         end = fireAt[head] + SPIT_TICKS;
@@ -130,6 +140,7 @@ public final class FumaroleGoals {
         @Override
         public boolean canStart() {
             LivingEntity target = fumarole.getTarget();
+            if (fumarole.hasPassengers()) return false;
             if (target == null || !target.isAlive() || fumarole.getWorld().getTime() < nextVolley) return false;
             return plan();
         }
@@ -222,7 +233,7 @@ public final class FumaroleGoals {
         }
 
         private boolean wants() {
-            return fumarole.getTank() < FumaroleEntity.TANK_MAX
+            return !fumarole.hasPassengers() && fumarole.getTank() < FumaroleEntity.TANK_MAX
                     && (fumarole.getTarget() == null || fumarole.getTank() == 0)
                     && fumarole.pumping.rateAllows(fumarole.getWorld().getTime());
         }
@@ -328,7 +339,7 @@ public final class FumaroleGoals {
 
         private boolean needed() {
             LivingEntity target = fumarole.getTarget();
-            return target != null && target.isAlive()
+            return target != null && target.isAlive() && !fumarole.hasPassengers()
                     && (!fumarole.inRange(target) || !fumarole.getVisibilityCache().canSee(target));
         }
 

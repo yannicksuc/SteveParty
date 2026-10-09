@@ -168,6 +168,7 @@ public class StevepartyClient implements ClientModInitializer {
         StencilGunHud.initialize();
         fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.initialize();
         fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient.initialize();
+        fr.lordfinn.steveparty.client.entity.FumaroleRiderClient.initialize();
         fr.lordfinn.steveparty.client.board.BrushClient.initialize();
         fr.lordfinn.steveparty.client.board.TileOutline.initialize();
         DevClientCommands.initialize();
@@ -386,6 +387,8 @@ public class StevepartyClient implements ClientModInitializer {
         
         //Initialize Screens
         HandledScreens.register(TILE_SCREEN_HANDLER, BoardSpaceScreen::new);
+        HandledScreens.register(fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.FUMAROLE_SCREEN_HANDLER,
+                fr.lordfinn.steveparty.client.screens.FumaroleScreen::new);
         HandledScreens.register(ROUTER_SCREEN_HANDLER, RouterScreen::new);
         HandledScreens.register(HOP_SWITCH_SCREEN_HANDLER, HopSwitchScreen::new);
         HandledScreens.register(BOXED_TRADER_SCREEN_HANDLER, BoxedTraderScreen::new);

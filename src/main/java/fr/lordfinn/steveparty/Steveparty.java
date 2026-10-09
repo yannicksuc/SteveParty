@@ -117,6 +117,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers.initialize();
         fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxSpawns.initialize();
         fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleSpawns.initialize();
+        fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEvents.initialize();
         fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartSpawns.initialize();
         fr.lordfinn.steveparty.entities.PetTeleports.initialize();
         // the Frousseux candle holder burns as planks do: fire catches it and burns it away, the Frousseux gone with it

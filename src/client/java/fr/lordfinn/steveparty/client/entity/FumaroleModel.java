@@ -70,6 +70,10 @@ public class FumaroleModel extends DefaultedEntityGeoModel<FumaroleEntity> {
             if (vent != null) vent.setHidden(true);
         }
         if (fumarole.deathTime > 0) return;
+        GeoBone body = getAnimationProcessor().getBone("body");
+        if (body != null) body.setRotZ(body.getRotZ() + fumarole.moods.bodyRoll);
+        GeoBone shell = getAnimationProcessor().getBone("shell");
+        if (shell != null) shell.setRotZ(shell.getRotZ() + fumarole.moods.shellRoll);
         GeoBone[][] bones = aimBones();
         for (FumaroleHead head : FumaroleEntity.HEADS) {
             int i = head.index();
@@ -85,6 +89,8 @@ public class FumaroleModel extends DefaultedEntityGeoModel<FumaroleEntity> {
                 bone.setRotY(bone.getRotY() + yawShare);
                 bone.setRotX(bone.getRotX() + pitchShare);
             }
+            GeoBone skull = turning[turning.length - 1];
+            skull.setRotZ(skull.getRotZ() + fumarole.moods.roll[i]);
         }
     }
 }

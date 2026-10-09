@@ -32,6 +32,11 @@ public class ModScreensHandlers {
                     BlockPosPayload.PACKET_CODEC
             );
 
+    /** A tamed Fumarole's saddle slot (opening data: its entity id). */
+    public static final ExtendedScreenHandlerType<fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleScreenHandler, Integer> FUMAROLE_SCREEN_HANDLER =
+            Registry.register(Registries.SCREEN_HANDLER, Steveparty.id("fumarole"),
+                    new ExtendedScreenHandlerType<>(fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleScreenHandler::new, PacketCodecs.VAR_INT));
+
     public static final ScreenHandlerType<RouterScreenHandler> ROUTER_SCREEN_HANDLER =
             register("router_screen_handler", RouterScreenHandler::new, FeatureSet.empty());
 

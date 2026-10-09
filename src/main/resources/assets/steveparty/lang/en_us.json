@@ -2672,6 +2672,7 @@
   "death.attack.steveparty.thermal_steam": "%1$s was scalded by %2$s",
   "death.attack.steveparty.thermal_steam.item": "%1$s was scalded by %2$s using %3$s",
   "death.attack.steveparty.thermal_steam.player": "%1$s was scalded by %2$s",
+  "screen.steveparty.fumarole.tank": "Lava %s/%s",
   "block.steveparty.frousseux_candle_holder": "Wickling Candle Holder",
   "tooltip.steveparty.frousseux_candle_holder.kept": "A Wickling asleep, its %s on its head",
   "tooltip.steveparty.frousseux_candle_holder.named": "%s asleep, its %s on its head",
