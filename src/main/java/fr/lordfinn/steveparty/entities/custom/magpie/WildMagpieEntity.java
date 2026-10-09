@@ -79,11 +79,13 @@ public class WildMagpieEntity extends MobEntity implements GeoEntity {
     private static final TrackedData<Integer> VARIANT = DataTracker.registerData(WildMagpieEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Byte> STATE = DataTracker.registerData(WildMagpieEntity.class, TrackedDataHandlerRegistry.BYTE);
     private static final TrackedData<ItemStack> CARRIED = DataTracker.registerData(WildMagpieEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
-    public static final byte PERCHED = 0, FLYING = 1, GLIDING = 2, ASLEEP = 3;
+    public static final byte PERCHED = 0, FLYING = 1, GLIDING = 2, ASLEEP = 3, TAKING_OFF = 4, LANDING = 5;
 
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.magpie.idle");
     private static final RawAnimation FLY = RawAnimation.begin().thenLoop("animation.magpie.fly");
+    private static final RawAnimation TAKEOFF = RawAnimation.begin().thenLoop("animation.magpie.takeoff");
     private static final RawAnimation GLIDE = RawAnimation.begin().thenLoop("animation.magpie.glide");
+    private static final RawAnimation LAND = RawAnimation.begin().thenLoop("animation.magpie.land");
     private static final RawAnimation SLEEP = RawAnimation.begin().thenLoop("animation.magpie.sleep");
     private static final RawAnimation PREEN = RawAnimation.begin().thenPlay("animation.magpie.preen");
     private static final RawAnimation HOP = RawAnimation.begin().thenPlay("animation.magpie.hop");
@@ -505,7 +507,7 @@ public class WildMagpieEntity extends MobEntity implements GeoEntity {
         flight = next;
         flightTick = 0;
         perch = null;
-        setFlightState(FLYING);
+        setFlightState(TAKING_OFF);
         getWorld().playSound(null, getX(), getY(), getZ(), SoundEvents.ENTITY_PARROT_FLY, SoundCategory.NEUTRAL, 0.5F, 1.4F);
     }
 
@@ -520,8 +522,10 @@ public class WildMagpieEntity extends MobEntity implements GeoEntity {
             turn((float) (MathHelper.atan2(delta.z, delta.x) * (180 / Math.PI)) - 90);
         }
         setPosition(at);
+        // the phase is synced (STATE) for the client's wings: fast flaps off the perch, flaps while it climbs or
+        // flies level, wings held open when it comes down, flaps and wings forward to brake onto the perch
         boolean gliding = p > 0.2 && p < 0.85 && delta.y < -0.06;
-        setFlightState(gliding ? GLIDING : FLYING);
+        setFlightState(p < 0.2 ? TAKING_OFF : p >= 0.85 ? LANDING : gliding ? GLIDING : FLYING);
         if (!gliding && flightTick % 7 == 0) {
             world.playSound(null, getX(), getY(), getZ(), SoundEvents.ENTITY_PARROT_FLY, SoundCategory.NEUTRAL, 0.2F, 1.5F);
         }
@@ -725,8 +729,10 @@ public class WildMagpieEntity extends MobEntity implements GeoEntity {
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "main", 4, state -> state.setAndContinue(switch (getFlightState()) {
+            case TAKING_OFF -> TAKEOFF;
             case FLYING -> FLY;
             case GLIDING -> GLIDE;
+            case LANDING -> LAND;
             case ASLEEP -> SLEEP;
             default -> IDLE;
         })));
