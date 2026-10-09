@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -20,7 +21,7 @@ public class GateKeyItem extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        CartridgeItem.addWrapped(tooltip, Text.translatable("tooltip.steveparty.gate_key"), Formatting.GRAY);
+        Tooltips.of(tooltip).tags(Tooltips.Tag.CONSUMED).summary("tooltip.steveparty.gate_key");
         super.appendTooltip(stack, context, tooltip, type);
     }
 }

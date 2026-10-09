@@ -128,30 +128,7 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
                 || super.onStackClicked(stack, slot, clickType, player);
     }
 
-    private static final int LINE_WIDTH = 46;
-    /** The colour of the « Configurable » tag of the tooltip. */
-    private static final int CONFIGURABLE_COLOR = 0xFCB017;
-
-    /** Adds {@code text} as lines of at most {@link #LINE_WIDTH} characters (a tooltip line doesn't wrap by itself). */
-    public static void addWrapped(List<Text> tooltip, Text text, Formatting formatting) {
-        StringBuilder line = new StringBuilder();
-        for (String word : text.getString().split(" ")) {
-            if (line.length() > 0 && line.length() + 1 + word.length() > LINE_WIDTH) {
-                tooltip.add(Text.literal(line.toString()).formatted(formatting));
-                line.setLength(0);
-            }
-            if (line.length() > 0) line.append(' ');
-            line.append(word);
-        }
-        if (line.length() > 0) tooltip.add(Text.literal(line.toString()).formatted(formatting));
-    }
-
-    /** A tooltip line's style in {@code rgb} (its settings in a few words). */
-    public static UnaryOperator<Style> tint(int rgb) {
-        return style -> style.withColor(TextColor.fromRgb(rgb));
-    }
-
-    /** The style of the tooltip's first line, what it is set to: {@code rgb}, bold. */
+    /** A setting shown in the action bar, in {@code rgb}, bold. */
     public static UnaryOperator<Style> headline(int rgb) {
         return style -> style.withColor(TextColor.fromRgb(rgb)).withBold(true);
     }

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -32,7 +33,6 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
 
     // Instant break needs speed / hardness / 30 >= 1, even when the /5 airborne or underwater penalty applies
     private static final float PLASTIC_MINING_SPEED = 1000f;
-    private static final int CONTROLS_COLOR = 0xfcb017;
 
     public WrenchItem(Settings settings) {
         super(settings);
@@ -73,14 +73,17 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         if (stack.contains(ModComponents.BLOCK_ORIGIN_COMPONENT)) stack.remove(ModComponents.BLOCK_ORIGIN_COMPONENT);
     }
 
-    @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        CartridgeItem.addWrapped(tooltip,
-                Text.translatable("tooltip.steveparty.wrench"), Formatting.GRAY);
-        tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));
-        for (String control : List.of("open", "offhand", "controller", "podium", "plastic")) {
-            tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls." + control).formatted(Formatting.GRAY));
-        }
+        Tooltips.of(tooltip).tags(Tooltips.Tag.TOOL)
+                .summary("tooltip.steveparty.wrench")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.wrench.controls.open")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.wrench.controls.offhand")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.wrench.controls.controller")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.wrench.controls.podium")
+                        .use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.wrench.controls.podium.reset")
+                        .use(Tooltips.Keys.attack(), "tooltip.steveparty.wrench.controls.plastic")
+                        .note("tooltip.steveparty.wrench.links"));
     }
 }

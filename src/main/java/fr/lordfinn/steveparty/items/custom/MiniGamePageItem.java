@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
@@ -95,22 +96,17 @@ public class MiniGamePageItem extends Item {
         return id == null ? Optional.empty() : Optional.of(new PageTooltip(id));
     }
 
-    @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         MiniGamePageRef ref = stack.get(ModComponents.MINI_GAME_PAGE);
-        if (ref != null && ref.linked()) {
-            tooltip.add(Text.translatable("tooltip.steveparty.mini_game_page.linked").formatted(Formatting.AQUA));
-        }
-        // Long lines are cut: a tooltip is no wider than about forty characters
-        for (String key : new String[]{ref == null ? "tooltip.steveparty.mini_game_page.blank" : "tooltip.steveparty.mini_game_page.open",
-                "tooltip.steveparty.mini_game_page.link"}) {
-            for (String line : MiniGameText.wrap(Text.translatable(key).getString(), TOOLTIP_WIDTH)) {
-                tooltip.add(Text.literal(line).formatted(Formatting.GRAY));
-            }
-        }
+        Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME);
+        if (ref != null && ref.linked()) tips.tags(Tooltips.Tag.LINKED_COPY);
+        tips.summary("tooltip.steveparty.mini_game_page.summary");
+        tips.more(more -> more
+                .use(Tooltips.Keys.use(), ref == null ? "tooltip.steveparty.mini_game_page.blank" : "tooltip.steveparty.mini_game_page.open")
+                .use(Tooltips.Keys.use(), "tooltip.steveparty.mini_game_page.link"));
         if (ref != null && type.isAdvanced()) {
-            tooltip.add(Text.literal(ref.id().toString()).formatted(Formatting.DARK_GRAY));
+            tooltip.add(Text.literal(ref.id().toString()).formatted(Tooltips.DIM));
         }
     }
 }

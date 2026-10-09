@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
@@ -197,12 +198,13 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip,
-                              TooltipType options) {
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        for (String line : List.of("page", "play", "redstone")) {
-            tooltip.add(Text.translatable("tooltip.steveparty.mini_game_controller." + line).formatted(Formatting.GRAY));
-        }
+        Tooltips.of(tooltip).tags(Tooltips.Tag.MINI_GAME)
+                .summary("tooltip.steveparty.mini_game_controller.play")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.mini_game_controller.page")
+                        .note("tooltip.steveparty.mini_game_controller.redstone"));
     }
 
     /** It is placed: the power it receives then is not an edge (it acts on the next one). */

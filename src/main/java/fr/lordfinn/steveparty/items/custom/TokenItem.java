@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.components.EntityDataComponent;
@@ -47,10 +48,9 @@ public class TokenItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        EntityDataComponent dataComponent = stack.get(ENTITY_DATA_COMPONENT);
-        if (dataComponent != null) {
-            tooltip.add(Text.translatable("tooltip.steveparty.token.summon").formatted(Formatting.GRAY));
-        }
+        boolean full = stack.get(ENTITY_DATA_COMPONENT) != null;
+        Tooltips.of(tooltip).summary("tooltip.steveparty.token.summary")
+                .more(more -> more.use(Tooltips.Keys.use(), full ? "tooltip.steveparty.token.summon" : "tooltip.steveparty.token.store"));
     }
 
     @Override

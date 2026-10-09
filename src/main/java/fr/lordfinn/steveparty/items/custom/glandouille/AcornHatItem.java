@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.glandouille;
 
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Equipment;
@@ -44,6 +45,6 @@ public class AcornHatItem extends Item implements Equipment {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("item.steveparty.acorn_hat.tooltip").formatted(Formatting.GRAY));
+        Tooltips.of(tooltip).tags(Tooltips.Tag.COSTUME).summary("item.steveparty.acorn_hat.tooltip");
     }
 }

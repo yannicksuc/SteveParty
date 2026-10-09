@@ -102,12 +102,13 @@ public final class Tooltips {
     /** Adds the badge {@code [label]} in {@code rgb} to the badge line under the name (made if missing). */
     public static void tag(List<Text> lines, Text label, int rgb) {
         MutableText badge = Text.literal("[").append(label).append("]").styled(s -> s.withColor(TextColor.fromRgb(rgb)));
-        int at = Math.min(1, lines.size());
-        if (lines.size() > at && lines.get(at) instanceof MutableText line && TAG_LINE_MARK.equals(line.getStyle().getInsertion())) {
-            line.append(" ").append(badge);
-        } else {
-            lines.add(at, Text.empty().styled(s -> s.withInsertion(TAG_LINE_MARK)).append(badge));
+        for (int i = 0; i < Math.min(2, lines.size()); i++) {
+            if (lines.get(i) instanceof MutableText line && TAG_LINE_MARK.equals(line.getStyle().getInsertion())) {
+                line.append(" ").append(badge);
+                return;
+            }
         }
+        lines.add(Math.min(1, lines.size()), Text.empty().styled(s -> s.withInsertion(TAG_LINE_MARK)).append(badge));
     }
 
     public static void tag(List<Text> lines, Tag tag) {
