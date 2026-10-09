@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.minigame;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -190,7 +191,7 @@ public final class MiniGamePageImages {
         return encode(fit(source));
     }
 
-    private static byte @Nullable [] jpeg(BufferedImage opaque, float quality) throws java.io.IOException {
+    private static byte @Nullable [] jpeg(BufferedImage opaque, float quality) throws IOException {
         Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpeg");
         if (!writers.hasNext()) return null;
         ImageWriter writer = writers.next();

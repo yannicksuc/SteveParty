@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import com.mojang.authlib.properties.PropertyMap;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -15,6 +16,7 @@ import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.utils.MessageUtils;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.entity.mob.MobEntity;
@@ -33,6 +35,7 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -74,7 +77,7 @@ public final class DiceRollEffects {
     private static final Map<UUID, Map<DiceModule, Integer>> MOVE_MODULES = new HashMap<>();
 
     static {
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             RESOLVING.clear();
             MOVE_MODULES.clear();
         });
@@ -228,7 +231,7 @@ public final class DiceRollEffects {
         if (player != null) {
             if (coins > 0) {
                 // Doubled by the Double Coins power-up of the roller's turn
-                applied = fr.lordfinn.steveparty.powerups.PowerUpService.coinsGained(roller, coins);
+                applied = PowerUpService.coinsGained(roller, coins);
                 InventoryUtils.giveOrDrop(player, coin, applied);
             } else if (coins < 0) {
                 applied = -InventoryUtils.take(player.getInventory(), coin, -coins);
@@ -273,7 +276,7 @@ public final class DiceRollEffects {
         } else {
             candidates.addAll(world.getEntitiesByClass(MobEntity.class, Box.of(token.getPos(), 2 * SWAP_RANGE, 2 * SWAP_RANGE, 2 * SWAP_RANGE),
                     mob -> mob != token && isToken(mob) && PartyControllerEntity.getRunningPartyOf(mob.getUuid()).isEmpty()));
-            candidates.sort(java.util.Comparator.comparingDouble(mob -> mob.squaredDistanceTo(token)));
+            candidates.sort(Comparator.comparingDouble(mob -> mob.squaredDistanceTo(token)));
         }
         return candidates;
     }

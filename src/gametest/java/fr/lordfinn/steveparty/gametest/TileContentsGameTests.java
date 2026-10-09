@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
@@ -104,7 +105,7 @@ public class TileContentsGameTests implements FabricGameTest {
 
     private static ItemStack linkedStop(TestContext context) {
         ItemStack stop = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP);
-        stop.set(ModComponents.DESTINATIONS_COMPONENT, new fr.lordfinn.steveparty.components.DestinationsComponent(
+        stop.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(
                 List.of(context.getAbsolutePos(new BlockPos(0, 2, 0))), "overworld"));
         return stop;
     }

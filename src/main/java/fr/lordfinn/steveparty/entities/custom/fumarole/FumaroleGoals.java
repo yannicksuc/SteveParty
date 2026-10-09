@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.fumarole;
 
+import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
@@ -12,6 +13,7 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
@@ -118,8 +120,8 @@ public final class FumaroleGoals {
         /** Picks the next head in turn that can reach an enemy (its own preferably); false if none can. */
         private boolean plan() {
             List<LivingEntity> enemies = enemies();
-            java.util.Arrays.fill(fireAt, -1);
-            java.util.Arrays.fill(targets, null);
+            Arrays.fill(fireAt, -1);
+            Arrays.fill(targets, null);
             if (enemies.isEmpty()) return false;
             for (int k = 0; k < fireAt.length; k++) {
                 int head = (nextHead + k) % fireAt.length;
@@ -180,7 +182,7 @@ public final class FumaroleGoals {
                 if (ticks == charge - TURN_TICKS) fumarole.setHeadTarget(head, target);
                 if (ticks == charge) {
                     fumarole.setVent(head, FumaroleEntity.VENT_CHARGING);
-                    fumarole.playSound(fr.lordfinn.steveparty.sounds.ModSounds.FUMAROLE_CHARGE, 2.0f, 0.9f + 0.1f * head);
+                    fumarole.playSound(ModSounds.FUMAROLE_CHARGE, 2.0f, 0.9f + 0.1f * head);
                     fumarole.playSpit(head);
                 }
                 if (ticks == fireAt[head]) {

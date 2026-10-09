@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.board;
 
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.block.entity.BlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -15,12 +17,16 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.DustParticleEffect;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -199,7 +205,7 @@ public final class BoardLinks {
     /** A chest (any inventory block that is not a cartridge container) at {@code pos}. */
     public static boolean isChest(World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
-        return blockEntity instanceof net.minecraft.inventory.Inventory && !(blockEntity instanceof CartridgeContainerBlockEntity);
+        return blockEntity instanceof Inventory && !(blockEntity instanceof CartridgeContainerBlockEntity);
     }
 
     /**
@@ -209,8 +215,8 @@ public final class BoardLinks {
     public static void linkNearestChest(PlayerEntity player, CartridgeContainerBlockEntity container, int slot) {
         World world = container.getWorld();
         ItemStack cartridge = container.getStack(slot);
-        if (world == null || !(cartridge.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem)
-                || !fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.isEmpty(cartridge)) return;
+        if (world == null || !(cartridge.getItem() instanceof InventoryCartridgeItem)
+                || !CartridgeContainers.isEmpty(cartridge)) return;
         BlockPos center = container.getPos();
         BlockPos nearest = null;
         double best = Double.MAX_VALUE;
@@ -222,11 +228,11 @@ public final class BoardLinks {
             }
         }
         if (nearest == null) return;
-        java.util.List<net.minecraft.util.math.GlobalPos> linked = java.util.List.of(net.minecraft.util.math.GlobalPos.create(world.getRegistryKey(), nearest));
-        fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, linked);
+        List<GlobalPos> linked = List.of(GlobalPos.create(world.getRegistryKey(), nearest));
+        CartridgeContainers.set(cartridge, linked);
         sync(container);
-        if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
-            LinkHistory.record(serverPlayer, new LinkHistory.ChestChange(center.toImmutable(), slot, java.util.List.of(), linked));
+        if (player instanceof ServerPlayerEntity serverPlayer) {
+            LinkHistory.record(serverPlayer, new LinkHistory.ChestChange(center.toImmutable(), slot, List.of(), linked));
         }
         player.sendMessage(Text.translatable("message.steveparty.wrench.chest.nearest", BoardText.pos(nearest)), false);
     }
@@ -241,7 +247,7 @@ public final class BoardLinks {
         boolean creative = player.getAbilities().creativeMode;
         if (offHand.getItem() instanceof CartridgeItem) return creative ? -1 : offHand.getCount();
         if (creative) return -1;
-        net.minecraft.item.Item kind = cartridgeKind(player);
+        Item kind = cartridgeKind(player);
         int count = 0;
         PlayerInventory inventory = player.getInventory();
         for (int i = 0; i < inventory.size(); i++) {
@@ -259,7 +265,7 @@ public final class BoardLinks {
     public static ItemStack cartridgeSource(PlayerEntity player) {
         ItemStack offHand = player.getOffHandStack();
         if (offHand.getItem() instanceof CartridgeItem) return offHand;
-        net.minecraft.item.Item kind = cartridgeKind(player);
+        Item kind = cartridgeKind(player);
         if (player.getAbilities().creativeMode) return new ItemStack(kind);
         PlayerInventory inventory = player.getInventory();
         for (int i = 0; i < inventory.size(); i++) {
@@ -270,8 +276,8 @@ public final class BoardLinks {
     }
 
     /** The kind of Cartridge put in new tiles: the one picked on the brush in hand, else the plain Cartridge. */
-    public static net.minecraft.item.Item cartridgeKind(PlayerEntity player) {
-        net.minecraft.item.Item picked = TileLinkerBrush.cartridge(player.getMainHandStack());
+    public static Item cartridgeKind(PlayerEntity player) {
+        Item picked = TileLinkerBrush.cartridge(player.getMainHandStack());
         return picked != null ? picked : ModItems.BOARD_SPACE_BEHAVIOR;
     }
 

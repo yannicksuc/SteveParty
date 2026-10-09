@@ -6,9 +6,11 @@ import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
@@ -313,7 +315,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
 
     /** Its variant's model: its own width, height and eyes (a tower's floors stand on the cap of the one below). */
     @Override
-    public EntityDimensions getBaseDimensions(net.minecraft.entity.EntityPose pose) {
+    public EntityDimensions getBaseDimensions(EntityPose pose) {
         return getVariant().dimensions().scaled(getScaleFactor());
     }
 
@@ -865,10 +867,6 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         playSound(ModSounds.GLANDOUILLE_FLICK, 1f, 1f);
     }
 
-    public Vec3d flyDirection() {
-        return flyDir;
-    }
-
     private void tickFlight(ServerWorld world) {
         int flown = flightTicks - moodTicks;
         if (flown < straightTicks) {
@@ -1331,7 +1329,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     }
 
     @Override
-    protected void playStepSound(BlockPos pos, net.minecraft.block.BlockState state) {
+    protected void playStepSound(BlockPos pos, BlockState state) {
         playSound(ModSounds.GLANDOUILLE_STEP, 0.15f, 1f); // as vanilla mobs step
     }
 

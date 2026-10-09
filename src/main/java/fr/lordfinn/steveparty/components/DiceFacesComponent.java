@@ -22,7 +22,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -117,7 +119,7 @@ public record DiceFacesComponent(List<DiceFace> faces) {
      * @return the die, or {@link ItemStack#EMPTY} if no valid face was given
      */
     public static ItemStack createDie(List<ItemStack> faceStacks) {
-        java.util.Map<DiceFace, Integer> weights = new java.util.LinkedHashMap<>();
+        Map<DiceFace, Integer> weights = new LinkedHashMap<>();
         for (ItemStack stack : faceStacks) {
             if (stack == null || stack.isEmpty()) continue;
             DiceFace.fromItem(stack.getItem()).ifPresent(face -> weights.merge(face, stack.getCount(), Integer::sum));

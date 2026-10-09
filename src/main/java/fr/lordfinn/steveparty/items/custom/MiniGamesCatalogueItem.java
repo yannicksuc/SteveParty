@@ -4,14 +4,15 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDispositio
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ItemStackBackedInventory;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGamesCatalogueScreenHandler;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
@@ -62,12 +63,12 @@ public class MiniGamesCatalogueItem extends Item {
     }
 
     /** Brings the titles kept on the catalogue's pages up to date with what the pages say now. */
-    public static void refreshPages(net.minecraft.server.MinecraftServer server, ItemStack catalogue) {
+    public static void refreshPages(MinecraftServer server, ItemStack catalogue) {
         InventoryComponent inventory = catalogue.get(ModComponents.INVENTORY_COMPONENT);
         if (inventory == null || server == null) return;
         List<ItemStack> pages = inventory.getItems();
         boolean changed = false;
-        for (ItemStack page : pages) changed |= fr.lordfinn.steveparty.minigame.MiniGamePages.refresh(server, page);
+        for (ItemStack page : pages) changed |= MiniGamePages.refresh(server, page);
         if (changed) catalogue.set(ModComponents.INVENTORY_COMPONENT, new InventoryComponent(pages));
     }
 

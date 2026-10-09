@@ -4,19 +4,26 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.ShopLinkComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +54,7 @@ public final class LinkHistory {
         public boolean apply(ServerWorld world, boolean undo) {
             // Any holder's cartridge: a board space's, a router's, a Hop Switch's...
             BrushLinks.Held held = BrushLinks.held(world, pos, slot);
-            if (held == null || !(held.cartridge().getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem)) return false;
+            if (held == null || !(held.cartridge().getItem() instanceof CartridgeItem)) return false;
             List<BlockPos> expected = undo ? after : before;
             if (!BoardLinks.links(held.cartridge()).equals(expected)) return false;
             BoardLinks.setLinks(held.cartridge(), undo ? before : after, world);
@@ -67,31 +74,31 @@ public final class LinkHistory {
     }
 
     /** The containers of an Inventory Cartridge, before and after (in their order). */
-    public record ChestChange(BlockPos pos, int slot, java.util.List<net.minecraft.util.math.GlobalPos> before,
-                              java.util.List<net.minecraft.util.math.GlobalPos> after) implements Change {
+    public record ChestChange(BlockPos pos, int slot, List<GlobalPos> before,
+                              List<GlobalPos> after) implements Change {
         @Override
         public boolean apply(ServerWorld world, boolean undo) {
             BrushLinks.Held held = BrushLinks.held(world, pos, slot);
             if (held == null) return false;
             ItemStack cartridge = held.cartridge();
-            if (cartridge.isEmpty() || !fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey())
+            if (cartridge.isEmpty() || !CartridgeContainers.of(cartridge, world.getRegistryKey())
                     .equals(undo ? after : before)) return false;
-            fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, undo ? before : after);
+            CartridgeContainers.set(cartridge, undo ? before : after);
             held.sync().run();
             return true;
         }
     }
 
     /** The shop chosen for the Shop Cartridge in {@code slot} (null: the nearest merchant). */
-    public record ShopChange(BlockPos pos, int slot, @Nullable fr.lordfinn.steveparty.components.ShopLinkComponent before,
-                             @Nullable fr.lordfinn.steveparty.components.ShopLinkComponent after) implements Change {
+    public record ShopChange(BlockPos pos, int slot, @Nullable ShopLinkComponent before,
+                             @Nullable ShopLinkComponent after) implements Change {
         @Override
         public boolean apply(ServerWorld world, boolean undo) {
             CartridgeContainerBlockEntity container = BoardLinks.container(world, pos);
             if (container == null) return false;
             ItemStack cartridge = container.getStack(slot);
             if (cartridge.isEmpty() || !Objects.equals(cartridge.get(ModComponents.SHOP_LINK), undo ? after : before)) return false;
-            fr.lordfinn.steveparty.components.ShopLinkComponent value = undo ? before : after;
+            ShopLinkComponent value = undo ? before : after;
             if (value == null) cartridge.remove(ModComponents.SHOP_LINK);
             else cartridge.set(ModComponents.SHOP_LINK, value);
             BoardLinks.sync(container);
@@ -103,15 +110,15 @@ public final class LinkHistory {
      * A block placed by a paste or a template: {@code before} (with its block entity data) comes back on undo if the
      * block is still {@code after}; redo places {@code after} again with its data.
      */
-    public record BlockChange(BlockPos pos, BlockState before, @Nullable net.minecraft.nbt.NbtCompound beforeData,
-                              BlockState after, @Nullable net.minecraft.nbt.NbtCompound afterData) implements Change {
+    public record BlockChange(BlockPos pos, BlockState before, @Nullable NbtCompound beforeData,
+                              BlockState after, @Nullable NbtCompound afterData) implements Change {
         @Override
         public boolean apply(ServerWorld world, boolean undo) {
             if (world.getBlockState(pos) != (undo ? after : before)) return false;
             BlockState state = undo ? before : after;
-            net.minecraft.nbt.NbtCompound data = undo ? beforeData : afterData;
+            NbtCompound data = undo ? beforeData : afterData;
             world.setBlockState(pos, state, Block.NOTIFY_ALL);
-            if (data != null && world.getBlockEntity(pos) instanceof net.minecraft.block.entity.BlockEntity blockEntity) {
+            if (data != null && world.getBlockEntity(pos) instanceof BlockEntity blockEntity) {
                 blockEntity.read(data, world.getRegistryManager());
                 blockEntity.markDirty();
                 world.updateListeners(pos, state, state, Block.NOTIFY_ALL);
@@ -120,8 +127,8 @@ public final class LinkHistory {
         }
 
         /** The block at {@code pos} now, with its block entity data. */
-        static net.minecraft.nbt.NbtCompound data(ServerWorld world, BlockPos pos) {
-            net.minecraft.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
+        static NbtCompound data(ServerWorld world, BlockPos pos) {
+            BlockEntity blockEntity = world.getBlockEntity(pos);
             return blockEntity == null ? null : blockEntity.createNbt(world.getRegistryManager());
         }
     }
@@ -215,7 +222,7 @@ public final class LinkHistory {
         if (world == null) return false;
         int skipped = 0;
         List<Change> changes = new ArrayList<>(action.changes());
-        if (undo) java.util.Collections.reverse(changes);
+        if (undo) Collections.reverse(changes);
         for (Change change : changes) {
             if (!world.canPlayerModifyAt(player, change.pos()) || !change.apply(world, undo)) skipped++;
         }

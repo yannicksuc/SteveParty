@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.board.BoardPerf;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
@@ -92,7 +93,7 @@ public class BoardPerfGameTests implements FabricGameTest {
         // Where the board view draws a link's ends (read per link and label, see BoardView on the client)
         start = System.nanoTime();
         double sink = 0;
-        for (int i = 0; i < 20; i++) for (BlockPos pos : absolute) sink += fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(world, pos).y;
+        for (int i = 0; i < 20; i++) for (BlockPos pos : absolute) sink += BoardSpaces.standPos(world, pos).y;
         Steveparty.LOGGER.info("[board perf] tile anchor (stand position) read: {} ns/op over {} ops",
                 (System.nanoTime() - start) / (20 * TILES), 20 * TILES);
         context.assertTrue(!Double.isNaN(sink), "anchors read");

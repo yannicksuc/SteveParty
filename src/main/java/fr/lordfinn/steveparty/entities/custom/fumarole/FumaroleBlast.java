@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.entities.custom.fumarole;
 
 import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
@@ -70,7 +71,7 @@ public final class FumaroleBlast {
         }
         // what it wears (its armour attribute lags a tick behind its equipment)
         if (Math.max(worn, target.getAttributeValue(EntityAttributes.GENERIC_ARMOR)) < ARMOUR_THRESHOLD) return false;
-        RegistryEntry<net.minecraft.enchantment.Enchantment> protection = target.getRegistryManager()
+        RegistryEntry<Enchantment> protection = target.getRegistryManager()
                 .get(RegistryKeys.ENCHANTMENT).entryOf(Enchantments.PROTECTION);
         int levels = 0;
         for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {

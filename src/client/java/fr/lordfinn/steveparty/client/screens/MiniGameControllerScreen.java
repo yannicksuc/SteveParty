@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
+import fr.lordfinn.steveparty.client.gui.FormatChips;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -9,17 +10,14 @@ import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler.State;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -29,6 +27,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -50,7 +50,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     private static final int MONITOR_Y = CY + 12, MONITOR_H = BEZEL + 4 + 47 + 4 + BEZEL;
     private static final int SX = CX + BEZEL + 4, SY = MONITOR_Y + BEZEL + 4, SW = CW - 2 * (BEZEL + 4);
     private static final int TX = SX + 82 + 6, TW = SW - 88;
-    private static final int SWITCH_W = 24, BUTTON_W = 80, BUTTON_H = 18;
+    private static final int BUTTON_W = 80, BUTTON_H = 18;
     private static final int LABEL_X = CX + 22;
 
     // The colours of the mock-up
@@ -77,7 +77,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     }
 
     private Object signature() {
-        return List.of(state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.format(), java.util.Arrays.toString(handler.shortfall()),
+        return List.of(state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.format(), Arrays.toString(handler.shortfall()),
                 handler.isLocked(), handler.forbiddenPos());
     }
 
@@ -139,7 +139,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
                 MiniGamePageData data = page();
                 int[] shortfall = handler.shortfall();
                 yield data == null || shortfall == null ? Text.translatable(KEY + "status.not_enough")
-                        : fr.lordfinn.steveparty.client.gui.FormatChips.shortfallText(data, shortfall);
+                        : FormatChips.shortfallText(data, shortfall);
             }
             case PARTY_PRACTICE -> Text.translatable(KEY + "status.party_practice", handler.readyCount(), handler.voters());
             case ZONE_FORBIDDEN -> Text.translatable(KEY + "status.zone_forbidden", handler.forbiddenBlock().getName(),
@@ -150,12 +150,12 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
 
     private Text formatName(int index) {
         MiniGamePageData data = page();
-        fr.lordfinn.steveparty.minigame.MiniGameFormat format = data == null ? null : data.format(index);
+        MiniGameFormat format = data == null ? null : data.format(index);
         return format == null ? Text.empty() : format.name();
     }
 
     /** The chips shown on the monitor this frame: {x, y, w, index}, for their tooltips. */
-    private final List<int[]> chipsShown = new java.util.ArrayList<>();
+    private final List<int[]> chipsShown = new ArrayList<>();
 
     /** The status line's colour, on the monitor's dark screen. */
     private static int statusColor(State state) {
@@ -180,7 +180,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
             context.drawOrderedTooltip(textRenderer, textRenderer.wrapLines(Text.translatable(KEY + "slot.page"), 180), mouseX, mouseY);
         } else if (chipAt(mouseX, mouseY) >= 0 && page() != null) {
             // A format chip: its name, what it means
-            fr.lordfinn.steveparty.minigame.MiniGameFormat format = page().format(chipAt(mouseX, mouseY));
+            MiniGameFormat format = page().format(chipAt(mouseX, mouseY));
             if (format != null) context.drawTooltip(textRenderer, List.of(format.name(), format.meaning().formatted(Formatting.GRAY)), mouseX, mouseY);
         } else {
             // The zone's line: whole, and where it is drawn
@@ -272,12 +272,12 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
             // Its formats (pawn chips, the one played gold rimmed, a « ! » on those without their pipes), on one row
             int left = tx;
             for (int i = 0; i < data.formats().size(); i++) {
-                fr.lordfinn.steveparty.minigame.MiniGameFormat format = data.formats().get(i);
-                fr.lordfinn.steveparty.client.gui.FormatChips.Look look =
-                        new fr.lordfinn.steveparty.client.gui.FormatChips.Look(false, i == handler.format(), !data.hasPipesFor(format), false, 13);
-                int w = fr.lordfinn.steveparty.client.gui.FormatChips.width(textRenderer, format, look);
+                MiniGameFormat format = data.formats().get(i);
+                FormatChips.Look look =
+                        new FormatChips.Look(false, i == handler.format(), !data.hasPipesFor(format), false, 13);
+                int w = FormatChips.width(textRenderer, format, look);
                 if (left + w > tx + TW) break;
-                fr.lordfinn.steveparty.client.gui.FormatChips.draw(context, textRenderer, format, look, left, ty + 10);
+                FormatChips.draw(context, textRenderer, format, look, left, ty + 10);
                 chipsShown.add(new int[]{left, ty + 10, w, i});
                 left += w + 3;
             }

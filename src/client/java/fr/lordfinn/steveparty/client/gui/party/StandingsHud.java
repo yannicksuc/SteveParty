@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
-import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import fr.lordfinn.steveparty.hud.StandingsLayout;
 import fr.lordfinn.steveparty.utils.Easing;
@@ -9,6 +8,7 @@ import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.hud.HudShapes.GAP;
 import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
 
 /**
@@ -114,7 +113,7 @@ final class StandingsHud {
         if (layout.bonuses()) {
             int bx = px + layout.bonusColumn() - 2;
             HudPaint.draw(context, HudPaint.shape(Form.PILL, 34 + 4, 12, HudPaint.NEUTRAL, HudPaint.OUTLINE), bx - PAD, StandingsLayout.TOP + 2 - PAD, alpha);
-            TurnBarHud.darkText(context, net.minecraft.text.Text.translatable("hud.steveparty.party.bonus").getString(),
+            TurnBarHud.darkText(context, Text.translatable("hud.steveparty.party.bonus").getString(),
                     px + layout.bonusColumn() + 3, StandingsLayout.TOP + 4, HudPaint.NEUTRAL.outline(), 0xFFFFFFFF, alpha);
         }
         for (StandingsLayout.Row gap : gaps) {

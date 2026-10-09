@@ -1,7 +1,10 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -31,6 +34,7 @@ import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.CowEntity;
 import net.minecraft.item.ItemStack;
@@ -70,7 +74,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     private static final int PRICE = StarSettingsComponent.DEFAULT_PRICE;
 
     private record Board(CowEntity token, PartyControllerEntity party, List<BlockPos> starSpaces,
-                         net.minecraft.block.entity.ChestBlockEntity bank) {
+                         ChestBlockEntity bank) {
         TokenizedEntityInterface tokenized() {
             return (TokenizedEntityInterface) token;
         }
@@ -123,7 +127,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
         owner.setPosition(context.getAbsolute(new Vec3d(4, 1, -10)));
         PartyControllerEntity controller = party(context, cow, owner);
         controller.setStarSpace(context.getAbsolutePos(STAR));
-        net.minecraft.block.entity.ChestBlockEntity bank = TestBank.stock(context, controller, BANK, 0, BANK_STARS);
+        ChestBlockEntity bank = TestBank.stock(context, controller, BANK, 0, BANK_STARS);
         return new Board(cow, controller, List.of(STAR, OTHER, ANOTHER), bank);
     }
 
@@ -144,7 +148,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
             try {
                 step.run();
             } catch (RuntimeException e) {
-                fr.lordfinn.steveparty.Steveparty.LOGGER.error("Star cartridge test failed: {}", e.getMessage());
+                Steveparty.LOGGER.error("Star cartridge test failed: {}", e.getMessage());
                 throw e;
             }
         });
@@ -178,7 +182,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
         context.assertFalse(ShopCartridgeItem.COLOR == StarCartridgeItem.COLOR, "the shop is no longer yellow");
         context.assertEquals(TileFeedback.landingOf(tile), TileFeedback.Landing.STAR, "its landing");
         context.assertEquals(tile.getBoardSpaceBehavior().comparatorLevel(tile, tile.getStack(0)),
-                fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity.LEVEL_STAR, "its comparator level");
+                BoardSpaceRedstoneRouterBlockEntity.LEVEL_STAR, "its comparator level");
         StarSettingsComponent settings = StarCartridgeItem.settings(tile.getStack(0));
         context.assertEquals(settings.price(), 20, "20 coins by default");
         context.assertTrue(settings.onPass() && settings.relocate(), "sold in passing, leaves a switched-off space");
@@ -320,8 +324,8 @@ public class StarCartridgeGameTests implements FabricGameTest {
     public void buyingMovesTheStarElsewhere(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.TILE);
-            ItemStack coin = board.party().getCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.COIN);
-            ItemStack starItem = board.party().getCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.STAR);
+            ItemStack coin = board.party().getCurrency(PartyCurrency.COIN);
+            ItemStack starItem = board.party().getCurrency(PartyCurrency.STAR);
             InventoryUtils.giveOrDrop(owner, coin, PRICE + 5);
             later(context, 2, () -> {
                 TokenMovementService.moveEntityOnBoard(board.token(), 2);
@@ -354,8 +358,8 @@ public class StarCartridgeGameTests implements FabricGameTest {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.TILE);
             board.bank().clear();
-            ItemStack coin = board.party().getCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.COIN);
-            ItemStack starItem = board.party().getCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.STAR);
+            ItemStack coin = board.party().getCurrency(PartyCurrency.COIN);
+            ItemStack starItem = board.party().getCurrency(PartyCurrency.STAR);
             InventoryUtils.giveOrDrop(owner, coin, PRICE + 5);
             later(context, 2, () -> {
                 context.assertFalse(PartyStars.buy(board.party(), context.getWorld(), owner, context.getAbsolutePos(STAR), PRICE),
@@ -379,7 +383,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     public void tooFewCoinsGoesOn(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.TILE);
-            ItemStack coin = board.party().getCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.COIN);
+            ItemStack coin = board.party().getCurrency(PartyCurrency.COIN);
             InventoryUtils.giveOrDrop(owner, coin, PRICE - 1);
             later(context, 2, () -> {
                 TokenMovementService.moveEntityOnBoard(board.token(), 2);
@@ -400,7 +404,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     public void skeletonKeyDoesNotSkipTheStar(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
-            ItemStack coin = board.party().getCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.COIN);
+            ItemStack coin = board.party().getCurrency(PartyCurrency.COIN);
             InventoryUtils.giveOrDrop(owner, coin, PRICE);
             later(context, 2, () -> {
                 DiceRollEffects.setMoveModules(board.token(), Map.of(DiceModules.SKELETON_KEY, 1));

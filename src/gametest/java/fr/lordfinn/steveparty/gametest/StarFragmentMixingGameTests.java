@@ -17,6 +17,7 @@ import net.minecraft.potion.Potions;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.input.CraftingRecipeInput;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.test.GameTest;
@@ -25,6 +26,7 @@ import net.minecraft.util.DyeColor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -120,7 +122,7 @@ public class StarFragmentMixingGameTests implements FabricGameTest {
                 ItemStack result = craft(context, recipes, fragments(inputs));
                 context.assertTrue(result.isOf(ModItems.starFragment(mix.result())) && result.getCount() == inputs.size(),
                         inputs + " should give " + inputs.size() + " " + mix.result().getName() + " fragments, got " + result);
-                java.util.Collections.reverse(inputs);
+                Collections.reverse(inputs);
             }
         }
         // White is the three primaries, three fragments in, three out
@@ -181,9 +183,9 @@ public class StarFragmentMixingGameTests implements FabricGameTest {
             Item fragment = ModItems.starFragment(dye);
             Item block = ModBlocks.starFragmentsBlock(dye).asItem();
             String name = dye.getName();
-            context.assertTrue(net.minecraft.registry.Registries.ITEM.getId(fragment).equals(Steveparty.id(name + "_star_fragment")),
+            context.assertTrue(Registries.ITEM.getId(fragment).equals(Steveparty.id(name + "_star_fragment")),
                     name + " fragment is at its dye's index");
-            context.assertTrue(net.minecraft.registry.Registries.ITEM.getId(block).equals(Steveparty.id(name + "_star_fragments_block")),
+            context.assertTrue(Registries.ITEM.getId(block).equals(Steveparty.id(name + "_star_fragments_block")),
                     name + " block is at its dye's index");
             List<ItemStack> nine = new ArrayList<>();
             for (int i = 0; i < 9; i++) nine.add(new ItemStack(fragment));

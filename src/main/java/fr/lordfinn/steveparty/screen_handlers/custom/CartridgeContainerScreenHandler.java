@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
-import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
@@ -32,7 +32,7 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
         if (inventory != null)
             inventory.onOpen(playerInventory.player);
         setupScreen();
-        addPlayerSlots(playerInventory, 8, playerInventoryTitleY);
+        PlayerSlots.add(this::addSlot, playerInventory, 8, playerInventoryTitleY);
     }
 
     @Override
@@ -84,17 +84,5 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
     public void onClosed(PlayerEntity player) {
         super.onClosed(player);
         player.getWorld().playSound(null, player.getBlockPos(), ModSounds.CLOSE_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
-    }
-
-    /** The player's inventory (3 rows) at (left, top) and its hotbar 58 pixels under it. */
-    private void addPlayerSlots(PlayerInventory playerInventory, int left, int top) {
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, left + col * 18, top + row * 18));
-            }
-        }
-        for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, left + col * 18, top + 58));
-        }
     }
 }

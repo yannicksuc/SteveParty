@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TeleportNetwork;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
@@ -179,8 +180,8 @@ public final class BoardGraph {
 
     private static @Nullable InventoryIssue inventoryIssue(World world, ItemStack cartridge) {
         if (!(cartridge.getItem() instanceof InventoryCartridgeItem)) return null;
-        List<BlockPos> chests = fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.in(cartridge, world);
-        if (fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.isEmpty(cartridge)) return InventoryIssue.NO_CHEST;
+        List<BlockPos> chests = CartridgeContainers.in(cartridge, world);
+        if (CartridgeContainers.isEmpty(cartridge)) return InventoryIssue.NO_CHEST;
         // One of its containers gone (an unloaded one is not looked at)
         for (BlockPos chest : chests) {
             if (world.isChunkLoaded(chest) && !(world.getBlockEntity(chest) instanceof Inventory)) return InventoryIssue.CHEST_GONE;

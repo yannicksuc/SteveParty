@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.persistent_state;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtElement;
@@ -53,7 +54,7 @@ public class VendorLinkPersistentState extends PersistentState {
     private static @Nullable VendorLinkPersistentState cached;
 
     static {
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             cachedServer = null;
             cached = null;
         });

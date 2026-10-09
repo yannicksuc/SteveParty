@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.components.ItemStackBackedInventory;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -11,6 +12,7 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.sound.SoundCategory;
 
 public class MiniGamesCatalogueScreenHandler extends ScreenHandler {
@@ -36,7 +38,7 @@ public class MiniGamesCatalogueScreenHandler extends ScreenHandler {
             }
         }
 
-        addPlayerSlots(playerInventory, 44, 158);
+        PlayerSlots.add(this::addSlot, playerInventory, 44, 158);
     }
 
     @Override
@@ -46,7 +48,7 @@ public class MiniGamesCatalogueScreenHandler extends ScreenHandler {
     }
 
     @Override
-    public void onSlotClick(int slotIndex, int button, net.minecraft.screen.slot.SlotActionType actionType, PlayerEntity player) {
+    public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
         if (!this.canUse(player)) return;
         super.onSlotClick(slotIndex, button, actionType, player);
     }
@@ -79,17 +81,5 @@ public class MiniGamesCatalogueScreenHandler extends ScreenHandler {
             backed.writeBack();
         }
         player.getWorld().playSound(null, player.getBlockPos(), ModSounds.CLOSE_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
-    }
-
-    /** The player's inventory (3 rows) at (left, top) and its hotbar 58 pixels under it. */
-    private void addPlayerSlots(PlayerInventory playerInventory, int left, int top) {
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, left + col * 18, top + row * 18));
-            }
-        }
-        for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, left + col * 18, top + 58));
-        }
     }
 }

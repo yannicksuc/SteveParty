@@ -32,6 +32,7 @@ import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.SlimeEntity;
 import net.minecraft.entity.passive.CowEntity;
 import net.minecraft.entity.passive.SheepEntity;
@@ -52,7 +53,6 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.WorldSavePath;
-import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
@@ -71,6 +71,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
@@ -150,7 +152,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
     }
 
     /** What each test leaves going far away, ended if it fails (the tests after it count the sessions of the server). */
-    private static final Map<TestContext, Runnable> CLEANUPS = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<TestContext, Runnable> CLEANUPS = new ConcurrentHashMap<>();
 
     /**
      * A far chunk loaded, its entities read and those other runs left there gone, a floor under the zones: then
@@ -206,7 +208,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
         MiniGameZone zone = MiniGameZone.of(world.getRegistryKey(), context.getAbsolutePos(at(1, 1, 1)), context.getAbsolutePos(at(6, 4, 6)));
         Map<BlockPos, BlockState> states = new HashMap<>();
         int flags = Block.NOTIFY_LISTENERS | Block.FORCE_STATE;
-        java.util.function.BiConsumer<BlockPos, BlockState> put = (rel, state) -> world.setBlockState(context.getAbsolutePos(rel), state, flags);
+        BiConsumer<BlockPos, BlockState> put = (rel, state) -> world.setBlockState(context.getAbsolutePos(rel), state, flags);
 
         // two-block structures, attachments, redstone, fluids, plants
         put.accept(at(1, 1, 1), Blocks.OAK_DOOR.getDefaultState().with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER));
@@ -294,7 +296,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
         world.spawnEntity(cloud);
         for (Entity entity : world.getOtherEntities(null, zone.bounds(), entity -> !(entity instanceof PlayerEntity))) {
             entity.setVelocity(Vec3d.ZERO);
-            if (entity instanceof net.minecraft.entity.mob.MobEntity mob) mob.setPersistent();
+            if (entity instanceof MobEntity mob) mob.setPersistent();
         }
 
         // what the zone is now: blocks, block entities, entities

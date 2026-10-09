@@ -23,7 +23,6 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class CartridgeContainerBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory {
@@ -56,11 +55,6 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
         return this.heldStacks.get(wrapSlot(slot));
     }
 
-    public List<ItemStack> clearToList() {
-        List<ItemStack> list = this.heldStacks.stream().filter((stack) -> !stack.isEmpty()).collect(Collectors.toList());
-        this.clear();
-        return list;
-    }
     @Override
     public ItemStack removeStack(int slot, int amount) {
         ItemStack itemStack = Inventories.splitStack(this.heldStacks, wrapSlot(slot), amount);
@@ -70,41 +64,6 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
         }
 
         return itemStack;
-    }
-
-    private void addToNewSlot(ItemStack stack) {
-        for(int i = 0; i < this.size; ++i) {
-            ItemStack itemStack = this.getStack(i);
-            if (itemStack.isEmpty()) {
-                this.setStack(i, stack.copyAndEmpty());
-                return;
-            }
-        }
-
-    }
-
-    private void addToExistingSlot(ItemStack stack) {
-        for(int i = 0; i < this.size; ++i) {
-            ItemStack itemStack = this.getStack(i);
-            if (ItemStack.areItemsAndComponentsEqual(itemStack, stack)) {
-                this.transfer(stack, itemStack);
-                if (stack.isEmpty()) {
-                    return;
-                }
-            }
-        }
-
-    }
-
-    private void transfer(ItemStack source, ItemStack target) {
-        int i = this.getMaxCount(target);
-        int j = Math.min(source.getCount(), i - target.getCount());
-        if (j > 0) {
-            target.increment(j);
-            source.decrement(j);
-            this.markDirty();
-        }
-
     }
 
     public boolean canInsert(ItemStack stack) {

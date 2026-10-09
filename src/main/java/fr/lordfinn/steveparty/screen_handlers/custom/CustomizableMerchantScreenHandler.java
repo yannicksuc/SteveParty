@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
+import fr.lordfinn.steveparty.powerups.PowerUpLimit;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -43,7 +44,7 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
 
     /**
      * The result of a trade is taken: refused, nothing paid, if it would bring a player of a running party past the
-     * power-ups they may carry ({@link fr.lordfinn.steveparty.powerups.PowerUpLimit}).
+     * power-ups they may carry ({@link PowerUpLimit}).
      */
     @Override
     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
@@ -66,7 +67,7 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
     private boolean overPowerUpLimit(PlayerEntity player) {
         if (player.getWorld().isClient) return false;
         ItemStack result = getSlot(RESULT_SLOT).getStack();
-        return !result.isEmpty() && fr.lordfinn.steveparty.powerups.PowerUpLimit.refuses(player, result);
+        return !result.isEmpty() && PowerUpLimit.refuses(player, result);
     }
 
     /** The trade result slot of a merchant screen. */

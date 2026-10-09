@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.minigame.PageZone;
 import java.util.Map;
 import java.util.HashMap;
 import fr.lordfinn.steveparty.minigame.MiniGameNameColors;
@@ -48,18 +49,20 @@ import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHan
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
-import net.minecraft.util.math.BlockBox;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
@@ -69,7 +72,6 @@ import net.minecraft.world.GameMode;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -153,7 +155,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         MiniGameControllerBlockEntity controller = context.getBlockEntity(HOME);
         controller.setPage(pageItem(id));
         if (zoned) MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(
-                new fr.lordfinn.steveparty.minigame.PageZone(context.getWorld().getRegistryKey(), zone(context).box())).withRestore(true));
+                new PageZone(context.getWorld().getRegistryKey(), zone(context).box())).withRestore(true));
         return id;
     }
 
@@ -365,13 +367,13 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             MiniGamePageData page = MiniGamePages.get(server, id);
             context.assertTrue(!page.withZone(null).restores() && !page.withZone(null).withRestore(true).restore(), "no zone, no restore");
             context.assertTrue(!page.withZone(null).withZone(page.zone()).restore(), "a new zone starts without restore");
-            context.assertTrue(page.withZone(new fr.lordfinn.steveparty.minigame.PageZone(page.zone().dimension(), page.zone().box().expand(1))).restore(),
+            context.assertTrue(page.withZone(new PageZone(page.zone().dimension(), page.zone().box().expand(1))).restore(),
                     "a zone moved keeps it");
             ServerPlayerEntity editor = p2;
             editor.changeGameMode(GameMode.CREATIVE);
             ItemStack held = pageItem(id);
-            editor.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, held);
-            MiniGamePagePayloads.Action toggle = new MiniGamePagePayloads.Action(net.minecraft.util.Hand.MAIN_HAND, id, MiniGamePagePayloads.Action.Kind.RESTORE);
+            editor.setStackInHand(Hand.MAIN_HAND, held);
+            MiniGamePagePayloads.Action toggle = new MiniGamePagePayloads.Action(Hand.MAIN_HAND, id, MiniGamePagePayloads.Action.Kind.RESTORE);
             context.assertTrue(MiniGamePageNetworking.action(editor, toggle) && !MiniGamePages.get(server, id).restore(), "the editor's checkbox: off");
             MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(null));
             context.assertTrue(!MiniGamePageNetworking.action(editor, toggle) && !MiniGamePages.get(server, id).restore(), "no zone: the checkbox can't be ticked");
@@ -398,10 +400,10 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertTrue(!MiniGamePages.get(server, id).adventure(), "off by default");
             ItemStack held = pageItem(id);
             p2.changeGameMode(GameMode.CREATIVE);
-            p2.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, held);
-            context.assertTrue(MiniGamePageNetworking.action(p2, new MiniGamePagePayloads.Action(net.minecraft.util.Hand.MAIN_HAND, id,
+            p2.setStackInHand(Hand.MAIN_HAND, held);
+            context.assertTrue(MiniGamePageNetworking.action(p2, new MiniGamePagePayloads.Action(Hand.MAIN_HAND, id,
                     MiniGamePagePayloads.Action.Kind.ADVENTURE)) && MiniGamePages.get(server, id).adventure(), "the editor's checkbox: on");
-            p2.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, ItemStack.EMPTY);
+            p2.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
             p2.changeGameMode(GameMode.SURVIVAL);
 
             // Without the restore: no bubble, adventure mode all the same
@@ -439,7 +441,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
     public void theOptionsOfOlderPages(TestContext context) {
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
-        net.minecraft.registry.RegistryWrapper.WrapperLookup registries = world.getRegistryManager();
+        RegistryWrapper.WrapperLookup registries = world.getRegistryManager();
         UUID id = arena(context, true);
         try {
             NbtCompound saved = MiniGamePages.get(server, id).withRestore(false).toNbt();
@@ -698,7 +700,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
 
     /** As the connection does when its player asks to respawn (the connection then plays the new player). */
     private static ServerPlayerEntity respawn(MinecraftServer server, ServerPlayerEntity dead) {
-        ServerPlayerEntity respawned = server.getPlayerManager().respawnPlayer(dead, false, net.minecraft.entity.Entity.RemovalReason.KILLED);
+        ServerPlayerEntity respawned = server.getPlayerManager().respawnPlayer(dead, false, Entity.RemovalReason.KILLED);
         respawned.networkHandler.player = respawned;
         return respawned;
     }

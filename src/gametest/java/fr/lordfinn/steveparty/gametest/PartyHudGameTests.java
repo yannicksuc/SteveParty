@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
@@ -18,6 +19,7 @@ import fr.lordfinn.steveparty.items.ModItems;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -29,6 +31,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -115,7 +118,7 @@ public class PartyHudGameTests implements FabricGameTest {
             player.getInventory().setStack(14, new ItemStack(Items.NETHER_STAR, 7));
             player.getInventory().setStack(12, new ItemStack(ModItems.COIN, 20));
             ItemStack renamed = new ItemStack(ModItems.COIN, 5);
-            renamed.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Fake coin"));
+            renamed.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Fake coin"));
             player.getInventory().setStack(13, renamed);
 
             PartyLiveData live = capture(context, controller);
@@ -126,7 +129,7 @@ public class PartyHudGameTests implements FabricGameTest {
             context.assertEquals(live.standings().get(1).stars(), 0, "an unknown owner holds nothing");
 
             // Other items picked: the counts follow
-            controller.setCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.COIN, renamed);
+            controller.setCurrency(PartyCurrency.COIN, renamed);
             context.assertEquals(capture(context, controller).standings().getFirst().coins(), 5, "the renamed nuggets are the coins now");
 
             ItemStack forged = DiceFacesComponent.createDie(List.of(new ItemStack(ModItems.DICE_FACES.get(1))));
@@ -160,7 +163,7 @@ public class PartyHudGameTests implements FabricGameTest {
         for (int[] starsCoins : held)
             standings.add(new PartyLiveData.Standing(UUID.randomUUID(), "", Optional.empty(), "", -1, true, starsCoins[0], starsCoins[1], List.of()));
         int[] ranks = PartyLiveData.ranks(standings);
-        context.assertTrue(java.util.Arrays.equals(ranks, new int[]{3, 1, 3, 5, 2}), "ranks " + java.util.Arrays.toString(ranks));
+        context.assertTrue(Arrays.equals(ranks, new int[]{3, 1, 3, 5, 2}), "ranks " + Arrays.toString(ranks));
         context.complete();
     }
 

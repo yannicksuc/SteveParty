@@ -22,7 +22,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.LoreComponent;
+import net.minecraft.component.type.BlockStateComponent;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.pathing.PathNodeType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -52,9 +52,7 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -62,6 +60,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.village.MerchantInventory;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
@@ -711,14 +710,6 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
         return super.writeNbt(nbt);
     }
 
-    private void disableAllTrades() {
-        tradeOffers.forEach(TradeOffer::disable);
-    }
-
-    private void enableAllTrades() {
-        tradeOffers.forEach(TradeOffer::resetUses);
-    }
-
     @Override
     public TradeOfferList getOffers() {
         return tradeOffers;
@@ -1316,7 +1307,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
     @Nullable
     public static BlockState boxBlockOf(ItemStack stack) {
         if (!(stack.getItem() instanceof BlockItem blockItem)) return null;
-        BlockState state = stack.getOrDefault(DataComponentTypes.BLOCK_STATE, net.minecraft.component.type.BlockStateComponent.DEFAULT)
+        BlockState state = stack.getOrDefault(DataComponentTypes.BLOCK_STATE, BlockStateComponent.DEFAULT)
                 .applyToState(blockItem.getBlock().getDefaultState());
         return canBeABox(state) ? state : null;
     }
@@ -1324,7 +1315,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
     /** A block drawn as a model (see {@link #isValidBoxBlock}) whose shape fills at least half of its space. */
     public static boolean canBeABox(@Nullable BlockState state) {
         if (!isValidBoxBlock(state)) return false;
-        net.minecraft.util.shape.VoxelShape shape = state.getOutlineShape(EmptyBlockView.INSTANCE, BlockPos.ORIGIN);
+        VoxelShape shape = state.getOutlineShape(EmptyBlockView.INSTANCE, BlockPos.ORIGIN);
         if (shape.isEmpty()) return false;
         Box bounds = shape.getBoundingBox();
         return bounds.getLengthX() * bounds.getLengthY() * bounds.getLengthZ() >= MIN_BOX_FILL;

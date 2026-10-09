@@ -1,8 +1,10 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -52,7 +54,7 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
         if (player == null) return ActionResult.PASS;
 
         // A part of a large tile stands for the tile
-        BlockPos clickedPos = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.resolve(world, context.getBlockPos());
+        BlockPos clickedPos = BoardSpaces.resolve(world, context.getBlockPos());
 
         ItemStack stack = context.getStack();
         ServerWorld serverWorld = (ServerWorld) world;
@@ -174,7 +176,7 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
             missing |= gone;
         }
         if (missing) {
-            fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem.addWrapped(tooltip,
+            CartridgeItem.addWrapped(tooltip,
                     Text.translatable("tooltip.steveparty.destination_missing.hint"), Formatting.GOLD);
         }
     }

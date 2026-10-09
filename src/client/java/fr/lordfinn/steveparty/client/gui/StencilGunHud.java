@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
+import fr.lordfinn.steveparty.client.hammer.HammerWheel;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
@@ -16,7 +18,7 @@ import java.util.List;
 /**
  * The Stencil Hammer's HUD: a small pair of boxes above the hotbar, the stencil it stamps and its paint, under its
  * controls (see {@link ToolHudPanel}). Both are picked on its wheel (left click: see
- * {@link fr.lordfinn.steveparty.client.hammer.HammerWheel}).
+ * {@link HammerWheel}).
  */
 public final class StencilGunHud {
     /** What the HUD shows of a gun, worked out again only when its contents or selection change. */
@@ -31,7 +33,7 @@ public final class StencilGunHud {
 
     public static void initialize() {
         ToolHudPanel.register(stack -> stack.getItem() instanceof StencilGunItem, StencilGunHud::describe);
-        fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.register(new fr.lordfinn.steveparty.client.hammer.HammerWheel());
+        ToolWheel.register(new HammerWheel());
     }
 
     /** Item components are immutable: the same component instances mean the same contents and selection. */
@@ -65,7 +67,7 @@ public final class StencilGunHud {
         ItemStack dye = selection.dye() == StencilGunSelection.ENGRAVE ? ItemStack.EMPTY
                 : shown.contents().get(StencilGunItem.STENCIL_SLOTS + selection.dye());
         // No paint: a netherite pickaxe (engrave), or an axe on a cut-out panel (cut)
-        panel.item(dye.getItem() instanceof DyeItem ? dye : fr.lordfinn.steveparty.client.hammer.HammerWheel.engraveIcon(client))
+        panel.item(dye.getItem() instanceof DyeItem ? dye : HammerWheel.engraveIcon(client))
                 .hint(Text.translatable("hud.steveparty.stencil_gun.controls"));
     }
 }

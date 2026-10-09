@@ -82,7 +82,7 @@ public final class StarWhistleEffect {
     public Result use(PartyControllerEntity party, @Nullable Entity token, @Nullable ServerPlayerEntity user, Random random) {
         Optional<BlockPos> star = starRelocator.currentStarSpace(party);
         if (star.isEmpty()) {
-            tell(party, user, Text.translatable(NO_STAR_KEY).formatted(Formatting.RED));
+            PowerUpStar.tell(party, user, Text.translatable(NO_STAR_KEY).formatted(Formatting.RED));
             return new Result(Outcome.NO_STAR, null, null);
         }
         BlockPos from = star.get().toImmutable();
@@ -90,7 +90,7 @@ public final class StarWhistleEffect {
                 && starRelocator.moveStarElsewhere(party, random);
         BlockPos to = moved ? starRelocator.currentStarSpace(party).map(BlockPos::toImmutable).orElse(null) : null;
         if (to == null || to.equals(from)) {
-            tell(party, user, Text.translatable(NO_OTHER_SPACE_KEY).formatted(Formatting.YELLOW));
+            PowerUpStar.tell(party, user, Text.translatable(NO_OTHER_SPACE_KEY).formatted(Formatting.YELLOW));
             return new Result(Outcome.NO_OTHER_SPACE, from, null);
         }
 
@@ -115,10 +115,5 @@ public final class StarWhistleEffect {
         world.playSound(null, tx, ty, tz, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.PLAYERS, 1.0f, 1.2f);
         world.spawnParticles(ParticleTypes.NOTE, tx, ty + 0.4, tz, 6, 0.4, 0.2, 0.4, 1.0);
         world.spawnParticles(ParticleTypes.FIREWORK, tx, ty, tz, 24, 0.3, 0.4, 0.3, 0.05);
-    }
-
-    private static void tell(PartyControllerEntity party, @Nullable ServerPlayerEntity user, Text message) {
-        if (user != null) MessageUtils.sendToPlayer(user, message, MessageUtils.MessageType.CHAT);
-        else MessageUtils.sendToPlayers(party.getPartyAudience(), message, MessageUtils.MessageType.CHAT);
     }
 }

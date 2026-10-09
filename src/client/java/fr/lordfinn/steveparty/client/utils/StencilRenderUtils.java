@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.utils;
 
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.joml.Matrix4f;
@@ -18,7 +19,7 @@ public class StencilRenderUtils {
                                     boolean isGlowing,
                                     Consumer<MatrixStack> transform) {
         if (isGlowing) {
-            light = 0xF000F0; // glowing
+            light = LightmapTextureManager.MAX_LIGHT_COORDINATE; // glowing
         }
 
         VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(textureId));

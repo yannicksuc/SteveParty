@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -10,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.board.BoardBlueprint;
 import fr.lordfinn.steveparty.board.BoardValidator;
 import fr.lordfinn.steveparty.board.LinkHistory;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -91,7 +93,7 @@ public final class BoardCommands {
                         .then(templateNode("line", BoardBlueprint.Template.LINE, 1)))));
     }
 
-    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<ServerCommandSource> templateNode(String name, BoardBlueprint.Template template, int min) {
+    private static LiteralArgumentBuilder<ServerCommandSource> templateNode(String name, BoardBlueprint.Template template, int min) {
         return CommandManager.literal(name).then(argument("count", IntegerArgumentType.integer(min, 128))
                 .executes(context -> template(context, template, 3))
                 .then(argument("spacing", IntegerArgumentType.integer(1, 16))
@@ -101,7 +103,7 @@ public final class BoardCommands {
     /** The Tile Linker Brush in hand, whose anchor follows the undo. */
     private static @Nullable ItemStack heldBrush(ServerPlayerEntity player) {
         ItemStack held = player.getMainHandStack();
-        return fr.lordfinn.steveparty.board.TileLinkerBrush.isBrush(held) ? held : null;
+        return TileLinkerBrush.isBrush(held) ? held : null;
     }
 
     private static int undo(ServerCommandSource source, boolean undo) throws CommandSyntaxException {

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -15,8 +16,10 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.entity.passive.CatVariant;
+import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -162,13 +165,13 @@ public class MistigriGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void unluckyFaces(TestContext context) {
-        context.assertTrue(MistigriSummoning.unlucky(List.of(new fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace(
-                fr.lordfinn.steveparty.components.DiceFacesComponent.Kind.NORMAL, 0), new fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace(
-                fr.lordfinn.steveparty.components.DiceFacesComponent.Kind.CURSED, 1))), "a double die: 0 and 1");
-        context.assertFalse(MistigriSummoning.unlucky(List.of(new fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace(
-                fr.lordfinn.steveparty.components.DiceFacesComponent.Kind.COIN, 1))), "a coin face is no 1");
-        context.assertFalse(MistigriSummoning.unlucky(List.of(new fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace(
-                fr.lordfinn.steveparty.components.DiceFacesComponent.Kind.BLANK, 0))), "a blank side is no 0");
+        context.assertTrue(MistigriSummoning.unlucky(List.of(new DiceFacesComponent.DiceFace(
+                DiceFacesComponent.Kind.NORMAL, 0), new DiceFacesComponent.DiceFace(
+                DiceFacesComponent.Kind.CURSED, 1))), "a double die: 0 and 1");
+        context.assertFalse(MistigriSummoning.unlucky(List.of(new DiceFacesComponent.DiceFace(
+                DiceFacesComponent.Kind.COIN, 1))), "a coin face is no 1");
+        context.assertFalse(MistigriSummoning.unlucky(List.of(new DiceFacesComponent.DiceFace(
+                DiceFacesComponent.Kind.BLANK, 0))), "a blank side is no 0");
         context.complete();
     }
 
@@ -284,9 +287,9 @@ public class MistigriGameTests implements FabricGameTest {
         context.assertTrue(MistigriBadLuck.nearTamed(context.getWorld(), near), "near a tamed one");
         context.assertFalse(MistigriBadLuck.nearTamed(context.getWorld(), near.add(30, 0, 0)), "far from him");
         // some of a zombie's blows miss (one in three: a hundred blows can't all land)
-        net.minecraft.entity.passive.PigEntity victim = context.spawnMob(EntityType.PIG, new BlockPos(5, 1, 5));
+        PigEntity victim = context.spawnMob(EntityType.PIG, new BlockPos(5, 1, 5));
         victim.setAiDisabled(true);
-        net.minecraft.entity.mob.ZombieEntity zombie = context.spawnMob(EntityType.ZOMBIE, new BlockPos(6, 1, 5));
+        ZombieEntity zombie = context.spawnMob(EntityType.ZOMBIE, new BlockPos(6, 1, 5));
         zombie.setAiDisabled(true);
         int missed = 0;
         for (int i = 0; i < 100; i++) {

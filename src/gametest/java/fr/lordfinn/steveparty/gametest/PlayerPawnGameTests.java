@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem.SpellResult;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -25,6 +26,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.world.GameRules;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 /**
@@ -177,7 +179,7 @@ public class PlayerPawnGameTests implements FabricGameTest {
         ItemStack[] token = new ItemStack[1];
         withPossessedPawn(context, (player, pawn) -> {
             target[0] = player;
-            pawn.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND, 3));
+            pawn.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND, 3));
             // Its owner (the caster) or a creative player can store it: the holder is creative
             holder.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TOKEN));
             ActionResult result = holder.interact(pawn, Hand.MAIN_HAND);
@@ -282,7 +284,7 @@ public class PlayerPawnGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aKilledStatueDropsItsItemOnce(TestContext context) {
         PlayerPawnEntity pawn = context.spawnEntity(ModEntities.PLAYER_PAWN, TARGET_POS);
-        pawn.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND, 4));
+        pawn.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND, 4));
         GameRules.BooleanRule mobLoot = context.getWorld().getGameRules().get(GameRules.DO_MOB_LOOT);
         boolean wasOn = mobLoot.get();
         // Even without mob loot: the item is the player's
@@ -304,10 +306,10 @@ public class PlayerPawnGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void theStatueIsSavedWithItsPoseSkinAndItem(TestContext context) {
         PlayerPawnEntity pawn = context.spawnEntity(ModEntities.PLAYER_PAWN, TARGET_POS);
-        java.util.UUID skin = java.util.UUID.randomUUID();
+        UUID skin = UUID.randomUUID();
         pawn.setSkin(skin, "Someone");
         pawn.setStatuePose(PlayerPawnPose.DAB);
-        pawn.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, new ItemStack(Items.GOLDEN_APPLE, 2));
+        pawn.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.GOLDEN_APPLE, 2));
         NbtCompound nbt = new NbtCompound();
         pawn.writeNbt(nbt);
         pawn.discard();

@@ -11,10 +11,11 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
@@ -101,7 +102,7 @@ public final class MulaBrain {
     private void refresh() {
         World world = mula.getWorld();
         active = world.getClosestPlayer(mula.getX(), mula.getY(), mula.getZ(), ACTIVE_RANGE,
-                net.minecraft.predicate.entity.EntityPredicates.EXCEPT_SPECTATOR) != null;
+                EntityPredicates.EXCEPT_SPECTATOR) != null;
         if (!active) {
             neighbourCount = 0;
             curiousPlayer = null;
@@ -353,7 +354,7 @@ public final class MulaBrain {
             pos.set(candidate.x, candidate.y, candidate.z);
             if (!world.isChunkLoaded(pos) || !world.getBlockState(pos).isAir()) continue;
             int score = 0;
-            for (var dir : net.minecraft.util.math.Direction.values()) {
+            for (var dir : Direction.values()) {
                 if (world.getBlockState(pos.offset(dir)).isIn(BlockTags.LEAVES)) {
                     score += 2;
                     break;

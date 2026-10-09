@@ -3,15 +3,19 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
+import fr.lordfinn.steveparty.entities.custom.goals.MulaGoals;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -97,28 +101,28 @@ public class MulaBehaviourGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void dawnPerchIsFoundFromTheNightSky(TestContext context) {
         // on the roof of the test area (it has a barrier ceiling): room for 18 blocks of sky above; removed afterwards
-        net.minecraft.server.world.ServerWorld world = context.getWorld();
+        ServerWorld world = context.getWorld();
         BlockPos base = context.getAbsolutePos(new BlockPos(0, 10, 0));
         List<BlockPos> placed = new ArrayList<>();
         for (int x = 0; x < 5; x++) {
             for (int z = 0; z < 5; z++) {
                 BlockPos ground = base.add(x, 0, z);
-                world.setBlockState(ground, net.minecraft.block.Blocks.GRASS_BLOCK.getDefaultState());
-                world.setBlockState(ground.up(), net.minecraft.block.Blocks.POPPY.getDefaultState());
+                world.setBlockState(ground, Blocks.GRASS_BLOCK.getDefaultState());
+                world.setBlockState(ground.up(), Blocks.POPPY.getDefaultState());
                 placed.add(ground);
             }
         }
         BlockPos high = base.add(2, 1 + 18, 2);
-        net.minecraft.util.math.random.Random random = net.minecraft.util.math.random.Random.create(7);
+        Random random = Random.create(7);
         BlockPos.Mutable probe = new BlockPos.Mutable();
         BlockPos found = null;
         for (int attempt = 0; attempt < 40 && found == null; attempt++) {
-            found = fr.lordfinn.steveparty.entities.custom.goals.MulaGoals.Sky.findPerch(world, high, random, probe);
+            found = MulaGoals.Sky.findPerch(world, high, random, probe);
         }
-        boolean flower = found != null && world.getBlockState(found).isOf(net.minecraft.block.Blocks.POPPY);
+        boolean flower = found != null && world.getBlockState(found).isOf(Blocks.POPPY);
         for (BlockPos p : placed) {
-            world.setBlockState(p.up(), net.minecraft.block.Blocks.AIR.getDefaultState());
-            world.setBlockState(p, net.minecraft.block.Blocks.AIR.getDefaultState());
+            world.setBlockState(p.up(), Blocks.AIR.getDefaultState());
+            world.setBlockState(p, Blocks.AIR.getDefaultState());
         }
         context.assertTrue(flower, "a flower found 18 blocks below: " + found);
         context.complete();

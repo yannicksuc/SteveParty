@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.goals;
 
+import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaHome;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.pathing.NavigationType;
@@ -68,13 +70,13 @@ public class SimpleFlyingMoveControl extends MoveControl {
      * brought back inside. Only its owner leading it away may take it out (it is then released).
      */
     private void keepHome() {
-        if (!(entity instanceof fr.lordfinn.steveparty.entities.custom.MulaEntity mula)) return;
+        if (!(entity instanceof MulaEntity mula)) return;
         BlockPos home = mula.homeForge();
         if (home == null || mula.isLedByOwner() || mula.isLeashed()) return; // led by its owner or on a lead: theirs
         target[0] = targetX;
         target[1] = targetY;
         target[2] = targetZ;
-        fr.lordfinn.steveparty.entities.custom.MulaHome.clamp(home, target);
+        MulaHome.clamp(home, target);
         targetX = target[0];
         targetY = target[1];
         targetZ = target[2];

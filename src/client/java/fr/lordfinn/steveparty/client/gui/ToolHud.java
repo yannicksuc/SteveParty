@@ -2,10 +2,16 @@ package fr.lordfinn.steveparty.client.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 
 /**
  * One visual language for the HUDs of the mod's tools held in hand: small plates just above the hotbar (a tool's whole
@@ -49,10 +55,10 @@ public final class ToolHud {
     private static final int HOTBAR_TOP = 23;
 
     /** How high the status rows reach above the screen's bottom: hearts (several rows), armour, air. */
-    private static int statusRowsTop(net.minecraft.entity.player.PlayerEntity player) {
-        float health = Math.max((float) player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.GENERIC_MAX_HEALTH), player.getHealth());
-        int absorption = net.minecraft.util.math.MathHelper.ceil(player.getAbsorptionAmount());
-        int lines = net.minecraft.util.math.MathHelper.ceil((health + absorption) / 2.0F / 10.0F);
+    private static int statusRowsTop(PlayerEntity player) {
+        float health = Math.max((float) player.getAttributeValue(EntityAttributes.GENERIC_MAX_HEALTH), player.getHealth());
+        int absorption = MathHelper.ceil(player.getAbsorptionAmount());
+        int lines = MathHelper.ceil((health + absorption) / 2.0F / 10.0F);
         int rowHeight = Math.max(10 - (lines - 2), 3);
         int left = 39 + (lines - 1) * rowHeight + (player.getArmor() > 0 ? 10 : 0);
         int right = player.getAir() < player.getMaxAir() || player.isSubmergedInWater() ? 49 : 39;
@@ -136,7 +142,7 @@ public final class ToolHud {
         void draw(DrawContext context, int x, int y);
     }
 
-    public static Element element(int width, java.util.function.BiConsumer<Integer, Integer> draw) {
+    public static Element element(int width, BiConsumer<Integer, Integer> draw) {
         return new Element() {
             @Override
             public int width() {
@@ -161,16 +167,16 @@ public final class ToolHud {
      *
      * @return the top of the highest row (where the hint goes above)
      */
-    public static int rows(DrawContext context, java.util.List<java.util.List<Element>> groups, int gap) {
-        java.util.List<java.util.List<Element>> rows = new java.util.ArrayList<>();
-        java.util.List<Element> all = new java.util.ArrayList<>();
+    public static int rows(DrawContext context, List<List<Element>> groups, int gap) {
+        List<List<Element>> rows = new ArrayList<>();
+        List<Element> all = new ArrayList<>();
         groups.forEach(all::addAll);
         if (width(all, gap) <= available(context)) rows.add(all);
         else rows.addAll(groups);
         int bottom = top(context);
         int centerX = context.getScaledWindowWidth() / 2;
         for (int i = 0; i < rows.size(); i++) {
-            java.util.List<Element> row = rows.get(i);
+            List<Element> row = rows.get(i);
             int y = bottom - (rows.size() - 1 - i) * (BOX + 2);
             int x = centerX - width(row, gap) / 2;
             for (Element element : row) {
@@ -181,7 +187,7 @@ public final class ToolHud {
         return bottom - (rows.size() - 1) * (BOX + 2);
     }
 
-    private static int width(java.util.List<Element> row, int gap) {
+    private static int width(List<Element> row, int gap) {
         int width = 0;
         for (Element element : row) width += element.width();
         return width + Math.max(0, row.size() - 1) * gap;

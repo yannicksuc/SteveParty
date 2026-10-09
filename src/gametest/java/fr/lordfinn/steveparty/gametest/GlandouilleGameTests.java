@@ -29,11 +29,15 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.passive.PigEntity;
+import net.minecraft.item.BoneMealItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.property.Properties;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
 import net.minecraft.world.GameMode;
 import net.minecraft.util.math.BlockPos;
@@ -41,6 +45,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -495,7 +500,7 @@ public class GlandouilleGameTests implements FabricGameTest {
         TestBoards.floor(context, 8);
         GlandouilleEntity top = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1)).get(1);
         context.assertTrue(top.isAiDisabled(), "riding: it doesn't think");
-        net.minecraft.nbt.NbtCompound saved = new net.minecraft.nbt.NbtCompound();
+        NbtCompound saved = new NbtCompound();
         top.writeNbt(saved);
         context.assertFalse(saved.getBoolean("NoAI"), "not saved without AI");
         // as an older version saved it
@@ -505,7 +510,7 @@ public class GlandouilleGameTests implements FabricGameTest {
         old.readNbt(saved);
         context.assertFalse(old.isAiDisabled(), "an old save is repaired");
         // a command's NoAI
-        net.minecraft.nbt.NbtCompound summoned = new net.minecraft.nbt.NbtCompound();
+        NbtCompound summoned = new NbtCompound();
         summoned.putBoolean("NoAI", true);
         GlandouilleEntity still = ModEntities.GLANDOUILLE.create(context.getWorld());
         still.readNbt(summoned);
@@ -522,7 +527,7 @@ public class GlandouilleGameTests implements FabricGameTest {
         Vec3d right = GlandouilleTowers.heldPos(player, one).subtract(player.getPos());
         context.assertTrue(right.x > 0.3 && right.z > 0.3, "forward, on the right: " + right);
         context.assertTrue(right.y < player.getStandingEyeHeight() - 0.6, "low, under the crosshair: " + right.y);
-        player.setMainArm(net.minecraft.util.Arm.LEFT);
+        player.setMainArm(Arm.LEFT);
         Vec3d left = GlandouilleTowers.heldPos(player, one).subtract(player.getPos());
         context.assertTrue(left.z < -0.3, "mirrored for a left-handed one: " + left);
         context.complete();
@@ -906,7 +911,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A ripe acorn hatches into its biome's kind: frosty where it snows, the old mossy one in taigas and lush caves. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aPlantedAcornHatchesIntoItsBiomesKind(TestContext context) {
-        Map<String, GlandouilleVariant> expected = new java.util.LinkedHashMap<>();
+        Map<String, GlandouilleVariant> expected = new LinkedHashMap<>();
         expected.put("minecraft:plains", GlandouilleVariant.CLASSIC);
         expected.put("minecraft:forest", GlandouilleVariant.CLASSIC);
         expected.put("minecraft:snowy_plains", GlandouilleVariant.FROSTY);
@@ -940,13 +945,13 @@ public class GlandouilleGameTests implements FabricGameTest {
         try {
             AcornCropBlock.earlyPopChance = 0f;
             context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
-            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+            BoneMealItem.useOnFertilizable(new ItemStack(Items.BONE_MEAL), world, abs);
             context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), 1, "never: it just grows");
             AcornCropBlock.earlyPopChance = 1f;
-            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+            BoneMealItem.useOnFertilizable(new ItemStack(Items.BONE_MEAL), world, abs);
             context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), 2, "only at its first stage");
             context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
-            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+            BoneMealItem.useOnFertilizable(new ItemStack(Items.BONE_MEAL), world, abs);
         } finally {
             AcornCropBlock.earlyPopChance = chance;
         }
@@ -1001,14 +1006,14 @@ public class GlandouilleGameTests implements FabricGameTest {
         AcornCropBlock.earlyPopChance = 0f; // no early young one here
         try {
             for (int age = 1; age <= AcornCropBlock.MAX_AGE; age++) {
-                context.assertTrue(net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs), "bone meal takes");
+                context.assertTrue(BoneMealItem.useOnFertilizable(new ItemStack(Items.BONE_MEAL), world, abs), "bone meal takes");
                 context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), age, "one stage per dose");
             }
         } finally {
             AcornCropBlock.earlyPopChance = chance;
         }
         for (int i = 0; i < 64 && world.getBlockState(abs).isOf(ModBlocks.ACORN_CROP); i++) {
-            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+            BoneMealItem.useOnFertilizable(new ItemStack(Items.BONE_MEAL), world, abs);
         }
         context.assertTrue(world.getBlockState(abs).isAir(), "the acorn hatched");
         context.assertEquals(context.getWorld().getEntitiesByClass(GlandouilleEntity.class, new Box(abs).expand(1), e -> true).size(), 1, "one Glandouille");

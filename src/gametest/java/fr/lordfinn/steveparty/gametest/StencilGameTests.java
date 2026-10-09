@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PlasticBlock;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.EaselSignBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
@@ -19,6 +21,15 @@ import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilGunScreenHandler;
 import fr.lordfinn.steveparty.stencil.StencilLibrary;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
+import net.minecraft.block.Block;
+import net.minecraft.block.FenceBlock;
+import net.minecraft.block.WallBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.item.DyeItem;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import fr.lordfinn.steveparty.stencil.StencilUnlocks;
@@ -54,8 +65,10 @@ import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.GameMode;
 
 import java.nio.ByteBuffer;
@@ -88,7 +101,7 @@ public class StencilGameTests implements FabricGameTest {
         return new BlockHitResult(Vec3d.ofCenter(abs), side, abs, false);
     }
 
-    private static <T extends net.minecraft.block.entity.BlockEntity> T at(TestContext context, BlockPos pos) {
+    private static <T extends BlockEntity> T at(TestContext context, BlockPos pos) {
         return context.getBlockEntity(pos);
     }
 
@@ -209,7 +222,7 @@ public class StencilGameTests implements FabricGameTest {
         sign.setGlowing(true);
         ServerWorld world = context.getWorld();
         BlockPos abs = context.getAbsolutePos(SIGN);
-        List<ItemStack> drops = net.minecraft.block.Block.getDroppedStacks(world.getBlockState(abs), world, abs, sign);
+        List<ItemStack> drops = Block.getDroppedStacks(world.getBlockState(abs), world, abs, sign);
         context.assertEquals(drops.size(), 1, "one drop");
         ItemStack drop = drops.getFirst();
         context.assertTrue(birch.equals(drop.get(ModComponents.SIGN_MATERIAL)), "birch kept");
@@ -235,16 +248,16 @@ public class StencilGameTests implements FabricGameTest {
         Identifier old = Identifier.of("steveparty", "traffic_sign");
         context.assertTrue(Registries.BLOCK.get(old) == ModBlocks.EASEL_SIGN, "old block id");
         context.assertTrue(Registries.ITEM.get(old) == ModBlocks.EASEL_SIGN.asItem(), "old item id");
-        context.assertTrue(Registries.BLOCK_ENTITY_TYPE.get(old) == fr.lordfinn.steveparty.blocks.ModBlockEntities.EASEL_SIGN_ENTITY, "old block entity id");
+        context.assertTrue(Registries.BLOCK_ENTITY_TYPE.get(old) == ModBlockEntities.EASEL_SIGN_ENTITY, "old block entity id");
         context.assertTrue(Registries.BLOCK.get(Identifier.of("steveparty", "cherry_traffic_sign")) == ModBlocks.CHERRY_EASEL_SIGN, "old wood block id");
         context.assertTrue(Registries.ITEM.get(Identifier.of("steveparty", "warped_traffic_sign")) == ModBlocks.WARPED_EASEL_SIGN.asItem(), "old wood item id");
         // A chunk palette entry
-        net.minecraft.nbt.NbtCompound stateNbt = new net.minecraft.nbt.NbtCompound();
+        NbtCompound stateNbt = new NbtCompound();
         stateNbt.putString("Name", "steveparty:oak_traffic_sign");
-        BlockState state = BlockState.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, stateNbt).getOrThrow();
+        BlockState state = BlockState.CODEC.parse(NbtOps.INSTANCE, stateNbt).getOrThrow();
         context.assertTrue(state.isOf(ModBlocks.OAK_EASEL_SIGN), "old block state loads, got " + state);
         // A saved stack
-        net.minecraft.nbt.NbtCompound stackNbt = new net.minecraft.nbt.NbtCompound();
+        NbtCompound stackNbt = new NbtCompound();
         stackNbt.putString("id", "steveparty:traffic_sign");
         stackNbt.putInt("count", 3);
         ItemStack stack = ItemStack.fromNbt(registries, stackNbt).orElse(ItemStack.EMPTY);
@@ -254,10 +267,10 @@ public class StencilGameTests implements FabricGameTest {
         context.setBlockState(SIGN, ModBlocks.EASEL_SIGN);
         EaselSignBlockEntity sign = at(context, SIGN);
         sign.setSymbol(pattern("heart"), DyeColor.RED);
-        net.minecraft.nbt.NbtCompound saved = sign.createNbtWithIdentifyingData(registries);
+        NbtCompound saved = sign.createNbtWithIdentifyingData(registries);
         saved.putString("id", "steveparty:traffic_sign");
         BlockPos abs = context.getAbsolutePos(SIGN);
-        var loaded = net.minecraft.block.entity.BlockEntity.createFromNbt(abs, context.getWorld().getBlockState(abs), saved, registries);
+        var loaded = BlockEntity.createFromNbt(abs, context.getWorld().getBlockState(abs), saved, registries);
         context.assertTrue(loaded instanceof EaselSignBlockEntity easel && Arrays.equals(easel.getShape(), pattern("heart"))
                 && easel.getColor() == DyeColor.RED, "old block entity loads with its symbol");
         context.complete();
@@ -268,13 +281,13 @@ public class StencilGameTests implements FabricGameTest {
         context.setBlockState(SIGN.down(), Blocks.STONE);
         context.setBlockState(SIGN, ModBlocks.OAK_EASEL_SIGN);
         EaselSignBlockEntity sign = at(context, SIGN);
-        net.minecraft.nbt.NbtCompound old = new net.minecraft.nbt.NbtCompound();
+        NbtCompound old = new NbtCompound();
         old.putByteArray("SymbolShape", pattern("left_arrow"));
         old.putString("Color", "lime");
         old.putBoolean("IsGlowing", true);
         sign.read(old, context.getWorld().getRegistryManager());
         context.assertTrue(Arrays.equals(sign.getShape(), pattern("left_arrow")) && sign.getColor() == DyeColor.LIME && sign.isGlowing(), "old data read");
-        net.minecraft.nbt.NbtCompound noColor = new net.minecraft.nbt.NbtCompound();
+        NbtCompound noColor = new NbtCompound();
         noColor.putByteArray("SymbolShape", pattern("left_arrow"));
         sign.read(noColor, context.getWorld().getRegistryManager());
         context.assertTrue(sign.getColor() == DyeColor.WHITE, "old signs without colour are white, as before");
@@ -366,7 +379,7 @@ public class StencilGameTests implements FabricGameTest {
             context.setBlockState(SIGN.down(), ModBlocks.PLASTIC_FENCES[3]);
             context.assertTrue(sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " on a plastic fence");
         }
-        context.assertTrue(ModBlocks.PLASTIC_FENCES[3].getDefaultState().isIn(net.minecraft.registry.tag.BlockTags.FENCES), "plastic fences are fences");
+        context.assertTrue(ModBlocks.PLASTIC_FENCES[3].getDefaultState().isIn(BlockTags.FENCES), "plastic fences are fences");
         context.complete();
     }
 
@@ -505,7 +518,7 @@ public class StencilGameTests implements FabricGameTest {
     }
 
     private static int risingTicks(int blocks) {
-        return blocks * fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RISE_DELAY + 10;
+        return blocks * PlasticBlock.RISE_DELAY + 10;
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
@@ -539,11 +552,11 @@ public class StencilGameTests implements FabricGameTest {
         ServerPlayerEntity player = TestPlayers.mock(context);
         Vec3d feet = Vec3d.ofBottomCenter(context.getAbsolutePos(start.up()));
         player.refreshPositionAndAngles(feet.x, feet.y, feet.z, 0, 0);
-        context.runAtTick(fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RISE_DELAY + 3, () -> {
+        context.runAtTick(PlasticBlock.RISE_DELAY + 3, () -> {
             try {
                 context.expectBlock(ModBlocks.PLASTIC_BLOCKS[0], start.up());
                 // A block per RISE_DELAY ticks through the water's drag (about 0.35), far from the column's 1.4
-                context.assertTrue(player.getVelocity().y <= fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RIDE_STILL_SPEED + 1e-3,
+                context.assertTrue(player.getVelocity().y <= PlasticBlock.RIDE_STILL_SPEED + 1e-3,
                         "carried gently, not flung: " + player.getVelocity().y);
             } finally {
                 TestPlayers.remove(context, player);
@@ -577,18 +590,18 @@ public class StencilGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void plasticFencesFloatButSignsOnPostsStay(TestContext context) {
         waterTube(context);
-        context.setBlockState(new BlockPos(TUBE_X, TUBE_BOTTOM, TUBE_Z), ModBlocks.PLASTIC_FENCES[4].getDefaultState().with(net.minecraft.block.FenceBlock.WATERLOGGED, true));
-        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.PlasticBlock.isPlastic(ModBlocks.PLASTIC_FENCES[4].getDefaultState())
-                && fr.lordfinn.steveparty.blocks.custom.PlasticBlock.isPlastic(ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState()), "made of plastic");
+        context.setBlockState(new BlockPos(TUBE_X, TUBE_BOTTOM, TUBE_Z), ModBlocks.PLASTIC_FENCES[4].getDefaultState().with(FenceBlock.WATERLOGGED, true));
+        context.assertTrue(PlasticBlock.isPlastic(ModBlocks.PLASTIC_FENCES[4].getDefaultState())
+                && PlasticBlock.isPlastic(ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState()), "made of plastic");
         // A sign standing on a (stone) wall under water: on its post, it stays
         BlockPos post = new BlockPos(1, 1, 1);
-        context.setBlockState(post, Blocks.COBBLESTONE_WALL.getDefaultState().with(net.minecraft.block.WallBlock.WATERLOGGED, true));
+        context.setBlockState(post, Blocks.COBBLESTONE_WALL.getDefaultState().with(WallBlock.WATERLOGGED, true));
         context.setBlockState(post.up(), ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState().with(AbstractStencilSignBlock.WATERLOGGED, true));
         context.setBlockState(post.up(2), Blocks.WATER);
         context.waitAndRun(risingTicks(TUBE_TOP - TUBE_BOTTOM + 1), () -> {
             // Like the plastic block, it stays in the water, its top level with the surface
             BlockState fence = context.getBlockState(new BlockPos(TUBE_X, TUBE_TOP, TUBE_Z));
-            context.assertTrue(fence.isOf(ModBlocks.PLASTIC_FENCES[4]) && fence.get(net.minecraft.block.FenceBlock.WATERLOGGED), "fence at the surface: " + fence);
+            context.assertTrue(fence.isOf(ModBlocks.PLASTIC_FENCES[4]) && fence.get(FenceBlock.WATERLOGGED), "fence at the surface: " + fence);
             context.expectBlock(Blocks.AIR, new BlockPos(TUBE_X, TUBE_TOP + 1, TUBE_Z));
             context.expectBlock(ModBlocks.PLASTIC_ROAD_SIGN, post.up());
             context.complete();
@@ -919,7 +932,7 @@ public class StencilGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, gun);
             StencilGunScreenHandler handler = new StencilGunScreenHandler(1, player.getInventory(), 0);
             context.assertEquals(handler.slots.size(), StencilGunItem.SIZE + 36, "hammer, inventory and hotbar");
-            java.util.Set<Long> places = new java.util.HashSet<>();
+            Set<Long> places = new HashSet<>();
             for (var slot : handler.slots) context.assertTrue(places.add(((long) slot.x << 32) | slot.y), "one slot per place: " + slot.x + ", " + slot.y);
             for (int i = 0; i < StencilGunItem.SIZE; i++) {
                 var slot = handler.slots.get(i);
@@ -982,14 +995,14 @@ public class StencilGameTests implements FabricGameTest {
         ItemEntity entity = new ItemEntity(world, at.x, at.y, at.z, loadedGun());
         world.spawnEntity(entity);
         entity.getStack().getItem().onItemEntityDestroyed(entity);
-        List<ItemEntity> spilled = world.getEntitiesByClass(ItemEntity.class, new net.minecraft.util.math.Box(at, at).expand(2),
+        List<ItemEntity> spilled = world.getEntitiesByClass(ItemEntity.class, new Box(at, at).expand(2),
                 item -> item != entity);
         int stencils = spilled.stream().filter(item -> item.getStack().isOf(ModItems.STENCIL)).mapToInt(item -> item.getStack().getCount()).sum();
-        int dyes = spilled.stream().filter(item -> item.getStack().getItem() instanceof net.minecraft.item.DyeItem)
+        int dyes = spilled.stream().filter(item -> item.getStack().getItem() instanceof DyeItem)
                 .mapToInt(item -> item.getStack().getCount()).sum();
         context.assertEquals(stencils, 2, "both stencils spilled");
         context.assertEquals(dyes, 3, "every dye spilled");
-        spilled.forEach(net.minecraft.entity.Entity::discard);
+        spilled.forEach(Entity::discard);
         entity.discard();
         context.complete();
     }
@@ -1071,7 +1084,7 @@ public class StencilGameTests implements FabricGameTest {
         sign.setGlowing(true);
         ServerWorld world = context.getWorld();
         BlockPos abs = context.getAbsolutePos(SIGN);
-        ItemStack drop = net.minecraft.block.Block.getDroppedStacks(world.getBlockState(abs), world, abs, sign).getFirst();
+        ItemStack drop = Block.getDroppedStacks(world.getBlockState(abs), world, abs, sign).getFirst();
         BlockPos other = SIGN.east(2);
         context.setBlockState(other.down(), Blocks.STONE);
         context.setBlockState(other, ModBlocks.EASEL_SIGN);
@@ -1136,7 +1149,7 @@ public class StencilGameTests implements FabricGameTest {
         context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
         context.setBlockState(SIGN, Blocks.AIR);
         player.setSneaking(true);
-        context.getWorld().setBlockState(context.getAbsolutePos(SIGN), Blocks.SNOW.getDefaultState(), net.minecraft.block.Block.FORCE_STATE);
+        context.getWorld().setBlockState(context.getAbsolutePos(SIGN), Blocks.SNOW.getDefaultState(), Block.FORCE_STATE);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.WOODEN_PANEL));
         useOn(context, player, SIGN, Direction.UP);
         BlockState onPost = context.getBlockState(SIGN);
@@ -1152,13 +1165,13 @@ public class StencilGameTests implements FabricGameTest {
         for (int rotation : new int[]{0, 4, 2}) {
             context.setBlockState(SIGN, ModBlocks.EASEL_SIGN.getDefaultState().with(AbstractStencilSignBlock.ROTATION, rotation));
             BlockState state = context.getBlockState(SIGN);
-            net.minecraft.util.shape.VoxelShape outline = state.getOutlineShape(context.getWorld(), abs);
-            net.minecraft.util.shape.VoxelShape collision = state.getCollisionShape(context.getWorld(), abs);
+            VoxelShape outline = state.getOutlineShape(context.getWorld(), abs);
+            VoxelShape collision = state.getCollisionShape(context.getWorld(), abs);
             // The 2 block wide board sticks out of the block, along x facing south / north, along z facing west / east
-            net.minecraft.util.math.Direction.Axis across = rotation == 4 ? net.minecraft.util.math.Direction.Axis.Z : net.minecraft.util.math.Direction.Axis.X;
+            Direction.Axis across = rotation == 4 ? Direction.Axis.Z : Direction.Axis.X;
             context.assertTrue(outline.getMin(across) < -0.3 && outline.getMax(across) > 1.3, "outline along the board at rotation " + rotation + ": " + outline.getBoundingBox());
             context.assertTrue(!collision.isEmpty() && collision.getMin(across) >= 0 && collision.getMax(across) <= 1
-                    && collision.getMax(net.minecraft.util.math.Direction.Axis.Y) <= 1, "collision in its own block at rotation " + rotation);
+                    && collision.getMax(Direction.Axis.Y) <= 1, "collision in its own block at rotation " + rotation);
         }
         context.complete();
     }
@@ -1188,11 +1201,11 @@ public class StencilGameTests implements FabricGameTest {
     /** Stencil paint can't be broken by hitting it outside creative (brush or water remove it). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilPaintOnlyBreaksInCreative(TestContext context) {
-        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreak(
-                context.createMockPlayer(net.minecraft.world.GameMode.CREATIVE)), "creative can break it");
-        net.minecraft.entity.player.PlayerEntity survival = context.createMockPlayer(net.minecraft.world.GameMode.SURVIVAL);
-        survival.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.DIAMOND_PICKAXE));
-        context.assertFalse(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreak(survival), "survival can't, even with a pickaxe");
+        context.assertTrue(StencilPaintBlock.canBreak(
+                context.createMockPlayer(GameMode.CREATIVE)), "creative can break it");
+        PlayerEntity survival = context.createMockPlayer(GameMode.SURVIVAL);
+        survival.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+        context.assertFalse(StencilPaintBlock.canBreak(survival), "survival can't, even with a pickaxe");
         context.complete();
     }
 }

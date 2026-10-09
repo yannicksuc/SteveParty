@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
@@ -19,6 +20,7 @@ import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.recipe.input.SingleStackRecipeInput;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 
 import java.util.HashSet;
@@ -165,7 +167,7 @@ public class DiceRecipeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void eachModuleHasItsRecipeInTheRecipeBook(TestContext context) {
         for (DiceModule module : DiceModules.all()) {
-            net.minecraft.util.Identifier key = fr.lordfinn.steveparty.Steveparty.id("dice_with_module_" + module.id());
+            Identifier key = Steveparty.id("dice_with_module_" + module.id());
             RecipeEntry<?> entry = context.getWorld().getServer().getRecipeManager().get(key).orElse(null);
             context.assertTrue(entry != null && entry.value() instanceof DiceModuleRecipe recipe && recipe.module() == module, "the recipe of " + module);
             context.assertTrue(!entry.value().isIgnoredInRecipeBook(), "shown in the recipe book");

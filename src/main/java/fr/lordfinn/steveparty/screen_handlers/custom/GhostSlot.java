@@ -8,6 +8,7 @@ import net.minecraft.screen.slot.SlotActionType;
 
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
 
@@ -100,7 +101,7 @@ public class GhostSlot extends Slot {
      * created or consumed.
      */
     public static void click(GhostSlot slot, int button, SlotActionType actionType, PlayerEntity player, ItemStack cursor,
-                             java.util.function.Consumer<ItemStack> setCursor) {
+                             Consumer<ItemStack> setCursor) {
         switch (actionType) {
             // Item on cursor → a ghost copy; empty cursor → clears the slot
             case PICKUP -> slot.setGhostStack(cursor);

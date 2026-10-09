@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -16,6 +17,8 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.world.Heightmap;
 
 import java.util.List;
 
@@ -56,7 +59,7 @@ public class MulaEphemerideGameTests implements FabricGameTest {
             context.assertTrue(!MulaEphemeride.guaranteed(world, 1, List.of(player)), "not guaranteed at another phase");
         } finally {
             forge.clear();
-            context.setBlockState(new BlockPos(1, 1, 1), net.minecraft.block.Blocks.AIR);
+            context.setBlockState(new BlockPos(1, 1, 1), Blocks.AIR);
             world.getServer().getPlayerManager().remove(player);
         }
         context.complete();
@@ -103,7 +106,7 @@ public class MulaEphemerideGameTests implements FabricGameTest {
         for (int i = 0; i < max + 10; i++) sites.add(new BlockPos(100000 + i * 1000, 64, 0), 0, new int[]{1});
         context.assertTrue(sites.pendingCount() == max && sites.siteCount() == max, "sites capped: " + sites.siteCount());
         context.assertTrue(sites.byId(10) == null && sites.byId(max + 10) != null, "the latest are the ones kept");
-        net.minecraft.util.math.random.Random random = net.minecraft.util.math.random.Random.create(3);
+        Random random = Random.create(3);
         for (int i = 0; i < 50; i++) {
             int n = MulaEphemeride.group(random).length;
             context.assertTrue(n >= MulaEphemeride.MIN_GROUP && n <= MulaEphemeride.MAX_GROUP, "a small flock: " + n);
@@ -115,17 +118,17 @@ public class MulaEphemerideGameTests implements FabricGameTest {
     public void starsFlyAboveTheTrees(TestContext context) {
         ServerWorld world = context.getWorld();
         BlockPos at = context.getAbsolutePos(new BlockPos(1, 1, 1));
-        double ground = world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING, at.getX(), at.getZ());
+        double ground = world.getTopY(Heightmap.Type.MOTION_BLOCKING, at.getX(), at.getZ());
         double open = MulaEphemeride.altitude(world, at.getX() + 0.5, at.getZ() + 0.5, 1, 0, ground);
         context.assertTrue(open >= ground + MulaEphemeride.MIN_ABOVE_GROUND && open <= ground + MulaEphemeride.MAX_ABOVE_GROUND,
                 "high above the ground: " + open + " over " + ground);
         BlockPos pillar = new BlockPos(at.getX() + 6, (int) ground, at.getZ()); // a sampled column (every 8 blocks from -90)
-        for (int i = 0; i < 24; i++) world.setBlockState(pillar.up(i), net.minecraft.block.Blocks.OAK_LEAVES.getDefaultState());
+        for (int i = 0; i < 24; i++) world.setBlockState(pillar.up(i), Blocks.OAK_LEAVES.getDefaultState());
         try {
             double y = MulaEphemeride.altitude(world, at.getX() + 0.5, at.getZ() + 0.5, 1, 0, ground);
             context.assertTrue(y >= ground + 24 + MulaEphemeride.CLEARANCE, "clears the pillar: " + y);
         } finally {
-            for (int i = 0; i < 24; i++) world.setBlockState(pillar.up(i), net.minecraft.block.Blocks.AIR.getDefaultState());
+            for (int i = 0; i < 24; i++) world.setBlockState(pillar.up(i), Blocks.AIR.getDefaultState());
         }
         context.complete();
     }

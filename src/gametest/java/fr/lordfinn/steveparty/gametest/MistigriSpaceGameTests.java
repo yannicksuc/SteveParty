@@ -27,6 +27,7 @@ import net.minecraft.util.math.random.Random;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
 import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
@@ -197,7 +198,7 @@ public class MistigriSpaceGameTests implements FabricGameTest {
         ServerPlayerEntity player = player(context);
         List<MobEntity> tokens = new ArrayList<>();
         PartyControllerEntity party = party(context, tokens, player);
-        ((TokenizedEntityInterface) tokens.getFirst()).steveparty$setTokenOwner((java.util.UUID) null);
+        ((TokenizedEntityInterface) tokens.getFirst()).steveparty$setTokenOwner((UUID) null);
         boolean[] done = {false};
         context.assertTrue(start(context, party, tokens.getFirst(), Sentence.JOKE, done) == MistigriSentences.Start.NO_PLAYER, "no player");
         context.assertTrue(MistigriSentences.actor(tokens.getFirst()) == null && !done[0], "no Mistigri");

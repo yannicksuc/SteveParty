@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -27,6 +28,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -128,7 +130,7 @@ public class PowerupTrapGameTests implements FabricGameTest {
             try {
                 step.run();
             } catch (RuntimeException e) {
-                fr.lordfinn.steveparty.Steveparty.LOGGER.error("Trap test failed: {}", e.getMessage());
+                Steveparty.LOGGER.error("Trap test failed: {}", e.getMessage());
                 throw e;
             }
         });
@@ -150,7 +152,7 @@ public class PowerupTrapGameTests implements FabricGameTest {
             context.assertFalse(game.controller().toInitialChunkDataNbt(context.getWorld().getRegistryManager()).contains(TrapState.NBT_KEY),
                     "the traps are not sent to the clients");
 
-            game.tokenA().setPosition(context.getAbsolute(new net.minecraft.util.math.Vec3d(4.5, 1, 7.5)));
+            game.tokenA().setPosition(context.getAbsolute(new Vec3d(4.5, 1, 7.5)));
             context.assertEquals(TrapEffect.use(game.controller(), game.tokenA()), TrapEffect.Placed.NO_SPACE, "off the board");
             context.assertEquals(game.traps().all().size(), 1, "no other trap");
             done.run();

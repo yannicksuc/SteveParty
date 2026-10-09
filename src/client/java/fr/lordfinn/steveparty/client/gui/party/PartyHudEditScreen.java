@@ -1,16 +1,19 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
 import fr.lordfinn.steveparty.hud.HudPlacements.Hud;
+import fr.lordfinn.steveparty.hud.HudPlacements;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.OrderedText;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
+import java.util.Locale;
 
 /**
  * « Party HUD layout »: the player drags each party HUD where they want it, resizes it (the handle at its bottom-right
@@ -25,7 +28,6 @@ public class PartyHudEditScreen extends Screen {
     private boolean resizing;
     private float grabX, grabY;
     private float resizeStartDistance, resizeStartScale;
-    private boolean snappedX, snappedY;
     private float snapLineX = -1, snapLineY = -1;
     private ButtonWidget turnBarToggle, standingsToggle, noticeToggle;
     private PartyHudModel sample;
@@ -51,7 +53,7 @@ public class PartyHudEditScreen extends Screen {
             addDrawableChild(new AnchorPicker(hud, left + 86, y));
             ButtonWidget reset = addDrawableChild(ButtonWidget.builder(Text.literal("\u21BA"), button -> reset(hud))
                     .dimensions(left + 108, y, 20, 20).build());
-            reset.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable(switch (hud) {
+            reset.setTooltip(Tooltip.of(Text.translatable(switch (hud) {
                 case TURN_BAR -> "screen.steveparty.party_hud_layout.reset_turn_bar";
                 case STANDINGS -> "screen.steveparty.party_hud_layout.reset_standings";
                 case NOTICE -> "screen.steveparty.party_hud_layout.reset_notice";
@@ -68,7 +70,7 @@ public class PartyHudEditScreen extends Screen {
                 .dimensions(left + 65, last, 41, 20).build());
         ButtonWidget help = addDrawableChild(ButtonWidget.builder(Text.literal("?"), button -> {
         }).dimensions(left + 108, last, 20, 20).build());
-        help.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("screen.steveparty.party_hud_layout.help")));
+        help.setTooltip(Tooltip.of(Text.translatable("screen.steveparty.party_hud_layout.help")));
         PartyHud.editing = true;
     }
 
@@ -79,13 +81,13 @@ public class PartyHudEditScreen extends Screen {
     }
 
     /** An anchor picker: the nine anchors of a HUD, its anchor lit; a click puts it at another one. */
-    private final class AnchorPicker extends net.minecraft.client.gui.widget.ClickableWidget {
+    private final class AnchorPicker extends ClickableWidget {
         private final Hud hud;
 
         AnchorPicker(Hud hud, int x, int y) {
             super(x, y, 20, 20, Text.translatable("screen.steveparty.party_hud_layout.anchor", hudName(hud)));
             this.hud = hud;
-            setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("screen.steveparty.party_hud_layout.anchor", hudName(hud))));
+            setTooltip(Tooltip.of(Text.translatable("screen.steveparty.party_hud_layout.anchor", hudName(hud))));
         }
 
         private int cellAt(double mouseX, double mouseY) {
@@ -98,7 +100,7 @@ public class PartyHudEditScreen extends Screen {
             context.fill(getX(), getY(), getX() + width, getY() + height, isHovered() ? 0xFF505050 : 0xFF303030);
             context.drawBorder(getX(), getY(), width, height, isHovered() ? 0xFFFFFFFF : 0xFF8B8B8B);
             int hovered = isHovered() ? cellAt(mouseX, mouseY) : -1;
-            fr.lordfinn.steveparty.hud.HudPlacements.Anchor current = PartyHudLayout.get(hud).anchor;
+            HudPlacements.Anchor current = PartyHudLayout.get(hud).anchor;
             for (int i = 0; i < 9; i++) {
                 int x = getX() + 3 + (i % 3) * 6, y = getY() + 3 + (i / 3) * 6;
                 int colour = current.ordinal() == i ? 0xFFFFD23A : i == hovered ? 0xFFFFFFFF : 0xFF8B8B8B;
@@ -109,11 +111,11 @@ public class PartyHudEditScreen extends Screen {
         @Override
         public void onClick(double mouseX, double mouseY) {
             int cell = cellAt(mouseX, mouseY);
-            if (cell >= 0) PartyHudLayout.moveTo(hud, fr.lordfinn.steveparty.hud.HudPlacements.Anchor.values()[cell]);
+            if (cell >= 0) PartyHudLayout.moveTo(hud, HudPlacements.Anchor.values()[cell]);
         }
 
         @Override
-        protected void appendClickableNarrations(net.minecraft.client.gui.screen.narration.NarrationMessageBuilder builder) {
+        protected void appendClickableNarrations(NarrationMessageBuilder builder) {
             appendDefaultNarrations(builder);
         }
     }
@@ -131,7 +133,7 @@ public class PartyHudEditScreen extends Screen {
     }
 
     private void toggle(Hud hud) {
-        fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
+        HudPlacements.Placement placement = PartyHudLayout.get(hud);
         placement.visible = !placement.visible;
         PartyHudLayout.changed();
         refreshToggles();
@@ -177,9 +179,9 @@ public class PartyHudEditScreen extends Screen {
     /** The nine anchor points of the screen, the dragged HUD's (the zone its centre is in) lit. */
     private void drawAnchors(DrawContext context, Hud hud) {
         float[] b = PartyHud.bounds(hud);
-        fr.lordfinn.steveparty.hud.HudPlacements.Anchor active = fr.lordfinn.steveparty.hud.HudPlacements.Anchor.nearest(
+        HudPlacements.Anchor active = HudPlacements.Anchor.nearest(
                 b[0] + b[2] / 2, b[1] + b[3] / 2, width, height);
-        for (fr.lordfinn.steveparty.hud.HudPlacements.Anchor anchor : fr.lordfinn.steveparty.hud.HudPlacements.Anchor.values()) {
+        for (HudPlacements.Anchor anchor : HudPlacements.Anchor.values()) {
             int x = MathHelper.clamp(Math.round(anchor.screenX(width)), 3, width - 4);
             int y = MathHelper.clamp(Math.round(anchor.screenY(height)), 3, height - 4);
             int r = anchor == active ? 3 : 2;
@@ -196,9 +198,9 @@ public class PartyHudEditScreen extends Screen {
         int color = active ? 0xFFFFD23A : 0x90FFFFFF;
         context.drawBorder(x - 1, y - 1, w + 2, h + 2, color);
         context.fill(x + w - HANDLE + 1, y + h - HANDLE + 1, x + w + 1, y + h + 1, color);
-        fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
+        HudPlacements.Placement placement = PartyHudLayout.get(hud);
         Text label = Text.translatable("screen.steveparty.party_hud_layout.label", hudName(hud),
-                String.format(java.util.Locale.ROOT, "%.2f", placement.scale).replaceAll("0+$", "").replaceAll("\\.$", ""));
+                String.format(Locale.ROOT, "%.2f", placement.scale).replaceAll("0+$", "").replaceAll("\\.$", ""));
         int labelWidth = textRenderer.getWidth(label);
         int labelX = MathHelper.clamp(x, 2, Math.max(2, width - labelWidth - 2));
         int labelY = y + h + 3 + 9 < height ? y + h + 3 : y - 11;
@@ -276,7 +278,7 @@ public class PartyHudEditScreen extends Screen {
 
     /** New scale, the HUD's top-left corner staying where it is. */
     private void rescale(Hud hud, float scale) {
-        fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
+        HudPlacements.Placement placement = PartyHudLayout.get(hud);
         float snapped = PartyHudLayout.snapScale(scale);
         if (snapped == placement.scale) return;
         float[] b = PartyHud.bounds(hud);
@@ -302,7 +304,7 @@ public class PartyHudEditScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         Hud hud = hudAt(mouseX, mouseY);
         if (hud == null || verticalAmount == 0) return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
-        fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
+        HudPlacements.Placement placement = PartyHudLayout.get(hud);
         rescale(hud, placement.scale + Math.signum((float) verticalAmount) * PartyHudLayout.SCALE_STEP);
         return true;
     }

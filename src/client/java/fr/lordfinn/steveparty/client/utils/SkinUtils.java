@@ -6,6 +6,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.util.DefaultSkinHelper;
+import net.minecraft.client.util.SkinTextures;
 import net.minecraft.util.Identifier;
 
 import java.util.Optional;
@@ -22,7 +23,7 @@ public class SkinUtils {
     }
 
     /** Same, with the model of the skin (wide or slim arms). */
-    public static net.minecraft.client.util.SkinTextures getSkinTextures(UUID uuid) {
+    public static SkinTextures getSkinTextures(UUID uuid) {
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayNetworkHandler networkHandler = client.getNetworkHandler();
         if (networkHandler != null) {

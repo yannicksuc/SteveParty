@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -98,11 +99,11 @@ public class TileLinkerBrushItem extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem.addWrapped(tooltip,
+        CartridgeItem.addWrapped(tooltip,
                 Text.translatable("tooltip.steveparty.tile_linker_brush"), Formatting.GRAY);
         tooltip.add(Text.translatable("tooltip.steveparty.tile_linker_brush.level",
                 TileLinkerBrush.levelText(TileLinkerBrush.level(stack))).formatted(Formatting.WHITE));
-        net.minecraft.item.Item cartridge = TileLinkerBrush.cartridge(stack);
+        Item cartridge = TileLinkerBrush.cartridge(stack);
         tooltip.add((cartridge == null ? Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge.keep")
                 : Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge", new ItemStack(cartridge).getName())).formatted(Formatting.WHITE));
         tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));

@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.gametest;
 
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
+import fr.lordfinn.steveparty.minigame.MiniGameIntroShot;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImage;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImages;
@@ -13,11 +13,14 @@ import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePagesState;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
+import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
+import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
@@ -26,12 +29,18 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
+import java.io.IOException;
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.GradientPaint;
@@ -39,11 +48,9 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -95,7 +102,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             ImageIO.write(image, "png", out);
             return out.toByteArray();
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new AssertionError(e);
         }
     }
@@ -110,8 +117,8 @@ public class MiniGamePageGameTests implements FabricGameTest {
                 new MiniGamePageImage("0123456789abcdef0123456789abcdef", 640, 360, 45678, "LordFinn", uploader),
                 List.of(MiniGameFormat.freeForAll(2, 6), MiniGameFormat.teams(false, MiniGameFormat.Side.exactly(1), MiniGameFormat.Side.exactly(1),
                         MiniGameFormat.Side.atLeast(2))),
-                List.of(new MiniGamePipeLink(GlobalPos.create(World.NETHER, new BlockPos(4, 70, -12)), net.minecraft.util.math.Direction.EAST,
-                        fr.lordfinn.steveparty.minigame.MiniGamePipeRole.TEAM_B)));
+                List.of(new MiniGamePipeLink(GlobalPos.create(World.NETHER, new BlockPos(4, 70, -12)), Direction.EAST,
+                        MiniGamePipeRole.TEAM_B)));
         MiniGamePageData blank = MiniGamePageData.empty(UUID.randomUUID());
 
         MiniGamePagesState state = new MiniGamePagesState();
@@ -130,31 +137,31 @@ public class MiniGamePageGameTests implements FabricGameTest {
 
         // The introduction's shots, the roles sent at random and the text markup come back too
         MiniGamePageData advanced = page.withTexts("Titre", "&lRègles&r : &cattention&r && bonne chance")
-                .withRandom(fr.lordfinn.steveparty.minigame.MiniGamePipeRole.PLAYERS, true)
-                .withIntro(List.of(new fr.lordfinn.steveparty.minigame.MiniGameIntroShot(World.OVERWORLD, new net.minecraft.util.math.Vec3d(1.5, 80, -3.25), 45, 30, 60, "Vue d'&6ensemble"),
-                        new fr.lordfinn.steveparty.minigame.MiniGameIntroShot(World.NETHER, new net.minecraft.util.math.Vec3d(0, 64, 0), -400, 120, 100000, "")));
+                .withRandom(MiniGamePipeRole.PLAYERS, true)
+                .withIntro(List.of(new MiniGameIntroShot(World.OVERWORLD, new Vec3d(1.5, 80, -3.25), 45, 30, 60, "Vue d'&6ensemble"),
+                        new MiniGameIntroShot(World.NETHER, new Vec3d(0, 64, 0), -400, 120, 100000, "")));
         MiniGamePageData reloaded = MiniGamePageData.fromNbt(advanced.toNbt());
         context.assertEquals(reloaded, advanced, "the advanced page comes back the same");
         context.assertEquals(advanced.toNbt().getInt("Format"), MiniGamePageData.FORMAT, "the saved form says its version");
         context.assertEquals(reloaded.intro().size(), 2, "two shots");
-        context.assertTrue(reloaded.intro().get(1).pitch() == 90 && reloaded.intro().get(1).ticks() == fr.lordfinn.steveparty.minigame.MiniGameIntroShot.MAX_TICKS,
+        context.assertTrue(reloaded.intro().get(1).pitch() == 90 && reloaded.intro().get(1).ticks() == MiniGameIntroShot.MAX_TICKS,
                 "a shot keeps sane values");
         context.assertTrue(page.intro().isEmpty() && page.randomRoles().isEmpty(), "none by default");
         NbtCompound old = page.toNbt();
         old.remove("Format");
         context.assertEquals(MiniGamePageData.fromNbt(old), page, "a page saved before these were added loads as it was");
-        net.minecraft.text.Text shown = fr.lordfinn.steveparty.minigame.MiniGameText.parse(advanced.description());
+        Text shown = MiniGameText.parse(advanced.description());
         context.assertEquals(shown.getString(), "Règles : attention & bonne chance", "the markup is not shown");
         context.assertTrue(shown.getSiblings().get(0).getStyle().isBold() && !shown.getSiblings().get(1).getStyle().isBold(), "&l bold until &r");
-        context.assertEquals(shown.getSiblings().get(2).getStyle().getColor(), net.minecraft.text.TextColor.fromFormatting(net.minecraft.util.Formatting.RED), "&c red");
-        context.assertEquals(fr.lordfinn.steveparty.minigame.MiniGameText.wrap("un deux trois quatre cinq six", 10), List.of("un deux", "trois", "quatre", "cinq six"),
+        context.assertEquals(shown.getSiblings().get(2).getStyle().getColor(), TextColor.fromFormatting(Formatting.RED), "&c red");
+        context.assertEquals(MiniGameText.wrap("un deux trois quatre cinq six", 10), List.of("un deux", "trois", "quatre", "cinq six"),
                 "long lines are cut at the spaces");
-        net.minecraft.network.PacketByteBuf advancedBuf = new net.minecraft.network.PacketByteBuf(io.netty.buffer.Unpooled.buffer());
+        PacketByteBuf advancedBuf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
         MiniGamePageData.PACKET_CODEC.encode(advancedBuf, advanced);
         context.assertEquals(MiniGamePageData.PACKET_CODEC.decode(advancedBuf), advanced, "and crosses the network the same");
 
         // The network form too
-        net.minecraft.network.PacketByteBuf buf = new net.minecraft.network.PacketByteBuf(io.netty.buffer.Unpooled.buffer());
+        PacketByteBuf buf = new PacketByteBuf(io.netty.buffer.Unpooled.buffer());
         MiniGamePageData.PACKET_CODEC.encode(buf, page);
         context.assertEquals(MiniGamePageData.PACKET_CODEC.decode(buf), page, "the page crosses the network the same");
         context.complete();

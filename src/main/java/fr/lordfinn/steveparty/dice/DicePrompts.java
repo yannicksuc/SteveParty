@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.dice;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.payloads.custom.DicePromptPayload;
+import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -93,7 +94,7 @@ public final class DicePrompts {
         }
     }
 
-    private static final Map<UUID, Prompt> PENDING = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<UUID, Prompt> PENDING = ServerMemory.forgetOnStop(new HashMap<>());
     private static int nextId = 1;
 
     private DicePrompts() {

@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.screen_handlers.custom.HopSwitchScreenHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.sound.SoundEvents;

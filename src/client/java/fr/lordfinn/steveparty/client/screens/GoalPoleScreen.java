@@ -23,6 +23,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static fr.lordfinn.steveparty.sounds.ModSounds.CLOSE_TILE_GUI_SOUND_EVENT;
 import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
@@ -232,12 +233,12 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     }
 
     private Text playerText() {
-        return Text.translatable(KEY + "who." + count.name().toLowerCase(java.util.Locale.ROOT));
+        return Text.translatable(KEY + "who." + count.name().toLowerCase(Locale.ROOT));
     }
 
     private Text playerTooltip() {
         return Text.empty().append(Text.translatable(KEY + "who").formatted(Formatting.GOLD)).append("\n")
-                .append(Text.translatable(KEY + "who." + count.name().toLowerCase(java.util.Locale.ROOT) + ".details").formatted(Formatting.GRAY))
+                .append(Text.translatable(KEY + "who." + count.name().toLowerCase(Locale.ROOT) + ".details").formatted(Formatting.GRAY))
                 .append("\n").append(Text.translatable("gui.steveparty.goal_pole_base.cycle_hint").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
     }
 
@@ -260,7 +261,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     }
 
     private static String key(Comparator c) {
-        return c.name().toLowerCase(java.util.Locale.ROOT);
+        return c.name().toLowerCase(Locale.ROOT);
     }
 
     private static Text symbolName(Comparator c) {

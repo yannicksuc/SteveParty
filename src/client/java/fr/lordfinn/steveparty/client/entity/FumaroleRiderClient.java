@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.Hand;
 
 /**
  * A player riding a Fumarole: his attack and use keys fire the head he holds (or grab a wall in the air) instead of
@@ -44,6 +45,6 @@ public final class FumaroleRiderClient {
     private static void click() {
         if (ClientPlayNetworking.canSend(FumaroleEvents.RiderClick.ID)) ClientPlayNetworking.send(new FumaroleEvents.RiderClick());
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player != null) client.player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+        if (client.player != null) client.player.swingHand(Hand.MAIN_HAND);
     }
 }

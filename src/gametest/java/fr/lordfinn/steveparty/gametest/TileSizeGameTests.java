@@ -12,15 +12,20 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.recipes.TileSizeRecipe;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.StairsBlock;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.book.CraftingRecipeCategory;
 import net.minecraft.recipe.input.CraftingRecipeInput;
+import net.minecraft.recipe.input.SingleStackRecipeInput;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -81,15 +86,15 @@ public class TileSizeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void largeTileFollowsTheSlopeUnderItsAnchor(TestContext context) {
         // Stairs climbing north under the anchor; its downhill side is south
-        context.setBlockState(TILE.down(), Blocks.OAK_STAIRS.getDefaultState().with(net.minecraft.block.StairsBlock.FACING, Direction.NORTH));
+        context.setBlockState(TILE.down(), Blocks.OAK_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH));
         PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
         ItemStack item = sized(new ItemStack(ModBlocks.ADVANCED_TILE), TileSize.LARGE);
         player.setStackInHand(Hand.MAIN_HAND, item);
         // Aimed at the west half of the step: across the slope, it spreads west
         BlockPos abs = context.getAbsolutePos(TILE.down());
-        net.minecraft.util.hit.BlockHitResult hit = new net.minecraft.util.hit.BlockHitResult(
+        BlockHitResult hit = new BlockHitResult(
                 new Vec3d(abs.getX() + 0.25, abs.getY() + 1, abs.getZ() + 0.3), Direction.UP, abs, false);
-        item.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND, hit));
+        item.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND, hit));
         assertLarge(context, TILE, TileLayout.LARGE_SOUTH_WEST);
         context.expectBlockProperty(TILE, SUPPORT, TileSupport.SLOPE_NORTH);
         // Its middle (the corner of its 4 blocks) is on the slope, half a block down from the step nose
@@ -182,10 +187,10 @@ public class TileSizeGameTests implements FabricGameTest {
                 context.getWorld()), "a tile and an advanced tile don't merge");
         context.assertFalse(recipe.matches(CraftingRecipeInput.create(1, 1, List.of(tile)), context.getWorld()), "a tile alone: nothing");
         // The stonecutter cuts a tile into 2 small ones
-        var cut = context.getWorld().getServer().getRecipeManager().getFirstMatch(net.minecraft.recipe.RecipeType.STONECUTTING,
-                new net.minecraft.recipe.input.SingleStackRecipeInput(tile), context.getWorld());
+        var cut = context.getWorld().getServer().getRecipeManager().getFirstMatch(RecipeType.STONECUTTING,
+                new SingleStackRecipeInput(tile), context.getWorld());
         context.assertTrue(cut.isPresent(), "a stonecutting recipe for the tile");
-        ItemStack cutResult = cut.get().value().craft(new net.minecraft.recipe.input.SingleStackRecipeInput(tile), registries);
+        ItemStack cutResult = cut.get().value().craft(new SingleStackRecipeInput(tile), registries);
         context.assertTrue(cutResult.isOf(ModBlocks.TILE.asItem()) && cutResult.getCount() == 2 && TileSize.of(cutResult) == TileSize.SMALL,
                 "2 small tiles: " + cutResult);
         context.complete();

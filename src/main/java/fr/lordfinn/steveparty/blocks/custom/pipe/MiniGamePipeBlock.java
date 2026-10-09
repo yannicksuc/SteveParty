@@ -2,13 +2,17 @@ package fr.lordfinn.steveparty.blocks.custom.pipe;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemActionResult;
@@ -17,10 +21,12 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * The mini-game pipes (Copper, Iron, Golden: they differ by how far they send, see {@link Reach}):
@@ -72,7 +78,7 @@ public class MiniGamePipeBlock extends PipeBlock {
     /**
      * @return true if a mini-game pipe at {@code from} in {@code world} sends as far as the mouth at {@code to}: see {@link Reach}
      */
-    public static boolean reaches(Reach reach, net.minecraft.server.world.ServerWorld world, BlockPos from, net.minecraft.util.math.GlobalPos to) {
+    public static boolean reaches(Reach reach, ServerWorld world, BlockPos from, GlobalPos to) {
         if (reach == Reach.EVERYWHERE) return true;
         if (!to.dimension().equals(world.getRegistryKey())) return false;
         if (reach == Reach.DIMENSION) return true;
@@ -100,12 +106,12 @@ public class MiniGamePipeBlock extends PipeBlock {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, net.minecraft.item.Item.TooltipContext context, List<Text> tooltip, net.minecraft.item.tooltip.TooltipType options) {
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         for (String line : new String[]{"what", "program", "colours", "direct", "own", "take"}) {
             tooltip.add(Text.translatable("tooltip.steveparty.minigame_pipe." + line)
                     .formatted(line.equals("what") ? Formatting.GOLD : Formatting.GRAY));
         }
-        tooltip.add(Text.translatable("tooltip.steveparty.minigame_pipe.reach." + reach().name().toLowerCase(java.util.Locale.ROOT))
+        tooltip.add(Text.translatable("tooltip.steveparty.minigame_pipe.reach." + reach().name().toLowerCase(Locale.ROOT))
                 .formatted(Formatting.YELLOW));
     }
 
@@ -167,8 +173,8 @@ public class MiniGamePipeBlock extends PipeBlock {
     @Override
     protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         // No longer a mini-game pipe: out of the index of the programmed pipes
-        if (!newState.isOf(this) && world instanceof net.minecraft.server.world.ServerWorld server) {
-            fr.lordfinn.steveparty.minigame.MiniGamePipeIndex.remove(server.getServer(), net.minecraft.util.math.GlobalPos.create(server.getRegistryKey(), pos));
+        if (!newState.isOf(this) && world instanceof ServerWorld server) {
+            MiniGamePipeIndex.remove(server.getServer(), GlobalPos.create(server.getRegistryKey(), pos));
         }
         super.onStateReplaced(state, world, pos, newState, moved);
     }

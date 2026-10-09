@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
+import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.mixin.FireworkRocketEntityAccessor;
@@ -13,6 +14,7 @@ import fr.lordfinn.steveparty.data.handler.ListUuidTrackedDataHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import net.minecraft.block.BlockState;
 import net.minecraft.component.type.FireworkExplosionComponent;
 import net.minecraft.component.type.FireworksComponent;
 import net.minecraft.entity.*;
@@ -24,23 +26,26 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.projectile.*;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.*;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.text.MutableText;
 import net.minecraft.util.Arm;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
@@ -53,9 +58,10 @@ import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.animation.AnimationState;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE;
+import static fr.lordfinn.steveparty.Steveparty.LOGGER;
 import static fr.lordfinn.steveparty.utils.EntitiesUtils.getPlayerNameByUuid;
 import static net.minecraft.component.DataComponentTypes.FIREWORKS;
 
@@ -304,7 +310,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.outcome = result;
         // A die bound to a black cat by a witch hut, landing on a 1 or a 0: a Mistigri
         if (this.getWorld() instanceof ServerWorld serverWorld) {
-            fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning.onRollFinished(serverWorld, this, faces);
+            MistigriSummoning.onRollFinished(serverWorld, this, faces);
         }
         DiceOutcome announced = result;
         this.getOwner().ifPresent(owner -> {
@@ -404,7 +410,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     /** A die is not a falling body: landing makes no fall sound, no crash particles, no fall damage. */
     @Override
-    protected void fall(double heightDifference, boolean onGround, net.minecraft.block.BlockState state, net.minecraft.util.math.BlockPos landedPosition) {
+    protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
         this.fallDistance = 0;
     }
 
@@ -420,7 +426,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     @Override
-    protected @Nullable net.minecraft.sound.SoundEvent getHurtSound(DamageSource source) {
+    protected @Nullable SoundEvent getHurtSound(DamageSource source) {
         return null;
     }
 
@@ -529,7 +535,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 } catch (IllegalArgumentException ex) {
                     // Log and clear on failure
                     this.setLinkedDice(Collections.emptyList());
-                    System.err.println("Failed to parse LinkedDice UUIDs from NBT: " + ex.getMessage());
+                    LOGGER.warn("Failed to parse LinkedDice UUIDs from NBT: {}", ex.getMessage());
                 }
             } else {
                 this.setLinkedDice(Collections.emptyList());
@@ -542,7 +548,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                     itemReference = ItemStack.fromNbt(
                             this.getRegistryManager(), itemReferenceNbt);
                 } catch (Exception ex) {
-                    System.err.println("Failed to parse ItemReference from NBT: " + ex.getMessage());
+                    LOGGER.warn("Failed to parse ItemReference from NBT: {}", ex.getMessage());
                 }
                 itemReference.ifPresentOrElse(
                         this::setItemReference,
@@ -574,13 +580,12 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                     if (targetEntity instanceof LivingEntity) {
                         simulation.setTarget((LivingEntity) targetEntity);
                     } else {
-                        System.err.println("Target entity UUID does not refer to a LivingEntity");
+                        LOGGER.warn("Target entity UUID does not refer to a LivingEntity");
                     }
                 });
             }
         } catch (Exception e) {
-            System.err.println("Error reading NBT in DiceEntity: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error reading NBT in DiceEntity", e);
         }
     }
 
@@ -607,20 +612,19 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                             this.getRegistryManager()
                     ));
                 } catch (Exception e) {
-                    System.err.println("Failed to write ItemReference to NBT: " + e.getMessage());
+                    LOGGER.warn("Failed to write ItemReference to NBT: {}", e.getMessage());
                 }
             } else if (dieStack != null && !dieStack.isEmpty()) {
                 try {
                     nbt.put("DieStack", dieStack.encode(this.getRegistryManager()));
                 } catch (Exception e) {
-                    System.err.println("Failed to write DieStack to NBT: " + e.getMessage());
+                    LOGGER.warn("Failed to write DieStack to NBT: {}", e.getMessage());
                 }
             }
 
             return super.writeNbt(nbt);
         } catch (Exception e) {
-            System.err.println("Error writing NBT in DiceEntity: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error writing NBT in DiceEntity", e);
             return nbt; // fallback to partial data
         }
     }
@@ -802,7 +806,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             entity.addVelocity(flat.x * push, BLAST_LIFT * near, flat.z * push);
             entity.velocityModified = true;
         }
-        world.spawnParticles(net.minecraft.particle.ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0, 0, 0, 0);
+        world.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0, 0, 0, 0);
         world.playSound(null, center.x, center.y, center.z, SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 1.0F, 1.4F);
     }
 
@@ -820,7 +824,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     private ItemStack createStopFireworkItem() {
-        ItemStack fireworkStack = new ItemStack(net.minecraft.item.Items.FIREWORK_ROCKET);
+        ItemStack fireworkStack = new ItemStack(Items.FIREWORK_ROCKET);
         List<FireworkExplosionComponent> components = new ArrayList<>();
         IntList colors = new IntArrayList(2);
         colors.add(0x569DCD);
@@ -876,7 +880,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.dataTracker.set(LINKED_DICE, linkedDice.stream().filter(uuid -> !uuid.equals(this.getUuid())).toList());
     }
 
-    private void propagateStateChange(java.util.function.Consumer<DiceEntity> stateChange) {
+    private void propagateStateChange(Consumer<DiceEntity> stateChange) {
         if (!(this.getWorld() instanceof ServerWorld world)) return;
         for (UUID uuid : this.getLinkedDice()) {
             if (uuid.equals(this.getUuid())) continue;

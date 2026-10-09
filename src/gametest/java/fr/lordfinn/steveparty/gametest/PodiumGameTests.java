@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.minigame.PartyMiniGameSession;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
@@ -45,6 +46,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -55,13 +57,16 @@ import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -443,7 +448,7 @@ public class PodiumGameTests implements FabricGameTest {
             Played played = played(context, page(context, first), new TeamDisposition(set(a1, a2), set(b1)), MiniGamePartyStep.Phase.PLAYING, a1, a2, b1);
             ServerWorld world = context.getWorld();
             PodiumGroup group = group(context, first);
-            context.assertTrue(Podiums.played(group) instanceof fr.lordfinn.steveparty.minigame.PartyMiniGameSession session && session.miniGame() == played.step(), "the group knows its mini-game");
+            context.assertTrue(Podiums.played(group) instanceof PartyMiniGameSession session && session.miniGame() == played.step(), "the group knows its mini-game");
             context.assertTrue(!Podiums.toggle(watcher, world, context.getAbsolutePos(first)), "not a player of the mini-game");
             context.assertTrue(occupant(context, first) == null, "refused");
             context.assertTrue(Podiums.register(group, group.columnAt(world, context.getAbsolutePos(second)), a1), "team A on the second place");
@@ -991,7 +996,7 @@ public class PodiumGameTests implements FabricGameTest {
     public void aLinkedStepControllerWorksFromAnotherDimension(TestContext context) {
         ServerPlayerEntity p1 = player(context, "n1", 0.5, 1, 0.5);
         MinecraftServer server = context.getWorld().getServer();
-        ServerWorld nether = server.getWorld(net.minecraft.world.World.NETHER);
+        ServerWorld nether = server.getWorld(World.NETHER);
         BlockPos there = new BlockPos(context.getAbsolutePos(CONTROLLER).getX(), 100, context.getAbsolutePos(CONTROLLER).getZ());
         try {
             context.assertTrue(nether != null, "the test server has a Nether");
@@ -1027,7 +1032,7 @@ public class PodiumGameTests implements FabricGameTest {
         ServerPlayerEntity player = player(context, "g1", 0.5, 1, 0.5), watcher = player(context, "g2", 1.5, 1, 0.5);
         BlockPos other = new BlockPos(3, 1, 2);
         MinecraftServer server = context.getWorld().getServer();
-        ServerWorld nether = server.getWorld(net.minecraft.world.World.NETHER);
+        ServerWorld nether = server.getWorld(World.NETHER);
         BlockPos there = new BlockPos(context.getAbsolutePos(BASE).getX(), 100, context.getAbsolutePos(BASE).getZ());
         try {
             GoalPoleBaseBlockEntity base = jumpCounter(context);
@@ -1090,7 +1095,7 @@ public class PodiumGameTests implements FabricGameTest {
         ServerPlayerEntity p1 = player(context, "k1", 0.5, 1, 0.5);
         ServerWorld world = context.getWorld();
         BlockPos abs = context.getAbsolutePos(CONTROLLER);
-        net.minecraft.util.math.ChunkPos chunk = new net.minecraft.util.math.ChunkPos(abs);
+        ChunkPos chunk = new ChunkPos(abs);
         try {
             context.setBlockState(CONTROLLER.down(), Blocks.STONE);
             context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
@@ -1106,7 +1111,7 @@ public class PodiumGameTests implements FabricGameTest {
             // Saved with the world: the tickets are taken again when it loads
             NbtCompound saved = PartyChunkHolds.get(world).writeNbt(new NbtCompound(), world.getRegistryManager());
             long[] read = PartyChunkHolds.fromNbt(saved, world.getRegistryManager()).writeNbt(new NbtCompound(), world.getRegistryManager()).getLongArray("Controllers");
-            context.assertTrue(java.util.Arrays.stream(read).anyMatch(pos -> pos == abs.asLong()), "the hold is saved and read back");
+            context.assertTrue(Arrays.stream(read).anyMatch(pos -> pos == abs.asLong()), "the hold is saved and read back");
 
             // The mini-game ends (a step controller here): the party goes on, the chunk is let go
             controller.nextStep();
@@ -1204,7 +1209,7 @@ public class PodiumGameTests implements FabricGameTest {
                 "four teams, and a player in no team");
 
         // The results travel to the clients as they are
-        net.minecraft.network.RegistryByteBuf buf = new net.minecraft.network.RegistryByteBuf(io.netty.buffer.Unpooled.buffer(), context.getWorld().getRegistryManager());
+        RegistryByteBuf buf = new RegistryByteBuf(io.netty.buffer.Unpooled.buffer(), context.getWorld().getRegistryManager());
         MiniGameResults sent = MiniGameResults.of("Course", new ItemStack(Items.EMERALD), new ItemStack(Items.NETHER_STAR), gains, places, oneVsThree, UUID::toString);
         MiniGameResults.PACKET_CODEC.encode(buf, sent);
         MiniGameResults received = MiniGameResults.PACKET_CODEC.decode(buf);

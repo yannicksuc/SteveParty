@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.datagen;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
@@ -9,7 +9,6 @@ import net.minecraft.block.Block;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.registry.tag.TagKey;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -50,7 +49,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
         }
         // Plastic travel pipes: plastic too (taken apart in one hit with the wrench; they have a block entity: never
         // switchable). Glass pipes are glass: by hand, like glass
-        for (fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind kind : fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values())
+        for (PipeKind kind : PipeKind.values())
             if (kind.isPlastic()) for (Block pipe : ModBlocks.PIPES[kind.ordinal()]) {
                 getOrCreateTagBuilder(Switchables.PLASTIC).add(pipe);
                 getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(pipe);

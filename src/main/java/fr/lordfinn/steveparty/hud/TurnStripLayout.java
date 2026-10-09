@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.hud.HudShapes.Form;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static fr.lordfinn.steveparty.hud.HudShapes.GAP;
 import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
@@ -172,10 +173,10 @@ public final class TurnStripLayout {
      * @param names  the names of the party's players (their tokens), in their order
      * @param width  the room for the strip, in pixels
      */
-    public record Input(List<Step> steps, int rounds, java.util.Set<Integer> mine, List<String> names, int width) {
+    public record Input(List<Step> steps, int rounds, Set<Integer> mine, List<String> names, int width) {
         /** One token of mine ({@code me}: its index, -1 for none). */
         public Input(List<Step> steps, int rounds, int me, List<String> names, int width) {
-            this(steps, rounds, me >= 0 ? java.util.Set.of(me) : java.util.Set.of(), names, width);
+            this(steps, rounds, me >= 0 ? Set.of(me) : Set.of(), names, width);
         }
 
         boolean mine(Step step) {

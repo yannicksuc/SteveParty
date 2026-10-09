@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.client.gui;
 
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
+import fr.lordfinn.steveparty.minigame.MiniGamePageData;
+import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
@@ -9,6 +11,7 @@ import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntFunction;
 
 /**
  * A format's pawn pictogram and its chip, as the editor's mock-ups draw them (the art sources
@@ -135,7 +138,7 @@ public final class FormatChips {
      * Where chips laid left to right go, a new row when one does not fit {@code width}: {x, y, w} of each, from the
      * top left of the area.
      */
-    public static List<int[]> flow(TextRenderer font, List<MiniGameFormat> formats, java.util.function.IntFunction<Look> looks, int width, int gap) {
+    public static List<int[]> flow(TextRenderer font, List<MiniGameFormat> formats, IntFunction<Look> looks, int width, int gap) {
         List<int[]> at = new ArrayList<>();
         int x = 0, y = 0;
         for (int i = 0; i < formats.size(); i++) {
@@ -152,7 +155,7 @@ public final class FormatChips {
     }
 
     /** Draws chips laid by {@link #flow}; returns the height they take. */
-    public static int drawFlow(DrawContext context, TextRenderer font, List<MiniGameFormat> formats, java.util.function.IntFunction<Look> looks,
+    public static int drawFlow(DrawContext context, TextRenderer font, List<MiniGameFormat> formats, IntFunction<Look> looks,
                                int x, int y, int width, int gap) {
         List<int[]> at = flow(font, formats, looks, width, gap);
         int bottom = 0;
@@ -168,11 +171,11 @@ public final class FormatChips {
      *
      * @param shortfall format index, role ordinal (-1: the teams are not of the same size), count, min, max (255: no limit)
      */
-    public static Text shortfallText(fr.lordfinn.steveparty.minigame.MiniGamePageData page, int[] shortfall) {
+    public static Text shortfallText(MiniGamePageData page, int[] shortfall) {
         MiniGameFormat format = page.format(shortfall[0]);
         Text name = format == null ? Text.empty() : format.name();
         if (shortfall[1] < 0) return Text.translatable("format.steveparty.shortfall.size", name);
-        fr.lordfinn.steveparty.minigame.MiniGamePipeRole role = fr.lordfinn.steveparty.minigame.MiniGamePipeRole.byOrdinal(shortfall[1]);
+        MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(shortfall[1]);
         MiniGameFormat.Side range = new MiniGameFormat.Side(shortfall[3], shortfall[4] >= 255 ? MiniGameFormat.Side.INFINITE : shortfall[4]);
         return Text.translatable("format.steveparty.shortfall.count", name, role == null ? Text.empty() : role.text(), shortfall[2], range.rangeText());
     }

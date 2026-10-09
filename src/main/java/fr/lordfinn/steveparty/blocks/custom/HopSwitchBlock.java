@@ -166,7 +166,7 @@ public class HopSwitchBlock extends CartridgeContainer {
         return ItemActionResult.CONSUME;
     }
     @Override
-    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {
+    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         return new SimpleNamedScreenHandlerFactory((syncId, inventory, player) ->
                 new HopSwitchScreenHandler(syncId, inventory, (HopSwitchBlockEntity) blockEntity), Text.empty());

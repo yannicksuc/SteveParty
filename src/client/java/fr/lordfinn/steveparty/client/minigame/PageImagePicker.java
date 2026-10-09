@@ -9,6 +9,8 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
+import java.io.IOException;
+import java.util.function.Supplier;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
@@ -61,7 +63,7 @@ public final class PageImagePicker {
         run(() -> load(file), done);
     }
 
-    private static void run(java.util.function.Supplier<Result> work, Consumer<Result> done) {
+    private static void run(Supplier<Result> work, Consumer<Result> done) {
         Thread thread = new Thread(() -> {
             Result result;
             try {
@@ -102,14 +104,14 @@ public final class PageImagePicker {
             // What the others will see: the compressed picture, not the file
             BufferedImage shown = MiniGamePageImages.decode(bytes);
             return shown == null ? failure("unreadable") : new Result(bytes, shown, null);
-        } catch (java.io.IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             Steveparty.LOGGER.warn("Can't read the picture {}", file, e);
             return failure("unreadable");
         }
     }
 
     /** Decodes the file, unless its header announces a picture too big to hold in memory. */
-    private static @Nullable BufferedImage decode(Path file) throws java.io.IOException {
+    private static @Nullable BufferedImage decode(Path file) throws IOException {
         try (ImageInputStream in = ImageIO.createImageInputStream(file.toFile())) {
             if (in == null) return null;
             Iterator<ImageReader> readers = ImageIO.getImageReaders(in);

@@ -13,7 +13,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
-import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -34,7 +33,6 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
 import java.util.UUID;
-import java.util.function.BooleanSupplier;
 
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 

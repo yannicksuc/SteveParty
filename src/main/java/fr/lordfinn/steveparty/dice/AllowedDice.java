@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.dice;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.DefaultDiceItem;
 import fr.lordfinn.steveparty.powerups.PowerUpLimit;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -15,6 +16,7 @@ import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -32,8 +34,8 @@ public final class AllowedDice {
     /** The list a new controller starts with: the plain Default Die (no faces, no modules). */
     public static List<ItemStack> defaults() {
         // The Default Die and its power-up version (carrying the Power-up Module)
-        ItemStack die = new ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE);
-        return List.of(die, DiceModules.set(die.copy(), java.util.Map.of(DiceModules.POWER_UP, 1)));
+        ItemStack die = new ItemStack(ModItems.DEFAULT_DICE);
+        return List.of(die, DiceModules.set(die.copy(), Map.of(DiceModules.POWER_UP, 1)));
     }
 
     /** True if {@code stack} is a die (plain, double, triple, forged or not). */

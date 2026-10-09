@@ -13,23 +13,27 @@ import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
 import fr.lordfinn.steveparty.dice.DiceRollSequence.Phase;
+import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.DiceModuleItem;
+import fr.lordfinn.steveparty.items.custom.PowerUpItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameMode;
@@ -38,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
@@ -109,7 +114,7 @@ public class DiceModulesGameTests implements FabricGameTest {
         List<Text> tooltip = new ArrayList<>();
         die.getItem().appendTooltip(die, Item.TooltipContext.DEFAULT, tooltip, TooltipType.BASIC);
         context.assertEquals(tooltip.size(), 8, "the tags, three points, the faces line and three module lines");
-        context.assertTrue(tooltip.getFirst().equals(fr.lordfinn.steveparty.items.custom.PowerUpItem.tags()),
+        context.assertTrue(tooltip.getFirst().equals(PowerUpItem.tags()),
                 "tagged like the power-ups, got " + tooltip.getFirst().getString());
         List<Text> plainTooltip = new ArrayList<>();
         ItemStack plain = with(die("dice_face_1", "dice_face_6"), DiceModules.LUCKY, 2);
@@ -120,12 +125,12 @@ public class DiceModulesGameTests implements FabricGameTest {
         context.assertTrue(lucky != null, "Lucky shows its count");
         Text reversed = DiceModules.line(DiceModules.REVERSED, 1);
         context.assertTrue(!reversed.getString().contains("×"), "a single module shows no count");
-        Set<net.minecraft.text.TextColor> colors = new HashSet<>();
+        Set<TextColor> colors = new HashSet<>();
         reversed.visit((style, text) -> {
             if (!text.isBlank()) colors.add(style.getColor());
-            return java.util.Optional.empty();
-        }, net.minecraft.text.Style.EMPTY);
-        context.assertEquals(colors, Set.of(net.minecraft.text.TextColor.fromFormatting(Formatting.RED)), "a negative module's line is all red");
+            return Optional.empty();
+        }, Style.EMPTY);
+        context.assertEquals(colors, Set.of(TextColor.fromFormatting(Formatting.RED)), "a negative module's line is all red");
         context.complete();
     }
 
@@ -431,7 +436,7 @@ public class DiceModulesGameTests implements FabricGameTest {
         PigEntity pig = token(context, PATH.get(0), roller.getUuid());
         PartyControllerEntity controller = party(context, roller.getUuid(), pig);
         TokenTurnPartyStep turn = (TokenTurnPartyStep) controller.getPartyData().getCurrentStep();
-        DiceEntity dice = context.spawnEntity(fr.lordfinn.steveparty.entities.ModEntities.DICE_ENTITY, DICE);
+        DiceEntity dice = context.spawnEntity(ModEntities.DICE_ENTITY, DICE);
         dice.setItemReference(die("dice_face_4"));
         turn.onDiceRoll(dice, roller.getUuid(), 4, controller);
         dice.discard();
@@ -543,10 +548,10 @@ public class DiceModulesGameTests implements FabricGameTest {
         ItemStack stack = new ItemStack(multi);
         if (die.get(DiceFacesComponent.TYPE) != null) stack.set(DiceFacesComponent.TYPE, die.get(DiceFacesComponent.TYPE));
         stack = DiceModules.set(stack, DiceModules.of(die));
-        roller.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, stack);
+        roller.setStackInHand(Hand.MAIN_HAND, stack);
         Box around = roller.getBoundingBox().expand(8);
         Set<DiceEntity> before = new HashSet<>(context.getWorld().getEntitiesByClass(DiceEntity.class, around, e -> true));
-        stack.use(context.getWorld(), roller, net.minecraft.util.Hand.MAIN_HAND);
+        stack.use(context.getWorld(), roller, Hand.MAIN_HAND);
         List<DiceEntity> dice = context.getWorld().getEntitiesByClass(DiceEntity.class, around, e -> !before.contains(e));
         for (DiceEntity die1 : dice) atEnd(context, () -> {
             if (!die1.isRemoved()) die1.discard();

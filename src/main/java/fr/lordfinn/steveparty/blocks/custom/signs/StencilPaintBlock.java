@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom.signs;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.stencil.StencilShape;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.enums.Orientation;
@@ -26,7 +27,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
@@ -207,7 +207,7 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
 
     /** Hitting the paint does nothing outside creative, and tells how to get it off. Both sides. */
     public static void registerBreakRule() {
-        net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (player.isSpectator() || !world.getBlockState(pos).isOf(ModBlocks.STENCIL_PAINT) || canBreak(player)) return ActionResult.PASS;
             StencilInteractions.hint(world, player, "message.steveparty.stencil_paint.remove");
             return ActionResult.FAIL;

@@ -17,6 +17,7 @@ import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.StonecuttingRecipe;
 import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.recipe.input.SingleStackRecipeInput;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.TranslatableTextContent;
@@ -189,7 +190,7 @@ public class PolishedTilesGameTests implements FabricGameTest {
             context.assertTrue(tiles.getHardness() == polished.getBlock().getHardness() && tiles.getBlastResistance() == polished.getBlock().getBlastResistance(),
                     tiles.material() + " tiles are as hard as the polished block");
             context.assertTrue(tiles.getDefaultState().isToolRequired(), "needs a pickaxe");
-            context.assertTrue(tiles.getDefaultState().isIn(net.minecraft.registry.tag.BlockTags.PICKAXE_MINEABLE), "mined with a pickaxe");
+            context.assertTrue(tiles.getDefaultState().isIn(BlockTags.PICKAXE_MINEABLE), "mined with a pickaxe");
             context.assertFalse(tiles.getDefaultState().hasBlockEntity(), "no block entity");
         }
         context.complete();

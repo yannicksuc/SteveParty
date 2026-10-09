@@ -1,12 +1,13 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
+import fr.lordfinn.steveparty.podium.Podiums;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
@@ -19,6 +20,7 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -56,7 +58,7 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
 
     /** Placed by a player: the base follows the party's players when a party controller is near, else everyone. */
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack itemStack) {
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
         if (!world.isClient && placer instanceof PlayerEntity && world.getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity base) {
             base.onPlacedByPlayer();
@@ -87,13 +89,13 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         ItemStack mainHandStack = player.getMainHandStack();
-        boolean page = mainHandStack.getItem() instanceof fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+        boolean page = mainHandStack.getItem() instanceof MiniGamePageItem;
         // Same result as the server on the client (arm swing, no item use behind the screen)
         if (world.isClient) return mainHandStack.getItem() instanceof WrenchItem || page ? ActionResult.SUCCESS : ActionResult.PASS;
         // A mini-game page: the base is one of its counters (reset with its podiums, its goals give their places)
         if (page) {
-            fr.lordfinn.steveparty.podium.Podiums.clickLink((ServerPlayerEntity) player, net.minecraft.util.Hand.MAIN_HAND, (ServerWorld) world, pos,
-                    fr.lordfinn.steveparty.minigame.MiniGamePodiumLink.Kind.COUNTER);
+            Podiums.clickLink((ServerPlayerEntity) player, Hand.MAIN_HAND, (ServerWorld) world, pos,
+                    MiniGamePodiumLink.Kind.COUNTER);
             return ActionResult.SUCCESS;
         }
 

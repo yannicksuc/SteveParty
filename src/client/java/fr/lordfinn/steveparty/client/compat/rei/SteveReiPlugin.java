@@ -33,6 +33,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -127,7 +128,7 @@ public class SteveReiPlugin implements REIClientPlugin {
                 List.of(EntryIngredients.ofItemStacks(results)),
                 Optional.of(Steveparty.id("tile_cartridge/tile"))));
         ItemStack stop = CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
-        ItemStack filled = fr.lordfinn.steveparty.recipes.TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE),
+        ItemStack filled = TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE),
                 List.of(plain, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP)));
         if (filled != null) registry.add(DefaultCustomShapelessDisplay.simple(
                 List.of(EntryIngredients.of(ModBlocks.ADVANCED_TILE), EntryIngredients.of(tile), EntryIngredients.of(stop)),
@@ -246,7 +247,7 @@ public class SteveReiPlugin implements REIClientPlugin {
 
     /** {@code die} carrying the Power-up module (on top of its own modules). */
     private static ItemStack powerUp(ItemStack die) {
-        Map<DiceModule, Integer> modules = new java.util.LinkedHashMap<>(DiceModules.of(die));
+        Map<DiceModule, Integer> modules = new LinkedHashMap<>(DiceModules.of(die));
         modules.put(DiceModules.POWER_UP, 1);
         return DiceModules.set(die, modules);
     }

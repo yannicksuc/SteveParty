@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.minigame.RichText;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.test.GameTest;
+import net.minecraft.test.GameTestException;
 import net.minecraft.test.TestContext;
 
 import java.util.Arrays;
@@ -15,7 +16,7 @@ import java.util.Arrays;
  */
 public class RichTextGameTests implements FabricGameTest {
     private static void check(TestContext context, boolean condition, String message) {
-        if (!condition) throw new net.minecraft.test.GameTestException(message);
+        if (!condition) throw new GameTestException(message);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
