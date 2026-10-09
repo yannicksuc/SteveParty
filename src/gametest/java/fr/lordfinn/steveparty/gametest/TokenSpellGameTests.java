@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem.SpellResult;
 import fr.lordfinn.steveparty.utils.DominantColorPicker;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
@@ -20,9 +21,13 @@ import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.passive.CowEntity;
 import net.minecraft.entity.passive.HorseEntity;
+import net.minecraft.entity.passive.LlamaEntity;
 import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.village.VillagerProfession;
 import net.minecraft.util.ActionResult;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -106,12 +111,12 @@ public class TokenSpellGameTests implements FabricGameTest {
     /** A llama token goes into an empty Token: the llama's own interaction (its chest screen, mounting) doesn't win. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aLlamaTokenCanBeStoredInAToken(TestContext context) {
-        net.minecraft.entity.passive.LlamaEntity llama = spawn(context, EntityType.LLAMA);
+        LlamaEntity llama = spawn(context, EntityType.LLAMA);
         llama.setTame(true);
         ServerPlayerEntity player = wandHolder(context);
         try {
             context.assertTrue(TokenizerWandItem.castSpell(player, llama.getId(), 1F, BLUE) == SpellResult.TOKENIZED, "tokenized");
-            player.setStackInHand(Hand.MAIN_HAND, new net.minecraft.item.ItemStack(ModItems.TOKEN));
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TOKEN));
             ActionResult result = player.interact(llama, Hand.MAIN_HAND);
             context.assertTrue(result.isAccepted(), "the Token takes the click: " + result);
             context.assertTrue(!player.hasVehicle(), "not riding the llama");
@@ -186,8 +191,8 @@ public class TokenSpellGameTests implements FabricGameTest {
     /** The biggest token is five times the mob's own size: a chicken pawn smaller than a zombie one. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void theBiggestTokenIsFiveTimesTheMob(TestContext context) {
-        net.minecraft.entity.passive.ChickenEntity chicken = spawn(context, EntityType.CHICKEN);
-        net.minecraft.entity.mob.ZombieEntity zombie = spawn(context, EntityType.ZOMBIE);
+        ChickenEntity chicken = spawn(context, EntityType.CHICKEN);
+        ZombieEntity zombie = spawn(context, EntityType.ZOMBIE);
         chicken.setBaby(false);
         zombie.setBaby(false);
         context.assertTrue(near(TokenizerWandItem.maxTokenSize(chicken), 3.5), "chicken: " + TokenizerWandItem.maxTokenSize(chicken));
@@ -395,7 +400,7 @@ public class TokenSpellGameTests implements FabricGameTest {
                 boss.discard();
             }
 
-            context.setBlockState(MOB_POS.add(0, 0, 2), net.minecraft.block.Blocks.STONE);
+            context.setBlockState(MOB_POS.add(0, 0, 2), Blocks.STONE);
             hit = TokenizerFlare.trace(player.getServerWorld(), player, wand, from, to);
             context.assertTrue(hit.mob() == null && hit.stops(), "a wall stops the flare");
             behind.discard();
@@ -590,8 +595,8 @@ public class TokenSpellGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void storedTokenItemTakesTheOwnerNameColour(TestContext context) {
         // The Token item is named "Token of %s" with the coloured name as argument: its icon is tinted with it
-        net.minecraft.text.Text name = net.minecraft.text.Text.translatable("item.steveparty.token.of",
-                net.minecraft.text.Text.literal("LordFinn").withColor(BLUE));
+        Text name = Text.translatable("item.steveparty.token.of",
+                Text.literal("LordFinn").withColor(BLUE));
         context.assertEquals(getColorFromText(name) & 0xFFFFFF, BLUE, "colour read from the translation argument");
         context.complete();
     }

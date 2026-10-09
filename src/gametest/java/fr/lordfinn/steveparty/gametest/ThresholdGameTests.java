@@ -29,10 +29,13 @@ import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -94,7 +97,7 @@ public class ThresholdGameTests implements FabricGameTest {
     }
 
     /** What to undo when the test ends (a test has one final task: they are run together). */
-    private static final java.util.Map<TestContext, List<Runnable>> AT_END = new java.util.WeakHashMap<>();
+    private static final Map<TestContext, List<Runnable>> AT_END = new WeakHashMap<>();
 
     static void atEnd(TestContext context, Runnable task) {
         List<Runnable> tasks = AT_END.get(context);
@@ -177,8 +180,8 @@ public class ThresholdGameTests implements FabricGameTest {
         ItemStack plain = new ItemStack(ModItems.THRESHOLD_CARTRIDGE);
         context.assertEquals(ThresholdCartridgeItem.operator(plain), Operator.AT_LEAST, "≥ by default");
         context.assertEquals(ThresholdCartridgeItem.value(plain), ThresholdCartridgeItem.DEFAULT_VALUE, "7 by default");
-        context.assertEquals(ThresholdCartridgeItem.label(plain), net.minecraft.text.Text.translatable("gui.steveparty.threshold.at_least", 7), "its label");
-        context.assertEquals(ThresholdCartridgeItem.label(obstacle(Operator.LESS, 4)), net.minecraft.text.Text.translatable("gui.steveparty.threshold.less", 4), "another label");
+        context.assertEquals(ThresholdCartridgeItem.label(plain), Text.translatable("gui.steveparty.threshold.at_least", 7), "its label");
+        context.assertEquals(ThresholdCartridgeItem.label(obstacle(Operator.LESS, 4)), Text.translatable("gui.steveparty.threshold.less", 4), "another label");
         context.complete();
     }
 

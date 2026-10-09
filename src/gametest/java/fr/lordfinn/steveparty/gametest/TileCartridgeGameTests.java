@@ -20,24 +20,32 @@ import fr.lordfinn.steveparty.recipes.TileCartridgeRecipe;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.DyedColorComponent;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.input.CraftingRecipeInput;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -81,7 +89,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
 
     // ---------------------------------------------------------------- recipes
 
-    private static ItemStack slab(net.minecraft.util.DyeColor colour) {
+    private static ItemStack slab(DyeColor colour) {
         return new ItemStack(ModBlocks.PLASTIC_SLABS[colour.getId()]);
     }
 
@@ -98,7 +106,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
         context.assertTrue(held.size() == 1 && held.getFirst().cartridge().isOf(ModItems.BOARD_SPACE_BEHAVIOR)
                 && held.getFirst().cartridge().getComponentChanges().isEmpty(), "shown holding a plain Cartridge: " + held);
 
-        ItemStack p = slab(net.minecraft.util.DyeColor.WHITE), iron = new ItemStack(Items.HEAVY_WEIGHTED_PRESSURE_PLATE);
+        ItemStack p = slab(DyeColor.WHITE), iron = new ItemStack(Items.HEAVY_WEIGHTED_PRESSURE_PLATE);
         CraftingRecipeInput grid = CraftingRecipeInput.create(3, 2, List.of(p, iron, p, p, plain(), p));
         context.assertTrue(match(context, grid).orElseThrow().value() instanceof TileShapedRecipe, "the tile recipe");
         context.assertTrue(ItemStack.areItemsAndComponentsEqual(craft(context, grid), shown), "a plain Cartridge: the tile shown");
@@ -119,7 +127,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
 
         // Not without a cartridge, not with another slab colour, not with something under it
         context.assertTrue(match(context, CraftingRecipeInput.create(3, 2, List.of(p, iron, p, p, EMPTY, p))).isEmpty(), "a cartridge is needed");
-        ItemStack y = slab(net.minecraft.util.DyeColor.YELLOW);
+        ItemStack y = slab(DyeColor.YELLOW);
         context.assertTrue(match(context, CraftingRecipeInput.create(3, 2, List.of(y, iron, y, y, plain(), y))).isEmpty(), "white slabs");
         context.assertTrue(match(context, CraftingRecipeInput.create(3, 3, List.of(p, iron, p, p, plain(), p, EMPTY, plain(), EMPTY))).isEmpty(),
                 "nothing under a Tile's recipe");
@@ -140,7 +148,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
         context.assertTrue(shown.isOf(ModBlocks.ADVANCED_TILE.asItem()) && shown.getCount() == 1 && slots(shown).equals(List.of(0, 15)),
                 "shown holding two Cartridges, slots 0 and 15: " + slots(shown));
 
-        ItemStack p = slab(net.minecraft.util.DyeColor.YELLOW), gold = new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE),
+        ItemStack p = slab(DyeColor.YELLOW), gold = new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE),
                 chest = new ItemStack(Items.TRAPPED_CHEST);
         ItemStack start = new ItemStack(ModItems.TILE_BEHAVIOR_START), stop = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP);
         CraftingRecipeInput grid = CraftingRecipeInput.create(3, 2, List.of(p, gold, p, start, chest, stop));
@@ -156,7 +164,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
         ItemStack teleport = new ItemStack(ModItems.TELEPORT_CARTRIDGE);
         ItemStack more = craft(context, CraftingRecipeInput.create(3, 3, List.of(p, gold, p, start, chest, stop, shop, EMPTY, teleport)));
         context.assertTrue(slots(more).equals(List.of(0, 13, 14, 15)), "the extra ones in 14 then 13: " + slots(more));
-        java.util.Map<Integer, ItemStack> bySlot = new java.util.HashMap<>();
+        Map<Integer, ItemStack> bySlot = new HashMap<>();
         for (TileContents.Slot slot : TileContents.cartridges(more)) bySlot.put(slot.slot(), slot.cartridge());
         context.assertTrue(ItemStack.areItemsAndComponentsEqual(bySlot.get(14), shop), "the Shop Cartridge, links kept, in 14");
         context.assertTrue(bySlot.get(13).isOf(ModItems.TELEPORT_CARTRIDGE), "the Teleport one in 13");
@@ -175,8 +183,8 @@ public class TileCartridgeGameTests implements FabricGameTest {
     /** Every cartridge is in the tag the tile recipes take. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void everyCartridgeIsInTheCartridgesTag(TestContext context) {
-        net.minecraft.registry.tag.TagKey<net.minecraft.item.Item> tag =
-                net.minecraft.registry.tag.TagKey.of(net.minecraft.registry.RegistryKeys.ITEM, Steveparty.id("cartridges"));
+        TagKey<Item> tag =
+                TagKey.of(RegistryKeys.ITEM, Steveparty.id("cartridges"));
         for (ItemStack cartridge : CartridgeApplications.cartridges())
             context.assertTrue(cartridge.isIn(tag), cartridge.getItem() + " is in #steveparty:cartridges");
         context.complete();
@@ -259,7 +267,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
             // A kind picked: the tiles painted get it, links kept, theirs back
             player.getInventory().setStack(9, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP, 1));
             context.assertTrue(BoardLinkingGameTests.pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
-                    net.minecraft.registry.Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR_STOP)), "stop picked");
+                    Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR_STOP)), "stop picked");
             TileLinkerBrush.paint(player, brush, context.getWorld(), t.get(0));
             TileLinkerBrush.endStroke(player);
             BoardSpaceBlockEntity first = BoardLinkingGameTests.boardSpace(context, t.get(0));
@@ -335,7 +343,7 @@ public class TileCartridgeGameTests implements FabricGameTest {
         BlockPos a = context.getAbsolutePos(new BlockPos(1, 1, 1)), b = context.getAbsolutePos(new BlockPos(2, 1, 1));
         // The pure logic: a coloured stop gets a shop's destinations, and stays a coloured stop
         ItemStack stop = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP);
-        stop.set(DataComponentTypes.DYED_COLOR, new net.minecraft.component.type.DyedColorComponent(0xFF0000, true));
+        stop.set(DataComponentTypes.DYED_COLOR, new DyedColorComponent(0xFF0000, true));
         List<BlockPos> copied = Pipette.copyOf(linked(new ItemStack(ModItems.SHOP_CARTRIDGE), a, b));
         ItemStack pasted = Pipette.pasted(stop, copied, context.getWorld());
         context.assertTrue(pasted != null && pasted.isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP)

@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -31,7 +32,7 @@ public class CartridgeSelectGameTests implements FabricGameTest {
     public void aCartridgeClickSelectsTheBoardSpaceOrTheGround(TestContext context) {
         List<BlockPos> tiles = BoardLinkingGameTests.tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1));
         BlockPos tile = tiles.getFirst();
-        context.setBlockState(new BlockPos(5, 0, 1), net.minecraft.block.Blocks.STONE);
+        context.setBlockState(new BlockPos(5, 0, 1), Blocks.STONE);
         BlockPos ground = context.getAbsolutePos(new BlockPos(5, 0, 1));
         ServerPlayerEntity player = TestPlayers.mock(context);
         try {

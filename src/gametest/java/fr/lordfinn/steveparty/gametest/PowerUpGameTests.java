@@ -24,6 +24,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.world.GameMode;
 
@@ -81,8 +82,8 @@ public class PowerUpGameTests implements FabricGameTest {
     /** On a stall, a power-up without a price sells at its default price, in coins; a price set by hand wins. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void unpricedPowerUpSellsAtItsDefaultPrice(TestContext context) {
-        context.setBlockState(new net.minecraft.util.math.BlockPos(1, 1, 1), ModBlocks.TRADING_STALL);
-        TradingStallBlockEntity stall = context.getBlockEntity(new net.minecraft.util.math.BlockPos(1, 1, 1));
+        context.setBlockState(new BlockPos(1, 1, 1), ModBlocks.TRADING_STALL);
+        TradingStallBlockEntity stall = context.getBlockEntity(new BlockPos(1, 1, 1));
         stall.setStack(18, new ItemStack(PowerUps.MUSHROOM.item()));
         stall.setStack(1, new ItemStack(Items.EMERALD, 2));
         stall.setStack(19, new ItemStack(PowerUps.DOUBLE_COINS.item()));

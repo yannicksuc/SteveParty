@@ -67,7 +67,9 @@ import net.minecraft.world.GameMode;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -164,7 +166,7 @@ public class TileTeleportGameTests implements FabricGameTest {
         return pig;
     }
 
-    private static final java.util.Map<TestContext, List<Runnable>> CLEANUPS = new java.util.WeakHashMap<>();
+    private static final Map<TestContext, List<Runnable>> CLEANUPS = new WeakHashMap<>();
 
     /** Runs {@code cleanup} when the test succeeds ({@link #finish}; a final task would end these waiting tests). */
     private static void onEnd(TestContext context, Runnable cleanup) {

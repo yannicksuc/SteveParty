@@ -17,6 +17,7 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameMode;
@@ -82,7 +83,7 @@ public class BoardExplosionGameTests implements FabricGameTest {
         ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.changeGameMode(GameMode.SURVIVAL);
-            player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
             BlockPos absolute = context.getAbsolutePos(pos);
             player.refreshPositionAndAngles(absolute.getX() + 1.5, absolute.getY(), absolute.getZ() + 0.5, 0, 0);
             context.assertTrue(player.interactionManager.tryBreakBlock(absolute), "the player breaks it");

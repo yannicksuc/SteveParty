@@ -16,6 +16,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.ActionResult;
@@ -60,7 +61,7 @@ public class BrushCartridgeLinksGameTests implements FabricGameTest {
         return CartridgeContainers.in(cartridge, context.getWorld());
     }
 
-    static void click(TestContext context, net.minecraft.server.network.ServerPlayerEntity player, BlockPos absolute) {
+    static void click(TestContext context, ServerPlayerEntity player, BlockPos absolute) {
         UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
                 new BlockHitResult(absolute.toCenterPos(), Direction.UP, absolute, false));
     }

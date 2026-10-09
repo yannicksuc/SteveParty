@@ -16,6 +16,8 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -24,6 +26,7 @@ import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
 
 import java.util.List;
 
@@ -193,7 +196,7 @@ public class DiceRollGameTests implements FabricGameTest {
         PartyControllerEntity controller = party(context, player.getUuid(), pig);
         player.getInventory().setStack(3, new ItemStack(ModItems.COIN, 2));
         ItemStack renamed = new ItemStack(ModItems.COIN, 9);
-        renamed.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, net.minecraft.text.Text.literal("Not a coin"));
+        renamed.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Not a coin"));
         player.getInventory().setStack(4, renamed);
         context.waitAndRun(2, () -> {
             DiceEntity dice = thrown(context, player, die("debt_dice_face_5"), PATH.get(1));
@@ -264,7 +267,7 @@ public class DiceRollGameTests implements FabricGameTest {
         PigEntity b = token(context, PATH.get(2), player.getUuid());
         PigEntity c = token(context, PATH.get(4), player.getUuid());
         context.waitAndRun(2, () -> {
-            List<net.minecraft.entity.mob.MobEntity> candidates = DiceRollEffects.swapCandidates(context.getWorld(), a);
+            List<MobEntity> candidates = DiceRollEffects.swapCandidates(context.getWorld(), a);
             context.assertTrue(candidates.contains(b) && candidates.contains(c) && !candidates.contains(a), "the tokens nearby, not itself");
             DiceRollEffects.resolve(context.getWorld(), a, player.getUuid(), DiceOutcome.of(List.of(new DiceFace(DiceFacesComponent.Kind.SWAP, 0))), 1, 10);
             when(context, () -> DicePrompts.pending(player) != null, 20, "the roller is asked", () ->

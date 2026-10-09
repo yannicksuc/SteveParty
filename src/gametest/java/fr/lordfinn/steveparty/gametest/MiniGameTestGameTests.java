@@ -60,6 +60,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -179,7 +180,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
     private static MiniGamePageData pageOf(List<MiniGameFormat> formats, MiniGamePipeRole... pipes) {
         List<MiniGamePipeLink> links = new ArrayList<>();
         for (int i = 0; i < pipes.length; i++) {
-            links.add(new MiniGamePipeLink(GlobalPos.create(net.minecraft.world.World.OVERWORLD, new BlockPos(i, 0, 0)), Direction.UP, pipes[i]));
+            links.add(new MiniGamePipeLink(GlobalPos.create(World.OVERWORLD, new BlockPos(i, 0, 0)), Direction.UP, pipes[i]));
         }
         return MiniGamePageData.empty(UUID.randomUUID()).withFormats(formats).withPipeLinks(links);
     }

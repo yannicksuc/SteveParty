@@ -17,6 +17,7 @@ import fr.lordfinn.steveparty.screen_handlers.custom.CashRegisterScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.ChestBlock;
+import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.enums.ChestType;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -24,6 +25,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
@@ -350,10 +352,10 @@ public class ShopGameTests implements FabricGameTest {
         TradingStallBlockEntity stall = (TradingStallBlockEntity) context.getBlockEntity(stallRelative);
         context.assertEquals(stall.size(), 27, "stall slots");
         // A stall saved with an item in the old 28th slot loads without it
-        net.minecraft.nbt.NbtCompound saved = stall.createNbt(context.getWorld().getRegistryManager());
-        net.minecraft.nbt.NbtList items = new net.minecraft.nbt.NbtList();
+        NbtCompound saved = stall.createNbt(context.getWorld().getRegistryManager());
+        NbtList items = new NbtList();
         for (int slot : new int[]{0, 27}) {
-            net.minecraft.nbt.NbtCompound entry = (net.minecraft.nbt.NbtCompound) new ItemStack(Items.GOLD_BLOCK).encode(context.getWorld().getRegistryManager());
+            NbtCompound entry = (NbtCompound) new ItemStack(Items.GOLD_BLOCK).encode(context.getWorld().getRegistryManager());
             entry.putByte("Slot", (byte) slot);
             items.add(entry);
         }
@@ -510,7 +512,7 @@ public class ShopGameTests implements FabricGameTest {
         links.setOwner(shop, UUID.randomUUID());
         // A dispenser of armour facing the merchant
         BlockPos dispenser = new BlockPos(3, 1, 3);
-        context.setBlockState(dispenser, Blocks.DISPENSER.getDefaultState().with(net.minecraft.block.DispenserBlock.FACING, Direction.WEST));
+        context.setBlockState(dispenser, Blocks.DISPENSER.getDefaultState().with(DispenserBlock.FACING, Direction.WEST));
         inventoryAt(context, dispenser).setStack(0, new ItemStack(Items.IRON_HELMET));
         context.setBlockState(dispenser.east(), Blocks.REDSTONE_BLOCK);
 
@@ -529,7 +531,7 @@ public class ShopGameTests implements FabricGameTest {
                 context.assertEquals(inventoryAt(context, stallPos.up()).count(Items.GOLD_INGOT), 3, "the hopper above keeps its gold");
                 context.assertTrue(stall.getStack(0).isOf(Items.EMERALD) && stall.getStack(18).isOf(Items.DIAMOND)
                         && inventoryAt(context, stallPos.down()).isEmpty(), "nothing pulled from the stall: its offer is whole");
-                context.assertTrue(trader.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD).isEmpty(), "no armour put on the merchant");
+                context.assertTrue(trader.getEquippedStack(EquipmentSlot.HEAD).isEmpty(), "no armour put on the merchant");
             } finally {
                 TestPlayers.remove(context, player);
             }
@@ -585,9 +587,9 @@ public class ShopGameTests implements FabricGameTest {
         context.assertTrue(!state.isLinked(pos), "nothing linked there");
         state.linkBlock(vendor, pos);
         state.linkBlock(other, pos);
-        context.assertTrue(state.isLinked(pos) && state.getVendorsLinkedTo(pos).equals(java.util.Set.of(vendor, other)), "two merchants there");
+        context.assertTrue(state.isLinked(pos) && state.getVendorsLinkedTo(pos).equals(Set.of(vendor, other)), "two merchants there");
         state.unlinkBlock(vendor, pos);
-        context.assertTrue(state.getVendorsLinkedTo(pos).equals(java.util.Set.of(other)), "one left");
+        context.assertTrue(state.getVendorsLinkedTo(pos).equals(Set.of(other)), "one left");
         state.forgetVendor(other);
         context.assertTrue(!state.isLinked(pos) && state.getVendorsLinkedTo(pos).isEmpty(), "none any more");
         context.complete();

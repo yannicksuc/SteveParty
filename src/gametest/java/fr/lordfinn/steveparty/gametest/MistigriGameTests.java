@@ -16,8 +16,10 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.entity.passive.CatVariant;
+import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -285,9 +287,9 @@ public class MistigriGameTests implements FabricGameTest {
         context.assertTrue(MistigriBadLuck.nearTamed(context.getWorld(), near), "near a tamed one");
         context.assertFalse(MistigriBadLuck.nearTamed(context.getWorld(), near.add(30, 0, 0)), "far from him");
         // some of a zombie's blows miss (one in three: a hundred blows can't all land)
-        net.minecraft.entity.passive.PigEntity victim = context.spawnMob(EntityType.PIG, new BlockPos(5, 1, 5));
+        PigEntity victim = context.spawnMob(EntityType.PIG, new BlockPos(5, 1, 5));
         victim.setAiDisabled(true);
-        net.minecraft.entity.mob.ZombieEntity zombie = context.spawnMob(EntityType.ZOMBIE, new BlockPos(6, 1, 5));
+        ZombieEntity zombie = context.spawnMob(EntityType.ZOMBIE, new BlockPos(6, 1, 5));
         zombie.setAiDisabled(true);
         int missed = 0;
         for (int i = 0; i < 100; i++) {

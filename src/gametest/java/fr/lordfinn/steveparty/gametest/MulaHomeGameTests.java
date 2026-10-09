@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
 import fr.lordfinn.steveparty.entities.custom.goals.SimpleFlyingMoveControl;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -19,10 +20,12 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * A Dice Forge with its core holds the Mulas around it (MulaHome): they dance, never leave its area, are reborn at it
@@ -162,7 +165,7 @@ public class MulaHomeGameTests implements FabricGameTest {
         BlockPos home = context.getAbsolutePos(FORGE_POS);
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 7));
         mula.setHomeForge(home);
-        java.util.UUID id = mula.getUuid();
+        UUID id = mula.getUuid();
         mula.burstIntoStar();
         MulaRebirths rebirths = MulaRebirths.get(world);
         MulaRebirths.Entry entry = rebirths.entries().stream().filter(e -> e.id().equals(id)).findFirst().orElse(null);
@@ -174,7 +177,7 @@ public class MulaHomeGameTests implements FabricGameTest {
         context.assertTrue(world.getEntity(id) instanceof MulaEntity m && home.equals(m.homeForge())
                 && m.squaredDistanceTo(home.getX() + 0.5, m.getY(), home.getZ() + 0.5) <= 36, "reborn by its forge, at home");
         world.getEntitiesByClass(MulaStarEntity.class,
-                new Box(home).expand(20), e -> true).forEach(net.minecraft.entity.Entity::discard);
+                new Box(home).expand(20), e -> true).forEach(Entity::discard);
         if (world.getEntity(id) != null) world.getEntity(id).discard();
         context.complete();
     }
@@ -189,7 +192,7 @@ public class MulaHomeGameTests implements FabricGameTest {
         DiceForgeBlockEntity forge = forge(context, true);
         BlockPos home = context.getAbsolutePos(FORGE_POS);
         List<MulaEntity> mulas = mulas(context, 3);
-        List<java.util.UUID> ids = mulas.stream().map(net.minecraft.entity.Entity::getUuid).toList();
+        List<UUID> ids = mulas.stream().map(Entity::getUuid).toList();
         for (MulaEntity m : mulas) {
             m.setHomeForge(home);
             m.setAiDisabled(true);
@@ -210,7 +213,7 @@ public class MulaHomeGameTests implements FabricGameTest {
             }
             for (int i = 0; i < angles.size(); i++) {
                 for (int j = i + 1; j < angles.size(); j++) {
-                    double diff = Math.abs(net.minecraft.util.math.MathHelper.wrapDegrees(Math.toDegrees(angles.get(i) - angles.get(j))));
+                    double diff = Math.abs(MathHelper.wrapDegrees(Math.toDegrees(angles.get(i) - angles.get(j))));
                     context.assertTrue(diff > 40, "different directions: " + diff);
                 }
             }
@@ -219,7 +222,7 @@ public class MulaHomeGameTests implements FabricGameTest {
             context.assertTrue(fragments == 0, "no fragments dropped: " + fragments);
             entries.forEach(e -> rebirths.remove(e.id()));
             world.getEntitiesByClass(MulaStarEntity.class,
-                    new Box(home).expand(40), e -> true).forEach(net.minecraft.entity.Entity::discard);
+                    new Box(home).expand(40), e -> true).forEach(Entity::discard);
             context.complete();
         });
     }

@@ -9,13 +9,25 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.BubbleColumnBlock;
 import net.minecraft.block.ChainBlock;
+import net.minecraft.block.FenceBlock;
+import net.minecraft.block.StairsBlock;
+import net.minecraft.block.enums.BlockFace;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.RotationPropertyHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 
 public class PlasticGameTests implements FabricGameTest {
     private static final int X = 3, Z = 3, BOTTOM = 1, TOP = 5;
@@ -100,9 +112,9 @@ public class PlasticGameTests implements FabricGameTest {
         }
         BlockPos pos = new BlockPos(1, 1, 1);
         context.setBlockState(pos, ModBlocks.PLASTIC_SLABS[0]);
-        context.assertTrue(context.getBlockState(pos).isIn(net.minecraft.registry.tag.BlockTags.SLABS), "a slab");
+        context.assertTrue(context.getBlockState(pos).isIn(BlockTags.SLABS), "a slab");
         context.setBlockState(pos.east(), ModBlocks.PLASTIC_WALLS[0]);
-        context.assertTrue(context.getBlockState(pos.east()).isIn(net.minecraft.registry.tag.BlockTags.WALLS), "a wall");
+        context.assertTrue(context.getBlockState(pos.east()).isIn(BlockTags.WALLS), "a wall");
         context.complete();
     }
 
@@ -122,14 +134,14 @@ public class PlasticGameTests implements FabricGameTest {
         BlockPos start = new BlockPos(X, BOTTOM, Z);
         context.setBlockState(start, ModBlocks.PLASTIC_STUDS[5].getDefaultState()
                 .with(PlotBlock.WATERLOGGED, true)
-                .with(PlotBlock.FACE, net.minecraft.block.enums.BlockFace.WALL)
+                .with(PlotBlock.FACE, BlockFace.WALL)
                 .with(PlotBlock.FACING, Direction.EAST));
         context.waitAndRun(risingTicks(TOP - BOTTOM + 1), () -> {
             BlockPos surface = new BlockPos(X, TOP + 1, Z);
             context.expectBlock(ModBlocks.PLASTIC_STUDS[5], surface);
             var state = context.getBlockState(surface);
             context.assertTrue(!state.get(PlotBlock.WATERLOGGED), "no water in it at the surface");
-            context.assertTrue(state.get(PlotBlock.FACE) == net.minecraft.block.enums.BlockFace.FLOOR, "lying flat");
+            context.assertTrue(state.get(PlotBlock.FACE) == BlockFace.FLOOR, "lying flat");
             for (int y = BOTTOM; y <= TOP; y++) {
                 BlockPos pos = new BlockPos(X, y, Z);
                 context.expectBlock(Blocks.WATER, pos);
@@ -230,7 +242,7 @@ public class PlasticGameTests implements FabricGameTest {
         context.assertTrue(context.getBlockState(surface).getFluidState().isStill(), "a water source");
 
         context.setBlockState(surface, plastic());
-        player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+        player.changeGameMode(GameMode.SURVIVAL);
         player.interactionManager.tryBreakBlock(context.getAbsolutePos(surface));
         context.expectBlock(Blocks.WATER, surface);
         context.complete();
@@ -313,7 +325,7 @@ public class PlasticGameTests implements FabricGameTest {
         });
     }
 
-    private static net.minecraft.block.BlockState wetStud() {
+    private static BlockState wetStud() {
         return ModBlocks.PLASTIC_STUDS[3].getDefaultState().with(PlotBlock.WATERLOGGED, true);
     }
 
@@ -326,7 +338,7 @@ public class PlasticGameTests implements FabricGameTest {
         context.waitAndRun(risingTicks(TOP - BOTTOM), () -> {
             BlockPos pos = new BlockPos(X, BOTTOM + 2, Z);
             context.expectBlock(ModBlocks.PLASTIC_STUDS[3], pos);
-            context.assertTrue(context.getBlockState(pos).get(PlotBlock.FACE) == net.minecraft.block.enums.BlockFace.CEILING, "under the stone");
+            context.assertTrue(context.getBlockState(pos).get(PlotBlock.FACE) == BlockFace.CEILING, "under the stone");
             context.assertTrue(context.getBlockState(pos).get(PlotBlock.WATERLOGGED), "still full of water");
             context.complete();
         });
@@ -338,11 +350,11 @@ public class PlasticGameTests implements FabricGameTest {
         waterColumn(context);
         context.setBlockState(new BlockPos(X, BOTTOM, Z), Blocks.MAGMA_BLOCK);
         context.waitAndRun(25, () -> {
-            context.setBlockState(new BlockPos(X, TOP, Z), wetStud().with(PlotBlock.FACE, net.minecraft.block.enums.BlockFace.CEILING));
+            context.setBlockState(new BlockPos(X, TOP, Z), wetStud().with(PlotBlock.FACE, BlockFace.CEILING));
             context.waitAndRun((TOP - BOTTOM) * COLUMN_TICKS + 20, () -> {
                 BlockPos pos = new BlockPos(X, BOTTOM + 1, Z);
                 context.expectBlock(ModBlocks.PLASTIC_STUDS[3], pos);
-                context.assertTrue(context.getBlockState(pos).get(PlotBlock.FACE) == net.minecraft.block.enums.BlockFace.FLOOR, "lies on the magma");
+                context.assertTrue(context.getBlockState(pos).get(PlotBlock.FACE) == BlockFace.FLOOR, "lies on the magma");
                 context.assertTrue(context.getBlockState(pos).get(PlotBlock.WATERLOGGED), "still full of water");
                 context.complete();
             });
@@ -359,7 +371,7 @@ public class PlasticGameTests implements FabricGameTest {
             context.expectBlock(plastic(), new BlockPos(X, BOTTOM + 1, Z));
             for (int y = BOTTOM + 2; y <= TOP; y++) {
                 var state = context.getBlockState(new BlockPos(X, y, Z));
-                context.assertTrue(state.isOf(Blocks.BUBBLE_COLUMN) && state.get(net.minecraft.block.BubbleColumnBlock.DRAG),
+                context.assertTrue(state.isOf(Blocks.BUBBLE_COLUMN) && state.get(BubbleColumnBlock.DRAG),
                         "whirlpool above the plastic at y=" + y);
             }
             context.complete();
@@ -377,7 +389,7 @@ public class PlasticGameTests implements FabricGameTest {
             context.expectBlock(plastic(), new BlockPos(X, BOTTOM + 2, Z));
             for (int y = BOTTOM + 3; y <= TOP; y++) {
                 var state = context.getBlockState(new BlockPos(X, y, Z));
-                context.assertTrue(state.isOf(Blocks.BUBBLE_COLUMN) && !state.get(net.minecraft.block.BubbleColumnBlock.DRAG),
+                context.assertTrue(state.isOf(Blocks.BUBBLE_COLUMN) && !state.get(BubbleColumnBlock.DRAG),
                         "upward column above the plastic at y=" + y);
             }
             context.complete();
@@ -391,7 +403,7 @@ public class PlasticGameTests implements FabricGameTest {
         // A 1-block air pocket above the block keeps the mob out of the water while it rides up
         context.setBlockState(new BlockPos(X, BOTTOM + 1, Z), Blocks.AIR);
         context.setBlockState(new BlockPos(X, BOTTOM, Z), Blocks.STONE);
-        var chicken = context.spawnMob(net.minecraft.entity.EntityType.CHICKEN, new BlockPos(X, BOTTOM + 1, Z));
+        var chicken = context.spawnMob(EntityType.CHICKEN, new BlockPos(X, BOTTOM + 1, Z));
         chicken.setAiDisabled(true);
         context.waitAndRun(5, () -> {
             context.setBlockState(new BlockPos(X, BOTTOM, Z), Blocks.WATER);
@@ -414,7 +426,7 @@ public class PlasticGameTests implements FabricGameTest {
         // The block starts held by a chain, with a chicken standing on it just above the water
         context.setBlockState(new BlockPos(X + 1, TOP, Z), Blocks.CHAIN.getDefaultState().with(ChainBlock.AXIS, Direction.Axis.X));
         context.setBlockState(new BlockPos(X, TOP, Z), plastic());
-        var chicken = context.spawnMob(net.minecraft.entity.EntityType.CHICKEN, new BlockPos(X, TOP + 1, Z));
+        var chicken = context.spawnMob(EntityType.CHICKEN, new BlockPos(X, TOP + 1, Z));
         chicken.setAiDisabled(true);
         context.waitAndRun(25, () -> {
             double startY = chicken.getY();
@@ -426,9 +438,9 @@ public class PlasticGameTests implements FabricGameTest {
         });
     }
 
-    private static net.minecraft.entity.decoration.ArmorStandEntity floatingStand(TestContext context, double y) {
-        var stand = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND,
-                new net.minecraft.util.math.Vec3d(X + 0.5, y, Z + 0.5));
+    private static ArmorStandEntity floatingStand(TestContext context, double y) {
+        var stand = context.spawnEntity(EntityType.ARMOR_STAND,
+                new Vec3d(X + 0.5, y, Z + 0.5));
         stand.setNoGravity(true); // stays where it is in the water
         return stand;
     }
@@ -455,7 +467,7 @@ public class PlasticGameTests implements FabricGameTest {
     public void aPlayerPutOnTheBlockKeepsTheirPlace(TestContext context) {
         waterColumn(context);
         var player = TestPlayers.mock(context);
-        net.minecraft.util.math.Vec3d feet = context.getAbsolute(new net.minecraft.util.math.Vec3d(X + 0.5, TOP, Z + 0.5));
+        Vec3d feet = context.getAbsolute(new Vec3d(X + 0.5, TOP, Z + 0.5));
         player.refreshPositionAndAngles(feet.x, feet.y, feet.z, 30, 10);
         context.setBlockState(new BlockPos(X, TOP - 1, Z), plastic());
         context.waitAndRun(risingTicks(1), () -> {
@@ -542,7 +554,7 @@ public class PlasticGameTests implements FabricGameTest {
         waterColumn(context);
         context.setBlockState(new BlockPos(X, BOTTOM, Z), Blocks.MAGMA_BLOCK);
         // No AI: the whirlpool does not move it, only the block can
-        var pig = context.spawnMob(net.minecraft.entity.EntityType.PIG, new BlockPos(X, BOTTOM + 2, Z));
+        var pig = context.spawnMob(EntityType.PIG, new BlockPos(X, BOTTOM + 2, Z));
         pig.setAiDisabled(true);
         context.waitAndRun(25, () -> {
             context.setBlockState(new BlockPos(X, TOP, Z), plastic());
@@ -612,7 +624,7 @@ public class PlasticGameTests implements FabricGameTest {
         }
         waterColumn(context);
         BlockPos stairs = new BlockPos(X, BOTTOM, Z);
-        context.setBlockState(stairs, ModBlocks.PLASTIC_STAIRS[2].getDefaultState().with(net.minecraft.block.StairsBlock.WATERLOGGED, true));
+        context.setBlockState(stairs, ModBlocks.PLASTIC_STAIRS[2].getDefaultState().with(StairsBlock.WATERLOGGED, true));
         context.waitAndRun(risingTicks(TOP - BOTTOM), () -> {
             context.expectBlock(ModBlocks.PLASTIC_STAIRS[2], stairs);
             for (int y = BOTTOM + 1; y <= TOP; y++) context.expectBlock(Blocks.WATER, new BlockPos(X, y, Z));
@@ -626,7 +638,7 @@ public class PlasticGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void everyPlasticPieceIsInThePlasticTag(TestContext context) {
-        var wrench = new net.minecraft.item.ItemStack(ModItems.WRENCH);
+        var wrench = new ItemStack(ModItems.WRENCH);
         for (int i = 0; i < ModBlocks.COLORS.length; i++) {
             for (Block piece : new Block[]{ModBlocks.PLASTIC_BLOCKS[i], ModBlocks.PLASTIC_STUDS[i], ModBlocks.PLASTIC_FENCES[i]}) {
                 var state = piece.getDefaultState();
@@ -647,13 +659,13 @@ public class PlasticGameTests implements FabricGameTest {
     public void aSignHungOnAPlasticFenceHoldsIt(TestContext context) {
         waterColumn(context);
         BlockPos fence = new BlockPos(X, BOTTOM, Z), sign = fence.east();
-        context.setBlockState(fence, ModBlocks.PLASTIC_FENCES[1].getDefaultState().with(net.minecraft.block.FenceBlock.WATERLOGGED, true));
+        context.setBlockState(fence, ModBlocks.PLASTIC_FENCES[1].getDefaultState().with(FenceBlock.WATERLOGGED, true));
         // In the tube's glass wall, on the east side of the fence, facing east
         context.setBlockState(sign, ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState()
                 .with(AbstractStencilSignBlock.MOUNT,
                         AbstractStencilSignBlock.Mount.HUNG)
                 .with(AbstractStencilSignBlock.ROTATION,
-                        net.minecraft.util.math.RotationPropertyHelper.fromDirection(Direction.EAST)));
+                        RotationPropertyHelper.fromDirection(Direction.EAST)));
         context.waitAndRun(risingTicks(TOP - BOTTOM), () -> {
             context.expectBlock(ModBlocks.PLASTIC_FENCES[1], fence);
             context.expectBlock(ModBlocks.PLASTIC_ROAD_SIGN, sign);
@@ -678,8 +690,8 @@ public class PlasticGameTests implements FabricGameTest {
         context.setBlockState(new BlockPos(X, BOTTOM + 1, Z), plastic());
         context.waitAndRun(40, () -> {
             var world = context.getWorld();
-            var rider = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND,
-                    new net.minecraft.util.math.Vec3d(X + 0.5, BOTTOM + 2, Z + 0.5));
+            var rider = context.spawnEntity(EntityType.ARMOR_STAND,
+                    new Vec3d(X + 0.5, BOTTOM + 2, Z + 0.5));
             context.assertTrue(!PlasticBlock.isRidingPlastic(world, rider), "over a chained piece: the column acts");
             context.setBlockState(chain, Blocks.GLASS); // released: the column carries it
             context.assertTrue(PlasticBlock.isRidingPlastic(world, rider), "over a piece the column carries");
@@ -714,7 +726,7 @@ public class PlasticGameTests implements FabricGameTest {
             context.expectBlock(ModBlocks.PLASTIC_STUDS[3], new BlockPos(X, BOTTOM + 1, Z));
             for (int y = BOTTOM + 2; y <= TOP; y++) {
                 var state = context.getBlockState(new BlockPos(X, y, Z));
-                context.assertTrue(state.isOf(Blocks.BUBBLE_COLUMN) && state.get(net.minecraft.block.BubbleColumnBlock.DRAG),
+                context.assertTrue(state.isOf(Blocks.BUBBLE_COLUMN) && state.get(BubbleColumnBlock.DRAG),
                         "whirlpool above the stud at y=" + y);
             }
             context.complete();
@@ -732,7 +744,7 @@ public class PlasticGameTests implements FabricGameTest {
         context.setBlockState(surface, plastic());
         context.waitAndRun(5, () -> {
             // An armor stand: it falls and stands (a mob without AI hangs in the air, touching nothing)
-            var stand = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, surface.up());
+            var stand = context.spawnEntity(EntityType.ARMOR_STAND, surface.up());
             context.waitAndRun(4 * PlasticBlock.RISE_DELAY + 10, () -> {
                 context.assertEquals(context.getBlockState(surface).get(PlasticBlock.SINK), 3, "pushed into the water");
                 double top = context.getAbsolutePos(surface).getY() + 1;
@@ -753,7 +765,7 @@ public class PlasticGameTests implements FabricGameTest {
         BlockPos pos = new BlockPos(1, 1, 1);
         context.setBlockState(pos.down(), Blocks.STONE);
         context.setBlockState(pos, plastic());
-        context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, pos.up());
+        context.spawnEntity(EntityType.ARMOR_STAND, pos.up());
         context.waitAndRun(20, () -> {
             context.assertEquals(context.getBlockState(pos).get(PlasticBlock.SINK), 0, "a floor stays a floor");
             context.complete();

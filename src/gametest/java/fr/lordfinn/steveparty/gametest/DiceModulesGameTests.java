@@ -30,8 +30,11 @@ import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameMode;
@@ -40,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
@@ -122,12 +126,12 @@ public class DiceModulesGameTests implements FabricGameTest {
         context.assertTrue(lucky != null, "Lucky shows its count");
         Text reversed = DiceModules.line(DiceModules.REVERSED, 1);
         context.assertTrue(!reversed.getString().contains("×"), "a single module shows no count");
-        Set<net.minecraft.text.TextColor> colors = new HashSet<>();
+        Set<TextColor> colors = new HashSet<>();
         reversed.visit((style, text) -> {
             if (!text.isBlank()) colors.add(style.getColor());
-            return java.util.Optional.empty();
-        }, net.minecraft.text.Style.EMPTY);
-        context.assertEquals(colors, Set.of(net.minecraft.text.TextColor.fromFormatting(Formatting.RED)), "a negative module's line is all red");
+            return Optional.empty();
+        }, Style.EMPTY);
+        context.assertEquals(colors, Set.of(TextColor.fromFormatting(Formatting.RED)), "a negative module's line is all red");
         context.complete();
     }
 
@@ -545,10 +549,10 @@ public class DiceModulesGameTests implements FabricGameTest {
         ItemStack stack = new ItemStack(multi);
         if (die.get(DiceFacesComponent.TYPE) != null) stack.set(DiceFacesComponent.TYPE, die.get(DiceFacesComponent.TYPE));
         stack = DiceModules.set(stack, DiceModules.of(die));
-        roller.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, stack);
+        roller.setStackInHand(Hand.MAIN_HAND, stack);
         Box around = roller.getBoundingBox().expand(8);
         Set<DiceEntity> before = new HashSet<>(context.getWorld().getEntitiesByClass(DiceEntity.class, around, e -> true));
-        stack.use(context.getWorld(), roller, net.minecraft.util.Hand.MAIN_HAND);
+        stack.use(context.getWorld(), roller, Hand.MAIN_HAND);
         List<DiceEntity> dice = context.getWorld().getEntitiesByClass(DiceEntity.class, around, e -> !before.contains(e));
         for (DiceEntity die1 : dice) atEnd(context, () -> {
             if (!die1.isRemoved()) die1.discard();

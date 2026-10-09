@@ -35,10 +35,12 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableTextContent;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -55,9 +57,14 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.stream.IntStream;
 
 /**
  * The cartridge menus: every cartridge declares modules that fit the shell, a change is checked (who, where, which
@@ -74,7 +81,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
             ModItems.THRESHOLD_CARTRIDGE, ModItems.POT_CARTRIDGE,
             ModItems.KEY_GATE_CARTRIDGE, ModItems.TRAP_CARTRIDGE);
 
-    private static BoardSpaceBlockEntity tile(TestContext context, net.minecraft.block.Block block, ItemStack cartridge) {
+    private static BoardSpaceBlockEntity tile(TestContext context, Block block, ItemStack cartridge) {
         context.setBlockState(TILE.down(), Blocks.STONE);
         context.setBlockState(TILE, block);
         BoardSpaceBlockEntity tile = context.getBlockEntity(TILE);
@@ -95,7 +102,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
         try (InputStream in = CartridgeMenuGameTests.class.getResourceAsStream("/assets/steveparty/lang/" + code + ".json")) {
             if (in == null) throw new AssertionError("no lang file " + code);
             return JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new AssertionError(e);
         }
     }
@@ -141,7 +148,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
             String pattern = lang.has(translatable.getKey()) ? lang.get(translatable.getKey()).getAsString() : translatable.getKey();
             for (Object arg : translatable.getArgs()) {
                 String value = arg instanceof Text nested ? resolve(nested, lang) : String.valueOf(arg);
-                pattern = pattern.replaceFirst("%(\\d+\\$)?[sd]", java.util.regex.Matcher.quoteReplacement(value));
+                pattern = pattern.replaceFirst("%(\\d+\\$)?[sd]", Matcher.quoteReplacement(value));
             }
             out.append(pattern);
         } else {
@@ -205,12 +212,12 @@ public class CartridgeMenuGameTests implements FabricGameTest {
                 context.assertTrue(width(shortName) <= labelRoom - width("n°16") - 4, name + ": short name « " + shortName + " » fits beside a slot number");
 
                 // The states its texts depend on
-                List<ItemStack> states = new java.util.ArrayList<>(List.of(new ItemStack(item)));
+                List<ItemStack> states = new ArrayList<>(List.of(new ItemStack(item)));
                 ItemStack other = new ItemStack(item);
                 other.set(ModComponents.INVENTORY_POS, new BlockPos(-29999999, -64, -29999999));
-                other.set(ModComponents.SHOP_LINK, new ShopLinkComponent(java.util.UUID.randomUUID(), new BlockPos(-29999999, -64, -29999999)));
-                other.set(ModComponents.TB_START_OWNER, java.util.UUID.randomUUID().toString());
-                other.set(ModComponents.TB_START_BOUND_ENTITY, java.util.UUID.randomUUID().toString());
+                other.set(ModComponents.SHOP_LINK, new ShopLinkComponent(UUID.randomUUID(), new BlockPos(-29999999, -64, -29999999)));
+                other.set(ModComponents.TB_START_OWNER, UUID.randomUUID().toString());
+                other.set(ModComponents.TB_START_BOUND_ENTITY, UUID.randomUUID().toString());
                 states.add(other);
                 for (ItemStack stack : states) {
                     for (BlockPos pos : new BlockPos[]{null, teleportTile.getPos()}) {
@@ -266,7 +273,7 @@ public class CartridgeMenuGameTests implements FabricGameTest {
         // A narrow window: a narrower column, and one column only when a second would not fit (the shell scrolls)
         List<CartridgeModule> teleport = ((CartridgeItem) ModItems.TELEPORT_CARTRIDGE).modules();
         int[] tall = new int[teleport.size()];
-        java.util.Arrays.fill(tall, 60);
+        Arrays.fill(tall, 60);
         CartridgeLayout narrow = CartridgeLayout.of(teleport, 100, tall, 1, CartridgeLayout.MIN_COLUMN_W);
         context.assertEquals(narrow.columns(), 1, "one column when there is no room for two");
         context.assertEquals(narrow.width(), CartridgeLayout.width(1, CartridgeLayout.MIN_COLUMN_W), "a narrow shell");
@@ -361,9 +368,9 @@ public class CartridgeMenuGameTests implements FabricGameTest {
                 for (CartridgeModule module : ((CartridgeItem) item).modules()) {
                     if (!module.editable()) continue;
                     int[] values = switch (module) {
-                        case ChoiceModule choice -> java.util.stream.IntStream.range(0, choice.options().size()).toArray();
-                        case NumberModule number -> java.util.stream.IntStream.rangeClosed(number.min(), number.max()).toArray();
-                        case ColorModule color -> java.util.stream.IntStream.rangeClosed(0, ColorModule.DEFAULT).toArray();
+                        case ChoiceModule choice -> IntStream.range(0, choice.options().size()).toArray();
+                        case NumberModule number -> IntStream.rangeClosed(number.min(), number.max()).toArray();
+                        case ColorModule color -> IntStream.rangeClosed(0, ColorModule.DEFAULT).toArray();
                         default -> new int[0];
                     };
                     // Walk every value, then back to the first (a module that can't change now is skipped)
