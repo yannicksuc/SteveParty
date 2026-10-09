@@ -29,9 +29,8 @@ public class ModPayloads {
         c2s(ToolWheelPayload.ID, ToolWheelPayload.CODEC);
         c2s(PipettePayload.ID, PipettePayload.CODEC);
         c2s(DestinationSwapPayload.ID, DestinationSwapPayload.CODEC);
-        c2s(ShopCartridgeScrollPayload.ID, ShopCartridgeScrollPayload.CODEC);
         c2s(PageZonePayload.ID, PageZonePayload.CODEC);
-        c2s(AdvanceBackScrollPayload.ID, AdvanceBackScrollPayload.CODEC);
+        c2s(HeldItemScrollPayload.ID, HeldItemScrollPayload.CODEC);
         c2s(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
         c2s(GoalPolePayload.ID, GoalPolePayload.CODEC);
         c2s(CartridgeSlotScrollPayload.ID, CartridgeSlotScrollPayload.CODEC);
