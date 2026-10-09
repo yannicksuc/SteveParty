@@ -455,12 +455,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         }
         if (stack.isOf(Items.LAVA_BUCKET)) {
             if (getTank() >= TANK_MAX) return ActionResult.PASS;
-            if (!client) {
-                setTank(getTank() + 1);
-                player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.BUCKET)));
-                playSound(SoundEvents.ITEM_BUCKET_EMPTY_LAVA, 1.0f, 1.0f);
-                playSound(ModSounds.TRICHAUDRON_GURGLE, 0.8f, 1.0f);
-            }
+            if (!client) refuel(player, hand);
             return ActionResult.success(client);
         }
         if (stack.isOf(Items.MAGMA_CREAM)) {
@@ -854,6 +849,10 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     public void riderClick(PlayerEntity rider) {
         int head = getPassengerList().indexOf(rider);
         if (head < 0 || head >= HEADS.length || !isSteered()) return;
+        if (rider.getMainHandStack().isOf(Items.LAVA_BUCKET)) { // its fuel, poured in from the saddle
+            refuel(rider, Hand.MAIN_HAND);
+            return;
+        }
         if (airborneJump && !isOnGround() && climbTo == null) {
             if (!tryGrab()) grabArmed = GRAB_ARMED_TICKS; // no wall within reach yet: the heads keep reaching out
             return;
@@ -873,14 +872,38 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     }
 
     private final long[] ventIdleAt = new long[HEADS.length];
+    /** Leaping out of the lava: it flies (no lava drag, no floating) until it is out or falls back. */
+    private boolean lavaLaunch;
 
     // ---------------------------------------------------------------- jumping, climbing
+
+    /** A lava bucket poured into its tank (+1 bucket), the bucket left empty. False if the tank is full. */
+    public boolean refuel(PlayerEntity player, Hand hand) {
+        ItemStack stack = player.getStackInHand(hand);
+        if (!stack.isOf(Items.LAVA_BUCKET) || getTank() >= TANK_MAX) return false;
+        setTank(getTank() + 1);
+        player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.BUCKET)));
+        playSound(SoundEvents.ITEM_BUCKET_EMPTY_LAVA, 1.0f, 1.0f);
+        playSound(ModSounds.TRICHAUDRON_GURGLE, 0.8f, 1.0f);
+        return true;
+    }
+
+    /** Which head (0 centre, 1 left, 2 right) this rider holds by its reins: the order they climbed on; -1 if none. */
+    public int headOf(Entity rider) {
+        int index = getPassengerList().indexOf(rider);
+        return index < HEADS.length ? index : -1;
+    }
 
     /** The thrusters: a leap for this charge, paid from the tank. False if it can't (no ground or lava, no lava left). */
     public boolean thrusterJump(int charge) {
         if (charge < TrichaudronRiding.CHARGE_MIN || getTank() <= 0 || !(standing() || isSwimmingInLava())) return false;
+        boolean fromLava = isSwimmingInLava();
         setTank(getTank() - TrichaudronRiding.jumpCost(charge));
         Vec3d leap = TrichaudronRiding.jumpVelocity(charge, getYaw());
+        if (fromLava) {
+            leap = TrichaudronRiding.lavaLeap(leap);
+            lavaLaunch = true; // the lava's drag and its floating would swallow the leap: it flies until out
+        }
         setVelocity(leap);
         velocityDirty = true;
         velocityModified = true;
@@ -963,6 +986,15 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
             move(MovementType.SELF, getVelocity());
             return;
         }
+        if (lavaLaunch) {
+            if (isInLava() && getVelocity().y > -0.2) { // leaping out of the lava: a plain flight, no lava drag
+                move(MovementType.SELF, getVelocity());
+                Vec3d v = getVelocity();
+                setVelocity(v.x * 0.98, (v.y - 0.08) * 0.98, v.z * 0.98);
+                return;
+            }
+            lavaLaunch = false;
+        }
         if (isSteered()) {
             rideTravel();
             return;
@@ -988,12 +1020,13 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     private void rideTravel() {
         TrichaudronRiding.Steer steer = TrichaudronRiding.combine(getPassengerList(),
                 rider -> ((LivingEntityJumpingAccessor) rider).steveparty$isJumping());
-        float yaw = getYaw() - TrichaudronRiding.turnFor(steer.turn());
+        float fuel = TrichaudronRiding.fuelFactor(getTank()); // lava is its fuel: empty, it can't move
+        float yaw = getYaw() - TrichaudronRiding.turnFor(steer.turn()) * fuel;
         setYaw(yaw);
         prevYaw = yaw;
         setBodyYaw(yaw);
         setHeadYaw(yaw);
-        float speed = TrichaudronRiding.speedFor(steer.forward());
+        float speed = TrichaudronRiding.speedFor(steer.forward()) * fuel;
         Vec3d input = new Vec3d(0, 0, steer.moving() ? Math.signum(steer.forward()) : 0);
         if (isSwimmingInLava()) {
             swim(input, speed);

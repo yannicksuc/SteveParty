@@ -24,7 +24,10 @@ import java.util.function.Predicate;
  *     head resting {@link #FIRE_COOLDOWN} ticks).</li>
  *     <li><b>The charged jump</b>: holding jump (any rider) charges it, up to {@link #CHARGE_MAX} ticks; on release
  *     the three heads turn into thrusters, steam jets down, and it leaps ({@link #jumpVelocity}): a bucket, two for a
- *     near full charge. It needs ground or lava under it.</li>
+ *     near full charge. It needs ground or lava under it; from the lava it leaps higher and farther
+ *     ({@link #LAVA_LEAP_UP}, {@link #LAVA_LEAP_FORWARD}) to climb out onto a bank.</li>
+ *     <li><b>Its fuel</b>: lava. Ridden, it goes as fast as its tank is full ({@link #fuelFactor}): empty, it can't
+ *     move or turn at all. A rider's click with a lava bucket pours it in instead of firing.</li>
  *     <li><b>Climbing</b> ({@link #findLedge}): in the air after a jump, a click makes the heads reach for the wall in
  *     front (for a second and a half, until one comes within {@link #GRAB_REACH} blocks) and hoist it, riders and all,
  *     onto the ledge above (up to {@link #CLIMB_MAX} blocks higher).</li>
@@ -99,6 +102,19 @@ public final class TrichaudronRiding {
         double t = MathHelper.clamp((charge - CHARGE_MIN) / (double) (CHARGE_MAX - CHARGE_MIN), 0, 1);
         Vec3d ahead = Vec3d.fromPolar(0, yaw).multiply(JUMP_FORWARD * t);
         return new Vec3d(ahead.x, JUMP_UP_MIN + (JUMP_UP_MAX - JUMP_UP_MIN) * t, ahead.z);
+    }
+
+    /** From the lava, a leap gets this much more up (blocks a tick) and this much more ahead (factor). */
+    public static final double LAVA_LEAP_UP = 0.45, LAVA_LEAP_FORWARD = 1.6;
+
+    /** A leap from the lava: higher, farther. */
+    public static Vec3d lavaLeap(Vec3d leap) {
+        return new Vec3d(leap.x * LAVA_LEAP_FORWARD, leap.y + LAVA_LEAP_UP, leap.z * LAVA_LEAP_FORWARD);
+    }
+
+    /** Its riding speed and turn rate as a share of the full ones, for this many buckets in its tank: 0 empty, 1 full. */
+    public static float fuelFactor(int tank) {
+        return MathHelper.clamp(tank / (float) TrichaudronEntity.TANK_MAX, 0, 1);
     }
 
     /** Buckets a leap of this charge costs. */

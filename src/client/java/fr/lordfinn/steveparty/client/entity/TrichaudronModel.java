@@ -8,6 +8,7 @@ import net.minecraft.util.math.MathHelper;
 import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +56,18 @@ public class TrichaudronModel extends DefaultedEntityGeoModel<TrichaudronEntity>
         }
         if (getAnimationProcessor().getRegisteredBones().isEmpty()) return bones; // not baked yet: look again next frame
         return aimBones = bones;
+    }
+
+    /**
+     * Where a head's reins tie: its skull's joint at the top of its neck, as last drawn (tracked: its local position,
+     * from the entity's origin, follows the neck's pose, aim and moods). Null until the model is baked.
+     */
+    public @Nullable GeoBone reinBone(int head) {
+        GeoBone[] turning = aimBones()[head];
+        if (turning == null || turning.length == 0) return null;
+        GeoBone skull = turning[turning.length - 1];
+        if (!skull.isTrackingMatrices()) skull.setTrackingMatrices(true);
+        return skull;
     }
 
     @Override
