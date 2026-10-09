@@ -25,6 +25,11 @@ public final class FumaroleGoals {
     private FumaroleGoals() {
     }
 
+    /** Its rest between volleys with 0 to 3 piglins on, as a share of its own (Blast). */
+    public static double cooldownFactor(int piglins) {
+        return Blast.cooldownFactor(piglins);
+    }
+
     /** Whether it has calmed down about {@code target} (FumaroleEntity#calmAbout). */
     static boolean calm(FumaroleEntity fumarole, @Nullable LivingEntity target) {
         return target != null && fumarole.calmAbout(target);
@@ -71,6 +76,7 @@ public final class FumaroleGoals {
         /** Its aim freezes this many ticks before the shot: the window to dodge. */
         static final int LOCK_TICKS = 9;
         static final int COOLDOWN_MIN = 80, COOLDOWN_SPREAD = 40;
+        private static final double[] COOLDOWN_FACTOR = {1, 0.75, 0.6, 0.5};
         private final FumaroleEntity fumarole;
         private final LivingEntity[] targets = new LivingEntity[FumaroleEntity.HEADS.length];
         /** Where each head's aim froze (null until {@link #LOCK_TICKS} before its shot). */
@@ -134,7 +140,7 @@ public final class FumaroleGoals {
         @Override
         public boolean canStart() {
             LivingEntity target = fumarole.getTarget();
-            if (fumarole.hasPassengers()) return false;
+            if (fumarole.hasPlayerRider()) return false;
             if (target == null || !target.isAlive() || fumarole.getWorld().getTime() < nextVolley) return false;
             return plan();
         }
@@ -207,7 +213,14 @@ public final class FumaroleGoals {
                 targets[head] = null;
                 locked[head] = null;
             }
-            nextVolley = fumarole.getWorld().getTime() + COOLDOWN_MIN + fumarole.getRandom().nextInt(COOLDOWN_SPREAD + 1);
+            double factor = cooldownFactor(fumarole.piglinRiders());
+            nextVolley = fumarole.getWorld().getTime()
+                    + Math.round((COOLDOWN_MIN + fumarole.getRandom().nextInt(COOLDOWN_SPREAD + 1)) * factor);
+        }
+
+        /** Its rest between volleys with 0 to 3 piglins on: the more piglins, the more often it shoots. */
+        public static double cooldownFactor(int piglins) {
+            return COOLDOWN_FACTOR[Math.max(0, Math.min(piglins, COOLDOWN_FACTOR.length - 1))];
         }
 
         /** The charge building up ({@code progress} 0..1): smoke thicker and thicker at the nozzle, a rising hiss. */
@@ -252,7 +265,7 @@ public final class FumaroleGoals {
         }
 
         private boolean wants() {
-            return !fumarole.hasPassengers() && fumarole.getTank() < FumaroleEntity.TANK_MAX
+            return !fumarole.hasPlayerRider() && fumarole.getTank() < FumaroleEntity.TANK_MAX
                     && (fumarole.getTarget() == null || fumarole.getTank() == 0)
                     && fumarole.pumping.rateAllows(fumarole.getWorld().getTime());
         }
@@ -351,6 +364,8 @@ public final class FumaroleGoals {
      * or beside it), it slowly turns on the spot to face them.
      */
     static final class Approach extends Goal {
+        /** How close (blocks from its shell) its piglins drive it to its target. */
+        static final double PIGLIN_CLOSE = 8;
         private final FumaroleEntity fumarole;
         private int repath;
 
@@ -361,8 +376,13 @@ public final class FumaroleGoals {
 
         private boolean needed() {
             LivingEntity target = fumarole.getTarget();
-            return target != null && target.isAlive() && !fumarole.hasPassengers()
-                    && (!reachable(target) || !fumarole.faces(target));
+            return target != null && target.isAlive() && !fumarole.hasPlayerRider()
+                    && (!reachable(target) || !fumarole.faces(target) || driven(target));
+        }
+
+        /** Its piglins drive it on toward its target, closer than its reach. */
+        private boolean driven(LivingEntity target) {
+            return fumarole.piglinRiders() > 0 && fumarole.distanceFromShell(target) > PIGLIN_CLOSE;
         }
 
         private boolean reachable(LivingEntity target) {
@@ -390,7 +410,7 @@ public final class FumaroleGoals {
             if (target == null) return;
             aim(fumarole, target);
             fumarole.setHeadTarget(0, target);
-            if (reachable(target)) {
+            if (reachable(target) && !driven(target)) {
                 fumarole.getNavigation().stop();
             } else if (--repath <= 0) {
                 repath = 20;
