@@ -151,6 +151,7 @@ public class ModEntities {
                     .eyeHeight(fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity.EYE_HEIGHT)
                     .makeFireImmune()
                     .maxTrackingRange(12)
+                    .trackingTickInterval(1) // ridden, it moves server side: every tick keeps the riders smooth
                     .build(FUMAROLE_KEY.getValue().toString())
     );
 

@@ -10,6 +10,7 @@
     "EntityRaycastTileMixin",
     "PowerUpPickupMixin",
     "FireworkRocketEntityAccessor",
+    "LivingEntityJumpingAccessor",
     "FireworkRocketEntityHarmlessMixin",
     "LivingEntityMixin",
     "PipeFallEntryMixin",

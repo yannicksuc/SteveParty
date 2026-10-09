@@ -1,14 +1,18 @@
 package fr.lordfinn.steveparty.entities.custom.fumarole;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.mixin.LivingEntityJumpingAccessor;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -24,16 +28,25 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtHelper;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -48,7 +61,7 @@ import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
-import net.minecraft.world.event.GameEvent;
+import net.minecraft.world.WorldView;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -60,82 +73,87 @@ import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
- * The Fumarole (Fumerolle): a huge, slow tortoise of the Nether carrying a tank of lava on its back
+ * The Fumarole (Fumerolle): a huge, slow, three-headed tortoise of the Nether carrying a tank of lava on its back
  * (docs: SteveParty-Workshop/docs/tortue-du-nether.md).
  * <ul>
- *     <li><b>Its tank</b> ({@link #getTank()}): 0 to {@link #TANK_MAX} buckets, synced, saved. Wild ones are born
- *     nearly empty (0 to {@link #SPAWN_TANK_MAX}).</li>
- *     <li><b>Pumping</b> ({@link FumaroleGoals.Pump}, {@link FumarolePumping}): below a full tank it looks for lava
- *     sources around it, walks to the shore, dips one head's nozzle ({@link #PUMP_HEAD}, the pump animation) and drinks one: the source block
- *     disappears, the tank gains a bucket. Its rules keep it from draining a pool (see FumarolePumping).</li>
- *     <li><b>Buckets</b>: a player takes a bucket of lava from it with an empty bucket, or pours one in with a lava
- *     bucket.</li>
- *     <li><b>Neutral, territorial</b>: it fights back whoever hurts it (players and mobs alike), and a player coming
- *     within {@link #TERRITORY} blocks makes it angry for {@link #ANGER_TICKS} ticks; then it calms down if they keep
- *     away.</li>
- *     <li><b>Its heads</b> ({@link #HEADS}): several necks, like a hydra, each a turret of its own: its own aim
- *     (the target it watches, synced: {@link #getHeadTarget}) and its own vent ({@link #getVent}).</li>
- *     <li><b>The thermal blast</b> ({@link FumaroleGoals.Blast}): one head at a time, the heads taking turns, at a
- *     target up to {@link #BLAST_RANGE} blocks it can see (each head its own if several enemies are about, else they
- *     focus one): a second of warning (the head's vent turns to {@link #VENT_CHARGING}, a hiss), then a thick line of
- *     scalding steam ({@link #blast}): {@link #BLAST_DAMAGE} damage, set on fire {@link #BLAST_FIRE_SECONDS} s, a
- *     strong shove; it stops at the first solid block and costs a bucket. Balance: the heads share one rest between
- *     blasts (4 to 6 s) and the one tank, so three heads shoot no more than one would; they only spread the threat.
- *     With an empty tank a head can only puff: a short weak cloud ({@link #PUFF_RANGE} blocks, {@link #PUFF_DAMAGE}
- *     damage, no fire, a small shove), so it goes back to pump first when there is lava around.</li>
- *     <li><b>Its death</b>: its lava spills. With mobGriefing on, min(buckets / 9, {@link #SPILL_MAX}) lava sources
- *     are poured where it dies (only into air or replaceable blocks); always a burst of lava and smoke. It drops
- *     0 to 2 magma cream (loot table).</li>
- *     <li>Slow and heavy (knockback resistant), armoured by its shell, immune to fire and lava; it wades through lava
- *     (no path penalty) rather than swims.</li>
+ *     <li><b>Its tank</b> ({@link #getTank()}): 0 to {@link #TANK_MAX} buckets, synced, saved; born at least half full
+ *     ({@link #SPAWN_TANK_MIN}). Only lava goes in: a lava bucket pours one in, an empty bucket takes one out.</li>
+ *     <li><b>Pumping</b> ({@link FumaroleGoals.Pump}): below a full tank it walks (or swims) to lava, dips its centre
+ *     head and drinks: a bucket a gulp, the lava source left as it was.</li>
+ *     <li><b>Taming</b>: empty its tank with buckets and it becomes tamable ({@link #isTamable}). Each head trusts
+ *     whoever fed it a magma cream ({@link #feedHead}): it never shoots them again, whatever the others do. The
+ *     three heads fed by the same player, once tamable: tamed, that player its owner.</li>
+ *     <li><b>Untamed riders</b>: like a horse it lets you climb on; after a few seconds its heads fidget, then one turns
+ *     round and sprays you off ({@link #sprayOff}): thrown high and back, a little fire unless fire-proof (a raised
+ *     shield toward the head spares you that, not the fall off).</li>
+ *     <li><b>Tamed</b>: its owner opens its saddle slot (sneaking, or with an empty hand while it has no saddle);
+ *     saddled, up to three players ride it on the tank's front rim ({@link FumaroleRiding}).</li>
+ *     <li><b>Its heads</b> ({@link #HEADS}): three necks, each a turret of its own: its own aim (synced:
+ *     {@link #getHeadTarget}) and its own vent ({@link #getVent}). Wild, one blasts at a time, the heads taking turns
+ *     ({@link FumaroleGoals.Blast}); ridden, each rider fires his own head.</li>
+ *     <li><b>The thermal blast</b>: see {@link FumaroleBlast}.</li>
+ *     <li><b>Neutral, territorial</b>: it fights back whoever hurts it, and a player coming within {@link #TERRITORY}
+ *     blocks makes it angry for {@link #ANGER_TICKS} ticks (unless all its heads trust him). Tamed, it only fights
+ *     back.</li>
+ *     <li><b>In lava</b> it swims, floating with its tank out ({@link FumaroleRiding#SWIM_DEPTH}); it is born on the
+ *     shores of the Nether's lava lakes or in them.</li>
+ *     <li><b>Its death</b>: its lava spills (with mobGriefing, up to {@link #SPILL_MAX} sources), it drops its saddle and
+ *     0 to 2 magma cream.</li>
  * </ul>
  */
 public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
-    /** Its shell and legs: 52 px wide, the tank's rim 58 px high. The necks reach far beyond (not in the box). */
-    public static final float WIDTH = 3.2f, HEIGHT = 3.625f, EYE_HEIGHT = 2.575f;
-    public static final int TANK_MAX = 27, SPAWN_TANK_MAX = 3;
+    /** Its shell and legs: 52 px wide, the tank's rim 61 px high. The necks reach far beyond (not in the box). */
+    public static final float WIDTH = 3.2f, HEIGHT = 3.8125f, EYE_HEIGHT = 2.76f;
+    public static final int TANK_MAX = 27, SPAWN_TANK_MIN = 14, SPAWN_TANK_MAX = 20;
     public static final double MAX_HEALTH = 80, ARMOR = 10, SPEED = 0.12;
+    /** The tank's front rim, where the riders sit: its height, how far ahead of the middle. */
+    public static final double RIM_HEIGHT = 3.75, RIM_FORWARD = 1.06;
 
     /**
-     * Its heads, centre first, and where each nozzle rests: measured on the v12 export (pose_s): the centre neck 11
-     * segments long, the side ones 8, splayed 30 degrees out from 13 px either side.
+     * Its heads, centre first, and where each rests: measured on the v14 export (pose_s): the centre neck 11 segments
+     * long, the side ones 8, splayed 30 degrees out from 13 px either side.
      */
     public static final FumaroleHead[] HEADS = {
-            new FumaroleHead(0, "_c", 0.0, 1.125, 8.31, 2.57, 0, 20),
-            new FumaroleHead(1, "_l", -0.8125, 1.125, 7.38, 1.94, -30, 20),
-            new FumaroleHead(2, "_r", 0.8125, 1.125, 7.76, 2.7, 30, 5),
+            new FumaroleHead(0, "_c", 0.0, 1.125, 8.31, 2.76, 0, 20, 4.11, 4.33, 0.0),
+            new FumaroleHead(1, "_l", -0.8125, 1.125, 7.38, 2.13, -30, 20, 3.17, 3.66, -0.8),
+            new FumaroleHead(2, "_r", 0.8125, 1.125, 7.76, 2.89, 30, 5, 3.34, 3.38, 0.8),
     };
     /** The head that dips into the lava to pump. */
     public static final int PUMP_HEAD = 0;
     /** A head turns at most this far (degrees) from its rest, this fast (degrees a tick). */
     public static final float HEAD_YAW_MAX = 75, HEAD_TURN = 25;
-    /** Pumping: the nozzle dips about 6.5 blocks ahead, 3.5 down; a source this far (horizontally) can be reached. */
-    public static final double PUMP_MIN = 2.0, PUMP_MAX = 9.0, PUMP_DOWN = 6.0, PUMP_UP = 1.0;
 
+    public static final double PUMP_MIN = 2.0, PUMP_MAX = 9.0, PUMP_DOWN = 6.0, PUMP_UP = 1.0;
     public static final double TERRITORY = 8.0;
     public static final int ANGER_TICKS = 600;
-    public static final double BLAST_RANGE = 30.0, BLAST_RADIUS = 1.5;
-    public static final float BLAST_DAMAGE = 6.0f, BLAST_FIRE_SECONDS = 4.0f;
-    public static final double BLAST_PUSH = 1.6, BLAST_LIFT = 0.45;
-    public static final double PUFF_RANGE = 6.0, PUFF_RADIUS = 1.2;
-    public static final float PUFF_DAMAGE = 2.0f;
-    public static final double PUFF_PUSH = 0.7, PUFF_LIFT = 0.25;
     /** Lava sources spilt on death: one per this many buckets, at most {@link #SPILL_MAX}. */
     public static final int SPILL_PER = 9, SPILL_MAX = 3;
+    /** An untamed one throws its rider off after this many ticks (and up to this many more), fidgeting before. */
+    public static final int THROW_MIN = 60, THROW_SPREAD = 60, FIDGET_TICKS = 40;
+    /** The throw: up and back. */
+    public static final double THROW_UP = 1.3, THROW_BACK = 1.0;
+    public static final float THROW_FIRE_SECONDS = 2.0f;
 
-    /** A head's vent state ({@link #getVent}), synced for the renderer: resting, the warning second, blasting. */
     public static final byte VENT_IDLE = 0, VENT_CHARGING = 1, VENT_SPITTING = 2;
+    /** Entity statuses (clients: its moods): a head fed (+ head), a head sulking (+ head), tamed. */
+    public static final byte STATUS_FED = 100, STATUS_SULK = 110, STATUS_TAMED = 120, STATUS_TAMABLE = 121;
 
     /** The scalding steam's damage type (data/steveparty/damage_type/thermal_steam.json). */
     public static final RegistryKey<DamageType> THERMAL_STEAM = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Steveparty.id("thermal_steam"));
 
     private static final TrackedData<Integer> TANK = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER);
-    /** Every head's vent state, 2 bits a head. */
     private static final TrackedData<Integer> VENTS = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER);
-    /** Each head's target (an entity id, -1: none): the clients aim the head at it. */
+    private static final TrackedData<Boolean> PUMPING = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    /** Bits: tamed, tamable, saddled, climbing. */
+    private static final TrackedData<Byte> FLAGS = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.BYTE);
+    private static final TrackedData<Integer> CHARGE = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final int TAMED = 1, TAMABLE = 2, SADDLED = 4, CLIMBING = 8;
     private static final List<TrackedData<Integer>> HEAD_TARGETS = new ArrayList<>();
 
     static {
@@ -143,7 +161,6 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
             HEAD_TARGETS.add(DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.INTEGER));
         }
     }
-    private static final TrackedData<Boolean> PUMPING = DataTracker.registerData(FumaroleEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
     public static final String ANIM_IDLE = "animation.nether_turtle.idle", ANIM_WALK = "animation.nether_turtle.walk",
             ANIM_PUMP = "animation.nether_turtle.pump", ANIM_SPIT = "animation.nether_turtle.spit";
@@ -154,15 +171,36 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     final FumarolePumping pumping = new FumarolePumping();
-    /** Until when (age) it stays angry at its target even if they keep away. */
+    /** Its saddle slot. */
+    public final SimpleInventory inventory = new SimpleInventory(1);
+    /** The players each head trusts (fed it a magma cream). */
+    private final List<Set<UUID>> trust = new ArrayList<>();
+    private @Nullable UUID owner;
     private int angryUntil;
+    /** Server: each head's aim (world yaw; degrees), and when it may fire again (ridden). */
+    private final float[] aimYaw = new float[HEADS.length];
+    private final long[] headReady = new long[HEADS.length];
+    /** Server: the jump charge being held, the climb under way. */
+    private int charge;
+    private @Nullable Vec3d climbTo;
+    private int climbTicks;
+    private boolean airborneJump;
+    /** Where its last leap started (height). */
+    private double jumpFromY;
+    /** Ticks its heads keep reaching for a wall after a click in the air. */
+    private int grabArmed;
+    private static final int GRAB_ARMED_TICKS = 30;
+    /** Server: when it throws its untamed rider off. */
+    private long throwAt = -1;
+
     /** Client only: the tank's drawn level, easing toward the synced one (buckets). */
     public float clientTankLevel = -1, prevClientTankLevel = -1;
-    /** Server: each head's aim (world yaw; degrees), turning toward its target. */
-    private final float[] aimYaw = new float[HEADS.length];
-    /** Client only: each head's drawn aim relative to its rest (yaw from the body, pitch), eased; and last tick's. */
+    /** Client only: each head's drawn aim (yaw from the body, Minecraft pitch), eased; and last tick's; its roll. */
     public final float[] clientYaw = new float[HEADS.length], clientPitch = new float[HEADS.length];
     public final float[] prevClientYaw = new float[HEADS.length], prevClientPitch = new float[HEADS.length];
+    /** Client only: its personality. */
+    public final FumaroleMoods moods = new FumaroleMoods();
+    private boolean wasSwimming;
 
     public FumaroleEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -171,6 +209,14 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         setPathfindingPenalty(PathNodeType.DANGER_FIRE, 0.0f);
         setPathfindingPenalty(PathNodeType.DAMAGE_FIRE, 0.0f);
         setPathfindingPenalty(PathNodeType.WATER, 8.0f);
+        for (int i = 0; i < HEADS.length; i++) {
+            trust.add(new HashSet<>());
+            clientPitch[i] = prevClientPitch[i] = HEADS[i].restPitch();
+            clientYaw[i] = prevClientYaw[i] = HEADS[i].restYaw();
+        }
+        inventory.addListener(inv -> {
+            if (!getWorld().isClient) setBit(SADDLED, inv.getStack(0).isOf(Items.SADDLE));
+        });
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
@@ -200,18 +246,64 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         super.initDataTracker(builder);
         builder.add(TANK, 0);
         builder.add(VENTS, 0);
-        for (TrackedData<Integer> target : HEAD_TARGETS) builder.add(target, -1);
         builder.add(PUMPING, false);
+        builder.add(FLAGS, (byte) 0);
+        builder.add(CHARGE, 0);
+        for (TrackedData<Integer> target : HEAD_TARGETS) builder.add(target, -1);
     }
 
     @Override
     public @Nullable EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason,
                                            @Nullable EntityData entityData) {
-        setTank(world.getRandom().nextInt(SPAWN_TANK_MAX + 1));
+        setTank(SPAWN_TANK_MIN + world.getRandom().nextInt(SPAWN_TANK_MAX - SPAWN_TANK_MIN + 1));
         return super.initialize(world, difficulty, spawnReason, entityData);
     }
 
-    // ---------------------------------------------------------------- tank, vent
+    /** Born on the shore or in the lava itself: only other mobs and blocks keep it from a spot, not lava. */
+    @Override
+    public boolean canSpawn(WorldView world) {
+        return world.doesNotIntersectEntities(this) && world.isSpaceEmpty(this);
+    }
+
+    // ---------------------------------------------------------------- state
+
+    private boolean bit(int bit) {
+        return (dataTracker.get(FLAGS) & bit) != 0;
+    }
+
+    private void setBit(int bit, boolean on) {
+        byte flags = dataTracker.get(FLAGS);
+        dataTracker.set(FLAGS, (byte) (on ? flags | bit : flags & ~bit));
+    }
+
+    public boolean isTamed() {
+        return bit(TAMED);
+    }
+
+    public boolean isTamable() {
+        return bit(TAMABLE);
+    }
+
+    public boolean isSaddled() {
+        return bit(SADDLED);
+    }
+
+    public boolean isClimbing() {
+        return bit(CLIMBING);
+    }
+
+    public @Nullable UUID getOwner() {
+        return owner;
+    }
+
+    public boolean isOwner(PlayerEntity player) {
+        return owner != null && owner.equals(player.getUuid());
+    }
+
+    /** The jump charge held by its riders (ticks). */
+    public int getCharge() {
+        return dataTracker.get(CHARGE);
+    }
 
     public int getTank() {
         return dataTracker.get(TANK);
@@ -230,7 +322,6 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         dataTracker.set(VENTS, all | (vent & 3) << (2 * head));
     }
 
-    /** The entity this head aims at, or null. */
     public @Nullable Entity getHeadTarget(int head) {
         int id = dataTracker.get(HEAD_TARGETS.get(head));
         return id < 0 ? null : getWorld().getEntityById(id);
@@ -248,15 +339,29 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         dataTracker.set(PUMPING, pumping);
     }
 
-    /** The tank's drawn level (buckets), eased between ticks. */
     public float tankLevel(float partialTick) {
         if (clientTankLevel < 0) return getTank();
         return MathHelper.lerp(partialTick, prevClientTankLevel, clientTankLevel);
     }
 
+    /** Whether this head trusts this player (fed it a magma cream, or owns the turtle). */
+    public boolean trusts(int head, PlayerEntity player) {
+        return isOwner(player) || trust.get(head).contains(player.getUuid());
+    }
+
+    /** Whether every head trusts this player. */
+    public boolean trustedByAll(PlayerEntity player) {
+        for (int head = 0; head < HEADS.length; head++) if (!trusts(head, player)) return false;
+        return true;
+    }
+
+    /** Whether it is swimming: deep in lava. */
+    public boolean isSwimmingInLava() {
+        return isInLava() && getFluidHeight(FluidTags.LAVA) > FumaroleRiding.SWIM_MIN_DEPTH;
+    }
+
     // ---------------------------------------------------------------- pumping
 
-    /** Whether this lava source is within the dipping nozzle's reach as it stands. */
     public boolean canReach(BlockPos source) {
         Vec3d center = Vec3d.ofCenter(source);
         double dx = center.x - getX(), dz = center.z - getZ(), dy = center.y - getY();
@@ -264,59 +369,240 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         return horizontal >= PUMP_MIN && horizontal <= PUMP_MAX && dy >= -PUMP_DOWN && dy <= PUMP_UP;
     }
 
-    /** Whether it may drink this source now: tank not full, the pool rules and the rate (FumarolePumping). */
+    /** Whether it may drink from this lava now: tank not full, a lava source there, its pace (FumarolePumping). */
     public boolean canPump(BlockPos source) {
-        return getTank() < TANK_MAX && pumping.rateAllows(getWorld().getTime())
-                && FumarolePumping.leavesEnough(getWorld(), source);
+        return getTank() < TANK_MAX && pumping.rateAllows(getWorld().getTime()) && FumarolePumping.isSource(getWorld(), source);
     }
 
-    /** Drinks this source: the block goes, the tank gains a bucket. False (nothing done) if the rules forbid it. */
+    /** Drinks a bucket from this lava: the tank gains one, the source stays. False if it may not. */
     public boolean pump(BlockPos source) {
         if (getWorld().isClient || !canPump(source)) return false;
-        World world = getWorld();
-        world.setBlockState(source, Blocks.AIR.getDefaultState());
-        world.emitGameEvent(this, GameEvent.FLUID_PICKUP, source);
-        pumping.record(world.getTime());
+        pumping.record(getWorld().getTime());
         setTank(getTank() + 1);
         playSound(ModSounds.FUMAROLE_PUMP, 1.2f, 0.8f + random.nextFloat() * 0.2f);
-        if (world instanceof ServerWorld server) {
+        if (getWorld() instanceof ServerWorld server) {
             Vec3d at = Vec3d.ofCenter(source);
-            server.spawnParticles(ParticleTypes.LAVA, at.x, at.y, at.z, 6, 0.4, 0.2, 0.4, 0.0);
-            server.spawnParticles(ParticleTypes.LARGE_SMOKE, at.x, at.y + 0.5, at.z, 4, 0.3, 0.2, 0.3, 0.02);
+            server.spawnParticles(ParticleTypes.LAVA, at.x, at.y + 0.5, at.z, 6, 0.4, 0.2, 0.4, 0.0);
+            server.spawnParticles(ParticleTypes.LARGE_SMOKE, at.x, at.y + 0.8, at.z, 4, 0.3, 0.2, 0.3, 0.02);
         }
         return true;
     }
 
-    // ---------------------------------------------------------------- buckets
+    // ---------------------------------------------------------------- interactions
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
         ItemStack stack = player.getStackInHand(hand);
         if (!isAlive()) return super.interactMob(player, hand);
-        if (stack.isOf(Items.BUCKET) && getTank() > 0) {
-            if (!getWorld().isClient) {
-                setTank(getTank() - 1);
-                player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.LAVA_BUCKET)));
-                playSound(SoundEvents.ITEM_BUCKET_FILL_LAVA, 1.0f, 1.0f);
-                playSound(ModSounds.FUMAROLE_GURGLE, 0.8f, 1.0f);
-            }
-            return ActionResult.success(getWorld().isClient);
+        boolean client = getWorld().isClient;
+        if (stack.isOf(Items.BUCKET)) {
+            if (getTank() <= 0) return ActionResult.PASS;
+            if (!client) takeBucket(player, hand);
+            return ActionResult.success(client);
         }
-        if (stack.isOf(Items.LAVA_BUCKET) && getTank() < TANK_MAX) {
-            if (!getWorld().isClient) {
+        if (stack.isOf(Items.LAVA_BUCKET)) {
+            if (getTank() >= TANK_MAX) return ActionResult.PASS;
+            if (!client) {
                 setTank(getTank() + 1);
                 player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.BUCKET)));
                 playSound(SoundEvents.ITEM_BUCKET_EMPTY_LAVA, 1.0f, 1.0f);
                 playSound(ModSounds.FUMAROLE_GURGLE, 0.8f, 1.0f);
             }
-            return ActionResult.success(getWorld().isClient);
+            return ActionResult.success(client);
+        }
+        if (stack.isOf(Items.MAGMA_CREAM)) {
+            if (!client) {
+                int head = headLookedAt(player);
+                feedHead(player, head < 0 ? nearestHead(player) : head, stack);
+            }
+            return ActionResult.success(client);
+        }
+        if (isTamed() && isOwner(player) && stack.isOf(Items.SADDLE) && !isSaddled()) {
+            if (!client) {
+                inventory.setStack(0, stack.split(1));
+                playSound(SoundEvents.ENTITY_HORSE_SADDLE, 1.0f, 0.8f);
+            }
+            return ActionResult.success(client);
+        }
+        if (isTamed() && isOwner(player) && (player.shouldCancelInteraction() || !isSaddled())) {
+            if (!client) openInventory(player);
+            return ActionResult.success(client);
+        }
+        if (stack.isEmpty() && canAddPassenger(player) && !player.shouldCancelInteraction()) {
+            if (isTamed() && !isSaddled()) return ActionResult.PASS;
+            if (!client) mount(player);
+            return ActionResult.success(client);
         }
         return super.interactMob(player, hand);
     }
 
-    // ---------------------------------------------------------------- the blast
+    /** An empty bucket takes a bucket of lava; emptied, an untamed one becomes tamable. */
+    public void takeBucket(PlayerEntity player, Hand hand) {
+        setTank(getTank() - 1);
+        player.setStackInHand(hand, ItemUsage.exchangeStack(player.getStackInHand(hand), player, new ItemStack(Items.LAVA_BUCKET)));
+        playSound(SoundEvents.ITEM_BUCKET_FILL_LAVA, 1.0f, 1.0f);
+        playSound(ModSounds.FUMAROLE_GURGLE, 0.8f, 1.0f);
+        if (getTank() == 0 && !isTamed() && !isTamable()) {
+            setBit(TAMABLE, true);
+            getWorld().sendEntityStatus(this, STATUS_TAMABLE);
+            playSound(SoundEvents.BLOCK_FIRE_EXTINGUISH, 1.0f, 0.5f);
+        }
+    }
 
-    /** A head's nozzle in the world, its neck in the S pose turned to world yaw {@code yaw}. */
+    /**
+     * Feeds a head a magma cream: it trusts this player from now on (never shoots him) and wiggles. When all the heads
+     * trust the same player and it is tamable: tamed, him its owner. A tamed one is healed instead.
+     */
+    public void feedHead(PlayerEntity player, int head, ItemStack cream) {
+        if (head < 0) return;
+        if (isTamed()) {
+            heal(10);
+        } else {
+            trust.get(head).add(player.getUuid());
+            if (isTamable() && trustedByAll(player)) tame(player);
+        }
+        if (!player.getAbilities().creativeMode) cream.decrement(1);
+        playSound(SoundEvents.ENTITY_GENERIC_EAT, 1.0f, 0.6f);
+        getWorld().sendEntityStatus(this, (byte) (STATUS_FED + head));
+        if (getTarget() instanceof PlayerEntity target && target == player && trustedByAll(player)) setTarget(null);
+    }
+
+    private void tame(PlayerEntity player) {
+        owner = player.getUuid();
+        setBit(TAMED, true);
+        setPersistent();
+        setTarget(null);
+        getWorld().sendEntityStatus(this, STATUS_TAMED);
+    }
+
+    /** How far a player reaches a head with his hand (they are big and far from its shell). */
+    public static final double HEAD_REACH = 12;
+
+    /** The head this player's crosshair points at (within {@link #HEAD_REACH} blocks), or -1. */
+    public int headLookedAt(PlayerEntity player) {
+        Vec3d eye = player.getEyePos(), look = player.getRotationVector();
+        int best = -1;
+        double bestAlong = Double.MAX_VALUE;
+        for (int head = 0; head < HEADS.length; head++) {
+            Vec3d center = headCenter(head);
+            double along = center.subtract(eye).dotProduct(look);
+            if (along < 0 || along > HEAD_REACH) continue;
+            if (eye.add(look.multiply(along)).squaredDistanceTo(center) > 1.8 * 1.8) continue;
+            if (along < bestAlong) {
+                bestAlong = along;
+                best = head;
+            }
+        }
+        return best;
+    }
+
+    private int nearestHead(PlayerEntity player) {
+        int best = 0;
+        for (int head = 1; head < HEADS.length; head++) {
+            if (headCenter(head).squaredDistanceTo(player.getPos()) < headCenter(best).squaredDistanceTo(player.getPos())) best = head;
+        }
+        return best;
+    }
+
+    /** The middle of a head (a little behind its nozzle). */
+    public Vec3d headCenter(int head) {
+        Vec3d nozzle = nozzle(head);
+        float yaw = getWorld().isClient ? bodyYaw + clientYaw[head] : aimYaw[head];
+        return nozzle.subtract(Vec3d.fromPolar(0, yaw).multiply(1.6));
+    }
+
+    private void openInventory(PlayerEntity player) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
+        serverPlayer.openHandledScreen(new ExtendedScreenHandlerFactory<Integer>() {
+            @Override
+            public Integer getScreenOpeningData(ServerPlayerEntity opener) {
+                return getId();
+            }
+
+            @Override
+            public Text getDisplayName() {
+                return FumaroleEntity.this.getDisplayName();
+            }
+
+            @Override
+            public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity opener) {
+                return new FumaroleScreenHandler(syncId, playerInventory, inventory, FumaroleEntity.this);
+            }
+        });
+    }
+
+    private void mount(PlayerEntity player) {
+        player.setYaw(getYaw());
+        player.startRiding(this);
+        if (!isTamed()) scheduleThrow();
+    }
+
+    private void scheduleThrow() {
+        throwAt = getWorld().getTime() + THROW_MIN + random.nextInt(THROW_SPREAD + 1);
+    }
+
+    @Override
+    protected boolean canAddPassenger(Entity passenger) {
+        return getPassengerList().size() < FumaroleRiding.MAX_RIDERS;
+    }
+
+    /** Its riders, seat order (centre, left, right). */
+    public List<Entity> riders() {
+        return getPassengerList();
+    }
+
+    public @Nullable PlayerEntity riderOf(int head) {
+        List<Entity> riders = getPassengerList();
+        return head < riders.size() && riders.get(head) instanceof PlayerEntity player ? player : null;
+    }
+
+    /** Ridden and steered: tamed, saddled, with a player on. */
+    public boolean isSteered() {
+        return isTamed() && isSaddled() && getFirstPassenger() instanceof PlayerEntity;
+    }
+
+    @Override
+    protected Vec3d getPassengerAttachmentPos(Entity passenger, EntityDimensions dimensions, float scaleFactor) {
+        int index = Math.max(0, getPassengerList().indexOf(passenger));
+        return FumaroleRiding.seat(index, RIM_HEIGHT, RIM_FORWARD).rotateY(-getYaw() * MathHelper.RADIANS_PER_DEGREE);
+    }
+
+    @Override
+    protected void removePassenger(Entity passenger) {
+        super.removePassenger(passenger);
+        if (!isTamed() && !hasPassengers()) throwAt = -1;
+    }
+
+    /**
+     * An untamed one's answer to a rider: a head turns round and sprays him off, throwing him high and back, a little
+     * fire unless fire-proof. A shield raised toward the head spares him the throw and the fire (he still gets off).
+     */
+    public void sprayOff(Entity rider) {
+        int head = random.nextInt(HEADS.length);
+        rider.stopRiding();
+        if (!(getWorld() instanceof ServerWorld world)) return;
+        Vec3d from = nozzle(head);
+        Vec3d away = rider.getPos().subtract(getPos());
+        away = new Vec3d(away.x, 0, away.z);
+        if (away.lengthSquared() < 1.0e-4) away = Vec3d.fromPolar(0, getYaw() + 180);
+        away = away.normalize();
+        world.spawnParticles(ModParticles.THERMAL_PLUME, rider.getX(), rider.getY() + 0.5, rider.getZ(), 12, 0.5, 0.4, 0.5, 0.05);
+        world.spawnParticles(ModParticles.THERMAL_POOF, from.x, from.y, from.z, 4, 0.3, 0.3, 0.3, 0.02);
+        playSound(ModSounds.FUMAROLE_PUFF, 2.0f, 0.7f);
+        world.sendEntityStatus(this, (byte) (STATUS_SULK + head));
+        if (rider instanceof LivingEntity living) {
+            if (FumaroleBlast.shields(living, rider.getPos().subtract(from).normalize())) {
+                world.playSound(null, rider.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, net.minecraft.sound.SoundCategory.PLAYERS, 1.0f, 0.8f);
+                return;
+            }
+            if (!FumaroleBlast.fireProof(living)) living.setOnFireFor(THROW_FIRE_SECONDS);
+        }
+        rider.setVelocity(away.x * THROW_BACK, THROW_UP, away.z * THROW_BACK);
+        rider.velocityModified = true;
+    }
+
+    // ---------------------------------------------------------------- the heads
+
     public Vec3d nozzle(FumaroleHead head, float bodyYaw, float yaw) {
         return getPos().add(Vec3d.fromPolar(0, bodyYaw).multiply(head.base()))
                 .add(Vec3d.fromPolar(0, bodyYaw + 90).multiply(head.side()))
@@ -324,21 +610,27 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
                 .add(0, head.up(), 0);
     }
 
-    /** A head's nozzle as it aims now (server: its aim; client: its drawn aim). */
     public Vec3d nozzle(int head) {
         float yaw = getWorld().isClient ? bodyYaw + clientYaw[head] : aimYaw[head];
         return nozzle(HEADS[head], bodyYaw, yaw);
     }
 
-    /** Where it aims on a target: the middle of its body. */
+    /** Where a rider's reins hold a head: the top of its neck (client: as drawn). */
+    public Vec3d neckTop(int head, float partialTick) {
+        FumaroleHead h = HEADS[head];
+        float body = MathHelper.lerpAngleDegrees(partialTick, prevBodyYaw, bodyYaw);
+        float yaw = body + MathHelper.lerp(partialTick, prevClientYaw[head], clientYaw[head]);
+        Vec3d pos = getLerpedPos(partialTick);
+        return pos.add(Vec3d.fromPolar(0, body).multiply(h.base()))
+                .add(Vec3d.fromPolar(0, body + 90).multiply(h.side()))
+                .add(Vec3d.fromPolar(0, yaw).multiply(h.neckReach()))
+                .add(0, h.neckUp(), 0);
+    }
+
     public static Vec3d aimPoint(Entity target) {
         return target.getPos().add(0, target.getHeight() * 0.5, 0);
     }
 
-    /**
-     * Where a head's steam leaves from: its nozzle, unless a block stands between the neck's base and the nozzle
-     * (the nozzle in a wall): then just before that block.
-     */
     public Vec3d blastOrigin(int head) {
         Vec3d nozzle = nozzle(head);
         Vec3d base = getPos().add(0, HEADS[head].up(), 0);
@@ -348,9 +640,9 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         return hit.getPos().add(base.subtract(hit.getPos()).normalize().multiply(0.3));
     }
 
-    /** Server: turns a head toward {@code target} (at most {@link #HEAD_TURN} a tick unless {@code instant}, within reach of the body). */
-    public void aimHead(int head, Entity target, boolean instant) {
-        Vec3d to = aimPoint(target).subtract(nozzle(HEADS[head], bodyYaw, aimYaw[head]));
+    /** Server: turns a head toward a point (at most {@link #HEAD_TURN} a tick unless {@code instant}). */
+    public void aimHeadAt(int head, Vec3d point, boolean instant) {
+        Vec3d to = point.subtract(nozzle(HEADS[head], bodyYaw, aimYaw[head]));
         float yaw = (float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90;
         float rest = HEADS[head].restYaw();
         float rel = rest + MathHelper.clamp(MathHelper.wrapDegrees(yaw - bodyYaw - rest), -HEAD_YAW_MAX, HEAD_YAW_MAX);
@@ -359,101 +651,253 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         aimYaw[head] = bodyYaw + current + MathHelper.clamp(MathHelper.wrapDegrees(rel - current), -step, step);
     }
 
-    /** Server: a head back to rest. */
+    public void aimHead(int head, Entity target, boolean instant) {
+        aimHeadAt(head, aimPoint(target), instant);
+    }
+
     public void restHead(int head) {
         aimYaw[head] = bodyYaw + HEADS[head].restYaw();
     }
 
-    /** Whether a head can reach this target now (a full blast's range, or a puff's with an empty tank). */
     public boolean inRange(int head, Entity target) {
-        double range = getTank() > 0 ? BLAST_RANGE : PUFF_RANGE;
+        double range = getTank() > 0 ? FumaroleBlast.RANGE : FumaroleBlast.PUFF_RANGE;
         return blastOrigin(head).squaredDistanceTo(aimPoint(target)) <= range * range;
     }
 
-    /** Whether any head can reach this target now. */
     public boolean inRange(Entity target) {
         for (int head = 0; head < HEADS.length; head++) if (inRange(head, target)) return true;
         return false;
     }
 
-    /**
-     * One head fires at {@code target}: with lava in the tank, the thermal blast (costs a bucket), else the weak puff. Hits
-     * every living thing (but other Fumaroles) within the jet's radius along the line, up to the first solid block.
-     * Returns the entities it hurt.
-     */
-    public List<LivingEntity> blast(int head, Entity target) {
-        List<LivingEntity> hurt = new ArrayList<>();
-        if (!(getWorld() instanceof ServerWorld world)) return hurt;
-        boolean full = getTank() > 0;
-        double range = full ? BLAST_RANGE : PUFF_RANGE, radius = full ? BLAST_RADIUS : PUFF_RADIUS;
-        Vec3d from = blastOrigin(head);
-        Vec3d dir = aimPoint(target).subtract(from);
-        if (dir.lengthSquared() < 1.0e-6) dir = getRotationVector();
-        dir = dir.normalize();
-        Vec3d to = from.add(dir.multiply(range));
-        BlockHitResult hit = world.raycast(new RaycastContext(from, to, RaycastContext.ShapeType.COLLIDER,
-                RaycastContext.FluidHandling.NONE, this));
-        boolean impact = hit.getType() != HitResult.Type.MISS;
-        if (impact) to = hit.getPos();
-        if (full) setTank(getTank() - 1);
-
-        DamageSource steam = new DamageSource(world.getRegistryManager().get(RegistryKeys.DAMAGE_TYPE).entryOf(THERMAL_STEAM), this);
-        Vec3d segment = to.subtract(from);
-        double length = segment.length();
-        Box box = new Box(from, to).expand(radius + 1);
-        for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, box,
-                e -> e != this && e.isAlive() && !(e instanceof FumaroleEntity) && !e.isSpectator())) {
-            Vec3d center = entity.getBoundingBox().getCenter();
-            double along = MathHelper.clamp(center.subtract(from).dotProduct(dir), 0, length);
-            Vec3d closest = from.add(dir.multiply(along));
-            double reach = radius + entity.getWidth() * 0.5;
-            if (closest.squaredDistanceTo(center) > reach * reach) continue;
-            if (!entity.damage(steam, full ? BLAST_DAMAGE : PUFF_DAMAGE)) continue;
-            hurt.add(entity);
-            if (full) entity.setOnFireFor(BLAST_FIRE_SECONDS);
-            double resist = 1 - entity.getAttributeValue(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE);
-            if (resist > 0) {
-                Vec3d push = new Vec3d(dir.x, 0, dir.z);
-                push = push.lengthSquared() < 1.0e-6 ? Vec3d.ZERO : push.normalize();
-                double strength = (full ? BLAST_PUSH : PUFF_PUSH) * resist;
-                entity.addVelocity(push.x * strength, (full ? BLAST_LIFT : PUFF_LIFT) * resist, push.z * strength);
-                entity.velocityModified = true;
-            }
-        }
-        blastEffects(world, from, dir, length, impact, full);
-        return hurt;
+    /** Whether this head would shoot at this entity: never at one it trusts. */
+    public boolean mayShoot(int head, Entity target) {
+        return !(target instanceof PlayerEntity player && trusts(head, player));
     }
 
-    private void blastEffects(ServerWorld world, Vec3d from, Vec3d dir, double length, boolean impact, boolean full) {
-        playSound(full ? ModSounds.FUMAROLE_BLAST : ModSounds.FUMAROLE_PUFF, full ? 3.0f : 1.2f, 0.9f + random.nextFloat() * 0.2f);
-        double step = full ? 0.8 : 0.6;
-        for (double d = 0; d <= length; d += step) {
-            Vec3d at = from.add(dir.multiply(d));
-            double spread = (full ? 0.5 : 0.3) + d * 0.02;
-            Vec3d v = dir.multiply(full ? 0.35 : 0.18);
-            world.spawnParticles(ModParticles.THERMAL_PLUME, at.x, at.y, at.z, 0,
-                    v.x + random.nextGaussian() * 0.03, v.y + 0.02, v.z + random.nextGaussian() * 0.03, 1.0);
-            if (random.nextInt(2) == 0) {
-                world.spawnParticles(ParticleTypes.WHITE_SMOKE, at.x, at.y, at.z, 1, spread, spread, spread, 0.02);
+    /** One head fires at a target (wild): see {@link FumaroleBlast}. */
+    public List<LivingEntity> blast(int head, Entity target) {
+        return FumaroleBlast.fire(this, head, blastOrigin(head), aimPoint(target));
+    }
+
+    /** A rider's click on his head: fires where he looks; in the air after a leap, grabs the wall instead. */
+    public void riderClick(PlayerEntity rider) {
+        int head = getPassengerList().indexOf(rider);
+        if (head < 0 || head >= HEADS.length || !isSteered()) return;
+        if (airborneJump && !isOnGround() && climbTo == null) {
+            if (!tryGrab()) grabArmed = GRAB_ARMED_TICKS; // no wall within reach yet: the heads keep reaching out
+            return;
+        }
+        long now = getWorld().getTime();
+        if (now < headReady[head]) return;
+        headReady[head] = now + FumaroleRiding.FIRE_COOLDOWN;
+        Vec3d eye = rider.getEyePos();
+        Vec3d end = eye.add(rider.getRotationVector().multiply(FumaroleBlast.RANGE));
+        BlockHitResult hit = getWorld().raycast(new RaycastContext(eye, end, RaycastContext.ShapeType.COLLIDER,
+                RaycastContext.FluidHandling.NONE, rider));
+        Vec3d aim = hit.getType() == HitResult.Type.MISS ? end : hit.getPos();
+        aimHeadAt(head, aim, true);
+        setVent(head, VENT_SPITTING);
+        FumaroleBlast.fire(this, head, blastOrigin(head), aim);
+        ventIdleAt[head] = now + 10;
+    }
+
+    private final long[] ventIdleAt = new long[HEADS.length];
+
+    // ---------------------------------------------------------------- jumping, climbing
+
+    /** The thrusters: a leap for this charge, paid from the tank. False if it can't (no ground or lava, no lava left). */
+    public boolean thrusterJump(int charge) {
+        if (charge < FumaroleRiding.CHARGE_MIN || getTank() <= 0 || !(standing() || isSwimmingInLava())) return false;
+        setTank(getTank() - FumaroleRiding.jumpCost(charge));
+        Vec3d leap = FumaroleRiding.jumpVelocity(charge, getYaw());
+        setVelocity(leap);
+        velocityDirty = true;
+        velocityModified = true;
+        airborneJump = true;
+        jumpFromY = getY();
+        playSound(ModSounds.FUMAROLE_BLAST, 3.0f, 0.6f);
+        if (getWorld() instanceof ServerWorld world) {
+            for (int head = 0; head < HEADS.length; head++) {
+                Vec3d at = nozzle(head);
+                world.spawnParticles(ModParticles.THERMAL_PLUME, at.x, at.y - 0.5, at.z, 0, 0, -0.6, 0, 1.0);
+                world.spawnParticles(ModParticles.THERMAL_POOF, at.x, at.y - 1, at.z, 5, 0.4, 0.2, 0.4, 0.02);
+                for (int k = 1; k < 6; k++) {
+                    world.spawnParticles(ModParticles.THERMAL_PLUME, at.x, at.y - k * 0.7, at.z, 0,
+                            random.nextGaussian() * 0.05, -0.5, random.nextGaussian() * 0.05, 1.0);
+                }
             }
-            if (full && d < length * 0.6 && random.nextInt(2) == 0) {
-                world.spawnParticles(ParticleTypes.FLAME, at.x, at.y, at.z, 1, 0.2, 0.2, 0.2, 0.05);
-            }
-            if (full && random.nextInt(3) == 0) {
-                world.spawnParticles(ParticleTypes.LARGE_SMOKE, at.x, at.y, at.z, 1, spread, spread, spread, 0.01);
+            world.spawnParticles(ParticleTypes.GUST, getX(), getY(), getZ(), 2, 1, 0, 1, 0);
+        }
+        return true;
+    }
+
+    /** On something solid: on the ground, or a block right under its feet. */
+    public boolean standing() {
+        if (isOnGround()) return true;
+        BlockPos under = BlockPos.ofFloored(getX(), getY() - 0.05, getZ());
+        return getY() - Math.floor(getY()) < 0.05 && getWorld().getBlockState(under).isSolidBlock(getWorld(), under);
+    }
+
+    /** In the air after a leap: the heads grab the wall ahead and pull it onto the ledge, if there is one. */
+    public boolean tryGrab() {
+        Vec3d ledge = FumaroleRiding.findLedge(getWorld(), getPos(), getYaw(), WIDTH / 2, HEIGHT, jumpFromY);
+        if (ledge == null) return false;
+        climbTo = ledge;
+        climbTicks = 0;
+        setBit(CLIMBING, true);
+        playSound(SoundEvents.BLOCK_BASALT_PLACE, 2.0f, 0.6f);
+        if (getWorld() instanceof ServerWorld world) {
+            for (int head = 0; head < HEADS.length; head++) {
+                Vec3d at = nozzle(head);
+                world.spawnParticles(ParticleTypes.POOF, at.x, at.y, at.z, 6, 0.3, 0.3, 0.3, 0.02);
             }
         }
-        world.spawnParticles(ModParticles.THERMAL_POOF, from.x, from.y, from.z, full ? 4 : 2, 0.3, 0.3, 0.3, 0.02);
-        if (full) world.spawnParticles(ParticleTypes.GUST, from.x, from.y, from.z, 1, 0, 0, 0, 0);
-        Vec3d end = from.add(dir.multiply(length));
-        world.spawnParticles(ModParticles.THERMAL_POOF, end.x, end.y, end.z, full ? 6 : 2, 0.6, 0.6, 0.6, 0.03);
-        if (impact) world.spawnParticles(ParticleTypes.CLOUD, end.x, end.y, end.z, full ? 12 : 4, 0.5, 0.5, 0.5, 0.05);
-        if (impact && full) world.spawnParticles(ParticleTypes.EXPLOSION, end.x, end.y, end.z, 1, 0, 0, 0, 0);
+        return true;
+    }
+
+    private void tickClimb() {
+        if (climbTo == null) return;
+        climbTicks++;
+        if (getY() < climbTo.y + 0.05) {
+            setVelocity(0, FumaroleRiding.CLIMB_SPEED, 0);
+        } else {
+            Vec3d over = new Vec3d(climbTo.x - getX(), 0, climbTo.z - getZ());
+            if (over.horizontalLength() < 0.3) {
+                endClimb();
+                return;
+            }
+            Vec3d step = over.normalize().multiply(Math.min(FumaroleRiding.CLIMB_OVER_SPEED, over.horizontalLength()));
+            setVelocity(step.x, 0.02, step.z);
+        }
+        velocityDirty = true;
+        if (climbTicks > FumaroleRiding.CLIMB_TIMEOUT) endClimb();
+    }
+
+    private void endClimb() {
+        climbTo = null;
+        airborneJump = false;
+        setBit(CLIMBING, false);
+    }
+
+    @Override
+    protected int computeFallDamage(float fallDistance, float damageMultiplier) {
+        return super.computeFallDamage(fallDistance - 12, damageMultiplier); // its heads and steam soften a landing
+    }
+
+    // ---------------------------------------------------------------- moving
+
+    @Override
+    public void travel(Vec3d input) {
+        if (climbTo != null) {
+            move(MovementType.SELF, getVelocity());
+            return;
+        }
+        if (isSteered()) {
+            rideTravel();
+            return;
+        }
+        if (isSwimmingInLava()) {
+            swim(input, getMovementSpeed());
+            return;
+        }
+        super.travel(input);
+    }
+
+    /** Floats in lava, its tank out, and moves along {@code input} at {@code speed} (blocks a tick, steady). */
+    void swim(Vec3d input, float speed) {
+        float drag = 0.8f;
+        updateVelocity(speed * FumaroleRiding.SWIM_FACTOR * (1 - drag), input);
+        double depth = getFluidHeight(FluidTags.LAVA);
+        double vy = getVelocity().y + (depth > FumaroleRiding.SWIM_DEPTH ? 0.04 : -0.03);
+        vy = MathHelper.clamp(vy, -0.25, 0.15) * 0.85;
+        setVelocity(getVelocity().x * drag, vy, getVelocity().z * drag);
+        move(MovementType.SELF, getVelocity());
+    }
+
+    private void rideTravel() {
+        FumaroleRiding.Steer steer = FumaroleRiding.combine(getPassengerList(),
+                rider -> ((LivingEntityJumpingAccessor) rider).steveparty$isJumping());
+        float yaw = getYaw() - FumaroleRiding.turnFor(steer.turn());
+        setYaw(yaw);
+        prevYaw = yaw;
+        setBodyYaw(yaw);
+        setHeadYaw(yaw);
+        float speed = FumaroleRiding.speedFor(steer.forward());
+        Vec3d input = new Vec3d(0, 0, steer.moving() ? Math.signum(steer.forward()) : 0);
+        if (isSwimmingInLava()) {
+            swim(input, speed);
+        } else {
+            setMovementSpeed(speed);
+            super.travel(input);
+        }
+        // the jump: charged while held, fired on release
+        if (steer.jumping()) {
+            charge = Math.min(FumaroleRiding.CHARGE_MAX, charge + 1);
+        } else if (charge > 0) {
+            thrusterJump(charge);
+            charge = 0;
+        }
+        if (dataTracker.get(CHARGE) != charge) dataTracker.set(CHARGE, charge);
+    }
+
+    @Override
+    protected void mobTick() {
+        super.mobTick();
+        LivingEntity target = getTarget();
+        if (target != null && squaredDistanceTo(target) <= TERRITORY * TERRITORY && !isTamed()) provoke();
+        if (target instanceof PlayerEntity player && trustedByAll(player)) setTarget(null);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (getWorld().isClient) {
+            clientTick();
+            return;
+        }
+        long now = getWorld().getTime();
+        for (int head = 0; head < HEADS.length; head++) {
+            if (ventIdleAt[head] != 0 && now >= ventIdleAt[head]) {
+                ventIdleAt[head] = 0;
+                setVent(head, VENT_IDLE);
+            }
+        }
+        for (int head = 0; head < HEADS.length; head++) {
+            PlayerEntity rider = isSteered() ? riderOf(head) : null;
+            if (rider != null) aimHeadAt(head, rider.getEyePos().add(rider.getRotationVector().multiply(20)), false);
+            else if (getHeadTarget(head) == null && now >= headReady[head]) restHead(head); // idle: back to rest
+        }
+        if (airborneJump && isOnGround() && climbTo == null && getVelocity().y <= 0) {
+            airborneJump = false;
+            grabArmed = 0;
+        }
+        if (grabArmed > 0 && climbTo == null && --grabArmed >= 0 && tryGrab()) grabArmed = 0;
+        tickClimb();
+        tickUntamedRider(now);
+    }
+
+    /** An untamed one with a rider: fidgets, its heads turning to look, then throws him off. */
+    private void tickUntamedRider(long now) {
+        if (isTamed() || !hasPassengers()) return;
+        if (throwAt < 0) scheduleThrow();
+        Entity rider = getFirstPassenger();
+        if (rider == null) return;
+        if (now >= throwAt - FIDGET_TICKS) {
+            for (int head = 0; head < HEADS.length; head++) setHeadTarget(head, rider);
+            if (random.nextInt(8) == 0 && getWorld() instanceof ServerWorld world) {
+                Vec3d at = nozzle(random.nextInt(HEADS.length));
+                world.spawnParticles(ModParticles.THERMAL_BASE, at.x, at.y, at.z, 2, 0.2, 0.2, 0.2, 0.02);
+            }
+        }
+        if (now >= throwAt) {
+            for (int head = 0; head < HEADS.length; head++) setHeadTarget(head, null);
+            sprayOff(rider);
+            throwAt = hasPassengers() ? now + THROW_MIN / 2 : -1;
+        }
     }
 
     // ---------------------------------------------------------------- anger
 
-    /** Angry again for {@link #ANGER_TICKS}. */
     public void provoke() {
         angryUntil = age + ANGER_TICKS;
     }
@@ -470,35 +914,57 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     public boolean damage(DamageSource source, float amount) {
+        if (source.getAttacker() != null && hasPassenger(source.getAttacker())) return false; // its own riders
         boolean damaged = super.damage(source, amount);
         if (damaged && source.getAttacker() == getTarget()) provoke();
         return damaged;
     }
 
-    @Override
-    protected void mobTick() {
-        super.mobTick();
-        // its target still in its territory keeps it angry (FumaroleGoals: it calms down once they keep away)
-        LivingEntity target = getTarget();
-        if (target != null && squaredDistanceTo(target) <= TERRITORY * TERRITORY) provoke();
-    }
+    // ---------------------------------------------------------------- client
 
-    // ---------------------------------------------------------------- client: tank easing, vent wisps
-
-    @Override
-    public void tick() {
-        super.tick();
-        if (!getWorld().isClient) return;
+    private void clientTick() {
+        if (isSteered()) { // ridden, it moves server side: its body faces where it goes
+            prevBodyYaw = bodyYaw;
+            bodyYaw = getYaw();
+            headYaw = getYaw();
+        }
         prevClientTankLevel = clientTankLevel < 0 ? getTank() : clientTankLevel;
         float goal = getTank();
         clientTankLevel = clientTankLevel < 0 ? goal : clientTankLevel + MathHelper.clamp(goal - clientTankLevel, -0.15f, 0.15f);
+        boolean swimming = isSwimmingInLava();
+        if (wasSwimming && !swimming && !isInLava()) moods.shakeOff();
+        wasSwimming = swimming;
+        boolean bored = !hasPassengers() && !isPumping() && getHeadTarget(0) == null && getHeadTarget(1) == null
+                && getHeadTarget(HEADS.length - 1) == null;
+        moods.tick(random, age, bored, hasPassengers(), getTank());
         if (deathTime > 0) return;
+        if (moods.bodyRoll != 0 && random.nextInt(2) == 0) {
+            getWorld().addParticle(ParticleTypes.DRIPPING_LAVA, getX() + random.nextGaussian() * 1.2, getY() + 1 + random.nextDouble() * 2,
+                    getZ() + random.nextGaussian() * 1.2, 0, 0, 0);
+        }
+        if (moods.burp) {
+            getWorld().playSound(getX(), getY(), getZ(), ModSounds.FUMAROLE_GURGLE, getSoundCategory(), 1.0f, 0.7f, false);
+            for (int k = 0; k < 4; k++) {
+                getWorld().addParticle(ParticleTypes.CAMPFIRE_SIGNAL_SMOKE, getX() + random.nextGaussian() * 0.4, getY() + HEIGHT,
+                        getZ() + random.nextGaussian() * 0.4, 0, 0.06, 0);
+            }
+            getWorld().addParticle(ParticleTypes.LAVA, getX(), getY() + HEIGHT, getZ(), 0, 0, 0);
+        }
+        int charging = getCharge();
         for (int head = 0; head < HEADS.length; head++) {
             easeHead(head);
             byte vent = getVent(head);
             Vec3d at = nozzle(head);
             Vec3d ahead = Vec3d.fromPolar(0, bodyYaw + clientYaw[head]);
-            if (vent == VENT_IDLE && random.nextInt(6 * HEADS.length) == 0) {
+            if (moods.puff[head]) {
+                for (int k = 0; k < 3; k++) {
+                    getWorld().addParticle(ModParticles.THERMAL_BASE, at.x, at.y, at.z, ahead.x * 0.05, 0.06, ahead.z * 0.05);
+                }
+                getWorld().playSound(at.x, at.y, at.z, ModSounds.FUMAROLE_PUFF, getSoundCategory(), 0.6f, 0.6f, false);
+            }
+            if (charging > 0 && random.nextInt(3) == 0) {
+                getWorld().addParticle(ModParticles.THERMAL_BASE, at.x, at.y - 0.4, at.z, 0, -0.08, 0);
+            } else if (vent == VENT_IDLE && random.nextInt(6 * HEADS.length) == 0) {
                 getWorld().addParticle(ModParticles.THERMAL_BASE, at.x + ahead.x * 0.3, at.y, at.z + ahead.z * 0.3,
                         ahead.x * 0.01, 0.03, ahead.z * 0.01);
             } else if (vent == VENT_CHARGING) {
@@ -507,7 +973,7 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
                 if (random.nextInt(2) == 0) getWorld().addParticle(ModParticles.THERMAL_BASE, at.x, at.y, at.z, 0, 0.05, 0);
             }
         }
-        if (random.nextInt(20) == 0) { // the tank's cracks smoke, and ash drifts about it
+        if (random.nextInt(20) == 0) {
             getWorld().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX() + random.nextGaussian() * 0.8,
                     getY() + HEIGHT, getZ() + random.nextGaussian() * 0.8, 0, 0.02, 0);
         }
@@ -517,24 +983,71 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         }
     }
 
-    /** Client: eases a head's drawn aim toward its target (or, without one, the centre head toward where it looks). */
+    /**
+     * Client: eases a head's drawn aim. In order: the target it watches (combat, or a rider it is about to throw), its
+     * rider's look (ridden), the thrusters (pointing down while a jump charges or it climbs), its mood, where it looks
+     * (the centre head), its rest.
+     */
     private void easeHead(int head) {
         prevClientYaw[head] = clientYaw[head];
         prevClientPitch[head] = clientPitch[head];
         FumaroleHead rest = HEADS[head];
         float yaw = rest.restYaw(), pitch = rest.restPitch();
         Entity target = getHeadTarget(head);
-        if (target != null) {
-            Vec3d to = aimPoint(target).subtract(nozzle(HEADS[head], bodyYaw, bodyYaw + clientYaw[head]));
+        Entity rider = head < getPassengerList().size() ? getPassengerList().get(head) : null;
+        if (target != null && !hasPassenger(target)) {
+            Vec3d to = aimPoint(target).subtract(nozzle(rest, bodyYaw, bodyYaw + clientYaw[head]));
             yaw = MathHelper.wrapDegrees((float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90 - bodyYaw);
             pitch = (float) -(MathHelper.atan2(to.y, to.horizontalLength()) * MathHelper.DEGREES_PER_RADIAN);
+        } else if (target != null) { // its own rider: turns back to look at him
+            yaw = rest.restYaw() + (head == 1 ? -70 : 70);
+            pitch = -40;
+        } else if (getCharge() > 0 || isClimbing()) {
+            pitch = isClimbing() ? -30 : 60;
+        } else if (isSteered() && rider != null) {
+            yaw = MathHelper.wrapDegrees(rider.getHeadYaw() - bodyYaw);
+            pitch = rider.getPitch();
+        } else if (!Float.isNaN(moods.yaw[head]) || !Float.isNaN(moods.pitch[head])) {
+            if (!Float.isNaN(moods.yaw[head])) yaw = moods.yaw[head];
+            if (!Float.isNaN(moods.pitch[head])) pitch = moods.pitch[head];
         } else if (head == 0 && !isPumping()) {
             yaw = MathHelper.wrapDegrees(headYaw - bodyYaw);
-            pitch = rest.restPitch() + getPitch() * 0.5f; // a glance from its resting pose
+            pitch = rest.restPitch() + getPitch() * 0.5f;
         }
         yaw = rest.restYaw() + MathHelper.clamp(MathHelper.wrapDegrees(yaw - rest.restYaw()), -HEAD_YAW_MAX, HEAD_YAW_MAX);
         clientYaw[head] += MathHelper.clamp(MathHelper.wrapDegrees(yaw - clientYaw[head]), -HEAD_TURN, HEAD_TURN);
         clientPitch[head] += MathHelper.clamp(pitch - clientPitch[head], -HEAD_TURN, HEAD_TURN);
+    }
+
+    @Override
+    public void handleStatus(byte status) {
+        if (status >= STATUS_FED && status < STATUS_FED + HEADS.length) {
+            moods.trigger(status - STATUS_FED, FumaroleMoods.Mood.WIGGLE, 30);
+            Vec3d at = nozzle(status - STATUS_FED);
+            for (int k = 0; k < 4; k++) getWorld().addParticle(ParticleTypes.HEART, at.x + random.nextGaussian() * 0.4, at.y + 0.6, at.z + random.nextGaussian() * 0.4, 0, 0.1, 0);
+            return;
+        }
+        if (status >= STATUS_SULK && status < STATUS_SULK + HEADS.length) {
+            moods.trigger(status - STATUS_SULK, FumaroleMoods.Mood.SULK, 60);
+            return;
+        }
+        if (status == STATUS_TAMED) {
+            for (int head = 0; head < HEADS.length; head++) {
+                moods.trigger(head, FumaroleMoods.Mood.WIGGLE, 40);
+                Vec3d at = nozzle(head);
+                for (int k = 0; k < 6; k++) getWorld().addParticle(ParticleTypes.HEART, at.x + random.nextGaussian() * 0.5, at.y + 0.8, at.z + random.nextGaussian() * 0.5, 0, 0.1, 0);
+            }
+            return;
+        }
+        if (status == STATUS_TAMABLE) {
+            for (int head = 0; head < HEADS.length; head++) {
+                moods.trigger(head, FumaroleMoods.Mood.SULK, 50);
+                Vec3d at = nozzle(head);
+                getWorld().addParticle(ParticleTypes.LARGE_SMOKE, at.x, at.y, at.z, 0, 0.05, 0);
+            }
+            return;
+        }
+        super.handleStatus(status);
     }
 
     // ---------------------------------------------------------------- death: the tank spills
@@ -545,7 +1058,13 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         if (getWorld() instanceof ServerWorld world && !isRemoved()) spill(world);
     }
 
-    /** Its lava spills: some sources poured where it dies if mobGriefing allows, always lava bursts and smoke. */
+    @Override
+    protected void dropInventory() {
+        super.dropInventory();
+        ItemStack saddle = inventory.removeStack(0);
+        if (!saddle.isEmpty()) dropStack(saddle);
+    }
+
     public int spill(ServerWorld world) {
         int buckets = getTank();
         if (buckets <= 0) return 0;
@@ -574,24 +1093,28 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
     // ---------------------------------------------------------------- body
 
     @Override
+    public Box getVisibilityBoundingBox() {
+        return getBoundingBox().expand(10, 3, 10);
+    }
+
+    @Override
     public int getMaxHeadRotation() {
         return 75;
     }
 
     @Override
     public int getMaxLookYawChange() {
-        return 25; // its neck turns fast, a turret
-    }
-
-    /** Drawn while any of it shows: its necks reach some 10 blocks out of its box. */
-    @Override
-    public Box getVisibilityBoundingBox() {
-        return getBoundingBox().expand(10, 3, 10);
+        return 25;
     }
 
     @Override
     public boolean isPushedByFluids() {
-        return false; // it wades
+        return false;
+    }
+
+    @Override
+    public boolean canImmediatelyDespawn(double distanceSquared) {
+        return !isTamed() && !hasPassengers() && super.canImmediatelyDespawn(distanceSquared);
     }
 
     // ---------------------------------------------------------------- save
@@ -601,6 +1124,17 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         super.writeCustomDataToNbt(nbt);
         nbt.putInt("Tank", getTank());
         pumping.write(nbt);
+        nbt.putBoolean("Tamed", isTamed());
+        nbt.putBoolean("Tamable", isTamable());
+        if (owner != null) nbt.putUuid("Owner", owner);
+        NbtList heads = new NbtList();
+        for (Set<UUID> players : trust) {
+            NbtList list = new NbtList();
+            for (UUID uuid : players) list.add(NbtHelper.fromUuid(uuid));
+            heads.add(list);
+        }
+        nbt.put("Trust", heads);
+        if (!inventory.getStack(0).isEmpty()) nbt.put("Saddle", inventory.getStack(0).encode(getRegistryManager()));
     }
 
     @Override
@@ -608,6 +1142,18 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         super.readCustomDataFromNbt(nbt);
         setTank(nbt.getInt("Tank"));
         pumping.read(nbt);
+        setBit(TAMED, nbt.getBoolean("Tamed"));
+        setBit(TAMABLE, nbt.getBoolean("Tamable"));
+        owner = nbt.containsUuid("Owner") ? nbt.getUuid("Owner") : null;
+        NbtList heads = nbt.getList("Trust", NbtElement.LIST_TYPE);
+        for (int head = 0; head < HEADS.length; head++) {
+            trust.get(head).clear();
+            if (head >= heads.size()) continue;
+            for (NbtElement uuid : heads.getList(head)) trust.get(head).add(NbtHelper.toUuid(uuid));
+        }
+        inventory.setStack(0, nbt.contains("Saddle") ? ItemStack.fromNbt(getRegistryManager(), nbt.get("Saddle"))
+                .filter(stack -> stack.isOf(Items.SADDLE)).orElse(ItemStack.EMPTY) : ItemStack.EMPTY);
+        setBit(SADDLED, inventory.getStack(0).isOf(Items.SADDLE));
     }
 
     // ---------------------------------------------------------------- sounds
@@ -644,7 +1190,6 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
 
     // ---------------------------------------------------------------- animations
 
-    /** Plays a head's spit animation (the warning second, then the whip as the steam leaves) on every client. */
     void playSpit(int head) {
         triggerAnim(HEADS[head].name(ACTION_CONTROLLER), "spit");
     }

@@ -2672,6 +2672,7 @@
   "death.attack.steveparty.thermal_steam": "%1$s a été ébouillanté par %2$s",
   "death.attack.steveparty.thermal_steam.item": "%1$s a été ébouillanté par %2$s avec %3$s",
   "death.attack.steveparty.thermal_steam.player": "%1$s a été ébouillanté par %2$s",
+  "screen.steveparty.fumarole.tank": "Lave %s/%s",
   "block.steveparty.frousseux_candle_holder": "Bougeoir de Frousseux",
   "tooltip.steveparty.frousseux_candle_holder.kept": "Un Frousseux endormi, sa %s sur la tête",
   "tooltip.steveparty.frousseux_candle_holder.named": "%s endormi, sa %s sur la tête",
