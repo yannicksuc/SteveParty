@@ -7,7 +7,13 @@ import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
 import fr.lordfinn.steveparty.compat.CartridgeApplications;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
+import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
 import fr.lordfinn.steveparty.components.TeleportNetwork;
+import fr.lordfinn.steveparty.dice.DiceModule;
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.dice.DiceModulesComponent;
 import fr.lordfinn.steveparty.items.custom.BandanaItem;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
@@ -31,6 +37,7 @@ import net.minecraft.util.DyeColor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
@@ -76,6 +83,22 @@ public final class ModItemGroups {
                 ModItemGroups::building);
     }
 
+    /** Faces 1 to {@code max} of this kind, once each. */
+    private static DiceFacesComponent faces(Kind kind, int max) {
+        List<DiceFace> faces = new ArrayList<>();
+        for (int value = 1; value <= max; value++) faces.add(new DiceFace(kind, value));
+        return new DiceFacesComponent(faces);
+    }
+
+    /** A Simple Die with these faces (its own 1 to 10 when null) and this module, named item.steveparty.<name>. */
+    private static ItemStack presetDie(String name, DiceFacesComponent faces, DiceModule module) {
+        ItemStack die = new ItemStack(DEFAULT_DICE);
+        if (faces != null) die.set(DiceFacesComponent.TYPE, faces);
+        if (module != null) die.set(DiceModulesComponent.TYPE, new DiceModulesComponent(Map.of(module.id(), 1)));
+        die.set(DataComponentTypes.ITEM_NAME, Text.translatable("item.steveparty." + name));
+        return die;
+    }
+
     /** The party, the board spaces and their cartridges, the pawns, the shop, coins and stars, the dice, power-ups. */
     private static void board(ItemGroup.DisplayContext context, ItemGroup.Entries entries) {
         addAll(entries, PARTY_CONTROLLER, PARTY_CARD_TURNS, PARTY_CARD_MINIGAME, PARTY_CARD_EVENT,
@@ -100,6 +123,11 @@ public final class ModItemGroups {
         for (Block block : STAR_FRAGMENTS_BLOCKS) entries.add(block);
         for (Item fragment : STAR_FRAGMENTS) entries.add(fragment);
         addAll(entries, DICE_FORGE, DEFAULT_DICE, DOUBLE_DICE, TRIPLE_DICE);
+        // Ready-made dice: a cursed die (1, 2, 3), a coins die (+1 to +10), a slow die and a choice die (1 to 10)
+        entries.add(presetDie("cursed_die", faces(Kind.CURSED, 3), null));
+        entries.add(presetDie("coins_die", faces(Kind.COIN, 10), null));
+        entries.add(presetDie("slow_die", null, DiceModules.SLOW));
+        entries.add(presetDie("choice_die", null, DiceModules.CHOICE));
         for (Item face : DICE_FACES) entries.add(face);
         entries.add(BLANK_DICE_MODULE);
         for (Item module : DICE_MODULES) entries.add(module);
