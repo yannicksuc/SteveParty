@@ -25,6 +25,7 @@ import net.minecraft.util.math.BlockPos;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 import static fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.*;
 
 /**

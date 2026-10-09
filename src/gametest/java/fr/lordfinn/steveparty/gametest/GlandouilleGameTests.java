@@ -16,6 +16,8 @@ import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.Mood
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
 import fr.lordfinn.steveparty.service.GlandouillePushes;
@@ -41,8 +43,9 @@ import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.function.Consumer;
+
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 
 /**
  * The Glandouille: it never hurts (it shoves), stomps flatten then finish it (the mossy one takes one more), towers
@@ -54,11 +57,6 @@ import java.util.function.Consumer;
 public class GlandouilleGameTests implements FabricGameTest {
 
     // ---------------------------------------------------------------- set-up
-
-    /** A stone floor (y 0) over the whole test area: the Glandouilles walk at y 1. */
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
-    }
 
     private static GlandouilleEntity glandouille(TestContext context, GlandouilleVariant variant, BlockPos at) {
         GlandouilleEntity one = context.spawnEntity(ModEntities.GLANDOUILLE, at);
@@ -79,10 +77,9 @@ public class GlandouilleGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, BlockPos at, float yaw) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        BlockPos abs = context.getAbsolutePos(at);
-        player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, yaw, 0);
-        atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        TestPlayers.placeOn(context, player, at, yaw);
+        TestPlayers.removeAtEnd(context, player);
         return player;
     }
 
@@ -91,7 +88,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Its charge shoves a pig hard and hurts it not; a blow pushes it but hurts it not either. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
     public void itNeverHurtsItShoves(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity glandouille = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 3));
         PigEntity pig = context.spawnMob(EntityType.PIG, new BlockPos(4, 1, 3));
         double pigX = pig.getX();
@@ -117,7 +114,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A stomp flattens it ("pouic"), the stomper bounces; the second one finishes it, and it drops an acorn. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
     public void twoStompsFinishIt(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity glandouille = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 3, 3), 0f);
         context.assertTrue(glandouille.squash(player), "stomped");
@@ -139,7 +136,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** The old mossy one: dented by the first stomp, flattened by the second, done for at the third. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
     public void theMossyOneTakesThreeStomps(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity mossy = glandouille(context, GlandouilleVariant.MOSSY, new BlockPos(3, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(3, 3, 3), 0f);
         context.assertTrue(mossy.squash(player), "first stomp");
@@ -159,7 +156,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A player coming down on its cap is seen (no call from the test): flattened. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void aPlayerLandingOnItsCapFlattensIt(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity glandouille = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(3, 1, 3));
         glandouille.setAiDisabled(true);
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 3), 0f);
@@ -183,7 +180,7 @@ public class GlandouilleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
     public void eachVariantHasItsModelsSize(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity classic = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(5, 1, 1));
         GlandouilleEntity young = glandouille(context, GlandouilleVariant.YOUNG, new BlockPos(1, 1, 1));
         GlandouilleEntity mossy = glandouille(context, GlandouilleVariant.MOSSY, new BlockPos(5, 1, 5));
@@ -217,7 +214,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Glandouilles build towers by themselves up to 5, not higher. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void spontaneousTowersStopAtFive(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> all = new ArrayList<>();
         for (int i = 0; i < 7; i++) all.add(glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1 + i % 4, 1, 2 + i / 4)));
         GlandouilleEntity base = all.getFirst();
@@ -233,7 +230,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A carried tower put on another one makes it higher than 5; put down on a block, it stands there. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aCarriedTowerGoesOnTop(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> first = tower(context, GlandouilleVariant.CLASSIC, 5, new BlockPos(1, 1, 1));
         List<GlandouilleEntity> second = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(5, 1, 5));
         ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 0f);
@@ -257,7 +254,7 @@ public class GlandouilleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aRightClickSplitsTheTowerAtTheClickedOne(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 4, new BlockPos(5, 1, 3));
         GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2), d = members.get(3);
         a.setAiDisabled(true);
@@ -287,7 +284,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** With a stack in hand, a right click on another tower (any of it) stacks the carried one on top of it. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aRightClickWithAStackPutsItOnAnotherTower(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> carried = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
         List<GlandouilleEntity> target = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(5, 1, 5));
         target.getFirst().setAiDisabled(true);
@@ -305,7 +302,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A carrier hit by anyone drops the stack on the ground in front of him, still stacked. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void aHitCarrierDropsTheStack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 3), -90f); // facing +x
         player.changeGameMode(GameMode.SURVIVAL);
@@ -330,7 +327,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Two in hand, both thrown one after the other: the second (back in the hands after the first went) flies too. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
     public void theOneLeftInHandAfterAThrowFliesToo(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
         GlandouilleEntity second = members.get(1);
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
@@ -356,7 +353,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Thrown the same way after the first one landed (dizzy), the second does not climb on it. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void aSecondThrowDoesNotStackOnTheDizzyFirst(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
         GlandouilleEntity first = members.getFirst(), second = members.get(1);
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
@@ -380,7 +377,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Picked up in the middle of its flight: it does not keep floating once put down. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void aFlightCutShortGivesGravityBack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 2, 1)).getFirst();
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
         one.launch(new Vec3d(1, 0, 0));
@@ -397,7 +394,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** The last one in hand, alone, is thrown like the others: it flies forward, lands, and walks again. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
     public void theLastOneInHandIsThrownToo(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1));
         GlandouilleEntity one = members.getFirst();
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
@@ -421,7 +418,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Picked up asleep and thrown: it is woken up in the hands, flies, and lands like any other (never frozen asleep). */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
     public void aSleepingOneIsWokenAndThrown(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
         one.fallAsleep(2000);
         context.assertTrue(one.isSleeping(), "asleep");
@@ -444,7 +441,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A flying one never drops off in mid-air: it lands, and falls again. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
     public void aThrownOneCanNotFallAsleepInFlight(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 3, 1)).getFirst();
         one.launch(new Vec3d(1, 0, 0));
         one.fallAsleep(2000);
@@ -459,7 +456,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Thrown into a napping one, it lands on top of it and wakes it up: a tower never stays stuck under a sleeper. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
     public void aOneLandingOnASleeperWakesItUp(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity sleeper = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(4, 1, 1)).getFirst();
         sleeper.fallAsleep(2000);
         context.assertTrue(sleeper.isSleeping(), "asleep");
@@ -475,7 +472,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Put down, it stays awake a while: a handled one does not drop off at once, at night on a bare platform. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aPutDownOneStaysAwake(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
         context.assertTrue(GlandouilleTowers.pickUp(player, one), "carried");
@@ -495,7 +492,7 @@ public class GlandouilleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
     public void aRiderIsNotSavedWithoutAi(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity top = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1)).get(1);
         context.assertTrue(top.isAiDisabled(), "riding: it doesn't think");
         net.minecraft.nbt.NbtCompound saved = new net.minecraft.nbt.NbtCompound();
@@ -519,7 +516,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A carried stack is held in the main hand: on its side (mirrored for a left-handed one), low, a little forward. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
     public void aStackIsHeldInTheMainHand(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x: his right is +z
         GlandouilleEntity one = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 1));
         Vec3d right = GlandouilleTowers.heldPos(player, one).subtract(player.getPos());
@@ -534,7 +531,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Thrown looking down at the floor a few blocks ahead, it lands there (not far away): it goes where he aims. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void aThrowGoesWhereTheCrosshairAims(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity one = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1)).getFirst();
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
         player.setPitch(35f); // the floor, about 2.5 blocks ahead
@@ -557,7 +554,7 @@ public class GlandouilleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aLeftClickThrowsTheBottomOne(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(1, 1, 1));
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
         context.assertTrue(GlandouilleTowers.pickUp(player, members.getFirst()), "carried");
@@ -583,7 +580,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A tower holds while it walks; it falls apart, all dizzy, only when its bottom one charges into a wall. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
     public void aTowerOnlyFallsWhenItsBottomChargesIntoAWall(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         for (int z = 0; z < 8; z++) for (int y = 1; y < 4; y++) context.setBlockState(new BlockPos(7, y, z), Blocks.STONE);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(2, 1, 3));
         GlandouilleEntity bottom = members.getFirst();
@@ -610,7 +607,7 @@ public class GlandouilleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
     public void aFlickShootsOneOutOfTheTower(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 4, new BlockPos(1, 1, 3));
         GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2), d = members.get(3);
         a.setAiDisabled(true);
@@ -647,7 +644,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** The bottom one hit goes alone too: the tower on it hops off and lands on the ground, still stacked. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
     public void aHitBottomOneLeavesItsTowerBehind(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.FROSTY, 3, new BlockPos(2, 1, 3));
         GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2);
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
@@ -675,7 +672,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** One shot out of a tower into another tower lands on top of it: that tower is one higher, and not pushed. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
     public void aShotOneLandsOnTheTowerItHits(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> shooterTower = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 3));
         List<GlandouilleEntity> target = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(4, 1, 3));
         shooterTower.getFirst().setAiDisabled(true);
@@ -700,7 +697,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A sliding one into a lone one: it carries it on top and slides on, a little slower. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void aSlidingOneCarriesALoneOne(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
         GlandouilleEntity lone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(3, 1, 3));
         lone.setAiDisabled(true);
@@ -711,7 +708,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A sliding one into a tower: the whole tower climbs on it, in order, and it slides on, slower still. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void aSlidingOneCarriesATower(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(3, 1, 3));
         members.getFirst().setAiDisabled(true);
@@ -743,7 +740,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** The old mossy one is too heavy to carry: a sliding one hitting its tower stops and climbs on top of it. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void aSlidingOneStopsOnAMossyTower(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.MOSSY, 2, new BlockPos(4, 1, 3));
         GlandouilleEntity mossy = members.getFirst();
@@ -763,7 +760,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A charge into a player: dazed on the spot (no walking, no jumping) for about 2 s, not hurt. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
     public void aChargeDazesAPlayer(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity glandouille = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(4, 1, 3), 90f);
         context.assertTrue(glandouille.startCharge(new Vec3d(1, 0, 0)), "charges");
@@ -773,7 +770,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** A frosty one sliding into a player: dazed the same way. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
     public void aSlidingOneDazesAPlayer(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 90f);
         frosty.startSlide(new Vec3d(0.6, 0, 0));
@@ -783,7 +780,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** One shot out of a tower flying into a player: dazed the same way. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
     public void aShotOneDazesAPlayer(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(1, 1, 3));
         members.getFirst().setAiDisabled(true);
         ServerPlayerEntity shooter = player(context, new BlockPos(0, 1, 3), -90f); // facing +x
@@ -824,7 +821,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** The old mossy one never charges, and a tower on it stays where it is. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
     public void theMossyOneIsAnAnchor(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.MOSSY, 3, new BlockPos(3, 1, 3));
         GlandouilleEntity mossy = members.getFirst();
         Vec3d start = mossy.getPos();
@@ -842,7 +839,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** The frosty one, hit, slides like a curling stone, bounces off a wall and goes back the other way. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
     public void theFrostyOneSlidesAndBouncesOffWalls(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         for (int z = 0; z < 8; z++) for (int y = 1; y < 3; y++) context.setBlockState(new BlockPos(6, y, z), Blocks.STONE);
         GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(2, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
@@ -864,7 +861,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Its cap never flies off while it carries a tower; alone, it does (the Acorn Hat drops). */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void neverLosesItsCapUnderATower(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(2, 1, 2));
         GlandouilleEntity bottom = members.getFirst();
         GlandouilleEntity alone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(5, 1, 5));
@@ -885,7 +882,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** An acorn planted on farmland grows, and ripe, hatches into a young Glandouille. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aPlantedAcornHatchesIntoAClassicOne(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         biome(context, "minecraft:plains");
         BlockPos farmland = new BlockPos(3, 1, 3), crop = farmland.up();
         context.setBlockState(farmland, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
@@ -933,7 +930,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Barely sprouted, an acorn may pop out of the ground at once, as a young one (5 %: forced here). */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aBarelySproutedAcornMayPopOutYoung(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         biome(context, "minecraft:snowy_plains");
         BlockPos farmland = new BlockPos(3, 1, 3), crop = farmland.up();
         context.setBlockState(farmland, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
@@ -975,7 +972,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Picked in creative (middle click): the egg of its own kind. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
     public void aPickedOneGivesTheEggOfItsKind(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         for (GlandouilleVariant variant : GlandouilleVariant.values()) {
             GlandouilleEntity one = glandouille(context, variant, new BlockPos(1 + variant.ordinal(), 1, 1));
             context.assertEquals(one.getPickBlockStack().getItem(), ModItems.GLANDOUILLE_SPAWN_EGGS[variant.ordinal()], "egg of " + variant);
@@ -994,7 +991,7 @@ public class GlandouilleGameTests implements FabricGameTest {
     /** Bone meal: one stage per dose; ripe, a dose in three hatches it (here, doses until it does). */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void boneMealOnARipeAcornHatchesIt(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BlockPos farmland = new BlockPos(3, 1, 3), crop = farmland.up();
         context.setBlockState(farmland, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
         context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
@@ -1264,19 +1261,5 @@ public class GlandouilleGameTests implements FabricGameTest {
     private static double horizontal(Vec3d a, Vec3d b) {
         double dx = a.x - b.x, dz = a.z - b.z;
         return Math.sqrt(dx * dx + dz * dz);
-    }
-
-    /** What to undo when the test ends (a test has one final task: they are run together). */
-    private static final Map<TestContext, List<Runnable>> AT_END = new WeakHashMap<>();
-
-    private static void atEnd(TestContext context, Runnable task) {
-        List<Runnable> tasks = AT_END.get(context);
-        if (tasks == null) {
-            List<Runnable> created = new ArrayList<>();
-            AT_END.put(context, created);
-            context.addFinalTask(() -> created.forEach(Runnable::run));
-            tasks = created;
-        }
-        tasks.add(task);
     }
 }

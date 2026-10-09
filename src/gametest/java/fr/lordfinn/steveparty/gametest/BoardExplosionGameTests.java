@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -78,7 +79,7 @@ public class BoardExplosionGameTests implements FabricGameTest {
         BlockPos pos = new BlockPos(1, 1, 1);
         context.setBlockState(pos.down(), Blocks.STONE);
         context.setBlockState(pos, ModBlocks.PARTY_CONTROLLER);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.changeGameMode(GameMode.SURVIVAL);
             player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
@@ -90,7 +91,7 @@ public class BoardExplosionGameTests implements FabricGameTest {
                     item -> item.getStack().isOf(ModBlocks.PARTY_CONTROLLER.asItem()));
             context.assertTrue(!drops.isEmpty(), "and drops itself");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

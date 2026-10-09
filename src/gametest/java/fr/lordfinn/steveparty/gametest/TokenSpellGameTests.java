@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.components.MobEntityComponent;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TokenizerFlare;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
@@ -62,7 +63,7 @@ public class TokenSpellGameTests implements FabricGameTest {
 
     /** A player standing next to {@link #MOB_POS}, holding a Tokenizer Wand. */
     private static ServerPlayerEntity wandHolder(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         Vec3d pos = context.getAbsolute(new Vec3d(MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() - 1.0));
         player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TOKENIZER_WAND));
@@ -72,10 +73,6 @@ public class TokenSpellGameTests implements FabricGameTest {
     private static void resetCooldown(ServerPlayerEntity player) {
         ItemStack wand = TokenizerWandItem.heldWand(player);
         player.getItemCooldownManager().remove((wand).getItem());
-    }
-
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
     private static TokenizedEntityInterface token(MobEntity mob) {
@@ -120,7 +117,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             context.assertTrue(player.getMainHandStack().get(fr.lordfinn.steveparty.components.ModComponents.ENTITY_DATA_COMPONENT) != null,
                     "the llama is stored in the Token");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -160,7 +157,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             // Anti-spam: the wand cools down after a cast
             context.assertTrue(TokenizerWandItem.castSpell(player, cow.getId(), 1F, BLUE) == SpellResult.COOLDOWN, "cooldown");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         // The hitbox follows on the next entity tick
         context.runAtTick(3, () -> {
@@ -176,7 +173,7 @@ public class TokenSpellGameTests implements FabricGameTest {
         try {
             context.assertTrue(TokenizerWandItem.castSpell(player, turtle.getId(), 1.5F, ORANGE) == SpellResult.TOKENIZED, "tokenized");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.runAtTick(3, () -> {
             context.assertTrue(near(body(turtle).width(), 1.5), "width = chosen size: " + body(turtle));
@@ -202,7 +199,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             // A resized token keeps its own size as the reference, not the size it was given
             context.assertTrue(near(TokenizerWandItem.naturalSize(zombie), 1.95), "natural size kept");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.runAtTick(3, () -> {
             context.assertTrue(near(body(zombie).height(), 9.75), "a 9.75 blocks zombie pawn: " + body(zombie));
@@ -230,7 +227,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             context.assertEquals(token(notANumber).steveparty$getTokenColor(), TokenizerWandItem.NO_COLOR, "invalid colour ignored");
             context.assertEquals(notANumber.getCustomName().getString(), player.getDisplayName().getString(), "still named");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.runAtTick(3, () -> {
             context.assertTrue(near(biggest(big), 4.5), "4.5 blocks: " + body(big));
@@ -292,7 +289,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.TOKENIZER_WAND));
             context.assertTrue(TokenizerWandItem.castSpell(player, pig.getId(), 0.5F, BLUE) == SpellResult.TOKENIZED, "off hand wand");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
             wither.discard();
         }
         context.complete();
@@ -322,7 +319,7 @@ public class TokenSpellGameTests implements FabricGameTest {
                     "the Wither is taken when bosses are allowed");
         } finally {
             rule.set(before, context.getWorld().getServer());
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.runAtTick(5, () -> {
             context.assertFalse(bossBar(wither).isVisible(), "a Wither token has no boss bar");
@@ -361,7 +358,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             context.assertTrue(result == SpellResult.TOKENIZED, "tokenized from 20 blocks: " + result);
             context.assertTrue(token(cow).steveparty$getTokenSize() == 0.75F, "size stored");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -402,7 +399,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             context.assertTrue(hit.mob() == null && hit.stops(), "a wall stops the flare");
             behind.discard();
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -429,7 +426,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             player.interact(mula, Hand.MAIN_HAND);
             context.assertTrue(mula.isSitting() == sitting, "the Mula did not sit / stand up");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -481,7 +478,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             context.assertEquals(token(reloaded).steveparty$getTokenColor(), BLUE, "colour saved");
             reloaded.discard();
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.runAtTick(3, () -> {
             context.assertTrue(near(biggest(pig), 1.5), "resized: " + body(pig));
@@ -515,7 +512,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             wand.inventoryTick(context.getWorld(), player, 0, true);
             context.assertTrue(!wand.contains(MOB_ENTITY_COMPONENT), "legacy selection removed");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.runAtTick(40, () -> {
             Vec3d now = pig.getPos();

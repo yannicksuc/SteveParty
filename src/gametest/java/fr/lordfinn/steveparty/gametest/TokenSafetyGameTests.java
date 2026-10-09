@@ -7,9 +7,10 @@ import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
@@ -41,25 +42,16 @@ import net.minecraft.util.math.GlobalPos;
  * else do nothing (a horse token can still be ridden), and its memories (a villager's job site) are kept.
  */
 public class TokenSafetyGameTests implements FabricGameTest {
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++)
-            for (int z = 0; z < 8; z++)
-                context.setBlockState(new BlockPos(x, 1, z), Blocks.STONE.getDefaultState());
-    }
 
     private static <T extends MobEntity> T token(T mob) {
         ((TokenizedEntityInterface) mob).steveparty$setTokenized(true);
         return mob;
     }
 
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
-    }
-
     /** Lit before the spell (already hissing) or after: a creeper token never explodes. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
     public void creeperTokenNeverExplodes(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8, 8, 1);
         CreeperEntity hissing = context.spawnEntity(EntityType.CREEPER, new BlockPos(2, 2, 2));
         hissing.setFuseSpeed(1);
         token(hissing);
@@ -76,7 +68,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
     /** The token spell is never released in the cloud of an exploding creeper: with only it, no cloud at all. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
     public void creeperCloudHasNoTokenSpell(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8, 8, 1);
         CreeperEntity creeper = context.spawnEntity(EntityType.CREEPER, new BlockPos(4, 2, 4));
         creeper.addStatusEffect(new StatusEffectInstance(ModEffects.SQUISHED, 2000, 5));
         creeper.ignite();
@@ -91,7 +83,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void lightningLeavesTokensAsTheyAre(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8, 8, 1);
         CreeperEntity creeper = token(context.spawnEntity(EntityType.CREEPER, new BlockPos(2, 2, 2)));
         PigEntity pig = token(context.spawnEntity(EntityType.PIG, new BlockPos(4, 2, 2)));
         VillagerEntity villager = token(context.spawnEntity(EntityType.VILLAGER, new BlockPos(6, 2, 2)));
@@ -109,8 +101,8 @@ public class TokenSafetyGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void vanillaActionsDoNotBreakPawns(TestContext context) {
-        floor(context);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        TestBoards.floor(context, 8, 8, 1);
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             AxolotlEntity axolotl = token(context.spawnEntity(EntityType.AXOLOTL, new BlockPos(1, 2, 1)));
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
@@ -141,7 +133,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
             horse.interact(player, Hand.MAIN_HAND);
             context.assertTrue(player.getVehicle() == horse, "a player can ride a tiny horse token, with an empty hand");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -149,7 +141,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
     /** Its brain stops, but keeps its memories: a villager token still knows its job site (and so its trades). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void villagerTokenKeepsItsJobSite(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8, 8, 1);
         VillagerEntity villager = context.spawnEntity(EntityType.VILLAGER, new BlockPos(2, 2, 2));
         GlobalPos site = GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(new BlockPos(4, 2, 4)));
         villager.getBrain().remember(MemoryModuleType.JOB_SITE, site);
@@ -162,9 +154,9 @@ public class TokenSafetyGameTests implements FabricGameTest {
     /** A Boxed Trader turned into a token is stored in an empty Token like any other token. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void boxedTraderTokenIsStoredInAToken(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8, 8, 1);
         BoxedTraderEntity trader = token(context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(3, 2, 3)));
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             ItemStack stack = new ItemStack(ModItems.TOKEN);
             player.setStackInHand(Hand.MAIN_HAND, stack);
@@ -173,7 +165,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
             context.assertTrue(trader.isRemoved(), "the trader token left the board");
             context.assertTrue(player.getMainHandStack().get(ModComponents.ENTITY_DATA_COMPONENT) != null, "the Token holds it");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -181,7 +173,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
     /** Two Mulas following the same player, resting right on top of each other, drift apart. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
     public void followingMulasKeepApart(TestContext context) {
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity owner = TestPlayers.mock(context);
         BlockPos at = context.getAbsolutePos(new BlockPos(3, 2, 3));
         owner.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         MulaEntity first = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(4, 4, 3));
@@ -196,7 +188,7 @@ public class TokenSafetyGameTests implements FabricGameTest {
                 double distance = first.distanceTo(second);
                 context.assertTrue(distance > 1.0, "the two Mulas moved apart: " + distance + " blocks");
             } finally {
-                disconnect(context, owner);
+                TestPlayers.remove(context, owner);
             }
             context.complete();
         });

@@ -30,6 +30,7 @@ import net.minecraft.world.GameMode;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The power-ups: used at the start of their player's turn (before the roll, one per turn, consumed), the Mushroom

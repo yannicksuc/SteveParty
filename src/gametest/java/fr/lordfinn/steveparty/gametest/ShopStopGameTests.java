@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
@@ -126,11 +127,11 @@ public class ShopStopGameTests implements FabricGameTest {
 
     /** Runs {@code test} with a mock player (removed on failure; the tests remove it when they end). */
     private static void withPlayer(TestContext context, Consumer<ServerPlayerEntity> test) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             test.accept(player);
         } catch (RuntimeException e) {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
             throw e;
         }
     }
@@ -145,10 +146,6 @@ public class ShopStopGameTests implements FabricGameTest {
                 throw e;
             }
         });
-    }
-
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
     private static BlockPos spaceOf(CowEntity cow) {
@@ -182,7 +179,7 @@ public class ShopStopGameTests implements FabricGameTest {
 
     private static void finish(TestContext context, Board board, ServerPlayerEntity owner) {
         board.tokenized().steveparty$setTokenized(false);
-        disconnect(context, owner);
+        TestPlayers.remove(context, owner);
         context.complete();
     }
 
@@ -315,7 +312,7 @@ public class ShopStopGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_onlyTheOwnerShops")
     public void onlyTheOwnerShops(TestContext context) {
         withPlayer(context, owner -> {
-            ServerPlayerEntity stranger = context.createMockCreativeServerPlayerInWorld();
+            ServerPlayerEntity stranger = TestPlayers.mock(context);
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
             stranger.setPosition(board.trader().getPos().add(0, 0, 1));
             later(context, 2, () -> {
@@ -326,7 +323,7 @@ public class ShopStopGameTests implements FabricGameTest {
                     board.trader().interact(stranger, Hand.MAIN_HAND);
                     context.assertFalse(stranger.currentScreenHandler instanceof MerchantScreenHandler, "the merchant is busy with the shopper");
                     context.assertTrue(owner.currentScreenHandler == handler, "the shopper keeps the screen");
-                    disconnect(context, stranger);
+                    TestPlayers.remove(context, stranger);
                     handler.onButtonClick(owner, ShopStopScreenHandler.BUY_NOTHING_BUTTON_ID);
                     assertWentOn(context, board, owner, END, () -> finish(context, board, owner));
                 });
@@ -362,7 +359,7 @@ public class ShopStopGameTests implements FabricGameTest {
                 TokenMovementService.moveEntityOnBoard(board.token(), 2);
                 later(context, 40, () -> {
                     assertShopping(context, board, owner, 2);
-                    disconnect(context, owner);
+                    TestPlayers.remove(context, owner);
                     later(context, 3, () -> {
                         context.assertFalse(ShopStops.isShopping(board.token().getUuid()), "the stop is over");
                         later(context, 50, () -> {

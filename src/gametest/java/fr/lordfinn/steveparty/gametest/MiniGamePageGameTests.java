@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
@@ -61,16 +62,6 @@ public class MiniGamePageGameTests implements FabricGameTest {
             CHANGES.incrementAndGet();
             lastChanged = page.id();
         });
-    }
-
-    private static ServerPlayerEntity player(TestContext context, GameMode mode) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(mode);
-        return player;
-    }
-
-    private static void remove(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
     /** A page in the player's main hand, opened once: it has its id. */
@@ -189,7 +180,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void linkedCopiesShareEdits(TestContext context) {
         MinecraftServer server = context.getWorld().getServer();
-        ServerPlayerEntity player = player(context, GameMode.CREATIVE);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.CREATIVE);
         try {
             ItemStack page = openedPage(player);
             UUID id = MiniGamePages.idOf(page);
@@ -233,7 +224,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertEquals(pages, 2, "the page and its copy");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -271,7 +262,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void unlinkedCopyLivesItsOwnLife(TestContext context) {
         MinecraftServer server = context.getWorld().getServer();
-        ServerPlayerEntity player = player(context, GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         try {
             ItemStack page = openedPage(player);
             UUID id = MiniGamePages.idOf(page);
@@ -302,14 +293,14 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertTrue(MiniGamePages.imageBytes(server, hash) == null, "no page shows it any more: gone");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 
     /** Of a stack of new pages, only the one opened becomes a page: the others stay blank. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void openingAStackWritesOnePage(TestContext context) {
-        ServerPlayerEntity player = player(context, GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         try {
             player.getInventory().clear();
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.MINI_GAME_PAGE, 5));
@@ -338,7 +329,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertEquals(linked, 2, "the page and its linked copy");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -348,7 +339,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void onlyBuildersHoldingThePageCanEdit(TestContext context) {
         MinecraftServer server = context.getWorld().getServer();
-        ServerPlayerEntity player = player(context, GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         try {
             ItemStack page = openedPage(player);
             UUID id = MiniGamePages.idOf(page);
@@ -386,7 +377,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertEquals(MiniGamePages.get(server, id).title(), "Écrit", "still as written");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -436,7 +427,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
         context.assertTrue(MiniGamePages.find(server, id).isEmpty(), "nothing got in");
 
         // Sent in pieces by a player, as the editor does
-        ServerPlayerEntity player = player(context, GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         try {
             ItemStack page = openedPage(player);
             UUID held = MiniGamePages.idOf(page);
@@ -469,7 +460,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertTrue(!MiniGamePages.clearImage(server, held), "nothing left to clear");
             context.complete();
         } finally {
-            remove(context, player);
+            TestPlayers.remove(context, player);
         }
     }
 

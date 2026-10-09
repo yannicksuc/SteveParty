@@ -14,6 +14,7 @@ import fr.lordfinn.steveparty.commands.PartyCommands;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -113,12 +114,7 @@ public class CoreGameTests implements FabricGameTest {
     }
 
     private static TokenizedEntityInterface spawnToken(TestContext context, BlockPos pos, @Nullable UUID owner) {
-        PigEntity pig = context.spawnMob(EntityType.PIG, pos);
-        TokenizedEntityInterface token = (TokenizedEntityInterface) pig;
-        token.steveparty$setTokenized(true);
-        token.steveparty$setTokenOwner(owner);
-        token.steveparty$setStatus(TokenStatus.IN_GAME);
-        return token;
+        return (TokenizedEntityInterface) TestBoards.token(context, pos, owner);
     }
 
     private static UUID uuid(TokenizedEntityInterface token) {

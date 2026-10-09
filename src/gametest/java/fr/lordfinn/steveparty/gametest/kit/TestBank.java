@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.gametest;
+package fr.lordfinn.steveparty.gametest.kit;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -11,12 +11,12 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 
 /** A Party Controller's bank for the tests: a chest holding coins and stars, and the Inventory Cartridge remembering it. */
-final class BankFixtures {
-    private BankFixtures() {
+public final class TestBank {
+    private TestBank() {
     }
 
     /** An Inventory Cartridge remembering the chest at the relative position {@code chest}. */
-    static ItemStack cartridge(TestContext context, BlockPos chest) {
+    public static ItemStack cartridge(TestContext context, BlockPos chest) {
         ItemStack cartridge = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
         InventoryCartridgeItem.choose(cartridge, context.getWorld(), context.getAbsolutePos(chest), null);
         return cartridge;
@@ -28,7 +28,7 @@ final class BankFixtures {
      *
      * @return the chest
      */
-    static ChestBlockEntity stock(TestContext context, PartyControllerEntity controller, BlockPos chest, int coins, int stars) {
+    public static ChestBlockEntity stock(TestContext context, PartyControllerEntity controller, BlockPos chest, int coins, int stars) {
         context.setBlockState(chest, Blocks.CHEST);
         ChestBlockEntity entity = context.getBlockEntity(chest);
         entity.clear();
@@ -46,14 +46,5 @@ final class BankFixtures {
             amount -= count;
         }
         return slot;
-    }
-
-    /** How many items of exactly that kind are in an inventory. */
-    static int count(net.minecraft.inventory.Inventory inventory, ItemStack template) {
-        int count = 0;
-        for (int i = 0; i < inventory.size(); i++) {
-            if (ItemStack.areItemsAndComponentsEqual(inventory.getStack(i), template)) count += inventory.getStack(i).getCount();
-        }
-        return count;
     }
 }

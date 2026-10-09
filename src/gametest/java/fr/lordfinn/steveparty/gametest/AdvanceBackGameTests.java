@@ -9,7 +9,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Kind;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Landing;
@@ -36,10 +35,12 @@ import net.minecraft.util.math.Box;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Move Forward / Back tile: forward N, back N the way it came, a fork asking the owner, no chain, a start tile
@@ -114,20 +115,6 @@ public class AdvanceBackGameTests implements FabricGameTest {
         return played;
     }
 
-    /** What to undo when the test ends (a test has one final task: they are run together). */
-    private static final Map<TestContext, List<Runnable>> AT_END = new WeakHashMap<>();
-
-    private static void atEnd(TestContext context, Runnable task) {
-        List<Runnable> tasks = AT_END.get(context);
-        if (tasks == null) {
-            List<Runnable> created = new ArrayList<>();
-            AT_END.put(context, created);
-            context.addFinalTask(() -> created.forEach(Runnable::run));
-            tasks = created;
-        }
-        tasks.add(task);
-    }
-
     private static boolean landed(List<Played> played, TestContext context, BlockPos at, Landing landing) {
         BlockPos absolute = context.getAbsolutePos(at);
         return played.stream().anyMatch(event -> event.kind() == Kind.LAND && event.tile().equals(absolute) && event.landing() == landing);
@@ -136,22 +123,6 @@ public class AdvanceBackGameTests implements FabricGameTest {
     private static boolean passed(List<Played> played, TestContext context, BlockPos at) {
         BlockPos absolute = context.getAbsolutePos(at);
         return played.stream().anyMatch(event -> event.kind() == Kind.PASS && event.tile().equals(absolute));
-    }
-
-    private static void assertOn(TestContext context, MobEntity token, BlockPos at, String what) {
-        BoardSpaceBlockEntity on = BoardSpaces.boardSpaceOf(token);
-        context.assertTrue(on != null && on.getPos().equals(context.getAbsolutePos(at)),
-                what + ": on " + (on == null ? "nothing" : on.getPos()) + ", expected " + context.getAbsolutePos(at));
-    }
-
-    /** Runs {@code then} as soon as {@code condition} holds, failing after {@code ticks}. */
-    private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) {
-            then.run();
-            return;
-        }
-        context.assertTrue(ticks > 0, "timed out: " + what);
-        context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
     }
 
     private static BooleanSupplier turnEnded(PartyControllerEntity controller) {

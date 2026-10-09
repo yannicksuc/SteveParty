@@ -29,6 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Mistigri space: each sentence does what it says (never more than a player holds), the move back walks the token
@@ -39,10 +42,6 @@ public class MistigriSpaceGameTests implements FabricGameTest {
     private static final String BATCH = "mistigri_space";
     private static final BlockPos TILE = new BlockPos(3, 1, 3);
     private static final int WHOLE = MistigriSentences.WHOLE + 20;
-
-    private static int count(ServerPlayerEntity player, Item item) {
-        return InventoryUtils.count(player.getInventory(), new ItemStack(item));
-    }
 
     private static void give(ServerPlayerEntity player, Item item, int count) {
         InventoryUtils.giveOrDrop(player, new ItemStack(item), count);

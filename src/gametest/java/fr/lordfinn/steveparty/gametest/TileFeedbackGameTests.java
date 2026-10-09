@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -160,7 +161,7 @@ public class TileFeedbackGameTests implements FabricGameTest {
         context.setBlockState(controllerPos.down(), Blocks.STONE);
         context.setBlockState(controllerPos, ModBlocks.PARTY_CONTROLLER);
         PartyControllerEntity controller = context.getBlockEntity(controllerPos);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         BlockPos near = context.getAbsolutePos(controllerPos.east(2));
         player.refreshPositionAndAngles(near.getX() + 0.5, near.getY(), near.getZ() + 0.5, 0, 0);
         context.assertTrue(controller.getPartyAudience().contains(player), "the player nearby follows the party");

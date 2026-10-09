@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -85,12 +86,12 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     /** Runs {@code test} with a mock player, always removed afterwards. */
     static void withPlayer(TestContext context, boolean creative, Consumer<ServerPlayerEntity> test) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         player.getAbilities().creativeMode = creative;
         try {
             test.accept(player);
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -457,11 +458,11 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     /** Like {@link #withPlayer}, for tests that go on over several ticks: {@code test} completes the test itself. */
     static void withLatePlayer(TestContext context, Consumer<ServerPlayerEntity> test) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             test.accept(player);
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 

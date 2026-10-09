@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEphemeride;
 import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.ItemStack;
@@ -41,7 +42,7 @@ public class MulaEphemerideGameTests implements FabricGameTest {
         context.setBlockState(new BlockPos(1, 1, 1), ModBlocks.DICE_FORGE.getDefaultState());
         DiceForgeBlockEntity forge = context.getBlockEntity(new BlockPos(1, 1, 1));
         forge.setStack(DiceForgeBlockEntity.CENTER_SLOT, new ItemStack(ModBlocks.GRAVITY_CORE));
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         BlockPos at = context.getAbsolutePos(new BlockPos(3, 2, 3));
         player.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         try {

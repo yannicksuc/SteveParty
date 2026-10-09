@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartFuse;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.block.Blocks;
@@ -42,20 +44,11 @@ public class BoomcartGameTests implements FabricGameTest {
     /** mobGriefing is changed for the whole server: these tests run alone in their batch. */
     private static final String GRIEFING_BATCH = "boomcart_griefing";
 
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
-    }
-
     private static ServerPlayerEntity player(TestContext context, BlockPos at, Hand hand, ItemStack held) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        BlockPos abs = context.getAbsolutePos(at);
-        player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, 0, 0);
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        TestPlayers.placeOn(context, player, at, 0);
         player.setStackInHand(hand, held);
         return player;
-    }
-
-    private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
     // ---------------------------------------------------------------- the hot potato
@@ -90,7 +83,7 @@ public class BoomcartGameTests implements FabricGameTest {
     /** Lit by A it goes for B; A can't pass it on; B passes it on, +3 s, and it goes for A. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void passedOnBetweenTwoPlayers(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoomcartEntity boomcart = context.spawnEntity(ModEntities.BOOMCART, new BlockPos(3, 1, 3));
         ServerPlayerEntity a = player(context, new BlockPos(1, 1, 3), Hand.MAIN_HAND, new ItemStack(Items.FLINT_AND_STEEL));
         ServerPlayerEntity b = player(context, new BlockPos(5, 1, 3), Hand.MAIN_HAND, new ItemStack(Items.FLINT_AND_STEEL));
@@ -105,7 +98,7 @@ public class BoomcartGameTests implements FabricGameTest {
         context.assertEquals(boomcart.getFuse(), fuse + 60, "+3 s");
         context.assertEquals(boomcart.panicTargetId(), a.getUuid(), "now goes for A");
         boomcart.discard();
-        remove(context, a, b);
+        TestPlayers.remove(context, a, b);
         context.complete();
     }
 
@@ -114,7 +107,7 @@ public class BoomcartGameTests implements FabricGameTest {
     /** TNT by default; fed a rocket, it gives the TNT back; fed TNT, it gives the rocket back. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void loadsAreSwapped(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoomcartEntity boomcart = context.spawnEntity(ModEntities.BOOMCART, new BlockPos(3, 1, 3));
         context.assertTrue(boomcart.getLoad().isOf(Items.TNT), "TNT by default");
         PlayerEntity player = context.createMockPlayer(net.minecraft.world.GameMode.SURVIVAL);
@@ -136,7 +129,7 @@ public class BoomcartGameTests implements FabricGameTest {
     /** TNT: the floor under it is blown away; with mobGriefing off, nothing is broken. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = GRIEFING_BATCH, tickLimit = 40)
     public void tntBreaksBlocksUnlessMobGriefingIsOff(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         GameRules.BooleanRule griefing = world.getGameRules().get(GameRules.DO_MOB_GRIEFING);
         boolean before = griefing.get();
@@ -157,7 +150,7 @@ public class BoomcartGameTests implements FabricGameTest {
     /** A firework: sparks and a shove; the floor stays, the pig isn't hurt but pushed away. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void fireworkBreaksNothingAndHurtsNobody(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BoomcartEntity boomcart = context.spawnEntity(ModEntities.BOOMCART, new BlockPos(3, 1, 3));
         boomcart.setLoad(new ItemStack(Items.FIREWORK_ROCKET));
         PigEntity pig = context.spawnMob(EntityType.PIG, new BlockPos(5, 1, 3));
@@ -190,7 +183,7 @@ public class BoomcartGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void fireworkShowIsTheRocketsOwn(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ItemStack stars = starRocket();
         BoomcartEntity custom = context.spawnEntity(ModEntities.BOOMCART, new BlockPos(2, 1, 2));
         custom.setLoad(stars);
@@ -213,7 +206,7 @@ public class BoomcartGameTests implements FabricGameTest {
             for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) {
                 context.assertTrue(context.getBlockState(new BlockPos(x, 0, z)).isOf(Blocks.STONE), "floor intact");
             }
-            remove(context, player);
+            TestPlayers.remove(context, player);
             context.complete();
         });
     }
@@ -240,7 +233,7 @@ public class BoomcartGameTests implements FabricGameTest {
     /** Pushed along a straight rail, it takes the curve at its end and goes on along the other branch. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
     public void itFollowsACurve(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         for (int x = 1; x <= 5; x++) {
             context.setBlockState(new BlockPos(x, 1, 1), Blocks.RAIL.getDefaultState().with(RailBlock.SHAPE, RailShape.EAST_WEST));
         }
@@ -263,7 +256,7 @@ public class BoomcartGameTests implements FabricGameTest {
     /** A detector rail under it is powered. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aDetectorRailSeesIt(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BlockPos rail = new BlockPos(3, 1, 3);
         context.setBlockState(rail, Blocks.DETECTOR_RAIL.getDefaultState());
         BoomcartEntity boomcart = context.spawnEntity(ModEntities.BOOMCART, rail);

@@ -1,14 +1,14 @@
 package fr.lordfinn.steveparty.gametest;
 
-import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.minigame.zone.ZoneForbidden;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -19,12 +19,9 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
@@ -41,7 +38,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * What a server forbids in a mini-game zone ({@link ZoneForbidden}): a zone holding a forbidden block or entity
@@ -53,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * server's.
  */
 public class ZoneForbiddenGameTests implements FabricGameTest {
-    private static final AtomicInteger SERIAL = new AtomicInteger();
     private long hour;
 
     // ------------------------------------------------------------------ helpers
@@ -88,27 +83,12 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
         return MiniGameZone.of(context.getWorld().getRegistryKey(), context.getAbsolutePos(at(1, 1, 1)), context.getAbsolutePos(at(4, 5, 4)));
     }
 
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(at(x, 0, z), Blocks.STONE);
-    }
-
     private static ZoneBubble begin(TestContext context, ServerPlayerEntity... participants) {
         return ZoneBubbles.begin(context.getWorld().getServer(), UUID.randomUUID(), zone(context), List.of(participants), List.of(), ZoneBubble.Options.DEFAULT);
     }
 
     private static ServerPlayerEntity player(TestContext context, String name, double x, double y, double z) {
-        ServerWorld world = context.getWorld();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "f" + SERIAL.incrementAndGet() + name);
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions());
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        player.changeGameMode(GameMode.SURVIVAL);
-        player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-        return player;
+        return TestPlayers.joined(context, "f", name, GameMode.SURVIVAL, x, y, z);
     }
 
     /** A zone holding {@code block} at {@code pos} starts no session, and says which block and where; without it, it does. */
@@ -142,7 +122,7 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_forbidden_blocks")
     public void forbiddenBlocks(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         context.assertTrue(Blocks.LODESTONE.getDefaultState().isIn(ZoneForbidden.BLOCKS), "the tests' data put the lodestone in the tag");
         expectRefused(context, Blocks.LODESTONE, at(2, 3, 2), "tag");
@@ -236,7 +216,7 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
     /** A member of a session gets no forbidden item: not picked up, not used, not taken from a container. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_forbidden_items")
     public void forbiddenItems(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         ServerPlayerEntity member = player(context, "in", 2.5, 1, 2.5), outsider = player(context, "out", 6.5, 1, 6.5);
         try {
@@ -278,8 +258,8 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
             context.assertTrue(outsider.getInventory().count(Items.NETHER_STAR) == 1, "the rule is for the members of a session");
             bubble.end();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(member);
-            context.getWorld().getServer().getPlayerManager().remove(outsider);
+            TestPlayers.remove(context, member);
+            TestPlayers.remove(context, outsider);
         }
         context.complete();
     }
@@ -289,7 +269,7 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
     /** A forbidden entity in the zone: no session, and the refusal names it; during a session none spawns in the zone. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_forbidden_entities")
     public void forbiddenEntities(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         context.assertTrue(EntityType.ALLAY.isIn(ZoneForbidden.ENTITIES), "the tests' data put the allay in the tag");
         forbid(List.of(), List.of(), List.of("minecraft:bat"));

@@ -23,6 +23,8 @@ import net.minecraft.util.math.Direction;
 
 import java.util.function.BooleanSupplier;
 
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
+
 /**
  * Pipes after the playtest of 2026-10-06: the speed inside is capped (#76): however fast it goes in, a traveller
  * rides at most {@link PipeTravel#MAX_SPEED}; thrown out of a pipe straight into another one (a loop of pipes without a
@@ -39,16 +41,6 @@ public class PipePlaytestGameTests implements FabricGameTest {
         BlockPos pos = new BlockPos(x, 2, z);
         context.setBlockState(pos, pipe().getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN));
         return pos;
-    }
-
-    private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) {
-            then.run();
-        } else if (ticks <= 0) {
-            context.throwGameTestException(what);
-        } else {
-            context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
-        }
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)

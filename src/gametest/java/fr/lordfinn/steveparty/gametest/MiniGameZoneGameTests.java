@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import java.util.Map;
 import java.util.HashMap;
 import fr.lordfinn.steveparty.minigame.MiniGameNameColors;
@@ -42,7 +45,6 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler.State;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
@@ -52,10 +54,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
@@ -160,40 +159,20 @@ public class MiniGameZoneGameTests implements FabricGameTest {
 
     /** A connected survival player with a name of its own, standing at a relative position. */
     private static ServerPlayerEntity player(TestContext context, String name, double x, double y, double z) {
-        ServerWorld world = context.getWorld();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "a" + SERIAL.incrementAndGet() + name);
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions());
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        player.changeGameMode(GameMode.SURVIVAL);
-        player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-        return player;
+        return TestPlayers.joined(context, "a", name, GameMode.SURVIVAL, x, y, z);
     }
 
     /** The players other tests left around are sent away: they would be recruited like anyone near a pipe. */
     private static void alone(TestContext context, ServerPlayerEntity... mine) {
-        List<ServerPlayerEntity> own = List.of(mine);
-        Vec3d center = context.getAbsolute(new Vec3d(4, 2, 4));
-        for (ServerPlayerEntity other : new ArrayList<>(context.getWorld().getServer().getPlayerManager().getPlayerList())) {
-            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) context.getWorld().getServer().getPlayerManager().remove(other);
-        }
+        TestPlayers.alone(context, new Vec3d(4, 2, 4), 40, mine);
     }
 
     private static void cleanUp(TestContext context, UUID page, ServerPlayerEntity... players) {
         MiniGameTest.stop(page);
-        if (context.getBlockState(PARTY).isOf(ModBlocks.PARTY_CONTROLLER)) context.removeBlock(PARTY);
+        TestCleanup.removeIf(context, PARTY, ModBlocks.PARTY_CONTROLLER);
         for (ZoneBubble left : ZoneBubbles.all()) left.endNow();
-        if (context.getBlockState(HOME).isOf(ModBlocks.MINI_GAME_CONTROLLER)) context.removeBlock(HOME);
-        for (ServerPlayerEntity player : players) {
-            if (player.hasVehicle()) player.stopRiding();
-            MiniGamePipes.leaveParty(player.getUuid());
-            if (context.getWorld().getServer().getPlayerManager().getPlayer(player.getUuid()) != null)
-                context.getWorld().getServer().getPlayerManager().remove(player);
-        }
+        TestCleanup.removeIf(context, HOME, ModBlocks.MINI_GAME_CONTROLLER);
+        TestPlayers.leaveMiniGamesIfOnline(context, players);
     }
 
     /** A party whose mini-game step, on {@code pageId}, is at its countdown with {@code participants}. */
@@ -226,7 +205,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, TeamDisposition.freeForAll(uuids));
         controller.catalogue = catalogue;
         // A well stocked bank: the gains are taken from it
-        BankFixtures.stock(context, controller, PARTY.up(), 640, 64);
+        TestBank.stock(context, controller, PARTY.up(), 640, 64);
         return controller;
     }
 
@@ -696,14 +675,14 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played");
             context.assertTrue(ZoneBubbles.ofPlayer(p2) != null && p2.getInventory().isEmpty(), "p2 plays with a session inventory");
             p2.getInventory().insertStack(new ItemStack(Items.DIAMOND, 3));
-            Reconnect.leave(p2);
+            TestPlayers.leave(p2);
             context.assertTrue(server.getPlayerManager().getPlayer(away.getId()) == null, "p2 left the server");
             context.assertTrue(p2.getInventory().count(Items.COBBLESTONE) == 12, "it left with what it owns");
             context.assertTrue(p2.getInventory().count(Items.DIAMOND) == 0, "nothing of the round");
             context.assertTrue(!p2.getCommandTags().contains(STASH_TAG), "no mark of a session");
             MiniGameTest.stop(id);
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "the round is over: p2 is waited for");
-            back = Reconnect.join(context, away);
+            back = TestPlayers.join(context, away);
             context.assertTrue(back.getPos().distanceTo(start2) < 0.01, "back where it stood before the round");
             context.assertTrue(back.getInventory().count(Items.COBBLESTONE) == 12 && back.getInventory().count(Items.DIAMOND) == 0,
                     "with what it owns, once");
@@ -787,12 +766,12 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertTrue((p1b.interactionManager.getGameMode() == GameMode.ADVENTURE) == adventure, "respawned: still in the round's game mode");
             p2.kill();
             // p3's game leaves and comes back during the round; the spectator's leaves
-            Reconnect.leave(p3);
-            ServerPlayerEntity p3b = Reconnect.join(context, profile3);
+            TestPlayers.leave(p3);
+            ServerPlayerEntity p3b = TestPlayers.join(context, profile3);
             made.add(p3b);
             context.assertTrue(p3b.interactionManager.getGameMode() == GameMode.SURVIVAL && ZoneBubbles.ofPlayer(p3b) == null
                     && !p3b.getCommandTags().contains(STASH_TAG), "back during the round: himself, no session");
-            Reconnect.leave(watcher);
+            TestPlayers.leave(watcher);
 
             MiniGameTest.stop(id);
             context.assertTrue(MiniGameReturns.isPending(server, p2.getUuid()), "dead at the end: brought back once respawned");
@@ -800,7 +779,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             MiniGameReturns.simulateRestart(server);
             ServerPlayerEntity p2b = respawn(server, p2);
             made.add(p2b);
-            ServerPlayerEntity watcherB = Reconnect.join(context, profileW);
+            ServerPlayerEntity watcherB = TestPlayers.join(context, profileW);
             made.add(watcherB);
             context.waitAndRun(3, () -> {
                 try {

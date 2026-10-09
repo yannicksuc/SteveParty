@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
@@ -83,17 +84,12 @@ public class GameplayRulesGameTests implements FabricGameTest {
     private static ServerPlayerEntity fallOnVillager(TestContext context, Block below, GameMode gameMode, float fallDistance) {
         context.setBlockState(VILLAGER_POS.down(), below);
         context.setBlockState(VILLAGER_POS, ModBlocks.VILLAGER_BLOCK);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(gameMode);
+        ServerPlayerEntity player = TestPlayers.mock(context, gameMode);
         BlockPos abs = context.getAbsolutePos(VILLAGER_POS.up());
         player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY() + 0.1, abs.getZ() + 0.5, 0, 0);
         player.setOnGround(false);
         player.fallDistance = fallDistance;
         return player;
-    }
-
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
     private static void assertVillagerFall(TestContext context, Block below, GameMode gameMode, float fallDistance, boolean shouldBreak) {
@@ -108,7 +104,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
                     context.expectBlock(below, VILLAGER_POS.down());
                 }
             } finally {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
             }
             context.complete();
         });
@@ -149,7 +145,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
         token.steveparty$setTokenized(true);
         token.steveparty$setTokenOwner(UUID.randomUUID());
 
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             ItemStack wand = new ItemStack(ModItems.TOKENIZER_WAND);
             context.assertTrue(!TokenizerWandItem.hasGameMaster(wand, context.getWorld()), "plain wand");
@@ -163,7 +159,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
             token.steveparty$setTokenOwner(player);
             context.assertTrue(TokenizerWandItem.canControlToken(player, new ItemStack(ModItems.TOKENIZER_WAND), pig), "own token allowed");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -173,7 +169,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void mulaIsTamedWithItsOwnFragment(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 2, 1));
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.changeGameMode(GameMode.SURVIVAL);
             Item fragment = mula.getVariant().getFragmentItem();
@@ -201,7 +197,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
             context.assertEquals(player.getMainHandStack().getCount(), 64 - attempts, "not used on a tamed Mula");
             context.assertTrue(mula.isSitting(), "the owner's click makes it sit");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -213,8 +209,8 @@ public class GameplayRulesGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
     public void mulaSitsOnOwnerOrderOnlyAndStaysSitting(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
-        ServerPlayerEntity stranger = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity owner = TestPlayers.mock(context);
+        ServerPlayerEntity stranger = TestPlayers.mock(context);
         try {
             owner.changeGameMode(GameMode.SURVIVAL);
             stranger.changeGameMode(GameMode.SURVIVAL);
@@ -240,8 +236,8 @@ public class GameplayRulesGameTests implements FabricGameTest {
             context.assertTrue(mula.isSitting(), "owner makes it sit");
             context.assertEquals(owner.getMainHandStack().getCount(), 1, "the item is not consumed");
         } catch (RuntimeException e) {
-            disconnect(context, owner);
-            disconnect(context, stranger);
+            TestPlayers.remove(context, owner);
+            TestPlayers.remove(context, stranger);
             throw e;
         }
         double startX = mula.getX();
@@ -271,8 +267,8 @@ public class GameplayRulesGameTests implements FabricGameTest {
                 mula.interactMob(owner, Hand.MAIN_HAND);
                 context.assertTrue(!mula.isSitting(), "owner makes it stand (empty hand)");
             } finally {
-                disconnect(context, owner);
-                disconnect(context, stranger);
+                TestPlayers.remove(context, owner);
+                TestPlayers.remove(context, stranger);
             }
             context.complete();
         });

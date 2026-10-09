@@ -2,12 +2,13 @@ package fr.lordfinn.steveparty.gametest;
 
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -35,10 +36,7 @@ import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.entity.vehicle.HopperMinecartEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
@@ -60,7 +58,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The mini-game bubble: a zone in session is given back as it was (blocks, containers, entities), its players
@@ -73,7 +70,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ZoneBubbleGameTests implements FabricGameTest {
     private static final String BATCH = "zone_bubble";
     private static final String STASH_TAG = "steveparty.zone_bubble";
-    private static final AtomicInteger SERIAL = new AtomicInteger();
     /** The time of day each running test began at. */
     private static final Map<TestContext, Long> STARTED_AT = new IdentityHashMap<>();
 
@@ -114,11 +110,6 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         return MiniGameZone.of(context.getWorld().getRegistryKey(), context.getAbsolutePos(at(1, 1, 1)), context.getAbsolutePos(at(4, 5, 4)));
     }
 
-    /** The stone floor the zone and its surroundings stand on (under the zone: not part of it). */
-    private static void floor(TestContext context) {
-        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(at(x, 0, z), Blocks.STONE);
-    }
-
     private static ZoneBubble begin(TestContext context, ServerPlayerEntity... participants) {
         // a test that ran out of time left its session going where the next one plays
         endLeftSession(context);
@@ -127,31 +118,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
 
     /** A connected survival player with a name of its own, standing at a relative position. */
     private static ServerPlayerEntity player(TestContext context, String name, double x, double y, double z) {
-        ServerPlayerEntity player = connect(context, new GameProfile(UUID.randomUUID(), "z" + SERIAL.incrementAndGet() + name));
-        player.changeGameMode(GameMode.SURVIVAL);
-        player.getInventory().clear();
-        move(context, player, x, y, z);
-        return player;
-    }
-
-    /** A player logs in: as it was saved if it came before, new otherwise. */
-    private static ServerPlayerEntity connect(TestContext context, GameProfile profile) {
-        ServerWorld world = context.getWorld();
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions());
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        return player;
-    }
-
-    private static void move(TestContext context, ServerPlayerEntity player, double x, double y, double z) {
-        Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-    }
-
-    private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
+        return TestPlayers.joined(context, "z", name, GameMode.SURVIVAL, x, y, z);
     }
 
     /** Runs a step of a test some ticks after its start; what makes it fail is also written to the log. */
@@ -191,7 +158,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** Blocks placed, replaced and broken in the zone are back as they were, containers with what they held; nothing is dropped. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void blocksAreRestored(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         context.setBlockState(at(2, 1, 2), Blocks.STONE);
         chest(context, at(3, 1, 2), new ItemStack(Items.DIAMOND, 5));
         ZoneBubble bubble = begin(context);
@@ -223,7 +190,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A container emptied, a sign rewritten, a hopper filled, without any block changing: all as they were. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void blockEntitiesAreRestored(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ChestBlockEntity chest = chest(context, at(2, 1, 2), new ItemStack(Items.DIAMOND, 5), new ItemStack(Items.GOLD_INGOT, 9));
         context.setBlockState(at(3, 1, 2), Blocks.OAK_SIGN);
         SignBlockEntity sign = context.getBlockEntity(at(3, 1, 2));
@@ -252,7 +219,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** The entities of the zone come back as they were, with their UUID; those of the session are gone, dropping nothing. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void entitiesAreRestored(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         PigEntity pig = context.spawnMob(EntityType.PIG, at(2, 1, 2));
         pig.setAiDisabled(true);
@@ -292,7 +259,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A double chest across the border is two chests while the session lasts, and one again after it. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void doubleChestAcrossTheBorderIsSplit(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         BlockState left = Blocks.CHEST.getDefaultState().with(ChestBlock.FACING, Direction.NORTH).with(ChestBlock.CHEST_TYPE, ChestType.LEFT);
         context.setBlockState(at(4, 1, 2), left);
@@ -320,7 +287,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A participant leaves all it owns at the door and gets it back at the end; what it got in the session is destroyed. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void inventoryIsSwappedAndGivenBack(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerPlayerEntity player = player(context, "inv", 2.5, 1, 2.5);
         player.getInventory().setStack(0, new ItemStack(Items.DIAMOND_SWORD));
         player.getInventory().setStack(20, new ItemStack(Items.COBBLESTONE, 33));
@@ -358,14 +325,14 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         context.assertTrue(count(player, Items.NETHERITE_BLOCK) == 0 && player.currentScreenHandler.getCursorStack().isEmpty(), "nothing of the session is left");
         context.assertTrue(!player.getCommandTags().contains(STASH_TAG) && ZoneBubbles.ofPlayer(player) == null, "the player is of no session any more");
         context.assertTrue(itemsIn(context, zone(context)).isEmpty(), "nothing was dropped");
-        remove(context, player);
+        TestPlayers.remove(context, player);
         done(context);
     }
 
     /** A player leaving the session gets its inventory back at once; one joining it late leaves its own at the door. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void playersComeAndGo(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerPlayerEntity first = player(context, "first", 2.5, 1, 2.5);
         ServerPlayerEntity late = player(context, "late", 3.5, 1, 3.5);
         ServerPlayerEntity watcher = player(context, "watch", 6.5, 1, 6.5);
@@ -386,7 +353,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
 
         bubble.end();
         context.assertTrue(count(late, Items.EMERALD) == 4 && count(watcher, Items.GOLD_INGOT) == 5, "the others get theirs at the end");
-        remove(context, first, late, watcher);
+        TestPlayers.remove(context, first, late, watcher);
         done(context);
     }
 
@@ -396,7 +363,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void playerComingBackGetsItsInventory(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         MinecraftServer server = context.getWorld().getServer();
         ServerPlayerEntity player = player(context, "back", 2.5, 1, 2.5);
         GameProfile profile = player.getGameProfile();
@@ -408,18 +375,18 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         server.getPlayerManager().remove(player);
         bubble.end();
 
-        ServerPlayerEntity again = connect(context, profile);
+        ServerPlayerEntity again = TestPlayers.join(context, profile);
         context.assertTrue(count(again, Items.DIAMOND) == 3 && again.experienceLevel == 9, "it holds what it owns again");
         context.assertTrue(count(again, Items.NETHERITE_BLOCK) == 0 && !again.getCommandTags().contains(STASH_TAG), "and nothing of the session");
         context.assertTrue(ZoneBubbles.ofPlayer(again) == null, "it is of no session");
-        remove(context, again);
+        TestPlayers.remove(context, again);
         done(context);
     }
 
     /** A participant dying loses nothing it owns: what it drops stays in the zone, and it is put back in the zone. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 60)
     public void deathLeaksNothing(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         ServerPlayerEntity player = player(context, "dead", 2.5, 1, 2.5);
         player.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 3));
@@ -441,7 +408,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             bubble.end();
             context.assertTrue(count(respawned[0], Items.DIAMOND) == 3 && count(respawned[0], Items.NETHERITE_BLOCK) == 0, "it gets what it owns back");
             context.assertTrue(itemsIn(context, zone(context)).isEmpty(), "what it dropped went with the session");
-            remove(context, respawned[0]);
+            TestPlayers.remove(context, respawned[0]);
             done(context);
         });
     }
@@ -449,7 +416,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A participant can't walk or be teleported out; anyone else can't come in; the mod's own teleports pass. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 60)
     public void playersStayOnTheirSide(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         context.setBlockState(at(6, 1, 2), Blocks.DIRT);
         context.setBlockState(at(3, 1, 3), Blocks.DIRT);
         ServerWorld world = context.getWorld();
@@ -467,8 +434,8 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             Vec3d in = context.getAbsolute(new Vec3d(2.5, 1, 2.5));
             context.assertTrue(!outsider.teleport(world, in.x, in.y, in.z, Set.of(), 0, 0) && !inZone(context, outsider), "nobody else is teleported in");
             // walking (or anything else moving it): sent back
-            move(context, inside, 6.5, 1, 2.5);
-            move(context, outsider, 2.5, 1, 2.5);
+            TestPlayers.place(context, inside, 6.5, 1, 2.5);
+            TestPlayers.place(context, outsider, 2.5, 1, 2.5);
         });
         later(context, 4, () -> {
             context.assertTrue(inZone(context, inside), "a participant out of the zone is put back in");
@@ -483,13 +450,13 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             context.assertTrue(inside.dropItem(new ItemStack(Items.NETHERITE_BLOCK), false, true) == null, "out of its zone, what it drops is destroyed");
             context.assertTrue(!inside.interactionManager.tryBreakBlock(context.getAbsolutePos(at(6, 1, 2))), "out of its zone, it breaks nothing");
             context.assertTrue(!inside.interactionManager.tryBreakBlock(context.getAbsolutePos(at(3, 1, 3))), "not even in the zone");
-            move(context, inside, 2.5, 1, 2.5);
+            TestPlayers.place(context, inside, 2.5, 1, 2.5);
         });
         later(context, 9, () -> {
             context.assertTrue(inside.interactionManager.tryBreakBlock(context.getAbsolutePos(at(3, 1, 3))), "back in, it plays again");
             bubble.end();
             context.expectBlock(Blocks.DIRT, at(3, 1, 3));
-            remove(context, inside, outsider);
+            TestPlayers.remove(context, inside, outsider);
             done(context);
         });
     }
@@ -497,7 +464,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** What a player may touch: a participant only its zone, anyone else only the rest of the world, a spectator nothing. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void playersOnlyTouchTheirSide(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         BlockPos in = at(4, 1, 2), in2 = at(4, 1, 3), outPos = at(5, 1, 2), out2 = at(6, 1, 3);
         for (BlockPos pos : List.of(in, in2, outPos, out2)) context.setBlockState(pos, Blocks.DIRT);
@@ -546,7 +513,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
 
         bubble.end();
         context.expectBlock(Blocks.DIRT, in);
-        remove(context, participant, outsider, spectator);
+        TestPlayers.remove(context, participant, outsider, spectator);
         done(context);
     }
 
@@ -555,7 +522,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** Entities never cross the border, whatever moves them: thrown, teleported, or simply set elsewhere. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 80)
     public void entitiesStayOnTheirSide(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         PigEntity pig = context.spawnMob(EntityType.PIG, at(2, 1, 2));
         pig.setAiDisabled(true);
         PigEntity stranger = context.spawnMob(EntityType.PIG, at(6, 1, 6));
@@ -588,7 +555,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** Hoppers neither pull from across the border nor push through it, and suck up no item lying on the other side. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 100)
     public void hoppersMoveNothingAcross(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         // a chest of the zone over a hopper under the zone
         chest(context, at(2, 1, 2), new ItemStack(Items.DIAMOND, 5));
         context.setBlockState(at(2, 0, 2), Blocks.HOPPER);
@@ -620,7 +587,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A dropper or a dispenser facing the border keeps what it holds, from either side. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 60)
     public void dispensersKeepTheirItems(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         context.setBlockState(at(4, 1, 2), Blocks.DROPPER.getDefaultState().with(DispenserBlock.FACING, Direction.EAST));
         context.<DispenserBlockEntity>getBlockEntity(at(4, 1, 2)).setStack(0, new ItemStack(Items.DIAMOND));
@@ -649,7 +616,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A piston pushes nothing across the border; one that stays on its side works. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 60)
     public void pistonsMoveNothingAcross(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         BlockState east = Blocks.PISTON.getDefaultState().with(PistonBlock.FACING, Direction.EAST);
         // would push the stone out of the zone
         context.setBlockState(at(3, 1, 2), east);
@@ -682,7 +649,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** Water spreads on its side of the border only, from the zone and from outside. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 100)
     public void fluidsStayOnTheirSide(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         // the water outside stays in a basin of two blocks, open on the zone only
         for (BlockPos wall : List.of(at(7, 1, 4), at(5, 1, 3), at(6, 1, 3), at(5, 1, 5), at(6, 1, 5))) context.setBlockState(wall, Blocks.STONE);
         // and a wall across the zone keeps its own water away from the place the one outside would flow to
@@ -713,7 +680,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** What spreads on random ticks (here grass) stays on its side; so does anything started by a tick. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 60)
     public void growthStaysOnItsSide(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         context.setBlockState(at(4, 1, 2), Blocks.GRASS_BLOCK);
         context.setBlockState(at(3, 1, 2), Blocks.DIRT);
@@ -786,7 +753,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** The portals of the zone take nobody anywhere; the egg of the dragon never jumps over the border. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_egg")
     public void portalsAndDragonEgg(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         ServerPlayerEntity player = player(context, "egg", 6.5, 1, 6.5);
         ArmorStandEntity inside = context.spawnEntity(EntityType.ARMOR_STAND, at(2, 1, 2));
@@ -819,7 +786,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
 
         bubble.end();
         context.expectBlock(Blocks.DRAGON_EGG, at(2, 2, 3));
-        remove(context, player);
+        TestPlayers.remove(context, player);
         done(context);
     }
 
@@ -840,7 +807,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A hopper minecart by the border sucks up no item lying on the other side; once the session is over, it does. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 100)
     public void hopperMinecartsTakeNothingAcross(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         HopperMinecartEntity cart = context.spawnEntity(EntityType.HOPPER_MINECART, new Vec3d(5.5, 1, 2.5));
         // an item of the zone, within the reach of the minecart standing just outside
         ItemEntity lying = context.spawnItem(Items.GOLD_INGOT, new Vec3d(4.8, 1, 2.5));
@@ -861,7 +828,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A crafter facing the border crafts nothing across it; one facing into its own side works. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 60)
     public void craftersCraftNothingAcross(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         context.setBlockState(at(4, 1, 3), Blocks.CRAFTER.getDefaultState().with(Properties.ORIENTATION, Orientation.EAST_UP));
         context.<CrafterBlockEntity>getBlockEntity(at(4, 1, 3)).setStack(0, new ItemStack(Items.OAK_LOG));
@@ -885,7 +852,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** Two stacks of the same item on either side of the border don't merge. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 80)
     public void itemsDontMergeAcross(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ZoneBubble bubble = begin(context);
         ItemEntity in = context.spawnItem(Items.DIAMOND, new Vec3d(4.85, 1, 2.5));
         ItemEntity out = context.spawnItem(Items.DIAMOND, new Vec3d(5.15, 1, 2.5));
@@ -904,7 +871,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A zone too big or over another one starts no session; a full journal lets no new block change. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_caps")
     public void capsAreHeld(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
         ServerConfig config = ServerConfig.get();
@@ -950,7 +917,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** A big journal is restored over several ticks; nobody stays in the zone meanwhile. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_slow", tickLimit = 100)
     public void bigRestorationsTakeSeveralTicks(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerConfig config = ServerConfig.get();
         int perTick = config.miniGameBubbleRestorePerTick;
         config.miniGameBubbleRestorePerTick = 16;
@@ -973,7 +940,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             config.miniGameBubbleRestorePerTick = perTick;
             context.assertTrue(bubble.state() == ZoneBubble.State.ENDED, "done after a few ticks");
             for (int x = 1; x <= 4; x++) for (int y = 1; y <= 4; y++) for (int z = 1; z <= 4; z++) context.expectBlock(Blocks.AIR, at(x, y, z));
-            remove(context, player);
+            TestPlayers.remove(context, player);
             done(context);
         });
     }
@@ -981,7 +948,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     /** The feature turned off: a session begins nothing, and nothing is swapped, journaled or guarded. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_off")
     public void switchTurnsEverythingOff(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerConfig config = ServerConfig.get();
         config.miniGameBubble = false;
         try {
@@ -998,7 +965,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             bubble.endNow();
             context.expectBlock(Blocks.GOLD_BLOCK, at(2, 1, 2));
             context.assertTrue(count(player, Items.DIAMOND) == 1, "nothing happened");
-            remove(context, player);
+            TestPlayers.remove(context, player);
         } finally {
             config.miniGameBubble = true;
         }
@@ -1011,7 +978,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_crash")
     public void crashIsRecovered(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
         context.setBlockState(at(2, 1, 2), Blocks.STONE);
@@ -1062,14 +1029,14 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         context.setBlockState(at(2, 1, 2), Blocks.EMERALD_BLOCK);
         ZoneBubbles.recover(server);
         context.expectBlock(Blocks.EMERALD_BLOCK, at(2, 1, 2));
-        remove(context, saved, rolledBack);
+        TestPlayers.remove(context, saved, rolledBack);
         done(context);
     }
 
     /** The server stops during a session: the zone is whole and the inventories back before anything is saved. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_stop")
     public void serverStopEndsEverySession(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         context.setBlockState(at(2, 1, 2), Blocks.STONE);
         ServerPlayerEntity player = player(context, "stop", 2.5, 2, 2.5);
         player.getInventory().setStack(0, new ItemStack(Items.DIAMOND));
@@ -1081,7 +1048,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         context.expectBlock(Blocks.STONE, at(2, 1, 2));
         context.expectBlock(Blocks.AIR, at(3, 1, 3));
         context.assertTrue(count(player, Items.DIAMOND) == 1 && !player.getCommandTags().contains(STASH_TAG), "the inventory is back");
-        remove(context, player);
+        TestPlayers.remove(context, player);
         done(context);
     }
 
@@ -1094,7 +1061,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_bench", tickLimit = 400)
     public void benchmark(TestContext context) {
-        floor(context);
+        TestBoards.floor(context, 8);
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
         // 22x22x22 blocks of air above the test

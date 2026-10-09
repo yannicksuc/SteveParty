@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockUse;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerMode;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerReaction;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BellBlock;
 import net.minecraft.block.BlockState;
@@ -54,15 +55,10 @@ public class VillagerBlockGameTests implements FabricGameTest {
 
     /** A player standing {@code offset} from the villager block, looking away from it. */
     private static ServerPlayerEntity playerAt(TestContext context, Vec3d offset, GameMode gameMode) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(gameMode);
+        ServerPlayerEntity player = TestPlayers.mock(context, gameMode);
         BlockPos abs = context.getAbsolutePos(POS);
         player.refreshPositionAndAngles(abs.getX() + 0.5 + offset.x, abs.getY() + offset.y, abs.getZ() + 0.5 + offset.z, 0, -90);
         return player;
-    }
-
-    private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
     private static BlockHitResult hit(TestContext context) {
@@ -111,7 +107,7 @@ public class VillagerBlockGameTests implements FabricGameTest {
             context.useBlock(POS, player);
             context.assertEquals(villager.getTotalPokes(), 3, "three right-clicks counted (the block in hand was not one)");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -133,7 +129,7 @@ public class VillagerBlockGameTests implements FabricGameTest {
             context.assertEquals(villager.getReaction(), VillagerReaction.DIZZY, "a poke doesn't stop the dizziness");
             context.assertEquals(villager.getTotalPokes(), 11, "every click counted");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -146,7 +142,7 @@ public class VillagerBlockGameTests implements FabricGameTest {
             for (int i = 0; i < VillagerBlockEntity.POKES_PER_STACK; i++) villager.onRightClick(player, VillagerReaction.POKED);
             context.assertEquals(villager.getReaction(), VillagerReaction.STACK_OF_POKES, "the 64th poke");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -229,9 +225,9 @@ public class VillagerBlockGameTests implements FabricGameTest {
                 context.assertFalse(VillagerBlockEvents.onPunchRequest(builder, abs), "where it can be broken, a punch breaks it as before");
                 player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 20, 0, 0);
                 context.assertFalse(VillagerBlockEvents.onPunchRequest(player, abs), "out of reach");
-                disconnect(context, builder);
+                TestPlayers.remove(context, builder);
             } finally {
-                disconnect(context, player);
+                TestPlayers.remove(context, player);
             }
             context.complete();
         });
@@ -251,7 +247,7 @@ public class VillagerBlockGameTests implements FabricGameTest {
             state.getBlock().onLandedUpon(context.getWorld(), state, abs, player, VillagerBlock.BELLY_FLOP_FALL + 1);
             context.assertEquals(villager.getReaction(), VillagerReaction.BELLY_FLOP, "landed on from high: belly flop");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -310,7 +306,7 @@ public class VillagerBlockGameTests implements FabricGameTest {
             context.getWorld().emitGameEvent(player, GameEvent.BLOCK_PLACE, watcherAbs.east());
             context.assertEquals(builderWatcher.getReaction(), VillagerReaction.PERSONAL_SPACE, "a block right against it");
         } finally {
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -344,7 +340,7 @@ public class VillagerBlockGameTests implements FabricGameTest {
         ServerPlayerEntity player = playerAt(context, new Vec3d(0, 0, 2.5), GameMode.SURVIVAL);
         context.addInstantFinalTask(() -> {
             context.assertTrue(villager.timesStarted(VillagerReaction.GREET) > 0, "greeted the player");
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         });
     }
 
@@ -377,7 +373,7 @@ public class VillagerBlockGameTests implements FabricGameTest {
         context.addInstantFinalTask(() -> {
             context.assertTrue(villager.timesStarted(VillagerReaction.CHAT_HMM) > 0, "answered hmm");
             unpinDay(context);
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         });
     }
 
@@ -392,7 +388,7 @@ public class VillagerBlockGameTests implements FabricGameTest {
             context.assertTrue(villager.timesStarted(VillagerReaction.ZOMBIE_PANIC) > 0, "panicked");
             unpinDay(context);
             zombie.discard();
-            disconnect(context, player);
+            TestPlayers.remove(context, player);
         });
     }
 

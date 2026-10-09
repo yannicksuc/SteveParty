@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestAsserts;
+import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
-import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
@@ -20,7 +22,6 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
@@ -34,10 +35,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
@@ -66,23 +64,12 @@ public class PartyBankGameTests implements FabricGameTest {
     private static final BlockPos CHEST = new BlockPos(3, 1, 6);
 
     private static ServerPlayerEntity player(TestContext context, String name, double x) {
-        ServerWorld world = context.getWorld();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "b" + SERIAL.incrementAndGet() + name);
-        ConnectedClientData data = ConnectedClientData.createDefault(profile, false);
-        ServerPlayerEntity player = new ServerPlayerEntity(world.getServer(), world, profile, data.syncedOptions());
-        ClientConnection connection = new ClientConnection(NetworkSide.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        world.getServer().getPlayerManager().onPlayerConnect(connection, player, data);
-        player.changeGameMode(GameMode.CREATIVE);
-        player.getInventory().clear();
-        Vec3d abs = context.getAbsolute(new Vec3d(x, 1, 1.5));
-        player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-        return player;
+        return TestPlayers.joined(context, "b", name, GameMode.CREATIVE, x, 1, 1.5);
     }
 
     /** The players go, and the controller and chests too (other tests look for the nearest party controller). */
     private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, players);
         for (BlockPos pos : List.of(CONTROLLER, CHEST, CHEST.east())) {
             if (!context.getBlockState(pos).isAir()) context.setBlockState(pos, Blocks.AIR);
         }
@@ -189,7 +176,7 @@ public class PartyBankGameTests implements FabricGameTest {
             PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);
             var slot = handler.getSlot(PartyControllerScreenHandler.SLOT_BANK);
             context.assertTrue(!slot.canInsert(new ItemStack(Items.CHEST)), "not a chest");
-            ItemStack set = BankFixtures.cartridge(context, CHEST);
+            ItemStack set = TestBank.cartridge(context, CHEST);
             context.assertTrue(slot.canInsert(set), "an Inventory Cartridge");
             slot.setStack(set);
             context.assertTrue(ItemStack.areEqual(controller.getBank(), set), "it is the controller's bank");
@@ -213,15 +200,15 @@ public class PartyBankGameTests implements FabricGameTest {
         ServerPlayerEntity p1 = player(context, "a", 0.5), p2 = player(context, "b", 1.5), p3 = player(context, "c", 2.5);
         try {
             PartyControllerEntity controller = controller(context);
-            ChestBlockEntity chest = BankFixtures.stock(context, controller, CHEST, 20, 3);
+            ChestBlockEntity chest = TestBank.stock(context, controller, CHEST, 20, 3);
             context.assertEquals(status(context, controller, 3).state(), PartyBank.State.OK, "enough for 3 players (10 + 2 + 2 coins, a star)");
             MiniGamePartyStep step = playing(context, controller, p1, p2, p3);
             context.assertTrue(step.finish(controller, List.of(p2.getUuid())), "p2 wins");
             context.assertEquals(coins(controller, p2), 10, "1st: 10 coins");
             context.assertEquals(stars(controller, p2), 1, "and a star");
             context.assertTrue(coins(controller, p1) == 2 && coins(controller, p3) == 2, "participants: 2 coins");
-            context.assertEquals(BankFixtures.count(chest, controller.getCurrency(PartyCurrency.COIN)), 6, "taken out of the chest: 20 - 14");
-            context.assertEquals(BankFixtures.count(chest, controller.getCurrency(PartyCurrency.STAR)), 2, "a star taken");
+            context.assertEquals(TestAsserts.count(chest, controller.getCurrency(PartyCurrency.COIN)), 6, "taken out of the chest: 20 - 14");
+            context.assertEquals(TestAsserts.count(chest, controller.getCurrency(PartyCurrency.STAR)), 2, "a star taken");
             MiniGameResults results = step.getLastResults();
             context.assertTrue(shown(results, p2) == 10 && shown(results, p1) == 2, "the results card: what was paid");
         } finally {
@@ -239,7 +226,7 @@ public class PartyBankGameTests implements FabricGameTest {
         ServerPlayerEntity p1 = player(context, "a", 0.5), p2 = player(context, "b", 1.5), p3 = player(context, "c", 2.5);
         try {
             PartyControllerEntity controller = controller(context);
-            ChestBlockEntity chest = BankFixtures.stock(context, controller, CHEST, 11, 0);
+            ChestBlockEntity chest = TestBank.stock(context, controller, CHEST, 11, 0);
             ItemStack renamed = controller.getCurrency(PartyCurrency.COIN).copyWithCount(30);
             renamed.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Fake"));
             chest.setStack(chest.size() - 1, renamed);
@@ -251,7 +238,7 @@ public class PartyBankGameTests implements FabricGameTest {
             context.assertEquals(stars(controller, p2), 0, "no star in the chest: none");
             context.assertEquals(coins(controller, p1), 1, "then the first participant in turn order: what is left");
             context.assertEquals(coins(controller, p3), 0, "the next one: nothing");
-            context.assertEquals(BankFixtures.count(chest, controller.getCurrency(PartyCurrency.COIN)), 0, "the chest is empty");
+            context.assertEquals(TestAsserts.count(chest, controller.getCurrency(PartyCurrency.COIN)), 0, "the chest is empty");
             context.assertEquals(chest.getStack(chest.size() - 1).getCount(), 30, "the renamed coins are left");
             MiniGameResults results = step.getLastResults();
             context.assertTrue(shown(results, p2) == 10 && shown(results, p1) == 1 && shown(results, p3) == 0, "the card shows the amounts really paid");
@@ -273,7 +260,7 @@ public class PartyBankGameTests implements FabricGameTest {
             context.assertTrue(coins(controller, p1) == 0 && stars(controller, p1) == 0, "no bank: nothing paid");
             context.assertEquals(shown(step.getLastResults(), p1), 0, "the card says so");
 
-            BankFixtures.stock(context, controller, CHEST, 50, 5);
+            TestBank.stock(context, controller, CHEST, 50, 5);
             context.setBlockState(CHEST, Blocks.AIR);
             context.assertEquals(status(context, controller, 2).state(), PartyBank.State.MISSING, "the chest was removed: missing");
             step = playing(context, controller, p1, p2);
@@ -300,7 +287,7 @@ public class PartyBankGameTests implements FabricGameTest {
             context.assertEquals(whole == null ? 0 : whole.size(), 54, "one double chest");
             ChestBlockEntity otherHalf = context.getBlockEntity(other);
             otherHalf.setStack(5, controller.getCurrency(PartyCurrency.COIN).copyWithCount(12));
-            controller.setBank(BankFixtures.cartridge(context, CHEST));
+            controller.setBank(TestBank.cartridge(context, CHEST));
             context.assertEquals(status(context, controller, 1).coins(), 12, "the coins of the other half count");
             MiniGamePartyStep step = playing(context, controller, p1);
             step.finish(controller, List.of(p1.getUuid()));
@@ -318,7 +305,7 @@ public class PartyBankGameTests implements FabricGameTest {
         ServerPlayerEntity p1 = player(context, "a", 0.5);
         try {
             PartyControllerEntity controller = controller(context);
-            BankFixtures.stock(context, controller, CHEST, 30, 0);
+            TestBank.stock(context, controller, CHEST, 30, 0);
             for (int i = 0; i < p1.getInventory().main.size(); i++) p1.getInventory().main.set(i, new ItemStack(Items.DIRT, 64));
             MiniGamePartyStep step = playing(context, controller, p1);
             step.finish(controller, List.of(p1.getUuid()));
@@ -341,7 +328,7 @@ public class PartyBankGameTests implements FabricGameTest {
             PartyControllerEntity controller = controller(context);
             PartyDashboardData.Board board = new PartyDashboardData.Board(0, 0, List.of(), List.of());
             context.assertEquals(PartyDashboardData.capture(controller, context.getWorld(), player, board).bank(), PartyBank.Status.NONE, "no bank");
-            BankFixtures.stock(context, controller, CHEST, 34, 2);
+            TestBank.stock(context, controller, CHEST, 34, 2);
             // No player known: a mini-game of 4 (10 + 5 + 3 + 1 coins, a star)
             PartyDashboardData data = PartyDashboardData.capture(controller, context.getWorld(), player, board);
             context.assertEquals(data.bank(), new PartyBank.Status(PartyBank.State.OK, 34, 2), "34 coins, 2 stars: enough");

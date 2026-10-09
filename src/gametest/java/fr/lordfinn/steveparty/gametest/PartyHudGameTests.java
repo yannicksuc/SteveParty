@@ -6,20 +6,18 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.entities.ModEntities;
-import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -43,33 +41,6 @@ import java.util.UUID;
 public class PartyHudGameTests implements FabricGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 5);
 
-    private static PigEntity spawnToken(TestContext context, BlockPos pos, UUID owner) {
-        PigEntity pig = context.spawnMob(EntityType.PIG, pos);
-        TokenizedEntityInterface token = (TokenizedEntityInterface) pig;
-        token.steveparty$setTokenized(true);
-        token.steveparty$setTokenOwner(owner);
-        token.steveparty$setStatus(TokenStatus.IN_GAME);
-        return pig;
-    }
-
-    /** A party of {@code a} and {@code b} (one round), started up to the turn of {@code a}. */
-    private static PartyControllerEntity startParty(TestContext context, UUID a, UUID b) {
-        context.setBlockState(CONTROLLER.down(), Blocks.STONE);
-        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
-        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
-        PartyData data = new PartyData();
-        data.addToken(a);
-        data.addToken(b);
-        data.addStep(new PartyStep());
-        data.addStep(new TokenTurnPartyStep(a, null));
-        data.addStep(new TokenTurnPartyStep(b, null));
-        data.addStep(new EndPartyStep(new ArrayList<>(List.of(a, b))));
-        controller.setPartyData(data);
-        controller.nextStep();
-        controller.nextStep();
-        return controller;
-    }
-
     private static PartyLiveData capture(TestContext context, PartyControllerEntity controller) {
         return PartyLiveData.capture(controller, context.getWorld());
     }
@@ -77,13 +48,13 @@ public class PartyHudGameTests implements FabricGameTest {
     /** The current turn: nothing rolled yet, then the roll, then the steps left while the token walks. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_turn")
     public void liveDataFollowsTheCurrentTurn(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
-            PigEntity pig = spawnToken(context, new BlockPos(2, 1, 2), player.getUuid());
+            PigEntity pig = TestBoards.token(context, new BlockPos(2, 1, 2), player.getUuid());
             pig.setCustomName(Text.literal("Cochonou"));
             ((TokenizedEntityInterface) pig).steveparty$setTokenColor(0x3366FF);
             UUID absent = UUID.randomUUID();
-            PartyControllerEntity controller = startParty(context, pig.getUuid(), absent);
+            PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 1, pig.getUuid(), absent);
             TokenTurnPartyStep turn = (TokenTurnPartyStep) controller.getPartyData().getCurrentStep();
 
             PartyLiveData live = capture(context, controller);
@@ -124,7 +95,7 @@ public class PartyHudGameTests implements FabricGameTest {
             context.setBlockState(CONTROLLER, Blocks.AIR);
             context.complete();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -135,10 +106,10 @@ public class PartyHudGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_standings")
     public void standingsCountTheStarsCoinsAndPowerUps(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
-            PigEntity pig = spawnToken(context, new BlockPos(2, 1, 2), player.getUuid());
-            PartyControllerEntity controller = startParty(context, pig.getUuid(), UUID.randomUUID());
+            PigEntity pig = TestBoards.token(context, new BlockPos(2, 1, 2), player.getUuid());
+            PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 1, pig.getUuid(), UUID.randomUUID());
             player.getInventory().setStack(10, new ItemStack(ModItems.PARTY_STAR, 2));
             player.getInventory().setStack(11, new ItemStack(ModItems.PARTY_STAR));
             player.getInventory().setStack(14, new ItemStack(Items.NETHER_STAR, 7));
@@ -177,7 +148,7 @@ public class PartyHudGameTests implements FabricGameTest {
             context.setBlockState(CONTROLLER, Blocks.AIR);
             context.complete();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -199,11 +170,11 @@ public class PartyHudGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_rename")
     public void renamedPawnIsSentAtOnce(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
-            PigEntity pig = spawnToken(context, new BlockPos(2, 1, 2), player.getUuid());
+            PigEntity pig = TestBoards.token(context, new BlockPos(2, 1, 2), player.getUuid());
             pig.setCustomName(Text.literal("Rose"));
-            PartyControllerEntity controller = startParty(context, pig.getUuid(), UUID.randomUUID());
+            PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 1, pig.getUuid(), UUID.randomUUID());
             controller.addInterestedPlayer(player);
             controller.syncLiveData(context.getWorld());
             context.assertEquals(controller.getLastLiveData().standings().getFirst().tokenName(), "Rose", "its name");
@@ -215,7 +186,7 @@ public class PartyHudGameTests implements FabricGameTest {
             context.setBlockState(CONTROLLER, Blocks.AIR);
             context.complete();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -224,23 +195,23 @@ public class PartyHudGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_pawn_name")
     public void standingsShowThePawnsName(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
-            PigEntity named = spawnToken(context, new BlockPos(2, 1, 2), player.getUuid());
+            PigEntity named = TestBoards.token(context, new BlockPos(2, 1, 2), player.getUuid());
             named.setCustomName(Text.literal("Cochonou"));
-            PigEntity plain = spawnToken(context, new BlockPos(3, 1, 2), player.getUuid());
-            PartyControllerEntity controller = startParty(context, named.getUuid(), plain.getUuid());
+            PigEntity plain = TestBoards.token(context, new BlockPos(3, 1, 2), player.getUuid());
+            PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 1, named.getUuid(), plain.getUuid());
             context.assertEquals(PartyLiveData.standingOf(controller, context.getWorld(), named.getUuid()).tokenName(), "Cochonou", "its own name");
             context.assertEquals(PartyLiveData.standingOf(controller, context.getWorld(), plain.getUuid()).tokenName(), player.getNameForScoreboard(),
                     "no name of its own: its player's");
-            PigEntity nobody = spawnToken(context, new BlockPos(4, 1, 2), null);
+            PigEntity nobody = TestBoards.token(context, new BlockPos(4, 1, 2), null);
             context.assertEquals(PartyLiveData.pawnName(controller, context.getWorld(), nobody.getUuid(), nobody, ""), nobody.getName().getString(),
                     "no name, no player: what it is");
             context.assertTrue(PartyLiveData.standingOf(controller, context.getWorld(), named.getUuid()).bonuses().isEmpty(), "no bonuses yet");
             context.setBlockState(CONTROLLER, Blocks.AIR);
             context.complete();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -285,7 +256,7 @@ public class PartyHudGameTests implements FabricGameTest {
         context.assertTrue(!live.sameAs(received), "another program: a new state");
 
         // The turns exist: the program is not sent any more
-        context.assertTrue(capture(context, startParty(context, a, b)).program().steps().isEmpty(), "a turn: the steps say what comes");
+        context.assertTrue(capture(context, TestBoards.party(context, CONTROLLER, 1, a, b)).program().steps().isEmpty(), "a turn: the steps say what comes");
         context.setBlockState(CONTROLLER, Blocks.AIR);
         context.complete();
     }
@@ -296,10 +267,10 @@ public class PartyHudGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_sync")
     public void liveStateIsSentOnlyWhenItChanged(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
-            PigEntity pig = spawnToken(context, new BlockPos(2, 1, 2), player.getUuid());
-            PartyControllerEntity controller = startParty(context, pig.getUuid(), UUID.randomUUID());
+            PigEntity pig = TestBoards.token(context, new BlockPos(2, 1, 2), player.getUuid());
+            PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 1, pig.getUuid(), UUID.randomUUID());
             controller.addInterestedPlayer(player);
             controller.syncLiveData(context.getWorld());
             PartyLiveData sent = controller.getLastLiveData();
@@ -315,7 +286,7 @@ public class PartyHudGameTests implements FabricGameTest {
             context.setBlockState(CONTROLLER, Blocks.AIR);
             context.complete();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 }

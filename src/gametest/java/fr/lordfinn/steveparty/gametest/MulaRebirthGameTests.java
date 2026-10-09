@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaRebirths;
 import fr.lordfinn.steveparty.entities.custom.MulaStarEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
@@ -32,7 +33,7 @@ public class MulaRebirthGameTests implements FabricGameTest {
     /** At the pop, the Mula leaves (without dying) as a star, and its rebirth is recorded 100-400 blocks away. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void burstLeavesAsAShootingStar(TestContext context) {
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity owner = TestPlayers.mock(context);
         try {
             MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
             mula.setVariant(MulaEntity.MulaVariant.PURPLE);
@@ -60,7 +61,7 @@ public class MulaRebirthGameTests implements FabricGameTest {
             stars.forEach(Entity::discard);
             MulaRebirths.get(world).remove(id);
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(owner);
+            TestPlayers.remove(context, owner);
         }
         context.complete();
     }
@@ -69,7 +70,7 @@ public class MulaRebirthGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void rebornOnceWhenDueAndLoaded(TestContext context) {
         ServerWorld world = context.getWorld();
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity owner = TestPlayers.mock(context);
         try {
             MulaEntity model = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
             model.setVariant(MulaEntity.MulaVariant.GREEN);
@@ -157,8 +158,7 @@ public class MulaRebirthGameTests implements FabricGameTest {
         context.assertTrue(MulaStarEntity.distanceFor(MulaStarEntity.MIN_APEX, MulaEntity.MulaVariant.BLUE) == 100
                 && MulaStarEntity.distanceFor(MulaStarEntity.MAX_APEX, MulaEntity.MulaVariant.RED) == 400, "others: 100-400");
         ServerWorld world = context.getWorld();
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, net.minecraft.world.GameMode.SURVIVAL);
         MulaEntity black = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         black.setVariant(MulaEntity.MulaVariant.BLACK);
         black.setHunger(MulaEntity.MAX_HUNGER - 1);
