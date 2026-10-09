@@ -118,7 +118,7 @@ public class StevepartyClient implements ClientModInitializer {
         return colorValue;
     };
 
-    private static final ItemColorProvider getTokenIemColor = (stack, tintIndex) -> {
+    private static final ItemColorProvider getTokenItemColor = (stack, tintIndex) -> {
         if (stack == null) return 0xFFFFFFFF;
         Text customName = stack.get(DataComponentTypes.CUSTOM_NAME);
         int color = getColorFromText(customName);
@@ -252,7 +252,7 @@ public class StevepartyClient implements ClientModInitializer {
             return dye == null ? 0xFFC8F2FF : 0xFF000000 | dye.getEntityColor();
         }, ModItems.STENCIL_GUN);
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
-        ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
+        ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenItemColor, ModItems.TOKEN);
         // Every Steve Party egg is drawn per mob (textures/item/*_spawn_egg.png, 1.21.5 style): item/generated gives
         // layer0 tint index 0, so the vanilla spawn-egg tint is replaced by a white one (ModItems.spawnEgg lists them)
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.SPAWN_EGGS.toArray(Item[]::new));
