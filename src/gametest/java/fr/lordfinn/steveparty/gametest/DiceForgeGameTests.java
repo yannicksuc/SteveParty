@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -265,8 +266,7 @@ public class DiceForgeGameTests implements FabricGameTest {
         }
         forge.setStack(FIRST_FRAGMENT_SLOT, new ItemStack(ModItems.RED_STAR_FRAGMENT, 2));
 
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         player.getInventory().clear();
         player.setSneaking(true);
         BlockPos abs = context.getAbsolutePos(FORGE_POS);
@@ -308,7 +308,7 @@ public class DiceForgeGameTests implements FabricGameTest {
                 context.assertEquals(forge.getActivationTime(), context.getWorld().getTime(), "new activation time");
                 context.assertTrue(forge.isInsertingCore(0f), "insertion animation replays");
             } finally {
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
             }
             GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
         });
@@ -495,13 +495,13 @@ public class DiceForgeGameTests implements FabricGameTest {
             context.assertTrue(forge.getCoreCenter().y - context.getAbsolutePos(FORGE_POS).getY() < CORE_REST_HEIGHT + CORE_HIT_ALTITUDE,
                     "a low core: " + forge.getCoreCenter());
             context.assertTrue(coreHitboxes(context).isEmpty(), "a low core can't be hit (it floats where the forge is punched)");
-            ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+            ServerPlayerEntity player = TestPlayers.mock(context);
             try {
                 player.changeGameMode(GameMode.SURVIVAL);
                 player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
                 context.assertTrue(player.interactionManager.tryBreakBlock(context.getAbsolutePos(FORGE_POS)), "the forge breaks");
             } finally {
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
             }
             context.waitAndRun(2, () -> {
                 context.assertEquals(dropped(context, ModBlocks.DICE_FORGE.asItem()), 1, "the forge itself");
@@ -525,11 +525,11 @@ public class DiceForgeGameTests implements FabricGameTest {
         context.waitAndRun(CORE_INSERT_TICKS + 40, () -> {
             List<ForgeCoreEntity> hitboxes = coreHitboxes(context);
             context.assertEquals(hitboxes.size(), 1, "the risen core has its hitbox");
-            ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+            ServerPlayerEntity player = TestPlayers.mock(context);
             try {
                 player.attack(hitboxes.getFirst());
             } finally {
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
             }
             context.assertTrue(context.getBlockState(FORGE_POS).isOf(ModBlocks.DICE_FORGE), "the forge stays");
             context.assertTrue(!forge.isActivated(), "its core is gone");

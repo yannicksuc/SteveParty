@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.components.MobEntityComponent;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TokenizerFlare;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
@@ -62,7 +63,7 @@ public class TokenSpellGameTests implements FabricGameTest {
 
     /** A player standing next to {@link #MOB_POS}, holding a Tokenizer Wand. */
     private static ServerPlayerEntity wandHolder(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         Vec3d pos = context.getAbsolute(new Vec3d(MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() - 1.0));
         player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TOKENIZER_WAND));
@@ -75,7 +76,7 @@ public class TokenSpellGameTests implements FabricGameTest {
     }
 
     private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     private static TokenizedEntityInterface token(MobEntity mob) {

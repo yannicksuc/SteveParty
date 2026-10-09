@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.*;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.PartyCardItem;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -282,7 +283,7 @@ public class PartyLoopGameTests implements FabricGameTest {
         ItemStack price = new ItemStack(Items.GOLD_NUGGET, 20);
         price.set(ModComponents.IS_NEGATIVE, true);
         ItemStack cartridge = cartridge(context, chestPos, 1, new ItemStack(ModItems.PARTY_STAR, 1), price);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         player.getInventory().insertStack(new ItemStack(Items.GOLD_NUGGET, 10));
         int[] cycle = {0};
         context.assertTrue(!CartridgeTransfers.apply(context.getWorld(), cartridge, player, () -> cycle[0], i -> cycle[0] = i),

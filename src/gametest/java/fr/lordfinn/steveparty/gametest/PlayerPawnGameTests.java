@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.pawn.PawnPossessions;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnPose;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem.SpellResult;
@@ -41,7 +42,7 @@ public class PlayerPawnGameTests implements FabricGameTest {
     // ---------------------------------------------------------------- helpers
 
     private static ServerPlayerEntity playerAt(TestContext context, double x, double z) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         Vec3d pos = context.getAbsolute(new Vec3d(x, TARGET_POS.getY(), z));
         player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, 0);
         return player;
@@ -50,7 +51,7 @@ public class PlayerPawnGameTests implements FabricGameTest {
     private static void leave(TestContext context, ServerPlayerEntity... players) {
         for (ServerPlayerEntity player : players) {
             if (context.getWorld().getServer().getPlayerManager().getPlayer(player.getUuid()) != null) {
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
             }
         }
     }
@@ -214,10 +215,10 @@ public class PlayerPawnGameTests implements FabricGameTest {
         ServerPlayerEntity[] back = new ServerPlayerEntity[1];
         withPossessedPawn(context, (player, found) -> {
             pawn[0] = found;
-            Reconnect.leave(player);
+            TestPlayers.leave(player);
             context.assertTrue(!PawnPossessions.isInsideAPawn(player), "out when leaving");
             context.assertTrue(found.isAlive() && !found.isPossessed(), "the pawn stays, empty");
-            back[0] = Reconnect.join(context, player.getGameProfile());
+            back[0] = TestPlayers.join(context, player.getGameProfile());
         }, () -> {
             try {
                 context.assertTrue(normal(back[0]), "joins back at their size, visible: scale " + back[0].getScale());

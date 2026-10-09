@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PlasticBlock;
 import fr.lordfinn.steveparty.blocks.custom.PlotBlock;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -218,7 +219,7 @@ public class PlasticGameTests implements FabricGameTest {
         BlockPos surface = new BlockPos(X, TOP, Z), above = new BlockPos(X, TOP + 1, Z);
         context.setBlockState(surface, plastic()); // wet, and it stays at the surface
         context.setBlockState(above, plastic()); // dry: above the water
-        var player = context.createMockCreativeServerPlayerInWorld();
+        var player = TestPlayers.mock(context);
         player.interactionManager.tryBreakBlock(context.getAbsolutePos(above));
         context.expectBlock(Blocks.AIR, above);
         player.interactionManager.tryBreakBlock(context.getAbsolutePos(surface));
@@ -450,7 +451,7 @@ public class PlasticGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aPlayerPutOnTheBlockKeepsTheirPlace(TestContext context) {
         waterColumn(context);
-        var player = context.createMockCreativeServerPlayerInWorld();
+        var player = TestPlayers.mock(context);
         net.minecraft.util.math.Vec3d feet = context.getAbsolute(new net.minecraft.util.math.Vec3d(X + 0.5, TOP, Z + 0.5));
         player.refreshPositionAndAngles(feet.x, feet.y, feet.z, 30, 10);
         context.setBlockState(new BlockPos(X, TOP - 1, Z), plastic());

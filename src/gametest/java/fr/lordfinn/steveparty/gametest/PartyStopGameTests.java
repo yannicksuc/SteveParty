@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -25,6 +26,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
+
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
 
 /**
  * Stopping a party: the dashboard's button / the command ({@link PartyControllerEntity#stopParty}) and a broken
@@ -93,12 +96,6 @@ public class PartyStopGameTests implements FabricGameTest {
         b.steveparty$setTargetPosition(new Vector3d(away.x, away.y, away.z), 0.05);
     }
 
-    private static void assertOn(TestContext context, MobEntity token, BlockPos at, String what) {
-        BoardSpaceBlockEntity on = BoardSpaces.boardSpaceOf(token);
-        context.assertTrue(on != null && on.getPos().equals(context.getAbsolutePos(at)),
-                what + ": on " + (on == null ? "nothing" : on.getPos()) + ", expected " + context.getAbsolutePos(at));
-    }
-
     /** The pawns are home, out of the game, still, and no party holds them. */
     private static void assertSentHome(TestContext context, Board board) {
         assertOn(context, board.a(), START_A, "a back on its start tile");
@@ -165,7 +162,7 @@ public class PartyStopGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stopButtonNeedsTheRightToEdit(TestContext context) {
         Board board = startedParty(context);
-        net.minecraft.server.network.ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        net.minecraft.server.network.ServerPlayerEntity player = TestPlayers.mock(context);
         var handler = new fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler(1, player.getInventory(), board.controller());
         context.assertTrue(!handler.onButtonClick(player, fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.BUTTON_STOP),
                 "refused");

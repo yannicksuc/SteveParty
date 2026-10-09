@@ -41,6 +41,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The power-ups plugged into the base ({@link PowerUps}): each is used through its item during its player's turn and is

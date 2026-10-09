@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleBlast;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleEntity;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumarolePumping;
 import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleRiding;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantment;
@@ -71,14 +72,13 @@ public class FumaroleGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, ItemStack held) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         player.setStackInHand(Hand.MAIN_HAND, held);
         return player;
     }
 
     private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
+        for (ServerPlayerEntity player : players) TestPlayers.remove(context, player);
     }
 
     /** Facing +x (yaw -90), its centre head at rest. */

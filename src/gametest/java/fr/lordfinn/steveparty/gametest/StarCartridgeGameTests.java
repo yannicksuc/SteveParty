@@ -16,6 +16,9 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StarSettingsComponent;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.gametest.kit.TestAsserts;
+import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
@@ -123,7 +126,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
         owner.setPosition(context.getAbsolute(new Vec3d(4, 1, -10)));
         PartyControllerEntity controller = party(context, cow, owner);
         controller.setStarSpace(context.getAbsolutePos(STAR));
-        net.minecraft.block.entity.ChestBlockEntity bank = BankFixtures.stock(context, controller, BANK, 0, BANK_STARS);
+        net.minecraft.block.entity.ChestBlockEntity bank = TestBank.stock(context, controller, BANK, 0, BANK_STARS);
         return new Board(cow, controller, List.of(STAR, OTHER, ANOTHER), bank);
     }
 
@@ -133,7 +136,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
 
     /** Runs {@code test} with a mock player (removed on failure; the tests remove it when they end). */
     private static void withPlayer(TestContext context, Consumer<ServerPlayerEntity> test) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             test.accept(player);
         } catch (RuntimeException e) {
@@ -155,7 +158,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     }
 
     private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     private static BlockPos spaceOf(CowEntity cow) {
@@ -340,8 +343,8 @@ public class StarCartridgeGameTests implements FabricGameTest {
                     context.assertTrue(PartyStars.decide(owner, true), "bought");
                     context.assertEquals(count(owner, coin), 5, "the price paid");
                     context.assertEquals(count(owner, starItem), 1, "a star given");
-                    context.assertEquals(BankFixtures.count(board.bank(), starItem), BANK_STARS - 1, "the star taken from the bank");
-                    context.assertEquals(BankFixtures.count(board.bank(), coin), PRICE, "the coins paid into the bank");
+                    context.assertEquals(TestAsserts.count(board.bank(), starItem), BANK_STARS - 1, "the star taken from the bank");
+                    context.assertEquals(TestAsserts.count(board.bank(), coin), PRICE, "the coins paid into the bank");
                     BlockPos moved = board.party().getStarSpace();
                     context.assertTrue(context.getAbsolutePos(OTHER).equals(moved) || context.getAbsolutePos(ANOTHER).equals(moved),
                             "the star went to another star space, got " + moved);

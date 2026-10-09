@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaLift;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -32,8 +33,7 @@ public class MulaLiftGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, net.minecraft.world.GameMode.SURVIVAL);
         BlockPos at = context.getAbsolutePos(new BlockPos(2, 2, 2));
         player.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         return player;
@@ -82,7 +82,7 @@ public class MulaLiftGameTests implements FabricGameTest {
                 }
             } finally {
                 mulas.forEach(MulaEntity::discard);
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
             }
             context.complete();
         });
@@ -101,7 +101,7 @@ public class MulaLiftGameTests implements FabricGameTest {
                 }
             } finally {
                 mulas.forEach(MulaEntity::discard);
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
             }
             context.complete();
         });
@@ -117,7 +117,7 @@ public class MulaLiftGameTests implements FabricGameTest {
                 context.assertTrue(!MulaLift.isCarried(player) && !player.hasStatusEffect(StatusEffects.LEVITATION), "no lift by day");
             } finally {
                 mulas.forEach(MulaEntity::discard);
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
             }
             context.complete();
         });

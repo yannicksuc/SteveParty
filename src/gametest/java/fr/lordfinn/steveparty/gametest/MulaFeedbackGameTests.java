@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaFood;
 import fr.lordfinn.steveparty.entities.custom.MulaMotion;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -39,14 +40,13 @@ public class MulaFeedbackGameTests implements FabricGameTest {
     }
 
     private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void mulaRemembersWhatItAteAndCountsItsMeals(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         Item food = foodOf(mula);
         try {
             context.assertTrue(mula.getLastFood().isEmpty(), "nothing eaten yet");
@@ -82,8 +82,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
     public void burstEmptiesTheBellyWithThePop(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         mula.setAiDisabled(true);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         try {
             mula.setHunger(MulaEntity.MAX_HUNGER - 1);
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(foodOf(mula), 1));
@@ -106,7 +105,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void lastFoodIsSavedWithTheMula(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(foodOf(mula), 1));
             mula.interactMob(player, Hand.MAIN_HAND);
@@ -140,7 +139,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void forcedTamingOutcome(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             mula.tameAttempt(player, false);
             context.assertTrue(!mula.isTamed(), "a failed attempt doesn't tame");
@@ -174,7 +173,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
     public void nonFoodOfItsColourIsRefused(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         mula.setVariant(MulaEntity.MulaVariant.BLUE);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.changeGameMode(GameMode.SURVIVAL);
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LAPIS_LAZULI, 4));
@@ -215,8 +214,8 @@ public class MulaFeedbackGameTests implements FabricGameTest {
     public void refusalIsNotSpammed(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         mula.setVariant(MulaEntity.MulaVariant.BLUE);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        ServerPlayerEntity other = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        ServerPlayerEntity other = TestPlayers.mock(context);
         player.changeGameMode(GameMode.SURVIVAL);
         other.changeGameMode(GameMode.SURVIVAL);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.APPLE, 3));
@@ -243,7 +242,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
     public void ownerHoldingAnotherColoursFoodIsRefused(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         mula.setVariant(MulaEntity.MulaVariant.BLUE);
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity owner = TestPlayers.mock(context);
         try {
             owner.changeGameMode(GameMode.SURVIVAL);
             mula.setOwner(owner);
@@ -263,7 +262,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
     public void foodGivesItsNutrition(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         mula.setVariant(MulaEntity.MulaVariant.BLUE);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.changeGameMode(GameMode.SURVIVAL);
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.COOKED_COD, 2));
@@ -294,7 +293,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         int colour = strength.get(DataComponentTypes.POTION_CONTENTS).getColor();
         mula.setVariant(MulaFood.colourOf(colour));
         context.assertTrue(mula.getVariant() == MulaEntity.MulaVariant.YELLOW, "strength is yellow: " + mula.getVariant());
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.changeGameMode(GameMode.SURVIVAL);
             player.setStackInHand(Hand.MAIN_HAND, strength);
@@ -320,8 +319,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         mula.setAiDisabled(true);
         int melon = Items.MELON_SLICE.getComponents().get(net.minecraft.component.DataComponentTypes.FOOD).nutrition();
         context.assertEquals(MulaFood.seedValue(), melon, "a seed is worth a melon slice");
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         try {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WHEAT_SEEDS, 4));
             mula.interactMob(player, Hand.MAIN_HAND);
@@ -376,8 +374,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
     public void nearlyFullMulaShakesOnlyWhenApproachedOrJustFed(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         mula.setAiDisabled(true);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         // a small meal (a seed), so it is nearly full before and after it, still one meal away from the burst
         mula.setVariant(MulaEntity.MulaVariant.GREEN);
         Item food = Items.WHEAT_SEEDS;

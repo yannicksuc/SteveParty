@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -209,9 +210,8 @@ public class ReplayTileGameTests implements FabricGameTest {
     /** The Power-up die spent for the turn comes back for the replay (a forged die included); the replay flag is saved. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theSpentDieComesBackAndTheReplayIsSaved(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
-        context.addFinalTask(() -> context.getWorld().getServer().getPlayerManager().remove(player));
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
+        context.addFinalTask(() -> TestPlayers.remove(context, player));
         BlockPos pos = new BlockPos(2, 1, 2);
         BoardSpaceBlockEntity tile = placeTile(context, pos, new ItemStack(ModItems.REPLAY_CARTRIDGE));
         PigEntity token = spawnToken(context, pos, player.getUuid());

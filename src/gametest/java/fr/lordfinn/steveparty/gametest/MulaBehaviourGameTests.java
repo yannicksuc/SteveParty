@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.PigEntity;
@@ -19,13 +20,13 @@ import java.util.List;
 public class MulaBehaviourGameTests implements FabricGameTest {
 
     private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     /** A tamed Mula starts circling its owner after the owner has stood still for a few seconds. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void orbitStartsWhenTheOwnerStandsStill(TestContext context) {
-        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity owner = TestPlayers.mock(context);
         BlockPos at = context.getAbsolutePos(new BlockPos(1, 2, 1));
         owner.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(2, 4, 1));
@@ -45,7 +46,7 @@ public class MulaBehaviourGameTests implements FabricGameTest {
     /** Each Mula only ever looks at its 3 nearest. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void flockNeighbourCacheIsBounded(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         // an audience: Mulas far from every player don't look around
         BlockPos at = context.getAbsolutePos(new BlockPos(1, 2, 1));
         player.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
@@ -153,7 +154,7 @@ public class MulaBehaviourGameTests implements FabricGameTest {
     /** Hit, a wild Mula flees away from what hit it; a tamed one hides on the far side of its owner. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void shyFleesAwayOrBehindItsOwner(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             PigEntity threat = context.spawnMob(EntityType.PIG, new BlockPos(0, 2, 1));
             threat.setAiDisabled(true);

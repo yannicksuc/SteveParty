@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
@@ -64,13 +65,12 @@ public class MiniGamePageGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, GameMode mode) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(mode);
+        ServerPlayerEntity player = TestPlayers.mock(context, mode);
         return player;
     }
 
     private static void remove(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     /** A page in the player's main hand, opened once: it has its id. */

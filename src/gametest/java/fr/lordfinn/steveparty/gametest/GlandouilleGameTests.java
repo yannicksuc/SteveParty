@@ -16,6 +16,7 @@ import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.Mood
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
 import fr.lordfinn.steveparty.service.GlandouillePushes;
@@ -41,8 +42,9 @@ import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.function.Consumer;
+
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 
 /**
  * The Glandouille: it never hurts (it shoves), stomps flatten then finish it (the mossy one takes one more), towers
@@ -79,10 +81,10 @@ public class GlandouilleGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, BlockPos at, float yaw) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         BlockPos abs = context.getAbsolutePos(at);
         player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, yaw, 0);
-        atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
+        atEnd(context, () -> TestPlayers.remove(context, player));
         return player;
     }
 
@@ -1264,19 +1266,5 @@ public class GlandouilleGameTests implements FabricGameTest {
     private static double horizontal(Vec3d a, Vec3d b) {
         double dx = a.x - b.x, dz = a.z - b.z;
         return Math.sqrt(dx * dx + dz * dz);
-    }
-
-    /** What to undo when the test ends (a test has one final task: they are run together). */
-    private static final Map<TestContext, List<Runnable>> AT_END = new WeakHashMap<>();
-
-    private static void atEnd(TestContext context, Runnable task) {
-        List<Runnable> tasks = AT_END.get(context);
-        if (tasks == null) {
-            List<Runnable> created = new ArrayList<>();
-            AT_END.put(context, created);
-            context.addFinalTask(() -> created.forEach(Runnable::run));
-            tasks = created;
-        }
-        tasks.add(task);
     }
 }

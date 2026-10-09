@@ -34,6 +34,7 @@ import net.minecraft.world.GameMode;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 
 /**
  * The Mistigri out of the board: his summoning (a die bound to a black cat by a witch hut, landing on a 1 of any colour

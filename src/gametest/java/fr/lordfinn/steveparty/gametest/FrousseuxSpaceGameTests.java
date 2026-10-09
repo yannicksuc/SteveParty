@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
 import fr.lordfinn.steveparty.service.FrousseuxThefts;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Frousseux space: coins stolen at once then given to the sender after the defence, each blow of the victim
@@ -216,7 +218,7 @@ public class FrousseuxSpaceGameTests implements FabricGameTest {
         start(context, party, token, thief, false, 10, done);
         when(context, () -> FrousseuxThefts.phase(token) == Phase.DEFENCE, WHOLE_THEFT, "the defence", () -> {
             FrousseuxEntity actor = FrousseuxThefts.actor(token);
-            context.getWorld().getServer().getPlayerManager().remove(victim);
+            TestPlayers.remove(context, victim);
             when(context, () -> done[0], WHOLE_THEFT, "the theft ends", () -> {
                 context.assertTrue(actor.isRemoved(), "the Frousseux is gone");
                 context.assertEquals(count(thief, Items.GOLD_INGOT), 10, "the sender still gets the loot");

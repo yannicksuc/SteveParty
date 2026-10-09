@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StencilCanvasComponent;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.items.custom.StencilHammerStrike;
@@ -535,7 +536,7 @@ public class StencilGameTests implements FabricGameTest {
         waterTube(context);
         BlockPos start = new BlockPos(TUBE_X, TUBE_BOTTOM, TUBE_Z);
         context.setBlockState(start, ModBlocks.PLASTIC_BLOCKS[0]);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         Vec3d feet = Vec3d.ofBottomCenter(context.getAbsolutePos(start.up()));
         player.refreshPositionAndAngles(feet.x, feet.y, feet.z, 0, 0);
         context.runAtTick(fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RISE_DELAY + 3, () -> {
@@ -545,7 +546,7 @@ public class StencilGameTests implements FabricGameTest {
                 context.assertTrue(player.getVelocity().y <= fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RIDE_STILL_SPEED + 1e-3,
                         "carried gently, not flung: " + player.getVelocity().y);
             } finally {
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
             }
             context.complete();
         });
@@ -680,7 +681,7 @@ public class StencilGameTests implements FabricGameTest {
         context.assertTrue(StencilLibrary.EMPTY.with(StencilShape.blank()).entries().isEmpty(), "blank stencils are not kept");
         context.assertTrue(library.toggleFavorite(StencilShape.blank()) == library, "nothing to favourite: same library, nothing synced");
 
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             player.getInventory().insertStack(stencil("crown"));
             StencilLibrary.learnFromInventory(player);
@@ -695,7 +696,7 @@ public class StencilGameTests implements FabricGameTest {
             StencilLibrary.learnFromInventory(player);
             context.assertTrue(StencilUnlocks.of(player).isUnlocked(StencilPatterns.byId("crown")), "still unlocked after removing it from the library");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -911,7 +912,7 @@ public class StencilGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilHammerRefillIsAWheelOfSlots(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             ItemStack gun = loadedGun();
             player.getInventory().selectedSlot = 0;
@@ -942,14 +943,14 @@ public class StencilGameTests implements FabricGameTest {
                             .equals(((StencilGunScreenHandler.FilteredSlot) handler.slots.get(StencilGunItem.STENCIL_SLOTS)).silhouette()),
                     "a stencil and a dye silhouette");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilGunLoaderOnlyFillsTheGunItWasOpenedOn(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             ItemStack gunA = loadedGun();
             ItemStack gunB = new ItemStack(ModItems.STENCIL_GUN);
@@ -969,7 +970,7 @@ public class StencilGameTests implements FabricGameTest {
             context.assertTrue(StencilGunItem.contents(gunA).get(3).isEmpty(), "the gun that went away is not changed either");
             context.assertTrue(!handler.canUse(player), "the loader closes");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

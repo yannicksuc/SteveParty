@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
@@ -108,7 +109,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_dashboard_gains")
     public void gainsAreSetFromTheDashboardAndSaved(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             PartyControllerEntity controller = place(context);
             MiniGameGains gains = controller.getGains();
@@ -179,7 +180,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                     "during a party: operators only");
             context.setBlockState(CONTROLLER, Blocks.AIR);
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -223,7 +224,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_dashboard_edit")
     public void onlyWhoMayEditChangesTheSettings(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             PartyControllerEntity controller = place(context);
             PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);
@@ -286,7 +287,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             context.setBlockState(CONTROLLER, Blocks.AIR);
             context.complete();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -296,7 +297,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_dashboard_sync")
     public void dashboardShowsThePartyAndIsSentWhenItChanged(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             PartyControllerEntity controller = place(context);
             PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);
@@ -352,7 +353,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             context.setBlockState(CONTROLLER, Blocks.AIR);
             context.complete();
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -363,7 +364,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theDashboardIsCompactAndItsSlotsFollowItsTabs(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             context.assertTrue(SLOT_CATALOGUE == 0 && SLOT_STAR == 1 && SLOT_COIN == 2 && PROGRAM_FIRST_SLOT == 39, "the slots keep their indices");
             context.assertTrue(WIDTH <= 427 && TABS_HEIGHT + INVENTORY_Y + INVENTORY_PANEL_HEIGHT <= 240, "tabs, page and inventory fit a 427 x 240 screen");
@@ -396,7 +397,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                 }
             }
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -471,7 +472,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_dashboard_timeline")
     public void thePartyTimelineFollowsTheCurrentStep(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             PartyControllerEntity controller = place(context);
             UUID a = UUID.randomUUID(), b = UUID.randomUUID();
@@ -525,7 +526,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             buf.release();
             context.assertTrue(received.steps().equals(sent.steps()) && received.program().equals(sent.program()), "the timelines are sent as they are");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -555,7 +556,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_dashboard_catalogue")
     public void theCatalogueIsLockedAgainstSwapsAndPlayers(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         try {
             PartyControllerEntity controller = place(context);
             BlockPos pos = context.getAbsolutePos(CONTROLLER);
@@ -590,7 +591,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             context.getWorld().getBlockState(pos).onUse(context.getWorld(), player, hit);
             context.assertTrue(controller.getCatalogue().isEmpty(), "survival: taken out");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

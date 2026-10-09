@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
@@ -151,7 +152,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     }
 
     private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
+        for (ServerPlayerEntity player : players) TestPlayers.remove(context, player);
     }
 
     /** Runs a step of a test some ticks after its start; what makes it fail is also written to the log. */

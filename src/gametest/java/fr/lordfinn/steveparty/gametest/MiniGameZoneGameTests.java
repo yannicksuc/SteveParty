@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import java.util.Map;
 import java.util.HashMap;
 import fr.lordfinn.steveparty.minigame.MiniGameNameColors;
@@ -179,7 +181,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         List<ServerPlayerEntity> own = List.of(mine);
         Vec3d center = context.getAbsolute(new Vec3d(4, 2, 4));
         for (ServerPlayerEntity other : new ArrayList<>(context.getWorld().getServer().getPlayerManager().getPlayerList())) {
-            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) context.getWorld().getServer().getPlayerManager().remove(other);
+            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) TestPlayers.remove(context, other);
         }
     }
 
@@ -192,7 +194,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             if (player.hasVehicle()) player.stopRiding();
             MiniGamePipes.leaveParty(player.getUuid());
             if (context.getWorld().getServer().getPlayerManager().getPlayer(player.getUuid()) != null)
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
         }
     }
 
@@ -226,7 +228,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, TeamDisposition.freeForAll(uuids));
         controller.catalogue = catalogue;
         // A well stocked bank: the gains are taken from it
-        BankFixtures.stock(context, controller, PARTY.up(), 640, 64);
+        TestBank.stock(context, controller, PARTY.up(), 640, 64);
         return controller;
     }
 
@@ -696,14 +698,14 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played");
             context.assertTrue(ZoneBubbles.ofPlayer(p2) != null && p2.getInventory().isEmpty(), "p2 plays with a session inventory");
             p2.getInventory().insertStack(new ItemStack(Items.DIAMOND, 3));
-            Reconnect.leave(p2);
+            TestPlayers.leave(p2);
             context.assertTrue(server.getPlayerManager().getPlayer(away.getId()) == null, "p2 left the server");
             context.assertTrue(p2.getInventory().count(Items.COBBLESTONE) == 12, "it left with what it owns");
             context.assertTrue(p2.getInventory().count(Items.DIAMOND) == 0, "nothing of the round");
             context.assertTrue(!p2.getCommandTags().contains(STASH_TAG), "no mark of a session");
             MiniGameTest.stop(id);
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "the round is over: p2 is waited for");
-            back = Reconnect.join(context, away);
+            back = TestPlayers.join(context, away);
             context.assertTrue(back.getPos().distanceTo(start2) < 0.01, "back where it stood before the round");
             context.assertTrue(back.getInventory().count(Items.COBBLESTONE) == 12 && back.getInventory().count(Items.DIAMOND) == 0,
                     "with what it owns, once");
@@ -787,12 +789,12 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertTrue((p1b.interactionManager.getGameMode() == GameMode.ADVENTURE) == adventure, "respawned: still in the round's game mode");
             p2.kill();
             // p3's game leaves and comes back during the round; the spectator's leaves
-            Reconnect.leave(p3);
-            ServerPlayerEntity p3b = Reconnect.join(context, profile3);
+            TestPlayers.leave(p3);
+            ServerPlayerEntity p3b = TestPlayers.join(context, profile3);
             made.add(p3b);
             context.assertTrue(p3b.interactionManager.getGameMode() == GameMode.SURVIVAL && ZoneBubbles.ofPlayer(p3b) == null
                     && !p3b.getCommandTags().contains(STASH_TAG), "back during the round: himself, no session");
-            Reconnect.leave(watcher);
+            TestPlayers.leave(watcher);
 
             MiniGameTest.stop(id);
             context.assertTrue(MiniGameReturns.isPending(server, p2.getUuid()), "dead at the end: brought back once respawned");
@@ -800,7 +802,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             MiniGameReturns.simulateRestart(server);
             ServerPlayerEntity p2b = respawn(server, p2);
             made.add(p2b);
-            ServerPlayerEntity watcherB = Reconnect.join(context, profileW);
+            ServerPlayerEntity watcherB = TestPlayers.join(context, profileW);
             made.add(watcherB);
             context.waitAndRun(3, () -> {
                 try {

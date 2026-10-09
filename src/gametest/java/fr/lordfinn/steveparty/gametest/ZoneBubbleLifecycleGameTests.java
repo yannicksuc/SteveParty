@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.config.ServerConfig;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
@@ -142,7 +143,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
     }
 
     private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
+        for (ServerPlayerEntity player : players) TestPlayers.remove(context, player);
     }
 
     private static void later(TestContext context, long ticks, Runnable step) {

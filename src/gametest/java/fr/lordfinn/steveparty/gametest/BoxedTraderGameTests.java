@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderBoxes;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.BandanaItem;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeBlock;
@@ -51,14 +52,13 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     /** A survival player right next to the trader (so he comes out). */
     private static ServerPlayerEntity playerNear(TestContext context, BoxedTraderEntity trader) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         player.setPosition(trader.getPos().add(0, 0, 2));
         return player;
     }
 
     private static void disconnect(TestContext context, ServerPlayerEntity player) {
-        context.getWorld().getServer().getPlayerManager().remove(player);
+        TestPlayers.remove(context, player);
     }
 
     /** Runs the checks, always disconnecting the mock player (a stray player would open other tests' traders). */
@@ -265,7 +265,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void heDoesNotNoticePlayersInABoxCostume(TestContext context) {
         // Checked on the rules themselves: a neighbouring test's player within 15 blocks would open a real trader
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         checks(context, player, () -> {
             player.changeGameMode(GameMode.SURVIVAL);
             context.assertTrue(BoxedTraderEntity.drawsHimOut(player) && BoxedTraderEntity.isAttentionTarget(player), "noticed without it");
@@ -387,7 +387,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         ItemStack costume = BoxCostumeItem.create(Blocks.OAK_PLANKS.getDefaultState());
         context.assertTrue(costume.getItem() instanceof Equipment equipment && equipment.getSlotType() == EquipmentSlot.CHEST,
                 "equippable in the chest slot");
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         checks(context, player, () -> {
             context.assertEquals(player.getPreferredEquipmentSlot(costume), EquipmentSlot.CHEST, "goes to the chest");
             player.setStackInHand(Hand.MAIN_HAND, costume.copy());
@@ -400,8 +400,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     /** A survival player hidden in a Box Costume, on the ground at this place of the test structure. */
     private static ServerPlayerEntity hiddenPlayerAt(TestContext context, Vec3d relative) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         Vec3d pos = context.getAbsolute(relative);
         player.setPosition(pos);
         player.setOnGround(true);
@@ -491,7 +490,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void sneakingHidesTheWearerInTheBox(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         checks(context, player, () -> {
             player.changeGameMode(GameMode.SURVIVAL);
             player.setSneaking(true);
@@ -543,7 +542,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void heStaysHiddenFromASneakingPlayer(TestContext context) {
         // Checked on the rule itself: a neighbouring test's player within 15 blocks would open a real trader
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         checks(context, player, () -> {
             player.changeGameMode(GameMode.SURVIVAL);
             context.assertTrue(BoxedTraderEntity.drawsHimOut(player), "a player standing makes him come out");
@@ -575,7 +574,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         context.assertTrue(bandana.getItem() instanceof Equipment equipment && equipment.getSlotType() == EquipmentSlot.HEAD,
                 "equippable in the head slot");
         context.assertTrue(BandanaItem.textureLayer(BandanaItem.getColor(bandana)).equals(Steveparty.id("bandana_pink")), "pink armour layer");
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         checks(context, player, () -> {
             context.assertEquals(player.getPreferredEquipmentSlot(bandana), EquipmentSlot.HEAD, "goes to the head");
             context.assertTrue(player.canEquip(bandana), "the head slot accepts it");
@@ -663,8 +662,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         floor(context);
         ServerPlayerEntity hider = hiddenPlayerAt(context, new Vec3d(3.5, 1, 3.5));
         costumeTicks(hider, 2);
-        ServerPlayerEntity walker = context.createMockCreativeServerPlayerInWorld();
-        walker.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity walker = TestPlayers.mock(context, GameMode.SURVIVAL);
         try {
             context.assertTrue(BoxCostumeBlock.isBlockAligned(hider), "still on the centre: a block");
             // Walking into him: stopped against the cube

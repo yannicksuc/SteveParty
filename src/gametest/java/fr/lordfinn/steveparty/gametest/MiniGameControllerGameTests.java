@@ -19,6 +19,8 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.ZoneFaces;
 import fr.lordfinn.steveparty.minigame.PageZoneTool;
@@ -165,7 +167,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
         List<ServerPlayerEntity> own = List.of(mine);
         Vec3d center = context.getAbsolute(new Vec3d(4, 2, 4));
         for (ServerPlayerEntity other : new ArrayList<>(context.getWorld().getServer().getPlayerManager().getPlayerList())) {
-            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) context.getWorld().getServer().getPlayerManager().remove(other);
+            if (!own.contains(other) && other.getPos().squaredDistanceTo(center) < 40 * 40) TestPlayers.remove(context, other);
         }
     }
 
@@ -178,7 +180,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             if (player.hasVehicle()) player.stopRiding();
             MiniGamePipes.leaveParty(player.getUuid());
             if (context.getWorld().getServer().getPlayerManager().getPlayer(player.getUuid()) != null)
-                context.getWorld().getServer().getPlayerManager().remove(player);
+                TestPlayers.remove(context, player);
         }
     }
 
@@ -225,7 +227,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, TeamDisposition.freeForAll(uuids));
         controller.catalogue = catalogue;
         // A well stocked bank: the gains are taken from it
-        BankFixtures.stock(context, controller, PARTY.up(), 640, 64);
+        TestBank.stock(context, controller, PARTY.up(), 640, 64);
         return controller;
     }
 
@@ -1061,11 +1063,11 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             MiniGamePartyStep step = step(controller);
             step.leaveForMiniGame(controller);
             context.assertTrue(step.isPractice() && step.isAway(p2.getUuid()), "the practice round, p2 sent to it");
-            Reconnect.leave(p2);
+            TestPlayers.leave(p2);
             step.end(controller);
             context.assertTrue(p1.getPos().distanceTo(start1) < 0.01, "p1, there, is back at once");
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "p2, gone, is waited for");
-            back = Reconnect.join(context, away);
+            back = TestPlayers.join(context, away);
         } catch (RuntimeException e) {
             if (back != null) cleanUp(context, id, back);
             cleanUp(context, id, p1, p2);

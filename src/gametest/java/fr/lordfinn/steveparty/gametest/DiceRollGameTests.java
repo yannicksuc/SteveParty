@@ -23,11 +23,12 @@ import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
-import net.minecraft.util.math.BlockPos;
 
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The special dice faces: the face 0 (the tile lands again), the coin and debt faces (the roller's coins), the swap

@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartFuse;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.block.Blocks;
@@ -47,7 +48,7 @@ public class BoomcartGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, BlockPos at, Hand hand, ItemStack held) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity player = TestPlayers.mock(context);
         BlockPos abs = context.getAbsolutePos(at);
         player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, 0, 0);
         player.setStackInHand(hand, held);
@@ -55,7 +56,7 @@ public class BoomcartGameTests implements FabricGameTest {
     }
 
     private static void remove(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
+        for (ServerPlayerEntity player : players) TestPlayers.remove(context, player);
     }
 
     // ---------------------------------------------------------------- the hot potato

@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
@@ -63,6 +64,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
+
 /**
  * The pipes of the mini-games: a pipe's colour gives its role, pages link and re-role pipes, the players come out of
  * the pipes of their team in order (positive players team A, negative ones team B), a party sends its players out of
@@ -89,8 +92,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
     }
 
     private static ServerPlayerEntity player(TestContext context, GameMode mode, double x, double y, double z) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(mode);
+        ServerPlayerEntity player = TestPlayers.mock(context, mode);
         player.getInventory().clear();
         Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
         player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
@@ -101,7 +103,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         for (ServerPlayerEntity player : players) {
             if (player.hasVehicle()) player.stopRiding();
             MiniGamePipes.leaveParty(player.getUuid());
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
     }
 
@@ -119,16 +121,6 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         Vec3d at = context.getRelative(player.getPos());
         return !player.hasVehicle() && Math.abs(at.x - (mouth.getX() + 0.5)) < 1.2 && Math.abs(at.z - (mouth.getZ() + 0.5)) < 1.2
                 && at.y >= mouth.getY() + 0.9;
-    }
-
-    private static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) {
-            then.run();
-        } else if (ticks <= 0) {
-            context.throwGameTestException(what);
-        } else {
-            context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
-        }
     }
 
     // ------------------------------------------------------------------ roles

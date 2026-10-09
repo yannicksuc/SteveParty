@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
@@ -184,12 +186,12 @@ public class PodiumSharedPlaceGameTests implements FabricGameTest {
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, teams == null ? TeamDisposition.freeForAll(uuids) : teams);
         controller.catalogue = catalogue;
         // A well stocked bank: the gains are taken from it
-        BankFixtures.stock(context, controller, CONTROLLER.up(), 640, 64);
+        TestBank.stock(context, controller, CONTROLLER.up(), 640, 64);
         return new Played(controller, step);
     }
 
     private static void cleanUp(TestContext context, ServerPlayerEntity... players) {
-        for (ServerPlayerEntity player : players) context.getWorld().getServer().getPlayerManager().remove(player);
+        for (ServerPlayerEntity player : players) TestPlayers.remove(context, player);
         if (context.getBlockState(CONTROLLER).isOf(ModBlocks.PARTY_CONTROLLER)) context.removeBlock(CONTROLLER);
     }
 

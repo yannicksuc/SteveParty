@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
@@ -41,8 +42,7 @@ import java.util.List;
 public class InventoryCartridgeGameTests implements FabricGameTest {
 
     private static ServerPlayerEntity player(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.changeGameMode(GameMode.SURVIVAL);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
         Vec3d at = context.getAbsolute(new Vec3d(3.5, 1, 3.5));
         player.refreshPositionAndAngles(at.x, at.y, at.z, 0, 0);
         return player;
@@ -126,7 +126,7 @@ public class InventoryCartridgeGameTests implements FabricGameTest {
                     .equals(List.of(context.getAbsolutePos(tile), context.getAbsolutePos(stone)))
                     && CartridgeContainers.in(cartridge, context.getWorld()).size() == 2, "stone: a destination, no container");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -157,7 +157,7 @@ public class InventoryCartridgeGameTests implements FabricGameTest {
             context.assertTrue(b.count(Items.EMERALD) == 3 && a.count(Items.EMERALD) == 0, "the price in the first with room: the second");
             context.assertEquals(player.getInventory().count(Items.DIAMOND), 3, "the player got 3 diamonds");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }
@@ -201,7 +201,7 @@ public class InventoryCartridgeGameTests implements FabricGameTest {
             context.assertEquals(CartridgeContainers.of(player.getMainHandStack(), context.getWorld().getRegistryKey()),
                     List.of(three.get(1), three.get(0)), "two left");
         } finally {
-            context.getWorld().getServer().getPlayerManager().remove(player);
+            TestPlayers.remove(context, player);
         }
         context.complete();
     }

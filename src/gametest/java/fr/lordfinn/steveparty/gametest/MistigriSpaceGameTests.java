@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Mistigri space: each sentence does what it says (never more than a player holds), the move back walks the token

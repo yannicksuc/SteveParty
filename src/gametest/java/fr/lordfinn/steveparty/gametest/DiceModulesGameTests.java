@@ -41,6 +41,9 @@ import java.util.Map;
 import java.util.Set;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The dice modules: what a die carries and shows, how each one changes the roll (Slow, Choice, Lucky, Reroll,

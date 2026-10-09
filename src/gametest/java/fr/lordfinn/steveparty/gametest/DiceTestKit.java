@@ -20,6 +20,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -39,9 +40,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 
 /**
  * What the dice tests share: a board, tokens owned by the test's player (a roll only moves its roller's tokens, so
@@ -57,38 +59,12 @@ final class DiceTestKit {
     private DiceTestKit() {
     }
 
-    // ---------------------------------------------------------------- end of test
-
-    private static final Map<TestContext, List<Runnable>> AT_END = new WeakHashMap<>();
-
-    /** What to undo when the test ends (a test has one final task: they are run together). */
-    static void atEnd(TestContext context, Runnable task) {
-        List<Runnable> tasks = AT_END.get(context);
-        if (tasks == null) {
-            List<Runnable> created = new ArrayList<>();
-            AT_END.put(context, created);
-            context.addFinalTask(() -> created.forEach(Runnable::run));
-            tasks = created;
-        }
-        tasks.add(task);
-    }
-
-    /** Runs {@code then} as soon as {@code condition} holds, failing after {@code ticks}. */
-    static void when(TestContext context, BooleanSupplier condition, int ticks, String what, Runnable then) {
-        if (condition.getAsBoolean()) {
-            then.run();
-            return;
-        }
-        context.assertTrue(ticks > 0, "timed out: " + what);
-        context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
-    }
-
     // ---------------------------------------------------------------- players, board, tokens
 
     @SuppressWarnings("removal")
     static ServerPlayerEntity player(TestContext context) {
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        atEnd(context, () -> TestPlayers.remove(context, player));
         return player;
     }
 
@@ -122,12 +98,6 @@ final class DiceTestKit {
         token.steveparty$setTokenOwner(owner);
         atEnd(context, () -> token.steveparty$setTokenized(false));
         return pig;
-    }
-
-    static void assertOn(TestContext context, MobEntity token, BlockPos at, String what) {
-        BoardSpaceBlockEntity on = BoardSpaces.boardSpaceOf(token);
-        context.assertTrue(on != null && on.getPos().equals(context.getAbsolutePos(at)),
-                what + ": on " + (on == null ? "nothing" : on.getPos()) + ", expected " + context.getAbsolutePos(at));
     }
 
     static boolean isOn(TestContext context, MobEntity token, BlockPos at) {
