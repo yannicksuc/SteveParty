@@ -196,9 +196,6 @@ public class ModEntities {
     );
 
     public static void initialize() {
-        // The Boxed Trader was the Hiding Trader: worlds saved before the rename keep their merchants and spawn eggs
-        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("hiding_trader"), Steveparty.id("boxed_trader"));
-        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("hiding_trader_spawn_egg"), Steveparty.id("boxed_trader_spawn_egg"));
         //FabricDefaultAttributeRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.DICE_ENTITY, DiceEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntity.setAttributes());
