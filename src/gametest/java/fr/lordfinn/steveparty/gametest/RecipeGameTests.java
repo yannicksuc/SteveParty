@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.advancement.AdvancementEntry;
@@ -92,7 +93,6 @@ public class RecipeGameTests implements FabricGameTest {
             Map.entry("fumarole_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("frousseux_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("mistigri_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
-            Map.entry("loaded_die", "the Mistigri's loot (loot table entities/mistigri)"),
             Map.entry("frousseux_candle_holder", "a tamed Frousseux put to sleep by its owner"),
             // The 10 fixed-wood easel signs are kept for the worlds that have them: the material easel sign replaced them
             Map.entry("oak_easel_sign", "legacy"), Map.entry("spruce_easel_sign", "legacy"),
@@ -219,7 +219,7 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.PARTY_STAR)).isOf(ModItems.STAR_CARTRIDGE), "star cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.ACORN)).isOf(ModItems.GLANDOUILLE_CARTRIDGE), "glandouille cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.CANDLE)).isOf(ModItems.FROUSSEUX_CARTRIDGE), "frousseux cartridge");
-        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.LOADED_DIE)).isOf(ModItems.MISTIGRI_CARTRIDGE), "mistigri cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, CursedRolls.mistigriDie()).isOf(ModItems.MISTIGRI_CARTRIDGE), "mistigri cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.IRON_BARS)).isOf(ModItems.THRESHOLD_CARTRIDGE), "threshold cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.MAGPIE_NEST)).isOf(ModItems.POT_CARTRIDGE), "pot cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.GATE_KEY)).isOf(ModItems.KEY_GATE_CARTRIDGE), "key gate cartridge");

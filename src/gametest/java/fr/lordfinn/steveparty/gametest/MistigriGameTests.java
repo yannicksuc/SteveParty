@@ -9,7 +9,6 @@ import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriGoals;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriBadLuck;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
-import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -43,7 +42,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 /**
  * The Mistigri out of the board: his summoning (a die bound to a black cat by a witch hut, landing on a 1 of any colour
  * or a 0), the Bad Luck of crossing his path, taming him with fish, his owner's Luck, the monsters missing, the chests
- * he sits on, what he knocks off, the Loaded Die's curse, and saving him.
+ * he sits on, what he knocks off, his die (cursed 1 to 3 only), and saving him.
  */
 public class MistigriGameTests implements FabricGameTest {
     private static final String HUT = "mistigri_hut", NO_HUT = "mistigri_no_hut";
@@ -340,24 +339,17 @@ public class MistigriGameTests implements FabricGameTest {
         context.complete();
     }
 
-    // ---------------------------------------------------------------- the Loaded Die
+    // ---------------------------------------------------------------- the Mistigri's Die
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void theLoadedDieCursesTheNextRoll(TestContext context) {
+    public void hisDieOnlyRollsTheCursedOneToThree(TestContext context) {
         TestBoards.floor(context, 8);
-        ServerPlayerEntity user = survival(context), victim = survival(context);
-        atEnd(context, () -> victim.removeCommandTag(CursedRolls.TAG));
-        ItemStack loaded = new ItemStack(ModItems.LOADED_DIE, 2);
-        user.setStackInHand(Hand.MAIN_HAND, loaded);
-        loaded.useOnEntity(user, victim, Hand.MAIN_HAND);
-        context.assertTrue(CursedRolls.isCursed(victim), "cursed");
-        context.assertTrue(loaded.getCount() == 1, "spent");
-        DiceEntity dice = thrown(context, victim, die("dice_face_9", "dice_face_10"), new BlockPos(3, 1, 3));
-        hit(context, dice, victim);
+        ServerPlayerEntity player = survival(context);
+        DiceEntity dice = thrown(context, player, CursedRolls.mistigriDie(), new BlockPos(3, 1, 3));
+        hit(context, dice, player);
         context.waitAndRun(1, () -> {
             int steps = dice.getOutcome().steps();
-            context.assertTrue(steps >= 1 && steps <= 3, "a 9-10 die rolled " + steps);
-            context.assertFalse(CursedRolls.isCursed(victim), "one roll and it's gone");
+            context.assertTrue(steps >= 1 && steps <= 3, "the Mistigri's Die rolled " + steps);
             context.complete();
         });
     }

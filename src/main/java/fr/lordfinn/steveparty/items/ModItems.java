@@ -182,9 +182,6 @@ public class ModItems {
     /** The Mistigri's egg: drawn per mob (textures/item/mistigri_spawn_egg.png). */
     public static final Item MISTIGRI_SPAWN_EGG = spawnEgg("mistigri_spawn_egg",
             ModEntities.MISTIGRI, 0x14111A, 0x9BCB2C);
-    /** The Loaded Die, the Mistigri's loot: curses the next roll of the player it is used on (1 to 3 only). */
-    public static final Item LOADED_DIE = register("loaded_die", LoadedDieItem::new,
-            new Item.Settings().maxCount(16));
     /** The Boomcart's egg: iron grey, TNT red. */
     public static final Item BOOMCART_SPAWN_EGG = spawnEgg("boomcart_spawn_egg",
             ModEntities.BOOMCART, 0x8C8C90, 0xDB2F1F);
@@ -502,7 +499,6 @@ public class ModItems {
             itemGroup.add(FROUSSEUX_SPAWN_EGG);
             itemGroup.add(BOOMCART_SPAWN_EGG);
             itemGroup.add(MISTIGRI_SPAWN_EGG);
-            itemGroup.add(LOADED_DIE);
             itemGroup.add(FUMAROLE_SPAWN_EGG);
             itemGroup.add(CANDLE_SAUCER);
             itemGroup.add(ACORN);

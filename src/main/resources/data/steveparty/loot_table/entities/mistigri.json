@@ -6,7 +6,38 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "steveparty:loaded_die"
+          "name": "steveparty:default_dice",
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "steveparty:dice-faces": [
+                  {
+                    "kind": "cursed",
+                    "value": 1,
+                    "weight": 2
+                  },
+                  {
+                    "kind": "cursed",
+                    "value": 2,
+                    "weight": 2
+                  },
+                  {
+                    "kind": "cursed",
+                    "value": 3,
+                    "weight": 2
+                  }
+                ]
+              }
+            },
+            {
+              "function": "minecraft:set_name",
+              "target": "item_name",
+              "name": {
+                "translate": "item.steveparty.mistigri_dice"
+              }
+            }
+          ]
         }
       ]
     },
