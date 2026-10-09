@@ -28,6 +28,7 @@ import net.minecraft.entity.mob.AbstractPiglinEntity;
 import net.minecraft.entity.mob.PiglinBrain;
 import net.minecraft.entity.mob.PiglinBruteEntity;
 import net.minecraft.entity.mob.PiglinEntity;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.entity.damage.DamageSource;
@@ -107,7 +108,7 @@ import java.util.UUID;
  *     him that, not the fall off). Someone who never emptied it is always thrown, and provokes it.</li>
  *     <li><b>Tamed</b>: its screen (saddle slot, lava gauge) opens like a horse's ({@link #openInventory}): its rider's
  *     inventory key, or a sneaking click while nobody rides it;
- *     saddled, up to three players ride it on the tank's front rim ({@link TrichaudronRiding}).</li>
+ *     saddled, up to three players ride it, in the middle of the tank and on its side rims ({@link TrichaudronRiding}).</li>
  *     <li><b>Its heads</b> ({@link #HEADS}): three necks, each a turret of its own: its own aim (synced:
  *     {@link #getHeadTarget}) and its own vent ({@link #getVent}). Wild, one blasts at a time, the heads taking turns
  *     ({@link TrichaudronGoals.Blast}); ridden, each rider fires his own head.</li>
@@ -135,8 +136,8 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     public static final float WIDTH = 3.2f, HEIGHT = 3.8125f, EYE_HEIGHT = 2.76f;
     public static final int TANK_MAX = 27, SPAWN_TANK_MIN = 14, SPAWN_TANK_MAX = 20;
     public static final double MAX_HEALTH = 80, ARMOR = 10, SPEED = 0.09;
-    /** The tank's front rim, where the riders sit: its height, how far ahead of the middle. */
-    public static final double RIM_HEIGHT = 3.75, RIM_FORWARD = 1.06;
+    /** The height the riders sit at: on the tank's rims (TrichaudronRiding#seat). */
+    public static final double RIM_HEIGHT = 3.75;
 
     /**
      * Its heads, centre first, and where each rests: measured on the v14 export (pose_s): the centre neck 11 segments
@@ -577,7 +578,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     @Override
     protected Vec3d getPassengerAttachmentPos(Entity passenger, EntityDimensions dimensions, float scaleFactor) {
         int index = Math.max(0, getPassengerList().indexOf(passenger));
-        return TrichaudronRiding.seat(index, RIM_HEIGHT - lavaSink(1), RIM_FORWARD).rotateY(-getYaw() * MathHelper.RADIANS_PER_DEGREE);
+        return TrichaudronRiding.seat(index, RIM_HEIGHT - lavaSink(1)).rotateY(-getYaw() * MathHelper.RADIANS_PER_DEGREE);
     }
 
     @Override
@@ -961,15 +962,28 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         super.travel(input);
     }
 
-    /** Floats in lava, its tank out, and moves along {@code input} at {@code speed} (blocks a tick, steady). */
+    /**
+     * Floats in lava, its tank out, and moves along {@code input} at {@code speed} (blocks a tick, steady). Not vanilla's
+     * up-and-down kicks: its vertical speed eases toward what brings it back to its depth (a damped spring, no
+     * overshoot), its depth swaying only by {@link TrichaudronRiding#SWIM_BOB} over {@link TrichaudronRiding#SWIM_BOB_TICKS}:
+     * a heavy, steady float, a few operations a tick.
+     */
     void swim(Vec3d input, float speed) {
         float drag = 0.8f;
         updateVelocity(speed * TrichaudronRiding.SWIM_FACTOR * (1 - drag), input);
-        double depth = getFluidHeight(FluidTags.LAVA);
-        double vy = getVelocity().y + (depth > TrichaudronRiding.SWIM_DEPTH ? 0.04 : -0.03);
-        vy = MathHelper.clamp(vy, -0.25, 0.15) * 0.85;
+        double target = TrichaudronRiding.SWIM_DEPTH
+                + TrichaudronRiding.SWIM_BOB * MathHelper.sin(age * MathHelper.TAU / TrichaudronRiding.SWIM_BOB_TICKS);
+        double error = getFluidHeight(FluidTags.LAVA) - target; // positive: too deep, it rises
+        double wanted = MathHelper.clamp(error * TrichaudronRiding.SWIM_SPRING, -TrichaudronRiding.SWIM_MAX_VY, TrichaudronRiding.SWIM_MAX_VY);
+        double vy = MathHelper.lerp(TrichaudronRiding.SWIM_DAMPING, getVelocity().y, wanted);
         setVelocity(getVelocity().x * drag, vy, getVelocity().z * drag);
         move(MovementType.SELF, getVelocity());
+    }
+
+    /** Swimming, it never kicks up like a mob jumping in lava: its float holds it. */
+    @Override
+    protected void swimUpward(TagKey<Fluid> fluid) {
+        if (!isSwimmingInLava()) super.swimUpward(fluid);
     }
 
     private void rideTravel() {

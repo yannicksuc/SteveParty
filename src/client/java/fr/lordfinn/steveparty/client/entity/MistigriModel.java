@@ -60,8 +60,8 @@ public class MistigriModel extends DefaultedEntityGeoModel<MistigriEntity> {
         GeoBone head = processor.getBone("head");
         if (head != null && !mistigri.isActing() && !mistigri.isLoafing()) {
             EntityModelData data = state.getData(DataTickets.ENTITY_MODEL_DATA);
-            head.setRotX(head.getRotX() + MathHelper.clamp(data.headPitch(), -30, 30) * MathHelper.RADIANS_PER_DEGREE * 0.7f);
-            head.setRotY(head.getRotY() + MathHelper.clamp(data.netHeadYaw(), -55, 55) * MathHelper.RADIANS_PER_DEGREE);
+            GeoBones.addRotX(head, MathHelper.clamp(data.headPitch(), -30, 30) * MathHelper.RADIANS_PER_DEGREE * 0.7f);
+            GeoBones.addRotY(head, MathHelper.clamp(data.netHeadYaw(), -55, 55) * MathHelper.RADIANS_PER_DEGREE);
         }
     }
 }

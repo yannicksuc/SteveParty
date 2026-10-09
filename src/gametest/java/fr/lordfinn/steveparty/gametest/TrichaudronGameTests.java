@@ -488,6 +488,31 @@ public class TrichaudronGameTests implements FabricGameTest {
         });
     }
 
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_float", tickLimit = 220)
+    public void itFloatsSteadyInCalmLava(TestContext context) {
+        // a pool 8 x 8, 5 deep, walled
+        for (int x = -1; x <= 8; x++) for (int z = -1; z <= 8; z++) for (int y = 0; y <= 6; y++) {
+            boolean wall = x < 0 || x > 7 || z < 0 || z > 7 || y == 0;
+            context.setBlockState(new BlockPos(x, y, z), wall ? Blocks.STONE.getDefaultState() : y <= 5 ? Blocks.LAVA.getDefaultState() : Blocks.AIR.getDefaultState());
+        }
+        TrichaudronEntity trichaudron = spawn(context, new BlockPos(4, 1, 4));
+        double[] range = {Double.MAX_VALUE, -Double.MAX_VALUE, 0};
+        context.runAtEveryTick(() -> {
+            if (trichaudron.age < 100) return; // settled first
+            range[0] = Math.min(range[0], trichaudron.getY());
+            range[1] = Math.max(range[1], trichaudron.getY());
+            range[2] = Math.max(range[2], Math.abs(trichaudron.getVelocity().y));
+        });
+        context.runAtTick(200, () -> {
+            context.assertTrue(trichaudron.isSwimmingInLava(), "floating");
+            context.assertTrue(range[1] - range[0] < 0.1, "steady: its height varies by " + (range[1] - range[0]));
+            context.assertTrue(range[2] < 0.03, "no kicks: vertical speed at most " + range[2]);
+            trichaudron.discard();
+            for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) for (int y = 1; y <= 5; y++) context.setBlockState(new BlockPos(x, y, z), Blocks.AIR);
+            context.complete();
+        });
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_swim", tickLimit = 140)
     public void itSwimsInLava(TestContext context) {
         // a pool 8 x 8, 6 deep, walled
