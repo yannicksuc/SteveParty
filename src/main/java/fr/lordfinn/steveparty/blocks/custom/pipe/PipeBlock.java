@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.blocks.custom.pipe;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -229,9 +231,9 @@ public class PipeBlock extends Block implements BlockEntityProvider {
             return ItemActionResult.SUCCESS;
         }
         // A mini-game page: the pipe is linked to it (or unlinked)
-        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.MiniGamePageItem) {
+        if (stack.getItem() instanceof MiniGamePageItem) {
             if (world instanceof ServerWorld serverWorld && player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
-                fr.lordfinn.steveparty.minigame.MiniGamePipes.click(serverPlayer, hand, serverWorld, pos);
+                MiniGamePipes.click(serverPlayer, hand, serverWorld, pos);
             }
             return ItemActionResult.SUCCESS;
         }

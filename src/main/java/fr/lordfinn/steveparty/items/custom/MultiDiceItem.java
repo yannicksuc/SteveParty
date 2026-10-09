@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.powerups.PowerUpService;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
@@ -29,10 +31,10 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         // A power-up of the turn still at work (a player being picked, a warp), or a power-up die after another one
-        if (isServerWorld(world) && fr.lordfinn.steveparty.powerups.PowerUpService.refusesRoll(player, player.getStackInHand(hand)))
+        if (isServerWorld(world) && PowerUpService.refusesRoll(player, player.getStackInHand(hand)))
             return TypedActionResult.fail(player.getStackInHand(hand));
         // A party listing its allowed dice refuses the others
-        if (isServerWorld(world) && fr.lordfinn.steveparty.dice.AllowedDice.refusesThrow(player, player.getStackInHand(hand)))
+        if (isServerWorld(world) && AllowedDice.refusesThrow(player, player.getStackInHand(hand)))
             return TypedActionResult.fail(player.getStackInHand(hand));
         if (isServerWorld(world)) {
             List<DiceEntity> diceEntities = new ArrayList<>();
@@ -53,7 +55,7 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
                     playSounds(world, dice);
                     if (i > 0) dice.follow(thrown.copy());
                 }
-                fr.lordfinn.steveparty.powerups.PowerUpService.onDieThrown(player, thrown);
+                PowerUpService.onDieThrown(player, thrown);
                 decrementDiceInHand(player, hand);
                 diceEntities.getFirst().startRoll();
             }

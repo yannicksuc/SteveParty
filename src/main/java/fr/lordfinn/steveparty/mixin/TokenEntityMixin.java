@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.mixin;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -438,7 +439,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             }
             if (source.getAttacker() instanceof ServerPlayerEntity attacker) {
                 MessageUtils.sendToPlayer(attacker, Text.translatable("message.steveparty.steps_remaining_for", this.steveparty$getNbSteps(), this.getCustomName()), MessageUtils.MessageType.CHAT);
-                BoardSpaceBlockEntity boardSpace = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(this);
+                BoardSpaceBlockEntity boardSpace = BoardSpaces.boardSpaceOf(this);
                 if (boardSpace != null)
                     EVENT.invoker().onTileUpdated((MobEntity) (Object) this, boardSpace);
             }

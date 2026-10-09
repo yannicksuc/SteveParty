@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.goals;
 
+import fr.lordfinn.steveparty.entities.PetSlots;
+import fr.lordfinn.steveparty.entities.custom.MulaEscorts;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -56,11 +58,11 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
     private static final double STUCK = 0.5;
     private int escortRetryTicks;
     /** Its mates: its owner's other Mulas following them, each its own place on a ring above them (PetSlots). */
-    private final fr.lordfinn.steveparty.entities.PetSlots.Group mates;
+    private final PetSlots.Group mates;
 
     public FollowOwnerWhileFlyingGoal(MulaEntity entity, double speed, float minDistance, float maxDistance) {
         this.entity = entity;
-        this.mates = new fr.lordfinn.steveparty.entities.PetSlots.Group(entity);
+        this.mates = new PetSlots.Group(entity);
         this.speed = speed;
         this.minDistance = minDistance;
         this.maxDistance = maxDistance;
@@ -80,7 +82,7 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
             return false;
         }
         if (entity.getWorld() instanceof net.minecraft.server.world.ServerWorld world
-                && !fr.lordfinn.steveparty.entities.custom.MulaEscorts.join(world, player.getUuid(), entity)) {
+                && !MulaEscorts.join(world, player.getUuid(), entity)) {
             escortRetryTicks = ESCORT_RETRY_TICKS;
             return false;
         }
@@ -137,7 +139,7 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
         PlayerEntity owner = this.owner;
         java.util.UUID id = owner.getUuid();
         mates.refresh(24, 20, other -> other instanceof MulaEntity mula && mula.isTamed() && id.equals(mula.getOwnerUuid())
-                && !mula.isSitting() && fr.lordfinn.steveparty.entities.custom.MulaEscorts.isFollower(id, mula));
+                && !mula.isSitting() && MulaEscorts.isFollower(id, mula));
         double[] place = {owner.getX(), owner.getY() + 2.0, owner.getZ()};
         int count = mates.count();
         if (count > 1) {

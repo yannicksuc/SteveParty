@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.board;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock;
@@ -8,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -52,7 +54,7 @@ public final class BoardBlueprint {
      */
     public record Clip(BlockBox box, BlockPos anchor, List<Entry> entries) {
         public int boardSpaces() {
-            return (int) entries.stream().filter(e -> e.data() != null && e.state().getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock).count();
+            return (int) entries.stream().filter(e -> e.data() != null && e.state().getBlock() instanceof ABoardSpaceBlock).count();
         }
     }
 
@@ -155,14 +157,14 @@ public final class BoardBlueprint {
                 else cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(moved, links.world()));
             }
             // Its containers follow too (those that fall outside are dropped), in the world it is pasted in
-            if (!fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.isEmpty(cartridge)) {
+            if (!CartridgeContainers.isEmpty(cartridge)) {
                 var dimension = container.getWorld() == null ? net.minecraft.world.World.OVERWORLD : container.getWorld().getRegistryKey();
                 List<net.minecraft.util.math.GlobalPos> chests = new ArrayList<>();
-                for (net.minecraft.util.math.GlobalPos chest : fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, dimension)) {
+                for (net.minecraft.util.math.GlobalPos chest : CartridgeContainers.of(cartridge, dimension)) {
                     BlockPos target = follow.apply(chest.pos());
                     if (target != null) chests.add(net.minecraft.util.math.GlobalPos.create(dimension, target));
                 }
-                fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, chests);
+                CartridgeContainers.set(cartridge, chests);
             }
             cartridge.remove(ModComponents.TB_START_BOUND_ENTITY);
         }
@@ -201,7 +203,7 @@ public final class BoardBlueprint {
                     moved += changed;
                 }
                 // Its containers that were in the former area follow it
-                List<net.minecraft.util.math.GlobalPos> chests = fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey());
+                List<net.minecraft.util.math.GlobalPos> chests = CartridgeContainers.of(cartridge, world.getRegistryKey());
                 List<net.minecraft.util.math.GlobalPos> followed = new ArrayList<>();
                 int chestsMoved = 0;
                 for (net.minecraft.util.math.GlobalPos chest : chests) {
@@ -210,7 +212,7 @@ public final class BoardBlueprint {
                     if (inside) chestsMoved++;
                 }
                 if (chestsMoved > 0) {
-                    fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, followed);
+                    CartridgeContainers.set(cartridge, followed);
                     LinkHistory.record(player, new LinkHistory.ChestChange(pos.toImmutable(), slot, chests, followed));
                     BoardLinks.sync(container);
                     moved += chestsMoved;

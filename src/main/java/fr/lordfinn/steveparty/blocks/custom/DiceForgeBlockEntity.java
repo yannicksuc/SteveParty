@@ -778,17 +778,17 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
      * They drop no fragments (a blast is not a meal). Bounded to this forge's Mulas; one already bursting is left alone.
      */
     private void burstMulas(Vec3d center) {
-        double r = fr.lordfinn.steveparty.entities.custom.MulaHome.RADIUS + 2;
-        java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> mulas = world.getEntitiesByClass(
-                fr.lordfinn.steveparty.entities.custom.MulaEntity.class,
-                new net.minecraft.util.math.Box(pos).expand(r, fr.lordfinn.steveparty.entities.custom.MulaHome.ABOVE + 2, r),
+        double r = MulaHome.RADIUS + 2;
+        java.util.List<MulaEntity> mulas = world.getEntitiesByClass(
+                MulaEntity.class,
+                new net.minecraft.util.math.Box(pos).expand(r, MulaHome.ABOVE + 2, r),
                 m -> m.isAlive() && !m.isToken() && pos.equals(m.homeForge()) && !m.isBursting());
         if (mulas.isEmpty()) return;
         mulas.sort(java.util.Comparator.comparingDouble(m -> m.squaredDistanceTo(center)));
         int n = mulas.size();
         double start = world.getRandom().nextDouble() * net.minecraft.util.math.MathHelper.TAU;
         for (int i = 0; i < n; i++) {
-            fr.lordfinn.steveparty.entities.custom.MulaEntity m = mulas.get(i);
+            MulaEntity m = mulas.get(i);
             // spread round the compass, a little randomness on each
             double angle = start + net.minecraft.util.math.MathHelper.TAU * i / n + (world.getRandom().nextDouble() - 0.5) * (net.minecraft.util.math.MathHelper.TAU / n) * 0.6;
             int delay = 2 + i * 4 + (int) (Math.sqrt(m.squaredDistanceTo(center)) * 0.8);

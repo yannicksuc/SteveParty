@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDispositio
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ItemStackBackedInventory;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGamesCatalogueScreenHandler;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -67,7 +68,7 @@ public class MiniGamesCatalogueItem extends Item {
         if (inventory == null || server == null) return;
         List<ItemStack> pages = inventory.getItems();
         boolean changed = false;
-        for (ItemStack page : pages) changed |= fr.lordfinn.steveparty.minigame.MiniGamePages.refresh(server, page);
+        for (ItemStack page : pages) changed |= MiniGamePages.refresh(server, page);
         if (changed) catalogue.set(ModComponents.INVENTORY_COMPONENT, new InventoryComponent(pages));
     }
 

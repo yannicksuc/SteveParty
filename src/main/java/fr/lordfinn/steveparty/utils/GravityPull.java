@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.utils;
 
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -82,7 +83,7 @@ public final class GravityPull {
             return false;
         }
         // Mulas float on their own (they dance round the forge instead)
-        if (entity instanceof fr.lordfinn.steveparty.entities.custom.MulaEntity) return false;
+        if (entity instanceof MulaEntity) return false;
         // Board tokens are moved by the board only
         if (entity instanceof TokenizedEntityInterface token && token.steveparty$isTokenized()) return false;
         if (entity instanceof PlayerEntity player) return client && player.isMainPlayer();

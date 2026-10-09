@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.screen_handlers;
 
+import fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleScreenHandler;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
 
 import fr.lordfinn.steveparty.Steveparty;
@@ -33,9 +34,9 @@ public class ModScreensHandlers {
             );
 
     /** A tamed Fumarole's saddle slot (opening data: its entity id). */
-    public static final ExtendedScreenHandlerType<fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleScreenHandler, Integer> FUMAROLE_SCREEN_HANDLER =
+    public static final ExtendedScreenHandlerType<FumaroleScreenHandler, Integer> FUMAROLE_SCREEN_HANDLER =
             Registry.register(Registries.SCREEN_HANDLER, Steveparty.id("fumarole"),
-                    new ExtendedScreenHandlerType<>(fr.lordfinn.steveparty.entities.custom.fumarole.FumaroleScreenHandler::new, PacketCodecs.VAR_INT));
+                    new ExtendedScreenHandlerType<>(FumaroleScreenHandler::new, PacketCodecs.VAR_INT));
 
     public static final ScreenHandlerType<RouterScreenHandler> ROUTER_SCREEN_HANDLER =
             register("router_screen_handler", RouterScreenHandler::new, FeatureSet.empty());

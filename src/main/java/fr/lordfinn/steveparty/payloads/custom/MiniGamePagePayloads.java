@@ -1,8 +1,10 @@
 package fr.lordfinn.steveparty.payloads.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImages;
+import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.payloads.Payloads;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -141,11 +143,11 @@ public final class MiniGamePagePayloads {
     }
 
     /** The results of the mini-game that just ended: the places, and what the party paid. */
-    public record Results(fr.lordfinn.steveparty.minigame.MiniGameResults results) implements CustomPayload {
+    public record Results(MiniGameResults results) implements CustomPayload {
         public static final Id<Results> ID = id("results");
         public static final PacketCodec<net.minecraft.network.RegistryByteBuf, Results> CODEC = PacketCodec.of(
-                (payload, buf) -> fr.lordfinn.steveparty.minigame.MiniGameResults.PACKET_CODEC.encode(buf, payload.results),
-                buf -> new Results(fr.lordfinn.steveparty.minigame.MiniGameResults.PACKET_CODEC.decode(buf)));
+                (payload, buf) -> MiniGameResults.PACKET_CODEC.encode(buf, payload.results),
+                buf -> new Results(MiniGameResults.PACKET_CODEC.decode(buf)));
 
         @Override
         public Id<? extends CustomPayload> getId() {
@@ -312,7 +314,7 @@ public final class MiniGamePagePayloads {
     }
 
     /** The texts and settings written in the editor, for the page {@code page} held in {@code hand}. */
-    public record Edit(Hand hand, UUID page, String title, String description, java.util.List<fr.lordfinn.steveparty.minigame.MiniGameFormat> formats)
+    public record Edit(Hand hand, UUID page, String title, String description, java.util.List<MiniGameFormat> formats)
             implements CustomPayload {
         public static final Id<Edit> ID = id("edit");
         public static final PacketCodec<PacketByteBuf, Edit> CODEC = PacketCodec.of((payload, buf) -> {
@@ -320,9 +322,9 @@ public final class MiniGamePagePayloads {
             buf.writeUuid(payload.page);
             buf.writeString(payload.title, MiniGamePageData.MAX_TITLE_LENGTH);
             buf.writeString(payload.description, MiniGamePageData.MAX_DESCRIPTION_STORED);
-            fr.lordfinn.steveparty.minigame.MiniGameFormat.writeList(buf, payload.formats);
+            MiniGameFormat.writeList(buf, payload.formats);
         }, buf -> new Edit(buf.readEnumConstant(Hand.class), buf.readUuid(), buf.readString(MiniGamePageData.MAX_TITLE_LENGTH),
-                buf.readString(MiniGamePageData.MAX_DESCRIPTION_STORED), fr.lordfinn.steveparty.minigame.MiniGameFormat.readList(buf)));
+                buf.readString(MiniGamePageData.MAX_DESCRIPTION_STORED), MiniGameFormat.readList(buf)));
 
         @Override
         public Id<? extends CustomPayload> getId() {

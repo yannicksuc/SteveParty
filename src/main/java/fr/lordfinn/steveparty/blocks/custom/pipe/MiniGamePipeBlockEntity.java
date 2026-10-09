@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.pipe;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
 import net.minecraft.block.BlockState;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
@@ -15,7 +16,7 @@ import net.minecraft.util.math.BlockPos;
 /**
  * The mini-game pipe's block entity: its slot holds the mini-game page it is programmed with (only pages go
  * in). The page is sent to the clients, which show it in the pipe's notch. The server's index of the programmed pipes
- * ({@link fr.lordfinn.steveparty.minigame.MiniGamePipeIndex}) is told when its page changes and when it is loaded.
+ * ({@link MiniGamePipeIndex}) is told when its page changes and when it is loaded.
  */
 public class MiniGamePipeBlockEntity extends PipeBlockEntity {
     public MiniGamePipeBlockEntity(BlockPos pos, BlockState state) {
@@ -49,7 +50,7 @@ public class MiniGamePipeBlockEntity extends PipeBlockEntity {
     /** Tells the server's index which page it is programmed with. */
     private void index() {
         if (!(world instanceof net.minecraft.server.world.ServerWorld server) || !server.getServer().isOnThread()) return;
-        fr.lordfinn.steveparty.minigame.MiniGamePipeIndex.set(server.getServer(), net.minecraft.util.math.GlobalPos.create(server.getRegistryKey(), pos),
+        MiniGamePipeIndex.set(server.getServer(), net.minecraft.util.math.GlobalPos.create(server.getRegistryKey(), pos),
                 MiniGamePages.idOf(getPage()), MiniGamePipeBlock.reachOf(getCachedState()));
     }
 

@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -54,8 +56,8 @@ public final class MulaEphemeride {
         final java.util.Set<java.util.UUID> sited = new java.util.HashSet<>();
     }
 
-    private static final Map<RegistryKey<World>, Long> ROLLED = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
-    private static final Map<RegistryKey<World>, Event> EVENTS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<RegistryKey<World>, Long> ROLLED = ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<RegistryKey<World>, Event> EVENTS = ServerMemory.forgetOnStop(new HashMap<>());
 
     public static void initialize() {
         ServerTickEvents.END_WORLD_TICK.register(MulaEphemeride::tick);
@@ -94,7 +96,7 @@ public final class MulaEphemeride {
         e.day = world.getTimeOfDay() / 24000L;
         e.nextWave = world.getTime() + 60;
         EVENTS.put(world.getRegistryKey(), e);
-        fr.lordfinn.steveparty.Steveparty.LOGGER.info("An ephemeride begins over {}", world.getRegistryKey().getValue());
+        Steveparty.LOGGER.info("An ephemeride begins over {}", world.getRegistryKey().getValue());
     }
 
     private static void tick(ServerWorld world) {

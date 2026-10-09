@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
@@ -188,7 +189,7 @@ public class StencilGunScreenHandler extends ScreenHandler {
          * slot), the screen draws this one itself, blended.
          */
         public Identifier silhouette() {
-            return fr.lordfinn.steveparty.Steveparty.id(stencils ? "item/empty_slot_stencil" : "item/empty_slot_dye");
+            return Steveparty.id(stencils ? "item/empty_slot_stencil" : "item/empty_slot_dye");
         }
     }
 

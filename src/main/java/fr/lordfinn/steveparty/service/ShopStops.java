@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
@@ -10,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
+import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
@@ -149,7 +151,7 @@ public final class ShopStops {
         BoxedTraderEntity best = null;
         double bestDistance = (double) SHOP_RADIUS * SHOP_RADIUS;
         for (BoxedTraderEntity trader : world.getEntitiesByClass(BoxedTraderEntity.class, new Box(space).expand(SHOP_RADIUS + 16),
-                trader -> trader.isAlive() && !fr.lordfinn.steveparty.entities.TokenBase.isToken(trader))) {
+                trader -> trader.isAlive() && !TokenBase.isToken(trader))) {
             List<BlockPos> stalls = stallsOf(world, links, trader);
             if (stalls.isEmpty()) continue; // a merchant sells what his stalls offer
             double distance = trader.squaredDistanceTo(at);
@@ -236,7 +238,7 @@ public final class ShopStops {
         stop.handler = handler;
         // A shop check point holds the token: its Router tells a comparator (a shop tile did when the token landed)
         if (!ABoardSpaceBlock.countsAsStep(space.getCachedState().getBlock()))
-            fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, space);
+            BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, space);
         // The merchant glows for everyone while the stop lasts
         trader.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * seconds + 40, 0, false, false));
         sparkle(world, stop, trader);

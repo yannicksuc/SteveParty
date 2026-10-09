@@ -3,8 +3,13 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
+import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.minigame.MiniGameArena;
+import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
+import fr.lordfinn.steveparty.minigame.PageZone;
+import fr.lordfinn.steveparty.minigame.zone.ZoneForbidden;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
@@ -156,8 +161,8 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         if (party.isPresent() && party.get().getPartyData().getCurrentStep() instanceof MiniGamePartyStep step) {
             state = step.isPractice() ? State.PARTY_PRACTICE : State.PARTY_PLAYING;
             players = step.getParticipants().size();
-            fr.lordfinn.steveparty.minigame.MiniGamePageData data = fr.lordfinn.steveparty.minigame.MiniGamePages.get(server, page);
-            mode = data.formatFor(MiniGamePartyStep.counts(fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem
+            MiniGamePageData data = MiniGamePages.get(server, page);
+            mode = data.formatFor(MiniGamePartyStep.counts(MiniGamesCatalogueItem
                     .getCurrentMiniGameTeamDisposition(party.get().catalogue)));
             if (step.isPractice()) {
                 List<MiniGamePagePayloads.Practice.Voter> votes = step.voters(party.get());
@@ -182,7 +187,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
                 case ZONE_FORBIDDEN -> State.ZONE_FORBIDDEN;
             };
             if (state == State.ZONE_FORBIDDEN) {
-                fr.lordfinn.steveparty.minigame.zone.ZoneForbidden.FoundBlock found = fr.lordfinn.steveparty.minigame.MiniGameArena.forbiddenBlock(server, page);
+                ZoneForbidden.FoundBlock found = MiniGameArena.forbiddenBlock(server, page);
                 if (found != null) {
                     setWide(P_FORBIDDEN_BLOCK, net.minecraft.registry.Registries.BLOCK.getRawId(found.block()));
                     setWide(P_FORBIDDEN_X, found.pos().getX());
@@ -206,7 +211,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         properties.set(P_READY, ready);
         properties.set(P_VOTERS, voters);
         properties.set(P_FLAGS, flags);
-        net.minecraft.util.math.BlockBox box = controller.getZone().map(fr.lordfinn.steveparty.minigame.PageZone::box).orElse(null);
+        net.minecraft.util.math.BlockBox box = controller.getZone().map(PageZone::box).orElse(null);
         properties.set(P_ZONE_X, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountX()));
         properties.set(P_ZONE_Y, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountY()));
         properties.set(P_ZONE_Z, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountZ()));

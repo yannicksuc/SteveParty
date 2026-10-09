@@ -5,6 +5,9 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -62,9 +65,9 @@ public class TokenMovementService {
         BoardSpaceBlockEntity rolledFrom = BoardSpaces.boardSpaceOf(chosenToken);
         TurnMoves.record(chosenToken, rollValue, numberFaces(dice), rolledFrom == null ? null : rolledFrom.getPos());
         AdvanceBackMoves.cancel(chosenToken); // a new move: nothing left of an extra move
-        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport.cancelPush(chosenToken);
+        TileTeleport.cancelPush(chosenToken);
         // The modules of the die that change the move itself (Skeleton Key, Homing)
-        DiceRollEffects.setMoveModules(chosenToken, fr.lordfinn.steveparty.dice.DiceModules.of(dice.lead().getDieStack()));
+        DiceRollEffects.setMoveModules(chosenToken, DiceModules.of(dice.lead().getDieStack()));
         DiceOutcome outcome = dice.getOutcome();
         if (outcome.steps() != rollValue) outcome = DiceOutcome.ofSteps(rollValue); // a roll announced by hand (tests, add-ons)
         if (outcome.steps() > 0 && !outcome.isSpecial()) {
@@ -80,7 +83,7 @@ public class TokenMovementService {
     /** The numbers shown by the dice of the throw (the faces that walk steps), one per die. */
     private static List<Integer> numberFaces(DiceEntity dice) {
         List<Integer> faces = new ArrayList<>();
-        for (fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace face : dice.getRolledFaces()) {
+        for (DiceFacesComponent.DiceFace face : dice.getRolledFaces()) {
             if (face.steps() > 0) faces.add(face.steps());
         }
         return faces;

@@ -3,6 +3,9 @@ package fr.lordfinn.steveparty.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.service.TurnMoves;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.mob.MobEntity;
@@ -42,9 +45,9 @@ public class MoveTokenCommand {
                                             }
 
                                             // A roll of one die showing rollNumber (what the board spaces of the move read)
-                                            fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity from =
-                                                    fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(mob);
-                                            fr.lordfinn.steveparty.service.TurnMoves.record(mob, rollNumber, List.of(rollNumber),
+                                            BoardSpaceBlockEntity from =
+                                                    BoardSpaces.boardSpaceOf(mob);
+                                            TurnMoves.record(mob, rollNumber, List.of(rollNumber),
                                                     from == null ? null : from.getPos());
                                             TokenMovementService.moveEntityOnBoard(mob, rollNumber);
                                             source.sendFeedback(() -> Text.translatable("command.steveparty.move_token.moved", tokenName, rollNumber), false);

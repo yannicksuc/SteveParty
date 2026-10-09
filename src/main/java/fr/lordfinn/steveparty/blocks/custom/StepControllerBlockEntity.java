@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.NbtCompound;
@@ -125,7 +127,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     /** The pages this controller is linked to (server: as the pages say now; client: as last told). */
     public java.util.List<java.util.UUID> getLinkedPages() {
         if (this.world instanceof ServerWorld serverWorld) {
-            return fr.lordfinn.steveparty.minigame.MiniGamePages.pageIdsAt(serverWorld, this.pos);
+            return MiniGamePages.pageIdsAt(serverWorld, this.pos);
         }
         return linkedPages;
     }
@@ -157,7 +159,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         if (this.world != null && this.world instanceof ServerWorld) {
             java.util.List<java.util.UUID> pages = getLinkedPages();
             if (!pages.isEmpty()) {
-                fr.lordfinn.steveparty.minigame.MiniGameSession session = fr.lordfinn.steveparty.minigame.MiniGameSession.playing(pages);
+                MiniGameSession session = MiniGameSession.playing(pages);
                 world.playSound(null, this.pos, session != null ? SoundEvents.BLOCK_TRIAL_SPAWNER_OPEN_SHUTTER : SoundEvents.EVENT_MOB_EFFECT_TRIAL_OMEN,
                         SoundCategory.BLOCKS, 1.0F, 1.0F);
                 if (session != null) session.step(this.mode);
