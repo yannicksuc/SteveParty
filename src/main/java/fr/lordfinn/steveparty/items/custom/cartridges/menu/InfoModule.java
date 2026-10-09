@@ -48,6 +48,11 @@ public final class InfoModule extends CartridgeModule {
         this(id, labelKey, lines, content, null);
     }
 
+    /** A soft hint: the text {@code key} on {@code lines} lines, without label. */
+    public static InfoModule hint(String id, String key, int lines) {
+        return new InfoModule(id, null, lines, context -> List.of(new Line(Text.translatable(key), Tone.SOFT)));
+    }
+
     public int lines() {
         return lines;
     }

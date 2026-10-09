@@ -12,6 +12,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -51,15 +52,16 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     private static final String K = MENU_KEY + "trap.";
+    private static final Setting EFFECT_SETTING = new Setting(EFFECT, 0, 0, Effect.values().length - 1);
+    private static final Setting REPLACE_SETTING = new Setting(REPLACE, 0, 0, 1);
     private static final List<CartridgeModule> MODULES = List.of(
             description("trap_cartridge", 2),
-            new ChoiceModule("effect", K + "effect", java.util.Arrays.stream(Effect.values())
-                    .map(effect -> new ChoiceModule.Option(K + "effect." + effect.id(), -1, K + "effect." + effect.id() + ".tooltip")).toList(),
-                    stack -> effect(stack).ordinal(), (edit, value) -> putSetting(edit.stack(), EFFECT, value)),
+            EFFECT_SETTING.choice("effect", K + "effect", Arrays.stream(Effect.values())
+                    .map(effect -> ChoiceModule.Option.tipped(K + "effect." + effect.id())).toList()),
             new NumberModule("amount", K + "amount", 1, MAX_AMOUNT, TrapCartridgeItem::amount,
                     (edit, value) -> putSetting(edit.stack(), AMOUNT + "_" + effect(edit.stack()).id(), value), stack -> COLOR,
                     stack -> effect(stack).hasAmount()),
-            yesNo("replace", K + "replace", REPLACE, false));
+            REPLACE_SETTING.yesNo("replace", K + "replace"));
 
     public TrapCartridgeItem(Settings settings) {
         super(settings);
@@ -81,7 +83,7 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     public static Effect effect(ItemStack stack) {
-        return Effect.values()[setting(stack, EFFECT, 0, 0, Effect.values().length - 1)];
+        return Effect.values()[EFFECT_SETTING.get(stack)];
     }
 
     /** Coins stolen or spaces back, for the current effect (1 for the others). */
@@ -92,7 +94,7 @@ public class TrapCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     public static boolean replaces(ItemStack stack) {
-        return setting(stack, REPLACE, 0, 0, 1) == 1;
+        return REPLACE_SETTING.get(stack) == 1;
     }
 
     /** A cartridge with this effect (tests, commands). */

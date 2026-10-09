@@ -37,33 +37,22 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
     private static final String K = MENU_KEY + "pot.";
     /** The numbers of the menu, edited one at a time (picked in a row of buttons): stake, start, cap, thief. */
     private static final String[] NUMBERS = {STAKE, START, CAP, THIEF};
-        /** The settings key of the number being edited in the menu. */
-    private static final String EDITED = "edited";
+    private static final Setting STAKE_SETTING = new Setting(STAKE, 1, 0, MAX), START_SETTING = new Setting(START, 0, 0, MAX),
+            CAP_SETTING = new Setting(CAP, 0, 0, MAX), THIEF_SETTING = new Setting(THIEF, 0, 0, MAX),
+            LANDER_PAYS_SETTING = new Setting(LANDER_PAYS, 0, 0, 1);
+    /** The numbers of the menu, in the order of its buttons. */
+    private static final List<Setting> NUMBER_SETTINGS = List.of(STAKE_SETTING, START_SETTING, CAP_SETTING, THIEF_SETTING);
+    /** The number being edited in the menu. */
+    private static final Setting EDITED = new Setting("edited", 0, 0, NUMBERS.length - 1);
     private static final List<CartridgeModule> MODULES = List.of(
             description("pot_cartridge", 2),
-            new ChoiceModule("number", K + "number", List.of(new ChoiceModule.Option(K + "stake", -1, K + "stake.tooltip"),
-                    new ChoiceModule.Option(K + "start", -1, K + "start.tooltip"), new ChoiceModule.Option(K + "cap", -1, K + "cap.tooltip"),
-                    new ChoiceModule.Option(K + "thief", -1, K + "thief.tooltip")),
-                    PotCartridgeItem::edited, (edit, value) -> putSetting(edit.stack(), EDITED, value)),
-            new NumberModule("amount", K + "amount", 0, MAX, stack -> number(stack, edited(stack)),
-                    (edit, value) -> {
-                        int i = edited(edit.stack());
-                        putSetting(edit.stack(), NUMBERS[i], Math.clamp(value, 0, MAX));
-                    }, stack -> COLOR),
-            yesNo("lander_pays", K + "lander_pays", LANDER_PAYS, false));
-
-    private static int edited(ItemStack stack) {
-        return setting(stack, EDITED, 0, 0, NUMBERS.length - 1);
-    }
-
-    private static int number(ItemStack stack, int i) {
-        return switch (i) {
-            case 0 -> stake(stack);
-            case 1 -> start(stack);
-            case 2 -> cap(stack);
-            default -> thief(stack);
-        };
-    }
+            EDITED.choice("number", K + "number", List.of(ChoiceModule.Option.tipped(K + "stake"),
+                    ChoiceModule.Option.tipped(K + "start"), ChoiceModule.Option.tipped(K + "cap"),
+                    ChoiceModule.Option.tipped(K + "thief"))),
+            new NumberModule("amount", K + "amount", 0, MAX, stack -> NUMBER_SETTINGS.get(EDITED.get(stack)).get(stack),
+                    (edit, value) -> NUMBER_SETTINGS.get(EDITED.get(edit.stack())).put(edit.stack(), Math.clamp(value, 0, MAX)),
+                    stack -> COLOR),
+            LANDER_PAYS_SETTING.yesNo("lander_pays", K + "lander_pays"));
 
     public PotCartridgeItem(Settings settings) {
         super(settings);
@@ -85,25 +74,25 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
     }
 
     public static int stake(ItemStack stack) {
-        return setting(stack, STAKE, 1, 0, MAX);
+        return STAKE_SETTING.get(stack);
     }
 
     public static boolean landerPays(ItemStack stack) {
-        return setting(stack, LANDER_PAYS, 0, 0, 1) == 1;
+        return LANDER_PAYS_SETTING.get(stack) == 1;
     }
 
     public static int start(ItemStack stack) {
-        return setting(stack, START, 0, 0, MAX);
+        return START_SETTING.get(stack);
     }
 
     /** The most coins the pot holds, 0: no cap. */
     public static int cap(ItemStack stack) {
-        return setting(stack, CAP, 0, 0, MAX);
+        return CAP_SETTING.get(stack);
     }
 
     /** The thieving Pie's chance to steal an item from a passing token's player, in percent (0: never). */
     public static int thief(ItemStack stack) {
-        return setting(stack, THIEF, 0, 0, MAX);
+        return THIEF_SETTING.get(stack);
     }
 
     /** The coins in the pot now (its start until a token passed). */

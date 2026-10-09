@@ -44,8 +44,7 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
                     (edit, value) -> edit.stack().set(ModComponents.ADVANCE_BACK_STEPS,
                             (steps(edit.stack()) < 0 ? -1 : 1) * value),
                     stack -> color(steps(stack))),
-            new InfoModule("hint", null, 1, context -> List.of(
-                    new InfoModule.Line(Text.translatable(K + "hint"), InfoModule.Tone.SOFT))));
+            InfoModule.hint("hint", K + "hint", 1));
 
     public AdvanceBackCartridgeItem(Settings settings) {
         super(settings);
