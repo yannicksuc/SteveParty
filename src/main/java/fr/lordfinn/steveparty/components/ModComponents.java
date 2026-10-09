@@ -115,6 +115,18 @@ public class ModComponents {
      */
     public static final ComponentType<java.util.Map<String, Integer>> MISTIGRI_SETTINGS =
             registerComponent("mistigri-settings", Codec.unboundedMap(Codec.STRING, Codec.INT));
+    /**
+     * The settings of the Threshold obstacle, Common pot, Key gate and Trap cartridges, by name (a missing one is its
+     * default; see each cartridge).
+     */
+    public static final ComponentType<java.util.Map<String, Integer>> BOARD_CARTRIDGE_SETTINGS =
+            registerComponent("board-cartridge-settings", Codec.unboundedMap(Codec.STRING, Codec.INT));
+    /**
+     * What a Common pot or a Key gate cartridge remembers in its board space (the coins in the pot, until when the gate
+     * stays open...): saved with the tile that holds it.
+     */
+    public static final ComponentType<java.util.Map<String, Integer>> BOARD_CARTRIDGE_STATE =
+            registerComponent("board-cartridge-state", Codec.unboundedMap(Codec.STRING, Codec.INT));
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =

@@ -522,6 +522,41 @@ public final class TileStampTextures {
                 key -> register(glyphValues(small ? SMALL_FROUSSEUX : FROUSSEUX, small, FROUSSEUX_SHADES), rgb, small));
     }
 
+    /** The Threshold obstacle: a striped hurdle, two posts and two bars. */
+    private static final String[] THRESHOLD = {
+            "..............",
+            "..##......##..",
+            "..##......##..",
+            "oo--oo--oo--oo",
+            "oo--oo--oo--oo",
+            "..##......##..",
+            "..##......##..",
+            "oo--oo--oo--oo",
+            "oo--oo--oo--oo",
+            "..##......##..",
+            "..##......##..",
+            "..##......##..",
+            ".####....####.",
+            ".............."};
+    private static final String[] SMALL_THRESHOLD = {
+            "..........",
+            ".##....##.",
+            "oo--oo--oo",
+            "oo--oo--oo",
+            ".##....##.",
+            "oo--oo--oo",
+            "oo--oo--oo",
+            ".##....##.",
+            "####..####",
+            ".........."};
+    private static final Map<Character, Float> THRESHOLD_SHADES = Map.of('#', FEATURE, 'o', -0.7f, '-', 0.45f);
+
+    /** The Threshold obstacle's face: a striped hurdle on the blank tile face, in the ramp of {@code rgb} (steel blue). */
+    public static Identifier thresholdFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("threshold", rgb, small),
+                key -> register(glyphValues(small ? SMALL_THRESHOLD : THRESHOLD, small, THRESHOLD_SHADES), rgb, small));
+    }
+
     /** The Mistigri: a cat's head, pointed ears (one notched), one slit eye open, the other shut, a nose, whiskers. */
     private static final String[] MISTIGRI = {
             "..o.......o.o.",

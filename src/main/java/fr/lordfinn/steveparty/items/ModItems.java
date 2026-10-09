@@ -96,6 +96,10 @@ public class ModItems {
     public static final Item MISTIGRI_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.class, "mistigri_cartridge",
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem.COLOR));
+    /** Its tile's face is steel blue until dyed; a token reaching it goes on only if its roll meets the condition. */
+    public static final Item THRESHOLD_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.class, "threshold_cartridge",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.COLOR));
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item MINI_GAME_REMOTE = registerUnstackable(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.class, "mini_game_remote");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
@@ -309,6 +313,7 @@ public class ModItems {
             itemGroup.add(GLANDOUILLE_CARTRIDGE);
             itemGroup.add(FROUSSEUX_CARTRIDGE);
             itemGroup.add(MISTIGRI_CARTRIDGE);
+            itemGroup.add(THRESHOLD_CARTRIDGE);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);

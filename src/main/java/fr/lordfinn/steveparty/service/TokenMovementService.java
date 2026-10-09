@@ -58,6 +58,9 @@ public class TokenMovementService {
         if (chosenToken == null) return ActionResult.PASS;
 
         PartyControllerEntity.onTokenDiceRolled(world, chosenToken, rollValue);
+        // The roll the board spaces of this move read (Threshold obstacle, Key gate)
+        BoardSpaceBlockEntity rolledFrom = BoardSpaces.boardSpaceOf(chosenToken);
+        TurnMoves.record(chosenToken, rollValue, numberFaces(dice), rolledFrom == null ? null : rolledFrom.getPos());
         AdvanceBackMoves.cancel(chosenToken); // a new move: nothing left of an extra move
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport.cancelPush(chosenToken);
         // The modules of the die that change the move itself (Skeleton Key, Homing)
@@ -72,6 +75,15 @@ public class TokenMovementService {
             DiceRollEffects.resolve(world, chosenToken, ownerUUID, outcome);
         }
         return ActionResult.SUCCESS;
+    }
+
+    /** The numbers shown by the dice of the throw (the faces that walk steps), one per die. */
+    private static List<Integer> numberFaces(DiceEntity dice) {
+        List<Integer> faces = new ArrayList<>();
+        for (fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace face : dice.getRolledFaces()) {
+            if (face.steps() > 0) faces.add(face.steps());
+        }
+        return faces;
     }
 
     private MobEntity getTargetedToken(ServerWorld world, DiceEntity dice, UUID ownerUUID) {
@@ -161,6 +173,13 @@ public class TokenMovementService {
                 && ABoardSpaceBlock.countsAsStep(boardSpace.getCachedState().getBlock())) {
             token.steveparty$setNbSteps(token.steveparty$getNbSteps() - 1);
         }
+        // The space's role may end the move here (a Threshold obstacle the roll does not get over)
+        ABoardSpaceBehavior reached = boardSpace.getBoardSpaceBehavior();
+        if (reached != null && mob.getWorld() instanceof ServerWorld reachedWorld
+                && reached.onTokenReached(reachedWorld, boardSpace, mob, token.steveparty$getNbSteps())
+                && token.steveparty$getNbSteps() > 0) {
+            halt(mob, boardSpace.getPos());
+        }
         endMoveIfForcedStop(mob, boardSpace);
         AdvanceBackMoves.onArrived(mob, boardSpace.getPos());
         if (token.steveparty$getNbSteps() == 0 && mob.getWorld() instanceof ServerWorld serverWorld)
@@ -175,6 +194,24 @@ public class TokenMovementService {
     public static boolean isForcedStop(net.minecraft.world.World world, BoardSpaceBlockEntity boardSpace) {
         ABoardSpaceBehavior behavior = boardSpace.getBoardSpaceBehavior();
         return behavior != null && behavior.needToStop(world, boardSpace.getPos());
+    }
+
+    /**
+     * Same for this token: also true where its move was ended early ({@link #halt}: a Threshold obstacle, waiting at a
+     * Key gate), a check point included.
+     */
+    public static boolean isForcedStop(net.minecraft.world.World world, BoardSpaceBlockEntity boardSpace, @Nullable MobEntity token) {
+        return isForcedStop(world, boardSpace) || token != null && TurnMoves.isHaltedOn(token, boardSpace.getPos());
+    }
+
+    /**
+     * Ends the move of {@code mob} on the board space it just reached at {@code space}: the steps left are lost and it
+     * lands there (a check point too).
+     */
+    public static void halt(MobEntity mob, BlockPos space) {
+        ((TokenizedEntityInterface) mob).steveparty$setNbSteps(0);
+        SCHEDULER.cancel(mob.getUuid()); // nothing of the roll may move it on
+        TurnMoves.halt(mob, space);
     }
 
     /**
@@ -194,6 +231,7 @@ public class TokenMovementService {
 
     public static void moveEntityOnBoard(MobEntity mob, int rollNumber) {
         ((TokenizedEntityInterface) mob).steveparty$setNbSteps(rollNumber);
+        if (rollNumber != 0) TurnMoves.release(mob); // it moves on: no halt holds it
         if (rollNumber == 0) {
             MessageUtils.sendToNearby((ServerWorld) mob.getWorld(), mob.getPos(), 100,
                     Text.translatable("message.steveparty.arrived_at_destination", mob.getCustomName() != null ? mob.getCustomName() : mob.getName()),
@@ -244,7 +282,7 @@ public class TokenMovementService {
     }
 
     /** Ends the movement on the given board space: the token "arrives" there on the next tick. */
-    static void stopOnCurrentBoardSpace(MobEntity mob, BlockPos boardSpacePos) {
+    public static void stopOnCurrentBoardSpace(MobEntity mob, BlockPos boardSpacePos) {
         moveEntityOnBoard(mob, 0);
         ((TokenizedEntityInterface) mob).steveparty$setTargetPosition(calculateTargetPosition(mob, boardSpacePos), MOVE_SPEED);
     }
@@ -275,7 +313,6 @@ public class TokenMovementService {
         if (tileDestination == null || tileOrigin == null) return;
         BoardSpaceBlockEntity tileEntity = ABoardSpaceBlock.getBoardSpaceEntity(world, tileOrigin);
         if (tileEntity == null) return;
-        tileEntity.hideDestinations();
         List<MobEntity> tokens = tileEntity.getTokensOnMe();
         MobEntity mob = null;
         for (MobEntity token : tokens) {
@@ -287,7 +324,11 @@ public class TokenMovementService {
                 if (mob == null) mob = token; // fallback: first waiting token
             }
         }
-        if (mob == null) return;
+        if (mob == null) {
+            tileEntity.hideDestinations();
+            return;
+        }
+        tileEntity.hideDestinations();
         moveEntity(mob, tileDestination.position());
     }
 

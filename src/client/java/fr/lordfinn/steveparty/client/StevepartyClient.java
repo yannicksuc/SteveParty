@@ -282,6 +282,8 @@ public class StevepartyClient implements ClientModInitializer {
 
         BlockEntityRendererFactories.register(ModBlockEntities.ADVANCED_TILE_ENTITY, TileBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
+        // A check point has no face: only what a board rule cartridge shows over it (a Threshold obstacle's condition...)
+        BlockEntityRendererFactories.register(ModBlockEntities.CHECK_POINT_ENTITY, context -> fr.lordfinn.steveparty.client.blockentity.BoardRuleOverlays::renderCheckPoint);
         fr.lordfinn.steveparty.client.gui.TileStampTooltipComponent.register();
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);

@@ -228,7 +228,8 @@ public final class TileFeedback {
         int steps = token instanceof fr.lordfinn.steveparty.entities.TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
         ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
         boolean stops = steps == 0 && (ABoardSpaceBlock.countsAsStep(tile.getCachedState().getBlock())
-                || behavior != null && behavior.needToStop(world, tile.getPos()));
+                || behavior != null && behavior.needToStop(world, tile.getPos())
+                || fr.lordfinn.steveparty.service.TurnMoves.isHaltedOn(token, tile.getPos()));
         if (stops) BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, tile);
         else BoardSpaceRedstoneRouterBlockEntity.onTokenPassed(world, tile.getPos());
     }

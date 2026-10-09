@@ -49,6 +49,7 @@
       "fr.lordfinn.steveparty.gametest.FrousseuxSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.MistigriSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.MistigriGameTests",
+      "fr.lordfinn.steveparty.gametest.ThresholdGameTests",
       "fr.lordfinn.steveparty.gametest.BoardActorsGameTests",
       "fr.lordfinn.steveparty.gametest.DiceModulesGameTests",
       "fr.lordfinn.steveparty.gametest.DiceRecipeGameTests",

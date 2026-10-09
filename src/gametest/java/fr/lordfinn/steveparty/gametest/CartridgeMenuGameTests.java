@@ -68,7 +68,8 @@ public class CartridgeMenuGameTests implements FabricGameTest {
     private static final List<Item> CARTRIDGES = List.of(ModItems.BOARD_SPACE_BEHAVIOR, ModItems.TILE_BEHAVIOR_START,
             ModItems.BOARD_SPACE_BEHAVIOR_STOP, ModItems.INVENTORY_CARTRIDGE, ModItems.SHOP_CARTRIDGE,
             ModItems.ADVANCE_BACK_CARTRIDGE, ModItems.REPLAY_CARTRIDGE, ModItems.TELEPORT_CARTRIDGE, ModItems.STAR_CARTRIDGE,
-            ModItems.GLANDOUILLE_CARTRIDGE, ModItems.FROUSSEUX_CARTRIDGE, ModItems.MISTIGRI_CARTRIDGE);
+            ModItems.GLANDOUILLE_CARTRIDGE, ModItems.FROUSSEUX_CARTRIDGE, ModItems.MISTIGRI_CARTRIDGE,
+            ModItems.THRESHOLD_CARTRIDGE);
 
     private static BoardSpaceBlockEntity tile(TestContext context, net.minecraft.block.Block block, ItemStack cartridge) {
         context.setBlockState(TILE.down(), Blocks.STONE);

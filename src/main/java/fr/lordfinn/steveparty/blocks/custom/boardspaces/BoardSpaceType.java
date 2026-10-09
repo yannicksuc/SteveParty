@@ -22,7 +22,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Frousseux »: a Frousseux steals coins or stars from another player (see FrousseuxTileBehavior). */
     TILE_FROUSSEUX("tile_frousseux"),
     /** « Mistigri »: the black cat of bad luck rolls his loaded die and passes a sentence (see MistigriTileBehavior). */
-    TILE_MISTIGRI("tile_mistigri");
+    TILE_MISTIGRI("tile_mistigri"),
+    /** « Obstacle à seuil »: a token reaching it goes on only if its roll meets a condition (see ThresholdTileBehavior). */
+    TILE_THRESHOLD("tile_threshold");
 
     private final String name;
 

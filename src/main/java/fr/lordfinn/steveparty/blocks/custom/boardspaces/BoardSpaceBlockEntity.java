@@ -536,7 +536,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         int steps = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
         // Lands (onDestinationReached): its move ends here, or a Stop space ended it (forced arrival)
         if (steps == 0 && (ABoardSpaceBlock.countsAsStep(getCachedState().getBlock())
-                || fr.lordfinn.steveparty.service.TokenMovementService.isForcedStop(serverWorld, this))) return;
+                || fr.lordfinn.steveparty.service.TokenMovementService.isForcedStop(serverWorld, this, token))) return;
         TileFeedback.pass(serverWorld, this.pos);
     }
 
