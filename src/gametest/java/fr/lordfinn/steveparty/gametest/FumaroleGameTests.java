@@ -713,4 +713,28 @@ public class FumaroleGameTests implements FabricGameTest {
             }
         });
     }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "fumarole_shot_behind", tickLimit = 400)
+    public void aTargetBehindItIsShotOnlyOnceItHasTurned(TestContext context) {
+        strip(context, 22);
+        FumaroleEntity fumarole = facingEast(context, new BlockPos(1, 1, 8));
+        fumarole.setYaw(90); // facing west, the pig east of it
+        fumarole.setBodyYaw(90);
+        fumarole.setHeadYaw(90);
+        for (int head = 0; head < FumaroleEntity.HEADS.length; head++) fumarole.restHead(head);
+        PigEntity pig = sittingDuck(context, fumarole);
+        context.assertFalse(fumarole.faces(pig), "the pig is behind it, out of its necks' arc");
+        float health = pig.getHealth();
+        boolean[] done = {false};
+        context.runAtEveryTick(() -> {
+            if (done[0]) return;
+            if (pig.getHealth() < health) {
+                    context.assertTrue(fumarole.faces(pig), "it turned round before it shot");
+                done[0] = true;
+                pig.discard();
+                fumarole.discard();
+                context.complete();
+            }
+        });
+    }
 }

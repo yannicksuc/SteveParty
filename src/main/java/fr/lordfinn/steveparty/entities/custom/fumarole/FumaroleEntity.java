@@ -694,6 +694,18 @@ public class FumaroleEntity extends PathAwareEntity implements GeoEntity {
         return inRange(head, aimPoint(target));
     }
 
+    /** Whether this head's neck can turn to {@code target} without the body turning first ({@link #HEAD_YAW_MAX}). */
+    public boolean faces(int head, Entity target) {
+        Vec3d to = target.getPos().subtract(getPos());
+        float yaw = (float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90;
+        return Math.abs(MathHelper.wrapDegrees(yaw - bodyYaw - HEADS[head].restYaw())) <= HEAD_YAW_MAX;
+    }
+
+    public boolean faces(Entity target) {
+        for (int head = 0; head < HEADS.length; head++) if (faces(head, target)) return true;
+        return false;
+    }
+
     public boolean inRange(int head, Vec3d point) {
         double range = getTank() > 0 ? FumaroleBlast.RANGE : FumaroleBlast.PUFF_RANGE;
         return blastOrigin(head).squaredDistanceTo(point) <= range * range;
