@@ -2924,7 +2924,6 @@
   "gui.steveparty.cartridge_menu.trichaudron.consumed.tooltip": "A prize won is no longer offered for the rest of the party: one head less each time",
   "gui.steveparty.cartridge_menu.trichaudron.same": "Permanent",
   "gui.steveparty.cartridge_menu.trichaudron.same.tooltip": "A prize won stays on offer, as long as the storage holds it",
-  "gui.steveparty.cartridge_menu.trichaudron.pick": "The pick",
   "gui.steveparty.cartridge_menu.trichaudron.blind": "Blind",
   "gui.steveparty.cartridge_menu.trichaudron.blind.tooltip": "The heads show nothing: the prizes are shuffled into them each time, revealed when the head spits",
   "gui.steveparty.cartridge_menu.trichaudron.true_choice": "True choice",
