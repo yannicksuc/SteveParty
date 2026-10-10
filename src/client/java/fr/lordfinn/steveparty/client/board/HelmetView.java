@@ -9,8 +9,6 @@ import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.ExplorerHelmet;
-import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
@@ -215,9 +213,9 @@ public final class HelmetView {
                 }
             }
             if (cartridge.getItem() instanceof ShopCartridgeItem) {
-                ShopLinkComponent link = cartridge.get(ModComponents.SHOP_LINK);
-                lines.add(new Line(link != null ? Text.translatable("hud.steveparty.explorer_helmet.shop", BoardText.pos(link.anchor()))
-                        : Text.translatable("hud.steveparty.explorer_helmet.shop.nearest"), WorldDraw.Plate.GOLD));
+                int offers = ShopCartridgeItem.offers(cartridge).size();
+                lines.add(new Line(offers > 0 ? Text.translatable("hud.steveparty.explorer_helmet.shop", offers)
+                        : Text.translatable("hud.steveparty.explorer_helmet.shop.none"), offers > 0 ? WorldDraw.Plate.GOLD : WorldDraw.Plate.RED));
             }
         }
         double top = anchor.y + 4;

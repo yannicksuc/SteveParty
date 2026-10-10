@@ -15,6 +15,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
@@ -82,6 +83,7 @@ public final class MarkerResidents {
             return one;
         });
         register(MistigriCartridgeItem.class, ModEntities.MISTIGRI::create);
+        register(ShopCartridgeItem.class, ModEntities.BOXED_TRADER_ENTITY::create);
         register(TrichaudronCartridgeItem.class, world -> {
             TrichaudronEntity one = ModEntities.TRICHAUDRON.create(world);
             if (one != null) one.setTank(TrichaudronEntity.TANK_MAX);

@@ -12,11 +12,14 @@ import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
+import me.shedaniel.rei.plugin.common.displays.DefaultInformationDisplay;
 import me.shedaniel.rei.plugin.common.displays.crafting.DefaultCustomShapedDisplay;
 import me.shedaniel.rei.plugin.common.displays.crafting.DefaultCustomShapelessDisplay;
 import dev.architectury.event.EventResult;
 import fr.lordfinn.steveparty.recipes.TileCartridgeRecipe;
+import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
+import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
@@ -47,7 +50,8 @@ import java.util.UUID;
 /**
  * Optional REI plugin (entrypoint {@code rei_client}, only loaded by REI): every tile in each size and with each role in
  * the list, the « Cartridge application » category (see {@link CartridgeApplications}), the « Dice Forge » category,
- * and the crafts of the dice modules (special recipes: shown as ordinary crafting recipes).
+ * the crafts of the dice modules (special recipes: shown as ordinary crafting recipes), and information pages for what
+ * is obtained without a recipe (the Villager Block, the Boxed Trader, his bandana).
  */
 public class SteveReiPlugin implements REIClientPlugin {
     public static final CategoryIdentifier<CartridgeApplicationDisplay> CARTRIDGE_APPLICATION =
@@ -80,6 +84,26 @@ public class SteveReiPlugin implements REIClientPlugin {
         registerTileCartridgeDisplays(registry);
         registerTileRecipeDisplays(registry);
         registerSpecialCraftDisplays(registry);
+        registerInfoDisplays(registry);
+    }
+
+    /**
+     * What has no recipe and must be found out: the Villager Block (a piston on a villager), the Boxed Trader (a villager
+     * block's fall on the block he will look like) and his bandana (stolen with shears): the trail to the Shop
+     * Cartridge, whose recipe needs a bandana. Pages of REI's information category, on the item's recipe lookup.
+     */
+    private static void registerInfoDisplays(DisplayRegistry registry) {
+        info(registry, ModBlocks.VILLAGER_BLOCK, "villager_block", 3);
+        info(registry, ModItems.BOXED_TRADER_SPAWN_EGG, "boxed_trader", 4);
+        info(registry, ModItems.BANDANA, "bandana", 2);
+    }
+
+    /** An information page for {@code item}: its name, then {@code lines} lines ({@code rei.steveparty.info.<id>.<n>}). */
+    private static void info(DisplayRegistry registry, ItemConvertible item, String id, int lines) {
+        String key = "rei.steveparty.info." + id;
+        DefaultInformationDisplay display = DefaultInformationDisplay.createFromEntry(EntryStacks.of(item), Text.translatable(key));
+        for (int line = 0; line < lines; line++) display.line(Text.translatable(key + "." + line));
+        registry.add(display);
     }
 
     /**

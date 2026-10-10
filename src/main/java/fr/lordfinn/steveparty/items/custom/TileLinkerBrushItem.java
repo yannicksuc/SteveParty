@@ -106,7 +106,6 @@ public class TileLinkerBrushItem extends Item {
         tips.summary("tooltip.steveparty.tile_linker_brush")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.tile_linker_brush.controls.chest")
-                        .use(Tooltips.Keys.use(), "tooltip.steveparty.tile_linker_brush.controls.shop")
                         .use(Tooltips.Keys.of("tooltip.steveparty.key.offhand"), "tooltip.steveparty.tile_linker_brush.controls.offhand"));
     }
 }
