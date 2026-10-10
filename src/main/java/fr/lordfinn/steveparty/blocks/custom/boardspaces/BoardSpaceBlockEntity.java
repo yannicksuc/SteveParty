@@ -370,8 +370,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         return getBoardSpaceBehavior(stack);
     }
 
+    /** What this board space does with {@code stack} as its active cartridge (see BoardSpaceRoles). */
     public ABoardSpaceBehavior getBoardSpaceBehavior(ItemStack stack) {
-        return determineBoardSpaceType(stack).behavior();
+        return fr.lordfinn.steveparty.api.board.BoardSpaceRoles.behaviorOf(stack);
     }
 
     /** Only ticks for board spaces whose role needs it (see ABoardSpaceBlock#getTicker). */

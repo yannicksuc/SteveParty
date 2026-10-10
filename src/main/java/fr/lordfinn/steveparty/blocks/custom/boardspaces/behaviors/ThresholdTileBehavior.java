@@ -200,6 +200,11 @@ public class ThresholdTileBehavior extends ABoardSpaceBehavior {
 
     /** A barrier not opened for all keeps its barrier mark over the space, while a player is near. */
     @Override
+    public boolean ticks() {
+        return true;
+    }
+
+    @Override
     public void tick(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, int ticks) {
         if (ticks % BARRIER_MARK_TICKS != 0 || !(stack.getItem() instanceof ThresholdCartridgeItem)
                 || !ThresholdCartridgeItem.isBarrier(stack)) return;

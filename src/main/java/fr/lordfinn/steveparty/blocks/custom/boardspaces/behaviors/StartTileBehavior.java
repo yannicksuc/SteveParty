@@ -219,6 +219,11 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
     }
 
     @Override
+    public boolean ticks() {
+        return true;
+    }
+
+    @Override
     public void tick(ServerWorld world, BoardSpaceBlockEntity state, ItemStack type, int ticks) {
         Entity entity = getBoundedEntity(world, type, state.getPos());
         if (entity == null) {

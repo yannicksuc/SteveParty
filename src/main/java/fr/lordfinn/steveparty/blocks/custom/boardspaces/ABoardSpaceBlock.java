@@ -46,7 +46,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
 
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        return state.get(TILE_TYPE).behavior().onUse(state, world, pos, player, hit);
+        return fr.lordfinn.steveparty.api.board.BoardSpaceRoles.behaviorAt(world, pos, state).onUse(state, world, pos, player, hit);
     }
 
     @Override
@@ -59,7 +59,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         if (inked != null) return ItemResults.of(inked);
         // Client prediction: every behavior only handles dyes (and returns PASS otherwise)
         if (world.isClient) return ItemResults.of(stack != null && stack.getItem() instanceof DyeItem ? SUCCESS : PASS);
-        return ItemResults.of(state.get(TILE_TYPE).behavior().onUseWithItem(stack, state, world, pos, player, hit));
+        return ItemResults.of(fr.lordfinn.steveparty.api.board.BoardSpaceRoles.behaviorAt(world, pos, state).onUseWithItem(stack, state, world, pos, player, hit));
     }
 
     @Override
@@ -111,9 +111,8 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        BoardSpaceType role = state.get(TILE_TYPE);
-        // A Threshold barrier keeps its mark over the space (see ThresholdTileBehavior#tick)
-        if (world.isClient || role != BoardSpaceType.TILE_START && role != BoardSpaceType.TILE_POT && role != BoardSpaceType.TILE_THRESHOLD) return null;
+        // Only the roles that need it tick (see ABoardSpaceBehavior#ticks)
+        if (world.isClient || !state.get(TILE_TYPE).behavior().ticks()) return null;
         return TickableBlockEntity.getTicker(world);
     }
     /**
@@ -139,7 +138,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     @Override
     protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
         if (!world.isClient) {
-            state.get(TILE_TYPE).behavior().onSteppedOn(world, pos, state, entity);
+            fr.lordfinn.steveparty.api.board.BoardSpaceRoles.behaviorAt(world, pos, state).onSteppedOn(world, pos, state, entity);
         }
     }
 

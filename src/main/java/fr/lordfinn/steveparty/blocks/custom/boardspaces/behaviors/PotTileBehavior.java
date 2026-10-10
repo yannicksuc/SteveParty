@@ -54,6 +54,11 @@ public class PotTileBehavior extends ABoardSpaceBehavior {
     }
 
     @Override
+    public boolean ticks() {
+        return true;
+    }
+
+    @Override
     public void tick(ServerWorld world, BoardSpaceBlockEntity state, ItemStack type, int ticks) {
         if (ticks % CommonPots.CARE_INTERVAL == 0 && type.getItem() instanceof PotCartridgeItem) CommonPots.care(world, state, type);
     }

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import com.google.common.base.Suppliers;
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.AdvanceBackTileBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.DefaultBoardSpaceBehavior;
@@ -18,6 +19,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpace
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TeleportTileBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ThresholdTileBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TrichaudronTileBehavior;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.StringIdentifiable;
 
 import java.util.function.Supplier;
@@ -70,5 +72,16 @@ public enum BoardSpaceType implements StringIdentifiable {
     @Override
     public String asString() {
         return name;
+    }
+
+    /** Its id in {@link fr.lordfinn.steveparty.api.StevePartyRegistries#BOARD_SPACE_ROLES}: {@code steveparty:<name>}. */
+    public Identifier id() {
+        return Steveparty.id(name);
+    }
+
+    /** Registers the behaviour of every built-in role, as an addon registers its own roles. */
+    public static void registerAll() {
+        for (BoardSpaceType type : values())
+            fr.lordfinn.steveparty.api.board.BoardSpaceRoles.register(type.id(), type.behavior());
     }
 }
