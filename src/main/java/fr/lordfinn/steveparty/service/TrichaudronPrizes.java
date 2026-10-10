@@ -29,6 +29,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
@@ -53,8 +55,8 @@ import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
  * What a Trichaudron space does (see TrichaudronTileBehavior): the Trichaudron rises from the ground beside the token
  * in a cloud of steam with one head per prize on offer (1 to 5: TrichaudronEntity#headsShown), its heads dive into its
  * tank and come out each with one of the prizes. Then it holds them out, swaying, and the token's player picks one by
- * hitting or clicking it (its hit boxes: TrichaudronPartEntity; left alone, a head at random once
- * {@link #CHOOSE_TICKS} are up).
+ * hitting or clicking it (its hit boxes: TrichaudronPartEntity). It never picks by itself: left alone for
+ * {@link #CHOOSE_TICKS}, the other players get a button in the chat to pick a head at random ({@link #pickAtRandom}).
  * <ul>
  *     <li><b>A blind pick</b> (the cartridge's default): the prizes are shuffled into the heads each time it rises and
  *     nothing shows which is where; the prize is only revealed when the head spits it.</li>
@@ -76,11 +78,11 @@ public final class TrichaudronPrizes {
 
     /** Timing (ticks). */
     public static final int RISE_TICKS = 30, DIVE_TICKS = 40, EMERGE_TICKS = 20, LEAVE_TICKS = 30;
-    /** Choosing: at most this long (then a head at random). */
+    /** Choosing: after this long, the others may pick a head at random for its player (a button in the chat). */
     public static final int CHOOSE_TICKS = 600;
     /** The chosen head's spit: its whip (the animation's, when the spit leaves), the splash at the token, the end. */
     public static final int SPIT_AT = TrichaudronEntity.SPIT_WHIP_TICKS, SPLASH_AT = SPIT_AT + 4, SPIT_TICKS = SPLASH_AT + 30;
-    /** The whole show, at most (for the tests). */
+    /** The whole show, at most, its head picked once the others may (for the tests). */
     public static final int WHOLE = RISE_TICKS + DIVE_TICKS + EMERGE_TICKS + CHOOSE_TICKS + SPIT_TICKS + LEAVE_TICKS;
     /** Whoever stands this close to the token's face (blocks) is splashed too. */
     public static final double SPLASH_REACH = 3.0;
@@ -130,6 +132,23 @@ public final class TrichaudronPrizes {
     public static void pick(MobEntity token, int head) {
         Show show = RUNNING.get(token);
         if (show != null && show.phase == Phase.CHOOSE) show.chosen(head);
+    }
+
+    /**
+     * {@code by} (the button in the chat) picks a head at random for the player of the token {@code tokenId}, who has
+     * been choosing for {@link #CHOOSE_TICKS} at least; true if a head was picked.
+     */
+    public static boolean pickAtRandom(UUID tokenId, ServerPlayerEntity by) {
+        Show show = RUNNING.get(tokenId);
+        if (show == null || show.done || show.phase != Phase.CHOOSE || show.phaseTick < CHOOSE_TICKS) {
+            by.sendMessage(Text.translatable("message.steveparty.trichaudron_space.random_late").formatted(Formatting.GRAY), true);
+            return false;
+        }
+        int[] shown = show.actor.shownHeads();
+        show.chosen(shown[show.world.getRandom().nextInt(shown.length)]);
+        BoardSequences.tell(show.party, Text.translatable("message.steveparty.trichaudron_space.random_picked", by.getDisplayName())
+                .formatted(Formatting.GRAY));
+        return true;
     }
 
     /** Tests: the show stops now (as if its party ended), its actor removed; its {@code onDone} runs. */
@@ -306,11 +325,20 @@ public final class TrichaudronPrizes {
             }
         }
 
-        /** Holding its heads out; too long and it picks one itself. */
+        /** Holding its heads out, as long as it takes; too long and the others get a button to pick one at random. */
         void tickChoose() {
-            if (phaseTick >= CHOOSE_TICKS) {
-                int[] shown = actor.shownHeads();
-                chosen(shown[world.getRandom().nextInt(shown.length)]);
+            if (phaseTick != CHOOSE_TICKS) return;
+            ServerPlayerEntity picker = player();
+            Text name = picker == null ? token.getDisplayName() : picker.getDisplayName();
+            MutableText message = Text.translatable("message.steveparty.trichaudron_space.waiting", name).formatted(Formatting.GOLD)
+                    .append(" ")
+                    .append(Text.translatable("message.steveparty.trichaudron_space.random_button").styled(style -> style
+                            .withColor(Formatting.YELLOW).withUnderline(true)
+                            .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/steveparty trichaudron_random " + token.getUuid()))
+                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                    Text.translatable("message.steveparty.trichaudron_space.random_hover")))));
+            for (ServerPlayerEntity other : party.getPartyAudience()) {
+                if (!other.getUuid().equals(playerId)) MessageUtils.sendToPlayer(other, message, MessageUtils.MessageType.CHAT);
             }
         }
 

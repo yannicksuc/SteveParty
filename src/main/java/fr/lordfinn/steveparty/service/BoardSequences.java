@@ -50,6 +50,11 @@ public final class BoardSequences<S extends BoardSequences.Sequence> {
         return running.get(token.getUuid());
     }
 
+    /** The sequence of the landing of the token {@code tokenId}, null if none. */
+    public @Nullable S get(UUID tokenId) {
+        return running.get(tokenId);
+    }
+
     /** {@code sequence} (set up) runs: {@code tick} every tick until it {@link Sequence#close closes}. */
     public void run(S sequence, Runnable tick) {
         ((Sequence) sequence).registry = this;
