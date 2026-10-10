@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
 import fr.lordfinn.steveparty.api.event.PartyEvents;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -179,6 +180,8 @@ final class PartyFlow {
         // (the step being resumed grants CAN_MOVE as usual)
         if (leavingEnd && controller.getWorld() instanceof ServerWorld serverWorld)
             controller.tokenHomes().restoreInGame(serverWorld, partyData.getTokens());
+        // ... and back where they stood when it ended (the END step sent them home)
+        if (leavingEnd && currentStep instanceof EndPartyStep end) end.sendTokensBack(controller);
         startStep(partyData.getStepIndex() - 1);
     }
 

@@ -760,8 +760,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     /**
      * Stops the running party at once, without a winner: the current step ends (a mini-game sends its players back
      * and gives its zone back, nothing is paid), the shop stops, star choices, teleports, pipe travels and dice of its
-     * tokens are dropped, every token goes back onto the start tile it started from, out of the game, and the
-     * controller is back as before the party (a new one can start). Everyone around is told.
+     * tokens are dropped, every token goes back onto the start tile it started from (see {@link #sendTokensHome}), out
+     * of the game, and the controller is back as before the party (a new one can start). Everyone around is told.
      *
      * @param stoppedBy who stopped it, null when its controller is broken or replaced
      * @return false if no party runs (nothing done)
@@ -771,17 +771,13 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         List<ServerPlayerEntity> audience = getPartyAudience();
         flow.endCurrentStep();
         Set<UUID> tokens = new LinkedHashSet<>(partyData.getTokens());
-        Map<UUID, BlockPos> homes = new HashMap<>(tokenHomes.startTiles());
-        // A party started without them (an older save): the start tiles still bound to its tokens
-        if (!homes.keySet().containsAll(tokens)) findStartTokenTiles(serverWorld).forEach(homes::putIfAbsent);
         PartyTokenHomes.dropDiceOf(serverWorld, pos, tokens, getPlayersInOrder());
         for (UUID tokenUUID : tokens) {
             ShopStops.cancel(tokenUUID);
             PartyStars.cancelOffer(tokenUUID);
-            BlockPos home = homes.get(tokenUUID);
-            if (home != null) tokenHomes.sendHome(serverWorld, tokenUUID, home);
-            releaseToken(serverWorld, tokenUUID);
         }
+        sendTokensHome(serverWorld, tokens);
+        for (UUID tokenUUID : tokens) releaseToken(serverWorld, tokenUUID);
         TrapEffect.clearAll(this);
         partyData.reset();
         tokenHomes.forgetStartTiles();
@@ -811,6 +807,42 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     }
 
     // ------------------------------------------------------------------ the tokens and the players
+
+    /**
+     * The party is over (ended or stopped): each of {@code tokens} goes back onto the start tile it started the party
+     * from, still, with a puff of smoke (a token that is not loaded, or whose start tile is not, goes as soon as both
+     * are). A token whose start tile is gone stays where it is.
+     *
+     * @return the board space each loaded token stood on before (none for the ones standing nowhere)
+     */
+    public Map<UUID, BlockPos> sendTokensHome(ServerWorld serverWorld, Collection<UUID> tokens) {
+        Map<UUID, BlockPos> homes = tokenHomes.startTiles();
+        // A party started without them (an older save): the start tiles still bound to its tokens
+        if (!homes.keySet().containsAll(tokens)) findStartTokenTiles(serverWorld).forEach(homes::putIfAbsent);
+        Map<UUID, BlockPos> left = new LinkedHashMap<>();
+        for (UUID tokenUUID : tokens) {
+            BlockPos home = homes.get(tokenUUID);
+            if (home == null) continue;
+            if (serverWorld.getEntity(tokenUUID) instanceof Entity entity) {
+                BoardSpaceBlockEntity space = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(entity);
+                if (space != null) left.put(tokenUUID, space.getPos().toImmutable());
+            }
+            tokenHomes.sendHome(serverWorld, tokenUUID, home);
+        }
+        return left;
+    }
+
+    /**
+     * A party brought back from its end: each loaded token of {@code spaces} goes back onto the board space it stood
+     * on when the party ended (see {@link #sendTokensHome}), if that space is still there.
+     */
+    public void sendTokensBack(ServerWorld serverWorld, Map<UUID, BlockPos> spaces) {
+        spaces.forEach((tokenUUID, space) -> {
+            if (serverWorld.getEntity(tokenUUID) instanceof MobEntity mob && serverWorld.isChunkLoaded(space)
+                    && serverWorld.getBlockEntity(space) instanceof BoardSpaceBlockEntity)
+                PartyTokenHomes.place(serverWorld, mob, space);
+        });
+    }
 
     /**
      * Takes a token out of the game (clears IN_GAME / CAN_MOVE). A token that is not loaded is released
