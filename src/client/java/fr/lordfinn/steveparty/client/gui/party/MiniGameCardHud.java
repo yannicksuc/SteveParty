@@ -131,9 +131,8 @@ public final class MiniGameCardHud {
 
         // Title
         Text title = Text.literal(page.title()).styled(style -> style.withBold(true));
-        // Clear of the countdown badge on the corner
-        OrderedText titleLine = HudDraw.fit(title, pictureWidth - 2 * BADGE_ROOM);
-        HudDraw.text(context, titleLine, x + (width - font.getWidth(titleLine)) / 2, top + 1, HudDraw.TEXT, alpha);
+        // Clear of the countdown badge on the corner (a longer title scrolls)
+        HudDraw.centered(context, title, x + PAD + BADGE_ROOM, top + 1, pictureWidth - 2 * BADGE_ROOM, HudDraw.TEXT, alpha);
         top += 12;
 
         // Picture, in a dark frame
@@ -161,7 +160,7 @@ public final class MiniGameCardHud {
         if (!description.isEmpty()) {
             top += 3;
             for (OrderedText line : description) {
-                HudDraw.text(context, line, x + (width - font.getWidth(line)) / 2, top, HudDraw.TEXT_SOFT, alpha);
+                HudDraw.centered(context, line, x + PAD, top, pictureWidth, HudDraw.TEXT_SOFT, alpha);
                 top += 10;
             }
         }
@@ -176,7 +175,8 @@ public final class MiniGameCardHud {
             HudDraw.plate(context, Plate.GOLD, -BADGE / 2, -BADGE / 2, BADGE, BADGE, alpha);
             String digit = String.valueOf(countdown);
             matrices.scale(2, 2, 1);
-            HudDraw.text(context, digit, -font.getWidth(digit) / 2, -4, HudDraw.TEXT, alpha);
+            // Centred on the badge (half its size at this scale)
+            HudDraw.centered(context, digit, -BADGE / 4, -4, BADGE / 2, HudDraw.TEXT, alpha);
             matrices.pop();
         }
         matrices.pop();

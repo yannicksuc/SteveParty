@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.client.gui.party;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.client.gui.UiText;
@@ -100,6 +99,14 @@ final class HudDraw {
     }
 
     /** Same, centered in the box when it fits. */
+    static void centered(DrawContext context, Text text, int x, int y, int width, int color, float alpha) {
+        HudDepth.onTop(context, () -> UiText.centered(context, font(), text, x, y, width, Argb.fade(color, alpha), false));
+    }
+
+    static void centered(DrawContext context, OrderedText text, int x, int y, int width, int color, float alpha) {
+        HudDepth.onTop(context, () -> UiText.centered(context, font(), text, x, y, width, Argb.fade(color, alpha), false));
+    }
+
     static void centered(DrawContext context, String text, int x, int y, int width, int color, float alpha) {
         HudDepth.onTop(context, () -> UiText.centered(context, font(), text, x, y, width, Argb.fade(color, alpha), false));
     }
@@ -107,29 +114,6 @@ final class HudDraw {
     /** Light text with the font's shadow (a quarter of its colour, a pixel down and right), in its box. */
     static void shadowed(DrawContext context, String text, int x, int y, int width, int color, float alpha) {
         HudDepth.onTop(context, () -> UiText.line(context, font(), text, x, y, width, Argb.fade(color, alpha), true));
-    }
-
-    // Without a box: the callers not given one yet, their text taking its own width (it never scrolls)
-
-    static void text(DrawContext context, Text text, int x, int y, int color, float alpha) {
-        text(context, text, x, y, font().getWidth(text), color, alpha);
-    }
-
-    static void text(DrawContext context, OrderedText text, int x, int y, int color, float alpha) {
-        text(context, text, x, y, font().getWidth(text), color, alpha);
-    }
-
-    static void text(DrawContext context, String text, int x, int y, int color, float alpha) {
-        text(context, text, x, y, font().getWidth(text), color, alpha);
-    }
-
-    static void shadowed(DrawContext context, String text, int x, int y, int color, float alpha) {
-        shadowed(context, text, x, y, font().getWidth(text), color, alpha);
-    }
-
-    /** The text, cut with an ellipsis to fit in {@code width} pixels. */
-    static OrderedText fit(Text text, int width) {
-        return GuiText.fit(font(), text, width);
     }
 
     // ------------------------------------------------------------------ easing

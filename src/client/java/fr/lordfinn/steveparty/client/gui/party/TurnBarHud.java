@@ -345,11 +345,6 @@ final class TurnBarHud {
         HudPaint.small(context, s, x0, y0, HudPaint.NEUTRAL.outline(), alpha);
     }
 
-    /** Dark text with a light shadow (the mock-ups' {@code dark_shadowed}), taking its own width. */
-    static void darkText(DrawContext context, String text, int x, int y, int color, int shade, float alpha) {
-        darkText(context, text, x, y, HudDraw.font().getWidth(text), color, shade, alpha);
-    }
-
     /** Dark text with a light shadow (the mock-ups' {@code dark_shadowed}), in the box ({@code x}, {@code y}, {@code width}). */
     static void darkText(DrawContext context, String text, int x, int y, int width, int color, int shade, float alpha) {
         HudDraw.text(context, text, x + 1, y + 1, width, shade, alpha);
