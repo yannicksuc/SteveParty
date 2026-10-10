@@ -23,6 +23,7 @@ import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexConsumer;
@@ -58,6 +59,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.GLOWING;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.ROTATION_8;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SUPPORT;
@@ -104,6 +106,9 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         boolean small = size == TileSize.SMALL;
         // The middle of the tile, in its cell (a large tile's is the corner shared by its 4 blocks)
         double centreX = layout.centreX(), centreZ = layout.centreZ();
+        // Painted with glow ink (TileGlow): the whole tile at full light, its support (the fill under it) as lit as the world
+        boolean glowing = state.get(GLOWING);
+        int tileLight = glowing ? LightmapTextureManager.MAX_LIGHT_COORDINATE : light;
 
         matrices.push();
         if (support.isSloped() && entity.getWorld() != null) {
@@ -115,7 +120,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         }
         applySupport(matrices, support, centreX, centreZ);
         matrices.translate(centreX - 0.5, 0, centreZ - 0.5);
-        if (!support.isFlat() || size != TileSize.STANDARD) {
+        if (!support.isFlat() || size != TileSize.STANDARD || glowing) {
             // Not baked in the chunk: the level standard model, brought to its size
             matrices.push();
             if (small) {
@@ -123,7 +128,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
                 matrices.scale(TileSize.SMALL_SCALE, 1, TileSize.SMALL_SCALE);
                 matrices.translate(-0.5, 0, -0.5);
             }
-            renderLevelModel(state, matrices, vertexConsumers, light, overlay, color);
+            renderLevelModel(state, matrices, vertexConsumers, tileLight, overlay, color);
             matrices.pop();
         }
         // A Trap set here: jaws around the tile, as large and turned as it is (on its support)
@@ -132,16 +137,16 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         if (tileType == BoardSpaceType.TILE_START) {
             matrices.pop();
             Matrix4f onSupport = support.transform(centreX, centreZ).translate((float) (centreX - 0.5), 0, (float) (centreZ - 0.5));
-            renderTileStart(entity, small, onSupport, matrices, vertexConsumers, light, stack);
+            renderTileStart(entity, small, onSupport, matrices, vertexConsumers, tileLight, stack);
             trapIcon(entity, trap, support, centreX, centreZ, tickDelta, matrices, vertexConsumers);
             return;
         }
         // A stamped look replaces the face (the tile's own, or its cartridge's: see TileStamping)
         Identifier face = faceTexture(tileType, stack, TileStamping.displayedStamp(entity, stack), color, small);
-        if (face != null) renderFace(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face)), light, small, direction, 1f);
+        if (face != null) renderFace(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face)), tileLight, small, direction, 1f);
         matrices.pop();
         // What the role shows over the space (a Threshold obstacle's condition...)
-        BoardRuleOverlays.render(entity, tileType, stack, centreX, centreZ, tickDelta, matrices, vertexConsumers, light);
+        BoardRuleOverlays.render(entity, tileType, stack, centreX, centreZ, tickDelta, matrices, vertexConsumers, tileLight);
         trapIcon(entity, trap, support, centreX, centreZ, tickDelta, matrices, vertexConsumers);
     }
 
