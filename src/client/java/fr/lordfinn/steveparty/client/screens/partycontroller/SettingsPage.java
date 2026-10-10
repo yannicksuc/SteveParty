@@ -6,18 +6,13 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.P
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
-import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.powerups.PowerUpLimit;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
@@ -59,8 +54,8 @@ public final class SettingsPage {
     public void addButtons(PartyDashboardData data) {
         int x = dashboard.left(), y = dashboard.top();
         // Restrict dice: its switch, the toggle of its panel (open, it takes the place of the other settings)
-        Switch restrict = dashboard.add(new Switch(x + DICE_SWITCH_X, y + DICE_Y, 24, BTN_H, Text.empty(), data.restrictDice(),
-                BUTTON_RESTRICT_DICE));
+        DashboardSwitch restrict = dashboard.add(new DashboardSwitch(dashboard, x + DICE_SWITCH_X, y + DICE_Y, 24, BTN_H, Text.empty(),
+                data.restrictDice(), BUTTON_RESTRICT_DICE));
         restrict.active = data.canEdit();
         restrict.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.allowed_dice.switch." + (data.restrictDice() ? "on" : "off"))
                 : Text.translatable(KEY + "locked")));
@@ -87,8 +82,8 @@ public final class SettingsPage {
         // A practice round before each mini-game: a switch, its state on its left (at most in the 72 px its label leaves)
         Text state = Text.translatable(KEY + (data.practiceRound() ? "settings.practice.on" : "settings.practice.off"));
         int width = Math.min(dashboard.font().getWidth(state) - 1 + 4 + 24, 68);
-        Switch practice = dashboard.add(new Switch(x + CX + CW - width, y + SETTINGS_Y + SETTINGS_ROW, width, BTN_H, state, data.practiceRound(),
-                BUTTON_PRACTICE));
+        DashboardSwitch practice = dashboard.add(new DashboardSwitch(dashboard, x + CX + CW - width, y + SETTINGS_Y + SETTINGS_ROW, width, BTN_H,
+                state, data.practiceRound(), BUTTON_PRACTICE));
         practice.active = data.canEdit();
         practice.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.practice.tooltip") : Text.translatable(KEY + "locked")));
         // The power-ups a player may carry (0: no limit)
@@ -215,38 +210,5 @@ public final class SettingsPage {
                 return Text.translatable(KEY + "settings.allowed_dice.listed");
         }
         return null;
-    }
-
-    /** A switch (the practice round, Restrict dice): its state, then the switch (green and to the right when on). */
-    private final class Switch extends PressableWidget {
-        private final boolean on;
-        private final int button;
-
-        Switch(int x, int y, int width, int height, Text message, boolean on, int button) {
-            super(x, y, width, height, message);
-            this.on = on;
-            this.button = button;
-        }
-
-        @Override
-        public void onPress() {
-            dashboard.click(button);
-        }
-
-        @Override
-        protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-            int sx = getX() + width - 24, sy = getY() + 3;
-            ConsolePaint.pill(context, sx, sy, 24, 12, on ? SWITCH_ON : SWITCH_OFF, true);
-            ConsolePaint.disc(context, sx + (on ? 13 : 1), sy + 1, 10, KNOB);
-            if (active && (isHovered() || isFocused())) ConsolePaint.highlight(context, sx - 1, sy - 1, 26, 14, -1, WHITE, 0);
-            TextRenderer font = MinecraftClient.getInstance().textRenderer;
-            // Its state, up to 4 px before the switch
-            UiText.line(context, font, getMessage(), getX(), getY() + 5, Math.max(0, width - 27), !active ? INK_DIM : on ? INK_GREEN : INK_SOFT, true);
-        }
-
-        @Override
-        protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-            appendDefaultNarrations(builder);
-        }
     }
 }
