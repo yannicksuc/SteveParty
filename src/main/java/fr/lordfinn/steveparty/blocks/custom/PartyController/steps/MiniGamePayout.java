@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
 import com.mojang.authlib.GameProfile;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
@@ -9,7 +9,6 @@ import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -30,7 +29,7 @@ final class MiniGamePayout {
     private final Map<UUID, int[]> paid = new LinkedHashMap<>();
 
     /**
-     * Pays the gains of the places, taken from the party's bank (see {@link PartyBank}): the 1st place first, then
+     * Pays the gains of the places, taken from the party's bank (see {@link PartyResources}): the 1st place first, then
      * the 2nd..., the participants last, in turn order within a place; when the bank runs short, a player gets what
      * is left and the next ones nothing. Nothing is created.
      *
@@ -40,7 +39,7 @@ final class MiniGamePayout {
         paid.clear();
         List<Map.Entry<UUID, Integer>> order = new ArrayList<>(places.entrySet());
         order.sort(Comparator.comparingInt(entry -> entry.getValue() <= 0 ? Integer.MAX_VALUE : entry.getValue()));
-        Inventory bank = PartyBank.inventory(controller);
+        PartyResources bank = PartyResources.of(controller);
         boolean full = true;
         for (Map.Entry<UUID, Integer> entry : order) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());

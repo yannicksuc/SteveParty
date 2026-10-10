@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.Blocker;
@@ -160,12 +161,12 @@ public class PartyControllerDashboardGameTests implements SteveGameTest {
             // Paid as items of the party's currencies, taken from the bank
             SimpleInventory bank = new SimpleInventory(
                     controller.getCurrency(PartyCurrency.COIN).copyWithCount(20), controller.getCurrency(PartyCurrency.STAR).copyWithCount(3));
-            PartyControllerEntity.Paid paid = controller.payGains(player, 1, bank);
+            PartyControllerEntity.Paid paid = controller.payGains(player, 1, PartyResources.of(List.of(bank)));
             context.assertTrue(paid.coins() == 11 && paid.stars() == 1 && paid.full(), "the whole gain paid");
             context.assertEquals(InventoryUtils.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN)), 11, "11 coins paid");
             context.assertEquals(InventoryUtils.count(player.getInventory(), controller.getCurrency(PartyCurrency.STAR)), 1, "a star paid");
             context.assertTrue(bank.getStack(0).getCount() == 9 && bank.getStack(1).getCount() == 2, "taken from the bank");
-            context.assertTrue(!controller.payGains(player, 1, null).full(), "no bank: nothing paid");
+            context.assertTrue(!controller.payGains(player, 1, PartyResources.NONE).full(), "no bank: nothing paid");
             context.assertEquals(InventoryUtils.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN)), 11, "nothing created");
 
             // The dashboard shows them, and they travel to the client as they are

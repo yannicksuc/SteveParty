@@ -214,13 +214,14 @@ public class PowerUpGameTests implements SteveGameTest {
 
     // ---------------------------------------------------------------- Double Coins
 
-    /** A coin face gives twice its coins. */
+    /** A coin face gives twice its coins, the extra from the bank too; a bank short of them gives what it has. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH)
     public void doubleCoinsDoublesTheGains(TestContext context) {
         path(context, 3, -1, null);
         ServerPlayerEntity player = survivalPlayer(context);
         PigEntity pig = token(context, PATH.get(1), player.getUuid());
         PartyControllerEntity controller = party(context, player.getUuid(), pig);
+        controller.getBankItems().setStack(0, new ItemStack(ModItems.COIN, 12));
         context.waitAndRun(2, () -> {
             context.assertTrue(use(context, player, PowerUps.DOUBLE_COINS, 1), "Double Coins is used");
             context.assertEquals(PowerUpService.itemsGained(player, new ItemStack(ModItems.COIN), 3), 6, "an item space's 3 coins: 6");
@@ -229,6 +230,7 @@ public class PowerUpGameTests implements SteveGameTest {
             hit(context, dice, player);
             when(context, turnEnded(controller), 150, "the turn ends", () -> {
                 context.assertEquals(coins(player), 10, "+5 doubled: 10 coins");
+                context.assertEquals(InventoryUtils.count(controller.getBankItems(), new ItemStack(ModItems.COIN)), 2, "all 10 from the bank");
                 context.complete();
             });
         });
@@ -249,6 +251,7 @@ public class PowerUpGameTests implements SteveGameTest {
             hit(context, dice, player);
             when(context, turnEnded(controller), 150, "the turn ends", () -> {
                 context.assertEquals(coins(player), 7, "−3, not −6");
+                context.assertEquals(InventoryUtils.count(controller.getBankItems(), new ItemStack(ModItems.COIN)), 3, "the 3 into the bank");
                 context.complete();
             });
         });
