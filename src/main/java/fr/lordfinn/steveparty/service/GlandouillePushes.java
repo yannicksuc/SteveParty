@@ -54,6 +54,8 @@ public final class GlandouillePushes {
     public static final int FALL_TICKS = 24;
     /** How far behind the token (and the tokens ahead of it) the tower stands. */
     private static final double BEHIND = 0.7;
+    /** From its Spawn Marker, the lone Glandouille trots behind the token in this many ticks. */
+    private static final int ARRIVE_TICKS = 10;
 
     /** The running shows, by the token that landed. */
     private static final BoardSequences<Show> RUNNING = new BoardSequences<>();
@@ -121,6 +123,14 @@ public final class GlandouillePushes {
         Vec3d dir = direction(points.get(0), points.get(1));
         Vec3d start = points.get(0).subtract(dir.multiply(BEHIND));
         float yaw = yawOf(dir);
+        // On the space's Spawn Marker, facing its way: it runs from there behind the token while it stomps
+        BoardMobSpots.Spot spot = BoardMobSpots.marker(world, from);
+        BoardMobSpots.showStarts(world, spot, show.task);
+        if (spot != null) {
+            show.arriveFrom = spot.pos();
+            start = spot.pos();
+            yaw = spot.yaw();
+        }
         GlandouilleEntity below = null;
         for (int i = 0; i < Math.max(1, height); i++) {
             GlandouilleEntity one = show.spawn(TOWER[i % TOWER.length], start, yaw);
@@ -131,7 +141,10 @@ public final class GlandouillePushes {
             below = one;
         }
         if (show.bottom == null) return false;
-        for (GlandouilleEntity one : show.crew) one.actOut(GlandouilleEntity.Mood.TELEGRAPH);
+        for (GlandouilleEntity one : show.crew) {
+            BoardMobSpots.hold(one, spot);
+            one.actOut(GlandouilleEntity.Mood.TELEGRAPH);
+        }
         poof(world, start, 12);
         RUNNING.run(show, show::tickTower);
         return true;
@@ -146,8 +159,19 @@ public final class GlandouillePushes {
         show.points = List.of(at);
         show.spaces = List.of(from.toImmutable());
         Vec3d start = at.subtract(dir.multiply(BEHIND * 0.8));
-        GlandouilleEntity one = show.spawn(GlandouilleVariant.CLASSIC, start, yawOf(dir));
+        show.loneAt = start;
+        float yaw = yawOf(dir);
+        // On the space's Spawn Marker, facing its way: it trots from there behind the token first
+        BoardMobSpots.Spot spot = BoardMobSpots.marker(world, from);
+        BoardMobSpots.showStarts(world, spot, show.task);
+        if (spot != null) {
+            show.arriveFrom = spot.pos();
+            start = spot.pos();
+            yaw = spot.yaw();
+        }
+        GlandouilleEntity one = show.spawn(GlandouilleVariant.CLASSIC, start, yaw);
         if (one == null) return false;
+        BoardMobSpots.hold(one, spot);
         show.bottom = one;
         show.crew.add(one);
         one.actOut(GlandouilleEntity.Mood.PUSH_FAIL);
@@ -181,6 +205,10 @@ public final class GlandouillePushes {
         List<Vec3d> points = List.of();
         List<BlockPos> spaces = List.of();
         GlandouilleEntity bottom;
+        /** Appeared on a Spawn Marker: from there to its place behind the token (null: it appeared there). */
+        @Nullable Vec3d arriveFrom;
+        /** Where the lone one pushes from. */
+        Vec3d loneAt = Vec3d.ZERO;
         int tick;
 
         Show(ServerWorld world, MobEntity token, Runnable onDone) {
@@ -262,6 +290,12 @@ public final class GlandouillePushes {
             Vec3d front = a.lerp(b, f);
             float yaw = yawOf(dir);
             Vec3d base = front.subtract(dir.multiply(BEHIND));
+            if (arriveFrom != null && tick < SETUP_TICKS) {
+                // from its Spawn Marker to behind the token, while the others stomp
+                Vec3d target = base;
+                base = arriveFrom.lerp(target, Math.min(1.0, tick / (double) (SETUP_TICKS - 4)));
+                if (base.squaredDistanceTo(target) > 1.0E-4) yaw = yawOf(direction(base, target));
+            }
             bottom.refreshPositionAndAngles(base.x, base.y, base.z, yaw, 0);
             bottom.bodyYaw = yaw;
             bottom.headYaw = yaw;
@@ -336,6 +370,14 @@ public final class GlandouillePushes {
             if (bottom == null || bottom.isRemoved()) {
                 finish();
                 return;
+            }
+            if (arriveFrom != null && tick <= ARRIVE_TICKS) {
+                // from its Spawn Marker to behind the token first
+                Vec3d at = arriveFrom.lerp(loneAt, tick / (double) ARRIVE_TICKS);
+                float yaw = tick < ARRIVE_TICKS ? yawOf(direction(at, loneAt)) : yawOf(direction(loneAt, points.getFirst()));
+                bottom.refreshPositionAndAngles(at.x, at.y, at.z, yaw, 0);
+                bottom.bodyYaw = yaw;
+                bottom.headYaw = yaw;
             }
             // pushing in vain: the token only quivers, the Glandouille's feet slip
             if (tick < 40 && tick % 6 == 0) bottom.playSound(ModSounds.GLANDOUILLE_STEP, 1f, 1.5f);

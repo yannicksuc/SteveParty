@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
@@ -152,6 +154,28 @@ public final class CartridgeContainers {
             inventories.add(inventory);
         }
         return inventories;
+    }
+
+    /**
+     * The containers the cartridge of the board space at {@code space} uses now, in order: its own linked ones
+     * ({@link #available}); with none linked, the bank of the party running on its board (its Party Controller's own
+     * inventory, then its linked chests: see PartyBank), so that a board needs no chest per space; outside a party,
+     * none (the space gives nothing: nothing is ever made from nothing). {@code space} null: its own only.
+     */
+    public static List<Inventory> availableFor(ItemStack stack, World world, @Nullable BlockPos space) {
+        if (!isEmpty(stack) || space == null) return available(stack, world);
+        PartyControllerEntity party = partyBankOf(stack, world, space);
+        return party == null ? List.of() : PartyBank.places(party);
+    }
+
+    /**
+     * The Party Controller whose bank the cartridge of the board space at {@code space} falls back on: none linked of
+     * its own, and a party running on its board (the nearest one); null otherwise.
+     */
+    public static @Nullable PartyControllerEntity partyBankOf(ItemStack stack, World world, BlockPos space) {
+        if (!isEmpty(stack) || world.isClient) return null;
+        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, space,
+                PartyControllerEntity.START_TILES_SEARCH_RADIUS, false).orElse(null);
     }
 
     /** The other half of a double chest, null for anything else. */

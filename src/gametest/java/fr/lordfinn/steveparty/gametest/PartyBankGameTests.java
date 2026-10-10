@@ -347,4 +347,97 @@ public class PartyBankGameTests implements SteveGameTest {
         }
         context.complete();
     }
+
+    // ---------------------------------------------------------------- its own bank (27 slots), then the linked chests
+
+    /** The gains are taken from its own bank first, then from the linked chests in their order. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bank_own_take")
+    public void takenFromItsOwnBankFirst(TestContext context) {
+        ServerPlayerEntity p1 = player(context, "a", 0.5);
+        try {
+            PartyControllerEntity controller = controller(context);
+            ChestBlockEntity chest = TestBank.stock(context, controller, CHEST, 30, 0);
+            controller.getBankItems().setStack(4, controller.getCurrency(PartyCurrency.COIN).copyWithCount(6));
+            context.assertEquals(status(context, controller, 1).coins(), 36, "its own 6 and the chest's 30");
+            MiniGamePartyStep step = playing(context, controller, p1);
+            step.finish(controller, List.of(p1.getUuid()));
+            context.assertEquals(coins(controller, p1), 10, "the winner's 10 coins");
+            context.assertTrue(controller.getBankItems().isEmpty(), "its own 6 first");
+            context.assertEquals(InventoryUtils.count(chest, controller.getCurrency(PartyCurrency.COIN)), 26, "then 4 from the chest");
+        } finally {
+            remove(context, p1);
+        }
+        context.complete();
+    }
+
+    /** What the party takes goes in the first place with room: its own bank, then the linked chests in order. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bank_own_deposit")
+    public void depositedInOrder(TestContext context) {
+        try {
+            PartyControllerEntity controller = controller(context);
+            ChestBlockEntity chest = TestBank.stock(context, controller, CHEST, 0, 0);
+            ItemStack coin = controller.getCurrency(PartyCurrency.COIN);
+            for (int i = 1; i < PartyControllerEntity.BANK_SIZE; i++) controller.getBankItems().setStack(i, new ItemStack(Items.DIRT, 64));
+            controller.getBankItems().setStack(0, coin.copyWithCount(60));
+            ItemStack paid = coin.copyWithCount(10);
+            context.assertEquals(PartyBank.deposit(controller, paid), 10, "all of it went in");
+            context.assertEquals(controller.getBankItems().getStack(0).getCount(), 64, "its own bank filled first");
+            context.assertEquals(InventoryUtils.count(chest, coin), 6, "the rest in the chest");
+        } finally {
+            remove(context);
+        }
+        context.complete();
+    }
+
+    /** A hopper fills its own bank; broken, the controller drops what it held. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bank_own_hopper", tickLimit = 120)
+    public void hopperFillsItAndBreakingDropsIt(TestContext context) {
+        PartyControllerEntity controller = controller(context);
+        ItemStack coin = controller.getCurrency(PartyCurrency.COIN);
+        context.setBlockState(CONTROLLER.up(), Blocks.HOPPER);
+        context.<net.minecraft.block.entity.HopperBlockEntity>getBlockEntity(CONTROLLER.up()).setStack(0, coin.copyWithCount(3));
+        context.waitAndRun(40, () -> {
+            context.assertEquals(InventoryUtils.count(controller.getBankItems(), coin), 3, "the hopper filled its bank");
+            context.setBlockState(CONTROLLER.up(), Blocks.AIR);
+            controller.getBankItems().setStack(10, new ItemStack(Items.DIAMOND, 5));
+            context.setBlockState(CONTROLLER, Blocks.AIR);
+            int coins = 0, diamonds = 0;
+            for (ItemEntity item : context.getWorld().getEntitiesByClass(ItemEntity.class, new Box(context.getAbsolutePos(CONTROLLER)).expand(2), e -> true)) {
+                if (ItemStack.areItemsAndComponentsEqual(item.getStack(), coin)) coins += item.getStack().getCount();
+                if (item.getStack().isOf(Items.DIAMOND)) diamonds += item.getStack().getCount();
+                item.discard();
+            }
+            context.assertTrue(coins == 3 && diamonds == 5, "broken, it dropped its bank (" + coins + " coins, " + diamonds + " diamonds)");
+            remove(context);
+            context.complete();
+        });
+    }
+
+    /** A controller saved before it had its own bank: an empty one, its linked chest still pays; its bank is saved. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bank_own_old")
+    public void anOldControllerKeepsItsChests(TestContext context) {
+        ServerPlayerEntity p1 = player(context, "a", 0.5);
+        try {
+            PartyControllerEntity controller = controller(context);
+            TestBank.stock(context, controller, CHEST, 20, 0);
+            NbtCompound saved = controller.createNbtWithIdentifyingData(context.getWorld().getRegistryManager());
+            context.assertTrue(!saved.contains("BankItems"), "nothing of its own: nothing saved");
+            controller.getBankItems().setStack(0, new ItemStack(Items.DIAMOND));
+            controller.read(saved, context.getWorld().getRegistryManager());
+            context.assertTrue(controller.getBankItems().isEmpty(), "read from before: an empty bank");
+            context.assertEquals(status(context, controller, 1).coins(), 20, "its chest still counts");
+            MiniGamePartyStep step = playing(context, controller, p1);
+            step.finish(controller, List.of(p1.getUuid()));
+            context.assertEquals(coins(controller, p1), 10, "and pays");
+            controller.getBankItems().setStack(2, new ItemStack(Items.EMERALD, 3));
+            NbtCompound again = controller.createNbtWithIdentifyingData(context.getWorld().getRegistryManager());
+            controller.getBankItems().clear();
+            controller.read(again, context.getWorld().getRegistryManager());
+            context.assertEquals(controller.getBankItems().getStack(2).getCount(), 3, "its own bank is saved");
+            context.assertTrue(!controller.toInitialChunkDataNbt(context.getWorld().getRegistryManager()).contains("BankItems"), "never sent to clients");
+        } finally {
+            remove(context, p1);
+        }
+        context.complete();
+    }
 }

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities;
 
+import fr.lordfinn.steveparty.mixin.MobEntityGoalsAccessor;
 import fr.lordfinn.steveparty.service.BoardActors;
 import net.minecraft.entity.mob.MobEntity;
 
@@ -25,6 +26,9 @@ public interface BoardActor {
         MobEntity self = (MobEntity) this;
         setBoardActor();
         self.setAiDisabled(true);
+        // No goal of its own, ever (a hologram: it only plays what its space scripts)
+        ((MobEntityGoalsAccessor) self).steveparty$goals().clear(goal -> true);
+        ((MobEntityGoalsAccessor) self).steveparty$targets().clear(goal -> true);
         onBoardActor();
         if (!self.getWorld().isClient) BoardActors.mark(self); // invulnerable, never kept
     }

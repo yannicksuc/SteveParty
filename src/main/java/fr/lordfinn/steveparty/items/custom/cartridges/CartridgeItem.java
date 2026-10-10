@@ -1,4 +1,5 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
+import net.minecraft.util.math.GlobalPos;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.board.DestinationSwap;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
@@ -150,6 +151,10 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
         Tooltips tips = Tooltips.of(tooltip).tags(Tooltips.Tag.CONFIGURABLE);
         if (stamp != null) tips.tags(Tooltips.Tag.STAMPED);
         appendState(stack, tips);
+        // A mob space's cartridge: its Spawn Marker, linked with the Tile Linker Brush
+        GlobalPos marker = stack.get(ModComponents.SPAWN_MARKER);
+        if (marker != null && CartridgeSpawnMarker.spawnsMobs(stack)) tips.state(Text.translatable("tooltip.steveparty.cartridge.spawn_marker",
+                Tooltips.value(marker.pos().getX() + " " + marker.pos().getY() + " " + marker.pos().getZ())));
         appendDestinations(stack, tips);
         if (hasSummary()) tips.summary("tooltip.steveparty.cartridge." + Registries.ITEM.getId(this).getPath());
         tips.more(more -> {
@@ -159,6 +164,8 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
             more.use(Tooltips.Keys.use(), "tooltip.steveparty.cartridge.use.block");
             more.use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.cartridge.use.destination");
             appendMore(stack, more);
+            if (CartridgeSpawnMarker.spawnsMobs(stack)) more.note("tooltip.steveparty.cartridge.spawn_marker.how");
+            if (CartridgeContainers.linksContainers(stack)) more.note("tooltip.steveparty.cartridge.party_bank");
         });
     }
 

@@ -14,6 +14,22 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.Vec3d;
 
+import fr.lordfinn.steveparty.entities.BoardActor;
+import fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity;
+import fr.lordfinn.steveparty.mixin.MobEntityGoalsAccessor;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.ExperienceOrbEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.math.Box;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
@@ -89,5 +105,74 @@ public class BoardActorsGameTests implements SteveGameTest {
         context.getWorld().spawnEntity(stray);
         context.assertTrue(stray.isRemoved(), "removed on load");
         context.complete();
+    }
+
+    /**
+     * Every mob a space summons is a hologram (central rules, BoardActor*Mixin): no blow, arrow, lava, fire or
+     * explosion hurts it, no use does anything (name tag, lead), it neither pushes nor is pushed nor knocked back, has
+     * no goal, picks nothing up, and killed by a command leaves no loot and no experience.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 120)
+    public void theyAreHolograms(TestContext context) {
+        ServerPlayerEntity player = player(context);
+        UUID sequence = UUID.randomUUID();
+        List<MobEntity> mobs = new ArrayList<>();
+        for (EntityType<? extends MobEntity> type : List.of(ModEntities.FROUSSEUX, ModEntities.GLANDOUILLE,
+                ModEntities.MISTIGRI, ModEntities.TRICHAUDRON)) {
+            MobEntity mob = type.create(context.getWorld());
+            ((BoardActor) mob).makeBoardActor();
+            mobs.add(spawn(context, mob, sequence));
+        }
+        MagpieEntity magpie = ModEntities.MAGPIE.create(context.getWorld());
+        BoardActors.mark(magpie);
+        spawn(context, magpie, sequence);
+        ArrowEntity arrow = new ArrowEntity(EntityType.ARROW, context.getWorld());
+        arrow.setOwner(player);
+        for (MobEntity mob : mobs) {
+            String what = mob.getType().getUntranslatedName();
+            float health = mob.getHealth();
+            mob.damage(player.getDamageSources().playerAttack(player), 50f);
+            mob.damage(mob.getDamageSources().arrow(arrow, player), 50f);
+            mob.damage(mob.getDamageSources().lava(), 50f);
+            mob.damage(mob.getDamageSources().onFire(), 50f);
+            mob.damage(mob.getDamageSources().explosion(null, null), 50f);
+            context.assertTrue(mob.isAlive() && mob.getHealth() == health, what + ": nothing hurts it");
+            context.assertTrue(mob.isFireImmune() && mob.isImmuneToExplosion(null), what + ": no fire, no explosion");
+            // no use of any kind
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.NAME_TAG));
+            player.getMainHandStack().set(DataComponentTypes.CUSTOM_NAME, Text.literal("Bob"));
+            context.assertTrue(player.interact(mob, Hand.MAIN_HAND) == ActionResult.PASS && mob.getCustomName() == null,
+                    what + ": no name tag");
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LEAD));
+            player.interact(mob, Hand.MAIN_HAND);
+            context.assertTrue(!mob.isLeashed(), what + ": no lead");
+            // neither pushed nor knocked back, pushing no one
+            mob.setVelocity(Vec3d.ZERO);
+            player.setVelocity(Vec3d.ZERO);
+            mob.pushAwayFrom(player);
+            player.pushAwayFrom(mob);
+            mob.takeKnockback(2, 1, 1);
+            context.assertTrue(mob.getVelocity().equals(Vec3d.ZERO) && player.getVelocity().equals(Vec3d.ZERO),
+                    what + ": no push, no knockback");
+            context.assertTrue(!mob.canPickUpLoot() && !mob.isPushedByFluids() && !mob.shouldSave(), what + ": picks nothing up, never saved");
+        }
+        context.assertTrue(magpie.isFireImmune() && !magpie.shouldSave() && !magpie.damage(magpie.getDamageSources().lava(), 50f)
+                && player.interact(magpie, Hand.MAIN_HAND) == ActionResult.PASS, "the Pie too");
+        player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+        Vec3d at = context.getAbsolute(new Vec3d(2.5, 2, 2.5));
+        context.runAtTick(context.getTick() + 10, () -> {
+            for (MobEntity mob : mobs) {
+                long goals = ((MobEntityGoalsAccessor) mob).steveparty$goals().getGoals().size()
+                        + ((MobEntityGoalsAccessor) mob).steveparty$targets().getGoals().size();
+                context.assertTrue(goals == 0, mob.getType().getUntranslatedName() + ": no goal at all");
+            }
+            for (MobEntity mob : mobs) mob.kill();
+        });
+        context.runAtTick(context.getTick() + 45, () -> {
+            Box box = new Box(at, at).expand(6);
+            context.assertTrue(context.getWorld().getEntitiesByClass(ItemEntity.class, box, e -> true).isEmpty(), "no loot");
+            context.assertTrue(context.getWorld().getEntitiesByClass(ExperienceOrbEntity.class, box, e -> true).isEmpty(), "no experience");
+            context.complete();
+        });
     }
 }

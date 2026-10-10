@@ -192,6 +192,7 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
                 entity.onControllerRemoved();
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.catalogue);
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.getBank());
+                ItemScatterer.spawn(world, pos, entity.getBankItems());
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);

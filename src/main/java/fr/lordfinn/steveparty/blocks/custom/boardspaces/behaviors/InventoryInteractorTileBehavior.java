@@ -47,7 +47,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         if (AdvancedTileBlock.getBoardSpaceEntity(world, pos) instanceof BoardSpaceBlockEntity tileEntity &&
                 tileEntity.getActiveCartridgeItemStack() instanceof ItemStack itemStack &&
                 itemStack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory &&
-                CartridgeTransfers.getLinkedInventory(world, itemStack) instanceof Inventory connectedInventory) {
+                CartridgeTransfers.getLinkedInventory(world, itemStack, pos) instanceof Inventory connectedInventory) {
 
             int selectionState = InventoryCartridgeItem.getSelectionState(itemStack);
             switch (selectionState) {
@@ -225,7 +225,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             info.line(mode == 1 ? TileInfo.Glyph.ALL : mode == 2 ? TileInfo.Glyph.CYCLE : TileInfo.Glyph.DICE,
                     TileInfo.value(TileInfo.line(mode == 1 ? "inventory.all" : mode == 2 ? "inventory.cycle" : "inventory.random")));
         }
-        Inventory linked = CartridgeTransfers.getLinkedInventory(world, stack);
+        Inventory linked = CartridgeTransfers.getLinkedInventory(world, stack, space.getPos());
         boolean listed = items.size() <= LISTED, gives = false;
         for (ItemStack item : items) {
             boolean taken = Boolean.TRUE.equals(item.get(IS_NEGATIVE));
@@ -245,6 +245,9 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
                 info.detail(item, TileInfo.line("inventory.left", TileInfo.value(left)));
         }
         if (gives && linked == null) info.line(new ItemStack(Items.CHEST), TileInfo.bad(TileInfo.line("inventory.no_chest")));
+        // No chest of its own: the party's bank
+        if (CartridgeContainers.partyBankOf(stack, world, space.getPos()) != null)
+            info.line(new ItemStack(Items.CHEST), TileInfo.value(TileInfo.line("party_bank")));
     }
 
     /** Up to this many items, each is a line; more circle the space. */

@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
+import fr.lordfinn.steveparty.service.MarkerResidents;
+import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerSettings;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
@@ -117,6 +120,9 @@ public class Steveparty implements ModInitializer {
         TileTeleport.initialize();
         GlandouilleTileBehavior.initialize();
         BoardActors.initialize();
+        PartyBank.initialize();
+        MarkerResidents.initialize();
+        SpawnMarkerSettings.initialize();
         FrousseuxThefts.initialize();
         MistigriSentences.initialize();
         TrichaudronPrizes.initialize();

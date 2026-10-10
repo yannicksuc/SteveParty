@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import java.util.List;
@@ -34,8 +35,16 @@ public final class CartridgeTransfers {
      * for none.
      */
     public static @Nullable Inventory getLinkedInventory(World world, ItemStack cartridge) {
+        return getLinkedInventory(world, cartridge, null);
+    }
+
+    /**
+     * The same for the cartridge of the board space at {@code space}: without a container of its own, the bank of the
+     * party running on its board (see {@link CartridgeContainers#availableFor}).
+     */
+    public static @Nullable Inventory getLinkedInventory(World world, ItemStack cartridge, @Nullable BlockPos space) {
         if (!(cartridge.getItem() instanceof InventoryCartridgeItem)) return null;
-        List<Inventory> available = CartridgeContainers.available(cartridge, world);
+        List<Inventory> available = CartridgeContainers.availableFor(cartridge, world, space);
         return available.isEmpty() ? null : new InventoryChain(available);
     }
 

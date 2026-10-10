@@ -174,7 +174,7 @@ public class InventoryCartridgeGameTests implements SteveGameTest {
         ItemStack cartridge = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
         CartridgeContainers.set(cartridge, List.of(global(context, gone), global(context, first), global(context, second)));
         var server = context.getWorld().getServer();
-        Inventory bank = PartyBank.inventory(server, cartridge);
+        Inventory bank = PartyBank.chests(server, cartridge);
         context.assertTrue(bank != null && InventoryUtils.count(bank, coin) == 13, "13 coins over the two chests there");
         context.assertEquals(InventoryUtils.take(bank, coin, 5), 5, "5 paid");
         context.assertTrue(((Inventory) context.getBlockEntity(first)).isEmpty() && InventoryUtils.count(context.getBlockEntity(second), coin) == 8,

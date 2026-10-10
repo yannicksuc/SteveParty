@@ -28,6 +28,7 @@ import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.minecraft.inventory.Inventories;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.component.ComponentMap;
@@ -69,6 +70,7 @@ import static fr.lordfinn.steveparty.components.ModComponents.*;
  * ({@link PartyBoard}).
  */
 public class PartyControllerEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
+    private static final String BANK_ITEMS = "BankItems";
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
     /** The board of a party: its start tiles and star spaces are looked for this far from the controller. */
@@ -86,6 +88,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public static final int MIN_ROUNDS = 1, MAX_ROUNDS = 50;
     /** The most dice the « Allowed dice » setting lists. */
     public static final int MAX_ALLOWED_DICE = 27;
+    /** The slots of its own bank. */
+    public static final int BANK_SIZE = 27;
     /**
      * The star space holding the party's star (see {@link PartyStars}); null while the party has no star yet, or
      * while it waits, hidden, for a star space to be switched on. Saved with the party.
@@ -97,6 +101,16 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private final PartyAudience audience = new PartyAudience(this);
     private final PartyTokenHomes tokenHomes = new PartyTokenHomes();
     private final PartyFlow flow = new PartyFlow(this);
+    /** Its own bank, 27 slots like a chest (see {@link PartyBank}): saved, never sent to the clients. */
+    private final SimpleInventory bankItems = new SimpleInventory(BANK_SIZE) {
+        @Override
+        public boolean canPlayerUse(PlayerEntity player) {
+            return !isRemoved() && canEdit(player) && ScreenHandlerChecks.canUseBlockEntity(PartyControllerEntity.this, player);
+        }
+    };
+    {
+        bankItems.addListener(inventory -> saveOnly());
+    }
 
     public PartyControllerEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PARTY_CONTROLLER_ENTITY, pos, state);
@@ -239,6 +253,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             nbt.put("LastWinners", winnersNbt);
         }
         program.writeNbt(nbt, wrapper);
+        if (!bankItems.isEmpty()) nbt.put(BANK_ITEMS, Inventories.writeNbt(new NbtCompound(), bankItems.getHeldStacks(), wrapper));
     }
 
     @Override
@@ -264,6 +279,9 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             }
         });
         program.readNbt(nbt, wrapper);
+        // A controller saved before it had its own bank: an empty one (its linked chests are kept)
+        bankItems.getHeldStacks().clear();
+        if (nbt.contains(BANK_ITEMS)) Inventories.readNbt(nbt.getCompound(BANK_ITEMS), bankItems.getHeldStacks(), wrapper);
         flow.loaded();
     }
 
@@ -272,6 +290,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
         NbtCompound nbt = super.toInitialChunkDataNbt(registries);
         nbt.remove(TrapState.NBT_KEY);
+        nbt.remove(BANK_ITEMS);
         return nbt;
     }
 
@@ -314,6 +333,19 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
 
     public void setGains(MiniGameGains gains) {
         if (settings.setGains(gains)) markDirty();
+    }
+
+    /**
+     * Its own bank: 27 slots, the first place the party's coins and stars are taken from and put in (see
+     * {@link PartyBank}); hoppers fill and empty it, broken it drops its content.
+     */
+    public SimpleInventory getBankItems() {
+        return bankItems;
+    }
+
+    /** Saved, not sent (its bank's content is the server's). */
+    private void saveOnly() {
+        super.markDirty();
     }
 
     /** The Inventory Cartridge of the bank (Gains page), empty for none. */

@@ -31,6 +31,8 @@ public final class GainsPage {
     /** A row per place. */
     private static final int GAINS_Y = CY + 21, GAINS_ROW = 17, GAINS_FIELD = GAINS_COLUMN - 2 * STEP - 4;
     private static final int COLOR_SHORT = 0xFFFFB54A;
+    /** The button opening the controller's own bank, right of the cartridge slot. */
+    private static final int BANK_BUTTON_X = CX + 22, BANK_BUTTON_W = 44;
     private static final PartyCurrency[] CURRENCIES = {PartyCurrency.COIN, PartyCurrency.STAR};
 
     private final Dashboard dashboard;
@@ -53,6 +55,10 @@ public final class GainsPage {
     }
 
     public void addButtons(PartyDashboardData data) {
+        ConsoleButton bank = dashboard.add(new ConsoleButton(dashboard.left() + BANK_BUTTON_X, dashboard.top() + CY + 2, BANK_BUTTON_W, 14,
+                Text.translatable(KEY + "gains.bank.open"), ConsoleButton.Kind.SCREEN, null, () -> dashboard.click(BUTTON_BANK, 1)));
+        bank.active = data.canEdit();
+        bank.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "gains.bank.open.hint") : Text.translatable(KEY + "locked")));
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
             for (PartyCurrency currency : CURRENCIES) {
                 int left = dashboard.left() + (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X), top = dashboard.top() + GAINS_Y + row * GAINS_ROW;
@@ -74,7 +80,7 @@ public final class GainsPage {
     public void draw(DrawContext context, PartyDashboardData data) {
         // The bank's line: its cartridge slot, its name (what it holds in its tooltip)
         PartyBank.Status bank = data.bank();
-        int tx = CX + 22, room = COIN_X - 1 - 4 - tx;
+        int tx = BANK_BUTTON_X + BANK_BUTTON_W + 4, room = COIN_X - 1 - 4 - tx;
         switch (bank.state()) {
             case NONE, MISSING -> paint.line(context, Text.translatable(KEY + "gains.bank." + (bank.state() == PartyBank.State.NONE ? "none" : "missing")),
                     tx, CY + 5, room, INK_RED);
@@ -127,7 +133,7 @@ public final class GainsPage {
 
     /** The bank (its line, its empty slot): what it is, what it holds, why it can't pay; null when the mouse is elsewhere. */
     public @Nullable List<Text> bankTooltip(PartyDashboardData data, @Nullable Slot focused, int mx, int my) {
-        if (!(HitArea.contains(mx, my, CX + 20, CY, COIN_X - 1 - CX - 24, 18) || (focused != null && focused.id == SLOT_BANK && !focused.hasStack())))
+        if (!(HitArea.contains(mx, my, BANK_BUTTON_X + BANK_BUTTON_W + 2, CY, COIN_X - 1 - BANK_BUTTON_X - BANK_BUTTON_W - 6, 18) || (focused != null && focused.id == SLOT_BANK && !focused.hasStack())))
             return null;
         PartyBank.Status bank = data.bank();
         List<Text> lines = new ArrayList<>();

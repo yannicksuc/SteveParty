@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -59,6 +60,20 @@ public final class BoardActors {
         });
     }
 
+    /**
+     * Whether {@code entity} is to be treated as a hologram: a board actor server side (its tag); client side, where
+     * the tag is not known, one of our board mobs without AI (the flag is synced), for what the client predicts
+     * (pushing, uses). A hologram: invulnerable, no loot nor experience, no use of any kind on it, no AI of its own,
+     * neither pushing nor pushed, no knockback, never burning, untouched by explosions, picking nothing up, never
+     * despawning by itself and never saved: it only plays its animations and the moves its space scripts (mixins
+     * BoardActor*Mixin).
+     */
+    public static boolean isHologram(Entity entity) {
+        if (entity == null) return false;
+        if (!entity.getWorld().isClient) return isBoardActor(entity);
+        return entity instanceof BoardActor && entity instanceof MobEntity mob && mob.isAiDisabled();
+    }
+
     /** Whether {@code entity} is a board actor (both sides for the tag; server side it is what counts). */
     public static boolean isBoardActor(Entity entity) {
         return entity.getCommandTags().contains(TAG);
@@ -91,6 +106,11 @@ public final class BoardActors {
             LIVE.remove(actor.getUuid());
             if (!actor.isRemoved()) actor.discard();
         }
+    }
+
+    /** Whether {@code sequence} has actors and is not over yet. */
+    public static boolean isRunning(UUID sequence) {
+        return SEQUENCES.containsKey(sequence);
     }
 
     /** The actors of {@code sequence} still in the world (for the GameTests). */

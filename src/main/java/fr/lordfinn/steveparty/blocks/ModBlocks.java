@@ -484,6 +484,16 @@ public class ModBlocks {
                     .pistonBehavior(PistonBehavior.DESTROY),
             "candle_saucer", true);
 
+    /** The Spawn Marker: a little stake where a mob space's mob appears (SpawnMarkerBlock). Walked through, broken by hand. */
+    public static final Block SPAWN_MARKER = register(SpawnMarkerBlock::new,
+            Block.Settings.create()
+                    .strength(0.2f)
+                    .nonOpaque()
+                    .noCollision()
+                    .sounds(BlockSoundGroup.WOOD)
+                    .pistonBehavior(PistonBehavior.DESTROY),
+            "spawn_marker", true);
+
     /** The Pie's nest, woven twigs: a Common pot's nest when set near its space (MagpieNestBlock). */
     public static final Block MAGPIE_NEST = register(MagpieNestBlock::new,
             Block.Settings.create()

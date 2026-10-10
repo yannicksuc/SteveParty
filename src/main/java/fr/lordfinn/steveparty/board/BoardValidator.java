@@ -87,7 +87,8 @@ public final class BoardValidator {
         add(issues, Severity.WARNING, "dead_ends", deadEnds);
         add(issues, Severity.WARNING, "unreachable", unreachable);
         add(issues, Severity.WARNING, "broken_links", broken);
-        add(issues, Severity.WARNING, "no_chest", noChest);
+        // Without a chest of its own, a space takes from the Party Controller's bank: said, no warning
+        add(issues, Severity.INFO, "no_chest", noChest);
         add(issues, Severity.WARNING, "chest_gone", chestGone);
         add(issues, Severity.WARNING, "router_targets", badRouters);
         add(issues, Severity.WARNING, "teleport_alone", teleportAlone);
