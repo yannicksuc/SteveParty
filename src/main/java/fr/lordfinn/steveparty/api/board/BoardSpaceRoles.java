@@ -26,7 +26,10 @@ import org.jetbrains.annotations.Nullable;
  *     tile and the block state); its settings are its menu modules ({@link CartridgeItem#modules()}).</li>
  * </ol>
  * A board space reads its role from its active cartridge: the behaviour of the addon's role then answers the
- * landings, the passings, the clicks, the comparator level and the landing feedback of the space.
+ * landings, the passings, the clicks, the comparator level, the landing feedback and the info panel of the space
+ * ({@link ABoardSpaceBehavior#describe}, titled by the lang key {@code hud.<namespace>.tile_info.role.<path>}). A
+ * cartridge whose space summons a mob implements
+ * {@link fr.lordfinn.steveparty.items.custom.cartridges.MobSpawnCartridge} (Spawn Marker link and preview).
  * <p>
  * Limit: {@link ABoardSpaceBehavior#tick} is only called for the roles whose base look ticks
  * ({@link ABoardSpaceBehavior#ticks()} of the built-in role, see {@link ABoardSpaceBlock#getTicker}).
