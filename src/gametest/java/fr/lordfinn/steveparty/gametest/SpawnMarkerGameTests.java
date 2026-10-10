@@ -387,4 +387,77 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         far.refreshPositionAndAngles(away.x, away.y, away.z, 0, 0);
         context.assertTrue(!SpawnMarkerSettings.apply(far, new SpawnMarkerSettings(context.getAbsolutePos(MARKER), false, 0)), "too far: refused");
     }
+
+    // ---------------------------------------------------------------- the brush's settings never undo a mob space
+
+    /** A Spawn Marker at {@code relative} on stone, as placed (absolute position). */
+    private static BlockPos placedMarker(TestContext context, BlockPos relative) {
+        context.setBlockState(relative.down(), Blocks.STONE);
+        context.setBlockState(relative, ModBlocks.SPAWN_MARKER.getDefaultState());
+        return context.getAbsolutePos(relative);
+    }
+
+    /**
+     * A kind of Cartridge picked on the brush goes in the spaces a path is painted between, never in a space whose
+     * Spawn Marker a stroke links or fails to link: a Trichaudron space linked to its marker keeps its cartridge (it is
+     * not « turned normal », then refused); the cartridges a path replaces are given back.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aPickedCartridgeNeverReplacesTheSpaceLinkingAMarker(TestContext context) {
+        BoardSpaceBlockEntity mob = tile(context, TILE, new ItemStack(ModItems.TRICHAUDRON_CARTRIDGE));
+        BoardSpaceBlockEntity next = tile(context, new BlockPos(1, 1, 3), plain());
+        BlockPos marker = placedMarker(context, MARKER);
+        withPlayer(context, false, player -> {
+            ItemStack brush = brush(player);
+            player.getInventory().setStack(10, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP, 2));
+            TileLinkerBrush.setCartridge(player, brush, ModItems.BOARD_SPACE_BEHAVIOR_STOP);
+            paint(player, brush, context, mob.getPos(), marker);
+            context.assertTrue(mob.getStack(0).isOf(ModItems.TRICHAUDRON_CARTRIDGE), "the Trichaudron Cartridge stays");
+            context.assertEquals(CartridgeSpawnMarker.linked(mob.getStack(0), context.getWorld()), marker, "linked to its marker");
+            context.assertEquals(player.getInventory().getStack(10).getCount(), 2, "no stop cartridge spent");
+            // a plain space reaching the marker: refused, and still a plain space
+            paint(player, brush, context, next.getPos(), marker);
+            context.assertTrue(next.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "a refused link changes nothing");
+            context.assertEquals(player.getInventory().getStack(10).getCount(), 2, "still no stop cartridge spent");
+            // a path painted: both spaces get the picked kind, theirs given back
+            paint(player, brush, context, next.getPos(), mob.getPos());
+            context.assertTrue(next.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP)
+                    && mob.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "a path: the picked kind on both");
+            context.assertEquals(BoardLinks.links(next.getStack(0)), List.of(mob.getPos()), "the path painted");
+            context.assertTrue(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR) == 1
+                    && player.getInventory().count(ModItems.TRICHAUDRON_CARTRIDGE) == 1, "theirs given back, none lost");
+        });
+    }
+
+    /**
+     * A shop in a checkpoint (16 slots) links its marker with the brush picking a cartridge and set to a level whose
+     * slot is empty: the active cartridge summons the mob, it takes the marker; no slot changes.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aShopCheckpointLinksItsMarkerWhateverTheBrushLevel(TestContext context) {
+        context.setBlockState(TILE.down(), Blocks.STONE);
+        context.setBlockState(TILE, ModBlocks.CHECK_POINT);
+        BoardSpaceBlockEntity checkpoint = context.getBlockEntity(TILE);
+        checkpoint.setStack(0, new ItemStack(ModItems.SHOP_CARTRIDGE));
+        BlockPos marker = placedMarker(context, MARKER);
+        withPlayer(context, false, player -> {
+            ItemStack brush = brush(player);
+            player.getInventory().setStack(10, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR, 4));
+            TileLinkerBrush.setCartridge(player, brush, ModItems.BOARD_SPACE_BEHAVIOR);
+            TileLinkerBrush.setLevel(player, brush, 3);
+            context.assertTrue(BrushLinks.refusal(context.getWorld(), checkpoint.getPos(), 3, marker) == null, "not refused");
+            paint(player, brush, context, checkpoint.getPos(), marker);
+            context.assertTrue(checkpoint.getStack(0).isOf(ModItems.SHOP_CARTRIDGE), "the shop stays");
+            context.assertTrue(checkpoint.getStack(3).isEmpty(), "the level's slot stays empty");
+            context.assertEquals(checkpoint.getActiveSlot(), 0, "the active slot unchanged");
+            context.assertEquals(CartridgeSpawnMarker.linked(checkpoint.getStack(0), context.getWorld()), marker, "the shop's marker");
+            context.assertEquals(player.getInventory().getStack(10).getCount(), 4, "no cartridge spent");
+            // the level holding a plain cartridge: still the shop's marker (painted again: erased)
+            checkpoint.setStack(3, plain());
+            paint(player, brush, context, checkpoint.getPos(), marker);
+            context.assertTrue(CartridgeSpawnMarker.linked(checkpoint.getStack(0), context.getWorld()) == null, "erased");
+            context.assertTrue(checkpoint.getStack(3).isOf(ModItems.BOARD_SPACE_BEHAVIOR) && checkpoint.getStack(0).isOf(ModItems.SHOP_CARTRIDGE),
+                    "both slots unchanged");
+        });
+    }
 }
