@@ -282,6 +282,8 @@ public final class CommonPots {
         updateNest(world, space, pot);
         if (magpieOf(world, space.getPos()) != null) return;
         MagpieEntity magpie = MagpieEntity.create(ModEntities.MAGPIE, world, space.getPos(), nest);
+        // A hologram like every mob a space summons: never saved, the space gives it back after a reload
+        BoardActors.mark(magpie);
         world.spawnEntity(magpie);
         world.spawnParticles(ParticleTypes.CLOUD, magpie.getX(), magpie.getY() + 0.3, magpie.getZ(), 5, 0.2, 0.2, 0.2, 0.01);
     }
