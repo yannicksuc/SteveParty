@@ -44,6 +44,12 @@ public class MistigriSpaceGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(3, 1, 3);
     private static final int WHOLE = MistigriSentences.WHOLE + 20;
 
+    /** How many of {@code item} the party's bank holds (its Party Controller's own inventory). */
+    private static int bank(TestContext context, Item item) {
+        PartyControllerEntity controller = context.getBlockEntity(DiceTestKit.CONTROLLER);
+        return InventoryUtils.count(controller.getBankItems(), new ItemStack(item));
+    }
+
     private static void give(ServerPlayerEntity player, Item item, int count) {
         InventoryUtils.giveOrDrop(player, new ItemStack(item), count);
     }
@@ -97,7 +103,10 @@ public class MistigriSpaceGameTests implements SteveGameTest {
     public void theSmallFine(TestContext context) {
         ServerPlayerEntity player = player(context);
         show(context, Sentence.COINS_SMALL, new ServerPlayerEntity[]{player}, () -> give(player, Items.GOLD_INGOT, 30),
-                () -> context.assertEquals(count(player, Items.GOLD_INGOT), 20, "10 coins taken"));
+                () -> {
+                    context.assertEquals(count(player, Items.GOLD_INGOT), 20, "10 coins taken");
+                    context.assertEquals(bank(context, Items.GOLD_INGOT), 10, "into the party's bank");
+                });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
@@ -122,6 +131,7 @@ public class MistigriSpaceGameTests implements SteveGameTest {
             give(player, Items.GOLD_INGOT, 10);
         }, () -> {
             context.assertEquals(count(player, Items.EMERALD), 1, "one star taken");
+            context.assertEquals(bank(context, Items.EMERALD), 1, "into the party's bank");
             context.assertEquals(count(player, Items.GOLD_INGOT), 10, "no coin");
         });
     }
@@ -135,6 +145,7 @@ public class MistigriSpaceGameTests implements SteveGameTest {
         }, () -> {
             context.assertEquals(count(first, Items.GOLD_INGOT), 5, "the token's player pays 5");
             context.assertEquals(count(second, Items.GOLD_INGOT), 0, "the other pays what they hold");
+            context.assertEquals(bank(context, Items.GOLD_INGOT), 8, "all of it into the party's bank");
         });
     }
 

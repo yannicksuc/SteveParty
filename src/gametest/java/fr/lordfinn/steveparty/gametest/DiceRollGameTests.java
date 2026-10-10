@@ -137,7 +137,7 @@ public class DiceRollGameTests implements SteveGameTest {
 
     // ---------------------------------------------------------------- coins
 
-    /** In a party: the roller gains the party's coin item, the token stays, nothing lands, the turn ends; the HUD tells it. */
+    /** In a party: the roller gains the party's coin item from its bank, the token stays, nothing lands, the turn ends; the HUD tells it. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH)
     public void coinFaceGivesThePartysCoins(TestContext context) {
         path(context, 3, -1, null);
@@ -146,12 +146,14 @@ public class DiceRollGameTests implements SteveGameTest {
         PigEntity pig = token(context, PATH.get(1), player.getUuid());
         PartyControllerEntity controller = party(context, player.getUuid(), pig);
         context.assertTrue(controller.setCurrency(PartyCurrency.COIN, new ItemStack(Items.GOLD_INGOT)), "the party counts gold ingots");
+        controller.getBankItems().setStack(0, new ItemStack(Items.GOLD_INGOT, 7));
         context.waitAndRun(2, () -> {
             DiceEntity dice = thrown(context, player, die("coin_dice_face_5"), PATH.get(1));
             hit(context, dice, player);
             context.assertTrue(DiceRollEffects.isResolving(pig.getUuid()) || dice.getOutcome().coins() == 5, "+5 was rolled");
             when(context, () -> count(player, Items.GOLD_INGOT) == 5, 100, "the coins are given", () -> {
                 context.assertEquals(count(player, ModItems.COIN), 0, "not the default coin");
+                context.assertEquals(controller.getBankItems().getStack(0).getCount(), 2, "taken from the bank");
                 PartyLiveData live = PartyLiveData.capture(controller, context.getWorld());
                 context.assertTrue(live.effect().rolled() && live.effect().coinFace() && live.effect().coins() == 5, "the HUD: +5 coins");
                 RegistryByteBuf buf = new RegistryByteBuf(Unpooled.buffer(), context.getWorld().getRegistryManager());
@@ -167,9 +169,9 @@ public class DiceRollGameTests implements SteveGameTest {
         });
     }
 
-    /** Outside a party: the default coin (the mod's coin). */
+    /** Outside a party: no bank, so no coin is given (nothing is made from nothing). */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH)
-    public void coinFaceGivesCoinsOutsideAParty(TestContext context) {
+    public void coinFaceGivesNothingOutsideAParty(TestContext context) {
         path(context, 3, -1, null);
         List<Played> played = record(context);
         ServerPlayerEntity player = player(context);
@@ -178,8 +180,9 @@ public class DiceRollGameTests implements SteveGameTest {
         context.waitAndRun(2, () -> {
             DiceEntity dice = thrown(context, player, die("coin_dice_face_10"), PATH.get(1));
             hit(context, dice, player);
-            when(context, () -> count(player, ModItems.COIN) == 10, 100, "the coins are given", () ->
+            when(context, () -> dice.isRollFinished() && dice.getOutcome().coins() == 10, 100, "+10 is rolled", () ->
                     when(context, () -> !DiceRollEffects.isResolving(pig.getUuid()), 100, "the roll is resolved", () -> {
+                        context.assertEquals(count(player, ModItems.COIN), 0, "no party, no bank: nothing given");
                         assertOn(context, pig, PATH.get(1), "the token did not move");
                         context.assertTrue(!played(played, context, Kind.AMBIENT, PATH.get(1)), "it did not arrive on its tile again");
                         context.complete();
@@ -187,7 +190,7 @@ public class DiceRollGameTests implements SteveGameTest {
         });
     }
 
-    /** A debt face never takes more than the roller holds, and only the party's coin. */
+    /** A debt face never takes more than the roller holds, and only the party's coin: what it takes goes into the bank. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH)
     public void debtFaceTakesNoMoreThanHeld(TestContext context) {
         path(context, 3, -1, null);
@@ -204,6 +207,7 @@ public class DiceRollGameTests implements SteveGameTest {
             context.assertEquals(dice.getOutcome().coins(), -5, "-5 was rolled");
             when(context, turnEnded(controller), 150, "the turn ends", () -> {
                 context.assertEquals(count(player, ModItems.COIN), 0, "the 2 coins held are taken");
+                context.assertEquals(InventoryUtils.count(controller.getBankItems(), new ItemStack(ModItems.COIN)), 2, "into the bank");
                 context.assertEquals(player.getInventory().getStack(4).getCount(), 9, "a renamed coin is not the party's coin");
                 assertOn(context, pig, PATH.get(1), "the token did not move");
                 context.complete();
@@ -308,6 +312,7 @@ public class DiceRollGameTests implements SteveGameTest {
         PigEntity a = token(context, PATH.get(0), player.getUuid());
         PigEntity b = token(context, PATH.get(2), player.getUuid());
         PartyControllerEntity controller = party(context, player.getUuid(), a, b);
+        controller.getBankItems().setStack(0, new ItemStack(ModItems.COIN, 3));
         context.waitAndRun(2, () -> {
             DiceOutcome outcome = DiceOutcome.of(List.of(new DiceFace(DiceFacesComponent.Kind.COIN, 3),
                     new DiceFace(DiceFacesComponent.Kind.SWAP, 0), new DiceFace(DiceFacesComponent.Kind.NORMAL, 2)));
@@ -338,7 +343,7 @@ public class DiceRollGameTests implements SteveGameTest {
             hit(context, steps, player);
             when(context, () -> !DiceRollEffects.isResolving(pig.getUuid()), 100, "resolved", () -> context.waitAndRun(40, () -> {
                 assertOn(context, pig, PATH.get(0), "the second die moved nothing");
-                context.assertEquals(count(player, ModItems.COIN), 2, "the coins of the first one");
+                context.assertEquals(count(player, ModItems.COIN), 0, "the first one is resolved alone (no party: no coin)");
                 context.complete();
             }));
         });
@@ -350,6 +355,8 @@ public class DiceRollGameTests implements SteveGameTest {
         path(context, 3, -1, null);
         ServerPlayerEntity player = player(context);
         PigEntity pig = token(context, PATH.get(1), player.getUuid());
+        PartyControllerEntity controller = party(context, player.getUuid(), pig);
+        controller.getBankItems().setStack(0, new ItemStack(ModItems.COIN, 8));
         ItemStack doubleDie = new ItemStack(ModItems.DOUBLE_DICE);
         doubleDie.set(DiceFacesComponent.TYPE, die("coin_dice_face_4").get(DiceFacesComponent.TYPE));
         context.waitAndRun(2, () -> {
@@ -369,7 +376,7 @@ public class DiceRollGameTests implements SteveGameTest {
                 context.assertTrue(!lead.isRolling() && !second.isRolling(), "both stopped");
                 context.assertEquals(lead.getRolledFaces().size(), 2, "one face per die");
                 context.assertEquals(second.getOutcome().coins(), 8, "+4 and +4");
-                when(context, () -> count(player, ModItems.COIN) == 8, 100, "the coins of both dice", () -> {
+                when(context, () -> count(player, ModItems.COIN) == 8, 100, "the coins of both dice, from the bank", () -> {
                     assertOn(context, pig, PATH.get(1), "the token did not move");
                     if (!second.isRemoved()) second.discard();
                     context.complete();

@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -39,7 +40,7 @@ import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
  * ({@link Sentence}). He reacts (a hiss, or a yawn for the lenient one) and leaps away in a puff of smoke.
  * <p>
  * A move back is walked once he is gone (the token's turn goes on until it lands: AdvanceBackMoves); every other
- * sentence ends the turn. He and his die are board actors: invulnerable, never saved, always removed at the end
+ * sentence ends the turn. What he takes (coins, a star) goes into the party's bank: nothing is lost. He and his die are board actors: invulnerable, never saved, always removed at the end
  * ({@link BoardActors}), whatever ends it (party over, server stopping). Server thread only.
  */
 public final class MistigriSentences {
@@ -353,7 +354,9 @@ public final class MistigriSentences {
                     for (UUID id : party.getPlayersInOrder()) {
                         ServerPlayerEntity each = world.getServer().getPlayerManager().getPlayer(id);
                         if (each == null) continue;
-                        total += InventoryUtils.take(each.getInventory(), coin, amount);
+                        int taken = InventoryUtils.take(each.getInventory(), coin, amount);
+                        PartyResources.deposit(party, coin.copyWithCount(taken)); // into the party's bank, never lost
+                        total += taken;
                         crumbs(each, coin);
                     }
                     return Text.translatable("message.steveparty.mistigri_space.taken", total, coin.getName());
@@ -371,6 +374,7 @@ public final class MistigriSentences {
 
         MutableText take(@Nullable ServerPlayerEntity player, ItemStack template, int count) {
             int taken = player == null || count <= 0 ? 0 : InventoryUtils.take(player.getInventory(), template, count);
+            PartyResources.deposit(party, template.copyWithCount(taken)); // into the party's bank, never lost
             if (player != null && taken > 0) crumbs(player, template);
             return taken > 0 ? Text.translatable("message.steveparty.mistigri_space.taken", taken, template.getName())
                     : Text.translatable("message.steveparty.mistigri_space.nothing", template.getName());

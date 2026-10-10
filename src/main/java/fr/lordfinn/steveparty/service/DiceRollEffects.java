@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.utils.InventoryUtils;
 import com.mojang.authlib.properties.PropertyMap;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -53,8 +54,8 @@ import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
  * A roll that is not a plain number of steps is resolved in this order, {@link #APPRECIATE_TICKS} after the dice
  * stopped:
  * <ol>
- *     <li><b>coins</b> (coin / debt faces): the roller gains or loses items of the party's coin (the default coin
- *     outside a party), never losing more than they hold;</li>
+ *     <li><b>coins</b> (coin / debt faces): the roller gains items of the party's coin from its bank, or loses them
+ *     into it, never losing more than they hold (outside a party, nothing);</li>
  *     <li><b>swap</b>: the roller picks another token (of the party; outside a party, a token within
  *     {@link #SWAP_RANGE} blocks; no answer: a random one), and the two tokens swap places, each standing on the
  *     other's board space without landing on it;</li>
@@ -227,23 +228,30 @@ public final class DiceRollEffects {
     // ---------------------------------------------------------------- coins
 
     /**
-     * The roller gains ({@code coins} > 0) or loses coins: items of the coin of the token's party, of the default coin
-     * outside a party. A loss never takes more than the roller holds.
+     * The roller gains ({@code coins} > 0) or loses coins: items of the coin of the token's party, never made from
+     * nothing. A gain (doubled by Double Coins) is taken from the party's bank ({@link PartyResources}): a bank short
+     * of them gives what it has, possibly nothing (« the bank is empty »). A loss goes into that bank and never takes
+     * more than the roller holds. Outside a party there is no bank: nothing is gained, nothing lost.
      *
-     * @return the coins really gained (negative: lost); 0 if the roller is not connected
+     * @return the coins really gained (negative: lost); 0 if the roller is not connected or out of a party
      */
     public static int applyCoins(ServerWorld world, MobEntity token, UUID roller, int coins) {
         ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(roller);
         Optional<PartyControllerEntity> party = PartyControllerEntity.getRunningPartyOf(token.getUuid());
         ItemStack coin = party.map(controller -> controller.getCurrency(PartyCurrency.COIN)).orElseGet(PartyCurrency.COIN::defaultStack);
         int applied = 0;
-        if (player != null) {
+        boolean bankShort = false;
+        if (player != null && party.isPresent()) {
             if (coins > 0) {
-                // Doubled by the Double Coins power-up of the roller's turn
-                applied = PowerUpService.coinsGained(roller, coins);
+                // Doubled by the Double Coins power-up of the roller's turn: the extra comes from the bank too
+                int wanted = PowerUpService.coinsGained(roller, coins);
+                applied = PartyResources.of(party.get()).take(coin, wanted);
+                bankShort = applied < wanted;
                 InventoryUtils.giveOrDrop(player, coin, applied);
             } else if (coins < 0) {
-                applied = -InventoryUtils.take(player.getInventory(), coin, -coins);
+                int lost = InventoryUtils.take(player.getInventory(), coin, -coins);
+                PartyResources.deposit(party.get(), coin.copyWithCount(lost));
+                applied = -lost;
             }
         }
         Text who = player != null ? player.getDisplayName() : token.getDisplayName();
@@ -251,6 +259,7 @@ public final class DiceRollEffects {
         MutableText message;
         if (applied > 0) {
             message = Text.translatable("message.steveparty.dice.coins.gained", who, applied, coin.getName()).formatted(Formatting.YELLOW);
+            if (bankShort) message.append(Text.translatable("message.steveparty.dice.coins.bank_short").formatted(Formatting.GRAY));
             world.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1f, 1.2f);
             world.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.4f, 1.6f);
             world.spawnParticles(ParticleTypes.WAX_ON, at.x, at.y + token.getHeight() / 2, at.z, 12 + 2 * applied, 0.35, 0.4, 0.35, 0.0);
@@ -260,7 +269,8 @@ public final class DiceRollEffects {
             world.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.PLAYERS, 0.6f, 1f);
             world.spawnParticles(ParticleTypes.SMOKE, at.x, at.y + token.getHeight() / 2, at.z, 12 - 2 * applied, 0.35, 0.4, 0.35, 0.01);
         } else {
-            message = Text.translatable("message.steveparty.dice.coins.none", who, coin.getName()).formatted(Formatting.GRAY);
+            message = bankShort ? Text.translatable("message.steveparty.dice.coins.bank_empty", who, coin.getName()).formatted(Formatting.GRAY)
+                    : Text.translatable("message.steveparty.dice.coins.none", who, coin.getName()).formatted(Formatting.GRAY);
             world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 0.8f, 0.8f);
         }
         MessageUtils.sendToNearby(world, at, 100, message, MessageUtils.MessageType.ACTION_BAR);
