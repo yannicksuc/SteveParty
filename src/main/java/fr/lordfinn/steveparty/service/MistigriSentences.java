@@ -114,7 +114,7 @@ public final class MistigriSentences {
             DIE_LANDS_AT = OutcomeRoulette.REVEAL_TICKS + OutcomeRoulette.SPIN_TICKS, SENTENCE_TICKS = 60, LEAVE_TICKS = 20;
     /** In the roll: he swats, his die flies up (until it hangs at the top), then falls (ticks). */
     /** The roulette's panel: this high over his seat (blocks), clear of his die hanging in the air. */
-    private static final double PANEL_ABOVE = 5.2;
+    private static final double PANEL_ABOVE = 5.8;
     private static final int SWAT_AT = OutcomeRoulette.REVEAL_TICKS - 8, DIE_UP_TICKS = 12, DIE_FALL_TICKS = 6;
     /** The whole show, at most (for the tests). */
     public static final int WHOLE = LEAP_TICKS + ROLL_TICKS + SENTENCE_TICKS + LEAVE_TICKS;
