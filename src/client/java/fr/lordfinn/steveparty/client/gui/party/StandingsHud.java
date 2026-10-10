@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
+import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import fr.lordfinn.steveparty.hud.StandingsLayout;
 import fr.lordfinn.steveparty.utils.Easing;
@@ -194,6 +195,6 @@ final class StandingsHud {
 
     /** An item at its full size, 16 x 16 (any item, block items too). */
     private static void icon(DrawContext context, ItemStack stack, int x, int y) {
-        if (!stack.isEmpty()) context.drawItem(stack, x, y);
+        if (!stack.isEmpty()) HudDepth.item(context, () -> context.drawItem(stack, x, y));
     }
 }

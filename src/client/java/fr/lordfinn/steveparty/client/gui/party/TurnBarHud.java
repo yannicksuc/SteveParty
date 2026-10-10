@@ -7,11 +7,9 @@ import fr.lordfinn.steveparty.hud.TurnStripLayout;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.El;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Kind;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Type;
-import fr.lordfinn.steveparty.utils.Argb;
 import fr.lordfinn.steveparty.utils.Easing;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.gui.paint.PaintedTextures.Tex;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.client.util.math.MatrixStack;
@@ -251,7 +249,7 @@ final class TurnBarHud {
             }
             case MARKER -> {
                 int bob = Math.round((float) Math.sin(now * Math.PI / 12) * 1.2f);
-                HudDraw.faded(alpha, () -> context.drawGuiTexture(HudDraw.ICON_MARKER, x + PAD, y + PAD + bob,
+                HudDraw.faded(context, alpha, () -> context.drawGuiTexture(HudDraw.ICON_MARKER, x + PAD, y + PAD + bob,
                         TurnStripLayout.MARKER_W, TurnStripLayout.MARKER_H));
             }
         }
@@ -270,36 +268,22 @@ final class TurnBarHud {
         if (!el.label.isEmpty()) HudDraw.shadowed(context, el.label, fx + size + 4, y + PAD + (el.h - 8) / 2, HudPaint.TEXT, alpha);
     }
 
-    /** How far in front of the HUD shapes the faces are drawn (depth, GUI units). */
-    private static final float FACE_Z = 40;
-
     /** A player's face, 8 x 8 (its skin's face and hat); the initial of its name without player. */
     static void head(DrawContext context, PartyHudModel.Player player, int x, int y, float alpha) {
         UUID owner = player == null ? null : player.owner;
         if (owner != null) {
             Identifier skin = SkinUtils.getPlayerSkin(owner);
             Identifier fallback = DefaultSkinHelper.getSkinTextures(owner).texture();
-            // In front of the plates by depth, not by drawing order: HUD batching mods (ImmediatelyFast) draw each texture
-            // in the order it was first used, which put a chip's plate drawn later over the face
-            MatrixStack matrices = context.getMatrices();
-            matrices.push();
-            HudDraw.faded(alpha, () -> {
-                // The default face of the UUID under it: a skin that is not (or no longer) there never leaves a blank
-                matrices.translate(0, 0, FACE_Z);
-                if (!fallback.equals(skin)) context.drawTexture(fallback, x, y, 8, 8, 8, 8, 8, 8, 64, 64);
-                matrices.translate(0, 0, 1);
-                context.drawTexture(skin, x, y, 8, 8, 8, 8, 8, 8, 64, 64);
-                matrices.translate(0, 0, 1);
-                context.drawTexture(skin, x, y, 8, 8, 40, 8, 8, 8, 64, 64);
-            });
-            matrices.pop();
+            // The default face of the UUID under it: a skin that is not (or no longer) there never leaves a blank
+            if (!fallback.equals(skin)) HudDraw.faded(context, alpha, () -> context.drawTexture(fallback, x, y, 8, 8, 8, 8, 8, 8, 64, 64));
+            HudDraw.faded(context, alpha, () -> context.drawTexture(skin, x, y, 8, 8, 8, 8, 8, 8, 64, 64));
+            HudDraw.faded(context, alpha, () -> context.drawTexture(skin, x, y, 8, 8, 40, 8, 8, 8, 64, 64));
             return;
         }
-        context.fill(x, y, x + 8, y + 8, Argb.fade(0xFF3F3F3F, alpha));
+        HudDraw.fill(context, x, y, x + 8, y + 8, 0xFF3F3F3F, alpha);
         String name = player == null || player.name.isEmpty() ? "?" : player.name;
         String initial = name.substring(0, name.offsetByCodePoints(0, 1)).toUpperCase(Locale.ROOT);
-        TextRenderer font = HudDraw.font();
-        context.drawText(font, initial, x + (8 - font.getWidth(initial)) / 2 + 1, y, Argb.fade(0xFFFFFFFF, alpha), false);
+        HudDraw.text(context, initial, x + (8 - HudDraw.font().getWidth(initial)) / 2 + 1, y, 0xFFFFFFFF, alpha);
     }
 
     private static Ramp kindRamp(Kind kind) {
