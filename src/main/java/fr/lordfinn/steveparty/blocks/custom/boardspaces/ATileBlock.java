@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.EntityShapeContext;
 import net.minecraft.block.ShapeContext;
@@ -14,6 +15,7 @@ import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.text.Text;
@@ -51,17 +53,19 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
     public static final IntProperty ROTATION_8 = IntProperty.of("rotation_8", 0, 7);
     public static final EnumProperty<TileSupport> SUPPORT = EnumProperty.of("support", TileSupport.class);
     public static final EnumProperty<TileLayout> SIZE = EnumProperty.of("size", TileLayout.class);
+    /** Painted with glow ink (see TileGlow): drawn at full light by its renderer, not baked in the chunk. */
+    public static final BooleanProperty GLOWING = BooleanProperty.of("glowing");
 
     protected ATileBlock(Settings settings, int numberOfCartridges) {
         super(settings.nonOpaque(), numberOfCartridges);
         setDefaultState(getStateManager().getDefaultState().with(ROTATION_8, 0).with(SUPPORT, TileSupport.FLAT)
-                .with(SIZE, TileLayout.STANDARD));
+                .with(SIZE, TileLayout.STANDARD).with(GLOWING, false));
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
-        builder.add(ROTATION_8, SUPPORT, SIZE);
+        builder.add(ROTATION_8, SUPPORT, SIZE, GLOWING);
     }
 
     /** The translation key suffix of the line describing this tile in its tooltip. */
@@ -73,6 +77,7 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
         // The name says its size (unless standard), the tooltip component draws its stamped look
         Tooltips tips = Tooltips.of(tooltip);
         if (TileContents.ownStamp(stack) != null) tips.tags(Tooltips.Tag.STAMPED);
+        if (stack.contains(ModComponents.GLOWING_TILE)) tips.tags(Tooltips.Tag.GLOWING);
         List<TileContents.Slot> cartridges = TileContents.cartridges(stack);
         if (cartridges.size() == 1) {
             tips.state("tooltip.steveparty.tile.contents.one", describe(cartridges.get(0).cartridge()).formatted(Tooltips.VALUE));
@@ -83,6 +88,7 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
         tips.more(more -> {
             if (cartridges.size() > 1) appendContentsTooltip(cartridges, more);
             more.use(Tooltips.Keys.of("tooltip.steveparty.key.stencil_dye"), "tooltip.steveparty.tile.stamp.hint");
+            more.use(Tooltips.Keys.of("item.minecraft.glow_ink_sac"), "tooltip.steveparty.tile.glow.hint");
             more.note("tooltip.steveparty.tile.contents.hint");
         });
     }
@@ -192,7 +198,14 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
         return getDefaultState()
                 .with(ROTATION_8, rotation8FromYaw(ctx.getPlayerYaw()))
                 .with(SIZE, layout)
-                .with(SUPPORT, support(ctx.getWorld(), ctx.getBlockPos(), layout));
+                .with(SUPPORT, support(ctx.getWorld(), ctx.getBlockPos(), layout))
+                .with(GLOWING, ctx.getStack().contains(ModComponents.GLOWING_TILE));
+    }
+
+    /** A glowing tile isn't baked in the chunk (lit as the world is): its renderer draws it at full light. */
+    @Override
+    public BlockRenderType getRenderType(BlockState state) {
+        return state.get(GLOWING) ? BlockRenderType.INVISIBLE : super.getRenderType(state);
     }
 
     /** The layout of the tile placed by {@code ctx}: its item's size, and for a large one the side it spreads to. */

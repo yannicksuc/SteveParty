@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.components;
 
+import net.minecraft.util.Unit;
+
 import com.mojang.serialization.Codec;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
@@ -180,6 +182,10 @@ public class ModComponents {
     /** A look stamped on a tile (the tile keeps it when empty, else its cartridge: see TileStamping). */
     public static final ComponentType<TileStampComponent> TILE_STAMP =
             registerComponent("tile-stamp", TileStampComponent.CODEC);
+
+    /** A tile painted with glow ink (see TileGlow): it shows at full light, kept by its item. */
+    public static final ComponentType<Unit> GLOWING_TILE =
+            registerComponent("glowing-tile", Unit.CODEC);
 
     /** The size a tile item places (none: the standard size). */
     public static final ComponentType<TileSize> TILE_SIZE =
