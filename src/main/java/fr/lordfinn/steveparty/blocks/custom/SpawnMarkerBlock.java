@@ -8,7 +8,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
-import net.minecraft.block.HorizontalFacingBlock;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -18,7 +17,8 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
@@ -28,6 +28,7 @@ import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.RotationPropertyHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
@@ -39,18 +40,24 @@ import java.util.function.Consumer;
 
 /**
  * The Spawn Marker: a little stake on a plate, all but invisible during a party, where the mob of a board space
- * appears, facing its way ({@link #FACING}: toward whoever placed it). Linked to a mob space with the Tile Linker
+ * appears, facing its way ({@link #ROTATION}: one of 16, like a sign, toward whoever placed it). Linked to a mob space with the Tile Linker
  * Brush (from the space to the marker, see CartridgeLinks.SpawnPoint); a space without one summons its mob beside it,
  * as always. Walked through, broken by hand; broken, the space forgets it.
  * <p>
  * An empty hand opens its menu (client side, {@link #openMenu}): when its mob shows ({@link SpawnMarkerBlockEntity#isResident}:
  * only when a token lands, or all the party long, see {@link MarkerResidents}) and how high above it the mob appears
- * ({@link SpawnMarkerBlockEntity#getLift}); sneaking, it turns a quarter. Any item in hand acts as that item (the
+ * ({@link SpawnMarkerBlockEntity#getLift}); sneaking, it turns a sixteenth of a turn (22.5°) clockwise. Any item in hand acts as that item (the
  * brush links it, a block is placed against it).
  */
 public class SpawnMarkerBlock extends BlockWithEntity {
     public static final MapCodec<SpawnMarkerBlock> CODEC = createCodec(SpawnMarkerBlock::new);
-    public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
+    /**
+     * The way its mob faces, in 16 steps of 22.5° like a sign's: 0 south, 4 west, 8 north, 12 east (see
+     * {@link RotationPropertyHelper}). The model turns with it: a quarter by the blockstate, the rest by its elements.
+     */
+    public static final IntProperty ROTATION = Properties.ROTATION;
+    /** The compass point of each step, from north clockwise: the end of its lang key. */
+    private static final String[] COMPASS = {"n", "nne", "ne", "ene", "e", "ese", "se", "sse", "s", "ssw", "sw", "wsw", "w", "wnw", "nw", "nnw"};
     private static final VoxelShape SHAPE = Block.createCuboidShape(5, 0, 5, 11, 3, 11);
     /** Opens the menu of the marker at a position: set by the client. */
     public static Consumer<BlockPos> openMenu = pos -> {
@@ -58,7 +65,7 @@ public class SpawnMarkerBlock extends BlockWithEntity {
 
     public SpawnMarkerBlock(Settings settings) {
         super(settings);
-        setDefaultState(getDefaultState().with(FACING, Direction.NORTH));
+        setDefaultState(getDefaultState().with(ROTATION, rotation(Direction.NORTH)));
     }
 
     @Override
@@ -68,23 +75,23 @@ public class SpawnMarkerBlock extends BlockWithEntity {
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(ROTATION);
     }
 
     /** Its mob will face whoever placed it. */
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
-        return getDefaultState().with(FACING, ctx.getHorizontalPlayerFacing().getOpposite());
+        return getDefaultState().with(ROTATION, RotationPropertyHelper.fromYaw(ctx.getPlayerYaw() + 180));
     }
 
     @Override
     protected BlockState rotate(BlockState state, BlockRotation rotation) {
-        return state.with(FACING, rotation.rotate(state.get(FACING)));
+        return state.with(ROTATION, rotation.rotate(state.get(ROTATION), RotationPropertyHelper.getMax() + 1));
     }
 
     @Override
     protected BlockState mirror(BlockState state, BlockMirror mirror) {
-        return state.rotate(mirror.getRotation(state.get(FACING)));
+        return state.with(ROTATION, mirror.mirror(state.get(ROTATION), RotationPropertyHelper.getMax() + 1));
     }
 
     @Override
@@ -118,9 +125,22 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return standPos(pos).add(0, lift, 0);
     }
 
-    /** The way its mob faces (a yaw). */
+    /**
+     * The way its mob faces (a yaw from 0 to 360: 0 south, 90 west, 180 north, 270 east, like {@link Direction#asRotation};
+     * {@link RotationPropertyHelper#toDegrees} wraps it to ±180).
+     */
     public static float yaw(BlockState state) {
-        return state.contains(FACING) ? state.get(FACING).asRotation() : 0;
+        return state.contains(ROTATION) ? (RotationPropertyHelper.toDegrees(state.get(ROTATION)) + 360) % 360 : 0;
+    }
+
+    /** The {@link #ROTATION} facing a horizontal direction (north: 8). */
+    public static int rotation(Direction direction) {
+        return RotationPropertyHelper.fromYaw(direction.asRotation());
+    }
+
+    /** The compass point of a {@link #ROTATION} ("n", "nne", "ne"...), the end of its lang key. */
+    public static String compass(int rotation) {
+        return COMPASS[(rotation + 8) & 15];
     }
 
     /** Any item in hand: that item's use (the brush links it, a block is placed against it...). */
@@ -130,7 +150,7 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return stack.isEmpty() ? ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION : ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 
-    /** An empty hand: its menu; sneaking, turned a quarter. */
+    /** An empty hand: its menu; sneaking, turned a sixteenth of a turn clockwise (22.5°). */
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (!(world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity)) return ActionResult.PASS;
@@ -143,10 +163,10 @@ public class SpawnMarkerBlock extends BlockWithEntity {
             return ActionResult.CONSUME;
         }
         if (player.isSneaking()) {
-            BlockState turned = state.with(FACING, state.get(FACING).rotateYClockwise());
+            BlockState turned = state.with(ROTATION, (state.get(ROTATION) + 1) & RotationPropertyHelper.getMax());
             world.setBlockState(pos, turned, Block.NOTIFY_ALL);
             player.sendMessage(Text.translatable("message.steveparty.spawn_marker.turned",
-                    Text.translatable("message.steveparty.spawn_marker.facing." + turned.get(FACING).asString())), true);
+                    Text.translatable("message.steveparty.spawn_marker.facing." + compass(turned.get(ROTATION)))), true);
             world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.BLOCKS, 0.6f, 1.4f);
             if (world instanceof ServerWorld serverWorld) MarkerResidents.refresh(serverWorld, pos);
             return ActionResult.SUCCESS;
