@@ -124,7 +124,8 @@ public class DiceRecipeGameTests implements SteveGameTest {
                 DiceModules.SKELETON_KEY, new Item[]{ModItems.YELLOW_STAR_FRAGMENT, Items.TRIPWIRE_HOOK},
                 DiceModules.HOMING, new Item[]{ModItems.MAGENTA_STAR_FRAGMENT, Items.ENDER_EYE},
                 DiceModules.FIRECRACKER, new Item[]{ModItems.PINK_STAR_FRAGMENT, Items.TNT});
-        context.assertEquals(recipes.size(), DiceModules.all().size(), "every module has its recipe");
+        context.assertEquals((long) recipes.size(), DiceModules.all().stream().filter(m -> m.identifier().getNamespace().equals("steveparty")).count(),
+                "every module of Steve Party has its recipe");
         recipes.forEach((module, parts) -> {
             ItemStack f = new ItemStack(parts[0]), i = new ItemStack(parts[1]), m = new ItemStack(ModItems.BLANK_DICE_MODULE);
             ItemStack result = craft3x3(context, f, i, f, f, m, f, f, f, f);
@@ -167,6 +168,7 @@ public class DiceRecipeGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void eachModuleHasItsRecipeInTheRecipeBook(TestContext context) {
         for (DiceModule module : DiceModules.all()) {
+            if (!module.identifier().getNamespace().equals(Steveparty.MOD_ID)) continue; // an addon brings its own recipes
             Identifier key = Steveparty.id("dice_with_module_" + module.id());
             RecipeEntry<?> entry = context.getWorld().getServer().getRecipeManager().get(key).orElse(null);
             context.assertTrue(entry != null && entry.value() instanceof DiceModuleRecipe recipe && recipe.module() == module, "the recipe of " + module);

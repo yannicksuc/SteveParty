@@ -297,16 +297,12 @@ public class ModItems {
         DICE_FACES.add(register("swap_dice_face", Item::new));
 
         // One item per dice module (see DiceModules)
-        for (DiceModule module : DiceModules.all()) {
-            Item item = new DiceModuleItem(module, new Item.Settings());
-            DICE_MODULES.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(module.itemPath())), item));
-        }
+        DiceModules.registerItems(module -> DICE_MODULES.add(Registry.register(Registries.ITEM,
+                RegistryKey.of(RegistryKeys.ITEM, module.itemId()), new DiceModuleItem(module, new Item.Settings()))));
 
         // One item per power-up (see PowerUps)
-        for (PowerUp powerUp : PowerUps.all()) {
-            Item item = powerUp.createItem(new Item.Settings());
-            POWER_UPS.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(powerUp.itemPath())), item));
-        }
+        PowerUps.registerItems(powerUp -> POWER_UPS.add(Registry.register(Registries.ITEM,
+                RegistryKey.of(RegistryKeys.ITEM, powerUp.itemId()), powerUp.createItem(new Item.Settings()))));
 
         // The creative tabs
         ModItemGroups.initialize();

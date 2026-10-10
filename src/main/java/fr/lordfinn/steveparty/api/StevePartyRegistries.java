@@ -18,6 +18,12 @@ public final class StevePartyRegistries {
     /** The kinds of party steps and how to rebuild a saved one (see {@link fr.lordfinn.steveparty.api.party.PartySteps}). */
     public static final IdRegistry<fr.lordfinn.steveparty.api.party.PartySteps.Loader> PARTY_STEPS = new IdRegistry<>("party step");
 
+    /** The modules a die may carry (see {@link fr.lordfinn.steveparty.dice.DiceModules}). */
+    public static final IdRegistry<fr.lordfinn.steveparty.dice.DiceModule> DICE_MODULES = new IdRegistry<>("dice module");
+
+    /** The power-ups (see {@link fr.lordfinn.steveparty.powerups.PowerUps}). */
+    public static final IdRegistry<fr.lordfinn.steveparty.powerups.PowerUp> POWER_UPS = new IdRegistry<>("power-up");
+
     private StevePartyRegistries() {
     }
 }

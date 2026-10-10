@@ -8,7 +8,12 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
+import fr.lordfinn.steveparty.dice.DiceModule;
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.powerups.PowerUp;
+import fr.lordfinn.steveparty.powerups.PowerUps;
+import net.minecraft.util.Formatting;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -41,7 +46,21 @@ public class TestAddon implements StevePartyAddon {
         PROBE_CARTRIDGE = Registry.register(Registries.ITEM, Identifier.of(NAMESPACE, "probe_cartridge"),
                 new ProbeCartridge(new Item.Settings()));
         PartySteps.register(PROBE_STEP, ProbeStep::new);
+        DiceModules.register(STICKY);
+        PowerUps.register(BANANA);
     }
+
+    /** A dice module of the addon: the token ignores the Stop spaces. */
+    public static final DiceModule STICKY = new DiceModule(Identifier.of(NAMESPACE, "sticky"), 1, false) {
+        @Override
+        public boolean ignoresStops() {
+            return true;
+        }
+    };
+
+    /** A power-up of the addon, doing nothing. */
+    public static final PowerUp BANANA = new PowerUp(Identifier.of(NAMESPACE, "banana"), 3, Formatting.YELLOW) {
+    };
 
     /** A board space role: it notes the tokens stopping on it, and drives its Routers at level 13. */
     public static class ProbeBehavior extends ABoardSpaceBehavior {

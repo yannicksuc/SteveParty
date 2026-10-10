@@ -19,7 +19,13 @@ import fr.lordfinn.steveparty.gametest.addon.TestAddon;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.dice.DiceModule;
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.powerups.PowerUp;
+import fr.lordfinn.steveparty.powerups.PowerUps;
 import net.minecraft.block.Blocks;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -28,6 +34,7 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 import java.util.UUID;
 
@@ -136,6 +143,24 @@ public class ApiGameTests implements SteveGameTest {
         controller.nextStep(); // the probe step ends right away: the end comes
         context.assertEquals(EVENTS, List.of("start default 0", "end default", "start probe_step 1", "end probe_step",
                 "start end 2", "party over"), "the events in order");
+        context.complete();
+    }
+
+    /** The addon's dice module and power-up: registered in their namespace, with their items, saved by their id. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void anAddonDiceModuleAndPowerUpHaveTheirItems(TestContext context) {
+        DiceModule sticky = TestAddon.STICKY;
+        context.assertEquals(sticky.id(), "steveparty-gametest:sticky", "its key on a die: its whole id");
+        context.assertEquals(Registries.ITEM.getId(sticky.item()), Identifier.of(TestAddon.NAMESPACE, "dice_module_sticky"), "its item, in its namespace");
+        context.assertTrue(DiceModules.fromItem(new ItemStack(sticky.item())) == sticky, "the item gives the module");
+        context.assertTrue(ModItems.DICE_MODULES.contains(sticky.item()), "listed with the others (creative tab)");
+        ItemStack die = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(sticky, 1, DiceModules.LUCKY, 2));
+        context.assertEquals(DiceModules.of(die), Map.of(sticky, 1, DiceModules.LUCKY, 2), "carried by a die with Steve Party's");
+        context.assertEquals(DiceModules.get("lucky"), DiceModules.LUCKY, "Steve Party's keys unchanged");
+
+        PowerUp banana = TestAddon.BANANA;
+        context.assertEquals(Registries.ITEM.getId(banana.item()), Identifier.of(TestAddon.NAMESPACE, "powerup_banana"), "the power-up's item");
+        context.assertTrue(PowerUps.byId(banana.id()) == banana && ModItems.POWER_UPS.contains(banana.item()), "found by its key, listed");
         context.complete();
     }
 }

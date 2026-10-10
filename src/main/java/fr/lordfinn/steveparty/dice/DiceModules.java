@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.dice;
 
+import fr.lordfinn.steveparty.api.StevePartyRegistries;
+import fr.lordfinn.steveparty.api.registry.ContentKeys;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.items.custom.DiceModuleItem;
 import net.minecraft.entity.mob.MobEntity;
@@ -34,7 +36,8 @@ import java.util.Map;
  * </ul>
  */
 public final class DiceModules {
-    private static final Map<String, DiceModule> REGISTRY = new LinkedHashMap<>();
+    /** Registers the item of a module (set by ModItems once it registers items: the later modules get theirs at once). */
+    private static @Nullable java.util.function.Consumer<DiceModule> itemRegistrar;
 
     /** The thrown die turns slowly, showing its faces one after the other: its roller hits it to stop it on one. */
     public static final DiceModule SLOW = register(new DiceModule("slow", 1, false) {
@@ -119,18 +122,28 @@ public final class DiceModules {
     }
 
     public static <T extends DiceModule> T register(T module) {
-        if (REGISTRY.putIfAbsent(module.id(), module) != null)
-            throw new IllegalStateException("Die module registered twice: " + module.id());
+        StevePartyRegistries.DICE_MODULES.register(module.identifier(), module);
+        if (itemRegistrar != null) itemRegistrar.accept(module);
         return module;
     }
 
+    /**
+     * Registers the item of every module, now and of the modules registered later (an addon's, from its entrypoint).
+     * Called once by ModItems.
+     */
+    public static void registerItems(java.util.function.Consumer<DiceModule> registrar) {
+        itemRegistrar = registrar;
+        all().forEach(registrar);
+    }
+
+    /** The module of a key on a die ({@link DiceModule#id()}), null for none. */
     public static @Nullable DiceModule get(String id) {
-        return REGISTRY.get(id);
+        return StevePartyRegistries.DICE_MODULES.get(ContentKeys.id(id));
     }
 
     /** Every module, in registration order. */
     public static Collection<DiceModule> all() {
-        return List.copyOf(REGISTRY.values());
+        return List.copyOf(StevePartyRegistries.DICE_MODULES.values());
     }
 
     /** @return the module a module item stands for, null for any other item. */
@@ -147,7 +160,7 @@ public final class DiceModules {
         Map<DiceModule, Integer> modules = new LinkedHashMap<>();
         DiceModulesComponent component = die == null || die.isEmpty() ? null : die.get(DiceModulesComponent.TYPE);
         if (component == null) return modules;
-        for (DiceModule module : REGISTRY.values()) {
+        for (DiceModule module : StevePartyRegistries.DICE_MODULES.values()) {
             Integer count = component.counts().get(module.id());
             if (count != null && count > 0) modules.put(module, Math.min(count, module.maxCount()));
         }
@@ -195,7 +208,7 @@ public final class DiceModules {
     /** The union of two sets of modules: for each module, the highest of the two counts. */
     public static Map<DiceModule, Integer> union(Map<DiceModule, Integer> a, Map<DiceModule, Integer> b) {
         Map<DiceModule, Integer> union = new LinkedHashMap<>();
-        for (DiceModule module : REGISTRY.values()) {
+        for (DiceModule module : StevePartyRegistries.DICE_MODULES.values()) {
             int count = Math.max(a.getOrDefault(module, 0), b.getOrDefault(module, 0));
             if (count > 0) union.put(module, count);
         }
