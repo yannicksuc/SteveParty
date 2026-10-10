@@ -120,9 +120,6 @@
     ]
   ],
   "rewards": {
-    "experience": 25,
-    "loot": [
-      "steveparty:advancement_reward/coins_10"
-    ]
+    "experience": 25
   }
 }

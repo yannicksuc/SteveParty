@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
@@ -35,17 +36,19 @@ public final class CartridgeTransfers {
      * for none.
      */
     public static @Nullable Inventory getLinkedInventory(World world, ItemStack cartridge) {
-        return getLinkedInventory(world, cartridge, null);
+        if (!(cartridge.getItem() instanceof InventoryCartridgeItem)) return null;
+        List<Inventory> available = CartridgeContainers.available(cartridge, world);
+        return available.isEmpty() ? null : new InventoryChain(available);
     }
 
     /**
-     * The same for the cartridge of the board space at {@code space}: without a container of its own, the bank of the
-     * party running on its board (see {@link CartridgeContainers#availableFor}).
+     * Where the cartridge of the board space at {@code space} takes and puts its items: its own containers, or without
+     * any the party running on its board (see {@link CartridgeContainers#sourceFor}); {@link PartyResources#NONE} for
+     * none.
      */
-    public static @Nullable Inventory getLinkedInventory(World world, ItemStack cartridge, @Nullable BlockPos space) {
-        if (!(cartridge.getItem() instanceof InventoryCartridgeItem)) return null;
-        List<Inventory> available = CartridgeContainers.availableFor(cartridge, world, space);
-        return available.isEmpty() ? null : new InventoryChain(available);
+    public static PartyResources source(World world, ItemStack cartridge, @Nullable BlockPos space) {
+        if (!(cartridge.getItem() instanceof InventoryCartridgeItem)) return PartyResources.NONE;
+        return CartridgeContainers.sourceFor(cartridge, world, space);
     }
 
     /**
@@ -56,16 +59,16 @@ public final class CartridgeTransfers {
      * @return true if the transfer happened (something moved; for "all items", everything)
      */
     public static boolean apply(World world, ItemStack cartridge, PlayerEntity player, IntSupplier cycleIndex, IntConsumer setCycleIndex) {
-        Inventory linked = getLinkedInventory(world, cartridge);
+        PartyResources linked = source(world, cartridge, null);
         InventoryComponent content = cartridge.getOrDefault(INVENTORY_COMPONENT, null);
-        if (linked == null || content == null) return false;
+        if (linked.isNone() || content == null) return false;
         List<ItemStack> items = content.getItems().stream().filter(stack -> !stack.isEmpty()).toList();
         if (items.isEmpty()) return false;
         return switch (InventoryCartridgeItem.getSelectionState(cartridge)) {
             case 1 -> {
                 for (ItemStack stack : items) {
-                    Inventory source = isNegative(stack) ? player.getInventory() : linked;
-                    if (countMatching(stack, source) < stack.getCount()) yield false;
+                    int held = isNegative(stack) ? countMatching(stack, player.getInventory()) : linked.available(pattern(stack));
+                    if (held < stack.getCount()) yield false;
                 }
                 boolean moved = false;
                 for (ItemStack stack : items) moved |= transfer(stack, linked, player) > 0;
@@ -96,19 +99,36 @@ public final class CartridgeTransfers {
         return count;
     }
 
-    private static int transfer(ItemStack stack, Inventory linked, PlayerEntity player) {
+    /** The cartridge item as the items it stands for: count 1, without the negative mark. */
+    public static ItemStack pattern(ItemStack template) {
+        ItemStack pattern = template.copyWithCount(1);
+        pattern.remove(IS_NEGATIVE);
+        return pattern;
+    }
+
+    /**
+     * Moves the cartridge item {@code stack}: negative, from the player into {@code linked} (what does not go in stays
+     * with the player); positive, from {@code linked} to the player (what does not fit falls at their feet).
+     *
+     * @return the number of items moved
+     */
+    public static int transfer(ItemStack stack, PartyResources linked, PlayerEntity player) {
         if (isNegative(stack)) {
-            // What does not fit in the container stays with the player
-            return InventoryInteractorTileBehavior.extractMatching(stack, player.getInventory(),
-                    toMove -> InventoryInteractorTileBehavior.insertLinked(toMove, linked));
+            return InventoryInteractorTileBehavior.extractMatching(stack, player.getInventory(), toMove -> linked.give(toMove));
         }
-        // What does not fit in the player's inventory is dropped at their feet
-        int moved = InventoryInteractorTileBehavior.extractMatching(stack, linked, toMove -> {
-            int count = toMove.getCount();
-            player.getInventory().offerOrDrop(toMove);
-            return count;
-        });
-        player.getInventory().markDirty();
+        ItemStack pattern = pattern(stack);
+        int moved = linked.take(pattern, stack.getCount());
+        if (moved > 0) giveOrDrop(player, pattern, moved);
         return moved;
+    }
+
+    private static void giveOrDrop(PlayerEntity player, ItemStack pattern, int count) {
+        int left = count;
+        while (left > 0) {
+            int size = Math.min(left, pattern.getMaxCount());
+            player.getInventory().offerOrDrop(pattern.copyWithCount(size));
+            left -= size;
+        }
+        player.getInventory().markDirty();
     }
 }
