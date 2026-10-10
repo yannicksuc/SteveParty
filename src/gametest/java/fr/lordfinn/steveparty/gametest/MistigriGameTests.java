@@ -455,6 +455,8 @@ public class MistigriGameTests implements SteveGameTest {
         context.assertTrue(MistigriPlay.findPrey(context.getWorld(), mistigri) == glandouille, "he spots it");
         boolean[] chased = {false};
         context.runAtEveryTick(() -> {
+            // kept awake: a nap (likely at night, which other tests set the world to) ends the game, and he rests long after
+            glandouille.handled();
             context.assertTrue(glandouille.isAlive() && glandouille.getHealth() >= health, "never hurt");
             if (!chased[0] && glandouille.scaredOf() == mistigri) chased[0] = true;
             if (chased[0] && glandouille.getNavigation().isFollowingPath()) {
