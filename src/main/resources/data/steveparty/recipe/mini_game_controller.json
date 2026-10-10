@@ -2,25 +2,28 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "pattern": [
-    "IGT",
-    "OPO",
+    "PGT",
+    "OXO",
     "III"
   ],
   "key": {
-    "I": {
-      "item": "minecraft:iron_ingot"
+    "P": {
+      "item": "minecraft:paper"
     },
     "G": {
       "item": "minecraft:glass"
     },
+    "T": {
+      "item": "minecraft:redstone_torch"
+    },
     "O": {
       "item": "minecraft:gold_ingot"
     },
-    "P": {
-      "item": "minecraft:paper"
+    "X": {
+      "tag": "steveparty:minigame_pipes"
     },
-    "T": {
-      "item": "minecraft:redstone_torch"
+    "I": {
+      "item": "minecraft:iron_ingot"
     }
   },
   "result": {
