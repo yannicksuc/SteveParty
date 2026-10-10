@@ -151,7 +151,7 @@ final class StandingsHud {
                 px - PAD, y - PAD, alpha);
         if (entry.mine()) HudPaint.draw(context, HudPaint.ring(Form.PILL, layout.plateWidth(), h, HudPaint.GOLD.body()), px - PAD, y - PAD, alpha);
         int head = StandingsLayout.HEAD;
-        HudPaint.draw(context, HudPaint.shape(Form.CUT1, head, head, HudPaint.white(player.ramp.outline()), HudPaint.OUTLINE),
+        HudPaint.draw(context, HudPaint.headFrame(head, player.ramp.outline()),
                 px + 3 - PAD, y + (h - head) / 2 - PAD, alpha);
         TurnBarHud.head(context, player, px + 3 + (head - 8) / 2, y + (h - head) / 2 + (head - 8) / 2, alpha);
         int textY = y + (h - 8) / 2;
