@@ -33,6 +33,8 @@ public final class GoalPoleNetwork {
     private static final ArrayDeque<BlockEntity> PENDING = new ArrayDeque<>();
     /** Bases and poles whose data changed this tick: sent to the players watching them once, at the end of the tick. */
     private static final Set<BlockEntity> TO_SYNC = new LinkedHashSet<>();
+    /** Bases with score popups waiting (sent at most every {@link GoalPoleBaseBlockEntity#POPUP_INTERVAL} ticks). */
+    private static final Set<GoalPoleBaseBlockEntity> TO_POPUP = new LinkedHashSet<>();
 
     private GoalPoleNetwork() {}
 
@@ -40,6 +42,7 @@ public final class GoalPoleNetwork {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             processPending();
             flushSyncs();
+            flushPopups(server.getTicks());
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> clear());
     }
@@ -100,7 +103,18 @@ public final class GoalPoleNetwork {
         TO_SYNC.clear();
     }
 
+    static void requestPopups(GoalPoleBaseBlockEntity base) {
+        TO_POPUP.add(base);
+    }
+
+    /** Sends the score popups of the bases whose last ones are old enough; the others wait. */
+    public static void flushPopups(long now) {
+        if (TO_POPUP.isEmpty()) return;
+        TO_POPUP.removeIf(base -> base.isRemoved() || base.getWorld() == null || !base.flushPopups(now));
+    }
+
     private static void clear() {
+        TO_POPUP.clear();
         BASES.clear();
         BY_OBJECTIVE.clear();
         PENDING.clear();

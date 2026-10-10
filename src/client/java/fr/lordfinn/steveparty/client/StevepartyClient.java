@@ -103,6 +103,7 @@ import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.client.tokenspell.MobTextureColors;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
+import fr.lordfinn.steveparty.client.renderer.GoalPolePopupRenderer;
 import fr.lordfinn.steveparty.client.renderer.items.TripleJumpShoesRenderer;
 import fr.lordfinn.steveparty.client.screens.*;
 import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
@@ -511,6 +512,7 @@ public class StevepartyClient implements ClientModInitializer {
 
     private static void initParticleRenderers() {
         FloatingTextRenderer.registerRenderCallback();
+        GoalPolePopupRenderer.register();
         StarSpaceRenderer.initialize();
     }
 
@@ -520,6 +522,7 @@ public class StevepartyClient implements ClientModInitializer {
         DiceRevealHud.clear();
         MiniGamePageClient.clear();
         FloatingTextRenderer.clear();
+        GoalPolePopupRenderer.clear();
         StarSpaceRenderer.clear();
         TileInfoClient.clear();
         GoalPoleFlipTracker.clear();

@@ -16,6 +16,7 @@ public class ModPayloads {
         s2c(PartyLivePayload.ID, PartyLivePayload.CODEC);
         s2c(PartyDashboardPayload.ID, PartyDashboardPayload.CODEC);
         s2c(FloatingTextPayload.ID, FloatingTextPayload.CODEC);
+        s2c(GoalPolePopupsPayload.ID, GoalPolePopupsPayload.CODEC);
         s2c(SwitchableBlocksPayload.ID, SwitchableBlocksPayload.CODEC);
         s2c(StarSpacesPayload.ID, StarSpacesPayload.CODEC);
         s2c(SquishAnimationPayload.ID, SquishAnimationPayload.CODEC);
