@@ -201,7 +201,10 @@ public final class MistigriSentences {
             return player == null || player.isDisconnected() ? null : player;
         }
 
-        /** He appears on the token's right, a few blocks off, crouched for his leap. */
+        /**
+         * He appears on the space's Spawn Marker, facing its way, or without one on the token's right, a few blocks
+         * off; crouched for his leap to his seat by the token (toward the marker), back the same way.
+         */
         boolean spawn() {
             MistigriEntity one = ModEntities.MISTIGRI.create(world);
             if (one == null) return false;
@@ -209,10 +212,24 @@ public final class MistigriSentences {
             Vec3d stand = BoardSpaces.standPos(world, tile);
             yaw = token.getYaw();
             Vec3d right = Vec3d.fromPolar(0, yaw + 90);
-            from = stand.add(right.multiply(APPEAR_SIDE));
-            seat = stand.add(right.multiply(SEAT_SIDE));
-            away = stand.add(right.multiply(APPEAR_SIDE)).add(Vec3d.fromPolar(0, yaw).multiply(-2));
-            float facing = yawToward(from, seat);
+            BoardMobSpots.Spot spot = BoardMobSpots.marker(world, tile);
+            BoardMobSpots.showStarts(world, spot, task);
+            float facing;
+            if (spot != null) {
+                from = spot.pos();
+                Vec3d toward = new Vec3d(from.x - stand.x, 0, from.z - stand.z);
+                double distance = toward.length();
+                Vec3d unit = distance < 1.0E-3 ? right : toward.multiply(1 / distance);
+                seat = distance <= SEAT_SIDE ? from : stand.add(unit.multiply(SEAT_SIDE));
+                away = from.add(unit.multiply(2));
+                facing = spot.yaw();
+                BoardMobSpots.hold(one, spot);
+            } else {
+                from = stand.add(right.multiply(APPEAR_SIDE));
+                seat = stand.add(right.multiply(SEAT_SIDE));
+                away = stand.add(right.multiply(APPEAR_SIDE)).add(Vec3d.fromPolar(0, yaw).multiply(-2));
+                facing = yawToward(from, seat);
+            }
             one.refreshPositionAndAngles(from.x, from.y, from.z, facing, 0);
             one.setHeadYaw(facing);
             one.setBodyYaw(facing);

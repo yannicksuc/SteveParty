@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -41,7 +42,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, ShopChange, BlockChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, ShopChange, SpawnChange, BlockChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -102,6 +103,25 @@ public final class LinkHistory {
             if (value == null) cartridge.remove(ModComponents.SHOP_LINK);
             else cartridge.set(ModComponents.SHOP_LINK, value);
             BoardLinks.sync(container);
+            return true;
+        }
+    }
+
+    /** The Spawn Marker of the mob space's cartridge in {@code slot} (null: none). */
+    public record SpawnChange(BlockPos pos, int slot, @Nullable GlobalPos before, @Nullable GlobalPos after) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            BrushLinks.Held held = BrushLinks.held(world, pos, slot);
+            if (held == null) return false;
+            ItemStack cartridge = held.cartridge();
+            if (cartridge.isEmpty() || !Objects.equals(cartridge.get(ModComponents.SPAWN_MARKER), undo ? after : before)) return false;
+            GlobalPos value = undo ? before : after;
+            if (value == null) cartridge.remove(ModComponents.SPAWN_MARKER);
+            else {
+                cartridge.set(ModComponents.SPAWN_MARKER, value);
+                if (value.dimension().equals(world.getRegistryKey())) CartridgeSpawnMarker.own(world, value.pos(), pos);
+            }
+            held.sync().run();
             return true;
         }
     }

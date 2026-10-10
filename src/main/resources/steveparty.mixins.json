@@ -4,6 +4,11 @@
   "package": "fr.lordfinn.steveparty.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "BoardActorEntityMixin",
+    "BoardActorLivingMixin",
+    "BoardActorMobMixin",
+    "BoardActorPlayerMixin",
+    "MobEntityGoalsAccessor",
     "BrushOffHandPlaceMixin",
     "PlayerPassengerSyncMixin",
     "DetectorRailBoomcartMixin",

@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.board.TileInfo;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.service.BoardSequences;
 import fr.lordfinn.steveparty.service.TrichaudronPrizes;
@@ -44,7 +45,7 @@ public class TrichaudronTileBehavior extends MobTileBehavior {
     public static void refreshSleep(ServerWorld world, BoardSpaceBlockEntity space) {
         ItemStack cartridge = space.getActiveCartridgeItemStack();
         if (!(cartridge.getItem() instanceof TrichaudronCartridgeItem)) return;
-        refreshSleep(space, !TrichaudronCartridgeItem.available(cartridge, world).isEmpty());
+        refreshSleep(space, !TrichaudronCartridgeItem.available(cartridge, world, space.getPos()).isEmpty());
     }
 
     /** {@code space} has prizes to give or not: its cartridge records it, its tile is sent again if that changed. */
@@ -93,13 +94,15 @@ public class TrichaudronTileBehavior extends MobTileBehavior {
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof TrichaudronCartridgeItem)) return;
-        List<ItemStack> prizes = TrichaudronCartridgeItem.available(stack, world);
+        List<ItemStack> prizes = TrichaudronCartridgeItem.available(stack, world, space.getPos());
         refreshSleep(space, !prizes.isEmpty());
         if (prizes.isEmpty()) {
             info.line(TileInfo.dim(TileInfo.line(TrichaudronCartridgeItem.hasChests(stack) ? "trichaudron.empty" : "trichaudron.no_chest")));
             return;
         }
         info.line(TileInfo.good(TileInfo.line("trichaudron.prizes", prizes.size())));
+        // No chest of its own: the party's bank
+        if (CartridgeContainers.partyBankOf(stack, world, space.getPos()) != null) info.line(TileInfo.value(TileInfo.line("party_bank")));
         for (ItemStack prize : prizes) info.item(prize);
     }
 }

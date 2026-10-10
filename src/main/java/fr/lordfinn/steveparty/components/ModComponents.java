@@ -217,6 +217,13 @@ public class ModComponents {
     public static final ComponentType<List<GlobalPos>> INVENTORY_CONTAINERS =
             registerComponent("inventory-containers", GlobalPos.CODEC.listOf());
 
+    /**
+     * The Spawn Marker of a cartridge whose space summons a mob (CartridgeSpawnMarker): where its mob appears. Absent:
+     * beside its space.
+     */
+    public static final ComponentType<GlobalPos> SPAWN_MARKER =
+            registerComponent("spawn-marker", GlobalPos.CODEC);
+
     /** Block a Box Costume looks like: the one the Boxed Trader's box looked like when it was taken from him. */
     public static final ComponentType<BlockState> BOX_BLOCK =
             registerComponent("box-block", BlockState.CODEC);

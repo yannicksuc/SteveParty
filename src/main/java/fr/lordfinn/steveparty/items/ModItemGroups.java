@@ -105,7 +105,7 @@ public final class ModItemGroups {
                 PARTY_CARD_SEQUENCE_START, PARTY_CARD_REPEAT, PARTY_BELL, PIGGY_BANK);
         // The tiles: plain, one per cartridge, then their other sizes (same order as in REI)
         entries.addAll(CartridgeApplications.tileEntries());
-        addAll(entries, CHECK_POINT, BOARD_SPACE_REDSTONE_ROUTER, WRENCH, TILE_LINKER_BRUSH, EXPLORER_HELMET);
+        addAll(entries, CHECK_POINT, BOARD_SPACE_REDSTONE_ROUTER, WRENCH, TILE_LINKER_BRUSH, ModItems.SPAWN_MARKER, EXPLORER_HELMET);
         addAll(entries, BOARD_SPACE_BEHAVIOR, BOARD_SPACE_BEHAVIOR_STOP, TILE_BEHAVIOR_START, INVENTORY_CARTRIDGE,
                 SHOP_CARTRIDGE, ADVANCE_BACK_CARTRIDGE);
         entries.add(AdvanceBackCartridgeItem.withSteps(-3));

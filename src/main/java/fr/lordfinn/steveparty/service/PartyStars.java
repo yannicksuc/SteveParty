@@ -431,25 +431,21 @@ public final class PartyStars {
     }
 
     /**
-     * The coins paid for the star go back to the party: into its bank (the chests of the Gains page's Inventory
-     * Cartridge, in their order), like the mini-game gains come from it. With no bank, or for what does not fit, they
+     * The coins paid for the star go back to the party: into its bank (see {@link PartyBank}: its own inventory, then
+     * its linked chests), like the mini-game gains come from it. For what does not fit, they
      * fall by the Party Controller: nothing is lost, and the purchase is never refused for it.
      */
     static void deposit(PartyControllerEntity party, ServerWorld world, ItemStack coins) {
         ItemStack rest = coins.copy();
-        Inventory bank = bank(party, world);
-        if (bank != null) {
-            InventoryInteractorTileBehavior.insertLinked(rest, bank);
-            bank.markDirty();
-        }
+        PartyBank.deposit(party, rest);
         if (rest.isEmpty()) return;
         BlockPos pos = party.getPos();
         ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, rest);
     }
 
-    /** The party's bank (the chests of its Gains page's Inventory Cartridge), null for none (or none loaded). */
-    private static @Nullable Inventory bank(PartyControllerEntity party, ServerWorld world) {
-        return world.getServer() == null ? null : PartyBank.inventory(world.getServer(), party.getBank());
+    /** The party's bank (see {@link PartyBank}: its own inventory, then its linked chests). */
+    private static Inventory bank(PartyControllerEntity party, ServerWorld world) {
+        return PartyBank.inventory(party);
     }
 
     /** The party's stars left in its bank: what the star spaces can still sell. */

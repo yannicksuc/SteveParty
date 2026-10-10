@@ -34,7 +34,7 @@ import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
  * empty chests, none of the items set) and the space sleeps. Nothing is ever made from nothing. Its tile is the dark
  * red of the beast's crust.
  */
-public class TrichaudronCartridgeItem extends CartridgeItem implements ContainerCartridge {
+public class TrichaudronCartridgeItem extends CartridgeItem implements ContainerCartridge, MobSpawnCartridge {
     /** Its tile's colour: a dark magma crust. */
     public static final int COLOR = 0x64200C;
     /** The most prizes on offer (its menu's slots). */
@@ -93,9 +93,12 @@ public class TrichaudronCartridgeItem extends CartridgeItem implements Container
         else InventoryComponent.writeToStack(stack, slots);
     }
 
-    /** Its linked chests that are there now (loaded), end to end in their order; null for none. */
-    public static @Nullable Inventory chests(ItemStack stack, World world) {
-        List<Inventory> available = CartridgeContainers.available(stack, world);
+    /**
+     * The chests of the space at {@code space} that are there now (loaded), end to end in their order: its linked ones,
+     * or without any, the bank of the party running on its board (CartridgeContainers.availableFor); null for none.
+     */
+    public static @Nullable Inventory chests(ItemStack stack, World world, @Nullable BlockPos space) {
+        List<Inventory> available = CartridgeContainers.availableFor(stack, world, space);
         return available.isEmpty() ? null : new InventoryChain(available);
     }
 
@@ -104,9 +107,9 @@ public class TrichaudronCartridgeItem extends CartridgeItem implements Container
      * hold, as many as set or as they hold if fewer; without prizes set, the first different items found in the
      * chests, as many as there are of each.
      */
-    public static List<ItemStack> available(ItemStack stack, World world) {
+    public static List<ItemStack> available(ItemStack stack, World world, @Nullable BlockPos space) {
         List<ItemStack> prizes = new ArrayList<>();
-        Inventory chests = chests(stack, world);
+        Inventory chests = chests(stack, world, space);
         if (chests == null) return prizes;
         List<ItemStack> filters = filters(stack);
         if (!filters.isEmpty()) {

@@ -40,7 +40,7 @@ final class MiniGamePayout {
         paid.clear();
         List<Map.Entry<UUID, Integer>> order = new ArrayList<>(places.entrySet());
         order.sort(Comparator.comparingInt(entry -> entry.getValue() <= 0 ? Integer.MAX_VALUE : entry.getValue()));
-        Inventory bank = PartyBank.inventory(server, controller.getBank());
+        Inventory bank = PartyBank.inventory(controller);
         boolean full = true;
         for (Map.Entry<UUID, Integer> entry : order) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
@@ -53,7 +53,7 @@ final class MiniGamePayout {
             full &= received.full();
         }
         if (full) return null;
-        return Text.translatable(bank == null ? "message.steveparty.minigame.results.no_bank" : "message.steveparty.minigame.results.bank_empty")
+        return Text.translatable("message.steveparty.minigame.results.bank_empty")
                 .formatted(Formatting.RED);
     }
 

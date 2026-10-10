@@ -130,7 +130,7 @@ public final class TrichaudronPrizes {
         if (RUNNING.isRunning(token)) return Start.STARTED;
         BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, tile);
         // What its chests really hold (never anything made from nothing)
-        List<ItemStack> stock = space == null ? List.of() : TrichaudronCartridgeItem.available(space.getActiveCartridgeItemStack(), world);
+        List<ItemStack> stock = space == null ? List.of() : TrichaudronCartridgeItem.available(space.getActiveCartridgeItemStack(), world, tile);
         if (space != null) TrichaudronTileBehavior.refreshSleep(space, !stock.isEmpty());
         if (stock.isEmpty()) return Start.EMPTY;
         ServerPlayerEntity player = BoardSequences.tokenPlayer(world, token);
@@ -182,15 +182,19 @@ public final class TrichaudronPrizes {
             return player == null || player.isDisconnected() ? null : player;
         }
 
-        /** It appears under the ground on the token's right, facing the token: its heads will reach over beside it. */
+        /** It appears under the ground on the space's Spawn Marker (else on the token's right, facing it): its heads will reach over. */
         boolean spawn() {
             TrichaudronEntity one = ModEntities.TRICHAUDRON.create(world);
             if (one == null) return false;
             cast(one);
             Vec3d stand = BoardSpaces.standPos(world, tile);
             Vec3d right = Vec3d.fromPolar(0, token.getYaw() + 90);
-            seat = stand.add(right.multiply(SIDE));
-            yaw = yawToward(seat, stand);
+            // On the space's Spawn Marker, facing its way; without one, on the token's right, facing it
+            BoardMobSpots.Spot spot = BoardMobSpots.marker(world, tile);
+            BoardMobSpots.showStarts(world, spot, task);
+            seat = spot != null ? spot.pos() : stand.add(right.multiply(SIDE));
+            yaw = spot != null ? spot.yaw() : yawToward(seat, stand);
+            BoardMobSpots.hold(one, spot);
             diePos = seat.add(Vec3d.fromPolar(0, yaw).multiply(DIE_AHEAD)).add(0, DIE_UP, 0);
             one.setTank(TrichaudronEntity.TANK_MAX);
             place(one, seat.add(0, -TrichaudronEntity.HEIGHT, 0));
@@ -390,7 +394,7 @@ public final class TrichaudronPrizes {
             BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, tile);
             if (space == null) return 0;
             ItemStack cartridge = space.getActiveCartridgeItemStack();
-            Inventory chests = cartridge.getItem() instanceof TrichaudronCartridgeItem ? TrichaudronCartridgeItem.chests(cartridge, world) : null;
+            Inventory chests = cartridge.getItem() instanceof TrichaudronCartridgeItem ? TrichaudronCartridgeItem.chests(cartridge, world, tile) : null;
             if (chests == null) return 0;
             int count = PowerUpService.itemsGained(player, prize, prize.getCount()); // Double Coins
             int allowed = PowerUpLimit.allowed(player, prize.copyWithCount(count));

@@ -180,6 +180,13 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(TelescopeBlockEntity::new, ModBlocks.TELESCOPE).build(null)
     );
 
+    /** A Spawn Marker's settings: when its mob shows, the space linked to it. */
+    public static final BlockEntityType<SpawnMarkerBlockEntity> SPAWN_MARKER_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "spawn_marker"),
+            FabricBlockEntityTypeBuilder.create(SpawnMarkerBlockEntity::new, ModBlocks.SPAWN_MARKER).build(null)
+    );
+
     /** What a Magpie Nest holds: coins (its pot's when linked) and shiny things. */
     public static final BlockEntityType<MagpieNestBlockEntity> MAGPIE_NEST_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
