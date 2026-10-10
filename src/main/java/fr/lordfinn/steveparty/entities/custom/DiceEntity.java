@@ -78,6 +78,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     /** Slow module: the rolling die shows the synced face (and turns slowly) instead of flickering at random. */
     private static final TrackedData<Boolean> FACE_SHOWN = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> ROLLING = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    /** The die it rolls, for the client: its faces flicker while it rolls. */
+    private static final TrackedData<ItemStack> DIE_STACK = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
     private static final TrackedData<Optional<UUID>> TARGET = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     private static final TrackedData<Optional<UUID>> OWNER = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     private static final TrackedData<List<UUID>> LINKED_DICE = DataTracker.registerData(DiceEntity.class, ListUuidTrackedDataHandler.INSTANCE);
@@ -148,11 +150,12 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     public void setItemReference(ItemStack itemReference) {
         this.itemReference = itemReference == null ? ItemStack.EMPTY : itemReference;
         this.dieStack = this.itemReference;
+        syncDieStack();
     }
 
-    /** The die this entity rolls: its faces and its modules (empty: a plain die). */
+    /** The die this entity rolls: its faces and its modules (empty: a plain die). On the client, its synced copy. */
     public ItemStack getDieStack() {
-        return dieStack;
+        return getWorld().isClient ? dataTracker.get(DIE_STACK) : dieStack;
     }
 
     /** Makes this die one of the other dice of a Double / Triple Dice: it rolls the same die, but holds no item. */
@@ -160,12 +163,18 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.itemReference = ItemStack.EMPTY;
         this.dieStack = die == null ? ItemStack.EMPTY : die;
         this.follower = true;
+        syncDieStack();
+    }
+
+    private void syncDieStack() {
+        if (!getWorld().isClient) dataTracker.set(DIE_STACK, dieStack.copyWithCount(1));
     }
 
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
         builder.add(ROLLING, true);
+        builder.add(DIE_STACK, ItemStack.EMPTY);
         builder.add(ROLL_VALUE, 1);
         builder.add(ROLL_KIND, DiceFacesComponent.Kind.NORMAL.ordinal());
         builder.add(FACE_SHOWN, false);
