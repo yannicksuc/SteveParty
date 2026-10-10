@@ -35,12 +35,17 @@ import java.util.List;
  *     <li>{@link SpawnPoint}: the Spawn Marker of a mob space's cartridge, where its mob appears (one at most).</li>
  * </ul>
  * The target decides: a board space is a destination, a container a container, a Spawn Marker the spawn point; a
- * target the cartridge takes nothing of is refused with a word (see TileLinkerBrush).
+ * target the cartridge takes nothing of is refused with a word (see TileLinkerBrush). The containers and the spawn
+ * point are those of the active cartridge when the slot of the brush's level holds none of that role (see
+ * {@link BrushLinks#withRole}).
  * Each writes what a click of the cartridge on the target writes, with the same feedback, recorded for undo.
  */
 public final class CartridgeLinks {
-    /** Colour of the links to containers (also the chest trail). */
-    public static final int CONTAINER_COLOR = 0x3C8CFF;
+    /**
+     * Colour of the links to a cartridge's storage, its containers or the Party Controller's bank (also the chest
+     * trail): the green of the « Storage » line of its menu.
+     */
+    public static final int CONTAINER_COLOR = 0x7CE06A;
     /** Colour of a router's links to the board spaces it powers: redstone. */
     public static final int ROUTER_COLOR = 0xE03030;
     /** Colour of a Hop Switch's links to the blocks it switches. */
@@ -59,10 +64,14 @@ public final class CartridgeLinks {
                 if (holder instanceof HopSwitchBlockEntity && BrushLinks.isCartridge(held.cartridge())) out.add(new Switches(held));
             },
             (world, holder, held, out) -> {
-                if (BrushLinks.isInventoryCartridge(held.cartridge()) && BrushLinks.usesContainers(holder)) out.add(new Containers(held));
+                if (!BrushLinks.usesContainers(holder)) return;
+                BrushLinks.Held containers = BrushLinks.withRole(world, holder, held, BrushLinks::isInventoryCartridge);
+                if (containers != null) out.add(new Containers(containers));
             },
             (world, holder, held, out) -> {
-                if (holder instanceof BoardSpaceBlockEntity && CartridgeSpawnMarker.spawnsMobs(held.cartridge())) out.add(new SpawnPoint(held));
+                if (!(holder instanceof BoardSpaceBlockEntity)) return;
+                BrushLinks.Held spawning = BrushLinks.withRole(world, holder, held, CartridgeSpawnMarker::spawnsMobs);
+                if (spawning != null) out.add(new SpawnPoint(spawning));
             });
 
     // ---------------------------------------------------------------- board paths

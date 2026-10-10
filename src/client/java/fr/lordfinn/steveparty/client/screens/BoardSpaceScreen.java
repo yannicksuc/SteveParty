@@ -58,7 +58,7 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
         isSingle = this.handler.isSingle();
         BoardSpaceBlockEntity boardSpace = handler.boardSpace();
         BlockPos pos = boardSpace == null ? null : boardSpace.getPos();
-        this.panel = new CartridgePanel(MinecraftClient.getInstance(), handler::selectedStack, () -> pos, () -> handler.syncId,
+        this.panel = new CartridgePanel(MinecraftClient.getInstance(), handler::selectedStack, () -> pos, handler::storage, () -> handler.syncId,
                 () -> pos != null && CartridgeRef.slot(pos, handler.getSelectedSlot()).mayEdit(inventory.player),
                 CartridgeLayout.MAX_CONTENT_BESIDE_TILE, 0, TILE_H);
     }

@@ -373,8 +373,9 @@ public class PartyControllerDashboardGameTests implements SteveGameTest {
 
     /**
      * The dashboard is compact: with its tabs and the player's inventory it fits a 427 x 240 screen. Each tab shows
-     * its own slots (the catalogue and the cards on Program, the Star and Coin items on Gains, the inventory on both),
-     * none overlapping, all inside their panel; the slots keep their indices.
+     * its own slots (the catalogue and the cards on Program, the Star and Coin items on Gains, the first 6 rows of the
+     * storage on Storage, the inventory on all of them), none overlapping, all inside their panel; the slots keep their
+     * indices.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theDashboardIsCompactAndItsSlotsFollowItsTabs(TestContext context) {
@@ -384,17 +385,23 @@ public class PartyControllerDashboardGameTests implements SteveGameTest {
             context.assertTrue(WIDTH <= 427 && TABS_HEIGHT + INVENTORY_Y + INVENTORY_PANEL_HEIGHT <= 240, "tabs, page and inventory fit a 427 x 240 screen");
             context.assertTrue(PartyControllerEntity.PROGRAM_SLOTS == 2 * PROGRAM_COLUMNS && DICE_FIRST_SLOT == PROGRAM_FIRST_SLOT + 24,
                     "the program: 2 rows of 12 cards, the allowed dice after them");
+            context.assertTrue(STORAGE_FIRST_SLOT == DICE_PANEL_FIRST_SLOT + PartyControllerEntity.MAX_ALLOWED_DICE && STORAGE_FIRST_SLOT == 94
+                    && PartyControllerEntity.BANK_SIZE == 108, "the storage's 108 slots last, after the dice panel's");
+            context.assertEquals(Arrays.asList(Page.values()), List.of(Page.STATE, Page.PLAYERS, Page.PROGRAM, Page.GAINS, Page.STORAGE, Page.SETTINGS),
+                    "the Storage tab between Gains and Settings");
             // The client's handler: the page shown decides which slots are there
             PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(),
                     new BlockPosPayload(BlockPos.ORIGIN));
             for (Page page : Page.values()) {
                 handler.setPage(page);
-                boolean program = page == Page.PROGRAM, gains = page == Page.GAINS;
+                boolean program = page == Page.PROGRAM, gains = page == Page.GAINS, storage = page == Page.STORAGE;
                 context.assertTrue(handler.getSlot(SLOT_CATALOGUE).isEnabled() == program, page + ": the catalogue slot is on the Program tab");
                 context.assertTrue(handler.getSlot(SLOT_STAR).isEnabled() == gains && handler.getSlot(SLOT_COIN).isEnabled() == gains,
                         page + ": the Star and Coin items are on the Gains tab");
                 context.assertTrue(handler.getSlot(PROGRAM_FIRST_SLOT).isEnabled() == program, page + ": the cards are on the Program tab");
                 context.assertTrue(handler.getSlot(PLAYER_SLOTS).isEnabled(), page + ": the inventory, on every tab");
+                long rows = handler.slots.stream().filter(slot -> isStorageSlot(slot.id) && slot.isEnabled()).count();
+                context.assertEquals(rows, storage ? (long) STORAGE_ROWS * STORAGE_COLUMNS : 0L, page + ": 6 rows of the storage on the Storage tab");
                 List<Slot> shown = handler.slots.stream().filter(Slot::isEnabled).toList();
                 for (Slot slot : shown) {
                     boolean inventory = slot.inventory == player.getInventory();
@@ -410,6 +417,92 @@ public class PartyControllerDashboardGameTests implements SteveGameTest {
                     }
                 }
             }
+        } finally {
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
+    /**
+     * The storage scrolls a row at a time: the 6 rows shown are at the top of the page, in their place (no gap, none
+     * overlapping, inside the panel), the others disabled; the list of the linked containers hides them all.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theStorageScrollsItsRows(TestContext context) {
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        try {
+            PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), new BlockPosPayload(BlockPos.ORIGIN));
+            handler.setPage(Page.STORAGE);
+            for (int scroll : new int[]{0, 1, 3, STORAGE_MAX_SCROLL, STORAGE_MAX_SCROLL + 5, -2}) {
+                handler.setStorageScroll(scroll);
+                int first = Math.clamp(scroll, 0, STORAGE_MAX_SCROLL);
+                context.assertEquals(handler.getStorageScroll(), first, scroll + ": clamped to the rows there are");
+                for (int i = 0; i < PartyControllerEntity.BANK_SIZE; i++) {
+                    Slot slot = handler.getSlot(STORAGE_FIRST_SLOT + i);
+                    int row = i / STORAGE_COLUMNS;
+                    boolean shown = row >= first && row < first + STORAGE_ROWS;
+                    context.assertEquals(slot.isEnabled(), shown, "scroll " + first + ": slot " + i + " shown only in the rows scrolled to");
+                    if (!shown) continue;
+                    context.assertTrue(slot.x == STORAGE_X + (i % STORAGE_COLUMNS) * 18 && slot.y == STORAGE_Y + (row - first) * 18,
+                            "scroll " + first + ": slot " + i + " in its place");
+                    context.assertTrue(slot.y >= 4 && slot.y + 16 <= PANEL_HEIGHT - 4, "scroll " + first + ": slot " + i + " inside the panel");
+                }
+            }
+            handler.setLinkedOpen(true);
+            context.assertTrue(handler.slots.stream().noneMatch(slot -> isStorageSlot(slot.id) && slot.isEnabled()), "the list open: no storage slot");
+        } finally {
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
+    /**
+     * The storage's slots move items for a player who may edit the controller: put, taken, shift-clicked from the
+     * inventory on the Storage page (only there) and back; read only for the others.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_dashboard_storage")
+    public void theStorageSlotsMoveItemsForWhoMayEdit(TestContext context) {
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        try {
+            PartyControllerEntity controller = place(context);
+            PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);
+            player.changeGameMode(GameMode.CREATIVE);
+            int last = STORAGE_FIRST_SLOT + PartyControllerEntity.BANK_SIZE - 1;
+            handler.setCursorStack(new ItemStack(Items.DIAMOND, 5));
+            handler.onSlotClick(last, 0, SlotActionType.PICKUP, player);
+            context.assertTrue(controller.getBankItems().getStack(PartyControllerEntity.BANK_SIZE - 1).isOf(Items.DIAMOND)
+                    && handler.getCursorStack().isEmpty(), "put in its last slot");
+            handler.onSlotClick(last, 0, SlotActionType.PICKUP, player);
+            context.assertTrue(controller.getBankItems().isEmpty() && handler.getCursorStack().getCount() == 5, "and taken back");
+            handler.setCursorStack(ItemStack.EMPTY);
+
+            // Shift-click from the inventory: to the storage on its page only (a page the client says it opened)
+            player.getInventory().setStack(0, new ItemStack(Items.EMERALD, 7));
+            int hotbar = PLAYER_SLOTS + 27;
+            handler.quickMove(player, hotbar);
+            context.assertTrue(player.getInventory().getStack(0).getCount() == 7 && controller.getBankItems().isEmpty(),
+                    "another page: an emerald goes nowhere");
+            context.assertTrue(handler.onButtonClick(player, BUTTON_PAGE + Page.STORAGE.ordinal()) && handler.getPage() == Page.STORAGE,
+                    "the client says the Storage page is open");
+            handler.quickMove(player, hotbar);
+            context.assertTrue(player.getInventory().getStack(0).isEmpty() && controller.getBankItems().getStack(0).getCount() == 7,
+                    "the Storage page: into its first slot");
+            handler.quickMove(player, STORAGE_FIRST_SLOT);
+            context.assertTrue(controller.getBankItems().isEmpty() && InventoryUtils.count(player.getInventory(), new ItemStack(Items.EMERALD)) == 7,
+                    "and back to the inventory");
+
+            // Read only: nothing moves
+            player.changeGameMode(GameMode.ADVENTURE);
+            context.assertTrue(!controller.canEdit(player), "Adventure mode: read only");
+            controller.getBankItems().setStack(3, new ItemStack(Items.GOLD_INGOT, 2));
+            handler.onSlotClick(STORAGE_FIRST_SLOT + 3, 0, SlotActionType.PICKUP, player);
+            context.assertTrue(controller.getBankItems().getStack(3).getCount() == 2 && handler.getCursorStack().isEmpty(), "read only: not taken");
+            handler.quickMove(player, STORAGE_FIRST_SLOT + 3);
+            context.assertEquals(controller.getBankItems().getStack(3).getCount(), 2, "read only: not shift-clicked out");
+            int emeralds = InventoryUtils.count(player.getInventory(), new ItemStack(Items.EMERALD));
+            for (int i = PLAYER_SLOTS; i < PROGRAM_FIRST_SLOT; i++) if (handler.getSlot(i).getStack().isOf(Items.EMERALD)) handler.quickMove(player, i);
+            context.assertEquals(InventoryUtils.count(player.getInventory(), new ItemStack(Items.EMERALD)), emeralds, "read only: not shift-clicked in");
+            context.setBlockState(CONTROLLER, Blocks.AIR);
         } finally {
             TestPlayers.remove(context, player);
         }

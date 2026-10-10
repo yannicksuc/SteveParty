@@ -27,6 +27,7 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -105,11 +106,20 @@ final class BrushOverlay {
             if (kind.drawnByBoardView()) continue;
             List<BlockPos> targets = kind.targets(world);
             if (targets.isEmpty()) continue;
-            List<Vec3d> to = new ArrayList<>(targets.size());
-            for (BlockPos target : targets) to.add(anchor(world, target));
-            found.add(new HolderLinks(anchor(world, kind.holder()), to, kind.color()));
+            List<Vec3d> to = new ArrayList<>(targets.size()), gone = new ArrayList<>();
+            for (BlockPos target : targets) (gone(world, kind, target) ? gone : to).add(anchor(world, target));
+            Vec3d from = anchor(world, kind.holder());
+            if (!to.isEmpty()) found.add(new HolderLinks(from, to, kind.color()));
+            // A container no longer there: a broken link, in red
+            if (!gone.isEmpty()) found.add(new HolderLinks(from, gone, BoardLinks.CUT_COLOR));
         }
         return found;
+    }
+
+    /** A container of a cartridge's storage that is no longer one (loaded: an unloaded one may still be there). */
+    private static boolean gone(ClientWorld world, BrushLinkable kind, BlockPos target) {
+        return kind instanceof CartridgeLinks.Containers && world.isChunkLoaded(target.getX() >> 4, target.getZ() >> 4)
+                && !(world.getBlockEntity(target) instanceof Inventory);
     }
 
     /**
@@ -204,7 +214,10 @@ final class BrushOverlay {
         }
     }
 
-    /** Dotted, from each space taking from containers without any to the Party Controller whose bank it falls back on. */
+    /**
+     * Dotted, from each space taking from containers without any to the Party Controller whose bank it falls back on:
+     * green, its storage (as its menu's « Storage: Party Controller »).
+     */
     private static void bankLinks(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera) {
         Vec3d half = new Vec3d(DOT, DOT, DOT);
         for (HolderLinks links : bankLinks) {

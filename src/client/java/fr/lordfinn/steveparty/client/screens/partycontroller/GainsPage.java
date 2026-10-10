@@ -1,19 +1,14 @@
 package fr.lordfinn.steveparty.client.screens.partycontroller;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
@@ -28,17 +23,15 @@ import static fr.lordfinn.steveparty.client.screens.partycontroller.DashboardSty
 import static fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.*;
 
 /**
- * The Gains tab: the controller's bank (its button, the Infinite bank switch, what it holds), the Coin and Star items above their columns (click with an item to pick
- * it, with an empty hand to go back to the default one), what each place earns.
+ * The Gains tab: where the gains are taken from (a line leading to the Storage tab, what the storage holds in its
+ * tooltip), the Coin and Star items above their columns (click with an item to pick it, with an empty hand to go back
+ * to the default one), what each place earns.
  */
 public final class GainsPage {
     /** A row per place. */
     private static final int GAINS_Y = CY + 21, GAINS_ROW = 17, GAINS_FIELD = GAINS_COLUMN - 2 * STEP - 4;
-    private static final int COLOR_SHORT = 0xFFFFB54A;
-    /** The button opening the controller's own bank, at the start of the bank's row. */
-    private static final int BANK_BUTTON_X = CX, BANK_BUTTON_W = 44;
-    /** The « Infinite bank » switch, right of that button (creative mode or operator only), then the bank's line. */
-    private static final int INFINITE_X = BANK_BUTTON_X + BANK_BUTTON_W + 2, INFINITE_W = 16, BANK_TEXT_X = INFINITE_X + INFINITE_W + 4;
+    /** The line leading to the Storage tab, left of the Coin item. */
+    private static final int STORAGE_LINE_W = COIN_X - 1 - 4 - CX;
     private static final PartyCurrency[] CURRENCIES = {PartyCurrency.COIN, PartyCurrency.STAR};
 
     private final Dashboard dashboard;
@@ -49,34 +42,7 @@ public final class GainsPage {
         this.paint = paint;
     }
 
-    /**
-     * The containers of the bank left out of its total, « · 1 absent, 1 non chargé », empty when none is: those gone
-     * (or no storage container), those whose chunk is not loaded. The others pay.
-     */
-    public static Text skipped(PartyBank.Status bank) {
-        if (bank.absent() == 0 && bank.unloaded() == 0) return Text.empty();
-        if (bank.unloaded() == 0) return Text.translatable(KEY + "bank.skipped.absent", bank.absent());
-        if (bank.absent() == 0) return Text.translatable(KEY + "bank.skipped.unloaded", bank.unloaded());
-        return Text.translatable(KEY + "bank.skipped.both", bank.absent(), bank.unloaded());
-    }
-
     public void addButtons(PartyDashboardData data) {
-        ConsoleButton bank = dashboard.add(new ConsoleButton(dashboard.left() + BANK_BUTTON_X, dashboard.top() + CY + 2, BANK_BUTTON_W, 14,
-                Text.translatable(KEY + "gains.bank.open"), ConsoleButton.Kind.SCREEN, null, () -> dashboard.click(BUTTON_BANK, 1)));
-        bank.active = data.canEdit();
-        bank.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "gains.bank.open.hint") : Text.translatable(KEY + "locked")));
-        // The « Infinite bank »: greyed out for a player who is neither in creative mode nor an operator (the server checks again)
-        boolean infinite = data.bank().state() == PartyBank.State.INFINITE;
-        PlayerEntity viewer = MinecraftClient.getInstance().player;
-        boolean allowed = viewer != null && PartyControllerEntity.canSwitchInfiniteBank(viewer);
-        ConsoleButton unlimited = dashboard.add(new ConsoleButton(dashboard.left() + INFINITE_X, dashboard.top() + CY + 2, INFINITE_W, 14,
-                Text.literal("∞").formatted(infinite ? Formatting.GREEN : Formatting.GRAY), ConsoleButton.Kind.SCREEN, null,
-                () -> dashboard.click(BUTTON_INFINITE_BANK, 1)));
-        unlimited.active = data.canEdit() && allowed;
-        Text state = Text.translatable(KEY + "gains.bank.infinite." + (infinite ? "on" : "off"));
-        Text hint = !data.canEdit() ? Text.translatable(KEY + "locked")
-                : !allowed ? Text.translatable(KEY + "gains.bank.infinite.not_allowed") : Text.translatable(KEY + "gains.bank.infinite.switch");
-        unlimited.setTooltip(Tooltip.of(Text.empty().append(state).append(ScreenTexts.LINE_BREAK).append(hint)));
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
             for (PartyCurrency currency : CURRENCIES) {
                 int left = dashboard.left() + (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X), top = dashboard.top() + GAINS_Y + row * GAINS_ROW;
@@ -96,17 +62,8 @@ public final class GainsPage {
     }
 
     public void draw(DrawContext context, PartyDashboardData data) {
-        // The bank's line: its name (what it holds in its tooltip)
-        PartyBank.Status bank = data.bank();
-        int tx = BANK_TEXT_X, room = COIN_X - 1 - 4 - tx;
-        switch (bank.state()) {
-            case NONE, MISSING -> paint.line(context, Text.translatable(KEY + "gains.bank." + (bank.state() == PartyBank.State.NONE ? "none" : "missing")),
-                    tx, CY + 5, room, INK_RED);
-            // Some containers skipped (gone, not loaded): said on the line, in the colour of « short »
-            case OK, SHORT -> paint.line(context, Text.translatable(KEY + "gains.bank").append(skipped(bank)), tx, CY + 5, room,
-                    bank.state() == PartyBank.State.SHORT || !skipped(bank).getString().isEmpty() ? COLOR_SHORT : WHITE);
-            case INFINITE -> paint.line(context, Text.translatable(KEY + "gains.bank.infinite"), tx, CY + 5, room, WHITE);
-        }
+        // Where the gains are taken from: the storage, in its state's colour (what it holds in its tooltip, a click opens its tab)
+        paint.line(context, Text.translatable(KEY + "gains.storage"), CX, CY + 5, STORAGE_LINE_W, StoragePage.colour(data.bank()));
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
             int top = GAINS_Y + row * GAINS_ROW;
             if (row == MiniGameGains.PARTICIPANTS) {
@@ -150,25 +107,16 @@ public final class GainsPage {
         return lines;
     }
 
-    /** The bank (its line): what it is, what it holds, why it can't pay; null when the mouse is elsewhere. */
-    public @Nullable List<Text> bankTooltip(PartyDashboardData data, @Nullable Slot focused, int mx, int my) {
-        if (!HitArea.contains(mx, my, BANK_TEXT_X - 2, CY, COIN_X - 1 - BANK_TEXT_X - 2, 18))
-            return null;
-        PartyBank.Status bank = data.bank();
-        List<Text> lines = new ArrayList<>();
-        lines.add(Text.translatable(KEY + "gains.bank.title").formatted(Formatting.GOLD));
-        switch (bank.state()) {
-            case NONE -> lines.add(Text.translatable(KEY + "gains.bank.none.hint").formatted(Formatting.GRAY));
-            case MISSING -> lines.add(Text.translatable(KEY + "gains.bank.missing.hint").append(skipped(bank)).formatted(Formatting.RED));
-            case INFINITE -> lines.add(Text.translatable(KEY + "gains.bank.infinite.hint").formatted(Formatting.GRAY));
-            case OK, SHORT -> {
-                lines.add(Text.translatable(KEY + "gains.bank.holds", bank.coins(), dashboard.currency(PartyCurrency.COIN).getName(),
-                        bank.stars(), dashboard.currency(PartyCurrency.STAR).getName()).formatted(Formatting.GRAY));
-                if (!skipped(bank).getString().isEmpty()) lines.add(Text.translatable(KEY + "gains.bank.skipped").append(skipped(bank)).formatted(Formatting.RED));
-                if (bank.state() == PartyBank.State.SHORT) lines.add(Text.translatable(KEY + "gains.bank.short").formatted(Formatting.GOLD));
-                lines.add(Text.translatable(KEY + "gains.bank.hint").formatted(Formatting.DARK_GRAY));
-            }
-        }
+    /** Whether the mouse is over the line leading to the Storage tab. */
+    public static boolean overStorageLine(double mx, double my) {
+        return HitArea.contains(mx, my, CX - 2, CY, STORAGE_LINE_W + 4, 18);
+    }
+
+    /** The line leading to the Storage tab: what the storage holds, why it can't pay; null when the mouse is elsewhere. */
+    public @Nullable List<Text> storageTooltip(PartyDashboardData data, int mx, int my) {
+        if (!overStorageLine(mx, my)) return null;
+        List<Text> lines = new ArrayList<>(StoragePage.storageTooltip(data, dashboard));
+        lines.add(Text.translatable(KEY + "gains.storage.go").formatted(Formatting.YELLOW));
         return lines;
     }
 }

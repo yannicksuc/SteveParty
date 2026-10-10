@@ -82,6 +82,7 @@ public final class CartridgePanel {
     private final TextRenderer textRenderer;
     private final Supplier<ItemStack> stack;
     private final Supplier<BlockPos> pos;
+    private final Supplier<CartridgeContainers.Storage> storage;
     private final IntSupplier syncId;
     private final BooleanSupplier canEdit;
     private final int maxContent;
@@ -113,6 +114,10 @@ public final class CartridgePanel {
     /** The width the ghost slots' help is wrapped at. */
     private int ghostHelpW;
     private String giveText = "", takeText = "";
+    /** The containers' module: what to do for another storage (none linked), wrapped. */
+    private List<OrderedText> storageHint = List.of();
+    /** The storage the containers' module was laid out for, null without such a module. */
+    private @Nullable CartridgeContainers.Storage shownStorage;
     private int infoTicks;
     // Traces: per module, 5 points (x, y) from the contacts to the module, and the lengths
     private int[][] paths = new int[0][];
@@ -125,12 +130,14 @@ public final class CartridgePanel {
      * @param minWidth   the shell's minimum width (a shell of a fixed size: with the player's inventory)
      * @param minHeight  the shell's minimum height (e.g. beside a tile, the tile's height)
      */
-    public CartridgePanel(MinecraftClient client, Supplier<ItemStack> stack, Supplier<BlockPos> pos, IntSupplier syncId,
+    public CartridgePanel(MinecraftClient client, Supplier<ItemStack> stack, Supplier<BlockPos> pos,
+                          Supplier<CartridgeContainers.Storage> storage, IntSupplier syncId,
                           BooleanSupplier canEdit, int maxContent, int minWidth, int minHeight) {
         this.client = client;
         this.textRenderer = client.textRenderer;
         this.stack = stack;
         this.pos = pos;
+        this.storage = storage;
         this.syncId = syncId;
         this.canEdit = canEdit;
         this.maxContent = maxContent;
@@ -206,7 +213,8 @@ public final class CartridgePanel {
             if (pending[i] == NO_PENDING) continue;
             if (modules.get(i).get(current) == pending[i] || ++pendingTicks[i] > PENDING_TICKS) pending[i] = NO_PENDING;
         }
-        if (infoTicks-- <= 0) {
+        // Its storage changed (sent by the server): its hint at once
+        if (infoTicks-- <= 0 || (shownStorage != null && shownStorage != storage(rows(current).size()))) {
             infoTicks = INFO_REFRESH_TICKS;
             int w = width(), h = height();
             relayout(current);
@@ -237,6 +245,7 @@ public final class CartridgePanel {
         optionTexts = new String[n][];
         infoLines = new ArrayList<>(n);
         infoColors = new int[n][];
+        shownStorage = null;
         InfoModule.Context context = client.world == null ? null : new InfoModule.Context(current, client.world, pos.get());
         for (int i = 0; i < n; i++) {
             CartridgeModule module = modules.get(i);
@@ -249,7 +258,7 @@ public final class CartridgePanel {
                     yield choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                 }
                 case NumberModule number -> NumberModule.ROW_H;
-                case ContainersModule containers -> containerRows(rows(current).size()) * ContainersModule.ROW_H;
+                case ContainersModule containers -> containersHeight(current);
                 case ColorModule color -> {
                     int rows = (ColorModule.DEFAULT + colorsPerRow()) / colorsPerRow();
                     yield rows * ColorModule.SWATCH + (rows - 1) * ColorModule.GAP;
@@ -760,9 +769,26 @@ public final class CartridgePanel {
         return rows;
     }
 
-    /** The rows the module takes: two containers per row (a row for « none » when empty), then the hint. */
-    private static int containerRows(int count) {
-        return Math.max(1, (count + ContainersModule.PER_ROW - 1) / ContainersModule.PER_ROW) + 1;
+    /**
+     * Where the items come from: its containers when it has some (at once, from the cartridge), else what the server
+     * sent (the Party Controller of its board, or none).
+     */
+    private CartridgeContainers.Storage storage(int count) {
+        if (count > 0) return CartridgeContainers.Storage.LINKED;
+        CartridgeContainers.Storage sent = storage.get();
+        // Its last container just removed: none until the server says otherwise
+        return sent == CartridgeContainers.Storage.LINKED ? CartridgeContainers.Storage.NONE : sent;
+    }
+
+    /** The module's height: the storage, its containers two per row (or how to link some, wrapped), then the hint. */
+    private int containersHeight(ItemStack current) {
+        int count = rows(current).size();
+        CartridgeContainers.Storage now = storage(count);
+        shownStorage = now;
+        storageHint = now == CartridgeContainers.Storage.LINKED ? List.of() : textRenderer.wrapLines(Text.translatable(
+                CartridgeItem.MENU_KEY + (now == CartridgeContainers.Storage.PARTY_CONTROLLER ? "storage.party.hint" : "storage.none.hint")), columnW);
+        int body = count > 0 ? (count + ContainersModule.PER_ROW - 1) / ContainersModule.PER_ROW : Math.max(1, storageHint.size());
+        return (1 + body + 1) * ContainersModule.ROW_H;
     }
 
     private int cellW() {
@@ -773,8 +799,9 @@ public final class CartridgePanel {
         return mx + (index % ContainersModule.PER_ROW) * (cellW() + 2);
     }
 
+    /** Under the storage's line. */
     private static int cellY(int top, int index) {
-        return top + (index / ContainersModule.PER_ROW) * ContainersModule.ROW_H;
+        return top + (1 + index / ContainersModule.PER_ROW) * ContainersModule.ROW_H;
     }
 
     /** The x of a cell's button: « earlier in the order », then remove at the cell's right end. */
@@ -785,8 +812,18 @@ public final class CartridgePanel {
 
     private void drawContainers(DrawContext context, ItemStack current, int mx, int top, int mouseX, int mouseY, boolean editable) {
         List<ContainerRow> rows = rows(current);
+        // First, where the items come from: green, it has a storage; red, none
+        CartridgeContainers.Storage now = storage(rows.size());
+        String title = switch (now) {
+            case LINKED -> rows.size() == 1 ? I18n.translate(CartridgeItem.MENU_KEY + "storage.linked.one")
+                    : I18n.translate(CartridgeItem.MENU_KEY + "storage.linked", rows.size());
+            case PARTY_CONTROLLER -> I18n.translate(CartridgeItem.MENU_KEY + "storage.party");
+            case NONE -> I18n.translate(CartridgeItem.MENU_KEY + "storage.none");
+        };
+        UiText.line(context, textRenderer, title, mx, top + 1, columnW, now == CartridgeContainers.Storage.NONE ? TONE_BAD : TONE_GOOD, false);
         if (rows.isEmpty()) {
-            UiText.line(context, textRenderer, I18n.translate(CartridgeItem.MENU_KEY + "inventory.chest.none"), mx, top + 1, columnW, TONE_BAD, false);
+            for (int l = 0; l < storageHint.size(); l++)
+                UiText.line(context, textRenderer, storageHint.get(l), mx, top + 1 + (1 + l) * ContainersModule.ROW_H, columnW, TONE_SOFT, false);
         }
         int buttons = editable ? 2 * (ROW_BUTTON + 1) : 0;
         for (int r = 0; r < rows.size(); r++) {
@@ -803,7 +840,8 @@ public final class CartridgePanel {
             rowButton(context, rowButtonX(mx, r, ContainersModule.REMOVE), cy, "×", true, mouseX, mouseY);
         }
         // What a click does, under the list
-        int hintY = top + (containerRows(rows.size()) - 1) * ContainersModule.ROW_H;
+        int body = rows.isEmpty() ? Math.max(1, storageHint.size()) : (rows.size() + ContainersModule.PER_ROW - 1) / ContainersModule.PER_ROW;
+        int hintY = top + (1 + body) * ContainersModule.ROW_H;
         UiText.line(context, textRenderer, I18n.translate(CartridgeItem.MENU_KEY + "inventory.click"), mx, hintY + 1, columnW, TONE_SOFT, false);
     }
 
