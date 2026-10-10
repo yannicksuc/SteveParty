@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
@@ -117,6 +118,7 @@ public class Steveparty implements ModInitializer {
         TileTeleport.initialize();
         GlandouilleTileBehavior.initialize();
         BoardActors.initialize();
+        PartyBank.initialize();
         FrousseuxThefts.initialize();
         MistigriSentences.initialize();
         TrichaudronPrizes.initialize();
