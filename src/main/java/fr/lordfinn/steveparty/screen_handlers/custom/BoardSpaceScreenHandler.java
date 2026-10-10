@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenuHost;
@@ -31,6 +32,8 @@ public class BoardSpaceScreenHandler extends CartridgeContainerScreenHandler imp
     public static final int TILE_W = 176, MENU_GAP = 4, MENU_X = TILE_W + MENU_GAP;
 
     private final Property selected = Property.create();
+    /** Where the selected cartridge keeps its items ({@link CartridgeContainers.Storage}), sent by the server. */
+    private final Property storage = Property.create();
     private final BoardSpaceBlockEntity boardSpace;
     private int ghostStart = -1;
 
@@ -42,6 +45,8 @@ public class BoardSpaceScreenHandler extends CartridgeContainerScreenHandler imp
         init(playerInventory, 101);
         selected.set(blockEntity == null ? 0 : Math.clamp(blockEntity.getActiveSlot(), 0, Math.max(0, blockEntity.size() - 1)));
         addProperty(selected);
+        addProperty(storage);
+        updateStorage();
         addGhostSlots(playerInventory.player);
     }
 
@@ -126,6 +131,25 @@ public class BoardSpaceScreenHandler extends CartridgeContainerScreenHandler imp
     public @Nullable CartridgeRef editedCartridge(PlayerEntity player) {
         if (boardSpace == null || CartridgeMenus.cartridge(selectedStack()) == null) return null;
         return CartridgeRef.slot(boardSpace.getPos(), getSelectedSlot());
+    }
+
+    @Override
+    public CartridgeContainers.Storage storage() {
+        return CartridgeContainers.Storage.byId(storage.get());
+    }
+
+    @Override
+    public void sendContentUpdates() {
+        updateStorage();
+        super.sendContentUpdates();
+    }
+
+    /** The selected cartridge's storage, before the properties are sent (a Party Controller is known on the server only). */
+    private void updateStorage() {
+        if (boardSpace == null || boardSpace.getWorld() == null || boardSpace.getWorld().isClient) return;
+        ItemStack stack = selectedStack();
+        if (CartridgeContainers.linksContainers(stack))
+            storage.set(CartridgeContainers.storageOf(stack, boardSpace.getWorld(), boardSpace.getPos()).ordinal());
     }
 
     private boolean isGhost(int slotIndex) {

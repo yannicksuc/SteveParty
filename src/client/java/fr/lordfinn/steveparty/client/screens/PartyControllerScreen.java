@@ -14,6 +14,7 @@ import fr.lordfinn.steveparty.client.screens.partycontroller.PlayersPage;
 import fr.lordfinn.steveparty.client.screens.partycontroller.ProgramPage;
 import fr.lordfinn.steveparty.client.screens.partycontroller.SettingsPage;
 import fr.lordfinn.steveparty.client.screens.partycontroller.StatusPage;
+import fr.lordfinn.steveparty.client.screens.partycontroller.StoragePage;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.Page;
@@ -49,7 +50,7 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  * right corner, what a slot or a control does in a short tooltip; a tab that blocks the party says it with its red label.
  * <ul>
  *     <li><b>Status</b> ({@link StatusPage}): before a party, a checklist of what a party needs (board, tokens on the
- *     start tiles, mini-game catalogue, bank, rounds), each line leading to the tab where it is fixed, and « Start the
+ *     start tiles, mini-game catalogue, storage, rounds), each line leading to the tab where it is fixed, and « Start the
  *     party » (active only when ready, else it says why); during a party, the round, a timeline of its steps (the current
  *     one framed, the past ones dimmed: wheel or drag to scroll it), what is happening now, the step and the leader; once
  *     over, the standings and « Start a new party ». « Follow » shows the party's HUDs.</li>
@@ -58,8 +59,12 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  *     <li><b>Program</b> ({@link ProgramPage}): the catalogue slot (its mini-games in its tooltip), what the party will
  *     be made of, the party's program (2 rows of 12 card slots, the default party as ghost cards while it is empty, see
  *     {@link BasicGameGeneratorStep#defaultProgram}) and, under them, the timeline of what it will play.</li>
- *     <li><b>Gains</b> ({@link GainsPage}): the bank's Inventory Cartridge, the Coin and Star items above their columns
- *     (click with an item to pick it, with an empty hand to go back to the default one), what each place earns.</li>
+ *     <li><b>Gains</b> ({@link GainsPage}): where the gains come from (a line leading to Storage), the Coin and Star
+ *     items above their columns (click with an item to pick it, with an empty hand to go back to the default one), what
+ *     each place earns.</li>
+ *     <li><b>Storage</b> ({@link StoragePage}): the controller's own storage as real slots (6 rows at a time: wheel or
+ *     scroll bar), the « Infinite storage » switch, what the storage holds in the party's currencies, the list of the
+ *     containers linked to it with the Tile Linker Brush (a toggle opens it over the slots).</li>
  *     <li><b>Settings</b> ({@link SettingsPage}): the rounds, the practice round, the power-ups a player may carry,
  *     « Restrict dice » (a switch, a row of ghost slots, its toggle opening a panel of all of them over the other
  *     settings; the places after the first free one greyed, all of them while the switch is off).</li>
@@ -82,6 +87,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     private final PlayersPage players = new PlayersPage(paint);
     private final ProgramPage program = new ProgramPage(this, paint, timeline);
     private final GainsPage gains = new GainsPage(this, paint);
+    private final StoragePage storage = new StoragePage(this, paint);
     private final SettingsPage settings = new SettingsPage(this, paint);
 
     public PartyControllerScreen(PartyControllerScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -144,6 +150,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         handler.setPage(page);
         handler.setDiceOpen(false);
         players.resetScroll();
+        storage.reset();
+        // The server follows: its shift-clicks go to the storage on its page only
+        click(BUTTON_PAGE + page.ordinal(), 1);
         clearAndInit();
     }
 
@@ -162,6 +171,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 case STATE -> status.addButtons(data);
                 case PLAYERS, PROGRAM -> {}
                 case GAINS -> gains.addButtons(data);
+                case STORAGE -> storage.addButtons(data);
                 case SETTINGS -> settings.addButtons(data);
             }
         }
@@ -189,6 +199,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         ConsolePaint.bezel(context, x, y + INVENTORY_Y, WIDTH, INVENTORY_PANEL_HEIGHT, BEZEL, FRAME, SCREEN, SCREEN_EDGE);
         tabs.drawLabels(context);
         if (page() == Page.SETTINGS) settings.drawPanel(context);
+        if (page() == Page.STORAGE) storage.drawPanel(context);
         for (Slot slot : handler.slots) {
             if (!slot.isEnabled()) continue;
             // The dice places after the first free one are greyed (not usable yet)
@@ -218,6 +229,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             case PLAYERS -> players.draw(context, data, mx, my);
             case PROGRAM -> program.draw(context, data, mx, my);
             case GAINS -> gains.draw(context, data);
+            case STORAGE -> storage.draw(context, data, mx, my);
             case SETTINGS -> settings.draw(context, data);
         }
         ConsolePaint.infoButton(context, INFO_X, infoY());
@@ -273,7 +285,8 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         Slot slot = focusedSlot;
         if (slot != null && isGhostSlot(slot.id) && emptyHand) return gains.currencyTooltip(data, slot);
         List<Text> lines = null;
-        if (page() == Page.GAINS && emptyHand) lines = gains.bankTooltip(data, slot, mx, my);
+        if (page() == Page.GAINS && emptyHand) lines = gains.storageTooltip(data, mx, my);
+        if (lines == null && page() == Page.STORAGE && emptyHand && (slot == null || !slot.hasStack())) lines = storage.tooltip(data, mx, my);
         if (lines == null && page() == Page.PROGRAM && emptyHand) lines = program.catalogueTooltip(data, slot, mx, my);
         if (lines != null) return lines;
         if (slot != null && isDiceSlot(slot.id) && emptyHand)
@@ -290,14 +303,17 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         PartyDashboardData data = data();
-        if (data != null && button == 0 && page() == Page.STATE) {
-            Page target = status.clicked(data, mouseX, mouseY);
-            if (target != null) {
-                if (client != null) client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-                showPage(target);
-                return true;
-            }
+        Page target = data == null || button != 0 ? null
+                : page() == Page.STATE ? status.clicked(data, mouseX, mouseY)
+                // The Gains tab's line leading to the storage
+                : page() == Page.GAINS && GainsPage.overStorageLine(mouseX - x, mouseY - y) ? Page.STORAGE
+                : null;
+        if (target != null) {
+            if (client != null) client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            showPage(target);
+            return true;
         }
+        if (button == 0 && page() == Page.STORAGE && handler.getCursorStack().isEmpty() && storage.pressed(mouseX, mouseY)) return true;
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
@@ -307,6 +323,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 : isGhostSlot(slot.id) ? gains.refusal(data(), slot, actionType)
                 : isDiceSlot(slot.id) ? settings.refusal(data(), slot, actionType)
                 : slot.id == SLOT_CATALOGUE && slot.hasStack() && handler.isCatalogueLocked() ? Text.translatable(KEY + "program.catalogue.locked")
+                // Its storage: for a player who may edit the controller (a drag only skips it)
+                : isStorageSlot(slot.id) && !handler.mayEditProgram() && actionType != SlotActionType.QUICK_CRAFT
+                ? (actionType == SlotActionType.PICKUP || actionType == SlotActionType.QUICK_MOVE ? Text.translatable(KEY + "read_only") : Text.empty())
                 : null;
         if (refusal != null) {
             // Empty: refused without a word (not a plain click)
@@ -331,7 +350,15 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             timeline.drag(deltaX);
             return true;
         }
+        // The storage's scroll bar, held
+        if (button == 0 && page() == Page.STORAGE && storage.dragged(mouseY)) return true;
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        storage.released();
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
@@ -342,6 +369,10 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
         if (verticalAmount != 0 && page() == Page.PLAYERS && mouseY < y + PANEL_HEIGHT) {
             players.scroll(verticalAmount);
+            return true;
+        }
+        if (verticalAmount != 0 && page() == Page.STORAGE && mouseY < y + PANEL_HEIGHT) {
+            storage.scroll(verticalAmount);
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);

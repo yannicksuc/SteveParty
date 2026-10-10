@@ -20,12 +20,13 @@ import static fr.lordfinn.steveparty.client.screens.partycontroller.DashboardSty
 import static fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.*;
 
 /**
- * The dashboard's tabs above its panel: their layout (each its name and 5 px each side, 2 px apart; all of the same
- * width, their names scrolling in them, when a wordy language makes them too long), their buttons, the tabs at rest behind the panel,
+ * The dashboard's tabs above its panel: their layout (each its name and 5 px each side, 2 px apart; down to 3 px each
+ * side when they don't fit; all of the same width, their names scrolling in them, when a wordy language makes them
+ * still too long), their buttons, the tabs at rest behind the panel,
  * their names (red, or orange, on a tab that blocks the party, or warns).
  */
 public final class DashboardTabs {
-    private static final int TAB_PAD = 5, TAB_GAP = 2, TAB_LABEL_Y = 7;
+    private static final int TAB_PAD = 5, MIN_TAB_PAD = 3, TAB_GAP = 2, TAB_LABEL_Y = 7;
 
     /** What needs the player's attention on a tab (its label turns red, or orange): an error or a warning, and why. */
     public record Badge(boolean error, Text reason) {}
@@ -34,6 +35,8 @@ public final class DashboardTabs {
     private final DashboardPainter paint;
     /** Left edge (from the panel's) and width of each tab. */
     private final int[] tabLeft = new int[Page.values().length], tabWide = new int[Page.values().length];
+    /** The room each side of a tab's name (the layout's). */
+    private int pad = TAB_PAD;
 
     public DashboardTabs(Dashboard dashboard, DashboardPainter paint) {
         this.dashboard = dashboard;
@@ -58,13 +61,17 @@ public final class DashboardTabs {
 
     private void layout() {
         Page[] tabs = Page.values();
-        int room = WIDTH - 2 * BEZEL - TAB_GAP * (tabs.length - 1), total = 0;
-        for (Page tab : tabs) total += dashboard.font().getWidth(name(tab)) - 1 + 2 * TAB_PAD;
+        int room = WIDTH - 2 * BEZEL - TAB_GAP * (tabs.length - 1), names = 0;
+        for (Page tab : tabs) names += dashboard.font().getWidth(name(tab)) - 1;
+        // Less room around the names before making them scroll
+        pad = TAB_PAD;
+        while (pad > MIN_TAB_PAD && names + 2 * pad * tabs.length > room) pad--;
+        boolean fits = names + 2 * pad * tabs.length <= room;
         int left = BEZEL;
         for (Page tab : tabs) {
             int index = tab.ordinal();
             // Names too long for the row (a wordy language): tabs of the same width, their names scrolling
-            tabWide[index] = total > room ? room / tabs.length : dashboard.font().getWidth(name(tab)) - 1 + 2 * TAB_PAD;
+            tabWide[index] = !fits ? room / tabs.length : dashboard.font().getWidth(name(tab)) - 1 + 2 * pad;
             tabLeft[index] = left;
             left += tabWide[index] + TAB_GAP;
         }
@@ -119,6 +126,11 @@ public final class DashboardTabs {
             case PROGRAM -> {
                 return ProgramPage.catalogueBadge(data);
             }
+            case STORAGE -> {
+                // Linked containers gone or not loaded (skipped): said, without blocking anything
+                int skipped = data.bank().absent() + data.bank().unloaded();
+                return skipped > 0 ? new Badge(false, Text.translatable(KEY + "badge.storage", skipped)) : null;
+            }
             default -> {
                 return null;
             }
@@ -145,8 +157,8 @@ public final class DashboardTabs {
             Badge badge = badge(tab);
             // Centred in the tab; too long (tabs of the same width), it scrolls between its paddings
             Text label = name(tab);
-            int w = dashboard.font().getWidth(label), room = tw - 2 * TAB_PAD + 2;
-            int lx = w <= room ? tx + (tw - w + 1) / 2 : tx + TAB_PAD - 1, lw = Math.min(w, room);
+            int w = dashboard.font().getWidth(label), room = tw - 2 * pad + 2;
+            int lx = w <= room ? tx + (tw - w + 1) / 2 : tx + pad - 1, lw = Math.min(w, room);
             if (tab == dashboard.page()) {
                 UiText.line(context, dashboard.font(), label, lx, ty, lw, badge == null ? WHITE : badge.error ? INK_RED : INK_WARN, true);
             } else {

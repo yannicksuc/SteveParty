@@ -97,8 +97,11 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public static final int MIN_ROUNDS = 1, MAX_ROUNDS = 50;
     /** The most dice the « Allowed dice » setting lists. */
     public static final int MAX_ALLOWED_DICE = 27;
-    /** The slots of its own bank. */
-    public static final int BANK_SIZE = 27;
+    /**
+     * The slots of its own storage (the dashboard's Storage tab). A controller saved with the 27 slots of before keeps
+     * them as its first ones.
+     */
+    public static final int BANK_SIZE = 108;
     /**
      * The star space holding the party's star (see {@link PartyStars}); null while the party has no star yet, or
      * while it waits, hidden, for a star space to be switched on. Saved with the party.
@@ -114,7 +117,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private final PartyBoard.Memory boardMemory = new PartyBoard.Memory();
     private @Nullable PartyBoard.Snapshot board;
     private long boardScanTime;
-    /** Its own bank, 27 slots like a chest (see {@link PartyBank}): saved, never sent to the clients. */
+    /** Its own storage, {@link #BANK_SIZE} slots (see {@link PartyBank}): saved, never sent to the clients. */
     private final SimpleInventory bankItems = new SimpleInventory(BANK_SIZE) {
         @Override
         public boolean canPlayerUse(PlayerEntity player) {
@@ -207,6 +210,14 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      */
     public static Optional<PartyControllerEntity> getPartyOfBoardSpace(World world, BlockPos pos, int fallbackRadius, boolean includeEnded) {
         return PartyControllers.ofBoardSpace(world, pos, fallbackRadius, includeEnded);
+    }
+
+    /**
+     * The controller of the board holding the board space at {@code pos}, its party running or not (whose bank its
+     * cartridges will take from): the one whose board holds it, else the closest within {@code fallbackRadius} blocks.
+     */
+    public static Optional<PartyControllerEntity> getControllerOfBoardSpace(World world, BlockPos pos, int fallbackRadius) {
+        return PartyControllers.ofBoard(world, pos, fallbackRadius);
     }
 
     /** The loaded controller whose running party contains the token, if any. */
@@ -361,7 +372,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     }
 
     /**
-     * Its own bank: 27 slots, the first place the party's coins and stars are taken from and put in (see
+     * Its own storage: {@link #BANK_SIZE} slots, the first place the party's coins and stars are taken from and put in (see
      * {@link PartyBank}); hoppers fill and empty it, broken it drops its content.
      */
     public SimpleInventory getBankItems() {

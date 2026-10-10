@@ -31,12 +31,16 @@ import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.enums.ChestType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -344,19 +348,30 @@ public class PartyBankGameTests implements SteveGameTest {
             context.assertEquals(data.bank(), new PartyBank.Status(PartyBank.State.OK, 34, 2), "34 coins, 2 stars: enough");
             RegistryByteBuf buf = new RegistryByteBuf(Unpooled.buffer(), context.getWorld().getRegistryManager());
             PartyDashboardData.PACKET_CODEC.encode(buf, data);
-            context.assertEquals(PartyDashboardData.PACKET_CODEC.decode(buf).bank(), data.bank(), "sent and read back");
+            PartyDashboardData read = PartyDashboardData.PACKET_CODEC.decode(buf);
+            context.assertEquals(read.bank(), data.bank(), "sent and read back");
             buf.release();
+            // The Storage tab lists the linked chest: where it is, what it is, there
+            BlockPos chest = context.getAbsolutePos(CHEST);
+            context.assertEquals(data.storages(), List.of(new PartyBank.Linked(GlobalPos.create(context.getWorld().getRegistryKey(), chest),
+                    Blocks.CHEST, PartyBank.LinkState.PRESENT)), "the linked chest, there");
+            context.assertEquals(read.storages(), data.storages(), "the list sent and read back");
             controller.setGains(controller.getGains().with(PartyCurrency.COIN, 0, 40));
             context.assertEquals(PartyDashboardData.capture(controller, context.getWorld(), player, board).bank().state(), PartyBank.State.SHORT,
                     "40 coins for the winner: not enough for a whole mini-game");
             context.assertEquals(PartyBank.need(controller.getGains(), PartyCurrency.COIN, 6), 40 + 5 + 3 + 1 + 2 + 2, "6 players: the 4 places and 2 participants");
+            context.<ChestBlockEntity>getBlockEntity(CHEST).clear();
+            context.setBlockState(CHEST, Blocks.STONE);
+            context.assertEquals(PartyDashboardData.capture(controller, context.getWorld(), player, board).storages(),
+                    List.of(new PartyBank.Linked(GlobalPos.create(context.getWorld().getRegistryKey(), chest), Blocks.STONE, PartyBank.LinkState.ABSENT)),
+                    "stone in its place: absent");
         } finally {
             remove(context, player);
         }
         context.complete();
     }
 
-    // ---------------------------------------------------------------- its own bank (27 slots), then the linked chests
+    // ---------------------------------------------------------------- its own storage (108 slots), then the linked chests
 
     /** The gains are taken from its own bank first, then from the linked chests in their order. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bank_own_take")
@@ -419,6 +434,62 @@ public class PartyBankGameTests implements SteveGameTest {
             remove(context);
             context.complete();
         });
+    }
+
+    /** A hopper fills its own storage up to its last slot (108 of them, through the Fabric item storage). */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bank_own_hopper_last", tickLimit = 120)
+    public void hopperFillsItsLastSlot(TestContext context) {
+        PartyControllerEntity controller = controller(context);
+        ItemStack coin = controller.getCurrency(PartyCurrency.COIN);
+        for (int i = 0; i < PartyControllerEntity.BANK_SIZE - 1; i++) controller.getBankItems().setStack(i, new ItemStack(Items.DIRT, 64));
+        context.setBlockState(CONTROLLER.up(), Blocks.HOPPER);
+        context.<net.minecraft.block.entity.HopperBlockEntity>getBlockEntity(CONTROLLER.up()).setStack(0, coin.copyWithCount(2));
+        context.waitAndRun(40, () -> {
+            context.assertEquals(controller.getBankItems().size(), 108, "108 slots");
+            context.assertTrue(ItemStack.areItemsAndComponentsEqual(controller.getBankItems().getStack(PartyControllerEntity.BANK_SIZE - 1), coin)
+                    && controller.getBankItems().getStack(PartyControllerEntity.BANK_SIZE - 1).getCount() == 2, "the hopper filled its last slot");
+            context.setBlockState(CONTROLLER.up(), Blocks.AIR);
+            controller.getBankItems().clear();
+            remove(context);
+            context.complete();
+        });
+    }
+
+    /**
+     * A controller saved with the 27 slots of before keeps them as its first ones (the others empty); its 108 slots
+     * are saved and loaded, the last one too.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bank_own_migration")
+    public void anOldBankOf27SlotsKeepsItsItems(TestContext context) {
+        try {
+            PartyControllerEntity controller = controller(context);
+            RegistryWrapper.WrapperLookup registries = context.getWorld().getRegistryManager();
+            // Saved by a controller of 27 slots: its first and last ones filled
+            DefaultedList<ItemStack> old = DefaultedList.ofSize(27, ItemStack.EMPTY);
+            old.set(0, new ItemStack(Items.DIAMOND, 3));
+            old.set(26, new ItemStack(Items.EMERALD, 9));
+            NbtCompound saved = controller.createNbtWithIdentifyingData(registries);
+            saved.put("BankItems", Inventories.writeNbt(new NbtCompound(), old, registries));
+            controller.read(saved, registries);
+            context.assertEquals(controller.getBankItems().size(), PartyControllerEntity.BANK_SIZE, "108 slots now");
+            context.assertTrue(controller.getBankItems().getStack(0).isOf(Items.DIAMOND) && controller.getBankItems().getStack(0).getCount() == 3,
+                    "its first slot kept");
+            context.assertTrue(controller.getBankItems().getStack(26).isOf(Items.EMERALD) && controller.getBankItems().getStack(26).getCount() == 9,
+                    "its 27th slot kept");
+            int filled = 0;
+            for (int i = 0; i < controller.getBankItems().size(); i++) if (!controller.getBankItems().getStack(i).isEmpty()) filled++;
+            context.assertEquals(filled, 2, "the new slots empty");
+            controller.getBankItems().setStack(PartyControllerEntity.BANK_SIZE - 1, new ItemStack(Items.GOLD_INGOT, 4));
+            NbtCompound again = controller.createNbtWithIdentifyingData(registries);
+            controller.getBankItems().clear();
+            controller.read(again, registries);
+            context.assertTrue(controller.getBankItems().getStack(PartyControllerEntity.BANK_SIZE - 1).getCount() == 4
+                    && controller.getBankItems().getStack(26).getCount() == 9, "its last slot saved and loaded with the others");
+            controller.getBankItems().clear();
+        } finally {
+            remove(context);
+        }
+        context.complete();
     }
 
     /** A controller saved before it had its own bank: an empty one, its linked chest still pays; its bank is saved. */

@@ -179,6 +179,35 @@ public final class CartridgeContainers {
                 PartyControllerEntity.BOARD_NEARBY_RADIUS, false).orElse(null);
     }
 
+    /**
+     * Where a cartridge taking or giving items keeps them, as its menu tells the player: its linked containers, the
+     * bank of the Party Controller of its board (none linked), or nothing.
+     */
+    public enum Storage {
+        NONE, PARTY_CONTROLLER, LINKED;
+
+        public static Storage byId(int id) {
+            return id >= 0 && id < values().length ? values()[id] : NONE;
+        }
+    }
+
+    /**
+     * The storage of the cartridge held at {@code holder} (null: in a hand): its linked containers if any (there or
+     * not); else a Party Controller whose board holds it, its party running or not (see {@link #partyBankOf}, the
+     * bank used once it runs); else none. Server side (the controllers are known there only).
+     */
+    public static Storage storageOf(ItemStack stack, World world, @Nullable BlockPos holder) {
+        return storageOf(stack, world, holder, PartyControllerEntity.BOARD_NEARBY_RADIUS);
+    }
+
+    /** {@link #storageOf(ItemStack, World, BlockPos)}, a controller searched within {@code fallbackRadius} blocks off its board. */
+    public static Storage storageOf(ItemStack stack, World world, @Nullable BlockPos holder, int fallbackRadius) {
+        if (!isEmpty(stack)) return Storage.LINKED;
+        if (holder == null || world.isClient) return Storage.NONE;
+        return PartyControllerEntity.getControllerOfBoardSpace(world, holder, fallbackRadius).isPresent()
+                ? Storage.PARTY_CONTROLLER : Storage.NONE;
+    }
+
     /** The other half of a double chest, null for anything else. */
     public static @Nullable BlockPos otherHalf(World world, BlockPos pos) {
         BlockState state = world.getBlockState(pos);

@@ -7,7 +7,9 @@ import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import net.fabricmc.fabric.api.transfer.v1.item.InventoryStorage;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import net.minecraft.block.entity.BlockEntity;
@@ -17,6 +19,10 @@ import net.minecraft.block.entity.HopperBlockEntity;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -28,9 +34,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The bank of a Party Controller: its own inventory (27 slots, opened from its dashboard, filled and emptied by
- * hoppers) first, then, optional, the containers of the Inventory Cartridge in its bank slot (Gains page), in their
- * order; the cartridge's item slots and transfer mode, for board spaces, play no part here. Everything the party pays
+ * The bank of a Party Controller (« Storage » for the players): its own inventory ({@link PartyControllerEntity#BANK_SIZE}
+ * slots, the dashboard's Storage tab, filled and emptied by hoppers) first, then, optional, the containers linked to it
+ * with the Tile Linker Brush (kept inside it as an Inventory Cartridge), in their order. Everything the party pays
  * (mini-game gains, a star bought, the board spaces without a chest of their own...) is taken from it, the first
  * places first, never created: what is not in it is not paid; what the party takes (a star's price, stakes...) goes
  * in the first place with room, in the same order. Nobody uses it directly: everything goes through the party's one
@@ -75,8 +81,32 @@ public final class PartyBank {
         }
     }
 
-    /** The containers of a bank cartridge looked at: those that pay, in order, and those skipped. */
-    private record Resolved(List<Inventory> paying, int absent, int unloaded) {
+    /** Where a linked container stands now (the dashboard's Storage tab lists them). */
+    public enum LinkState {
+        /** There, and paying (a double chest's second half too). */
+        PRESENT,
+        /** Gone, no storage container, or in a mini-game zone in session: skipped. */
+        ABSENT,
+        /** Its chunk is not loaded: skipped (nothing is loaded for it). */
+        UNLOADED
+    }
+
+    /**
+     * A container linked to the controller, as the dashboard lists it.
+     *
+     * @param pos   where it is
+     * @param block the block there now ({@link Blocks#AIR} when not known: its chunk not loaded, its world gone)
+     */
+    public record Linked(GlobalPos pos, Block block, LinkState state) {
+        public static final PacketCodec<RegistryByteBuf, Linked> PACKET_CODEC = PacketCodec.tuple(
+                GlobalPos.PACKET_CODEC, Linked::pos,
+                PacketCodecs.registryValue(RegistryKeys.BLOCK), Linked::block,
+                PacketCodecs.indexed(i -> LinkState.values()[Math.clamp(i, 0, LinkState.values().length - 1)], LinkState::ordinal), Linked::state,
+                Linked::new);
+    }
+
+    /** The containers of a bank cartridge looked at: those that pay, in order, those skipped, and each of the list. */
+    private record Resolved(List<Inventory> paying, int absent, int unloaded, List<Linked> links) {
     }
 
     private PartyBank() {
@@ -106,6 +136,11 @@ public final class PartyBank {
         return paying.isEmpty() ? null : paying.size() == 1 ? paying.getFirst() : new InventoryChain(paying);
     }
 
+    /** The containers linked to {@code controller}, in their order, each with where it stands now (the dashboard). */
+    public static List<Linked> linked(PartyControllerEntity controller, MinecraftServer server) {
+        return resolve(server, controller.getBank()).links();
+    }
+
     /** Whether a block entity can be a bank: a storage container that does not move items by itself. */
     public static boolean isBank(@Nullable BlockEntity blockEntity) {
         return blockEntity instanceof LootableContainerBlockEntity && !(blockEntity instanceof HopperBlockEntity)
@@ -131,22 +166,31 @@ public final class PartyBank {
     private static Resolved resolve(MinecraftServer server, ItemStack cartridge) {
         List<Inventory> paying = new ArrayList<>();
         List<GlobalPos> seen = new ArrayList<>();
+        List<Linked> links = new ArrayList<>();
         int absent = 0, unloaded = 0;
         for (GlobalPos target : targets(cartridge)) {
-            if (seen.contains(target)) continue;
             ServerWorld world = server.getWorld(target.dimension());
             BlockPos pos = target.pos();
+            if (seen.contains(target)) {
+                // The other half of a double chest already paying
+                links.add(new Linked(target, world == null ? Blocks.AIR : world.getBlockState(pos).getBlock(), LinkState.PRESENT));
+                continue;
+            }
             if (world == null) {
                 absent++;
+                links.add(new Linked(target, Blocks.AIR, LinkState.ABSENT));
                 continue;
             }
             if (!world.isChunkLoaded(pos)) {
                 unloaded++;
+                links.add(new Linked(target, Blocks.AIR, LinkState.UNLOADED));
                 continue;
             }
+            Block block = world.getBlockState(pos).getBlock();
             Inventory inventory = inventory(world, pos);
             if (inventory == null) {
                 absent++;
+                links.add(new Linked(target, block, LinkState.ABSENT));
                 continue;
             }
             // A double chest is paid from once, whichever halves are in the list
@@ -154,8 +198,9 @@ public final class PartyBank {
             BlockPos other = CartridgeContainers.otherHalf(world, pos);
             if (other != null) seen.add(GlobalPos.create(target.dimension(), other));
             paying.add(inventory);
+            links.add(new Linked(target, block, LinkState.PRESENT));
         }
-        return new Resolved(paying, absent, unloaded);
+        return new Resolved(paying, absent, unloaded, links);
     }
 
     /** The container at {@code pos}, as an inventory (a double chest whole), or null if it is no bank. */
