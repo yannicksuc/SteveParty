@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.frousseux.FrousseuxCandleHolderBlock;
+import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor;
 import fr.lordfinn.steveparty.blocks.custom.signs.MaterialSignItems;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
@@ -152,8 +154,10 @@ public final class ModItemGroups {
         }
         entries.add(BOX_COSTUME);
         for (Item egg : GLANDOUILLE_SPAWN_EGGS) entries.add(egg);
-        addAll(entries, ACORN, ACORN_HAT, FROUSSEUX_SPAWN_EGG, ModItems.CANDLE_SAUCER, MISTIGRI_SPAWN_EGG,
-                BOOMCART_SPAWN_EGG, TRICHAUDRON_SPAWN_EGG, MAGPIE_SPAWN_EGG, ModItems.MAGPIE_NEST);
+        addAll(entries, ACORN, ACORN_HAT, FROUSSEUX_SPAWN_EGG, ModItems.CANDLE_SAUCER);
+        // A Frousseux asleep in its candle holder, one per candle (plain, then the 16 colours in dye order)
+        for (FrousseuxColor color : FrousseuxColor.values()) entries.add(FrousseuxCandleHolderBlock.asleep(color));
+        addAll(entries, MISTIGRI_SPAWN_EGG, BOOMCART_SPAWN_EGG, TRICHAUDRON_SPAWN_EGG, MAGPIE_SPAWN_EGG, ModItems.MAGPIE_NEST);
     }
 
     /** Stencils, signs, plastic and polished blocks, then the stencil library. */
