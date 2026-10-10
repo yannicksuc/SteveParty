@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -239,13 +240,14 @@ public final class TilePanel {
         context.getMatrices().push();
         context.getMatrices().translate(centreX - layout.titleWidth / 2f, top + PAD, 0);
         context.getMatrices().scale(TITLE_SCALE, TITLE_SCALE, 1);
-        context.drawText(font, layout.title, 0, 0, layout.titleColor, false);
+        HudDepth.onTop(context, () -> context.drawText(font, layout.title, 0, 0, layout.titleColor, false));
         context.getMatrices().pop();
         int y = top + PAD + TITLE_HEIGHT + PAD / 2;
         for (int part = 0; part < 2; part++) {
             boolean build = part == 1;
             if ((build ? layout.buildRows(view) : layout.bodyRows(view)) == 0) continue;
-            context.fill(left + PAD, y, left + width - PAD, y + 1, RULE);
+            int rule = y;
+            HudDepth.onTop(context, () -> context.fill(left + PAD, rule, left + width - PAD, rule + 1, RULE));
             y += RULE_GAP + 1;
             for (int i = 0; i < layout.lines.length; i++) {
                 if (!layout.shown(i, view) || (layout.layers[i] == TileInfo.Layer.BUILD) != build) continue;
@@ -255,14 +257,18 @@ public final class TilePanel {
                     context.getMatrices().push();
                     context.getMatrices().translate(textX, y - 1, 0);
                     context.getMatrices().scale(ICON / 16f, ICON / 16f, 1);
-                    context.drawItem(icon, 0, 0);
+                    HudDepth.item(context, () -> context.drawItem(icon, 0, 0));
                     context.getMatrices().pop();
                     textX += ICON + ICON_GAP;
                 } else if (layout.glyphs[i] != TileInfo.Glyph.NONE) {
-                    TileGlyphs.drawHud(context, layout.glyphs[i], textX, y);
+                    TileInfo.Glyph glyph = layout.glyphs[i];
+                    int gx = textX, gy = y;
+                    HudDepth.onTop(context, () -> TileGlyphs.drawHud(context, glyph, gx, gy));
                     textX += ICON + ICON_GAP;
                 }
-                context.drawText(font, layout.lines[i], textX, y, ToolHud.TEXT, false);
+                OrderedText line = layout.lines[i];
+                int lx = textX, ly = y;
+                HudDepth.onTop(context, () -> context.drawText(font, line, lx, ly, ToolHud.TEXT, false));
                 y += ROW;
             }
             y += RULE_GAP - 1;

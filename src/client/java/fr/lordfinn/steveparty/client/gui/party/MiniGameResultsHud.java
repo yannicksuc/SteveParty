@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
+import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
@@ -130,8 +131,8 @@ public final class MiniGameResultsHud {
         int left = x;
         if (row.place() > 0) {
             int color = PLACE_COLORS[Math.min(row.place(), PLACE_COLORS.length) - 1];
-            context.fill(x, y, x + CHIP, y + ROW - 2, Argb.fade(HudDraw.OUTLINE, alpha));
-            context.fill(x + 1, y + 1, x + CHIP - 1, y + ROW - 3, Argb.fade(color, alpha));
+            HudDraw.fill(context, x, y, x + CHIP, y + ROW - 2, HudDraw.OUTLINE, alpha);
+            HudDraw.fill(context, x + 1, y + 1, x + CHIP - 1, y + ROW - 3, color, alpha);
             Text place = row.place() <= 9 ? Text.translatable("hud.steveparty.party.rank." + row.place()) : Text.literal(String.valueOf(row.place()));
             HudDraw.text(context, place, x + (CHIP - font.getWidth(place)) / 2, y + 2, HudDraw.TEXT, alpha);
             left += CHIP + 4;
@@ -146,7 +147,7 @@ public final class MiniGameResultsHud {
         if (row.team() >= 0) {
             MiniGamePipeRole role = MiniGamePipeRole.ofTeam(row.team());
             names.append(role.text().copy().styled(style -> style.withBold(true))).append(" ");
-            context.fill(left, y + 1, left + 3, y + ROW - 3, Argb.fade(Argb.opaque(role.color()), alpha));
+            HudDraw.fill(context, left, y + 1, left + 3, y + ROW - 3, Argb.opaque(role.color()), alpha);
             left += 5;
         } else if (row.place() == 0) {
             names.append(Text.translatable("hud.steveparty.minigame.results.participant")).append(" ");
@@ -165,7 +166,7 @@ public final class MiniGameResultsHud {
             matrices.push();
             matrices.translate(iconX, y, 0);
             matrices.scale(10 / 16f, 10 / 16f, 1);
-            context.drawItem(item, 0, 0);
+            HudDepth.item(context, () -> context.drawItem(item, 0, 0));
             matrices.pop();
         }
         int textX = iconX - 2 - font.getWidth(text);
