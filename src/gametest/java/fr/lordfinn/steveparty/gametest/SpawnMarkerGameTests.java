@@ -29,14 +29,20 @@ import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -56,7 +62,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  * One brush for every position a cartridge stores (the target decides: a board space is a destination, a container a
  * container, a Spawn Marker the mob's spawn point; what the cartridge takes none of is refused), the Spawn Marker
  * (where the mob of a mob space appears, facing its way; beside the space without one; broken, forgotten; « always
- * visible »: its mob lives on it all the party long), and the Party Controller's bank for the spaces with no chest.
+ * visible »: its mob lives on it all the party long; 16 ways like a sign, turned a sixteenth when sneaking), and the Party Controller's bank for the spaces with no chest.
  */
 public class SpawnMarkerGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(3, 1, 3);
@@ -65,9 +71,19 @@ public class SpawnMarkerGameTests implements SteveGameTest {
 
     /** A Spawn Marker at {@code relative} on stone, facing {@code facing}; its absolute position. */
     private static BlockPos marker(TestContext context, BlockPos relative, Direction facing) {
+        return marker(context, relative, SpawnMarkerBlock.rotation(facing));
+    }
+
+    /** A Spawn Marker at {@code relative} on stone, turned to {@code rotation} (16 steps, like a sign); its absolute position. */
+    private static BlockPos marker(TestContext context, BlockPos relative, int rotation) {
         context.setBlockState(relative.down(), Blocks.STONE);
-        context.setBlockState(relative, ModBlocks.SPAWN_MARKER.getDefaultState().with(SpawnMarkerBlock.FACING, facing));
+        context.setBlockState(relative, ModBlocks.SPAWN_MARKER.getDefaultState().with(SpawnMarkerBlock.ROTATION, rotation));
         return context.getAbsolutePos(relative);
+    }
+
+    /** {@code yaw} is {@code expected}, give or take a degree (wrapped). */
+    private static boolean facing(float yaw, float expected) {
+        return Math.abs(MathHelper.wrapDegrees(yaw - expected)) < 1;
     }
 
     /** {@code cartridge} of the space at {@code tile} linked to the marker at {@code marker} (absolute). */
@@ -184,6 +200,51 @@ public class SpawnMarkerGameTests implements SteveGameTest {
             context.assertTrue(second != null && near(second.getPos(), beside), "no marker: beside the space");
             when(context, () -> again[0], WHOLE_THEFT, "the second theft ends", context::complete);
         });
+    }
+
+    // ---------------------------------------------------------------- 16 ways, like a sign
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "spawn_marker_diagonal")
+    public void aDiagonalMarkerTurnsItsMobBySixteenths(TestContext context) {
+        // placed: its mob faces whoever placed it, diagonals too
+        ServerPlayerEntity placer = player(context);
+        placer.setYaw(45);
+        BlockPos at = context.getAbsolutePos(MARKER);
+        BlockState placed = ModBlocks.SPAWN_MARKER.getPlacementState(new ItemPlacementContext(placer, Hand.MAIN_HAND,
+                new ItemStack(ModItems.SPAWN_MARKER), new BlockHitResult(Vec3d.ofBottomCenter(at), Direction.UP, at.down(), false)));
+        context.assertTrue(placed != null && placed.get(SpawnMarkerBlock.ROTATION) == 10 && SpawnMarkerBlock.yaw(placed) == 225,
+                "placed by someone looking south-west: its mob faces north-east, toward them");
+        context.assertTrue(SpawnMarkerBlock.yaw(ModBlocks.SPAWN_MARKER.getDefaultState()) == Direction.NORTH.asRotation()
+                && SpawnMarkerBlock.rotation(Direction.EAST) == 12, "the cardinal ways as before");
+        // a structure turned or mirrored: its way follows, by sixteenths
+        context.assertTrue(placed.rotate(BlockRotation.CLOCKWISE_90).get(SpawnMarkerBlock.ROTATION) == 14, "turned a quarter: south-east");
+        context.assertTrue(placed.mirror(BlockMirror.FRONT_BACK).get(SpawnMarkerBlock.ROTATION) == 6, "mirrored: north-west");
+        // its mob appears facing the diagonal
+        BoardSpaceBlockEntity tile = tile(context, TILE, new ItemStack(ModItems.MISTIGRI_CARTRIDGE));
+        BlockPos marker = marker(context, MARKER, 10);
+        link(context, tile, marker);
+        context.assertTrue(facing(BoardMobSpots.spot(context.getWorld(), tile.getPos(), Vec3d.ZERO, 0).yaw(), 225), "the spot faces north-east");
+        SpawnMarkerBlockEntity entity = (SpawnMarkerBlockEntity) context.getWorld().getBlockEntity(marker);
+        entity.setResident(true);
+        atEnd(context, () -> MarkerResidents.remove(context.getWorld(), marker));
+        ServerPlayerEntity a = player(context), b = player(context);
+        party(context, new ArrayList<>(), a, b);
+        MarkerResidents.update(context.getWorld().getServer());
+        MobEntity resident = MarkerResidents.resident(context.getWorld(), marker);
+        context.assertTrue(resident != null && facing(resident.getYaw(), 225), "its mob faces north-east");
+        // sneaking, an empty hand turns it a sixteenth clockwise; its mob turns with it
+        ServerPlayerEntity turner = player(context);
+        turner.setSneaking(true);
+        BlockHitResult hit = new BlockHitResult(Vec3d.ofBottomCenter(marker), Direction.UP, marker, false);
+        context.getWorld().getBlockState(marker).onUse(context.getWorld(), turner, hit);
+        BlockState turned = context.getWorld().getBlockState(marker);
+        context.assertTrue(turned.get(SpawnMarkerBlock.ROTATION) == 11 && SpawnMarkerBlock.yaw(turned) == 247.5f
+                && SpawnMarkerBlock.compass(11).equals("ene"), "turned 22.5° clockwise: east-north-east");
+        MobEntity again = MarkerResidents.resident(context.getWorld(), marker);
+        context.assertTrue(again != null && facing(again.getYaw(), 247.5f), "its mob turned with it");
+        for (int i = 0; i < 15; i++) context.getWorld().getBlockState(marker).onUse(context.getWorld(), turner, hit);
+        context.assertTrue(context.getWorld().getBlockState(marker).get(SpawnMarkerBlock.ROTATION) == 10, "16 turns: a whole turn, north-east again");
+        context.complete();
     }
 
     // ---------------------------------------------------------------- always visible
