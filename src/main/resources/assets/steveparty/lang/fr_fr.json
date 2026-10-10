@@ -1429,7 +1429,7 @@
   "gui.steveparty.party_controller.badge.empty_catalogue": "Le catalogue de mini-jeux est vide",
   "gui.steveparty.party_controller.blocker.none": "Prêt !",
   "gui.steveparty.party_controller.blocker.running": "Une partie est déjà en cours.",
-  "gui.steveparty.party_controller.blocker.no_board": "Aucune case de plateau à moins de 100 blocs du contrôleur.",
+  "gui.steveparty.party_controller.blocker.no_board": "Aucune case de départ ni case de plateau à moins de 32 blocs du contrôleur.",
   "gui.steveparty.party_controller.blocker.no_start": "Aucune case de départ (une case avec une Cartouche de départ).",
   "gui.steveparty.party_controller.blocker.no_token": "Aucun pion sur les cases de départ : fais-y marcher un pion.",
   "gui.steveparty.party_controller.blocker.not_allowed": "Tu ne peux pas lancer de partie ici (mode Aventure, zone protégée).",
@@ -1454,7 +1454,7 @@
   "gui.steveparty.party_controller.state.ended": "Partie terminée !",
   "gui.steveparty.party_controller.state.winner": "%s remporte la partie !",
   "gui.steveparty.party_controller.check.board.none": "Aucun plateau autour du contrôleur",
-  "gui.steveparty.party_controller.check.board.none.hint": "Pose des §ecases de plateau§7 à moins de 100 blocs du contrôleur\nRelie-les avec le §ePinceau lieur",
+  "gui.steveparty.party_controller.check.board.none.hint": "Pose les §ecases de départ§7 à moins de 32 blocs du contrôleur\nRelie-leur le plateau avec le §ePinceau lieur",
   "gui.steveparty.party_controller.check.board.no_start": "Plateau : %s cases, aucune case de départ",
   "gui.steveparty.party_controller.check.board.no_start.hint": "Mets une §eCartouche de départ§7 dans une case : les pions y commencent",
   "gui.steveparty.party_controller.check.board.ok": "Plateau : %s cases, %s cases de départ",
@@ -3151,5 +3151,7 @@
   "gui.steveparty.spawn_marker.resident.hint": "Toute la partie : il attend sur le repère, joue sa séquence quand un Pion s'arrête, revient, et part à la fin de la partie",
   "gui.steveparty.spawn_marker.lift": "Hauteur au-dessus du repère",
   "gui.steveparty.spawn_marker.lift.hint": "Un demi-bloc plus haut ou plus bas (Maj : un bloc ; la molette aussi). Le mob flotte là : le repère peut se cacher sous le sol ou dans un mur",
-  "gui.steveparty.spawn_marker.preview": "Le pinceau, la Clé ou le casque montrent où il sera"
+  "gui.steveparty.spawn_marker.preview": "Le pinceau, la Clé ou le casque montrent où il sera",
+  "message.steveparty.board.check.unloaded_starts": "%s cases de départ dans des chunks non chargés (leurs pions ne sont pas vus) :",
+  "message.steveparty.board.summary.unloaded_starts": "%s cases de départ non chargées"
 }

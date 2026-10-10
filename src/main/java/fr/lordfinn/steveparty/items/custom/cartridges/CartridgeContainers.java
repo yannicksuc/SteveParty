@@ -175,8 +175,8 @@ public final class CartridgeContainers {
      */
     public static @Nullable PartyControllerEntity partyBankOf(ItemStack stack, World world, BlockPos space) {
         if (!isEmpty(stack) || world.isClient) return null;
-        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, space,
-                PartyControllerEntity.START_TILES_SEARCH_RADIUS, false).orElse(null);
+        return PartyControllerEntity.getPartyOfBoardSpace(world, space,
+                PartyControllerEntity.BOARD_NEARBY_RADIUS, false).orElse(null);
     }
 
     /** The other half of a double chest, null for anything else. */

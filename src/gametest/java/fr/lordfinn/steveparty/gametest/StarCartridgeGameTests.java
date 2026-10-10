@@ -57,13 +57,11 @@ import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
  * its cartridge says so); no active star space: it hides until one is switched on; the Skeleton Key does not walk past
  * it.
  * <p>
- * Each test runs in a batch of its own: the star spaces of a party are looked for within
- * {@link PartyControllerEntity#START_TILES_SEARCH_RADIUS} blocks of its controller, and the tests of a batch stand side
- * by side, so another test's star spaces would be found. Each test also takes its star spaces away when it ends, for
- * the batches after it.
+ * Each test runs in a batch of its own, and takes its star spaces away when it ends, for the batches after it: the
+ * star spaces of a party are the ones of its board (the paths from where its tokens started, whichever way).
  */
 public class StarCartridgeGameTests implements SteveGameTest {
-    /** The board: tile → star tile → tile, and two more star tiles off the path. */
+    /** The board: tile → star tile → tile, and two more star tiles off the path (linking to the first tile: on the board). */
     private static final BlockPos START = new BlockPos(1, 1, 1), STAR = new BlockPos(3, 1, 1), END = new BlockPos(5, 1, 1);
     private static final BlockPos OTHER = new BlockPos(1, 1, 5), ANOTHER = new BlockPos(5, 1, 5);
     private static final BlockPos CONTROLLER = new BlockPos(8, 1, 8);
@@ -92,6 +90,24 @@ public class StarCartridgeGameTests implements SteveGameTest {
         return space;
     }
 
+    /**
+     * Puts the star spaces placed so far on the token's board: a tile under the token (START), and every cartridge of
+     * the other spaces linking to it (a board is what the paths from where the tokens stand join).
+     */
+    private static void onBoard(TestContext context) {
+        if (!(context.getWorld().getBlockEntity(context.getAbsolutePos(START)) instanceof BoardSpaceBlockEntity))
+            space(context, START, ModBlocks.TILE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), null);
+        for (BlockPos pos : List.of(STAR, END, OTHER, ANOTHER)) {
+            if (!(context.getWorld().getBlockEntity(context.getAbsolutePos(pos)) instanceof BoardSpaceBlockEntity space)) continue;
+            for (int slot = 0; slot < space.size(); slot++) {
+                ItemStack cartridge = space.getStack(slot);
+                if (cartridge.isEmpty()) continue;
+                cartridge.set(ModComponents.DESTINATIONS_COMPONENT,
+                        new DestinationsComponent(new ArrayList<>(List.of(context.getAbsolutePos(START))), ""));
+            }
+        }
+    }
+
     /** A party of one token, started up to its first turn (the controller off the board). */
     private static PartyControllerEntity party(TestContext context, CowEntity token, ServerPlayerEntity owner) {
         context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
@@ -118,8 +134,8 @@ public class StarCartridgeGameTests implements SteveGameTest {
         space(context, START, ModBlocks.TILE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), STAR);
         space(context, STAR, starBlock, new ItemStack(ModItems.STAR_CARTRIDGE), END);
         space(context, END, ModBlocks.TILE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), null);
-        space(context, OTHER, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), null);
-        space(context, ANOTHER, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), null);
+        space(context, OTHER, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), START);
+        space(context, ANOTHER, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), START);
         CowEntity cow = context.spawnEntity(EntityType.COW, START);
         TokenizedEntityInterface token = (TokenizedEntityInterface) cow;
         token.steveparty$setTokenized(true);
@@ -202,6 +218,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
             BoardSpaceBlockEntity off = context.getBlockEntity(OTHER);
             off.setStack(1, new ItemStack(ModItems.STAR_CARTRIDGE));
             context.assertEquals(off.getCachedState().get(ABoardSpaceBlock.TILE_TYPE), BoardSpaceType.DEFAULT, "a switched-off star space");
+            onBoard(context);
             CowEntity cow = context.spawnEntity(EntityType.COW, START);
             PartyControllerEntity controller = party(context, cow, owner);
             for (int i = 0; i < 12; i++) {
@@ -227,6 +244,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
             ItemStack waiting = new ItemStack(ModItems.STAR_CARTRIDGE);
             waiting.set(ModComponents.STAR_SETTINGS, StarSettingsComponent.DEFAULT.withRelocate(false));
             stays.setStack(0, waiting);
+            onBoard(context);
             CowEntity cow = context.spawnEntity(EntityType.COW, START);
             PartyControllerEntity controller = party(context, cow, owner);
             controller.setStarSpace(context.getAbsolutePos(STAR));
@@ -256,6 +274,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
             context.setBlockState(STAR, ModBlocks.ADVANCED_TILE);
             BoardSpaceBlockEntity star = context.getBlockEntity(STAR);
             star.setStack(0, new ItemStack(ModItems.STAR_CARTRIDGE));
+            onBoard(context);
             CowEntity cow = context.spawnEntity(EntityType.COW, START);
             PartyControllerEntity controller = party(context, cow, owner);
             controller.setStarSpace(context.getAbsolutePos(STAR));
@@ -283,6 +302,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
         List<BlockPos> starSpaces = List.of(STAR, OTHER, ANOTHER);
         for (BlockPos pos : starSpaces) space(context, pos, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), null);
         List<BlockPos> absolute = starSpaces.stream().map(context::getAbsolutePos).toList();
+        onBoard(context);
         CowEntity cow = context.spawnEntity(EntityType.COW, START);
         context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
         PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);

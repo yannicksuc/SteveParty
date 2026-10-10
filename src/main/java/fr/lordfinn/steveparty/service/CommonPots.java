@@ -309,8 +309,8 @@ public final class CommonPots {
     public static void care(ServerWorld world, BoardSpaceBlockEntity space, ItemStack pot) {
         // A party running on its board: its base, still due, comes from that party's bank at once
         if (PotCartridgeItem.baseDue(pot)) {
-            PartyControllerEntity party = PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, space.getPos(),
-                    PartyControllerEntity.START_TILES_SEARCH_RADIUS, false).orElse(null);
+            PartyControllerEntity party = PartyControllerEntity.getPartyOfBoardSpace(world, space.getPos(),
+                    PartyControllerEntity.BOARD_NEARBY_RADIUS, false).orElse(null);
             if (party != null) {
                 fillBase(pot, party);
                 updateNest(world, space, pot);

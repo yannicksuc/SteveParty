@@ -170,7 +170,7 @@ public final class PartyTokenHomes {
 
     /** Gives the dice thrown for a stopped party (for one of its tokens, or by one of its players) back to their owners. */
     static void dropDiceOf(ServerWorld serverWorld, BlockPos controller, Set<UUID> tokens, List<UUID> players) {
-        Box around = new Box(controller).expand(PartyControllerEntity.START_TILES_SEARCH_RADIUS);
+        Box around = new Box(controller).expand(PartyControllerEntity.BOARD_NEARBY_RADIUS);
         for (DiceEntity dice : serverWorld.getEntitiesByClass(DiceEntity.class, around, dice ->
                 dice.getTarget().filter(tokens::contains).isPresent() || dice.getOwner().filter(players::contains).isPresent())) {
             dice.kill();

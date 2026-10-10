@@ -72,8 +72,18 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private static final String BANK_ITEMS = "BankItems";
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
-    /** The board of a party: its start tiles and star spaces are looked for this far from the controller. */
-    public static final int START_TILES_SEARCH_RADIUS = 100;
+    /**
+     * The start tiles of its board are looked for this far from the controller; the rest of the board is where the
+     * paths from them go, however far (see {@link PartyBoard}).
+     */
+    public static final int START_TILES_SEARCH_RADIUS = 32;
+    /**
+     * A board space whose board no loaded controller knows is said to be near the closest one within this many blocks
+     * (and a token's start space is looked for this far from it).
+     */
+    public static final int BOARD_NEARBY_RADIUS = 100;
+    /** Its board is read again when asked this long after the last time (ticks). */
+    private static final int BOARD_SCAN_INTERVAL = 20;
     /** Radius around the controller in which the players are told about the party (absent turns, exclusions...). */
     public static final int PARTY_AUDIENCE_RADIUS = 100;
     /** Players who won the last mini-game (piggy banks may reward them). */
@@ -100,6 +110,10 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private final PartyAudience audience = new PartyAudience(this);
     private final PartyTokenHomes tokenHomes = new PartyTokenHomes();
     private final PartyFlow flow = new PartyFlow(this);
+    /** Its board as it remembers it (saved), and as last read. */
+    private final PartyBoard.Memory boardMemory = new PartyBoard.Memory();
+    private @Nullable PartyBoard.Snapshot board;
+    private long boardScanTime;
     /** Its own bank, 27 slots like a chest (see {@link PartyBank}): saved, never sent to the clients. */
     private final SimpleInventory bankItems = new SimpleInventory(BANK_SIZE) {
         @Override
@@ -187,6 +201,14 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         return PartyControllers.closestSteppable(world, pos, radius, includeEnded);
     }
 
+    /**
+     * The party of the board space at {@code pos}: the loaded controller whose board holds it, else the closest one
+     * within {@code fallbackRadius} blocks (a board no controller has read yet); running, or ended if {@code includeEnded}.
+     */
+    public static Optional<PartyControllerEntity> getPartyOfBoardSpace(World world, BlockPos pos, int fallbackRadius, boolean includeEnded) {
+        return PartyControllers.ofBoardSpace(world, pos, fallbackRadius, includeEnded);
+    }
+
     /** The loaded controller whose running party contains the token, if any. */
     public static Optional<PartyControllerEntity> getRunningPartyOf(UUID tokenUUID) {
         return PartyControllers.runningPartyOf(tokenUUID);
@@ -246,6 +268,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         settings.writeNbt(nbt, wrapper);
         if (starSpace != null) nbt.putLong("StarSpace", starSpace.asLong());
         tokenHomes.writeNbt(nbt);
+        boardMemory.writeNbt(nbt);
         if (!lastWinners.isEmpty()) {
             NbtList winnersNbt = new NbtList();
             lastWinners.forEach(uuid -> winnersNbt.add(NbtString.of(uuid.toString())));
@@ -270,6 +293,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         settings.readNbt(nbt, wrapper);
         starSpace = nbt.contains("StarSpace") ? BlockPos.fromLong(nbt.getLong("StarSpace")) : null;
         tokenHomes.readNbt(nbt);
+        boardMemory.readNbt(nbt);
+        board = null;
         lastWinners.clear();
         nbt.getList("LastWinners", NbtElement.STRING_TYPE).forEach(element -> {
             try {
@@ -290,6 +315,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         NbtCompound nbt = super.toInitialChunkDataNbt(registries);
         nbt.remove(TrapState.NBT_KEY);
         nbt.remove(BANK_ITEMS);
+        nbt.remove("Board");
         return nbt;
     }
 
@@ -537,22 +563,67 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
 
     // ------------------------------------------------------------------ the board (see PartyBoard)
 
-    /** The tokens that would play if a party started now: the ones bound to the start tiles around, in their order. */
+    /** Its board ({@link PartyBoard}), read again if the last reading is older than a second. */
+    public PartyBoard.Snapshot board(ServerWorld world) {
+        return board(world, false);
+    }
+
+    /** Its board, read again now if {@code fresh} (or if the last reading is old). */
+    public PartyBoard.Snapshot board(ServerWorld world, boolean fresh) {
+        long now = world.getTime();
+        if (board != null && !fresh && now - boardScanTime < BOARD_SCAN_INTERVAL && now >= boardScanTime) return board;
+        Set<BlockPos> before = Set.copyOf(boardMemory.spaces());
+        board = PartyBoard.scan(world, pos, boardMemory, partySpaces(world));
+        boardScanTime = now;
+        boardMemory.update(board);
+        if (!before.equals(boardMemory.spaces())) {
+            PartyControllers.indexBoard(this, before, boardMemory.spaces());
+            saveOnly();
+        }
+        return board;
+    }
+
+    /** Where the tokens of its party started and stand (none without a party). */
+    private List<BlockPos> partySpaces(ServerWorld world) {
+        List<BlockPos> spaces = new ArrayList<>();
+        if (!partyData.isStarted()) return spaces;
+        for (UUID token : partyData.getTokens()) {
+            BlockPos start = tokenHomes.startTile(token);
+            if (start != null) spaces.add(start);
+            if (world.getEntity(token) instanceof net.minecraft.entity.Entity entity) {
+                BoardSpaceBlockEntity space = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(entity);
+                if (space != null) spaces.add(space.getPos().toImmutable());
+            }
+        }
+        return spaces;
+    }
+
+    /** The board spaces it remembers (loaded or not), for the index of the boards (PartyControllers). */
+    Set<BlockPos> rememberedBoardSpaces() {
+        return boardMemory.spaces();
+    }
+
+    /** The tokens that would play if a party started now: the ones bound to the start tiles of its board, in their order. */
     public List<UUID> findStartTokens(ServerWorld serverWorld) {
         return new ArrayList<>(findStartTokenTiles(serverWorld).keySet());
     }
 
-    /** The tokens bound to the start tiles around, in their order, each with its start tile (the first one bound to it). */
+    /** The tokens bound to the start tiles of its board, in their order, each with its start tile (the first one bound to it). */
     public Map<UUID, BlockPos> findStartTokenTiles(ServerWorld serverWorld) {
-        return PartyBoard.startTokenTiles(serverWorld, this.getPos());
+        return board(serverWorld, true).startTokens();
+    }
+
+    /** The loaded board spaces of its board of the type {@code type}, sorted by z, then y, then x. */
+    public List<BlockPos> boardSpaces(ServerWorld world, BoardSpaceType type) {
+        return PartyBoard.boardSpaces(world, board(world), type);
     }
 
     /**
-     * The board spaces of the type {@code type} within {@link #START_TILES_SEARCH_RADIUS} blocks of {@code center}, in
-     * the loaded chunks (none is loaded for this), sorted by z, then y, then x.
+     * The board spaces of the type {@code type} within {@link #BOARD_NEARBY_RADIUS} blocks of {@code center}, in the
+     * loaded chunks (none is loaded for this), sorted by z, then y, then x: for a position whose party is unknown.
      */
     public static List<BlockPos> findBoardSpaces(ServerWorld world, BlockPos center, BoardSpaceType type) {
-        return PartyBoard.boardSpaces(world, center, type);
+        return PartyBoard.boardSpaces(world, center, BOARD_NEARBY_RADIUS, type);
     }
 
     /** The start tile a token of the running party started from, null if unknown. */
@@ -614,7 +685,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         getTokenFromStartTiles(serverWorld);
         setTokensStatus(serverWorld);
         // A warning for everyone around if the board has problems (the party still starts)
-        BoardValidator.warnAtStart(serverWorld, pos);
+        BoardValidator.warnAtStart(serverWorld, this);
 
         audience.addFromTokens(serverWorld);
 
