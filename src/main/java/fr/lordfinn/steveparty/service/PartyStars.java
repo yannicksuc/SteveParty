@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -24,9 +24,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ItemScatterer;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
@@ -405,14 +403,12 @@ public final class PartyStars {
                     .formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
             return false;
         }
-        Inventory bank = bank(party, world);
         ItemStack star = party.getCurrency(PartyCurrency.STAR);
-        if (bank == null || InventoryUtils.take(bank, star, 1) < 1) {
+        if (PartyResources.of(party).take(star, 1) < 1) {
             MessageUtils.sendToPlayers(audienceWith(party, buyer), Text.translatable("message.steveparty.star.bank_empty")
                     .formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
             return false;
         }
-        bank.markDirty();
         InventoryUtils.take(buyer.getInventory(), coin, price);
         deposit(party, world, coin.copyWithCount(price));
         InventoryUtils.giveOrDrop(buyer, star, 1);
@@ -431,27 +427,17 @@ public final class PartyStars {
     }
 
     /**
-     * The coins paid for the star go back to the party: into its bank (see {@link PartyBank}: its own inventory, then
-     * its linked chests), like the mini-game gains come from it. For what does not fit, they
-     * fall by the Party Controller: nothing is lost, and the purchase is never refused for it.
+     * The coins paid for the star go back to the party: into its bank ({@link PartyResources}), like the mini-game
+     * gains come from it. What does not fit falls by the Party Controller: nothing is lost, and the purchase is never
+     * refused for it.
      */
     static void deposit(PartyControllerEntity party, ServerWorld world, ItemStack coins) {
-        ItemStack rest = coins.copy();
-        PartyBank.deposit(party, rest);
-        if (rest.isEmpty()) return;
-        BlockPos pos = party.getPos();
-        ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, rest);
-    }
-
-    /** The party's bank (see {@link PartyBank}: its own inventory, then its linked chests). */
-    private static Inventory bank(PartyControllerEntity party, ServerWorld world) {
-        return PartyBank.inventory(party);
+        PartyResources.deposit(party, coins.copy());
     }
 
     /** The party's stars left in its bank: what the star spaces can still sell. */
     public static int bankStars(PartyControllerEntity party, ServerWorld world) {
-        Inventory bank = bank(party, world);
-        return bank == null ? 0 : InventoryUtils.count(bank, party.getCurrency(PartyCurrency.STAR));
+        return PartyResources.of(party).available(party.getCurrency(PartyCurrency.STAR));
     }
 
     private static List<ServerPlayerEntity> audienceWith(PartyControllerEntity party, ServerPlayerEntity player) {

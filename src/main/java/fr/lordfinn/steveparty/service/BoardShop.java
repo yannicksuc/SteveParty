@@ -1,7 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
-import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
@@ -23,7 +22,7 @@ import java.util.List;
  * cartridge's menu ({@link ShopCartridgeItem#offers}), each sale taken from its stock, each payment put in its till.
  * <ul>
  *     <li>stock: the cartridge's linked containers, or without any the bank of the party running on its board
- *     ({@link CartridgeContainers#availableFor}: the Party Controller's inventory, then its linked chests);</li>
+ *     ({@link CartridgeContainers#sourceFor}: the party's source, its Party Controller's bank);</li>
  *     <li>till: the bank of the party running on its board; outside a party, the cartridge's containers. What does not
  *     fit is dropped at the merchant (never lost).</li>
  * </ul>
@@ -55,40 +54,25 @@ public final class BoardShop {
         return ShopCartridgeItem.offers(cartridge());
     }
 
-    /** Where its sales are taken from now, in order. */
-    public List<Inventory> stock() {
+    /** Where its sales are taken from now: its containers, or the party's source (CartridgeContainers.sourceFor). */
+    public PartyResources stock() {
         ItemStack cartridge = cartridge();
-        return cartridge.isEmpty() ? List.of() : CartridgeContainers.availableFor(cartridge, world, space);
+        return cartridge.isEmpty() ? PartyResources.NONE : CartridgeContainers.sourceFor(cartridge, world, space);
     }
 
     /** How many of {@code item} (item and components) its stock holds now. */
     public int held(ItemStack item) {
-        int count = 0;
-        for (Inventory inventory : stock()) count += CartridgeTransfers.countMatching(item, inventory);
-        return count;
+        return stock().available(item);
     }
 
     /** Whether its stock holds {@code sold} (as many as that). */
     public boolean inStock(ItemStack sold) {
-        return sold.isEmpty() || held(sold) >= sold.getCount();
+        return sold.isEmpty() || stock().canTake(sold, sold.getCount());
     }
 
     /** {@code sold} is sold: taken from its stock, in order. */
     public void take(ItemStack sold) {
-        int left = sold.getCount();
-        for (Inventory inventory : stock()) {
-            boolean changed = false;
-            for (int slot = 0; slot < inventory.size() && left > 0; slot++) {
-                ItemStack stack = inventory.getStack(slot);
-                if (stack.isEmpty() || !ItemStack.areItemsAndComponentsEqual(stack, sold)) continue;
-                int taken = Math.min(left, stack.getCount());
-                stack.decrement(taken);
-                left -= taken;
-                changed = true;
-            }
-            if (changed) inventory.markDirty();
-            if (left <= 0) return;
-        }
+        if (!sold.isEmpty()) stock().take(sold, sold.getCount());
     }
 
     /** The party running on its board, whose bank is its till; null outside a party. */
@@ -101,7 +85,7 @@ public final class BoardShop {
     public void pay(ItemStack payment, Vec3d dropAt) {
         if (payment.isEmpty()) return;
         PartyControllerEntity party = party();
-        if (party != null) PartyBank.deposit(party, payment);
+        if (party != null) PartyResources.of(party).give(payment);
         else {
             ItemStack cartridge = cartridge();
             if (!cartridge.isEmpty()) {

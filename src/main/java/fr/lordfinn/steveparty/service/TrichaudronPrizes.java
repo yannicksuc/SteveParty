@@ -16,10 +16,10 @@ import fr.lordfinn.steveparty.powerups.PowerUpLimit;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
+import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TrichaudronTileBehavior;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleTypes;
@@ -394,18 +394,14 @@ public final class TrichaudronPrizes {
             BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, tile);
             if (space == null) return 0;
             ItemStack cartridge = space.getActiveCartridgeItemStack();
-            Inventory chests = cartridge.getItem() instanceof TrichaudronCartridgeItem ? TrichaudronCartridgeItem.chests(cartridge, world, tile) : null;
-            if (chests == null) return 0;
+            PartyResources chests = cartridge.getItem() instanceof TrichaudronCartridgeItem
+                    ? TrichaudronCartridgeItem.chests(cartridge, world, tile) : PartyResources.NONE;
+            if (chests.isNone()) return 0;
             int count = PowerUpService.itemsGained(player, prize, prize.getCount()); // Double Coins
             int allowed = PowerUpLimit.allowed(player, prize.copyWithCount(count));
             if (allowed < count) PowerUpLimit.tellFull(player);
             if (allowed <= 0) return 0;
-            int moved = InventoryInteractorTileBehavior.extractMatching(prize.copyWithCount(allowed), chests, toMove -> {
-                int given = toMove.getCount();
-                player.getInventory().offerOrDrop(toMove);
-                return given;
-            });
-            player.getInventory().markDirty();
+            int moved = CartridgeTransfers.transfer(prize.copyWithCount(allowed), chests, player);
             TrichaudronTileBehavior.refreshSleep(world, space);
             return moved;
         }
