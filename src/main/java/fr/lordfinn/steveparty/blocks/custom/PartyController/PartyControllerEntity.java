@@ -209,6 +209,14 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         return PartyControllers.ofBoardSpace(world, pos, fallbackRadius, includeEnded);
     }
 
+    /**
+     * The controller of the board holding the board space at {@code pos}, its party running or not (whose bank its
+     * cartridges will take from): the one whose board holds it, else the closest within {@code fallbackRadius} blocks.
+     */
+    public static Optional<PartyControllerEntity> getControllerOfBoardSpace(World world, BlockPos pos, int fallbackRadius) {
+        return PartyControllers.ofBoard(world, pos, fallbackRadius);
+    }
+
     /** The loaded controller whose running party contains the token, if any. */
     public static Optional<PartyControllerEntity> getRunningPartyOf(UUID tokenUUID) {
         return PartyControllers.runningPartyOf(tokenUUID);

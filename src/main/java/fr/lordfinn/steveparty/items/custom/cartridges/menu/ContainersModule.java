@@ -7,13 +7,14 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The containers of an Inventory Cartridge in their order, two per row (index, coordinates, red when it is not there:
+ * Where the cartridge's items come from, first (its storage, see {@link CartridgeContainers.Storage}: green, its
+ * linked containers or the Party Controller of its board; red, none, with how to give it one), then its containers in their order, two per row (index, coordinates, red when it is not there:
  * gone or not loaded), each with a remove button and one to put it earlier in the order (the order matters: taken from and given to in this
  * order, the bank pays in this order). A change is sent as {@code index * OPS + op} and checked on the server.
  */
 public final class ContainersModule extends CartridgeModule {
     public static final int ROW_H = 10;
-    /** Two containers per row, then the row of the hint (what a click does). */
+    /** The row of the storage, two containers per row, then the row of the hint (what a click does). */
     public static final int PER_ROW = 2;
     public static final int OPS = 4;
     public static final int REMOVE = 0, UP = 1, DOWN = 2;
@@ -28,8 +29,8 @@ public final class ContainersModule extends CartridgeModule {
 
     @Override
     public int height() {
-        // Its most rows: the full list, two per row, and the hint
-        return labelHeight() + (CartridgeContainers.MAX / PER_ROW + 1) * ROW_H;
+        // Its most rows: the storage, the full list, two per row, and the hint
+        return labelHeight() + (CartridgeContainers.MAX / PER_ROW + 2) * ROW_H;
     }
 
     @Override
