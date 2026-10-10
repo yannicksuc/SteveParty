@@ -75,6 +75,7 @@ import fr.lordfinn.steveparty.registry.ModGameRules;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.service.BoardActors;
 import fr.lordfinn.steveparty.service.FrousseuxThefts;
+import fr.lordfinn.steveparty.service.OutcomeRoulettes;
 import fr.lordfinn.steveparty.service.MistigriSentences;
 import fr.lordfinn.steveparty.service.TrichaudronPrizes;
 import fr.lordfinn.steveparty.service.TileInfos;
@@ -125,6 +126,7 @@ public class Steveparty implements ModInitializer {
         SpawnMarkerSettings.initialize();
         FrousseuxThefts.initialize();
         MistigriSentences.initialize();
+        OutcomeRoulettes.initialize();
         TrichaudronPrizes.initialize();
         MistigriBadLuck.initialize();
         MistigriSummoning.initialize();
