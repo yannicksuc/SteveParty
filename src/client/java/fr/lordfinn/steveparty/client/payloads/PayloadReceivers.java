@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.payloads;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.gui.party.DiceRevealHud;
+import fr.lordfinn.steveparty.client.gui.party.OutcomeRouletteHud;
 import fr.lordfinn.steveparty.client.gui.party.PartyHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.renderer.GoalPolePopupRenderer;
@@ -82,6 +83,7 @@ public class PayloadReceivers {
         // A dice prompt (Choice / Lucky / Reroll / swap picker), or its end
         ClientPayloads.receive(DicePromptPayload.ID, (payload, context) -> DicePickScreen.onPayload(context.client(), payload));
         ClientPayloads.receive(DiceRevealPayload.ID, (payload, context) -> DiceRevealHud.onPayload(payload));
+        ClientPayloads.receive(OutcomeRoulettePayload.ID, (payload, context) -> OutcomeRouletteHud.onPayload(payload));
         ClientPayloads.receive(SixSevenPayload.ID, (payload, context) -> SixSevenClient.onPayload(payload));
         ClientTickEvents.END_CLIENT_TICK.register(
                 DicePickScreen::showWaiting);

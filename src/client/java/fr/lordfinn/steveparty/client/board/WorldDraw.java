@@ -257,6 +257,28 @@ public final class WorldDraw {
         if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
     }
 
+    /**
+     * {@code plate} stretched over (x0, y0)-(x1, y1) in label space, seen through the terrain (no depth test, no depth
+     * written): what is drawn on it next, the same way, comes in front of it in drawing order. Drawn right away.
+     */
+    public static void plateSeeThrough(MatrixStack matrices, VertexConsumerProvider consumers, Plate plate, float x0, float y0, float x1, float y1) {
+        RenderLayer layer = RenderLayer.getTextSeeThrough(plate.texture);
+        nineSlice(consumers.getBuffer(layer), matrices.peek().getPositionMatrix(), x0, y0, x1, y1);
+        if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
+    }
+
+    /** A plain rectangle (x0, y0)-(x1, y1) in label space, seen through the terrain like {@link #plateSeeThrough}. */
+    public static void fillSeeThrough(MatrixStack matrices, VertexConsumerProvider consumers, float x0, float y0, float x1, float y1, int argb) {
+        RenderLayer layer = RenderLayer.getTextBackgroundSeeThrough();
+        VertexConsumer consumer = consumers.getBuffer(layer);
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+        consumer.vertex(matrix, x0, y0, 0).color(argb).light(LIGHT);
+        consumer.vertex(matrix, x0, y1, 0).color(argb).light(LIGHT);
+        consumer.vertex(matrix, x1, y1, 0).color(argb).light(LIGHT);
+        consumer.vertex(matrix, x1, y0, 0).color(argb).light(LIGHT);
+        if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
+    }
+
     /** A horizontal rule one text pixel thick from x0 to x1 at y, in label space, on a plate (drawn right away). */
     public static void rule(MatrixStack matrices, VertexConsumerProvider consumers, float x0, float x1, float y, int argb) {
         RenderLayer layer = RenderLayer.getTextBackground();
