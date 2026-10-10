@@ -15,6 +15,9 @@ public final class StevePartyRegistries {
      */
     public static final IdRegistry<ABoardSpaceBehavior> BOARD_SPACE_ROLES = new IdRegistry<>("board space role");
 
+    /** The kinds of party steps and how to rebuild a saved one (see {@link fr.lordfinn.steveparty.api.party.PartySteps}). */
+    public static final IdRegistry<fr.lordfinn.steveparty.api.party.PartySteps.Loader> PARTY_STEPS = new IdRegistry<>("party step");
+
     private StevePartyRegistries() {
     }
 }

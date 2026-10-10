@@ -16,6 +16,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -50,7 +51,8 @@ public class PartyStep {
                 Steveparty.LOGGER.warn("Unknown party step status '{}', defaulting to {}", step.getString("Status"), this.status);
             }
         }
-        if (step.contains("Type")) {
+        // An addon's step saves its id: its kind stays DEFAULT here (see getTypeId)
+        if (step.contains("Type") && step.getString("Type").indexOf(':') < 0) {
             try {
                 this.type = PartyStepType.valueOf(step.getString("Type").toUpperCase());
             } catch (IllegalArgumentException e) {
@@ -62,7 +64,8 @@ public class PartyStep {
     public NbtCompound toNbt() {
         NbtCompound nbtCompound = new NbtCompound();
         nbtCompound.putString("Status", this.status.toString());
-        nbtCompound.putString("Type", this.type.toString());
+        Identifier typeId = getTypeId();
+        nbtCompound.putString("Type", typeId.getNamespace().equals(Steveparty.MOD_ID) ? this.type.toString() : typeId.toString());
         return nbtCompound;
     }
 
@@ -80,6 +83,14 @@ public class PartyStep {
 
     public PartyStepType getType() {
         return type;
+    }
+
+    /**
+     * The kind of this step: an id of {@link fr.lordfinn.steveparty.api.StevePartyRegistries#PARTY_STEPS}, saved
+     * with it to rebuild it. By default the id of its built-in {@link #getType()}; an addon's step returns its own.
+     */
+    public Identifier getTypeId() {
+        return fr.lordfinn.steveparty.api.party.PartySteps.idOf(type);
     }
 
     protected void setType(PartyStepType type) {
