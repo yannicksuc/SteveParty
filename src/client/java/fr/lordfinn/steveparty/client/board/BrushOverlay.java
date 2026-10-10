@@ -1,5 +1,15 @@
 package fr.lordfinn.steveparty.client.board;
 
+import java.util.Comparator;
+import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.text.Text;
+import net.minecraft.block.entity.BlockEntity;
+import fr.lordfinn.steveparty.board.CartridgeLinks;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BrushAim;
@@ -51,6 +61,12 @@ final class BrushOverlay {
     private static final int HOLDERS_REFRESH = 10;
     private static int holdersAge;
 
+    /** The spaces around whose cartridge takes from containers and has none: dotted to the Party Controller's bank. */
+    private static List<HolderLinks> bankLinks = List.of();
+    /** The dots of a link to the Party Controller's bank: this far apart, this big. */
+    private static final double DOT_GAP = 0.35, DOT = 0.05;
+    private static final float LABEL_SCALE = 1f / 40f;
+
     /** A holder of a cartridge, its targets and their colour (see BrushLinkable). */
     private record HolderLinks(Vec3d from, List<Vec3d> to, int color) {
     }
@@ -73,10 +89,12 @@ final class BrushOverlay {
                 : BrushAim.ghosts(player, client.world, TileLinkerBrush.level(brush));
         if (client.world == null || !TileLinkerBrush.isBrush(brush)) {
             holders = List.of();
+            bankLinks = List.of();
             holdersAge = HOLDERS_REFRESH;
         } else if (++holdersAge >= HOLDERS_REFRESH) {
             holdersAge = 0;
             holders = holders(client.world, player, TileLinkerBrush.level(brush));
+            bankLinks = bankLinks(client.world, player, TileLinkerBrush.level(brush));
         }
     }
 
@@ -90,6 +108,33 @@ final class BrushOverlay {
             List<Vec3d> to = new ArrayList<>(targets.size());
             for (BlockPos target : targets) to.add(anchor(world, target));
             found.add(new HolderLinks(anchor(world, kind.holder()), to, kind.color()));
+        }
+        return found;
+    }
+
+    /**
+     * The board spaces around whose cartridge takes from containers and links none: in a party they take from its
+     * Party Controller's bank, the nearest controller's (dotted to it).
+     */
+    private static List<HolderLinks> bankLinks(ClientWorld world, ClientPlayerEntity player, int level) {
+        List<BlockPos> controllers = new ArrayList<>();
+        Vec3d center = player.getEyePos();
+        double radius = BoardView.RADIUS;
+        for (int chunkX = ChunkSectionPos.getSectionCoord(MathHelper.floor(center.x - radius)); chunkX <= ChunkSectionPos.getSectionCoord(MathHelper.floor(center.x + radius)); chunkX++) {
+            for (int chunkZ = ChunkSectionPos.getSectionCoord(MathHelper.floor(center.z - radius)); chunkZ <= ChunkSectionPos.getSectionCoord(MathHelper.floor(center.z + radius)); chunkZ++) {
+                WorldChunk chunk = world.getChunkManager().getWorldChunk(chunkX, chunkZ);
+                if (chunk == null) continue;
+                for (BlockEntity blockEntity : chunk.getBlockEntities().values())
+                    if (blockEntity instanceof PartyControllerEntity) controllers.add(blockEntity.getPos());
+            }
+        }
+        if (controllers.isEmpty()) return List.of();
+        List<HolderLinks> found = new ArrayList<>();
+        for (BrushLinkable kind : BrushLinks.around(world, center, radius, level)) {
+            if (!(kind instanceof CartridgeLinks.Containers) || !kind.targets(world).isEmpty()
+                    || !(world.getBlockEntity(kind.holder()) instanceof BoardSpaceBlockEntity)) continue;
+            BlockPos nearest = controllers.stream().min(Comparator.comparingDouble(pos -> pos.getSquaredDistance(kind.holder()))).orElseThrow();
+            found.add(new HolderLinks(anchor(world, kind.holder()), List.of(Vec3d.ofCenter(nearest).add(0, 0.6, 0)), CartridgeLinks.CONTAINER_COLOR));
         }
         return found;
     }
@@ -118,7 +163,9 @@ final class BrushOverlay {
         Camera camera = context.camera();
         ghosts(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));
         holderLinks(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));
+        bankLinks(matrices, consumers, camera);
         BlockPos aimed = BrushAim.aimed(player, world, context.tickCounter().getTickDelta(true), ghosts(), targets(world, brush));
+        numbers(matrices, consumers, camera, world, brush, aimed);
         if (aimed != null) {
             BlockPos last = BrushTrail.lastTile();
             int color = last == null || last.equals(aimed) ? WHITE : 0xFF000000 | BrushTrail.outcome(world, brush, last, aimed);
@@ -153,6 +200,47 @@ final class BrushOverlay {
         for (HolderLinks links : holders) {
             for (Vec3d to : links.to()) {
                 WorldDraw.path(matrices, consumers, camera, links.from(), to, 0xC0000000 | links.color(), 0.4, 0.45, phase, 0.3, 0);
+            }
+        }
+    }
+
+    /** Dotted, from each space taking from containers without any to the Party Controller whose bank it falls back on. */
+    private static void bankLinks(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera) {
+        Vec3d half = new Vec3d(DOT, DOT, DOT);
+        for (HolderLinks links : bankLinks) {
+            for (Vec3d to : links.to()) {
+                double length = links.from().distanceTo(to);
+                Vec3d unit = to.subtract(links.from()).multiply(1 / Math.max(length, 1.0E-3));
+                for (double t = 0.3; t < length - 0.3; t += DOT_GAP) {
+                    Vec3d at = links.from().add(unit.multiply(t));
+                    WorldDraw.box(matrices, consumers, camera, at.subtract(half), at.add(half), links.color(), 0.9f);
+                }
+            }
+        }
+    }
+
+    /**
+     * The containers of the space aimed at (or the last one painted), numbered in their order as the cartridge in hand
+     * shows them; none of its own: the Party Controller's bank named on its controller.
+     */
+    private static void numbers(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, Camera camera, ClientWorld world,
+                                ItemStack brush, @Nullable BlockPos aimed) {
+        BlockPos focus = aimed != null && BrushLinks.isHolder(world, aimed) ? aimed : BrushTrail.lastTile();
+        if (focus == null) return;
+        consumers.draw();
+        for (BrushLinkable kind : BrushLinks.of(world, focus, TileLinkerBrush.level(brush))) {
+            if (!(kind instanceof CartridgeLinks.Containers)) continue;
+            List<BlockPos> targets = kind.targets(world);
+            for (int i = 0; i < targets.size(); i++) {
+                WorldDraw.plateLabel(matrices, consumers, camera, Vec3d.ofCenter(targets.get(i)).add(0, 0.95, 0),
+                        Text.literal(Integer.toString(i + 1)), WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, LABEL_SCALE);
+            }
+            if (targets.isEmpty()) {
+                for (HolderLinks links : bankLinks) {
+                    if (!links.from().equals(anchor(world, kind.holder()))) continue;
+                    WorldDraw.plateLabel(matrices, consumers, camera, links.to().getFirst().add(0, 0.6, 0),
+                            Text.translatable("hud.steveparty.tile_linker_brush.party_bank"), WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, LABEL_SCALE);
+                }
             }
         }
     }

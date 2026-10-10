@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "steveparty:block/spawn_marker"
+    },
+    "facing=east": {
+      "model": "steveparty:block/spawn_marker",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "steveparty:block/spawn_marker",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "steveparty:block/spawn_marker",
+      "y": 270
+    }
+  }
+}

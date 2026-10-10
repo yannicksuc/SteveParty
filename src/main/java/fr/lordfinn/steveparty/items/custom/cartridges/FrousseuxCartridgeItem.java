@@ -19,7 +19,7 @@ import java.util.List;
  * victim may hit it to get some back) or stars ({@link #stars}, no defence). Its tile is night indigo; a dye on it
  * changes that.
  */
-public class FrousseuxCartridgeItem extends CartridgeItem {
+public class FrousseuxCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** Its tile's night indigo (a thief in the dark). */
     public static final int COLOR = 0x3B1FB8;
     public static final int MAX_COINS = 99, DEFAULT_COINS = 15;

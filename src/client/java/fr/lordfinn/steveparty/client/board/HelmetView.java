@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
+import fr.lordfinn.steveparty.board.CartridgeLinks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.board.BoardGraph;
@@ -67,7 +69,7 @@ public final class HelmetView {
     static final int MAX_FRAMES = 24;
     private static final int REBUILD_TICKS = 10;
     private static final float LABEL_SCALE = 1f / 40f, DETAIL_SCALE = 0.8f;
-    static final int OUT = 0xFF4CFF4C, IN = 0xFF3A9BFF, CHEST = 0xFFFFD83D;
+    static final int OUT = 0xFF4CFF4C, IN = 0xFF3A9BFF, CHEST = 0xFFFFD83D, MARKER = 0xFF000000 | CartridgeLinks.SPAWN_COLOR;
 
     private record Line(Text text, WorldDraw.Plate plate) {
     }
@@ -78,7 +80,7 @@ public final class HelmetView {
 
     private static KeyBinding lampKey;
     private static List<Detail> details = List.of();
-    private static List<BlockPos> outFrames = List.of(), inFrames = List.of(), chestFrames = List.of();
+    private static List<BlockPos> outFrames = List.of(), inFrames = List.of(), chestFrames = List.of(), markerFrames = List.of();
     /** Per board graph: the spaces linked to each space, the spaces a router drives. */
     private static @Nullable BoardGraph indexed;
     private static Map<BlockPos, List<BlockPos>> incoming = Map.of();
@@ -128,7 +130,7 @@ public final class HelmetView {
     private static void clear() {
         if (indexed == null && details.isEmpty()) return;
         details = List.of();
-        outFrames = inFrames = chestFrames = List.of();
+        outFrames = inFrames = chestFrames = markerFrames = List.of();
         indexed = null;
         incoming = Map.of();
         routed = Set.of();
@@ -203,7 +205,8 @@ public final class HelmetView {
             if (!node.step()) lines.add(new Line(Text.translatable("hud.steveparty.explorer_helmet.checkpoint"), WorldDraw.Plate.GREEN));
             if (CartridgeContainers.linksContainers(cartridge)) {
                 if (node.inventoryIssue() == BoardGraph.InventoryIssue.NO_CHEST) {
-                    lines.add(new Line(Text.translatable("hud.steveparty.explorer_helmet.no_chest"), WorldDraw.Plate.RED));
+                    // No chest of its own: the bank of the party running on its board
+                    lines.add(new Line(Text.translatable("hud.steveparty.explorer_helmet.no_chest"), WorldDraw.Plate.GOLD));
                 } else {
                     MutableText chests = Text.translatable("hud.steveparty.explorer_helmet.chests", CartridgeContainers.in(cartridge, world).size());
                     lines.add(new Line(node.inventoryIssue() == BoardGraph.InventoryIssue.CHEST_GONE
@@ -230,7 +233,7 @@ public final class HelmetView {
     /** The aimed space's destinations, the spaces leading to it and its chests. */
     private static void frames(ClientWorld world, @Nullable BoardGraph.Node node) {
         if (node == null) {
-            outFrames = inFrames = chestFrames = List.of();
+            outFrames = inFrames = chestFrames = markerFrames = List.of();
             return;
         }
         List<BlockPos> out = new ArrayList<>(), in = new ArrayList<>(), chests = new ArrayList<>();
@@ -259,6 +262,10 @@ public final class HelmetView {
         outFrames = out;
         inFrames = in;
         chestFrames = chests;
+        // Its Spawn Marker, where its mob appears
+        BlockPos marker = world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space
+                ? CartridgeSpawnMarker.marker(space.getActiveCartridgeItemStack(), world) : null;
+        markerFrames = marker == null ? List.of() : List.of(marker);
     }
 
     private static void renderDetails(WorldRenderContext context) {
@@ -311,7 +318,7 @@ public final class HelmetView {
     }
 
     private static void renderFrames(WorldRenderContext context) {
-        if (outFrames.isEmpty() && inFrames.isEmpty() && chestFrames.isEmpty()) return;
+        if (outFrames.isEmpty() && inFrames.isEmpty() && chestFrames.isEmpty() && markerFrames.isEmpty()) return;
         MinecraftClient client = MinecraftClient.getInstance();
         MatrixStack matrices = context.matrixStack();
         ClientWorld world = client.world;
@@ -321,6 +328,7 @@ public final class HelmetView {
         for (BlockPos pos : outFrames) BrushOverlay.frame(matrices, consumers, camera, world, pos, OUT);
         for (BlockPos pos : inFrames) BrushOverlay.frame(matrices, consumers, camera, world, pos, IN);
         for (BlockPos pos : chestFrames) BrushOverlay.frame(matrices, consumers, camera, world, pos, CHEST);
+        for (BlockPos pos : markerFrames) BrushOverlay.frame(matrices, consumers, camera, world, pos, MARKER);
         consumers.draw();
     }
 }

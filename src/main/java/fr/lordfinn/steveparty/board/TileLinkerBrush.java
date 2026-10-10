@@ -272,6 +272,15 @@ public final class TileLinkerBrush {
         BlockPos from = stroke.last;
         if (from == null || stroke.cells.contains(pos)) return;
         BrushLinkable kind = BrushLinks.kindFor(BrushLinks.of(world, from, level(brush)), world, pos);
+        if (kind == null) {
+            // A chest or a Spawn Marker the cartridge takes none of: said, once a stroke
+            String refusal = BrushLinks.refusal(world, from, level(brush), pos);
+            if (refusal != null) {
+                stroke.cells.add(pos.toImmutable());
+                WrenchActions.warn(player, Text.translatable(refusal, BoardText.pos(from), BoardText.pos(pos)));
+            }
+            return;
+        }
         // A ghost is only erased (a blob plans a cell, see blob)
         if (kind == null || (kind instanceof CartridgeLinks.BoardPaths && !kind.linked(world, pos))) return;
         stroke.cells.add(pos.toImmutable());
