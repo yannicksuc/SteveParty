@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.gui.party;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.GuiText;
+import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.utils.Argb;
 import java.util.Locale;
@@ -52,18 +53,28 @@ final class HudDraw {
         return Argb.fade(0xFFFFFFFF, alpha);
     }
 
-    /** Runs texture draws blended and faded to {@code alpha} (1.21.1 textures take no colour: the shader colour). */
-    static void faded(float alpha, Runnable draw) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1f, 1f, 1f, ColorHelper.Argb.getAlpha(white(alpha)) / 255f);
-        draw.run();
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        RenderSystem.disableBlend();
+    /**
+     * Runs texture draws blended and faded to {@code alpha} (1.21.1 textures take no colour: the shader colour), in
+     * front of what the HUD drew before ({@link HudDepth}).
+     */
+    static void faded(DrawContext context, float alpha, Runnable draw) {
+        HudDepth.onTop(context, () -> {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(1f, 1f, 1f, ColorHelper.Argb.getAlpha(white(alpha)) / 255f);
+            draw.run();
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            RenderSystem.disableBlend();
+        });
+    }
+
+    /** A plain fill (vertex colour: {@code argb} faded), in front of what the HUD drew before. */
+    static void fill(DrawContext context, int x0, int y0, int x1, int y1, int argb, float alpha) {
+        HudDepth.onTop(context, () -> context.fill(x0, y0, x1, y1, Argb.fade(argb, alpha)));
     }
 
     static void plate(DrawContext context, ToolHud.Plate plate, int x, int y, int width, int height, float alpha) {
-        faded(alpha, () -> context.drawGuiTexture(plateSprite(plate), x, y, width, height));
+        faded(context, alpha, () -> context.drawGuiTexture(plateSprite(plate), x, y, width, height));
     }
 
     private static Identifier plateSprite(ToolHud.Plate plate) {
@@ -71,24 +82,24 @@ final class HudDraw {
     }
 
     static void icon(DrawContext context, Identifier icon, int x, int y, float alpha) {
-        faded(alpha, () -> context.drawGuiTexture(icon, x, y, ICON, ICON));
+        faded(context, alpha, () -> context.drawGuiTexture(icon, x, y, ICON, ICON));
     }
 
     static void text(DrawContext context, Text text, int x, int y, int color, float alpha) {
-        context.drawText(font(), text, x, y, Argb.fade(color, alpha), false);
+        HudDepth.onTop(context, () -> context.drawText(font(), text, x, y, Argb.fade(color, alpha), false));
     }
 
     static void text(DrawContext context, OrderedText text, int x, int y, int color, float alpha) {
-        context.drawText(font(), text, x, y, Argb.fade(color, alpha), false);
+        HudDepth.onTop(context, () -> context.drawText(font(), text, x, y, Argb.fade(color, alpha), false));
     }
 
     static void text(DrawContext context, String text, int x, int y, int color, float alpha) {
-        context.drawText(font(), text, x, y, Argb.fade(color, alpha), false);
+        HudDepth.onTop(context, () -> context.drawText(font(), text, x, y, Argb.fade(color, alpha), false));
     }
 
     /** Light text with the font's shadow (a quarter of its colour, a pixel down and right). */
     static void shadowed(DrawContext context, String text, int x, int y, int color, float alpha) {
-        context.drawText(font(), text, x, y, Argb.fade(color, alpha), true);
+        HudDepth.onTop(context, () -> context.drawText(font(), text, x, y, Argb.fade(color, alpha), true));
     }
 
     /** The text, cut with an ellipsis to fit in {@code width} pixels. */
