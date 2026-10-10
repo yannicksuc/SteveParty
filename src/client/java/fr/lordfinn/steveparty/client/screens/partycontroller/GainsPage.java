@@ -28,15 +28,15 @@ import static fr.lordfinn.steveparty.client.screens.partycontroller.DashboardSty
 import static fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.*;
 
 /**
- * The Gains tab: the bank's Inventory Cartridge, the Coin and Star items above their columns (click with an item to pick
+ * The Gains tab: the controller's bank (its button, the Infinite bank switch, what it holds), the Coin and Star items above their columns (click with an item to pick
  * it, with an empty hand to go back to the default one), what each place earns.
  */
 public final class GainsPage {
     /** A row per place. */
     private static final int GAINS_Y = CY + 21, GAINS_ROW = 17, GAINS_FIELD = GAINS_COLUMN - 2 * STEP - 4;
     private static final int COLOR_SHORT = 0xFFFFB54A;
-    /** The button opening the controller's own bank, right of the cartridge slot. */
-    private static final int BANK_BUTTON_X = CX + 22, BANK_BUTTON_W = 44;
+    /** The button opening the controller's own bank, at the start of the bank's row. */
+    private static final int BANK_BUTTON_X = CX, BANK_BUTTON_W = 44;
     /** The « Infinite bank » switch, right of that button (creative mode or operator only), then the bank's line. */
     private static final int INFINITE_X = BANK_BUTTON_X + BANK_BUTTON_W + 2, INFINITE_W = 16, BANK_TEXT_X = INFINITE_X + INFINITE_W + 4;
     private static final PartyCurrency[] CURRENCIES = {PartyCurrency.COIN, PartyCurrency.STAR};
@@ -96,7 +96,7 @@ public final class GainsPage {
     }
 
     public void draw(DrawContext context, PartyDashboardData data) {
-        // The bank's line: its cartridge slot, its name (what it holds in its tooltip)
+        // The bank's line: its name (what it holds in its tooltip)
         PartyBank.Status bank = data.bank();
         int tx = BANK_TEXT_X, room = COIN_X - 1 - 4 - tx;
         switch (bank.state()) {
@@ -150,9 +150,9 @@ public final class GainsPage {
         return lines;
     }
 
-    /** The bank (its line, its empty slot): what it is, what it holds, why it can't pay; null when the mouse is elsewhere. */
+    /** The bank (its line): what it is, what it holds, why it can't pay; null when the mouse is elsewhere. */
     public @Nullable List<Text> bankTooltip(PartyDashboardData data, @Nullable Slot focused, int mx, int my) {
-        if (!(HitArea.contains(mx, my, BANK_TEXT_X - 2, CY, COIN_X - 1 - BANK_TEXT_X - 2, 18) || (focused != null && focused.id == SLOT_BANK && !focused.hasStack())))
+        if (!HitArea.contains(mx, my, BANK_TEXT_X - 2, CY, COIN_X - 1 - BANK_TEXT_X - 2, 18))
             return null;
         PartyBank.Status bank = data.bank();
         List<Text> lines = new ArrayList<>();

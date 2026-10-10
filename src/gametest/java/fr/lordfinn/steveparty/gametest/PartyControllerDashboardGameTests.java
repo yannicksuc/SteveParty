@@ -382,8 +382,8 @@ public class PartyControllerDashboardGameTests implements SteveGameTest {
         try {
             context.assertTrue(SLOT_CATALOGUE == 0 && SLOT_STAR == 1 && SLOT_COIN == 2 && PROGRAM_FIRST_SLOT == 39, "the slots keep their indices");
             context.assertTrue(WIDTH <= 427 && TABS_HEIGHT + INVENTORY_Y + INVENTORY_PANEL_HEIGHT <= 240, "tabs, page and inventory fit a 427 x 240 screen");
-            context.assertTrue(PartyControllerEntity.PROGRAM_SLOTS == 2 * PROGRAM_COLUMNS && SLOT_BANK == PROGRAM_FIRST_SLOT + 24,
-                    "the program: 2 rows of 12 cards, the bank after them");
+            context.assertTrue(PartyControllerEntity.PROGRAM_SLOTS == 2 * PROGRAM_COLUMNS && DICE_FIRST_SLOT == PROGRAM_FIRST_SLOT + 24,
+                    "the program: 2 rows of 12 cards, the allowed dice after them");
             // The client's handler: the page shown decides which slots are there
             PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(),
                     new BlockPosPayload(BlockPos.ORIGIN));

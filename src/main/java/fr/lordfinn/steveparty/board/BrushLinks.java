@@ -29,13 +29,13 @@ import java.util.function.Predicate;
 
 /**
  * Everything the Tile Linker Brush links: the blocks holding a cartridge (board spaces of every role, routers, Hop
- * Switches, Looting Boxes, Piggy Banks, the Party Controller's bank) and, for each, the kinds of links their cartridge
+ * Switches, Looting Boxes, Piggy Banks, the Party Controller, for the chests of its bank) and, for each, the kinds of links their cartridge
  * stores ({@link BrushLinkable}), given by {@link Provider}s: the built-in ones are in {@link CartridgeLinks}, another
  * holder or cartridge adds its own with {@link #register}. Same answers on both sides (the cartridges of the holders are
  * sent to the clients).
  */
 public final class BrushLinks {
-    /** The slot of the Party Controller's bank (its Inventory Cartridge, not in an inventory). */
+    /** The « slot » of the Party Controller: the chests of its bank (kept inside it as an Inventory Cartridge, no slot). */
     public static final int BANK = -2;
 
     private BrushLinks() {

@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
@@ -174,23 +175,29 @@ public class PartyBankGameTests implements SteveGameTest {
             player.setSneaking(false);
             player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
 
-            // The controller's bank slot: an Inventory Cartridge only, for who may edit the controller
+            // The controller keeps its linked chests itself (no cartridge to put in it)
             PartyControllerEntity controller = controller(context);
-            PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);
-            var slot = handler.getSlot(PartyControllerScreenHandler.SLOT_BANK);
-            context.assertTrue(!slot.canInsert(new ItemStack(Items.CHEST)), "not a chest");
+            context.assertTrue(controller.getBank().getItem() instanceof InventoryCartridgeItem && PartyBank.targets(controller.getBank()).isEmpty(),
+                    "no chest linked at first");
             ItemStack set = TestBank.cartridge(context, CHEST);
-            context.assertTrue(slot.canInsert(set), "an Inventory Cartridge");
-            slot.setStack(set);
-            context.assertTrue(ItemStack.areEqual(controller.getBank(), set), "it is the controller's bank");
+            controller.setBank(set);
+            context.assertEquals(PartyBank.targets(controller.getBank()), PartyBank.targets(set), "its linked chests");
             context.assertEquals(status(context, controller, 4).state(), PartyBank.State.SHORT, "an empty chest: too little");
             // Saved with the controller
             NbtCompound nbt = controller.createNbtWithIdentifyingData(world.getRegistryManager());
             controller.setBank(ItemStack.EMPTY);
             controller.read(nbt, world.getRegistryManager());
-            context.assertTrue(ItemStack.areEqual(controller.getBank(), set), "saved and read back");
-            player.changeGameMode(GameMode.ADVENTURE);
-            context.assertTrue(!slot.canTakeItems(player), "adventure: can't take it");
+            context.assertEquals(PartyBank.targets(controller.getBank()), PartyBank.targets(set), "saved and read back");
+            // Saved when a player put an Inventory Cartridge in it: its chests kept, the cartridge given back above it
+            nbt.remove("BankInternal");
+            controller.read(nbt, world.getRegistryManager());
+            context.assertEquals(PartyBank.targets(controller.getBank()), PartyBank.targets(set), "an old bank cartridge: its chests kept");
+            controller.serverTick(world);
+            BlockPos above = controller.getPos().up();
+            var given = world.getEntitiesByClass(net.minecraft.entity.ItemEntity.class, new net.minecraft.util.math.Box(above).expand(1),
+                    item -> item.getStack().getItem() instanceof InventoryCartridgeItem);
+            context.assertTrue(!given.isEmpty(), "the old cartridge given back");
+            given.forEach(net.minecraft.entity.Entity::discard);
         } finally {
             remove(context, player);
         }
