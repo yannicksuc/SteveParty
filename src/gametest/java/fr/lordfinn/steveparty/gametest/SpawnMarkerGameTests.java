@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
@@ -255,7 +256,7 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         BoardSpaceBlockEntity inventory = tile(context, TILE, new ItemStack(ModItems.INVENTORY_CARTRIDGE));
         BoardSpaceBlockEntity trichaudron = tile(context, new BlockPos(5, 1, 3), new ItemStack(ModItems.TRICHAUDRON_CARTRIDGE));
         if (noPartyAround(context, inventory.getPos())) {
-            context.assertTrue(CartridgeTransfers.getLinkedInventory(context.getWorld(), inventory.getStack(0), inventory.getPos()) == null,
+            context.assertTrue(CartridgeTransfers.source(context.getWorld(), inventory.getStack(0), inventory.getPos()).isNone(),
                     "no chest, no party: nothing");
             context.assertTrue(TrichaudronCartridgeItem.available(trichaudron.getStack(0), context.getWorld(), trichaudron.getPos()).isEmpty(),
                     "no chest, no party: the Tricauldron has nothing");
@@ -263,16 +264,16 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         ServerPlayerEntity a = player(context), b = player(context);
         PartyControllerEntity party = party(context, new ArrayList<>(), a, b);
         party.getBankItems().setStack(0, new ItemStack(Items.DIAMOND, 4));
-        Inventory bank = CartridgeTransfers.getLinkedInventory(context.getWorld(), inventory.getStack(0), inventory.getPos());
-        context.assertTrue(bank != null && InventoryUtils.count(bank, new ItemStack(Items.DIAMOND)) == 4, "a party: its controller's bank");
+        PartyResources bank = CartridgeTransfers.source(context.getWorld(), inventory.getStack(0), inventory.getPos());
+        context.assertTrue(bank.available(new ItemStack(Items.DIAMOND)) == 4, "a party: its controller's bank");
         List<ItemStack> prizes = TrichaudronCartridgeItem.available(trichaudron.getStack(0), context.getWorld(), trichaudron.getPos());
         context.assertTrue(prizes.size() == 1 && prizes.getFirst().isOf(Items.DIAMOND), "the Tricauldron gives from the bank");
         // its own chest linked: that one only
         context.setBlockState(new BlockPos(1, 1, 5), Blocks.CHEST);
         BlockPos chest = context.getAbsolutePos(new BlockPos(1, 1, 5));
         CartridgeContainers.toggle(inventory.getStack(0), context.getWorld(), chest);
-        Inventory own = CartridgeTransfers.getLinkedInventory(context.getWorld(), inventory.getStack(0), inventory.getPos());
-        context.assertTrue(own != null && InventoryUtils.count(own, new ItemStack(Items.DIAMOND)) == 0, "its own chest, not the bank");
+        PartyResources own = CartridgeTransfers.source(context.getWorld(), inventory.getStack(0), inventory.getPos());
+        context.assertTrue(!own.isNone() && own.available(new ItemStack(Items.DIAMOND)) == 0, "its own chest, not the bank");
         context.complete();
     }
 

@@ -54,7 +54,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
             BUTTON_PRACTICE = 5, BUTTON_MAX_POWER_UPS_DOWN = 6, BUTTON_MAX_POWER_UPS_UP = 7, BUTTON_RESTRICT_DICE = 8,
-            BUTTON_STOP = 9, BUTTON_BANK = 10;
+            BUTTON_STOP = 9, BUTTON_BANK = 10, BUTTON_INFINITE_BANK = 11;
     /**
      * The steppers of the Gains page: {@code BUTTON_GAINS + row * 4 + column}, the columns being coins less, coins
      * more, stars less, stars more (see {@link #gainButton}).
@@ -535,6 +535,11 @@ public class PartyControllerScreenHandler extends ScreenHandler {
             case BUTTON_RESTRICT_DICE -> {
                 if (!controller.canEdit(player)) return false;
                 controller.setRestrictDice(!controller.isRestrictDice());
+            }
+            case BUTTON_INFINITE_BANK -> {
+                // Checked here, whatever the screen showed: a player in creative mode or an operator only
+                if (!controller.canEdit(player) || !PartyControllerEntity.canSwitchInfiniteBank(player)) return false;
+                controller.setInfiniteBank(!controller.isInfiniteBank());
             }
             case BUTTON_PRACTICE -> {
                 if (!controller.canEdit(player)) return false;

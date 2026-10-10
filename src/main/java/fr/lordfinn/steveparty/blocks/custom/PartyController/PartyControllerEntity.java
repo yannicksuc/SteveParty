@@ -36,7 +36,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -374,18 +373,18 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     /**
      * Pays a player what his place in a mini-game is worth, taken from the bank: the party's coins and stars, given
      * as items (what does not fit in his inventory falls at his feet). Nothing is created: a bank short of them pays
-     * what it has, an absent bank (null) pays nothing.
+     * what it has, no bank ({@link PartyResources#NONE}) pays nothing.
      *
      * @param place 1 for the winners, 2, 3, 4; 0 (or more than 4) for the participants
-     * @param bank  the bank's chest ({@link PartyBank#inventory}), null for none
+     * @param bank  the party's source ({@link PartyResources#of(PartyControllerEntity)})
      */
-    public Paid payGains(ServerPlayerEntity player, int place, @Nullable Inventory bank) {
+    public Paid payGains(ServerPlayerEntity player, int place, PartyResources bank) {
         int[] paid = new int[2];
         boolean full = true;
         for (PartyCurrency currency : PartyCurrency.values()) {
             int amount = settings.getGains().forPlace(currency, place);
             ItemStack template = getCurrency(currency);
-            int taken = InventoryUtils.take(bank, template, amount);
+            int taken = bank.take(template, amount);
             if (taken < amount) full = false;
             paid[currency == PartyCurrency.STAR ? 1 : 0] = taken;
             InventoryUtils.giveOrDrop(player, template, taken);
@@ -420,6 +419,20 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     /** Whether only the allowed dice may be thrown during this party (off: every die). */
     public boolean isRestrictDice() {
         return settings.isRestrictDice();
+    }
+
+    /** « Infinite bank »: the party's bank never runs out (see {@link PartyResources#of(PartyControllerEntity)}). */
+    public boolean isInfiniteBank() {
+        return settings.isInfiniteBank();
+    }
+
+    public void setInfiniteBank(boolean infiniteBank) {
+        if (settings.setInfiniteBank(infiniteBank)) markDirty();
+    }
+
+    /** Who may switch the « Infinite bank »: a player in creative mode or an operator (permission level 2). */
+    public static boolean canSwitchInfiniteBank(PlayerEntity player) {
+        return player.getAbilities().creativeMode || player.hasPermissionLevel(2);
     }
 
     public void setRestrictDice(boolean restrictDice) {

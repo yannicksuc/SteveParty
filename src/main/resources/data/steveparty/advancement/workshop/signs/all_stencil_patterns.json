@@ -24,9 +24,6 @@
     ]
   ],
   "rewards": {
-    "experience": 100,
-    "loot": [
-      "steveparty:advancement_reward/coins_25"
-    ]
+    "experience": 100
   }
 }

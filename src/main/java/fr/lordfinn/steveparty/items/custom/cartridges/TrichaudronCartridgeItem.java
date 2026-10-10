@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
-import fr.lordfinn.steveparty.utils.InventoryChain;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -10,7 +10,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.ContainersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import net.minecraft.entity.Entity;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
@@ -99,12 +98,12 @@ public class TrichaudronCartridgeItem extends CartridgeItem implements Container
     }
 
     /**
-     * The chests of the space at {@code space} that are there now (loaded), end to end in their order: its linked ones,
-     * or without any, the bank of the party running on its board (CartridgeContainers.availableFor); null for none.
+     * Where the space at {@code space} takes its prizes: its linked chests that are there now (loaded), in their order,
+     * or without any, the party running on its board through its one source (CartridgeContainers.sourceFor);
+     * {@link PartyResources#NONE} for none.
      */
-    public static @Nullable Inventory chests(ItemStack stack, World world, @Nullable BlockPos space) {
-        List<Inventory> available = CartridgeContainers.availableFor(stack, world, space);
-        return available.isEmpty() ? null : new InventoryChain(available);
+    public static PartyResources chests(ItemStack stack, World world, @Nullable BlockPos space) {
+        return CartridgeContainers.sourceFor(stack, world, space);
     }
 
     /**
@@ -114,20 +113,19 @@ public class TrichaudronCartridgeItem extends CartridgeItem implements Container
      */
     public static List<ItemStack> available(ItemStack stack, World world, @Nullable BlockPos space) {
         List<ItemStack> prizes = new ArrayList<>();
-        Inventory chests = chests(stack, world, space);
-        if (chests == null) return prizes;
+        PartyResources chests = chests(stack, world, space);
+        if (chests.isNone()) return prizes;
         List<ItemStack> filters = filters(stack);
         if (!filters.isEmpty()) {
             for (ItemStack filter : filters) {
-                int held = CartridgeTransfers.countMatching(filter, chests);
+                int held = chests.available(CartridgeTransfers.pattern(filter));
                 if (held > 0) prizes.add(filter.copyWithCount(Math.min(filter.getCount(), held)));
             }
             return prizes;
         }
-        for (int i = 0; i < chests.size() && prizes.size() < PRIZES; i++) {
-            ItemStack found = chests.getStack(i);
-            if (found.isEmpty() || prizes.stream().anyMatch(prize -> ItemStack.areItemsAndComponentsEqual(prize, found))) continue;
-            prizes.add(found.copyWithCount(CartridgeTransfers.countMatching(found, chests)));
+        for (ItemStack found : chests.contents()) {
+            if (prizes.size() >= PRIZES) break;
+            prizes.add(found);
         }
         return prizes;
     }
