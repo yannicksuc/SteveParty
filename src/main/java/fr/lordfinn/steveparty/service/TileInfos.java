@@ -104,7 +104,7 @@ public final class TileInfos {
         TileInfo.Builder info = TileInfo.builder();
         ItemStack cartridge = space.getActiveCartridgeItemStack();
         if (cartridge.getItem() instanceof CartridgeItem item) {
-            info.title(title(space, item.getBoardSpaceType()), item.menuColor(cartridge));
+            info.title(title(space, item), item.menuColor(cartridge));
             space.getBoardSpaceBehavior(cartridge).describe(world, space, cartridge, info);
             spawnMarker(world, cartridge, info);
         }
@@ -119,7 +119,20 @@ public final class TileInfos {
      * there the role plays when a token passes, never when one stops.
      */
     public static Text title(BoardSpaceBlockEntity space, BoardSpaceType type) {
-        Text role = TileInfo.line("role." + type.asString());
+        return title(space, TileInfo.line("role." + type.asString()));
+    }
+
+    /**
+     * The name of the role {@code cartridge} gives: Steve Party's as above, an addon's from its lang key
+     * {@code hud.<namespace>.tile_info.role.<path>}.
+     */
+    public static Text title(BoardSpaceBlockEntity space, CartridgeItem cartridge) {
+        net.minecraft.util.Identifier role = cartridge.getBoardSpaceRole();
+        if (role.getNamespace().equals(fr.lordfinn.steveparty.Steveparty.MOD_ID)) return title(space, cartridge.getBoardSpaceType());
+        return title(space, Text.translatable("hud." + role.getNamespace() + ".tile_info.role." + role.getPath()));
+    }
+
+    private static Text title(BoardSpaceBlockEntity space, Text role) {
         return space.getCachedState().getBlock() instanceof CheckPointBlock ? TileInfo.line("check_point", role) : role;
     }
 
