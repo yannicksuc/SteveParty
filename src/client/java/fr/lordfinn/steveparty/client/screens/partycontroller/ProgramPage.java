@@ -61,13 +61,7 @@ public final class ProgramPage {
     }
 
     private static Item cardItem(PartyCardItem.CardType type) {
-        return switch (type) {
-            case TURNS -> ModItems.PARTY_CARD_TURNS;
-            case MINIGAME -> ModItems.PARTY_CARD_MINIGAME;
-            case EVENT -> ModItems.PARTY_CARD_EVENT;
-            case REPEAT -> ModItems.PARTY_CARD_REPEAT;
-            case SEQUENCE_START -> ModItems.PARTY_CARD_SEQUENCE_START;
-        };
+        return ModItems.partyCard(type);
     }
 
     /**

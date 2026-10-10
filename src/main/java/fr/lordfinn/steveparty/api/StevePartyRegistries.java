@@ -24,6 +24,9 @@ public final class StevePartyRegistries {
     /** The power-ups (see {@link fr.lordfinn.steveparty.powerups.PowerUps}). */
     public static final IdRegistry<fr.lordfinn.steveparty.powerups.PowerUp> POWER_UPS = new IdRegistry<>("power-up");
 
+    /** The playing cards of the party program and what they put in the party (see {@link fr.lordfinn.steveparty.api.party.PartyCards}). */
+    public static final IdRegistry<fr.lordfinn.steveparty.api.party.PartyCard> PARTY_CARDS = new IdRegistry<>("party card");
+
     private StevePartyRegistries() {
     }
 }

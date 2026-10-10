@@ -1,6 +1,9 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.api.party.PartyCard;
+import fr.lordfinn.steveparty.api.party.PartyCardContext;
+import fr.lordfinn.steveparty.api.party.PartyCards;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -11,6 +14,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -85,30 +89,13 @@ public class BasicGameGeneratorStep extends PartyStep {
         if (generatorIndex >= 0 && generatorIndex + 1 < steps.size())
             steps.subList(generatorIndex + 1, steps.size()).clear();
 
+        // Each playing card adds its steps (the repeat and sequence start cards are already expanded)
+        PartyCardContext context = new PartyCardContext(world, partyData);
         for (ExpandedCard card : expand(program, partyData.getNbTurn())) {
-            switch (card.type()) {
-                case TURNS -> {
-                    // Token turn steps: every registered token gets its turns, even if it is not loaded right now
-                    // (an absent token is waited for a while when its turn comes, see TokenTurnPartyStep)
-                    for (UUID token : tokens) {
-                        UUID owner = null;
-                        String name = null;
-                        if (world.getEntity(token) instanceof TokenizedEntityInterface tokenEntity) {
-                            owner = tokenEntity.steveparty$getTokenOwner();
-                            Text customName = ((Entity) tokenEntity).getCustomName();
-                            if (customName != null) name = customName.getString();
-                        }
-                        TokenTurnPartyStep turn = new TokenTurnPartyStep(token, owner);
-                        turn.setTokenName(name);
-                        partyData.addStep(turn);
-                    }
-                }
-                case MINIGAME -> partyData.addStep(new MiniGamePartyStep(new ArrayList<>(tokens)));
-                case EVENT -> partyData.addStep(EventPartyStep.eventCard(Math.min(card.count(), 15)));
-                case REPEAT, SEQUENCE_START -> {
-                    // Already expanded
-                }
-            }
+            PartyCard playing = PartyCards.get(card.card());
+            if (playing != null) playing.addSteps(context, card.count());
+            else if (card.type() == PartyCardItem.CardType.CUSTOM)
+                Steveparty.LOGGER.warn("Party card {} is not registered: it plays nothing", card.card());
         }
         // Add the end step
         partyData.addStep(new EndPartyStep(new ArrayList<>(tokens)));
@@ -139,7 +126,7 @@ public class BasicGameGeneratorStep extends PartyStep {
         }
         for (ItemStack stack : program) {
             if (!(stack.getItem() instanceof PartyCardItem cardItem)) continue;
-            ExpandedCard card = new ExpandedCard(cardItem.getCardType(), stack.getCount());
+            ExpandedCard card = new ExpandedCard(cardItem.getCardType(), stack.getCount(), cardItem.getCardId());
             if (card.type() == PartyCardItem.CardType.SEQUENCE_START) {
                 // What is before it was played once, and stays out of the next loop
                 group.clear();
@@ -158,7 +145,40 @@ public class BasicGameGeneratorStep extends PartyStep {
         return result;
     }
 
-    public record ExpandedCard(PartyCardItem.CardType type, int count) {}
+    /**
+     * A card of the expanded program.
+     *
+     * @param card what it plays (see PartyCards): the id of its type for Steve Party's cards
+     */
+    public record ExpandedCard(PartyCardItem.CardType type, int count, Identifier card) {
+        public ExpandedCard(PartyCardItem.CardType type, int count) {
+            this(type, count, Steveparty.id(type.getName()));
+        }
+    }
+
+    /** Registers what Steve Party's playing cards put in the party, as an addon registers its own cards. */
+    public static void registerCards() {
+        // Token turn steps: every registered token gets its turns, even if it is not loaded right now
+        // (an absent token is waited for a while when its turn comes, see TokenTurnPartyStep)
+        PartyCards.register(Steveparty.id(PartyCardItem.CardType.TURNS.getName()), (context, count) -> {
+            for (UUID token : context.tokens()) {
+                UUID owner = null;
+                String name = null;
+                if (context.world().getEntity(token) instanceof TokenizedEntityInterface tokenEntity) {
+                    owner = tokenEntity.steveparty$getTokenOwner();
+                    Text customName = ((Entity) tokenEntity).getCustomName();
+                    if (customName != null) name = customName.getString();
+                }
+                TokenTurnPartyStep turn = new TokenTurnPartyStep(token, owner);
+                turn.setTokenName(name);
+                context.addStep(turn);
+            }
+        });
+        PartyCards.register(Steveparty.id(PartyCardItem.CardType.MINIGAME.getName()),
+                (context, count) -> context.addStep(new MiniGamePartyStep(new ArrayList<>(context.tokens()))));
+        PartyCards.register(Steveparty.id(PartyCardItem.CardType.EVENT.getName()),
+                (context, count) -> context.addStep(EventPartyStep.eventCard(Math.min(count, 15))));
+    }
 
     /**
      * What a program is made of once expanded (what the dashboard says of it).

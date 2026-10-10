@@ -2,7 +2,9 @@ package fr.lordfinn.steveparty.gametest.addon;
 
 import fr.lordfinn.steveparty.api.StevePartyAddon;
 import fr.lordfinn.steveparty.api.board.BoardSpaceRoles;
+import fr.lordfinn.steveparty.api.party.PartyCards;
 import fr.lordfinn.steveparty.api.party.PartySteps;
+import fr.lordfinn.steveparty.items.custom.PartyCardItem;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -38,6 +40,9 @@ public class TestAddon implements StevePartyAddon {
     /** How many times the entrypoint ran (once). */
     public static int initialized = 0;
     public static Item PROBE_CARTRIDGE;
+    public static final Identifier PROBE_CARD = Identifier.of(NAMESPACE, "probe_card");
+    /** A party card of the addon: one probe step, of the stack's size as value. */
+    public static Item PROBE_CARD_ITEM;
 
     @Override
     public void onStevePartyInitialize() {
@@ -46,6 +51,9 @@ public class TestAddon implements StevePartyAddon {
         PROBE_CARTRIDGE = Registry.register(Registries.ITEM, Identifier.of(NAMESPACE, "probe_cartridge"),
                 new ProbeCartridge(new Item.Settings()));
         PartySteps.register(PROBE_STEP, ProbeStep::new);
+        PartyCards.register(PROBE_CARD, (context, count) -> context.addStep(new ProbeStep(count)));
+        PROBE_CARD_ITEM = Registry.register(Registries.ITEM, Identifier.of(NAMESPACE, "party_card_probe"),
+                new PartyCardItem(PROBE_CARD, new Item.Settings()));
         DiceModules.register(STICKY);
         PowerUps.register(BANANA);
     }
