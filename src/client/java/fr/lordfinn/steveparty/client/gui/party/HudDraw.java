@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.utils.Argb;
 import java.util.Locale;
 import net.minecraft.client.MinecraftClient;
@@ -85,21 +86,45 @@ final class HudDraw {
         faded(context, alpha, () -> context.drawGuiTexture(icon, x, y, ICON, ICON));
     }
 
+    /** One line of text in the box ({@code x}, {@code y}, {@code width}) (see {@link UiText#line}), faded. */
+    static void text(DrawContext context, Text text, int x, int y, int width, int color, float alpha) {
+        HudDepth.onTop(context, () -> UiText.line(context, font(), text, x, y, width, Argb.fade(color, alpha), false));
+    }
+
+    static void text(DrawContext context, OrderedText text, int x, int y, int width, int color, float alpha) {
+        HudDepth.onTop(context, () -> UiText.line(context, font(), text, x, y, width, Argb.fade(color, alpha), false));
+    }
+
+    static void text(DrawContext context, String text, int x, int y, int width, int color, float alpha) {
+        HudDepth.onTop(context, () -> UiText.line(context, font(), text, x, y, width, Argb.fade(color, alpha), false));
+    }
+
+    /** Same, centered in the box when it fits. */
+    static void centered(DrawContext context, String text, int x, int y, int width, int color, float alpha) {
+        HudDepth.onTop(context, () -> UiText.centered(context, font(), text, x, y, width, Argb.fade(color, alpha), false));
+    }
+
+    /** Light text with the font's shadow (a quarter of its colour, a pixel down and right), in its box. */
+    static void shadowed(DrawContext context, String text, int x, int y, int width, int color, float alpha) {
+        HudDepth.onTop(context, () -> UiText.line(context, font(), text, x, y, width, Argb.fade(color, alpha), true));
+    }
+
+    // Without a box: the callers not given one yet, their text taking its own width (it never scrolls)
+
     static void text(DrawContext context, Text text, int x, int y, int color, float alpha) {
-        HudDepth.onTop(context, () -> context.drawText(font(), text, x, y, Argb.fade(color, alpha), false));
+        text(context, text, x, y, font().getWidth(text), color, alpha);
     }
 
     static void text(DrawContext context, OrderedText text, int x, int y, int color, float alpha) {
-        HudDepth.onTop(context, () -> context.drawText(font(), text, x, y, Argb.fade(color, alpha), false));
+        text(context, text, x, y, font().getWidth(text), color, alpha);
     }
 
     static void text(DrawContext context, String text, int x, int y, int color, float alpha) {
-        HudDepth.onTop(context, () -> context.drawText(font(), text, x, y, Argb.fade(color, alpha), false));
+        text(context, text, x, y, font().getWidth(text), color, alpha);
     }
 
-    /** Light text with the font's shadow (a quarter of its colour, a pixel down and right). */
     static void shadowed(DrawContext context, String text, int x, int y, int color, float alpha) {
-        HudDepth.onTop(context, () -> context.drawText(font(), text, x, y, Argb.fade(color, alpha), true));
+        shadowed(context, text, x, y, font().getWidth(text), color, alpha);
     }
 
     /** The text, cut with an ellipsis to fit in {@code width} pixels. */

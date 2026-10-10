@@ -107,7 +107,8 @@ public final class PartyGui {
         int w = textRenderer.getWidth(title) + iconSpace + 20;
         int x = centerX - w / 2;
         panel(context, x, y, w, 22, theme);
-        context.drawTextWithShadow(textRenderer, title, x + 10 + iconSpace, y + 7, 0xFFFFFFFF);
+        // The plate is sized to its title: its slot is the title's width
+        UiText.line(context, textRenderer, title, x + 10 + iconSpace, y + 7, textRenderer.getWidth(title), 0xFFFFFFFF, true);
     }
 
     /** @return the x where {@link #titlePlate} draws its icon (16 px wide), for the same arguments. */

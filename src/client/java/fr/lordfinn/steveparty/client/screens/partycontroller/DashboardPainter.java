@@ -6,9 +6,9 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.GuiItems;
-import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import net.minecraft.client.font.TextRenderer;
@@ -17,7 +17,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -27,17 +26,11 @@ import static fr.lordfinn.steveparty.client.screens.partycontroller.DashboardSty
 
 /**
  * The dashboard's drawing kit, shared by its pages: header rows, light and dark text, one-line texts that may not fit
- * (cut, or scrolling under the mouse), player rows, rank discs, heads, ghost items, tooltips. Coordinates are the
+ * (scrolling in their box, see {@link UiText}), player rows, rank discs, heads, ghost items, tooltips. Coordinates are the
  * panel's (the pages are drawn from its corner).
  */
 public final class DashboardPainter {
-    private static final float MARQUEE_SPEED = 28F;
-    private static final long MARQUEE_PAUSE_MS = 700;
-
     private final Dashboard dashboard;
-    /** The text scrolling under the mouse (too long for its place), and since when. */
-    private @Nullable String marqueeText;
-    private long marqueeStart;
 
     public DashboardPainter(Dashboard dashboard) {
         this.dashboard = dashboard;
@@ -57,19 +50,19 @@ public final class DashboardPainter {
         line(context, title, CX, CY + 2, room, WHITE);
     }
 
-    /** « Read only » in red, ending 4 px before the « i », on the row at {@code ty}. @return its width */
+    /** « Read only » in red, ending 4 px before the « i », on the row at {@code ty} (at most half of it). @return its width */
     public int readOnly(DrawContext context, int ty) {
         Text locked = Text.translatable(KEY + "read_only");
-        int lw = font().getWidth(locked) - 1;
-        context.drawText(font(), locked, INFO_X - 4 - lw, ty, INK_RED, true);
+        int lw = Math.min(font().getWidth(locked) - 1, (INFO_X - 4 - CX) / 2);
+        UiText.line(context, font(), locked, INFO_X - 4 - lw, ty, lw + 1, INK_RED, true);
         return lw;
     }
 
-    /** A gold pill on the header row, its label dark (the round). */
+    /** A gold pill on the header row (up to 4 px before the « i »), its label dark (the round). */
     public void headerPill(DrawContext context, Text label) {
-        int w = font().getWidth(label) - 1 + 10;
+        int w = Math.min(font().getWidth(label) - 1 + 10, INFO_X - 4 - CX);
         ConsolePaint.pill(context, CX, CY, w, ROW_H, FRAME, true);
-        dark(context, label.asOrderedText(), CX + 5, CY + 2, GOLD_DARK, GOLD_LIGHT);
+        ConsolePaint.darkText(context, font(), label.asOrderedText(), CX + 5, CY + 2, w - 9, GOLD_DARK, GOLD_LIGHT);
     }
 
     /** Dark text with a light shadow (the mock-ups' {@code dark}). */
@@ -77,21 +70,29 @@ public final class DashboardPainter {
         ConsolePaint.darkText(context, font(), text, tx, ty, colour, shade);
     }
 
+    /** Light text in a box of its own width: for short symbols whose place follows them (« ‹ », « +3 »). */
     public void light(DrawContext context, Text text, int tx, int ty, int colour) {
-        context.drawText(font(), text, tx, ty, colour, true);
+        UiText.line(context, font(), text, tx, ty, font().getWidth(text), colour, true);
     }
 
-    /** A number centred (light) in a field {@code width} wide. */
+    /** Light text in a box {@code width} wide: too long, it scrolls in it. */
+    public void light(DrawContext context, Text text, int tx, int ty, int width, int colour) {
+        UiText.line(context, font(), text, tx, ty, width, colour, true);
+    }
+
+    /** A number centred (light) in a field {@code width} wide (too wide, it scrolls in it). */
     public void centred(DrawContext context, String value, int fieldX, int width, int ty, int colour) {
-        light(context, Text.literal(value), fieldX + (width - font().getWidth(value) + 1) / 2, ty, colour);
+        int w = font().getWidth(value);
+        if (w <= width) light(context, Text.literal(value), fieldX + (width - w + 1) / 2, ty, w, colour);
+        else light(context, Text.literal(value), fieldX, ty, width, colour);
     }
 
-    /** « [star] 3  [coin] 12 » at the right of a row (56 px). */
+    /** « [star] 3  [coin] 12 » at the right of a row (56 px): each number up to the next icon, or the row's end. */
     public void counts(DrawContext context, int stars, int coins, int cx, int cy) {
         smallItem(context, dashboard.currency(PartyCurrency.STAR), cx, cy, 8);
-        light(context, Text.literal(Integer.toString(stars)), cx + 10, cy, WHITE);
+        light(context, Text.literal(Integer.toString(stars)), cx + 10, cy, 16, WHITE);
         smallItem(context, dashboard.currency(PartyCurrency.COIN), cx + 26, cy, 8);
-        light(context, Text.literal(Integer.toString(coins)), cx + 36, cy, WHITE);
+        light(context, Text.literal(Integer.toString(coins)), cx + 36, cy, 20, WHITE);
     }
 
     private static void smallItem(DrawContext context, ItemStack stack, int ix, int iy, int size) {
@@ -113,49 +114,17 @@ public final class DashboardPainter {
 
     // ------------------------------------------------------------------ one-line texts that may not fit
 
-    /** {@code text} as it fits in {@code width} pixels (its last column of shadow left out): as is, or cut with « … ». */
-    public OrderedText fit(Text text, int width) {
-        if (font().getWidth(text) - 1 <= width) return text.asOrderedText();
-        return Text.literal(GuiText.cut(font(), text.getString(), width)).setStyle(text.getStyle()).asOrderedText();
-    }
-
-    /** {@code text} (light, shadowed) cut with « … » when wider than {@code width}. */
-    public void line(DrawContext context, Text text, int tx, int ty, int width, int colour) {
-        context.drawText(font(), fit(text, width), tx, ty, colour, true);
-    }
-
     /**
-     * Draws {@code text} (light, shadowed) in a box {@code maxWidth} wide (panel coordinates): as is when it fits; else
-     * cut with « … », and scrolling back and forth, clipped to the box, while {@code hovered}.
+     * {@code text} (light, shadowed) on one line in a box {@code width} wide, its last column of shadow left out: too
+     * long, it scrolls in it (its whole text in a tooltip under the mouse).
      */
+    public void line(DrawContext context, Text text, int tx, int ty, int width, int colour) {
+        UiText.line(context, font(), text, tx, ty, width + 1, colour, true);
+    }
+
+    /** Same as {@link #line} ({@code hovered} no longer matters: a text too long always scrolls in its box). */
     public void fitted(DrawContext context, Text text, int tx, int ty, int maxWidth, int color, boolean hovered) {
-        int width = font().getWidth(text) - 1;
-        if (width <= maxWidth || !hovered) {
-            line(context, text, tx, ty, maxWidth, color);
-            return;
-        }
-        long now = Util.getMeasuringTimeMs();
-        String string = text.getString();
-        if (!string.equals(marqueeText)) {
-            marqueeText = string;
-            marqueeStart = now;
-        }
-        int travel = width - maxWidth;
-        long moveMs = Math.max(1, (long) (travel / MARQUEE_SPEED * 1000F));
-        long t = (now - marqueeStart) % (2 * (MARQUEE_PAUSE_MS + moveMs));
-        float offset;
-        if (t < MARQUEE_PAUSE_MS) offset = 0;
-        else if (t < MARQUEE_PAUSE_MS + moveMs) offset = (t - MARQUEE_PAUSE_MS) / (float) moveMs * travel;
-        else if (t < 2 * MARQUEE_PAUSE_MS + moveMs) offset = travel;
-        else offset = travel - (t - 2 * MARQUEE_PAUSE_MS - moveMs) / (float) moveMs * travel;
-        // The scissor is in screen coordinates, the page is drawn from the panel's corner
-        int x = dashboard.left(), y = dashboard.top();
-        context.enableScissor(x + tx, y + ty - 1, x + tx + maxWidth + 1, y + ty + 10);
-        context.getMatrices().push();
-        context.getMatrices().translate(-offset, 0, 0);
-        context.drawText(font(), text, tx, ty, color, true);
-        context.getMatrices().pop();
-        context.disableScissor();
+        line(context, text, tx, ty, maxWidth, color);
     }
 
     // ------------------------------------------------------------------ players
@@ -165,7 +134,8 @@ public final class DashboardPainter {
                           boolean current, boolean ranked, int mx, int my) {
         boolean hovered = HitArea.contains(mx, my, CX, ry, rowWidth, ROW - 2);
         ConsolePaint.inset(context, CX, ry, rowWidth - 1, 15, current ? 0xFF3D3460 : SLOT_BODY, current ? 0xFFFFC52E : SLOT_EDGE, SLOT_LOW);
-        light(context, Text.literal(Integer.toString(index + 1)), CX + 4, ry + 4, INK_SOFT);
+        // Its turn, up to its rank disc (or its head)
+        light(context, Text.literal(Integer.toString(index + 1)), CX + 4, ry + 4, ranked ? 10 : 26, INK_SOFT);
         if (ranked) rankDisc(context, rank, CX + 14, ry + 2);
         ConsolePaint.box(context, CX + 30, ry + 3, 10, 10, HEAD_FRAME, 1, 1);
         head(context, player, CX + 31, ry + 4);

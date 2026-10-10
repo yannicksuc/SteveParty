@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.config;
 
 import fr.lordfinn.steveparty.board.DestinationSwap;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.cartridge.CartridgeGuiConfig;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -46,7 +47,9 @@ public class ClientOptionsScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 15, 0xFFFFFF);
+        // The screen's width, a margin on each side (odd: centered on the pixel drawCenteredText used)
+        int room = (width - 20 - 1) | 1;
+        UiText.centered(context, textRenderer, title, width / 2 - room / 2, 15, room, 0xFFFFFF, true);
     }
 
     @Override

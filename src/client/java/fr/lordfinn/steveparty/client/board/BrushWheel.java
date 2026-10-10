@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -198,7 +199,9 @@ final class BrushWheel implements ToolWheel.Provider {
             var renderer = MinecraftClient.getInstance().textRenderer;
             context.getMatrices().push();
             context.getMatrices().translate(0, 0, 400);
-            context.drawText(renderer, text, x + 17 - renderer.getWidth(text), y + 9, 0xFFFFFFFF, true);
+            // A count's corner, as a hotbar slot's: a number of one or two digits, its box its own width
+            int w = renderer.getWidth(text);
+            UiText.line(context, renderer, text, x + 17 - w, y + 9, w, 0xFFFFFFFF, true);
             context.getMatrices().pop();
         };
     }
@@ -207,7 +210,8 @@ final class BrushWheel implements ToolWheel.Provider {
         String text = Integer.toString(power);
         return (context, x, y) -> {
             var renderer = MinecraftClient.getInstance().textRenderer;
-            context.drawText(renderer, text, x - renderer.getWidth(text) / 2 + 1, y - 3, power >= 12 ? 0xFF3A0000 : 0xFFFFFFFF, power < 12);
+            int w = renderer.getWidth(text);
+            UiText.line(context, renderer, text, x - w / 2 + 1, y - 3, w, power >= 12 ? 0xFF3A0000 : 0xFFFFFFFF, power < 12);
         };
     }
 

@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.FormatChips;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
@@ -50,21 +51,27 @@ final class FormatEditorPopup extends PagePopup {
         MiniGamePageData data = editor.current().withFormats(withDraft());
         // « Modifier : » and the chip, live
         Text edit = Text.translatable(KEY + "formats.edit");
-        context.drawText(font(), edit, cx, cy + 4, INK2, false);
-        FormatChips.draw(context, font(), draft, new FormatChips.Look(true, true, !data.hasPipesFor(draft), false, FORMAT_CHIP_H),
-                cx + font().getWidth(edit) + 3, cy);
-        // The kind: a segmented control
+        FormatChips.Look editLook = new FormatChips.Look(true, true, !data.hasPipesFor(draft), false, FORMAT_CHIP_H);
+        int editW = Math.min(font().getWidth(edit), Math.max(0, cw - FormatChips.width(font(), draft, editLook) - 3));
+        UiText.line(context, font(), edit, cx, cy + 4, editW, INK2, false);
+        FormatChips.draw(context, font(), draft, editLook, cx + editW + 3, cy);
+        // The kind: a segmented control (its segments share the row when their names are too long for it)
         int ky = cy + 21;
-        context.drawText(font(), Text.translatable(KEY + "formats.kind"), cx, ky + 3, INK2, false);
+        UiText.line(context, font(), Text.translatable(KEY + "formats.kind"), cx, ky + 3, 42, INK2, false);
         int sx = cx + 44;
-        for (MiniGameFormat.Kind kind : MiniGameFormat.Kind.values()) {
+        MiniGameFormat.Kind[] kinds = MiniGameFormat.Kind.values();
+        int[] segments = new int[kinds.length];
+        for (int i = 0; i < kinds.length; i++) segments[i] = font().getWidth(Text.translatable(KEY + "formats.kind." + kinds[i].key())) - 1 + 10;
+        segments = share(cw - 44 - 2 * (kinds.length - 1), segments);
+        for (int i = 0; i < kinds.length; i++) {
+            MiniGameFormat.Kind kind = kinds[i];
             Text label = Text.translatable(KEY + "formats.kind." + kind.key());
-            int w = font().getWidth(label) - 1 + 10;
+            int w = segments[i];
             boolean on = draft.kind() == kind, over = HitArea.contains(mouseX, mouseY, sx, ky, w, 13);
             ConsolePaint.box(context, sx, ky, w, 13, on ? SEGMENT_ON : KEYCAP, 1, 1);
             if (over && !on) ConsolePaint.highlight(context, sx, ky, w, 13, 1, TEAL2, 0);
-            if (on) context.drawText(font(), label, sx + 5, ky + 3, WHITE, true);
-            else context.drawText(font(), label, sx + 5, ky + 3, INK2, false);
+            if (on) UiText.line(context, font(), label, sx + 5, ky + 3, w - 9, WHITE, true);
+            else UiText.line(context, font(), label, sx + 5, ky + 3, w - 9, INK2, false);
             hits.add(new Hit(sx, ky, w, 13, () -> draft = draft.withKind(kind), null));
             sx += w + 2;
         }
@@ -102,17 +109,18 @@ final class FormatEditorPopup extends PagePopup {
                 }
             }
             Text same = Text.translatable(KEY + "formats.same_size");
-            context.drawText(font(), same, bx + 12, ay + 3, draft.sameSize() ? INK : INK2, false);
-            hits.add(new Hit(bx, ay, 12 + font().getWidth(same), 13, () -> draft = draft.withSameSize(!draft.sameSize()), null));
+            int sameW = Math.min(font().getWidth(same), Math.max(0, cx + cw - bx - 12));
+            UiText.line(context, font(), same, bx + 12, ay + 3, sameW, draft.sameSize() ? INK : INK2, false);
+            hits.add(new Hit(bx, ay, 12 + sameW, 13, () -> draft = draft.withSameSize(!draft.sameSize()), null));
         }
         // Its pipes
         int cyCheck = ay + 17;
         List<MiniGamePipeRole> missing = data.missing(draft);
         if (missing.isEmpty()) {
-            context.drawText(font(), PagePaint.fit(font(), Text.translatable(KEY + "formats.pipes_ok"), cw), cx, cyCheck, GREEN2, false);
+            UiText.line(context, font(), Text.translatable(KEY + "formats.pipes_ok"), cx, cyCheck, cw, GREEN2, false);
         } else {
             PagePaint.missingBadge(context, cx, cyCheck - 1);
-            context.drawText(font(), PagePaint.fit(font(), PagePaint.missingText(missing), cw - 14), cx + 13, cyCheck, RED, false);
+            UiText.line(context, font(), PagePaint.missingText(missing), cx + 13, cyCheck, cw - 13, RED, false);
         }
         // Annuler / OK
         int oky = cyCheck + 16;
@@ -127,30 +135,33 @@ final class FormatEditorPopup extends PagePopup {
     /** A team's row (its letter), or the players': « from [−] N [+] to [−] M [+] », and its × for a team. */
     private void sideRow(DrawContext context, int cx, int cw, int rowY, int side, MiniGameFormat.Side range, int sides, boolean teams, int mouseX, int mouseY) {
         int x0 = cx;
+        // The row's words share what its letter (or players), steppers and × leave of it
+        Text players = Text.translatable(KEY + "formats.players"), from = Text.translatable(KEY + "formats.from"),
+                to = Text.translatable(KEY + "formats.to");
+        int[] words = teams ? share(cw - 21 - 3 - 16 - 2 - 35 - 5 - 2 - 35, font().getWidth(from), font().getWidth(to))
+                : share(cw - 4 - 2 - 35 - 5 - 2 - 35, font().getWidth(players), font().getWidth(from), font().getWidth(to));
+        int fromW = words[teams ? 0 : 1], toW = words[teams ? 1 : 2];
         if (teams) {
             MiniGamePipeRole role = MiniGamePipeRole.ofTeam(side);
             int colour = FormatChips.TEAM[side];
             ConsolePaint.box(context, x0, rowY, 12, 12, new Ramp(0xFF1E1E1E, lighter(colour), colour, darker(colour)), 1, 1);
             String letter = String.valueOf((char) ('A' + side));
-            context.drawText(font(), letter, x0 + (12 - font().getWidth(letter) + 1) / 2, rowY + 2, WHITE, true);
+            UiText.centered(context, font(), letter, x0 + 1, rowY + 2, 11, WHITE, true);
             hits.add(new Hit(x0, rowY, 12, 12, () -> {
             }, () -> role.text()));
             x0 += 16;
         } else {
-            Text players = Text.translatable(KEY + "formats.players");
-            context.drawText(font(), players, x0, rowY + 3, INK2, false);
-            x0 += font().getWidth(players) + 4;
+            UiText.line(context, font(), players, x0, rowY + 3, words[0], INK2, false);
+            x0 += words[0] + 4;
         }
-        Text from = Text.translatable(KEY + "formats.from");
-        context.drawText(font(), from, x0, rowY + 3, INK2, false);
-        x0 += font().getWidth(from) + 2;
+        UiText.line(context, font(), from, x0, rowY + 3, fromW, INK2, false);
+        x0 += fromW + 2;
         x0 = stepper(context, x0, rowY, Integer.toString(range.min()), mouseX, mouseY,
                 range.min() > 1, () -> draft = draft.withSide(side, new MiniGameFormat.Side(range.min() - 1, range.max())),
                 range.min() < MiniGameFormat.MAX_COUNT, () -> draft = draft.withSide(side, new MiniGameFormat.Side(range.min() + 1,
                         range.infinite() ? range.max() : Math.max(range.max(), range.min() + 1)))) + 5;
-        Text to = Text.translatable(KEY + "formats.to");
-        context.drawText(font(), to, x0, rowY + 3, INK2, false);
-        x0 += font().getWidth(to) + 2;
+        UiText.line(context, font(), to, x0, rowY + 3, toW, INK2, false);
+        x0 += toW + 2;
         stepper(context, x0, rowY, range.infinite() ? "∞" : Integer.toString(range.max()), mouseX, mouseY,
                 range.infinite() || range.max() > range.min(), () -> draft = draft.withSide(side,
                         new MiniGameFormat.Side(range.min(), range.infinite() ? MiniGameFormat.MAX_COUNT : range.max() - 1)),
@@ -172,9 +183,11 @@ final class FormatEditorPopup extends PagePopup {
     /** « [−] N [+] »: returns its right. */
     private int stepper(DrawContext context, int sx, int sy, String value, int mouseX, int mouseY, boolean canLess, Runnable less, boolean canMore, Runnable more) {
         button(context, sx, sy, 11, 12, Text.literal("-"), canLess, false, mouseX, mouseY, less, null);
+        // Bold (drawn twice), centred between its two buttons; too wide, it scrolls there
         int vw = font().getWidth(value) - 1;
-        context.drawText(font(), value, sx + 12 + (11 - vw) / 2, sy + 3, INK, false);
-        context.drawText(font(), value, sx + 13 + (11 - vw) / 2, sy + 3, INK, false);
+        int vx = vw + 1 <= 11 ? sx + 12 + (11 - vw) / 2 : sx + 12, vRoom = vw + 1 <= 11 ? vw + 1 : 10;
+        UiText.line(context, font(), value, vx, sy + 3, vRoom, INK, false);
+        UiText.line(context, font(), value, vx + 1, sy + 3, vRoom, INK, false);
         button(context, sx + 24, sy, 11, 12, Text.literal("+"), canMore, false, mouseX, mouseY, more, null);
         return sx + 35;
     }
@@ -183,6 +196,16 @@ final class FormatEditorPopup extends PagePopup {
     public boolean scroll(double mouseX, double mouseY, double amount) {
         rowsScroll = Math.max(0, rowsScroll - (int) Math.signum(amount));
         return true;
+    }
+
+    /** {@code widths} as they are if they hold in {@code room} together, else each cut down in proportion to share it. */
+    private static int[] share(int room, int... widths) {
+        int total = 0;
+        for (int w : widths) total += w;
+        if (total <= room) return widths;
+        int[] shared = new int[widths.length];
+        for (int i = 0; i < widths.length; i++) shared[i] = Math.max(0, widths[i] * Math.max(0, room) / total);
+        return shared;
     }
 
     private static int lighter(int colour) {

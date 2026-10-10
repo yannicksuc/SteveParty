@@ -130,8 +130,9 @@ public final class ToolHudPanel {
 
     // ---------------------------------------------------------------- drawing
 
-    private static int stateWidth(TextRenderer textRenderer, Text text) {
-        return textRenderer.getWidth(text) + 10;
+    /** A state plate's width: its text's, but no wider than a row (a longer text scrolls in it). */
+    private static int stateWidth(TextRenderer textRenderer, Text text, int available) {
+        return Math.min(textRenderer.getWidth(text) + 10, available);
     }
 
     private void draw(DrawContext context) {
@@ -156,16 +157,16 @@ public final class ToolHudPanel {
         if (!boxRows.isEmpty()) bottom -= boxRows.size() * (BOX + GAP) - GAP + PART_GAP;
 
         // State plates
-        List<List<State>> stateRows = wrap(states, state -> stateWidth(textRenderer, state.text()), available);
+        List<List<State>> stateRows = wrap(states, state -> stateWidth(textRenderer, state.text(), available), available);
         for (int i = 0; i < stateRows.size(); i++) {
             List<State> row = stateRows.get(i);
             int y = bottom - STATE - i * (STATE + GAP);
-            int x = centerX - rowWidth(row, state -> stateWidth(textRenderer, state.text())) / 2;
+            int x = centerX - rowWidth(row, state -> stateWidth(textRenderer, state.text(), available)) / 2;
             for (State state : row) {
-                int width = stateWidth(textRenderer, state.text());
+                int width = stateWidth(textRenderer, state.text(), available);
                 ToolHud.plate(context, x, y, width, STATE, state.plate());
                 int tx = x + 5;
-                HudDepth.onTop(context, () -> context.drawText(textRenderer, state.text(), tx, y + (STATE - 8) / 2, ToolHud.TEXT, false));
+                HudDepth.onTop(context, () -> UiText.line(context, textRenderer, state.text(), tx, y + (STATE - 8) / 2, width - 10, ToolHud.TEXT, false));
                 x += width + GAP;
             }
         }
@@ -177,7 +178,7 @@ public final class ToolHudPanel {
             for (int i = 0; i < lines.size(); i++) {
                 var line = lines.get(i);
                 int y = bottom - LINE * (lines.size() - i) + 1;
-                HudDepth.onTop(context, () -> context.drawCenteredTextWithShadow(textRenderer, line, centerX, y, ToolHud.HINT));
+                HudDepth.onTop(context, () -> ToolHud.centeredLine(context, textRenderer, line, centerX, y, available, ToolHud.HINT));
             }
             bottom -= LINE * lines.size();
         }

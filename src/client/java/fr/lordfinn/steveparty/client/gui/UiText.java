@@ -44,8 +44,21 @@ public final class UiText {
                 ScreenEvents.afterRender(screen).register((s, context, mouseX, mouseY, delta) -> {
                     Text text = hovered;
                     hovered = null;
+                    // A hovered widget with a tooltip of its own: that one is shown, not this one over it
+                    for (var child : s.children()) {
+                        if (child instanceof net.minecraft.client.gui.widget.ClickableWidget widget && widget.visible
+                                && widget.isHovered() && widget.getTooltip() != null) return;
+                    }
                     if (text != null) context.drawOrderedTooltip(client.textRenderer, wrap(client.textRenderer, text, TOOLTIP_W), mouseX, mouseY);
                 }));
+    }
+
+    /**
+     * The screen shows its own tooltip this frame (a button's, a panel's): the one of a line that does not fit is not
+     * drawn over it. Called by whoever draws that tooltip.
+     */
+    public static void cancelTooltip() {
+        hovered = null;
     }
 
     // ---------------------------------------------------------------- on several lines

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
 import fr.lordfinn.steveparty.client.gui.HudDepth;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.hud.HudPlacements.Hud;
 import fr.lordfinn.steveparty.hud.HudPlacements;
 import net.minecraft.client.MinecraftClient;
@@ -24,6 +25,8 @@ import java.util.Locale;
 public class PartyHudEditScreen extends Screen {
     private static final int SNAP = 6;
     private static final int HANDLE = 6;
+    /** The width of the buttons' column (toggle, anchor picker, reset). */
+    private static final int COLUMN_W = 128;
     private final @Nullable Screen parent;
     private @Nullable Hud dragged;
     private boolean resizing;
@@ -176,8 +179,9 @@ public class PartyHudEditScreen extends Screen {
         if (dragged != null && !resizing) drawAnchors(context, dragged);
         // The title over the column (how it works: the « ? » button's tooltip, nothing over the HUDs)
         int under = buttonsTop() + (Hud.values().length + 1) * 24 + 2;
-        context.drawTextWithShadow(textRenderer, title, 4, under, 0xFFFFFFFF);
-        if (real == null) context.drawTextWithShadow(textRenderer, Text.translatable("screen.steveparty.party_hud_layout.sample"), 4, under + 11, 0xFF9A9A9A);
+        int titleHeight = UiText.wrapped(context, textRenderer, title, 4, under, COLUMN_W, 0xFFFFFFFF, true);
+        if (real == null) UiText.wrapped(context, textRenderer, Text.translatable("screen.steveparty.party_hud_layout.sample"),
+                4, under + titleHeight + 1, COLUMN_W, 0xFF9A9A9A, true);
         super.render(context, mouseX, mouseY, delta);
         context.getMatrices().pop();
     }
@@ -207,11 +211,12 @@ public class PartyHudEditScreen extends Screen {
         HudPlacements.Placement placement = PartyHudLayout.get(hud);
         Text label = Text.translatable("screen.steveparty.party_hud_layout.label", hudName(hud),
                 String.format(Locale.ROOT, "%.2f", placement.scale).replaceAll("0+$", "").replaceAll("\\.$", ""));
-        int labelWidth = textRenderer.getWidth(label);
+        // On the screen, scrolling if it is wider
+        int labelWidth = Math.min(textRenderer.getWidth(label), width - 4);
         int labelX = MathHelper.clamp(x, 2, Math.max(2, width - labelWidth - 2));
         int labelY = y + h + 3 + 9 < height ? y + h + 3 : y - 11;
         context.fill(labelX - 2, labelY - 1, labelX + labelWidth + 2, labelY + 9, 0xA0000000);
-        context.drawText(textRenderer, label, labelX, labelY, active ? 0xFFFFD23A : 0xFFFFFFFF, false);
+        UiText.line(context, textRenderer, label, labelX, labelY, labelWidth, active ? 0xFFFFD23A : 0xFFFFFFFF, false);
     }
 
     private static boolean isOver(Hud hud, double mouseX, double mouseY) {

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronScreenHandler;
 import net.minecraft.client.gui.DrawContext;
@@ -38,8 +39,16 @@ public class TrichaudronScreen extends HandledScreen<TrichaudronScreenHandler> {
         int filled = Math.round((gaugeBottom - gaugeTop) * tank / (float) TrichaudronEntity.TANK_MAX);
         context.fill(gaugeLeft, gaugeBottom - filled, right - 1, gaugeBottom, 0xFFE0601C);
         context.fill(left, bottom - 10, right, bottom, 0xA0000000);
-        context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.steveparty.trichaudron.tank", tank,
-                TrichaudronEntity.TANK_MAX), (left + right) / 2, bottom - 9, 0xFFFFFFFF);
+        UiText.centered(context, textRenderer, Text.translatable("screen.steveparty.trichaudron.tank", tank,
+                TrichaudronEntity.TANK_MAX), left, bottom - 9, right - left, 0xFFFFFFFF, true);
+    }
+
+    /** The titles as a horse's, each up to the panel's right padding (8 px, as on its left). */
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        UiText.line(context, textRenderer, title, titleX, titleY, backgroundWidth - 8 - titleX, 0x404040, false);
+        UiText.line(context, textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY,
+                backgroundWidth - 8 - playerInventoryTitleX, 0x404040, false);
     }
 
     @Override

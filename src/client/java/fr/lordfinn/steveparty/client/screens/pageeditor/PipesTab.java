@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
@@ -133,7 +134,8 @@ public final class PipesTab {
     public void draw(DrawContext context, MiniGamePageData data, int mouseX, int mouseY) {
         List<Text> missing = status(data);
         Text line = missing.isEmpty() ? Text.translatable(KEY + "pipes.complete") : missing.getFirst();
-        context.drawText(font(), PagePaint.fit(font(), line, FULL - 16), editor.left() + LX, editor.top() + M + 2, missing.isEmpty() ? GREEN2 : RED, false);
+        // Up to the « i » at the top right
+        UiText.line(context, font(), line, editor.left() + LX, editor.top() + M + 2, FULL - 16, missing.isEmpty() ? GREEN2 : RED, false);
 
         int hovered = held != null && dragged ? columnAt(mouseX, mouseY) : -1;
         for (int column = 0; column < COLUMNS.length; column++) {
@@ -145,9 +147,10 @@ public final class PipesTab {
             // Header: the role, in the colour of its pipes
             context.fill(cx, cy, cx + COLUMN_WIDTH, cy + HEADER, Argb.opaque(role.color()));
             boolean light = Argb.luminance(role.color()) > 150;
-            int room = role.hasOrder() ? 54 : COLUMN_WIDTH - 6;
-            if (light) context.drawText(font(), PagePaint.fit(font(), role.text(), room), cx + 3, cy + 3, INK, false);
-            else context.drawText(font(), PagePaint.fit(font(), role.text(), room), cx + 3, cy + 2, WHITE, true);
+            // Its room: up to its order button, else the header's width (its last column of shadow may go past)
+            int room = role.hasOrder() ? 55 : COLUMN_WIDTH - 5;
+            if (light) UiText.line(context, font(), role.text(), cx + 3, cy + 3, room, INK, false);
+            else UiText.line(context, font(), role.text(), cx + 3, cy + 2, room, WHITE, true);
             if (role.hasOrder()) {
                 // How its players are sent to its pipes: each in turn, or at random
                 drawOrderButton(context, cx + COLUMN_WIDTH - 12, cy + 2, data.isRandom(role), light, orderButtonAt(mouseX, mouseY) == column);
@@ -162,8 +165,8 @@ public final class PipesTab {
             // No pipe of this role yet: which pipe to click, page in hand
             if (pipes.isEmpty()) drawEmptyColumn(context, role, cx, cy + HEADER + 3);
             // More cards than shown: marks
-            if (scroll[column] > 0) context.drawText(font(), "▲", cx + COLUMN_WIDTH - 8, cy + HEADER + 6, INK3, false);
-            if (scroll[column] + CARDS_SHOWN < pipes.size()) context.drawText(font(), "▼", cx + COLUMN_WIDTH - 8, cy + COLUMN_HEIGHT - 9, INK3, false);
+            if (scroll[column] > 0) UiText.line(context, font(), "▲", cx + COLUMN_WIDTH - 8, cy + HEADER + 6, 8, INK3, false);
+            if (scroll[column] + CARDS_SHOWN < pipes.size()) UiText.line(context, font(), "▼", cx + COLUMN_WIDTH - 8, cy + COLUMN_HEIGHT - 9, 8, INK3, false);
         }
     }
 
@@ -194,7 +197,7 @@ public final class PipesTab {
         }
         context.fill(left + 3, top + 3, left + 6, bottom - 3, Argb.opaque(role.color()));
         String first = role.pipeColors().isEmpty() ? "" : dyeName(role.pipeColors().getFirst());
-        context.drawText(font(), PagePaint.fit(font(), Text.translatable(KEY + "pipes.empty", first), COLUMN_WIDTH - 12), left + 9, top + 4, INK2, false);
+        UiText.line(context, font(), Text.translatable(KEY + "pipes.empty", first), left + 9, top + 4, COLUMN_WIDTH - 11, INK2, false);
     }
 
     /** The 9 px toggle of a column: two arrows for « each in turn », a dice face for « at random ». */
@@ -242,7 +245,7 @@ public final class PipesTab {
         // « x y z », or « x z » when that is too long for the card (the tooltip has it all)
         Text text = cardText(link);
         if (font().getWidth(text) - 1 > COLUMN_WIDTH - 12) text = Text.literal(link.mouth().pos().getX() + " " + link.mouth().pos().getZ());
-        context.drawText(font(), PagePaint.fit(font(), text, COLUMN_WIDTH - 12), left + 8, top + 4, INK, false);
+        UiText.line(context, font(), text, left + 8, top + 4, COLUMN_WIDTH - 11, INK, false);
     }
 
     /** Over everything: the card being dragged, or the tooltip of what is under the mouse. */

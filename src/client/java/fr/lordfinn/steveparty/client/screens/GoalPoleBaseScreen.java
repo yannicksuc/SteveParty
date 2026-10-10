@@ -10,10 +10,10 @@ import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Players;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Source;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleSearch;
 import fr.lordfinn.steveparty.client.gui.GuiItems;
-import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -334,8 +334,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             refresh();
         });
         button.content((context, textRenderer, centerX, centerY, color) -> {
-            String shown = fit(textRenderer, valueText(name, getter.get()).getString(), width - 8, true);
-            context.drawText(textRenderer, shown, centerX - textRenderer.getWidth(shown) / 2, centerY - 4, color, false);
+            String shown = withoutPrefix(textRenderer, valueText(name, getter.get()).getString(), width - 8);
+            UiText.centered(context, textRenderer, shown, centerX - (width - 8) / 2, centerY - 4, width - 8, color, false);
         });
         button.setTooltip(Tooltip.of(tooltipText(name, getter.get())));
         cycleButtons.add(new CycleButton(button, name, () -> getter.get()));
@@ -343,18 +343,13 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     }
 
     /**
-     * The text as it fits in {@code width}: when it is too long, only the value after "Setting: " if allowed (the
-     * setting's name is in the tooltip), else cut with an ellipsis (the full text is in the tooltip too).
+     * The text of a cycle button: when it is too long for {@code width}, only the value after "Setting: " (the
+     * setting's name is in the tooltip); still too long, it scrolls in the button (UiText).
      */
-    static String fit(TextRenderer textRenderer, String text, int width, boolean dropPrefix) {
+    static String withoutPrefix(TextRenderer textRenderer, String text, int width) {
         if (textRenderer.getWidth(text) <= width) return text;
         int colon = text.indexOf(':');
-        if (dropPrefix && colon > 0 && colon < text.length() - 1) {
-            String value = text.substring(colon + 1).strip();
-            if (textRenderer.getWidth(value) <= width) return value;
-            text = value;
-        }
-        return GuiText.cut(textRenderer, text, width);
+        return colon > 0 && colon < text.length() - 1 ? text.substring(colon + 1).strip() : text;
     }
 
     private record CycleButton(PartyButton button, String name, Supplier<Enum<?>> value) {}
@@ -532,19 +527,21 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         matrices.push();
         matrices.translate(0, 0, 300);
         context.fill(left, top, left + width, top + rows * COMPLETION_ROW + 2, 0xF0202428);
+        // The counter (when the list goes on) sits at the right of the last row
+        String more = completions.size() > COMPLETION_ROWS ? (first + rows) + "/" + completions.size() : null;
+        int moreWidth = more != null ? textRenderer.getWidth(more) : 0;
         for (int i = 0; i < rows; i++) {
             int index = first + i, rowY = top + 1 + i * COMPLETION_ROW;
             GoalPoleSearch.Entry<Goal> goal = completions.get(index);
             boolean hovered = HitArea.contains(mouseX, mouseY, left, rowY, width, COMPLETION_ROW);
             if (index == completion || hovered) context.fill(left + 1, rowY, left + width - 1, rowY + COMPLETION_ROW, 0x50FFFFFF);
             GuiItems.scaled(context, new ItemStack(goal.data().icon()), left + 2, rowY, 0.625f);
-            String shown = fit(textRenderer, goal.label(), width - 17, false);
-            context.drawText(textRenderer, shown, left + 14, rowY + 2,
+            int room = width - 17 - (more != null && i == rows - 1 ? moreWidth + 2 : 0);
+            UiText.line(context, textRenderer, goal.label(), left + 14, rowY + 2, room,
                     index == completion ? 0xFFFFE36A : goal.group() == GoalPoleSearch.GROUP_OBJECTIVE ? 0xFFB8E0FF : 0xFFE0E0E0, false);
         }
-        if (completions.size() > COMPLETION_ROWS) {
-            String more = (first + rows) + "/" + completions.size();
-            context.drawText(textRenderer, more, left + width - 3 - textRenderer.getWidth(more), top + rows * COMPLETION_ROW - 8, 0xFF8A949A, false);
+        if (more != null) {
+            UiText.line(context, textRenderer, more, left + width - 3 - moreWidth, top + rows * COMPLETION_ROW - 8, moreWidth, 0xFF8A949A, false);
         }
         matrices.pop();
     }
@@ -636,8 +633,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             matrices.scale(0.75f, 0.75f, 1f);
             context.drawItem(LEGEND_ITEMS[i], 0, 0);
             matrices.pop();
-            String line = fit(textRenderer, Text.translatable(KEY + LEGEND_KEYS[i]).getString(), COLUMN - 16, false);
-            context.drawText(textRenderer, line, x + RIGHT_X + 16, rowY + 3, PartyGui.TEXT_DARK, false);
+            UiText.line(context, textRenderer, Text.translatable(KEY + LEGEND_KEYS[i]).getString(), x + RIGHT_X + 16, rowY + 3,
+                    COLUMN - 16, PartyGui.TEXT_DARK, false);
         }
     }
 
@@ -655,20 +652,21 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        context.drawText(textRenderer, Text.translatable(KEY + "points"), MARGIN, TOP - 11, PartyGui.TEXT_DARK, false);
-        context.drawText(textRenderer, Text.translatable(KEY + "redstone"), RIGHT_X, TOP - 11, PartyGui.TEXT_DARK, false);
+        UiText.line(context, textRenderer, Text.translatable(KEY + "points"), MARGIN, TOP - 11, COLUMN, PartyGui.TEXT_DARK, false);
+        UiText.line(context, textRenderer, Text.translatable(KEY + "redstone"), RIGHT_X, TOP - 11, COLUMN, PartyGui.TEXT_DARK, false);
         if (source == Source.CRITERION) {
             drawMeaning(context, goalCheck, MARGIN, TOP + ROW + FIELD_HEIGHT + 3);
         } else {
-            context.drawTextWrapped(textRenderer, Text.translatable(KEY + "source.landings_here.meaning"), MARGIN, TOP + ROW + 3,
-                    COLUMN, PartyGui.TEXT_SOFT);
+            // No field under the choice: room for its meaning on three lines, down to the players title
+            UiText.wrapped(context, textRenderer, Text.translatable(KEY + "source.landings_here.meaning"), MARGIN, TOP + ROW + 3,
+                    COLUMN, PartyGui.TEXT_SOFT, false);
         }
-        context.drawText(textRenderer, Text.translatable(KEY + "players"), MARGIN, playersY(), PartyGui.TEXT_DARK, false);
+        UiText.line(context, textRenderer, Text.translatable(KEY + "players"), MARGIN, playersY(), COLUMN, PartyGui.TEXT_DARK, false);
         if (playersHasField()) {
             drawMeaning(context, playersCheck, MARGIN, playersFieldY() + FIELD_HEIGHT + 3);
         } else {
-            // No field under the choice: room for its meaning on two lines
-            context.drawTextWrapped(textRenderer, playersCheck.meaning(), MARGIN, playersFieldY() + 3, COLUMN, PartyGui.TEXT_SOFT);
+            // No field under the choice: room for its meaning on four lines, down to the status line
+            UiText.wrapped(context, textRenderer, playersCheck.meaning(), MARGIN, playersFieldY() + 3, COLUMN, PartyGui.TEXT_SOFT, false);
         }
 
         // Status line: total and whether the base counts
@@ -677,13 +675,12 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         MutableText status = Text.translatable(KEY + "status", settings.getLong("Total"))
                 .append("  ").append(Text.translatable(KEY + (active ? "status.active" : "status.paused"))
                         .formatted(active ? Formatting.DARK_GREEN : Formatting.DARK_RED));
-        context.drawText(textRenderer, status, MARGIN, BUTTONS_Y - 14, PartyGui.TEXT_DARK, false);
+        UiText.line(context, textRenderer, status, MARGIN, BUTTONS_Y - 14, WIDTH - 2 * MARGIN, PartyGui.TEXT_DARK, false);
     }
 
-    /** What the field means, under it (trimmed to the column; the full text is in the tooltip of the status icon). */
+    /** What the field means, under it (on one line of the column; also in the tooltip of the status icon). */
     private void drawMeaning(DrawContext context, Check check, int x, int y) {
-        String shown = fit(textRenderer, check.meaning().getString(), COLUMN, false);
-        context.drawText(textRenderer, shown, x, y, check.valid() ? PartyGui.TEXT_SOFT : PartyGui.TEXT_ERROR, false);
+        UiText.line(context, textRenderer, check.meaning().getString(), x, y, COLUMN, check.valid() ? PartyGui.TEXT_SOFT : PartyGui.TEXT_ERROR, false);
     }
 
     @Override

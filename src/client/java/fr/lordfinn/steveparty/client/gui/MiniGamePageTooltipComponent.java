@@ -42,6 +42,10 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         return new FormatChips.Look(false, false, !data.hasPipesFor(data.formats().get(index)), false, 13);
     }
 
+    private static Text notPlayable() {
+        return Text.translatable("tooltip.steveparty.mini_game_page.not_playable");
+    }
+
     private static List<OrderedText> lines(TextRenderer textRenderer, Text text, int max) {
         return wrap(textRenderer, text, WIDTH, max);
     }
@@ -68,7 +72,7 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         int height = data.image() != null ? PICTURE_HEIGHT + 3 : 0;
         List<int[]> chips = FormatChips.flow(textRenderer, data.formats(), i -> look(data, i), WIDTH, 3);
         height += chips.getLast()[1] + 13 + 3;
-        if (!data.isPlayable()) height += 10;
+        if (!data.isPlayable()) height += UiText.height(textRenderer, notPlayable(), WIDTH);
         if (!data.description().isEmpty()) height += 2 + 10 * lines(textRenderer, MiniGameText.parse(data.description()), MAX_DESCRIPTION_LINES).size();
         return height + 2;
     }
@@ -92,13 +96,12 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         }
         top += FormatChips.drawFlow(context, textRenderer, data.formats(), i -> look(data, i), x, top, WIDTH, 3) + 3;
         if (!data.isPlayable()) {
-            context.drawText(textRenderer, Text.translatable("tooltip.steveparty.mini_game_page.not_playable"), x, top, 0xFFFF7A7A, true);
-            top += 10;
+            top += UiText.wrapped(context, textRenderer, notPlayable(), x, top, WIDTH, 0xFFFF7A7A, true);
         }
         if (!data.description().isEmpty()) {
             top += 2;
             for (OrderedText line : lines(textRenderer, MiniGameText.parse(data.description()), MAX_DESCRIPTION_LINES)) {
-                context.drawText(textRenderer, line, x, top, COLOR_DESCRIPTION, true);
+                UiText.line(context, textRenderer, line, x, top, WIDTH, COLOR_DESCRIPTION, true);
                 top += 10;
             }
         }

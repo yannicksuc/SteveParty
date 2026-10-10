@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens.pageeditor;
 
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -124,13 +125,15 @@ public final class BinderPage {
                     Map.of('#', selected ? each.ramp.shadow() : WHITE), x + PW + iconX(each, tab), ty + (TAB_H - ICON) / 2);
             int labelLeft = x + PW + labelStart(each, tab), labelRight = x + PW + out - (selected ? BAND + 2 : 5);
             if (labelRight > labelLeft + 2) {
+                // Its box is the divider fully out (sized on the name): the scissor shows as much as is out
                 Text label = name(each);
+                int labelW = font.getWidth(label);
                 context.enableScissor(labelLeft, ty, labelRight, ty + TAB_H);
                 if (selected) {
-                    context.drawText(font, label, labelLeft, ty + 4, INK, false);
-                    context.drawText(font, label, labelLeft + 1, ty + 4, INK, false);
+                    UiText.line(context, font, label, labelLeft, ty + 4, labelW, INK, false);
+                    UiText.line(context, font, label, labelLeft + 1, ty + 4, labelW, INK, false);
                 } else {
-                    context.drawText(font, label, labelLeft, ty + 4, WHITE, true);
+                    UiText.line(context, font, label, labelLeft, ty + 4, labelW, WHITE, true);
                 }
                 context.disableScissor();
             }

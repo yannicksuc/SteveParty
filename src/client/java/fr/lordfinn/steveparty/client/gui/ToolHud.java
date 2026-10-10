@@ -6,9 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -79,17 +81,18 @@ public final class ToolHud {
         plate(context, x, y, BOX, BOX, active ? Plate.GOLD : Plate.TEAL);
     }
 
-    /** A one-line text plate {@link #BOX} high, returns its width. */
+    /** A one-line text plate {@link #BOX} high, returns its width (no wider than a row: a longer text scrolls in it). */
     public static int textPlate(DrawContext context, int x, int y, Text text, Plate plate) {
         MinecraftClient client = MinecraftClient.getInstance();
-        int width = client.textRenderer.getWidth(text) + 12;
+        int width = textPlateWidth(text);
         plate(context, x, y, width, BOX, plate);
-        HudDepth.onTop(context, () -> context.drawText(client.textRenderer, text, x + 6, y + (BOX - 8) / 2, TEXT, false));
+        HudDepth.onTop(context, () -> UiText.line(context, client.textRenderer, text, x + 6, y + (BOX - 8) / 2, width - 12, TEXT, false));
         return width;
     }
 
     public static int textPlateWidth(Text text) {
-        return MinecraftClient.getInstance().textRenderer.getWidth(text) + 12;
+        MinecraftClient client = MinecraftClient.getInstance();
+        return Math.min(client.textRenderer.getWidth(text) + 12, client.getWindow().getScaledWidth() - 16);
     }
 
     /**
@@ -103,8 +106,17 @@ public final class ToolHud {
         for (int i = 0; i < lines.size(); i++) {
             var line = lines.get(i);
             int y = boxesTop - 10 * (lines.size() - i);
-            HudDepth.onTop(context, () -> context.drawCenteredTextWithShadow(textRenderer, line, centerX, y, HINT));
+            HudDepth.onTop(context, () -> centeredLine(context, textRenderer, line, centerX, y, available(context), HINT));
         }
+    }
+
+    /**
+     * A line centred on {@code centerX} in a box about {@code room} wide, with its shadow. The box is made odd (one more
+     * pixel, out of the side margins) so that a line that fits lands where {@code drawCenteredTextWithShadow} put it.
+     */
+    static void centeredLine(DrawContext context, TextRenderer font, OrderedText line, int centerX, int y, int room, int color) {
+        int box = room | 1;
+        UiText.centered(context, font, line, centerX - box / 2, y, box, color, true);
     }
 
     // ---------------------------------------------------------------- room for the action bar

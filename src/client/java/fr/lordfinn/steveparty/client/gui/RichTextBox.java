@@ -700,11 +700,16 @@ public class RichTextBox extends ClickableWidget {
         if (!paper) PartyGui.inset(context, getX(), getY(), width, height, insetBody, isFocused() || refused, false);
         if (refused) context.drawBorder(getX(), getY(), width, height, 0xFFD8323F);
         int left = getX() + padLeft, top = getY() + padTop;
-        // On paper the placeholder stays while it is empty (the caret before it), like a form's hint
-        if (text.length() == 0 && (paper || !isFocused())) {
-            context.drawText(font, placeholder, left + (plain ? 2 : 0), top, placeholderColor, false);
-        }
         int shown = shownLines();
+        // The text's room, as laid out (narrower by the scroll bar when there is one)
+        int textWidth = width - padLeft - padRight - (lines.size() > shown ? SCROLLBAR + 1 : 0);
+        // On paper the placeholder stays while it is empty (the caret before it), like a form's hint: on the box's
+        // lines when it fits them, else on one line, scrolling
+        if (text.length() == 0 && (paper || !isFocused())) {
+            int px = left + (plain ? 2 : 0), room = textWidth - (plain ? 2 : 0);
+            if (UiText.height(font, placeholder, room) <= shown * LINE_H) UiText.wrapped(context, font, placeholder, px, top, room, placeholderColor, false);
+            else UiText.line(context, font, placeholder, px, top, room, placeholderColor, false);
+        }
         int from = from(), to = to();
         for (int row = 0; row < shown && scroll + row < lines.size(); row++) {
             int index = scroll + row;
@@ -722,7 +727,7 @@ public class RichTextBox extends ClickableWidget {
                 int j = i + 1;
                 while (j < line.end() && text.styleAt(j).equals(text.styleAt(i))) j++;
                 MutableText run = Text.literal(shownText.substring(i, j)).setStyle(style(i));
-                context.drawText(font, run, left + caretX[i], y, textColor, false);
+                UiText.line(context, font, run, left + caretX[i], y, textWidth - caretX[i], textColor, false);
                 i = j;
             }
         }

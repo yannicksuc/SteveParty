@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.screens.pageeditor;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
@@ -113,9 +114,11 @@ public abstract class PagePopup {
         boolean over = active && HitArea.contains(mouseX, mouseY, bx, by, w, h);
         ConsolePaint.box(context, bx, by, w, h, !active ? KEYCAP_OFF : green ? FRAME : KEYCAP, 1, 1);
         if (over) ConsolePaint.highlight(context, bx, by, w, h, 1, TEAL2, 0);
+        // Centred inside its frame; too long, it scrolls inside the frame
         int tw = font().getWidth(label) - 1;
-        if (green && active) context.drawText(font(), label, bx + (w - tw) / 2, by + (h - 8) / 2, WHITE, true);
-        else context.drawText(font(), label, bx + (w - tw) / 2, by + (h - 7) / 2 + (h - 7) % 2, active ? INK : INK3, false);
+        int lx = tw + 2 <= w ? bx + (w - tw) / 2 : bx + 1, lw = tw + 2 <= w ? tw + 1 : w - 2;
+        if (green && active) UiText.line(context, font(), label, lx, by + (h - 8) / 2, lw, WHITE, true);
+        else UiText.line(context, font(), label, lx, by + (h - 7) / 2 + (h - 7) % 2, lw, active ? INK : INK3, false);
         if (active) hits.add(new Hit(bx, by, w, h, action, tooltip));
         else if (tooltip != null) hits.add(new Hit(bx, by, w, h, () -> {
         }, tooltip));

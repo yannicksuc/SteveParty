@@ -4,8 +4,8 @@ import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.FormatChips;
 import fr.lordfinn.steveparty.client.gui.HitArea;
-import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
@@ -23,6 +23,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.OrderedText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
@@ -187,6 +188,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
             if (HitArea.contains(mouseX, mouseY, x + CX, y + ROW2_Y, CW - BUTTON_W - 4, 18)) {
                 MiniGamePageData data = page();
                 boolean restore = data != null && data.restores(), adventure = data != null && data.adventure();
+                UiText.cancelTooltip();
                 context.drawOrderedTooltip(textRenderer, textRenderer.wrapLines(Text.empty().append(zoneText()).append("\n")
                         .append(Text.translatable(KEY + "zone.tooltip").formatted(Formatting.GRAY)).append("\n")
                         .append(Text.translatable(KEY + (restore ? "restore.on" : "restore.off")).formatted(restore ? Formatting.GREEN : Formatting.GRAY)).append("\n")
@@ -252,8 +254,8 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         if (stack.isEmpty()) {
             context.drawItem(new ItemStack(ModItems.MINI_GAME_PAGE), px + 32, py + 15);
             PartyGui.veil(context, px + 32, py + 15, 0x80000000 | (SCREEN & 0xFFFFFF));
-            List<OrderedText> lines = textRenderer.wrapLines(Text.translatable(KEY + "card.empty"), TW + 1);
-            for (int i = 0; i < Math.min(5, lines.size()); i++) context.drawText(textRenderer, lines.get(i), tx, ty + i * 9, SCREEN_SOFT, true);
+            List<OrderedText> lines = monitorLines(Text.translatable(KEY + "card.empty"), 5);
+            for (int i = 0; i < lines.size(); i++) UiText.line(context, textRenderer, lines.get(i), tx, ty + i * 9, TW + 1, SCREEN_SOFT, true);
             return;
         }
         MiniGamePageData data = page();
@@ -262,11 +264,11 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         else context.drawItem(stack, px + 32, py + 15);
         // The page's title
         Text name = data != null && data.hasTitle() ? Text.literal(data.title()) : stack.getName();
-        context.drawText(textRenderer, fitOrdered(name, TW), tx, ty, SCREEN_TITLE, true);
+        UiText.line(context, textRenderer, name, tx, ty, TW + 1, SCREEN_TITLE, true);
         // What the mini-game is doing, or why it can't be played: never cut (over the mode's line when it needs it)
         State state = state();
         Text status = statusText(state);
-        List<OrderedText> lines = textRenderer.wrapLines(status, TW + 1);
+        List<OrderedText> lines = monitorLines(status, 4);
         boolean modeRow = data != null && lines.size() <= 2;
         if (modeRow) {
             // Its formats (pawn chips, the one played gold rimmed, a « ! » on those without their pipes), on one row
@@ -281,12 +283,28 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
                 chipsShown.add(new int[]{left, ty + 10, w, i});
                 left += w + 3;
             }
-            for (int i = 0; i < lines.size(); i++) context.drawText(textRenderer, lines.get(i), tx, ty + 27 + i * 10, statusColor(state), true);
+            for (int i = 0; i < lines.size(); i++) UiText.line(context, textRenderer, lines.get(i), tx, ty + 27 + i * 10, TW + 1, statusColor(state), true);
         } else {
             // A long reason: under the title, on up to four lines
             int step = lines.size() > 3 ? 9 : 10;
-            for (int i = 0; i < Math.min(4, lines.size()); i++) context.drawText(textRenderer, lines.get(i), tx, ty + 10 + i * step, statusColor(state), true);
+            for (int i = 0; i < lines.size(); i++) UiText.line(context, textRenderer, lines.get(i), tx, ty + 10 + i * step, TW + 1, statusColor(state), true);
         }
+    }
+
+    /**
+     * {@code text} on the monitor's lines ({@code TW} pixels, its last pixel column), at most {@code max}: what does not
+     * fit goes on the last one, which then scrolls.
+     */
+    private List<OrderedText> monitorLines(Text text, int max) {
+        List<OrderedText> lines = UiText.wrap(textRenderer, text, TW + 1);
+        if (lines.size() <= max) return lines;
+        List<OrderedText> shown = new ArrayList<>(lines.subList(0, max - 1)), rest = new ArrayList<>();
+        for (OrderedText line : lines.subList(max - 1, lines.size())) {
+            if (!rest.isEmpty()) rest.add(OrderedText.styledForwardsVisitedString(" ", Style.EMPTY));
+            rest.add(line);
+        }
+        shown.add(OrderedText.concat(rest));
+        return shown;
     }
 
     private int chipAt(int mouseX, int mouseY) {
@@ -304,37 +322,32 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         // The title, dark with a light shadow
-        dark(context, title, CX, CY, INK);
-        // Row 1: the page slot's label
-        boolean hasPage = handler.getSlot(SLOT_PAGE).hasStack();
-        dark(context, Text.translatable(KEY + "label.page"), LABEL_X, ROW1_Y + 5, hasPage ? INK : INK_GHOST);
-        // The page's « Mode aventure », read only (set in its editor)
+        dark(context, title, CX, CY, CW + 1, INK);
+        // Row 1: the page's « Mode aventure », read only (set in its editor), right-aligned on at most half the row
         MiniGamePageData data = page();
+        int labelEnd = CX + CW + 1;
         if (data != null && data.adventure()) {
             Text adventure = Text.translatable(KEY + "adventure");
-            dark(context, adventure, CX + CW - textRenderer.getWidth(adventure) + 1, ROW1_Y + 5, INK);
+            int w = Math.min(textRenderer.getWidth(adventure), (CX + CW + 1 - LABEL_X) / 2);
+            dark(context, adventure, CX + CW + 1 - w, ROW1_Y + 5, w, INK);
+            labelEnd = CX + CW + 1 - w - 4;
         }
-        // Row 2: the zone, cut before the button
+        // The page slot's label, before it
+        boolean hasPage = handler.getSlot(SLOT_PAGE).hasStack();
+        dark(context, Text.translatable(KEY + "label.page"), LABEL_X, ROW1_Y + 5, labelEnd - LABEL_X, hasPage ? INK : INK_GHOST);
+        // Row 2: the zone, before the button
         int room = CX + CW - BUTTON_W - 4 - LABEL_X;
-        dark(context, fitOrdered(zoneText(), room), LABEL_X, ROW2_Y + 5, handler.zoneSize()[0] <= 0 ? INK_GHOST : INK);
+        dark(context, zoneText(), LABEL_X, ROW2_Y + 5, room + 1, handler.zoneSize()[0] <= 0 ? INK_GHOST : INK);
         if (state() == State.PARTY_PLAYING) {
             // No button while a party plays it: what it is doing, where the button would be
-            OrderedText playing = fitOrdered(Text.translatable(KEY + "party.playing"), BUTTON_W);
-            dark(context, playing, CX + CW - textRenderer.getWidth(playing) + 1, ROW2_Y + 5, INK_GHOST);
+            Text playing = Text.translatable(KEY + "party.playing");
+            int w = Math.min(textRenderer.getWidth(playing), BUTTON_W + 1);
+            dark(context, playing, CX + CW + 1 - w, ROW2_Y + 5, w, INK_GHOST);
         }
     }
 
-    private void dark(DrawContext context, Text text, int tx, int ty, int colour) {
-        dark(context, text.asOrderedText(), tx, ty, colour);
-    }
-
-    /** Dark text with a light shadow (the mock-ups' {@code dark}). */
-    private void dark(DrawContext context, OrderedText text, int tx, int ty, int colour) {
-        ConsolePaint.darkText(context, textRenderer, text, tx, ty, colour, 0xFFFFFFFF);
-    }
-
-    /** {@code text} on one line {@code width} pixels wide (its last pixel column), cut with « … » when longer. */
-    private OrderedText fitOrdered(Text text, int width) {
-        return MiniGamePageTooltipComponent.wrap(textRenderer, text, width + 1, 1).stream().findFirst().orElse(OrderedText.EMPTY);
+    /** Dark text with a light shadow (the mock-ups' {@code dark}), in a box {@code width} wide. */
+    private void dark(DrawContext context, Text text, int tx, int ty, int width, int colour) {
+        ConsolePaint.darkText(context, textRenderer, text.asOrderedText(), tx, ty, width, colour, 0xFFFFFFFF);
     }
 }

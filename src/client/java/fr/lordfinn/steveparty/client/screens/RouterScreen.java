@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.screen_handlers.custom.RouterScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerInventory;
@@ -25,7 +26,7 @@ public class RouterScreen extends CartridgeContainerScreen<RouterScreenHandler> 
     @Override
     protected void init() {
         super.init();
-        help = textRenderer.wrapLines(COMPARATOR_HELP, backgroundWidth - 2 * HELP_PADDING);
+        help = UiText.wrap(textRenderer, COMPARATOR_HELP, backgroundWidth - 2 * HELP_PADDING);
     }
 
     @Override
@@ -44,8 +45,8 @@ public class RouterScreen extends CartridgeContainerScreen<RouterScreenHandler> 
         int y = top - h - 2 >= 0 ? top - h - 2 : top + backgroundHeight + 2;
         PartyGui.panel(context, x, y, backgroundWidth, h, PartyGui.PANEL);
         for (int i = 0; i < help.size(); i++) {
-            context.drawText(textRenderer, help.get(i), x + HELP_PADDING, y + HELP_PADDING + i * (textRenderer.fontHeight + 1),
-                    PartyGui.TEXT_DARK, false);
+            UiText.line(context, textRenderer, help.get(i), x + HELP_PADDING, y + HELP_PADDING + i * (textRenderer.fontHeight + 1),
+                    backgroundWidth - 2 * HELP_PADDING, PartyGui.TEXT_DARK, false);
         }
     }
 

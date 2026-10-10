@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.tokenspell.MobTextureColors;
 import fr.lordfinn.steveparty.client.tokenspell.SpellShape;
 import fr.lordfinn.steveparty.client.tokenspell.TokenSpellHand;
@@ -1009,6 +1010,8 @@ public class TokenSpellScreen extends Screen {
         int[] colors = SpellPalette.GRADIENT;
         for (int i = 0; i < spell.length(); i++) {
             String letter = String.valueOf(spell.charAt(i));
+            // Each letter in its own box, as wide as it
+            int letterWidth = textRenderer.getWidth(letter);
             // Pure spell colours, one per letter, shifting along slowly (blends between them look muddy on letters)
             int rgb = colors[Math.floorMod(i + (int) (time / 10), colors.length)];
             float shimmer = (float) Math.pow(Math.max(0, MathHelper.sin(time * 0.12F - i * 0.45F)), 12);
@@ -1021,13 +1024,13 @@ public class TokenSpellScreen extends Screen {
                 matrices.push();
                 matrices.translate(offset[0], offset[1], 0);
                 matrices.scale(scale, scale, 1);
-                context.drawText(textRenderer, letter, 0, 0, Argb.opaque(SpellPalette.SHADOW), false);
+                UiText.line(context, textRenderer, letter, 0, 0, letterWidth, Argb.opaque(SpellPalette.SHADOW), false);
                 matrices.pop();
             }
             matrices.scale(scale, scale, 1);
-            context.drawText(textRenderer, letter, 0, 0, Argb.opaque(rgb), false);
+            UiText.line(context, textRenderer, letter, 0, 0, letterWidth, Argb.opaque(rgb), false);
             matrices.pop();
-            x += textRenderer.getWidth(letter) * scale;
+            x += letterWidth * scale;
         }
 
         if (ticks < failedUntil) {
@@ -1035,12 +1038,13 @@ public class TokenSpellScreen extends Screen {
             float fade = MathHelper.clamp((failedUntil - ticks) / 10F, 0, 1);
             if (fade > 0.05F) {
                 Text message = Text.translatableWithFallback("screen.steveparty.token_spell.not_a_circle", "That's not a circle: try again");
-                int messageWidth = textRenderer.getWidth(message);
+                // As wide as it, at most the screen's width less its plate and 4 px each side (longer, it scrolls)
+                int messageWidth = Math.min(textRenderer.getWidth(message), width - 16);
                 int messageY = y0 + textRenderer.fontHeight * scale + 9;
                 int left = (width - messageWidth) / 2;
                 context.fill(left - 4, messageY - 3, left + messageWidth + 4, messageY + textRenderer.fontHeight + 2,
                         ((int) (0x90 * fade) << 24) | SpellPalette.SHADOW);
-                context.drawText(textRenderer, message, left, messageY, ((int) (255 * fade) << 24) | SpellPalette.LILAC, false);
+                UiText.line(context, textRenderer, message, left, messageY, messageWidth, ((int) (255 * fade) << 24) | SpellPalette.LILAC, false);
             }
         }
     }

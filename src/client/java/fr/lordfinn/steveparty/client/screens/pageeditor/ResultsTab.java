@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
@@ -13,7 +14,6 @@ import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
@@ -122,12 +122,12 @@ public final class ResultsTab {
         int x = editor.left(), y = editor.top(), lx = x + LX;
         // The first line: what is linked (without any podium the mini-game names no winner)
         if (!data.hasPodium()) {
-            context.drawText(font(), PagePaint.fit(font(), Text.translatable(KEY + "podiums.none"), FULL - 16), lx, y + M + 2, ORANGE2, false);
+            UiText.line(context, font(), Text.translatable(KEY + "podiums.none"), lx, y + M + 2, FULL - 16, ORANGE2, false);
         } else {
             long podiums = links.stream().filter(link -> link.kind() == MiniGamePodiumLink.Kind.PODIUM).count();
             long counters = links.stream().filter(link -> link.kind() == MiniGamePodiumLink.Kind.COUNTER).count();
-            context.drawText(font(), PagePaint.fit(font(), Text.translatable(KEY + "podiums.complete", podiums, counters, links.size() - podiums - counters), FULL - 16),
-                    lx, y + M + 2, INK2, false);
+            UiText.line(context, font(), Text.translatable(KEY + "podiums.complete", podiums, counters, links.size() - podiums - counters),
+                    lx, y + M + 2, FULL - 16, INK2, false);
         }
         scroll = Math.max(0, Math.min(scroll, links.size() - RESULT_ROWS));
         MiniGamePodiumLink hovered = podiumAt(mouseX, mouseY);
@@ -141,19 +141,21 @@ public final class ResultsTab {
             int colour = place == 1 ? 0xFFFFD83D : place == 2 ? 0xFFC9D3DA : place == 3 ? 0xFFD98A4A
                     : link.kind() == MiniGamePodiumLink.Kind.COUNTER ? 0xFF3A9BFF : link.kind() == MiniGamePodiumLink.Kind.STEP_CONTROLLER ? 0xFFA35CFF : 0xFFFFD83D;
             context.fill(lx + 2, top + 2, lx + 6, top + 14, colour);
-            // Its block's name (bold), what it does, where it is (greyed, at the right)
+            // Its block's name (bold), what it does, where it is (greyed, at the right). Too long together, the name keeps
+            // at most two thirds of their room and each scrolls in its part
             String where = position(link);
             int whereWidth = font().getWidth(where) - 1;
-            int room = FULL - 6 - whereWidth - 6 - 10;
-            OrderedText name = PagePaint.fit(font(), name(link), room);
-            int nameWidth = font().getWidth(name);
-            context.drawText(font(), name, lx + 10, top + 5, INK, false);
-            context.drawText(font(), name, lx + 11, top + 5, INK, false);
-            if (room - nameWidth - 6 > 12) context.drawText(font(), PagePaint.fit(font(), role, room - nameWidth - 6), lx + 10 + nameWidth + 6, top + 5, INK2, false);
-            context.drawText(font(), where, lx + FULL - 6 - whereWidth, top + 5, INK3, false);
+            int room = FULL - 6 - whereWidth - 6 - 10 + 1;
+            Text name = name(link);
+            int nameWidth = font().getWidth(name), roleWidth = font().getWidth(role);
+            if (nameWidth + 6 + roleWidth > room) nameWidth = Math.min(nameWidth, Math.max(room * 2 / 3, room - 6 - roleWidth));
+            UiText.line(context, font(), name, lx + 10, top + 5, nameWidth, INK, false);
+            UiText.line(context, font(), name, lx + 11, top + 5, nameWidth, INK, false);
+            if (room - nameWidth - 6 > 0) UiText.line(context, font(), role, lx + 10 + nameWidth + 6, top + 5, room - nameWidth - 6, INK2, false);
+            UiText.line(context, font(), where, lx + FULL - 6 - whereWidth, top + 5, whereWidth + 1, INK3, false);
         }
-        if (scroll > 0) context.drawText(font(), "▲", x + PW - M - 8, y + RESULTS_TOP - 9, INK3, false);
-        if (scroll + RESULT_ROWS < links.size()) context.drawText(font(), "▼", x + PW - M - 8, y + RESULTS_TOP + RESULT_ROWS * RESULT_PITCH, INK3, false);
+        if (scroll > 0) UiText.line(context, font(), "▲", x + PW - M - 8, y + RESULTS_TOP - 9, 8, INK3, false);
+        if (scroll + RESULT_ROWS < links.size()) UiText.line(context, font(), "▼", x + PW - M - 8, y + RESULTS_TOP + RESULT_ROWS * RESULT_PITCH, 8, INK3, false);
     }
 
     /** Over everything: the tooltip of the first line (no podium), or of a card. */

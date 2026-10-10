@@ -122,10 +122,15 @@ public final class ConsolePaint {
         PixelArt.inset(context, x, y, w, h, body, edge, low);
     }
 
-    /** Dark text with a light shadow one pixel down right (the mock-ups' {@code dark}). */
+    /** Dark text with a light shadow one pixel down right (the mock-ups' {@code dark}), a line its callers already cut. */
     public static void darkText(DrawContext context, TextRenderer textRenderer, OrderedText text, int x, int y, int colour, int shade) {
-        context.drawText(textRenderer, text, x + 1, y + 1, shade, false);
-        context.drawText(textRenderer, text, x, y, colour, false);
+        darkText(context, textRenderer, text, x, y, textRenderer.getWidth(text), colour, shade);
+    }
+
+    /** Same, in a box {@code width} wide: too long, it scrolls inside it (its shadow with it). */
+    public static void darkText(DrawContext context, TextRenderer textRenderer, OrderedText text, int x, int y, int width, int colour, int shade) {
+        UiText.line(context, textRenderer, text, x + 1, y + 1, width, shade, false);
+        UiText.line(context, textRenderer, text, x, y, width, colour, false);
     }
 
     // ------------------------------------------------------------------ painting

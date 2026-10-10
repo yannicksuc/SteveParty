@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens.pageeditor;
 
 import fr.lordfinn.steveparty.client.gui.FormatChips;
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
@@ -68,7 +69,8 @@ public final class FormatsTab {
 
     public void draw(DrawContext context, MiniGamePageData data, int mouseX, int mouseY) {
         int lx = editor.left() + LX;
-        context.drawText(font(), Text.translatable(KEY + "formats.label"), lx, editor.top() + M + 2, INK2, false);
+        // Its label, up to the « i » at the top right
+        UiText.line(context, font(), Text.translatable(KEY + "formats.label"), lx, editor.top() + M + 2, FULL - 16, INK2, false);
         List<int[]> chips = chips(data);
         int hovered = editor.popup() == null ? chipAt(mouseX, mouseY) : -1;
         for (int i = 0; i < data.formats().size(); i++) {
@@ -78,7 +80,7 @@ public final class FormatsTab {
         int[] plus = chips.getLast();
         boolean full = data.formats().size() >= MiniGamePageData.MAX_FORMATS || !editor.canEdit();
         PagePaint.plusChip(context, plus[0], plus[1], full, hovered == chips.size() - 1);
-        // Under the chips: whether every format has its pipes, else the first missing
+        // Under the chips (nothing below them in the tab, so it wraps): whether every format has its pipes, else the first missing
         int bottom = chips.getLast()[1] + FORMAT_CHIP_H + 6;
         Text line = null;
         for (MiniGameFormat format : data.formats()) {
@@ -88,10 +90,10 @@ public final class FormatsTab {
             break;
         }
         if (line == null) {
-            context.drawText(font(), PagePaint.fit(font(), Text.translatable(KEY + "formats.complete"), FULL), lx, bottom, GREEN2, false);
+            UiText.wrapped(context, font(), Text.translatable(KEY + "formats.complete"), lx, bottom, FULL, GREEN2, false);
         } else {
             PagePaint.missingBadge(context, lx, bottom - 1);
-            context.drawText(font(), PagePaint.fit(font(), line, FULL - 13), lx + 13, bottom, RED, false);
+            UiText.wrapped(context, font(), line, lx + 13, bottom, FULL - 13, RED, false);
         }
     }
 

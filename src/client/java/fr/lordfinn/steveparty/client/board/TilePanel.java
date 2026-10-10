@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.board;
 import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
@@ -240,7 +241,8 @@ public final class TilePanel {
         context.getMatrices().push();
         context.getMatrices().translate(centreX - layout.titleWidth / 2f, top + PAD, 0);
         context.getMatrices().scale(TITLE_SCALE, TITLE_SCALE, 1);
-        HudDepth.onTop(context, () -> context.drawText(font, layout.title, 0, 0, layout.titleColor, false));
+        // The panel is as wide as its title (scaled): its slot is the title's width
+        HudDepth.onTop(context, () -> UiText.line(context, font, layout.title, 0, 0, font.getWidth(layout.title), layout.titleColor, false));
         context.getMatrices().pop();
         int y = top + PAD + TITLE_HEIGHT + PAD / 2;
         for (int part = 0; part < 2; part++) {
@@ -268,7 +270,7 @@ public final class TilePanel {
                 }
                 OrderedText line = layout.lines[i];
                 int lx = textX, ly = y;
-                HudDepth.onTop(context, () -> context.drawText(font, line, lx, ly, ToolHud.TEXT, false));
+                HudDepth.onTop(context, () -> UiText.line(context, font, line, lx, ly, left + width - PAD - lx, ToolHud.TEXT, false));
                 y += ROW;
             }
             y += RULE_GAP - 1;

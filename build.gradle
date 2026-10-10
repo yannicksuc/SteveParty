@@ -234,7 +234,7 @@ tasks.register('checkUiText') {
     inputs.files(sources, allowlist)
     doLast {
         def allowed = allowlist.exists() ? allowlist.readLines()*.trim().findAll { it && !it.startsWith('#') } as Set : [] as Set
-        def pattern = ~/\.(drawText|drawTextWithShadow|drawCenteredTextWithShadow|drawCenteredText)\s*\(/
+        def pattern = ~/\.(drawText|drawTextWithShadow|drawCenteredTextWithShadow|drawCenteredText|drawTextWrapped)\s*\(/
         def offenders = []
         sources.each { File source ->
             def path = file('src/client/java').toPath().relativize(source.toPath()).toString().replace('\\', '/')

@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity.Comparator;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.GoalPolePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleScreenHandler;
@@ -72,8 +73,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
 
     @Override
     protected void init() {
-        int hintLines = textRenderer.wrapLines(Text.translatable(KEY + "hint"), WIDTH - 24).size();
-        cmpY = HINT_Y + hintLines * 10 + 4;
+        cmpY = HINT_Y + UiText.height(textRenderer, Text.translatable(KEY + "hint"), WIDTH - 24) + 4;
         valueY = cmpY + CMP_HEIGHT + 12;
         summaryY = valueY + FIELD_HEIGHT + 7;
         modeY = summaryY + 16;
@@ -215,14 +215,14 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        context.drawTextWrapped(textRenderer, Text.translatable(KEY + "hint"), 12, HINT_Y, WIDTH - 24, PartyGui.TEXT_DARK);
+        UiText.wrapped(context, textRenderer, Text.translatable(KEY + "hint"), 12, HINT_Y, WIDTH - 24, PartyGui.TEXT_DARK, false);
         // What the pole does with the current settings, in words
         Integer value = parsedValue();
         Text summary = value == null
                 ? Text.translatable(KEY + "invalid_value")
                 : Text.translatable(KEY + "summary", Text.translatable(KEY + "comparator." + key(comparator), value));
-        int summaryWidth = textRenderer.getWidth(summary);
-        context.drawText(textRenderer, summary, (WIDTH - summaryWidth) / 2, summaryY,
+        // It changes as the value is typed: one line between the panel's paddings
+        UiText.centered(context, textRenderer, summary, 12, summaryY, WIDTH - 24,
                 value == null ? PartyGui.TEXT_ERROR : PartyGui.TEXT_SOFT, false);
     }
 
@@ -284,7 +284,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         matrices.push();
         matrices.translate(centerX - glyphWidth, centerY - 7 - (orEqual ? 2 : 0), 0);
         matrices.scale(2f, 2f, 1f);
-        context.drawText(textRenderer, glyph, 0, 0, color, false);
+        UiText.line(context, textRenderer, glyph, 0, 0, textRenderer.getWidth(glyph), color, false);
         matrices.pop();
         if (orEqual) {
             context.fill(centerX - glyphWidth, centerY + 6, centerX + glyphWidth, centerY + 8, color);

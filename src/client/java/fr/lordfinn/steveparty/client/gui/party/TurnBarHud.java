@@ -235,17 +235,17 @@ final class TurnBarHud {
             case ROUND_DISC -> roundDisc(context, el.number, el.w, el.h, x, y, alpha);
             case MORE -> {
                 HudPaint.draw(context, HudPaint.shape(Form.PILL, el.w, el.h, HudPaint.NEUTRAL, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), x, y, alpha);
-                darkText(context, el.label, x + PAD + (el.w - el.labelWidth - 1) / 2, y + PAD + 3, HudPaint.NEUTRAL.outline(), 0xFFFFFFFF, alpha);
+                darkText(context, el.label, x + PAD + (el.w - el.labelWidth - 1) / 2, y + PAD + 3, el.labelWidth + 1, HudPaint.NEUTRAL.outline(), 0xFFFFFFFF, alpha);
             }
             case PINNED -> {
                 HudPaint.draw(context, HudPaint.shape(Form.PILL, el.w, el.h, HudPaint.MINI_GAME, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), x, y, alpha);
                 HudPaint.draw(context, HudPaint.shape(Form.PILL, 10, 10, HudPaint.white(HudPaint.MINI_GAME.shadow()), 0), x + 2, y + 2, alpha);
                 HudPaint.draw(context, HudPaint.gamepad(), x + 2 + PAD, y + 3 + PAD, alpha);
-                HudDraw.shadowed(context, el.label, x + PAD + 15, y + PAD + 3, HudPaint.TEXT, alpha);
+                HudDraw.shadowed(context, el.label, x + PAD + 15, y + PAD + 3, el.labelWidth + 1, HudPaint.TEXT, alpha);
             }
             case BUBBLE -> {
                 HudPaint.draw(context, HudPaint.bubble(el.w, false), x, y, alpha);
-                darkText(context, el.label, x + PAD + 4, y + TurnStripLayout.POINTER + PAD + 2, HudPaint.GOLD.outline(), HudPaint.GOLD.hi(), alpha);
+                darkText(context, el.label, x + PAD + 4, y + TurnStripLayout.POINTER + PAD + 2, el.labelWidth + 1, HudPaint.GOLD.outline(), HudPaint.GOLD.hi(), alpha);
             }
             case MARKER -> {
                 int bob = Math.round((float) Math.sin(now * Math.PI / 12) * 1.2f);
@@ -265,7 +265,7 @@ final class TurnBarHud {
         int fx = x + PAD + d + 3, fy = y + PAD + (el.h - size) / 2;
         HudPaint.draw(context, HudPaint.headFrame(size, ramp.outline()), fx - PAD, fy - PAD, alpha);
         head(context, player, fx + (size - 8) / 2, fy + (size - 8) / 2, alpha);
-        if (!el.label.isEmpty()) HudDraw.shadowed(context, el.label, fx + size + 4, y + PAD + (el.h - 8) / 2, HudPaint.TEXT, alpha);
+        if (!el.label.isEmpty()) HudDraw.shadowed(context, el.label, fx + size + 4, y + PAD + (el.h - 8) / 2, el.labelWidth + 1, HudPaint.TEXT, alpha);
     }
 
     /** A player's face, 8 x 8 (its skin's face and hat); the initial of its name without player. */
@@ -283,7 +283,7 @@ final class TurnBarHud {
         HudDraw.fill(context, x, y, x + 8, y + 8, 0xFF3F3F3F, alpha);
         String name = player == null || player.name.isEmpty() ? "?" : player.name;
         String initial = name.substring(0, name.offsetByCodePoints(0, 1)).toUpperCase(Locale.ROOT);
-        HudDraw.text(context, initial, x + (8 - HudDraw.font().getWidth(initial)) / 2 + 1, y, 0xFFFFFFFF, alpha);
+        HudDraw.centered(context, initial, x + 1, y, 8, 0xFFFFFFFF, alpha);
     }
 
     private static Ramp kindRamp(Kind kind) {
@@ -319,8 +319,8 @@ final class TurnBarHud {
         HudPaint.draw(context, HudPaint.halo(Form.PILL, el.w, el.h), x, y, alpha);
         stepDisc(context, el.step.kind(), TurnStripLayout.BIG_MEDAL, x + 2, y + 3, alpha);
         int tx = x + PAD + 3 + TurnStripLayout.BIG_MEDAL + 4, ty = y + PAD + 8;
-        if (ramp == HudPaint.NEUTRAL) darkText(context, el.label, tx, ty, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
-        else HudDraw.shadowed(context, el.label, tx, ty, HudPaint.TEXT, alpha);
+        if (ramp == HudPaint.NEUTRAL) darkText(context, el.label, tx, ty, el.labelWidth + 1, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
+        else HudDraw.shadowed(context, el.label, tx, ty, el.labelWidth + 1, HudPaint.TEXT, alpha);
     }
 
     /** A round whose turn order is not known: a neutral chevron, its number, blank pawns. */
@@ -345,9 +345,14 @@ final class TurnBarHud {
         HudPaint.small(context, s, x0, y0, HudPaint.NEUTRAL.outline(), alpha);
     }
 
-    /** Dark text with a light shadow (the mock-ups' {@code dark_shadowed}). */
+    /** Dark text with a light shadow (the mock-ups' {@code dark_shadowed}), taking its own width. */
     static void darkText(DrawContext context, String text, int x, int y, int color, int shade, float alpha) {
-        HudDraw.text(context, text, x + 1, y + 1, shade, alpha);
-        HudDraw.text(context, text, x, y, color, alpha);
+        darkText(context, text, x, y, HudDraw.font().getWidth(text), color, shade, alpha);
+    }
+
+    /** Dark text with a light shadow (the mock-ups' {@code dark_shadowed}), in the box ({@code x}, {@code y}, {@code width}). */
+    static void darkText(DrawContext context, String text, int x, int y, int width, int color, int shade, float alpha) {
+        HudDraw.text(context, text, x + 1, y + 1, width, shade, alpha);
+        HudDraw.text(context, text, x, y, width, color, alpha);
     }
 }

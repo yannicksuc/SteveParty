@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.screens;
 import fr.lordfinn.steveparty.client.config.ClientOptions;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.OrderedText;
@@ -68,9 +69,9 @@ public class DestinationSwapPromptScreen extends Screen {
         int left = (width - PANEL_W) / 2;
         PartyGui.panel(context, left, panelTop, PANEL_W, panelHeight, PartyGui.PANEL);
         PartyGui.titlePlate(context, textRenderer, width / 2, panelTop - 11, 0, title, PartyGui.BUTTON_SELECTED);
-        int y = panelTop + 18;
+        int y = panelTop + 18, inner = PANEL_W - 2 * PAD;
         for (OrderedText line : body) {
-            context.drawText(textRenderer, line, width / 2 - textRenderer.getWidth(line) / 2, y, PartyGui.TEXT_DARK, false);
+            UiText.centered(context, textRenderer, line, width / 2 - inner / 2, y, inner, PartyGui.TEXT_DARK, false);
             y += textRenderer.fontHeight;
         }
         for (var child : children()) {

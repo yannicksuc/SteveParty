@@ -108,13 +108,15 @@ public class ConsoleButton extends PressableWidget {
         Text label = getMessage();
         int iconWidth = icon == null ? 0 : icon.width() + 5;
         int tx = getX() + (width - iconWidth - font.getWidth(label) + 1) / 2;
+        // Too long for the button: from its left, inside its outline, the label scrolling
+        tx = Math.max(tx, getX() + 1);
         // Light labels with their dark shadow on the green and red buttons, dark ones with a light shadow on the others
         boolean light = shown == Kind.GREEN || shown == Kind.RED || shown == Kind.SCREEN || shown == Kind.PAPER_GREEN || shown == Kind.PAPER_TEAL;
         boolean ink = shown == Kind.PAPER || shown == Kind.PAPER_OFF;
         int ty = getY() + (ink ? (height - 7) / 2 + (height - 7) % 2 : (height - 8) / 2) + (held ? 1 : 0);
         if (ink) {
             // Ink on paper: no shadow
-            context.drawText(font, label, tx, ty, shown == Kind.PAPER_OFF ? 0xFF8AA3A6 : 0xFF1E3A40, false);
+            UiText.line(context, font, label, tx, ty, getX() + width - 1 - tx, shown == Kind.PAPER_OFF ? 0xFF8AA3A6 : 0xFF1E3A40, false);
             return;
         }
         int colour = shown == Kind.SCREEN ? (active ? 0xFFE0EEF3 : 0xFF5E5C88) : light ? 0xFFFFFFFF : shown == Kind.OFF ? 0xFF5E5E5E : ramp.outline();
@@ -133,11 +135,12 @@ public class ConsoleButton extends PressableWidget {
             }
             tx += iconWidth;
         }
+        int room = getX() + width - 1 - tx;
         if (light) {
-            context.drawText(font, label, tx, ty, colour, true);
+            UiText.line(context, font, label, tx, ty, room, colour, true);
         } else {
-            context.drawText(font, label, tx + 1, ty + 1, shade, false);
-            context.drawText(font, label, tx, ty, colour, false);
+            UiText.line(context, font, label, tx + 1, ty + 1, room, shade, false);
+            UiText.line(context, font, label, tx, ty, room, colour, false);
         }
     }
 
