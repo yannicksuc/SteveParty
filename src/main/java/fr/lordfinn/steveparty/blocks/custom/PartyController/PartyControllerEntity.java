@@ -432,7 +432,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
 
     /** Who may switch the « Infinite bank »: a player in creative mode or an operator (permission level 2). */
     public static boolean canSwitchInfiniteBank(PlayerEntity player) {
-        return player.isCreative() || player.hasPermissionLevel(2);
+        return player.getAbilities().creativeMode || player.hasPermissionLevel(2);
     }
 
     public void setRestrictDice(boolean restrictDice) {

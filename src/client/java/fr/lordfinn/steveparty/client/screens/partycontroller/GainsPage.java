@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.entity.player.PlayerEntity;
@@ -75,8 +76,7 @@ public final class GainsPage {
         Text state = Text.translatable(KEY + "gains.bank.infinite." + (infinite ? "on" : "off"));
         Text hint = !data.canEdit() ? Text.translatable(KEY + "locked")
                 : !allowed ? Text.translatable(KEY + "gains.bank.infinite.not_allowed") : Text.translatable(KEY + "gains.bank.infinite.switch");
-        unlimited.setTooltip(Tooltip.of(Text.empty().append(state).append("
-").append(hint)));
+        unlimited.setTooltip(Tooltip.of(Text.empty().append(state).append(ScreenTexts.LINE_BREAK).append(hint)));
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
             for (PartyCurrency currency : CURRENCIES) {
                 int left = dashboard.left() + (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X), top = dashboard.top() + GAINS_Y + row * GAINS_ROW;
