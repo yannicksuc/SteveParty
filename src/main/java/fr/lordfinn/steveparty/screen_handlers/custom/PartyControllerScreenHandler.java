@@ -1,12 +1,14 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
 import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.items.custom.PartyCardItem;
+import fr.lordfinn.steveparty.mixin.SlotPositionAccessor;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.PartyDashboardPayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
@@ -20,8 +22,6 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
-import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -38,22 +38,31 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * The Party Controller's dashboard: five pages (state, players, program, gains, settings) fed by a
+ * The Party Controller's dashboard: six pages (state, players, program, gains, storage, settings) fed by a
  * {@link PartyDashboardData} the server sends while the screen is open, three slots (the mini-game catalogue, the
- * star item and the coin item) and the player's inventory. Everything is checked server side: the setting slots and
- * the buttons and the program cards only act for a player who {@linkplain PartyControllerEntity#canEdit may edit} the controller (except
+ * star item and the coin item), the controller's own storage ({@link PartyControllerEntity#BANK_SIZE} slots, shown
+ * {@link #STORAGE_ROWS} rows at a time: the screen scrolls them, see {@link #setStorageScroll}) and the player's
+ * inventory. Everything is checked server side: the setting slots and the buttons and the program cards only act for a player who {@linkplain PartyControllerEntity#canEdit may edit} the controller (except
  * following the party, open to anyone), the catalogue slot follows the block's rule (locked while powered).
  * <p>
  * The currency slots (the Star and Coin items, shown on the Gains page) are « ghost » slots: clicking one with an item picks that item (nothing is taken), clicking it
  * with an empty hand puts the default item back. The « Allowed dice » slots (Settings page) are ghost slots too: clicking one
  * with a die lists a copy of it (nothing is taken), with an empty hand takes it off the list, while « Restrict dice » is on. Each listed die shows twice:
  * in the row of the page (its first {@link #DICE_ROW}) and in the panel it opens (all of them).
+ * <p>
+ * The storage's slots are real ones (moved with the mouse, shift-clicked from the inventory on the Storage page) for a
+ * player who may edit the controller, like the chest it replaced; hoppers use the same inventory (see {@link PartyBank}).
  */
 public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
             BUTTON_PRACTICE = 5, BUTTON_MAX_POWER_UPS_DOWN = 6, BUTTON_MAX_POWER_UPS_UP = 7, BUTTON_RESTRICT_DICE = 8,
-            BUTTON_STOP = 9, BUTTON_BANK = 10, BUTTON_INFINITE_BANK = 11;
+            BUTTON_STOP = 9, BUTTON_INFINITE_BANK = 11;
+    /**
+     * The page the player opened: {@code BUTTON_PAGE + ordinal}. The server only needs it for the shift-clicks (to the
+     * storage on its page) and the double-clicks (the storage's items only gathered on its page).
+     */
+    public static final int BUTTON_PAGE = 50;
     /**
      * The steppers of the Gains page: {@code BUTTON_GAINS + row * 4 + column}, the columns being coins less, coins
      * more, stars less, stars more (see {@link #gainButton}).
@@ -65,12 +74,13 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int BOARD_INTERVAL = 40;
 
     /** Pages of the dashboard: each shows its own slots (client side; the server always has them all). */
-    public enum Page { STATE, PLAYERS, PROGRAM, GAINS, SETTINGS }
+    public enum Page { STATE, PLAYERS, PROGRAM, GAINS, STORAGE, SETTINGS }
 
     // Layout (shared with the screen), the approved mock-up's (the art sources): the
     // tabs (17 px above the panel), the panel (125), 2 px, the player's inventory in its own panel (92): 236 px high,
-    // it fits a 427 x 240 screen. The content of a panel is 10 px inside it (its bezel 4, a margin 6).
-    public static final int WIDTH = 248, PANEL_HEIGHT = 125;
+    // it fits a 427 x 240 screen. The content of a panel is 10 px inside it (its bezel 4, a margin 6). 280 px wide:
+    // the mock-up's 248 and room for a sixth tab (Storage).
+    public static final int WIDTH = 280, PANEL_HEIGHT = 125;
     /** The player's inventory (every tab): its own panel under the page, its grid centred, 8 px under its top. */
     public static final int INVENTORY_Y = PANEL_HEIGHT + 2, INVENTORY_PANEL_HEIGHT = 92, INVENTORY_PAD = 8;
     public static final int INVENTORY_GRID_X = (WIDTH - 162) / 2;
@@ -96,6 +106,13 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int DICE_FIRST_SLOT = PROGRAM_FIRST_SLOT + PartyControllerEntity.PROGRAM_SLOTS, DICE_PANEL_FIRST_SLOT = DICE_FIRST_SLOT + DICE_ROW;
     public static final int DICE_ROW_Y = CONTENT_Y + 18 + 3 * 22 + 1, DICE_ROW_X = CONTENT_X + CONTENT_WIDTH - 16 - 2 - DICE_ROW * 18 + 1;
     public static final int DICE_PANEL_X = CONTENT_X + (CONTENT_WIDTH - DICE_COLUMNS * 18) / 2 + 1, DICE_PANEL_Y = CONTENT_Y + 21;
+    /**
+     * Storage page: the controller's own storage after the dice slots, 9 per row, {@link #STORAGE_ROWS} rows shown at a
+     * time at the panel's left, as high as it is (the first row shown at the top, the others disabled and moved out).
+     */
+    public static final int STORAGE_FIRST_SLOT = DICE_PANEL_FIRST_SLOT + PartyControllerEntity.MAX_ALLOWED_DICE;
+    public static final int STORAGE_COLUMNS = 9, STORAGE_ROWS = 6, STORAGE_X = CONTENT_X + 1, STORAGE_Y = 9;
+    public static final int STORAGE_MAX_SCROLL = PartyControllerEntity.BANK_SIZE / STORAGE_COLUMNS - STORAGE_ROWS;
 
     private final @Nullable PartyControllerEntity controller;
     private final BlockPos pos;
@@ -104,6 +121,10 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     private Page page = Page.STATE;
     /** Client: the « Allowed dice » panel is open (its slots shown instead of the row's). */
     private boolean diceOpen;
+    /** Client: the first storage row shown (0 to {@link #STORAGE_MAX_SCROLL}). */
+    private int storageScroll;
+    /** Client: the list of the linked containers is open over the storage (its slots hidden). */
+    private boolean linkedOpen;
     /** Client: the last data received; server: the last data sent. Null until the first one. */
     private @Nullable PartyDashboardData data;
     // server
@@ -117,18 +138,19 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     /** Server side. */
     public PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, PartyControllerEntity controller) {
         this(syncId, playerInventory, controller.getPos(), controller, catalogueInventory(controller), currencyInventory(controller),
-                controller.getProgram(), diceInventory(controller));
+                controller.getProgram(), diceInventory(controller), controller.getBankItems());
     }
 
     /** Client side. */
     public PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload payload) {
         this(syncId, playerInventory, payload.pos(), null, new SimpleInventory(1), new SimpleInventory(2),
-                new SimpleInventory(PartyControllerEntity.PROGRAM_SLOTS), new SimpleInventory(PartyControllerEntity.MAX_ALLOWED_DICE));
+                new SimpleInventory(PartyControllerEntity.PROGRAM_SLOTS), new SimpleInventory(PartyControllerEntity.MAX_ALLOWED_DICE),
+                new SimpleInventory(PartyControllerEntity.BANK_SIZE));
     }
 
     private PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, BlockPos pos,
                                          @Nullable PartyControllerEntity controller, Inventory catalogue, Inventory currencies,
-                                         Inventory program, Inventory dice) {
+                                         Inventory program, Inventory dice, Inventory storage) {
         super(ModScreensHandlers.PARTY_CONTROLLER_SCREEN_HANDLER, syncId);
         this.controller = controller;
         this.pos = pos;
@@ -150,6 +172,8 @@ public class PartyControllerScreenHandler extends ScreenHandler {
             addSlot(new DiceSlot(dice, i, DICE_ROW_X + i * 18, DICE_ROW_Y, false));
         for (int i = 0; i < PartyControllerEntity.MAX_ALLOWED_DICE; i++)
             addSlot(new DiceSlot(dice, i, DICE_PANEL_X + (i % DICE_COLUMNS) * 18, DICE_PANEL_Y + (i / DICE_COLUMNS) * 18, true));
+        for (int i = 0; i < PartyControllerEntity.BANK_SIZE; i++)
+            addSlot(new StorageSlot(storage, i, STORAGE_X + (i % STORAGE_COLUMNS) * 18, STORAGE_Y + (i / STORAGE_COLUMNS) * 18));
     }
 
     // ------------------------------------------------------------------ inventories (server)
@@ -295,7 +319,33 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         }
     }
 
-    /** Whether the player may change the program (server: the controller's rule, client: what the server said). */
+    /**
+     * A slot of the controller's own storage (Storage page): any item, moved only by a player who may edit the
+     * controller. Client side, only the rows scrolled to are there.
+     */
+    private class StorageSlot extends PageSlot {
+        StorageSlot(Inventory inventory, int index, int x, int y) {
+            super(inventory, index, x, y, EnumSet.of(Page.STORAGE));
+        }
+
+        @Override
+        public boolean isEnabled() {
+            int row = getIndex() / STORAGE_COLUMNS;
+            return controller != null || (page == Page.STORAGE && !linkedOpen && row >= storageScroll && row < storageScroll + STORAGE_ROWS);
+        }
+
+        @Override
+        public boolean canInsert(ItemStack stack) {
+            return mayEditProgram();
+        }
+
+        @Override
+        public boolean canTakeItems(PlayerEntity playerEntity) {
+            return mayEditProgram();
+        }
+    }
+
+    /** Whether the player may change the program and the storage (server: the controller's rule, client: what the server said). */
     public boolean mayEditProgram() {
         if (controller != null) return controller.canEdit(player);
         return data != null && data.canEdit();
@@ -303,6 +353,10 @@ public class PartyControllerScreenHandler extends ScreenHandler {
 
     public static boolean isProgramSlot(int slotIndex) {
         return slotIndex >= PROGRAM_FIRST_SLOT && slotIndex < PROGRAM_FIRST_SLOT + PartyControllerEntity.PROGRAM_SLOTS;
+    }
+
+    public static boolean isStorageSlot(int slotIndex) {
+        return slotIndex >= STORAGE_FIRST_SLOT && slotIndex < STORAGE_FIRST_SLOT + PartyControllerEntity.BANK_SIZE;
     }
 
     public static boolean isGhostSlot(int slotIndex) {
@@ -412,7 +466,9 @@ public class PartyControllerScreenHandler extends ScreenHandler {
 
     @Override
     public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
-        return !isGhostSlot(slot.id) && !isDiceSlot(slot.id) && super.canInsertIntoSlot(stack, slot);
+        // A double-click gathers from the storage on its page only
+        return !isGhostSlot(slot.id) && !isDiceSlot(slot.id) && (!isStorageSlot(slot.id) || page == Page.STORAGE)
+                && super.canInsertIntoSlot(stack, slot);
     }
 
     @Override
@@ -422,8 +478,12 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         if (!slot.hasStack()) return ItemStack.EMPTY;
         ItemStack stack = slot.getStack();
         ItemStack original = stack.copy();
-        if (index == SLOT_CATALOGUE || isProgramSlot(index)) {
+        if (index == SLOT_CATALOGUE || isProgramSlot(index) || isStorageSlot(index)) {
             if (!slot.canTakeItems(player) || !insertItem(stack, PLAYER_SLOTS, PROGRAM_FIRST_SLOT, true)) return ItemStack.EMPTY;
+        } else if (page == Page.STORAGE) {
+            // From the inventory, on the Storage page: into the storage (its first places with room)
+            if (!mayEditProgram() || !insertItem(stack, STORAGE_FIRST_SLOT, STORAGE_FIRST_SLOT + PartyControllerEntity.BANK_SIZE, false))
+                return ItemStack.EMPTY;
         } else if (stack.getItem() instanceof PartyCardItem) {
             if (!mayEditProgram() || !insertItem(stack, PROGRAM_FIRST_SLOT, PROGRAM_FIRST_SLOT + PartyControllerEntity.PROGRAM_SLOTS, false))
                 return ItemStack.EMPTY;
@@ -461,6 +521,10 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public boolean onButtonClick(PlayerEntity player, int id) {
         if (controller == null || !(player instanceof ServerPlayerEntity serverPlayer)
                 || !(controller.getWorld() instanceof ServerWorld world)) return false;
+        if (id >= BUTTON_PAGE && id < BUTTON_PAGE + Page.values().length) {
+            page = Page.values()[id - BUTTON_PAGE];
+            return true;
+        }
         if (id >= BUTTON_GAINS && id < BUTTON_GAINS + MiniGameGains.ROWS * 4) {
             if (!changeGain(player, id - BUTTON_GAINS)) return false;
             refreshNow = true;
@@ -499,15 +563,6 @@ public class PartyControllerScreenHandler extends ScreenHandler {
                 if (PartyDashboardData.launchBlocker(controller.getPartyData().isStarted(), board, controller.canEdit(player))
                         != PartyDashboardData.Blocker.NONE) return false;
                 controller.boot();
-            }
-            case BUTTON_BANK -> {
-                // Its own bank, a chest of 27 slots (this screen closes): for those who may change the controller
-                if (!controller.canEdit(player)) return false;
-                PartyControllerEntity bankOf = controller;
-                serverPlayer.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, inventory, opener) ->
-                        GenericContainerScreenHandler.createGeneric9x3(syncId, inventory, bankOf.getBankItems()),
-                        Text.translatable("container.steveparty.party_bank")));
-                return true;
             }
             case BUTTON_STOP -> {
                 // The screen asked for a confirmation first; the same rule as the settings (a party runs: operator or Game Master)
@@ -569,9 +624,30 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         return page;
     }
 
-    /** Client: the page shown. */
+    /** The page shown (client), the page the player said he opened (server, {@link #BUTTON_PAGE}). */
     public void setPage(Page page) {
         this.page = page;
+    }
+
+    public int getStorageScroll() {
+        return storageScroll;
+    }
+
+    /** Client: the first storage row shown; the rows shown move up to the top of the page, the others are disabled. */
+    public void setStorageScroll(int scroll) {
+        storageScroll = Math.clamp(scroll, 0, STORAGE_MAX_SCROLL);
+        for (int i = 0; i < PartyControllerEntity.BANK_SIZE; i++) {
+            ((SlotPositionAccessor) slots.get(STORAGE_FIRST_SLOT + i)).steveparty$setY(STORAGE_Y + (i / STORAGE_COLUMNS - storageScroll) * 18);
+        }
+    }
+
+    public boolean isLinkedOpen() {
+        return linkedOpen;
+    }
+
+    /** Client: opens or closes the list of the linked containers (over the storage's slots). */
+    public void setLinkedOpen(boolean linkedOpen) {
+        this.linkedOpen = linkedOpen;
     }
 
     public boolean isDiceOpen() {

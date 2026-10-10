@@ -15,6 +15,7 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -58,15 +59,21 @@ import java.util.UUID;
  * @param program         what the program (its cards, or the default party) will play, as a timeline
  * @param bank            the chest the gains are taken from (see {@link PartyBank}): what it holds, whether it can pay a
  *                        whole mini-game for the party's players (4 when none is known)
+ * @param storages        the containers linked to the controller (the Storage tab), in their order, at most
+ *                        {@link #MAX_STORAGES}
  */
 public record PartyDashboardData(Phase phase, int round, int rounds, int roundsSetting, int stepIndex, int stepCount,
                                  Text action, Text actionDetail, int currentPlayer,
                                  List<PartyLiveData.Standing> players, Board board, boolean hasCatalogue,
                                  List<Page> pages, int currentPage, boolean canEdit, boolean following,
                                  boolean catalogueLocked, MiniGameGains gains, boolean practiceRound, int maxPowerUps,
-                                 boolean restrictDice, Timeline steps, Timeline program, PartyBank.Status bank) {
+                                 boolean restrictDice, Timeline steps, Timeline program, PartyBank.Status bank,
+                                 List<PartyBank.Linked> storages) {
 
     public enum Phase { SETUP, RUNNING, ENDED }
+
+    /** The most linked containers sent to a dashboard. */
+    public static final int MAX_STORAGES = 64;
 
     /** Why a party can't be started from the dashboard now ({@link #NONE}: it can). */
     public enum Blocker { NONE, RUNNING, NO_BOARD, NO_START, NO_TOKEN, NOT_ALLOWED }
@@ -338,7 +345,13 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
                 controller.isRestrictDice(),
                 phase == Phase.SETUP ? Timeline.EMPTY : timelineOf(steps, stepIndex, tokens),
                 programTimeline(controller.getProgram().getHeldStacks(), data.getNbTurn()),
-                world.getServer() == null ? PartyBank.Status.NONE : PartyBank.status(controller, world.getServer(), players.isEmpty() ? 4 : players.size()));
+                world.getServer() == null ? PartyBank.Status.NONE : PartyBank.status(controller, world.getServer(), players.isEmpty() ? 4 : players.size()),
+                world.getServer() == null ? List.of() : storagesOf(controller, world));
+    }
+
+    private static List<PartyBank.Linked> storagesOf(PartyControllerEntity controller, ServerWorld world) {
+        List<PartyBank.Linked> linked = PartyBank.linked(controller, world.getServer());
+        return linked.size() > MAX_STORAGES ? List.copyOf(linked.subList(0, MAX_STORAGES)) : linked;
     }
 
     // ------------------------------------------------------------------ network
@@ -392,6 +405,9 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
         }
     };
 
+    private static final PacketCodec<RegistryByteBuf, List<PartyBank.Linked>> STORAGES_CODEC =
+            PartyBank.Linked.PACKET_CODEC.collect(PacketCodecs.toList(MAX_STORAGES));
+
     static Timeline readTimeline(RegistryByteBuf buf) {
         int count = Math.min(buf.readVarInt(), MAX_TIMELINE_STEPS);
         List<TimelineStep> steps = new ArrayList<>(count);
@@ -435,7 +451,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
                     currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked, MiniGameGains.read(buf),
                     buf.readBoolean(), buf.readVarInt(), buf.readBoolean(), readTimeline(buf), readTimeline(buf),
                     new PartyBank.Status(PartyBank.State.values()[Math.clamp(buf.readVarInt(), 0, PartyBank.State.values().length - 1)],
-                            buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+                            buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()),
+                    STORAGES_CODEC.decode(buf));
         }
 
         @Override
@@ -468,6 +485,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             buf.writeVarInt(data.bank.stars());
             buf.writeVarInt(data.bank.absent());
             buf.writeVarInt(data.bank.unloaded());
+            STORAGES_CODEC.encode(buf, data.storages);
         }
     };
 }

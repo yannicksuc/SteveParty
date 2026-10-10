@@ -24,6 +24,7 @@
     "PlayerWandInteractMixin",
     "PreparedRecipesMixin",
     "ShapedRecipeAccessor",
+    "SlotPositionAccessor",
     "ShearsItemMixin",
     "SimpleRegistryAliasMixin",
     "BubbleColumnBlockMixin",

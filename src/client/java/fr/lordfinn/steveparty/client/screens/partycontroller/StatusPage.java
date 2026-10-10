@@ -224,15 +224,15 @@ public final class StatusPage {
         PartyBank.Status bank = data.bank();
         Text bankHint = Text.empty().append(Text.translatable(KEY + "check.bank.hint")).append("\n").append(Text.translatable(KEY + "check.currencies.hint"));
         Text coin = dashboard.currency(PartyCurrency.COIN).getName(), star = dashboard.currency(PartyCurrency.STAR).getName();
-        Text skipped = GainsPage.skipped(bank);
+        Text skipped = StoragePage.skipped(bank);
         checks.add(switch (bank.state()) {
-            case NONE -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.none"), bankHint, Page.GAINS);
-            case INFINITE -> new Check(Check.INFO, Text.translatable(KEY + "check.bank.infinite"), bankHint, Page.GAINS);
-            case MISSING -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.missing").append(skipped), bankHint, Page.GAINS);
+            case NONE -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.none"), bankHint, Page.STORAGE);
+            case INFINITE -> new Check(Check.INFO, Text.translatable(KEY + "check.bank.infinite"), bankHint, Page.STORAGE);
+            case MISSING -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.missing").append(skipped), bankHint, Page.STORAGE);
             case SHORT -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.short", bank.coins(), coin, bank.stars(), star).append(skipped),
-                    bankHint, Page.GAINS);
+                    bankHint, Page.STORAGE);
             case OK -> new Check(skipped.getString().isEmpty() ? Check.INFO : Check.WARN,
-                    Text.translatable(KEY + "check.bank.ok", bank.coins(), coin, bank.stars(), star).append(skipped), bankHint, Page.GAINS);
+                    Text.translatable(KEY + "check.bank.ok", bank.coins(), coin, bank.stars(), star).append(skipped), bankHint, Page.STORAGE);
         });
         checks.add(new Check(Check.INFO, Text.translatable(KEY + "check.rounds", data.roundsSetting()), Text.translatable(KEY + "check.rounds.hint"), Page.SETTINGS));
         return checks;
