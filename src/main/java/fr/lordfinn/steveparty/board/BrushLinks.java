@@ -202,4 +202,17 @@ public final class BrushLinks {
     static boolean isInventoryCartridge(ItemStack stack) {
         return CartridgeContainers.linksContainers(stack);
     }
+
+    /**
+     * The cartridge of {@code held} if it has the {@code role} (takes containers, summons a mob...); else, on a board
+     * space whose brush level picked another slot (empty, or a cartridge without that role), its active cartridge if
+     * that one has it: a Spawn Marker or a chest painted from a mob or shop space links the cartridge using them,
+     * whatever the level. Null: neither has it.
+     */
+    static @Nullable Held withRole(World world, BlockEntity holder, Held held, Predicate<ItemStack> role) {
+        if (role.test(held.cartridge())) return held;
+        if (!(holder instanceof BoardSpaceBlockEntity space) || held.slot() == space.getActiveSlot()) return null;
+        Held active = held(world, held.pos(), space.getActiveSlot());
+        return active != null && role.test(active.cartridge()) ? active : null;
+    }
 }
