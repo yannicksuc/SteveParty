@@ -39,6 +39,7 @@
       "fr.lordfinn.steveparty.gametest.CartridgeApplicationsGameTests",
       "fr.lordfinn.steveparty.gametest.TileContentsGameTests",
       "fr.lordfinn.steveparty.gametest.TileStampGameTests",
+      "fr.lordfinn.steveparty.gametest.TileGlowGameTests",
       "fr.lordfinn.steveparty.gametest.CoreGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpProtectionGameTests",
       "fr.lordfinn.steveparty.gametest.SwitchableGameTests",

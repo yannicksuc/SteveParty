@@ -20,6 +20,7 @@ import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.util.Unit;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.component.ComponentMap;
 import net.minecraft.component.DataComponentTypes;
@@ -403,6 +404,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         if (!isEmpty()) builder.add(DataComponentTypes.CONTAINER,
                 ContainerComponent.fromStacks(getHeldStacks()));
         if (stamp != null) builder.add(ModComponents.TILE_STAMP, stamp);
+        // Its glow ink (the block state's: see TileGlow), back with the tile placed again (ATileBlock#getPlacementState)
+        BlockState state = getCachedState();
+        if (state.contains(ATileBlock.GLOWING) && state.get(ATileBlock.GLOWING)) builder.add(ModComponents.GLOWING_TILE, Unit.INSTANCE);
     }
 
     /** Placed from an item carrying them: its cartridges and its look back (the role is applied by {@link #onPlaced}). */
@@ -414,6 +418,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         TileStampComponent own = components.get(ModComponents.TILE_STAMP);
         if (own != null) stamp = own;
         components.get(ModComponents.TILE_SIZE); // read from the block state: not kept by the block entity
+        components.get(ModComponents.GLOWING_TILE); // same
     }
 
     /** The cartridges and the look travel as components (above), not twice in the copied block entity data. */

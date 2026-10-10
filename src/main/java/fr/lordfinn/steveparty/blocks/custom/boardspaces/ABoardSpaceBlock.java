@@ -54,6 +54,9 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         // Stencil + dye, the Stencil Hammer, a wet sponge: a new look for the tile (client-safe: decided the same way on both sides)
         ActionResult stamped = TileStamping.onUseWithItem(state, world, pos, player, hand, hit);
         if (stamped != null) return ItemResults.of(stamped);
+        // Glow ink (or ink, to put it out) on a tile, as on a sign
+        ActionResult inked = TileGlow.onUseWithItem(stack, state, world, pos, player, hand);
+        if (inked != null) return ItemResults.of(inked);
         // Client prediction: every behavior only handles dyes (and returns PASS otherwise)
         if (world.isClient) return ItemResults.of(stack != null && stack.getItem() instanceof DyeItem ? SUCCESS : PASS);
         return ItemResults.of(state.get(TILE_TYPE).behavior().onUseWithItem(stack, state, world, pos, player, hit));
