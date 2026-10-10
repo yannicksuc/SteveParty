@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity;
@@ -157,15 +157,16 @@ public final class CartridgeContainers {
     }
 
     /**
-     * The containers the cartridge of the board space at {@code space} uses now, in order: its own linked ones
-     * ({@link #available}); with none linked, the bank of the party running on its board (its Party Controller's own
-     * inventory, then its linked chests: see PartyBank), so that a board needs no chest per space; outside a party,
-     * none (the space gives nothing: nothing is ever made from nothing). {@code space} null: its own only.
+     * Where the cartridge of the board space at {@code space} takes and puts its items now: its own linked containers,
+     * in order ({@link #available}: they really give and take); with none linked, the party running on its board
+     * through its one source ({@link PartyResources#of(PartyControllerEntity)}: its bank), so that a board needs no
+     * chest per space; outside a party, none (the space gives nothing: nothing is ever made from nothing).
+     * {@code space} null: its own only.
      */
-    public static List<Inventory> availableFor(ItemStack stack, World world, @Nullable BlockPos space) {
-        if (!isEmpty(stack) || space == null) return available(stack, world);
+    public static PartyResources sourceFor(ItemStack stack, World world, @Nullable BlockPos space) {
+        if (!isEmpty(stack) || space == null) return PartyResources.of(available(stack, world));
         PartyControllerEntity party = partyBankOf(stack, world, space);
-        return party == null ? List.of() : PartyBank.places(party);
+        return PartyResources.of(party);
     }
 
     /**

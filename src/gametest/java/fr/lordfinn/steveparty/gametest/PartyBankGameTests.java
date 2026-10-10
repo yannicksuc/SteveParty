@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -380,7 +381,7 @@ public class PartyBankGameTests implements SteveGameTest {
             for (int i = 1; i < PartyControllerEntity.BANK_SIZE; i++) controller.getBankItems().setStack(i, new ItemStack(Items.DIRT, 64));
             controller.getBankItems().setStack(0, coin.copyWithCount(60));
             ItemStack paid = coin.copyWithCount(10);
-            context.assertEquals(PartyBank.deposit(controller, paid), 10, "all of it went in");
+            context.assertEquals(PartyResources.of(controller).give(paid), 10, "all of it went in");
             context.assertEquals(controller.getBankItems().getStack(0).getCount(), 64, "its own bank filled first");
             context.assertEquals(InventoryUtils.count(chest, coin), 6, "the rest in the chest");
         } finally {

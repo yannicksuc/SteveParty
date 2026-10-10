@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
@@ -47,7 +48,8 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         if (AdvancedTileBlock.getBoardSpaceEntity(world, pos) instanceof BoardSpaceBlockEntity tileEntity &&
                 tileEntity.getActiveCartridgeItemStack() instanceof ItemStack itemStack &&
                 itemStack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory &&
-                CartridgeTransfers.getLinkedInventory(world, itemStack, pos) instanceof Inventory connectedInventory) {
+                CartridgeTransfers.source(world, itemStack, pos) instanceof PartyResources connectedInventory
+                && !connectedInventory.isNone()) {
 
             int selectionState = InventoryCartridgeItem.getSelectionState(itemStack);
             switch (selectionState) {
@@ -62,7 +64,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         // nextStep() is called by BoardSpaceBlockEntity.onDestinationReached (calling it here too skipped a turn)
     }
 
-    private void actionateAllSlots(InventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token) {
+    private void actionateAllSlots(InventoryComponent cartridgeInventory, PartyResources connectedInventory, MobEntity token) {
         PlayerEntity player = getPlayerFromToken(token);
         if (player == null) return;
 
@@ -72,7 +74,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         }
     }
 
-    private void actionateRandomSlot(InventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token) {
+    private void actionateRandomSlot(InventoryComponent cartridgeInventory, PartyResources connectedInventory, MobEntity token) {
         PlayerEntity player = getPlayerFromToken(token);
         if (player == null) return;
 
@@ -83,7 +85,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         }
     }
 
-    private void actionateCycleSlot(InventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity) {
+    private void actionateCycleSlot(InventoryComponent cartridgeInventory, PartyResources connectedInventory, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity) {
         PlayerEntity player = getPlayerFromToken(token);
         if (player == null) return;
 
@@ -106,15 +108,14 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         return token.getWorld().getPlayerByUuid(owner);
     }
 
-    private void handleTransfer(ItemStack stack, Inventory connectedInventory, PlayerEntity player) {
+    private void handleTransfer(ItemStack stack, PartyResources connectedInventory, PlayerEntity player) {
         boolean shouldTakeFromPlayer = Boolean.TRUE.equals(stack.get(IS_NEGATIVE));
         if (shouldTakeFromPlayer) {
-            // What does not fit in the connected inventory stays in the player's inventory
-            extractMatching(stack, player.getInventory(), toMove -> insertLinked(toMove, connectedInventory));
+            // What does not go in the connected inventory stays in the player's inventory
+            CartridgeTransfers.transfer(stack, connectedInventory, player);
         } else {
-            // The party's coins gained during a turn may be doubled (Double Coins power-up): taken from the same inventory
-            ItemStack given = stack.copy();
-            given.remove(IS_NEGATIVE);
+            // The party's coins gained during a turn may be doubled (Double Coins power-up): taken from the same source
+            ItemStack given = CartridgeTransfers.pattern(stack);
             int gained = PowerUpService.itemsGained(player, given, stack.getCount());
             if (gained != stack.getCount()) stack = stack.copyWithCount(gained);
             // Power-ups past what the player may carry in the party stay in the chest
@@ -125,12 +126,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
                 stack = stack.copyWithCount(allowed);
             }
             // What does not fit in the player's inventory is dropped at the player's feet
-            extractMatching(stack, connectedInventory, toMove -> {
-                int count = toMove.getCount();
-                player.getInventory().offerOrDrop(toMove);
-                return count;
-            });
-            player.getInventory().markDirty();
+            CartridgeTransfers.transfer(stack, connectedInventory, player);
         }
     }
 
@@ -225,11 +221,12 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             info.line(mode == 1 ? TileInfo.Glyph.ALL : mode == 2 ? TileInfo.Glyph.CYCLE : TileInfo.Glyph.DICE,
                     TileInfo.value(TileInfo.line(mode == 1 ? "inventory.all" : mode == 2 ? "inventory.cycle" : "inventory.random")));
         }
-        Inventory linked = CartridgeTransfers.getLinkedInventory(world, stack, space.getPos());
+        PartyResources source = CartridgeTransfers.source(world, stack, space.getPos());
+        PartyResources linked = source.isNone() ? null : source;
         boolean listed = items.size() <= LISTED, gives = false;
         for (ItemStack item : items) {
             boolean taken = Boolean.TRUE.equals(item.get(IS_NEGATIVE));
-            int left = taken || linked == null ? 0 : countMatching(item, linked);
+            int left = taken || linked == null ? 0 : linked.available(CartridgeTransfers.pattern(item));
             if (!taken) gives = true;
             if (!listed) {
                 info.item(item);
@@ -241,29 +238,17 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
                 info.line(item, TileInfo.bad(TileInfo.line("inventory.empty")));
             }
             // The stock, for the helmet; an item run out already says so
-            if (!taken && linked != null && left >= item.getCount())
+            if (!taken && linked != null && !linked.isUnlimited() && left >= item.getCount())
                 info.detail(item, TileInfo.line("inventory.left", TileInfo.value(left)));
         }
         if (gives && linked == null) info.line(new ItemStack(Items.CHEST), TileInfo.bad(TileInfo.line("inventory.no_chest")));
         // No chest of its own: the party's bank
         if (CartridgeContainers.partyBankOf(stack, world, space.getPos()) != null)
-            info.line(new ItemStack(Items.CHEST), TileInfo.value(TileInfo.line("party_bank")));
+            info.line(new ItemStack(Items.CHEST), TileInfo.value(TileInfo.line(source.isUnlimited() ? "party_bank.infinite" : "party_bank")));
     }
 
     /** Up to this many items, each is a line; more circle the space. */
     private static final int LISTED = 4;
-
-    /** How many items matching {@code template} (item and components, the cartridge's IS_NEGATIVE flag aside) {@code inventory} holds. */
-    private static int countMatching(ItemStack template, Inventory inventory) {
-        ItemStack pattern = template.copyWithCount(1);
-        pattern.remove(IS_NEGATIVE);
-        int count = 0;
-        for (int i = 0; i < inventory.size(); i++) {
-            ItemStack slot = inventory.getStack(i);
-            if (!slot.isEmpty() && ItemStack.areItemsAndComponentsEqual(slot, pattern)) count += slot.getCount();
-        }
-        return count;
-    }
 
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {

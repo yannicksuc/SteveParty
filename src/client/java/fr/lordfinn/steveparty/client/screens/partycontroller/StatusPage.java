@@ -227,6 +227,7 @@ public final class StatusPage {
         Text skipped = GainsPage.skipped(bank);
         checks.add(switch (bank.state()) {
             case NONE -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.none"), bankHint, Page.GAINS);
+            case INFINITE -> new Check(Check.INFO, Text.translatable(KEY + "check.bank.infinite"), bankHint, Page.GAINS);
             case MISSING -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.missing").append(skipped), bankHint, Page.GAINS);
             case SHORT -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.short", bank.coins(), coin, bank.stars(), star).append(skipped),
                     bankHint, Page.GAINS);
