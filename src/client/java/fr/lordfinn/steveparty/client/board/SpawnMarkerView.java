@@ -25,7 +25,6 @@ import net.minecraft.item.Item;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.WorldChunk;
@@ -35,7 +34,8 @@ import java.util.List;
 
 /**
  * The Spawn Markers seen by those who build the board: all but invisible otherwise (a little plate), they show where
- * their mob will be (its outline, its size, lifted as set) with an arrow the way it will face and a label (« always
+ * their mob will be (its outline, its size, lifted as set) with two eyes on the side it will face (no chevrons: those
+ * are the brush's links) and a label (« always
  * visible » when their mob lives there all the party long),
  * for whoever holds the Tile Linker Brush, the Wrench or a cartridge, or wears the Explorer's Helmet with its lamp lit.
  * The markers around are looked for every {@link #REFRESH} ticks, only then.
@@ -43,12 +43,14 @@ import java.util.List;
 final class SpawnMarkerView {
     private static final int REFRESH = 10;
     private static final double RADIUS = 32;
+    /** Half the size of an eye of the mob's outline. */
+    private static final double EYE = 0.05;
     private static final float LABEL_SCALE = 1f / 48f;
     private static List<Marker> markers = List.of();
     private static int age = REFRESH;
 
-    /** A marker, its mob's size (a generic one when no space links it) and how high above it the mob appears. */
-    private record Marker(BlockPos pos, Direction facing, boolean resident, double lift, float width, float height) {
+    /** A marker, the way its mob faces (a yaw), its mob's size (a generic one when no space links it) and how high above it the mob appears. */
+    private record Marker(BlockPos pos, float yaw, boolean resident, double lift, float width, float height) {
     }
 
     private SpawnMarkerView() {
@@ -95,17 +97,33 @@ final class SpawnMarkerView {
                 for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
                     if (!(blockEntity instanceof SpawnMarkerBlockEntity marker)) continue;
                     BlockState state = blockEntity.getCachedState();
-                    if (!state.contains(SpawnMarkerBlock.FACING)) continue;
+                    if (!state.contains(SpawnMarkerBlock.ROTATION)) continue;
                     EntityType<?> mob = null;
                     if (marker.getOwner() != null && world.getBlockEntity(marker.getOwner()) instanceof BoardSpaceBlockEntity space)
                         mob = CartridgeSpawnMarker.mobOf(space.getActiveCartridgeItemStack());
                     float width = mob == null ? 0.6f : mob.getWidth(), height = mob == null ? 1.0f : mob.getHeight();
-                    found.add(new Marker(blockEntity.getPos(), state.get(SpawnMarkerBlock.FACING), marker.isResident(), marker.getLift(),
+                    found.add(new Marker(blockEntity.getPos(), SpawnMarkerBlock.yaw(state), marker.isResident(), marker.getLift(),
                             width, height));
                 }
             }
         }
         return found;
+    }
+
+    /**
+     * Two little bright cubes on the outline, where it meets the way the mob will face, at 80% of its height: its eyes,
+     * which way it looks (any of the 16, diagonals too), without the chevrons of the brush's links.
+     */
+    private static void eyes(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d base, Marker marker,
+                             double w, int color) {
+        Vec3d way = Vec3d.fromPolar(0, marker.yaw());
+        // Out to the side of the box along that way (a diagonal reaches its corner), a hair outside
+        double reach = w / Math.max(Math.abs(way.x), Math.abs(way.z)) + EYE;
+        Vec3d front = base.add(way.multiply(reach)).add(0, marker.height() * 0.8, 0);
+        Vec3d side = new Vec3d(-way.z, 0, way.x).multiply(Math.min(0.15, w * 0.5));
+        Vec3d size = new Vec3d(EYE, EYE, EYE);
+        for (Vec3d eye : new Vec3d[]{front.add(side), front.subtract(side)})
+            WorldDraw.box(matrices, consumers, camera, eye.subtract(size), eye.add(size), color, 0.85f);
     }
 
     private static void render(WorldRenderContext context) {
@@ -118,7 +136,6 @@ final class SpawnMarkerView {
         Camera camera = context.camera();
         float now = world.getTime() + context.tickCounter().getTickDelta(true);
         float pulse = 0.22f + 0.1f * (float) Math.sin(now / 6.0);
-        double phase = now / 20.0 * 1.5;
         int color = CartridgeLinks.SPAWN_COLOR;
         for (Marker marker : markers) {
             Vec3d plate = Vec3d.ofBottomCenter(marker.pos());
@@ -126,9 +143,7 @@ final class SpawnMarkerView {
             // Where its mob will be, its size, and the way it will face
             double w = marker.width() / 2;
             WorldDraw.box(matrices, consumers, camera, base.add(-w, 0.01, -w), base.add(w, marker.height(), w), color, pulse);
-            Vec3d way = Vec3d.of(marker.facing().getVector());
-            WorldDraw.path(matrices, consumers, camera, base.add(0, 0.05, 0), base.add(way.multiply(w + 0.9)).add(0, 0.05, 0),
-                    0xE0000000 | color, 0.3, 0.35, phase, 0.05, 0);
+            eyes(matrices, consumers, camera, base, marker, w, color);
             // Lifted: a thin thread from the marker up (or down) to it
             if (marker.lift() != 0) {
                 WorldDraw.box(matrices, consumers, camera, new Vec3d(plate.x - 0.02, Math.min(plate.y, base.y), plate.z - 0.02),
