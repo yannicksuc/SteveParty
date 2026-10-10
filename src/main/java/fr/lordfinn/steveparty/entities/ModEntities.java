@@ -11,6 +11,8 @@ import fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity;
 import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronPartEntity;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronParts;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity;
 import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieEntity;
@@ -163,6 +165,21 @@ public class ModEntities {
                     .maxTrackingRange(12)
                     .trackingTickInterval(1) // ridden, it moves server side: every tick keeps the riders smooth
                     .build(TRICHAUDRON_KEY.getValue().toString())
+    );
+
+    /** A hit box of a Trichaudron's heads and necks (see TrichaudronPartEntity): invisible, never saved. */
+    public static final RegistryKey<EntityType<?>> TRICHAUDRON_PART_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("trichaudron_part"));
+    public static final EntityType<TrichaudronPartEntity> TRICHAUDRON_PART = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("trichaudron_part"),
+            EntityType.Builder
+                    .<TrichaudronPartEntity>create(TrichaudronPartEntity::new, SpawnGroup.MISC)
+                    .dimensions(TrichaudronParts.HEAD_SIZE, TrichaudronParts.HEAD_SIZE)
+                    .disableSaving()
+                    .disableSummon()
+                    .makeFireImmune()
+                    .maxTrackingRange(12)
+                    .trackingTickInterval(1) // on the heads every tick: where the player aims is where it is drawn
+                    .build(TRICHAUDRON_PART_KEY.getValue().toString())
     );
 
     /** A player turned into a pawn: a statue of the player on a token base (see PlayerPawnEntity). */

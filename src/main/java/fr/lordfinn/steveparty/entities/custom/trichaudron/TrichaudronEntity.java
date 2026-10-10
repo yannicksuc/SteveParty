@@ -149,6 +149,21 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
             new TrichaudronHead(1, "_l", -0.8125, 1.125, 7.38, 2.13, -30, 20, 3.17, 3.66, -0.8),
             new TrichaudronHead(2, "_r", 0.8125, 1.125, 7.76, 2.89, 30, 5, 3.34, 3.38, 0.8),
     };
+    /**
+     * Every head of the model: {@link #HEADS}, then the two outer ones (v19: out of its flanks, 17 px either side, splayed
+     * 65 degrees), only shown by a Trichaudron space offering 4 or 5 prizes ({@link #headsShown}). A wild one has three.
+     */
+    public static final TrichaudronHead[] ALL_HEADS = {HEADS[0], HEADS[1], HEADS[2],
+            new TrichaudronHead(3, "_ll", -1.0625, 0.0, 7.38, 2.13, -65, 20, 3.17, 3.66, 0.0),
+            new TrichaudronHead(4, "_rr", 1.0625, 0.0, 7.76, 2.89, 65, 5, 3.34, 3.38, 0.0),
+    };
+    /** The most heads it shows (a Trichaudron space's five prizes). */
+    public static final int MAX_HEADS = ALL_HEADS.length;
+    /**
+     * The heads shown for 1 to 5 (index: the count): the centre one alone, the two side ones, the three of a wild one,
+     * the side and outer ones, all five. Symmetric, so the beast always looks whole (the Workshop's HEAD_SETS).
+     */
+    private static final int[][] SHOWN = {{0}, {0}, {1, 2}, {0, 1, 2}, {1, 2, 3, 4}, {0, 1, 2, 3, 4}};
     /** The head that dips into the lava to pump. */
     public static final int PUMP_HEAD = 0;
     /**
@@ -198,20 +213,31 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     private static final TrackedData<Integer> CHARGE = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final int TAMED = 1, SADDLED = 4, CLIMBING = 8; // (2: a former "tamable", unused)
     private static final List<TrackedData<Integer>> HEAD_TARGETS = new ArrayList<>();
+    /** How many heads it shows (1 to 5, {@link #headsShown}); 3 for a wild one. */
+    private static final TrackedData<Byte> HEAD_COUNT = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.BYTE);
+    /** A board actor holding its heads out to be picked (the « offer » sway). */
+    private static final TrackedData<Boolean> OFFERING = DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    /** What each head shows at its mouth (a true choice), empty: nothing shown. */
+    private static final List<TrackedData<ItemStack>> HELD = new ArrayList<>();
 
     static {
-        for (TrichaudronHead ignored : HEADS) {
+        for (TrichaudronHead ignored : ALL_HEADS) {
             HEAD_TARGETS.add(DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.INTEGER));
+            HELD.add(DataTracker.registerData(TrichaudronEntity.class, TrackedDataHandlerRegistry.ITEM_STACK));
         }
     }
 
     public static final String ANIM_IDLE = "animation.nether_turtle.idle", ANIM_WALK = "animation.nether_turtle.walk",
-            ANIM_PUMP = "animation.nether_turtle.pump", ANIM_SPIT = "animation.nether_turtle.spit";
+            ANIM_PUMP = "animation.nether_turtle.pump", ANIM_SPIT = "animation.nether_turtle.spit",
+            ANIM_OFFER = "animation.nether_turtle.offer";
+    /** The spit animation's whip: when the jet (or a board actor's spit) leaves its mouth (ticks after its start). */
+    public static final int SPIT_WHIP_TICKS = 37;
     /** The idle and walk animations' playing speed (1: as authored). */
     static final double IDLE_PACE = 0.6, WALK_PACE = 0.75;
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop(ANIM_IDLE);
     private static final RawAnimation WALK = RawAnimation.begin().thenLoop(ANIM_WALK);
     private static final RawAnimation PUMP = RawAnimation.begin().thenLoop(ANIM_PUMP);
+    private static final RawAnimation OFFER = RawAnimation.begin().thenLoop(ANIM_OFFER);
     public static final String MAIN_CONTROLLER = "main", ACTION_CONTROLLER = "action";
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
@@ -229,8 +255,12 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     /** The prey it hunts, while it is its target (given up beyond its hunting range). */
     private @Nullable LivingEntity hunted;
     /** Server: each head's aim (world yaw; degrees), and when it may fire again (ridden). */
-    private final float[] aimYaw = new float[HEADS.length];
-    private final long[] headReady = new long[HEADS.length];
+    private final float[] aimYaw = new float[MAX_HEADS];
+    private final long[] headReady = new long[MAX_HEADS];
+    /** Server: its heads' hit boxes (TrichaudronParts). */
+    final TrichaudronParts parts = new TrichaudronParts(this);
+    /** Server: a board actor's head was clicked (TrichaudronPrizes): the player, the head. Null: nobody listens. */
+    private @Nullable java.util.function.BiConsumer<PlayerEntity, Integer> onHeadPicked;
     /** Server: the jump charge being held, the climb under way. */
     private int charge;
     private @Nullable Vec3d climbTo;
@@ -249,8 +279,8 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     /** Client: how much lower it is drawn standing in shallow lava (eased; see {@link #lavaSink}). */
     private float clientSink, prevClientSink;
     /** Client only: each head's drawn aim (yaw from the body, Minecraft pitch), eased; and last tick's; its roll. */
-    public final float[] clientYaw = new float[HEADS.length], clientPitch = new float[HEADS.length];
-    public final float[] prevClientYaw = new float[HEADS.length], prevClientPitch = new float[HEADS.length];
+    public final float[] clientYaw = new float[MAX_HEADS], clientPitch = new float[MAX_HEADS];
+    public final float[] prevClientYaw = new float[MAX_HEADS], prevClientPitch = new float[MAX_HEADS];
     /** Client only: its personality. */
     public final TrichaudronMoods moods = new TrichaudronMoods();
     private boolean wasSwimming;
@@ -265,9 +295,9 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         setPathfindingPenalty(PathNodeType.DANGER_FIRE, 0.0f);
         setPathfindingPenalty(PathNodeType.DAMAGE_FIRE, 0.0f);
         setPathfindingPenalty(PathNodeType.WATER, 8.0f);
-        for (int i = 0; i < HEADS.length; i++) {
-            clientPitch[i] = prevClientPitch[i] = HEADS[i].restPitch();
-            clientYaw[i] = prevClientYaw[i] = HEADS[i].restYaw();
+        for (int i = 0; i < MAX_HEADS; i++) {
+            clientPitch[i] = prevClientPitch[i] = ALL_HEADS[i].restPitch();
+            clientYaw[i] = prevClientYaw[i] = ALL_HEADS[i].restYaw();
         }
         inventory.addListener(inv -> {
             if (!getWorld().isClient) setBit(SADDLED, inv.getStack(0).isOf(Items.SADDLE));
@@ -304,6 +334,9 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         builder.add(FLAGS, (byte) 0);
         builder.add(CHARGE, 0);
         for (TrackedData<Integer> target : HEAD_TARGETS) builder.add(target, -1);
+        builder.add(HEAD_COUNT, (byte) HEADS.length);
+        builder.add(OFFERING, false);
+        for (TrackedData<ItemStack> held : HELD) builder.add(held, ItemStack.EMPTY);
     }
 
     @Override
@@ -384,6 +417,81 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
 
     public void setHeadTarget(int head, @Nullable Entity target) {
         dataTracker.set(HEAD_TARGETS.get(head), target == null ? -1 : target.getId());
+    }
+
+    /** The heads (indices in {@link #ALL_HEADS}) shown for {@code count} heads (1 to 5). Never to be modified. */
+    public static int[] headsShown(int count) {
+        return SHOWN[MathHelper.clamp(count, 1, MAX_HEADS)];
+    }
+
+    /** How many heads it shows (1 to 5): 3 for a wild one, a Trichaudron space's one per prize on offer. */
+    public int getHeadCount() {
+        return dataTracker.get(HEAD_COUNT);
+    }
+
+    public void setHeadCount(int count) {
+        dataTracker.set(HEAD_COUNT, (byte) MathHelper.clamp(count, 1, MAX_HEADS));
+    }
+
+    /** The heads it shows now (indices in {@link #ALL_HEADS}). Never to be modified. */
+    public int[] shownHeads() {
+        return headsShown(getHeadCount());
+    }
+
+    public boolean showsHead(int head) {
+        for (int shown : shownHeads()) if (shown == head) return true;
+        return false;
+    }
+
+    /** A board actor holding its heads out to be picked: the « offer » sway. */
+    public boolean isOffering() {
+        return dataTracker.get(OFFERING);
+    }
+
+    public void setOffering(boolean offering) {
+        dataTracker.set(OFFERING, offering);
+    }
+
+    /** What {@code head} shows at its mouth (a true choice); empty: nothing. */
+    public ItemStack getHeldPrize(int head) {
+        return dataTracker.get(HELD.get(head));
+    }
+
+    public void setHeldPrize(int head, ItemStack prize) {
+        dataTracker.set(HELD.get(head), prize.isEmpty() ? ItemStack.EMPTY : prize.copyWithCount(1));
+    }
+
+    /** Server: its head and neck hit boxes. */
+    public TrichaudronParts getParts() {
+        return parts;
+    }
+
+    /** Server: who hears a board actor's heads being picked (TrichaudronPrizes); null: nobody. */
+    public void setOnHeadPicked(@Nullable java.util.function.BiConsumer<PlayerEntity, Integer> listener) {
+        this.onHeadPicked = listener;
+    }
+
+    /**
+     * One of its head or neck hit boxes ({@link TrichaudronPartEntity}) was hit or clicked by {@code player}. A board
+     * actor's: that head is picked (if someone listens); true if it was.
+     */
+    public boolean pickHead(PlayerEntity player, int head) {
+        if (!boardActor || onHeadPicked == null || !showsHead(head)) return false;
+        onHeadPicked.accept(player, head);
+        return true;
+    }
+
+    /**
+     * A blow on one of its hit boxes: a board actor's head is picked instead (no damage); otherwise the blow goes to
+     * its body, its riders' own excepted, a head's {@link TrichaudronParts#HEAD_DAMAGE} times as hard.
+     */
+    public boolean damagePart(TrichaudronPartEntity part, DamageSource source, float amount) {
+        if (boardActor) {
+            if (source.getAttacker() instanceof PlayerEntity player) pickHead(player, part.getHead());
+            return false;
+        }
+        if (source.getAttacker() != null && hasPassenger(source.getAttacker())) return false;
+        return damage(source, part.isNeck() ? amount : amount * TrichaudronParts.HEAD_DAMAGE);
     }
 
     public boolean isPumping() {
@@ -704,12 +812,12 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
 
     public Vec3d nozzle(int head) {
         float yaw = getWorld().isClient ? bodyYaw + clientYaw[head] : aimYaw[head];
-        return nozzle(HEADS[head], bodyYaw, yaw);
+        return nozzle(ALL_HEADS[head], bodyYaw, yaw);
     }
 
     /** Where a rider's reins hold a head: the top of its neck (client: as drawn). */
     public Vec3d neckTop(int head, float partialTick) {
-        TrichaudronHead h = HEADS[head];
+        TrichaudronHead h = ALL_HEADS[head];
         float body = MathHelper.lerpAngleDegrees(partialTick, prevBodyYaw, bodyYaw);
         float yaw = body + MathHelper.lerp(partialTick, prevClientYaw[head], clientYaw[head]);
         Vec3d pos = getLerpedPos(partialTick).add(0, -lavaSink(partialTick), 0);
@@ -719,13 +827,26 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
                 .add(0, h.neckUp(), 0);
     }
 
+    /** How high its necks leave the shell (blocks from its feet: their root bones' pivot, 26 px). */
+    public static final double NECK_ROOT_UP = 1.625;
+
+    /** The middle of a head's neck: between where it leaves the shell and its top, along its aim (client: as drawn). */
+    public Vec3d neckMiddle(int head) {
+        TrichaudronHead h = ALL_HEADS[head];
+        float yaw = getWorld().isClient ? bodyYaw + clientYaw[head] : aimYaw[head];
+        Vec3d root = getPos().add(Vec3d.fromPolar(0, bodyYaw).multiply(h.base()))
+                .add(Vec3d.fromPolar(0, bodyYaw + 90).multiply(h.side())).add(0, NECK_ROOT_UP, 0);
+        Vec3d top = root.add(Vec3d.fromPolar(0, yaw).multiply(h.neckReach())).add(0, h.neckUp() - NECK_ROOT_UP, 0);
+        return root.add(top).multiply(0.5);
+    }
+
     public static Vec3d aimPoint(Entity target) {
         return target.getPos().add(0, target.getHeight() * 0.5, 0);
     }
 
     public Vec3d blastOrigin(int head) {
         Vec3d nozzle = nozzle(head);
-        Vec3d base = getPos().add(0, HEADS[head].up(), 0);
+        Vec3d base = getPos().add(0, ALL_HEADS[head].up(), 0);
         BlockHitResult hit = getWorld().raycast(new RaycastContext(base, nozzle, RaycastContext.ShapeType.COLLIDER,
                 RaycastContext.FluidHandling.NONE, this));
         if (hit.getType() == HitResult.Type.MISS) return nozzle;
@@ -739,9 +860,9 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
 
     /** Server: turns a head toward a point, at most {@code step} degrees a tick. */
     public void aimHeadAt(int head, Vec3d point, float step) {
-        Vec3d to = point.subtract(nozzle(HEADS[head], bodyYaw, aimYaw[head]));
+        Vec3d to = point.subtract(nozzle(ALL_HEADS[head], bodyYaw, aimYaw[head]));
         float yaw = (float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90;
-        float rest = HEADS[head].restYaw();
+        float rest = ALL_HEADS[head].restYaw();
         float rel = rest + MathHelper.clamp(MathHelper.wrapDegrees(yaw - bodyYaw - rest), -HEAD_YAW_MAX, HEAD_YAW_MAX);
         float current = MathHelper.wrapDegrees(aimYaw[head] - bodyYaw);
         aimYaw[head] = bodyYaw + current + MathHelper.clamp(MathHelper.wrapDegrees(rel - current), -step, step);
@@ -752,7 +873,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     }
 
     public void restHead(int head) {
-        aimYaw[head] = bodyYaw + HEADS[head].restYaw();
+        aimYaw[head] = bodyYaw + ALL_HEADS[head].restYaw();
     }
 
     /** How far {@code entity} stands from its shell: hitbox to hitbox (0: touching it). */
@@ -772,7 +893,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     public boolean faces(int head, Entity target) {
         Vec3d to = target.getPos().subtract(getPos());
         float yaw = (float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90;
-        return Math.abs(MathHelper.wrapDegrees(yaw - bodyYaw - HEADS[head].restYaw())) <= HEAD_YAW_MAX;
+        return Math.abs(MathHelper.wrapDegrees(yaw - bodyYaw - ALL_HEADS[head].restYaw())) <= HEAD_YAW_MAX;
     }
 
     public boolean faces(Entity target) {
@@ -831,7 +952,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         ventIdleAt[head] = now + 10;
     }
 
-    private final long[] ventIdleAt = new long[HEADS.length];
+    private final long[] ventIdleAt = new long[MAX_HEADS];
     /** Leaping out of the lava: it flies (no lava drag, no floating) until it is out or falls back. */
     private boolean lavaLaunch;
 
@@ -1072,11 +1193,14 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
                 setVent(head, VENT_IDLE);
             }
         }
-        for (int head = 0; head < HEADS.length; head++) {
-            PlayerEntity rider = isSteered() ? riderOf(head) : null;
+        for (int head = 0; head < MAX_HEADS; head++) {
+            PlayerEntity rider = isSteered() && head < HEADS.length ? riderOf(head) : null;
             if (rider != null) aimHeadAt(head, rider.getEyePos().add(rider.getRotationVector().multiply(20)), false);
             else if (getHeadTarget(head) == null && now >= headReady[head]) restHead(head); // idle: back to rest
+            // a board actor's heads (and the outer ones, no goal aims them) follow their target on the server too
+            else if (getHeadTarget(head) != null && (boardActor || head >= HEADS.length)) aimHeadAt(head, aimPoint(getHeadTarget(head)), BLAST_TURN);
         }
+        parts.tick();
         if (airborneJump && isOnGround() && climbTo == null && getVelocity().y <= 0) {
             airborneJump = false;
             grabArmed = 0;
@@ -1220,7 +1344,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         boolean swimming = isSwimmingInLava();
         if (wasSwimming && !swimming && !isInLava()) moods.shakeOff();
         wasSwimming = swimming;
-        boolean bored = !hasPassengers() && !isPumping() && getHeadTarget(0) == null && getHeadTarget(1) == null
+        boolean bored = !hasPassengers() && !isPumping() && !isOffering() && getHeadTarget(0) == null && getHeadTarget(1) == null
                 && getHeadTarget(HEADS.length - 1) == null;
         moods.tick(random, age, bored, hasPassengers(), getTank());
         if (deathTime > 0) return;
@@ -1237,12 +1361,12 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
             getWorld().addParticle(ParticleTypes.LAVA, getX(), getY() + HEIGHT, getZ(), 0, 0, 0);
         }
         int charging = getCharge();
-        for (int head = 0; head < HEADS.length; head++) {
+        for (int head : shownHeads()) {
             easeHead(head);
             byte vent = getVent(head);
             Vec3d at = nozzle(head);
             Vec3d ahead = Vec3d.fromPolar(0, bodyYaw + clientYaw[head]);
-            if (moods.puff[head]) {
+            if (head < HEADS.length && moods.puff[head]) {
                 for (int k = 0; k < 3; k++) {
                     getWorld().addParticle(ModParticles.THERMAL_BASE, at.x, at.y, at.z, ahead.x * 0.05, 0.06, ahead.z * 0.05);
                 }
@@ -1277,7 +1401,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     private void easeHead(int head) {
         prevClientYaw[head] = clientYaw[head];
         prevClientPitch[head] = clientPitch[head];
-        TrichaudronHead rest = HEADS[head];
+        TrichaudronHead rest = ALL_HEADS[head];
         float yaw = rest.restYaw(), pitch = rest.restPitch(), turn = HEAD_TURN;
         Entity target = getHeadTarget(head);
         Entity rider = head < getPassengerList().size() ? getPassengerList().get(head) : null;
@@ -1297,7 +1421,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
             yaw = MathHelper.wrapDegrees(rider.getHeadYaw() - bodyYaw);
             pitch = rider.getPitch();
             turn = HEAD_EASE;
-        } else if (!Float.isNaN(moods.yaw[head]) || !Float.isNaN(moods.pitch[head])) {
+        } else if (head < HEADS.length && (!Float.isNaN(moods.yaw[head]) || !Float.isNaN(moods.pitch[head]))) {
             if (!Float.isNaN(moods.yaw[head])) yaw = moods.yaw[head];
             if (!Float.isNaN(moods.pitch[head])) pitch = moods.pitch[head];
             turn = HEAD_EASE;
@@ -1454,6 +1578,13 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         setPumping(diving);
     }
 
+    /** Gone (dead, discarded, unloaded): its hit boxes go with it. */
+    @Override
+    public void remove(RemovalReason reason) {
+        super.remove(reason);
+        parts.discard();
+    }
+
     @Override
     public boolean shouldSave() {
         return !boardActor && super.shouldSave();
@@ -1549,14 +1680,14 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
 
     // ---------------------------------------------------------------- animations
 
-    void playSpit(int head) {
-        triggerAnim(HEADS[head].name(ACTION_CONTROLLER), "spit");
+    public void playSpit(int head) {
+        triggerAnim(ALL_HEADS[head].name(ACTION_CONTROLLER), "spit");
     }
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, MAIN_CONTROLLER, 6, this::animate));
-        for (TrichaudronHead head : HEADS) {
+        for (TrichaudronHead head : ALL_HEADS) {
             controllers.add(new AnimationController<>(this, head.name(ACTION_CONTROLLER), 4, state -> PlayState.STOP)
                     .triggerableAnim("spit", RawAnimation.begin().thenPlay(head.name(ANIM_SPIT))));
         }
@@ -1567,6 +1698,10 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
      * slowed down: {@link #IDLE_PACE}, {@link #WALK_PACE} (the walk's stride follows {@link #SPEED}).
      */
     private PlayState animate(AnimationState<TrichaudronEntity> state) {
+        if (isOffering()) { // a board actor's heads held out to be picked: the loose sway
+            state.getController().setAnimationSpeed(1);
+            return state.setAndContinue(OFFER);
+        }
         if (isPumping()) {
             state.getController().setAnimationSpeed(1);
             return state.setAndContinue(PUMP);

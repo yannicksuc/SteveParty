@@ -1,26 +1,28 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
-import fr.lordfinn.steveparty.components.DiceFacesComponent;
-import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
-import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TrichaudronTileBehavior;
 import fr.lordfinn.steveparty.entities.ModEntities;
-import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
-import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
+import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.powerups.PowerUpLimit;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TrichaudronTileBehavior;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
+import net.minecraft.network.packet.s2c.play.DamageTiltS2CPacket;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -29,6 +31,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.text.Texts;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -37,40 +40,52 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
 
 /**
  * What a Trichaudron space does (see TrichaudronTileBehavior): the Trichaudron rises from the ground beside the token
- * in a cloud of steam, its three heads dive into its tank and each comes out with a hidden prize drawn from the
- * cartridge's linked chests (what they really hold, filtered by its menu; empty heads once fewer than three). A slow die rolls under the heads, cycling 1, 2, 3
- * (left, centre, right head; the head its face points to glows); the token's player hits it to stop it (left alone it
- * stops by itself). The chosen head turns to the player and gives its prize, taken out of the chests; the other heads
- * show what they held, then the Trichaudron sinks back into a puff of steam and the turn goes on.
+ * in a cloud of steam with one head per prize on offer (1 to 5: TrichaudronEntity#headsShown), its heads dive into its
+ * tank and come out each with one of the prizes. Then it holds them out, swaying, and the token's player picks one by
+ * hitting or clicking it (its hit boxes: TrichaudronPartEntity; left alone, a head at random once
+ * {@link #CHOOSE_TICKS} are up).
+ * <ul>
+ *     <li><b>A blind pick</b> (the cartridge's default): the prizes are shuffled into the heads each time it rises and
+ *     nothing shows which is where; the prize is only revealed when the head spits it.</li>
+ *     <li><b>A true choice</b> (cartridge option): each head shows its prize floating at its mouth.</li>
+ * </ul>
+ * The chosen head recoils for a long breath (its spit animation's wind-up), then spits at the token's face: a big
+ * splash, the prize flying out with it, given to the player (taken out of the chests); whoever stands at the token gets
+ * splashed too, harmlessly (a start, a jolt of the view). The other heads' prizes are told. Then it sinks back into a
+ * puff of steam and the turn goes on. A prize won is consumed for the rest of the party ({@link Won}), unless the
+ * cartridge always offers the same prizes.
  * <p>
- * The Trichaudron and its die are board actors: invulnerable, never saved, always removed at the end
- * ({@link BoardActors}), whatever ends it (party over, server stopping). Server thread only.
+ * The Trichaudron is a board actor: invulnerable, never saved, always removed at the end ({@link BoardActors}),
+ * whatever ends it (party over, server stopping). Server thread only.
  */
 public final class TrichaudronPrizes {
-    public enum Phase { RISE, DIVE, EMERGE, CHOOSE, GIVE, LEAVE }
+    public enum Phase { RISE, DIVE, EMERGE, CHOOSE, SPIT, LEAVE }
 
     public enum Start { STARTED, NO_PLAYER, EMPTY }
 
     /** Timing (ticks). */
-    public static final int RISE_TICKS = 30, DIVE_TICKS = 40, EMERGE_TICKS = 20, GIVE_TICKS = 50, LEAVE_TICKS = 30;
-    /** Choosing: at most this long (the die stops by itself before; then a head at random). */
-    public static final int CHOOSE_TICKS = 300;
-    /** In the give phase, when the chosen head hands its prize over. */
-    public static final int GIVE_AT = 16;
+    public static final int RISE_TICKS = 30, DIVE_TICKS = 40, EMERGE_TICKS = 20, LEAVE_TICKS = 30;
+    /** Choosing: at most this long (then a head at random). */
+    public static final int CHOOSE_TICKS = 600;
+    /** The chosen head's spit: its whip (the animation's, when the spit leaves), the splash at the token, the end. */
+    public static final int SPIT_AT = TrichaudronEntity.SPIT_WHIP_TICKS, SPLASH_AT = SPIT_AT + 4, SPIT_TICKS = SPLASH_AT + 30;
     /** The whole show, at most (for the tests). */
-    public static final int WHOLE = RISE_TICKS + DIVE_TICKS + EMERGE_TICKS + CHOOSE_TICKS + GIVE_TICKS + LEAVE_TICKS;
-    /** The die's faces 1, 2, 3, left to right: the left head, the centre one, the right one ({@link TrichaudronEntity#HEADS}). */
-    public static final int[] HEAD_OF_FACE = {1, 0, 2};
-    /** Where it stands (blocks to the token's right), its heads reaching over beside the token; the die, ahead of it. */
-    private static final double SIDE = 11.0, DIE_AHEAD = 9.5, DIE_UP = 1.2;
+    public static final int WHOLE = RISE_TICKS + DIVE_TICKS + EMERGE_TICKS + CHOOSE_TICKS + SPIT_TICKS + LEAVE_TICKS;
+    /** Whoever stands this close to the token's face (blocks) is splashed too. */
+    public static final double SPLASH_REACH = 3.0;
+    /** Where it stands (blocks to the token's right), its heads reaching over beside the token. */
+    private static final double SIDE = 11.0;
 
     private static final BoardSequences<Show> RUNNING = new BoardSequences<>();
 
@@ -95,42 +110,45 @@ public final class TrichaudronPrizes {
         return show == null ? null : show.actor;
     }
 
-    public static @Nullable DiceEntity die(MobEntity token) {
-        Show show = RUNNING.get(token);
-        return show == null ? null : show.die;
-    }
-
-    /** What each face's head holds (face 1 to 3, an empty stack for an empty head); empty when no show. */
+    /**
+     * What each head holds, by head ({@link TrichaudronEntity#ALL_HEADS}; an empty stack for a head not shown); empty
+     * when no show.
+     */
     public static List<ItemStack> heads(MobEntity token) {
         Show show = RUNNING.get(token);
         if (show == null) return List.of();
         return Arrays.stream(show.held).map(ItemStack::copy).toList();
     }
 
-    /** Tests: the die stops on {@code face} (1 to 3) as if the player hit it there. */
-    public static void pick(MobEntity token, int face) {
+    /** The head picked (its index in {@link TrichaudronEntity#ALL_HEADS}), -1 until then or without a show. */
+    public static int picked(MobEntity token) {
         Show show = RUNNING.get(token);
-        if (show != null && show.phase == Phase.CHOOSE) show.chosen(face);
+        return show == null ? -1 : show.head;
     }
 
-    /** The die of the choice: faces 1, 2, 3 and the Slow module (its player stops it). */
-    public static ItemStack choiceDie() {
-        ItemStack die = new ItemStack(ModItems.DEFAULT_DICE);
-        die.set(DiceFacesComponent.TYPE, new DiceFacesComponent(List.of(new DiceFace(DiceFacesComponent.Kind.NORMAL, 1),
-                new DiceFace(DiceFacesComponent.Kind.NORMAL, 2), new DiceFace(DiceFacesComponent.Kind.NORMAL, 3))));
-        return DiceModules.set(die, Map.of(DiceModules.SLOW, 1));
+    /** Tests: the token's player picks {@code head} (as a click on it would). */
+    public static void pick(MobEntity token, int head) {
+        Show show = RUNNING.get(token);
+        if (show != null && show.phase == Phase.CHOOSE) show.chosen(head);
+    }
+
+    /** Tests: the show stops now (as if its party ended), its actor removed; its {@code onDone} runs. */
+    public static void stop(MobEntity token) {
+        Show show = RUNNING.get(token);
+        if (show != null) show.finish(false);
     }
 
     /**
-     * {@code token} stopped on the Trichaudron space {@code tile} of {@code party}: the show starts, its prizes drawn
-     * from the tile's cartridge. {@code onDone} runs when it is over. Nothing happens (and {@code onDone} is not called)
-     * without the token's player online, or with nothing to give in its chests.
+     * {@code token} stopped on the Trichaudron space {@code tile} of {@code party}: the show starts, its prizes those
+     * the tile's cartridge offers now (TrichaudronCartridgeItem#offered). {@code onDone} runs when it is over. Nothing
+     * happens (and {@code onDone} is not called) without the token's player online, or with nothing to offer.
      */
     public static Start start(ServerWorld world, BlockPos tile, MobEntity token, PartyControllerEntity party, Runnable onDone) {
         if (RUNNING.isRunning(token)) return Start.STARTED;
         BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, tile);
-        // What its chests really hold (never anything made from nothing)
-        List<ItemStack> stock = space == null ? List.of() : TrichaudronCartridgeItem.available(space.getActiveCartridgeItemStack(), world, tile);
+        ItemStack cartridge = space == null ? ItemStack.EMPTY : space.getActiveCartridgeItemStack();
+        // What its chests really hold (never anything made from nothing), less what was already won
+        List<ItemStack> stock = space == null ? List.of() : TrichaudronCartridgeItem.offered(cartridge, world, tile, party);
         if (space != null) TrichaudronTileBehavior.refreshSleep(space, !stock.isEmpty());
         if (stock.isEmpty()) return Start.EMPTY;
         ServerPlayerEntity player = BoardSequences.tokenPlayer(world, token);
@@ -138,43 +156,47 @@ public final class TrichaudronPrizes {
             BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.no_player").formatted(Formatting.GRAY));
             return Start.NO_PLAYER;
         }
-        // Three heads, each a prize drawn from the stock (never the same one twice), empty past them
-        java.util.Random random = new java.util.Random(world.getRandom().nextLong());
-        List<ItemStack> drawn = new ArrayList<>(stock);
-        Collections.shuffle(drawn, random);
-        List<ItemStack> heads = new ArrayList<>(drawn.subList(0, Math.min(3, drawn.size())));
-        while (heads.size() < 3) heads.add(ItemStack.EMPTY);
-        Collections.shuffle(heads, random); // an empty head may be any of them
-        ItemStack[] held = heads.toArray(ItemStack[]::new);
-        Show show = new Show(world, tile.toImmutable(), token, player.getUuid(), party, held, onDone);
+        // One head per prize, the prizes shuffled into them each time (a head's place never tells its prize)
+        List<ItemStack> prizes = new ArrayList<>(stock.subList(0, Math.min(TrichaudronEntity.MAX_HEADS, stock.size())));
+        Collections.shuffle(prizes, new java.util.Random(world.getRandom().nextLong()));
+        int[] shown = TrichaudronEntity.headsShown(prizes.size());
+        ItemStack[] held = new ItemStack[TrichaudronEntity.MAX_HEADS];
+        Arrays.fill(held, ItemStack.EMPTY);
+        for (int i = 0; i < shown.length; i++) held[shown[i]] = prizes.get(i);
+        Show show = new Show(world, tile.toImmutable(), token, player.getUuid(), party, held, prizes.size(),
+                TrichaudronCartridgeItem.trueChoice(cartridge), TrichaudronCartridgeItem.samePrizes(cartridge), onDone);
         if (!show.spawn()) return Start.EMPTY;
         RUNNING.run(show, show::tick);
         return Start.STARTED;
     }
 
-    /** One show: the Trichaudron, its die, the prizes in its heads. */
+    /** One show: the Trichaudron, the prizes in its heads. */
     private static final class Show extends BoardSequences.Sequence {
         final BlockPos tile;
         final UUID playerId;
         final PartyControllerEntity party;
-        /** The prize of each face's head (face 1 to 3), empty for an empty head. */
+        /** The prize of each head (ALL_HEADS), empty for a head not shown. */
         final ItemStack[] held;
+        final int count;
+        final boolean trueChoice, samePrizes;
         TrichaudronEntity actor;
-        @Nullable DiceEntity die;
         Phase phase = Phase.RISE;
         int phaseTick;
-        /** The face the die stopped on (1 to 3), 0 until then. */
-        int face;
-        Vec3d seat = Vec3d.ZERO, diePos = Vec3d.ZERO;
+        /** The head picked, -1 until then. */
+        int head = -1;
+        Vec3d seat = Vec3d.ZERO;
         float yaw;
 
         Show(ServerWorld world, BlockPos tile, MobEntity token, UUID playerId, PartyControllerEntity party,
-             ItemStack[] held, Runnable onDone) {
+             ItemStack[] held, int count, boolean trueChoice, boolean samePrizes, Runnable onDone) {
             super(world, token, onDone);
             this.tile = tile;
             this.playerId = playerId;
             this.party = party;
             this.held = held;
+            this.count = count;
+            this.trueChoice = trueChoice;
+            this.samePrizes = samePrizes;
         }
 
         @Nullable ServerPlayerEntity player() {
@@ -187,6 +209,8 @@ public final class TrichaudronPrizes {
             TrichaudronEntity one = ModEntities.TRICHAUDRON.create(world);
             if (one == null) return false;
             cast(one);
+            one.setHeadCount(count);
+            one.setOnHeadPicked(this::clicked);
             Vec3d stand = BoardSpaces.standPos(world, tile);
             Vec3d right = Vec3d.fromPolar(0, token.getYaw() + 90);
             // On the space's Spawn Marker, facing its way; without one, on the token's right, facing it
@@ -195,7 +219,6 @@ public final class TrichaudronPrizes {
             seat = spot != null ? spot.pos() : stand.add(right.multiply(SIDE));
             yaw = spot != null ? spot.yaw() : yawToward(seat, stand);
             BoardMobSpots.hold(one, spot);
-            diePos = seat.add(Vec3d.fromPolar(0, yaw).multiply(DIE_AHEAD)).add(0, DIE_UP, 0);
             one.setTank(TrichaudronEntity.TANK_MAX);
             place(one, seat.add(0, -TrichaudronEntity.HEIGHT, 0));
             world.spawnEntity(one);
@@ -223,7 +246,7 @@ public final class TrichaudronPrizes {
                 case DIVE -> tickDive();
                 case EMERGE -> tickEmerge();
                 case CHOOSE -> tickChoose();
-                case GIVE -> tickGive();
+                case SPIT -> tickSpit();
                 case LEAVE -> {
                     float t = Math.min(1f, phaseTick / (float) LEAVE_TICKS);
                     place(actor, seat.add(0, -TrichaudronEntity.HEIGHT * t * t, 0));
@@ -259,130 +282,165 @@ public final class TrichaudronPrizes {
             }
         }
 
-        /** The heads come out, dripping, each holding something (or not: nobody knows yet). */
+        /** The heads come out, dripping, each holding its prize (a true choice: shown at its mouth). */
         void tickEmerge() {
             if (phaseTick == EMERGE_TICKS / 2) {
-                for (int head = 0; head < TrichaudronEntity.HEADS.length; head++) {
-                    Vec3d at = actor.nozzle(head);
+                for (int h : actor.shownHeads()) {
+                    Vec3d at = actor.nozzle(h);
                     world.spawnParticles(ParticleTypes.DRIPPING_LAVA, at.x, at.y, at.z, 6, 0.2, 0.2, 0.2, 0.0);
                     world.spawnParticles(ParticleTypes.CLOUD, at.x, at.y, at.z, 4, 0.2, 0.2, 0.2, 0.02);
+                    if (trueChoice) actor.setHeldPrize(h, held[h]);
                 }
                 world.playSound(null, seat.x, seat.y, seat.z, ModSounds.TRICHAUDRON_PUFF, SoundCategory.NEUTRAL, 1.0f, 0.8f);
             }
             if (phaseTick >= EMERGE_TICKS) {
-                spawnDie();
+                actor.setOffering(true);
+                ServerPlayerEntity player = player();
+                if (player != null) {
+                    MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.trichaudron_space.title")
+                            .formatted(Formatting.GOLD), MessageUtils.MessageType.TITLE);
+                    MessageUtils.sendToPlayer(player, Text.translatable(trueChoice ? "message.steveparty.trichaudron_space.pick_true"
+                            : "message.steveparty.trichaudron_space.pick").formatted(Formatting.YELLOW), MessageUtils.MessageType.ACTION_BAR);
+                }
                 go(Phase.CHOOSE);
             }
         }
 
-        /** The slow die, under the heads, rolled for the token's player: its result picks a head. */
-        void spawnDie() {
-            DiceEntity one = ModEntities.DICE_ENTITY.create(world);
-            ServerPlayerEntity player = player();
-            if (player != null) {
-                MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.trichaudron_space.title")
-                        .formatted(Formatting.GOLD), MessageUtils.MessageType.TITLE);
-                MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.trichaudron_space.hit")
-                        .formatted(Formatting.YELLOW), MessageUtils.MessageType.ACTION_BAR);
-            }
-            if (one == null) return; // a head at random when the time is up
-            castProp(one);
-            one.rollForShow(choiceDie(), playerId, faces -> {
-                int value = faces.isEmpty() ? 0 : faces.getFirst().value();
-                chosen(value >= 1 && value <= 3 ? value : 1 + world.getRandom().nextInt(3));
-            });
-            one.refreshPositionAndAngles(diePos.x, diePos.y, diePos.z, yaw, 0);
-            one.setNoGravity(true);
-            world.spawnEntity(one);
-            die = one;
-            one.startRoll();
-            for (int head = 0; head < TrichaudronEntity.HEADS.length; head++) actor.setHeadTarget(head, one);
-        }
-
-        /** The head the die's face points to glows; the die gone (or too long): a head at random. */
+        /** Holding its heads out; too long and it picks one itself. */
         void tickChoose() {
-            if (die != null && !die.isRemoved()) {
-                int shown = die.getRollValue();
-                for (int value = 1; value <= 3; value++) {
-                    actor.setVent(HEAD_OF_FACE[value - 1], value == shown ? TrichaudronEntity.VENT_CHARGING : TrichaudronEntity.VENT_IDLE);
-                }
-            }
-            if ((die == null || die.isRemoved()) && phaseTick > 1 || phaseTick >= CHOOSE_TICKS) {
-                chosen(1 + world.getRandom().nextInt(3));
+            if (phaseTick >= CHOOSE_TICKS) {
+                int[] shown = actor.shownHeads();
+                chosen(shown[world.getRandom().nextInt(shown.length)]);
             }
         }
 
-        /** The die stopped on {@code value} (1 to 3): that head will give its prize. */
-        void chosen(int value) {
+        /** A head of it was hit or clicked: the token's player picks it; anyone else is told whose pick it is. */
+        void clicked(PlayerEntity player, int clicked) {
             if (done || phase != Phase.CHOOSE) return;
-            face = value;
-            go(Phase.GIVE);
+            if (player.getUuid().equals(playerId)) {
+                chosen(clicked);
+                return;
+            }
+            ServerPlayerEntity picker = player();
+            if (player instanceof ServerPlayerEntity other) MessageUtils.sendToPlayer(other, Text.translatable(
+                    "message.steveparty.trichaudron_space.not_yours", picker == null ? Text.literal("?") : picker.getDisplayName())
+                    .formatted(Formatting.GRAY), MessageUtils.MessageType.ACTION_BAR);
         }
 
-        /** The chosen head turns to the player and gives its prize; the others show what they held. */
-        void tickGive() {
-            int head = HEAD_OF_FACE[face - 1];
-            ServerPlayerEntity player = player();
+        /** {@code picked} (a head it shows) will spit its prize. */
+        void chosen(int picked) {
+            if (done || phase != Phase.CHOOSE || !actor.showsHead(picked)) return;
+            head = picked;
+            go(Phase.SPIT);
+        }
+
+        /**
+         * The chosen head turns to the token and recoils for a long breath (its spit's wind-up), the others still; then
+         * it spits at the token's face: the splash, the prize flying out with it, given; the others' prizes told.
+         */
+        void tickSpit() {
             if (phaseTick == 1) {
-                for (int h = 0; h < TrichaudronEntity.HEADS.length; h++) {
-                    actor.setVent(h, TrichaudronEntity.VENT_IDLE);
-                    actor.setHeadTarget(h, h == head ? (player != null ? player : token) : null);
+                actor.setOffering(false);
+                for (int h : actor.shownHeads()) {
+                    actor.setHeadTarget(h, h == head ? token : null);
+                    actor.setVent(h, h == head ? TrichaudronEntity.VENT_CHARGING : TrichaudronEntity.VENT_IDLE);
                 }
-                world.playSound(null, seat.x, seat.y, seat.z, ModSounds.TRICHAUDRON_AMBIENT, SoundCategory.NEUTRAL, 1.0f, 1.2f);
+                actor.playSpit(head);
+                world.playSound(null, seat.x, seat.y, seat.z, ModSounds.TRICHAUDRON_CHARGE, SoundCategory.NEUTRAL, 1.0f, 0.9f);
             }
-            if (phaseTick == GIVE_AT) give(player, head);
-            if (phaseTick >= GIVE_TICKS) {
-                for (int h = 0; h < TrichaudronEntity.HEADS.length; h++) actor.setHeadTarget(h, null);
+            if (phaseTick == SPIT_AT) spit();
+            if (phaseTick == SPLASH_AT) splash();
+            if (phaseTick >= SPIT_TICKS) {
+                for (int h = 0; h < TrichaudronEntity.MAX_HEADS; h++) {
+                    actor.setHeadTarget(h, null);
+                    actor.setHeldPrize(h, ItemStack.EMPTY);
+                    actor.setVent(h, TrichaudronEntity.VENT_IDLE);
+                }
                 go(Phase.LEAVE);
             }
         }
 
-        void give(@Nullable ServerPlayerEntity player, int head) {
-            ItemStack prize = held[face - 1];
+        /** The token's face: where the spit lands. */
+        Vec3d face() {
+            return token.getEyePos();
+        }
+
+        /** The spit leaves the mouth: a jet of steam and lava drops toward the token, the prize tumbling in it. */
+        void spit() {
+            actor.setVent(head, TrichaudronEntity.VENT_SPITTING);
             Vec3d from = actor.nozzle(head);
+            Vec3d way = face().subtract(from);
+            world.playSound(null, from.x, from.y, from.z, ModSounds.TRICHAUDRON_BLAST, SoundCategory.NEUTRAL, 1.0f, 1.3f);
+            world.playSound(null, from.x, from.y, from.z, SoundEvents.ENTITY_LLAMA_SPIT, SoundCategory.NEUTRAL, 1.5f, 0.5f);
+            ItemStack prize = held[head];
+            ItemStackParticleEffect crumb = prize.isEmpty() ? null : new ItemStackParticleEffect(ParticleTypes.ITEM, prize.copyWithCount(1));
+            for (int i = 0; i <= 12; i++) {
+                Vec3d at = from.add(way.multiply(i / 12.0)).add(0, Math.sin(Math.PI * i / 12.0) * 0.6, 0);
+                world.spawnParticles(ModParticles.THERMAL_POOF, at.x, at.y, at.z, 2, 0.15, 0.15, 0.15, 0.01);
+                if (i % 3 == 0) world.spawnParticles(ParticleTypes.FALLING_LAVA, at.x, at.y, at.z, 1, 0.1, 0.1, 0.1, 0.0);
+                if (crumb != null && i % 2 == 0) world.spawnParticles(crumb, at.x, at.y, at.z, 1, 0.1, 0.1, 0.1, 0.02);
+            }
+        }
+
+        /**
+         * It hits the token's face: a big splash (and whoever stands there: harmless, a start and a jolt of the view),
+         * the prize given to the player, the others' told.
+         */
+        void splash() {
+            Vec3d face = face();
+            world.spawnParticles(ParticleTypes.EXPLOSION, face.x, face.y, face.z, 1, 0, 0, 0, 0);
+            world.spawnParticles(ModParticles.THERMAL_POOF, face.x, face.y, face.z, 24, 0.5, 0.4, 0.5, 0.06);
+            world.spawnParticles(ParticleTypes.SPLASH, face.x, face.y, face.z, 60, 0.6, 0.4, 0.6, 0.3);
+            world.spawnParticles(ParticleTypes.LAVA, face.x, face.y, face.z, 8, 0.3, 0.2, 0.3, 0.0);
+            ItemStack prize = held[head];
+            if (!prize.isEmpty()) world.spawnParticles(new ItemStackParticleEffect(ParticleTypes.ITEM, prize.copyWithCount(1)),
+                    face.x, face.y, face.z, 16, 0.3, 0.3, 0.3, 0.15);
+            world.playSound(null, face.x, face.y, face.z, SoundEvents.ENTITY_GENERIC_SPLASH, SoundCategory.NEUTRAL, 1.2f, 0.8f);
+            world.playSound(null, face.x, face.y, face.z, SoundEvents.BLOCK_LAVA_EXTINGUISH, SoundCategory.NEUTRAL, 0.8f, 1.4f);
+            for (ServerPlayerEntity near : world.getPlayers(p -> !p.isSpectator() && p.getEyePos().distanceTo(face) <= SPLASH_REACH)) {
+                splashed(near);
+            }
+            give(player());
+        }
+
+        /** {@code player} got splashed too: no harm, steam in his face, a start, a jolt of his view. */
+        void splashed(ServerPlayerEntity player) {
+            Vec3d eye = player.getEyePos().add(player.getRotationVector().multiply(0.4));
+            player.networkHandler.sendPacket(new DamageTiltS2CPacket(player.getId(), 0));
+            world.spawnParticles(player, ModParticles.THERMAL_POOF, true, eye.x, eye.y, eye.z, 14, 0.25, 0.2, 0.25, 0.02);
+            world.spawnParticles(player, ParticleTypes.SPLASH, true, eye.x, eye.y, eye.z, 30, 0.3, 0.2, 0.3, 0.2);
+            player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_SPLASH_HIGH_SPEED, SoundCategory.PLAYERS, 1.0f, 1.2f);
+            player.playSoundToPlayer(SoundEvents.ENTITY_PUFFER_FISH_BLOW_UP, SoundCategory.PLAYERS, 0.8f, 1.3f);
+        }
+
+        void give(@Nullable ServerPlayerEntity player) {
+            ItemStack prize = held[head];
             Text name = player == null ? Text.literal("?") : player.getDisplayName();
-            boolean given = false;
             int moved = prize.isEmpty() || player == null ? 0 : handFromChests(player, prize);
             if (moved > 0) {
-                prize = prize.copyWithCount(moved);
-                given = true;
-                Vec3d them = player.getPos().add(0, player.getHeight() * 0.6, 0);
-                Vec3d way = them.subtract(from);
-                ItemStackParticleEffect crumb = new ItemStackParticleEffect(ParticleTypes.ITEM, prize.copyWithCount(1));
-                for (int i = 0; i < 10; i++) {
-                    world.spawnParticles(crumb, from.x, from.y, from.z, 0, way.x, way.y + 0.4, way.z, 0.15 + world.getRandom().nextDouble() * 0.05);
+                ItemStack won = prize.copyWithCount(moved);
+                if (!samePrizes) {
+                    party.getPartyData().getTrichaudronWon().add(tile, TrichaudronCartridgeItem.prizeKey(prize));
+                    party.markDirty();
+                    BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, tile);
+                    if (space != null) TrichaudronTileBehavior.refreshSleep(world, space);
                 }
-                world.playSound(null, them.x, them.y, them.z, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 0.8f, 0.8f);
-                world.playSound(null, them.x, them.y, them.z, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.5f, 1.4f);
-                MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.trichaudron_space.won", prizeText(prize))
+                world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 0.8f, 0.8f);
+                world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.5f, 1.4f);
+                MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.trichaudron_space.won", prizeText(won))
                         .formatted(Formatting.GOLD), MessageUtils.MessageType.ACTION_BAR);
-                BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.won_by", name, prizeText(prize))
+                BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.won_by", name, prizeText(won))
                         .formatted(Formatting.GOLD), player);
-            } else {
-                world.spawnParticles(ParticleTypes.LARGE_SMOKE, from.x, from.y, from.z, 12, 0.2, 0.2, 0.2, 0.02);
-                world.playSound(null, from.x, from.y, from.z, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.NEUTRAL, 0.8f, 0.7f);
-                if (player != null) MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.trichaudron_space.empty_head")
-                        .formatted(Formatting.GRAY), MessageUtils.MessageType.ACTION_BAR);
-                BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.empty_head_of", name)
-                        .formatted(Formatting.GRAY), player);
-            }
-            // The other heads show what they held (left in the chests)
-            List<Text> others = new ArrayList<>();
-            for (int value = 1; value <= 3; value++) {
-                if (value == face) continue;
-                ItemStack other = held[value - 1];
-                others.add(other.isEmpty() ? Text.translatable("message.steveparty.trichaudron_space.nothing") : prizeText(other));
-                Vec3d at = actor.nozzle(HEAD_OF_FACE[value - 1]);
-                if (!other.isEmpty()) world.spawnParticles(new ItemStackParticleEffect(ParticleTypes.ITEM, other.copyWithCount(1)),
-                        at.x, at.y, at.z, 6, 0.15, 0.15, 0.15, 0.05);
-            }
-            BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.others", others.get(0), others.get(1))
-                    .formatted(Formatting.GRAY), player);
-            if (!given && !prize.isEmpty() && player != null) {
+            } else if (player != null) {
                 // its chests emptied meanwhile: nothing given
                 MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.trichaudron_space.gone")
                         .formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
             }
+            // The other heads' prizes, told (left in the chests)
+            List<Text> others = new ArrayList<>();
+            for (int h : actor.shownHeads()) if (h != head && !held[h].isEmpty()) others.add(prizeText(held[h]));
+            if (!others.isEmpty()) BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.others",
+                    Texts.join(others, Text.literal(", "))).formatted(Formatting.GRAY), player);
         }
 
         /**
@@ -425,9 +483,64 @@ public final class TrichaudronPrizes {
         /** Over: the actors go, the turn goes on. */
         void finish(boolean completed) {
             if (!close()) return;
-            if (actor != null && !actor.isRemoved()) steam(actor.getPos(), 20);
+            if (actor != null && !actor.isRemoved()) {
+                actor.setOnHeadPicked(null);
+                steam(actor.getPos(), 20);
+            }
             dismissActors();
             onDone.run();
+        }
+    }
+
+    /**
+     * The prizes won at each Trichaudron space during a party (TrichaudronCartridgeItem#prizeKey), so that a prize won
+     * is no longer offered there for the rest of it (TrichaudronCartridgeItem#offered). Kept in the party's data, saved
+     * with it, cleared when it starts and ends.
+     */
+    public static final class Won {
+        /** NBT key in the party's data. */
+        public static final String NBT_KEY = "TrichaudronWon";
+        private final Map<BlockPos, Set<String>> won = new LinkedHashMap<>();
+
+        /** The prizes won at the space at {@code pos} (read only). */
+        public Set<String> wonAt(BlockPos pos) {
+            Set<String> keys = won.get(pos);
+            return keys == null ? Set.of() : Collections.unmodifiableSet(keys);
+        }
+
+        /** The prize {@code key} was won at {@code pos}. */
+        public void add(BlockPos pos, String key) {
+            won.computeIfAbsent(pos.toImmutable(), p -> new LinkedHashSet<>()).add(key);
+        }
+
+        public void reset() {
+            won.clear();
+        }
+
+        /** Writes them under {@link #NBT_KEY} (nothing if none was won). */
+        public void writeNbt(NbtCompound nbt) {
+            if (won.isEmpty()) return;
+            NbtList list = new NbtList();
+            won.forEach((pos, keys) -> {
+                NbtCompound entry = new NbtCompound();
+                entry.putLong("Pos", pos.asLong());
+                NbtList ids = new NbtList();
+                keys.forEach(key -> ids.add(NbtString.of(key)));
+                entry.put("Won", ids);
+                list.add(entry);
+            });
+            nbt.put(NBT_KEY, list);
+        }
+
+        /** Reads what {@link #writeNbt} wrote (replaces the current ones). */
+        public void readNbt(NbtCompound nbt) {
+            won.clear();
+            for (NbtElement element : nbt.getList(NBT_KEY, NbtElement.COMPOUND_TYPE)) {
+                NbtCompound entry = (NbtCompound) element;
+                Set<String> keys = new LinkedHashSet<>();
+                for (NbtElement key : entry.getList("Won", NbtElement.STRING_TYPE)) keys.add(key.asString());
+                if (!keys.isEmpty()) won.put(BlockPos.fromLong(entry.getLong("Pos")), keys);
+            }
         }
     }
 }

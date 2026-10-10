@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronHead;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.cache.object.GeoBone;
@@ -21,6 +22,9 @@ import java.util.List;
  *     client); hidden from the model pass, TrichaudronRenderer draws its own animated lava there.</li>
  *     <li><b>The vents</b> ({@code vent<suffix>}, one a head): hidden too, TrichaudronRenderer draws each head's state
  *     texture there, full bright.</li>
+ *     <li><b>Its heads</b>: one to five shown (TrichaudronEntity#shownHeads), the others' neck chains hidden from
+ *     their root ({@code neck<suffix>_01}); its texture follows, the shell's openings being one per neck
+ *     ({@link #getTextureResource}).</li>
  *     <li><b>The turrets</b>: each head's drawn aim (TrichaudronEntity#clientYaw, #clientPitch: its yaw from the body,
  *     both from its rest, TrichaudronHead#restYaw, #restPitch) spread over its last
  *     {@link #AIM_SEGMENTS} neck segments ({@code neck<suffix>_NN}) and its head ({@code head<suffix>}).</li>
@@ -35,15 +39,30 @@ public class TrichaudronModel extends DefaultedEntityGeoModel<TrichaudronEntity>
     static final float TANK_RISE = 32;
     /** Each head's turning bones, found once the model is baked (null until then). */
     private GeoBone[][] aimBones;
+    private static final Identifier[] TEXTURES = new Identifier[TrichaudronEntity.MAX_HEADS + 1];
 
     public TrichaudronModel() {
         super(Steveparty.id("trichaudron"));
     }
 
+    /** Its shell's openings follow the heads it shows: trichaudron.png for three, trichaudron_heads_N.png otherwise. */
+    @Override
+    public Identifier getTextureResource(TrichaudronEntity trichaudron) {
+        return texture(trichaudron.getHeadCount(), TEXTURES, "trichaudron");
+    }
+
+    /** {@code base}.png for three heads, {@code base}_heads_N.png for N (cached in {@code cache}). */
+    static Identifier texture(int count, Identifier[] cache, String base) {
+        int n = MathHelper.clamp(count, 1, TrichaudronEntity.MAX_HEADS);
+        if (cache[n] == null) cache[n] = Steveparty.id("textures/entity/" + base
+                + (n == TrichaudronEntity.HEADS.length ? "" : "_heads_" + n) + ".png");
+        return cache[n];
+    }
+
     private GeoBone[][] aimBones() {
         if (aimBones != null) return aimBones;
-        GeoBone[][] bones = new GeoBone[TrichaudronEntity.HEADS.length][];
-        for (TrichaudronHead head : TrichaudronEntity.HEADS) {
+        GeoBone[][] bones = new GeoBone[TrichaudronEntity.MAX_HEADS][];
+        for (TrichaudronHead head : TrichaudronEntity.ALL_HEADS) {
             List<GeoBone> chain = new ArrayList<>();
             for (int i = 1; i <= MAX_SEGMENTS; i++) {
                 GeoBone segment = getAnimationProcessor().getBone(String.format("neck%s_%02d", head.suffix(), i));
@@ -70,6 +89,16 @@ public class TrichaudronModel extends DefaultedEntityGeoModel<TrichaudronEntity>
         return skull;
     }
 
+    /**
+     * A head's vent (its mouth), tracked: its local position (from the entity's origin) as last drawn, where a true
+     * choice's prize floats. Null until the model is baked.
+     */
+    public @Nullable GeoBone mouthBone(int head) {
+        GeoBone vent = getAnimationProcessor().getBone(TrichaudronEntity.ALL_HEADS[head].name("vent"));
+        if (vent != null && !vent.isTrackingMatrices()) vent.setTrackingMatrices(true);
+        return vent;
+    }
+
     @Override
     public void setCustomAnimations(TrichaudronEntity trichaudron, long instanceId, AnimationState<TrichaudronEntity> animationState) {
         super.setCustomAnimations(trichaudron, instanceId, animationState);
@@ -79,7 +108,9 @@ public class TrichaudronModel extends DefaultedEntityGeoModel<TrichaudronEntity>
             lava.setHidden(true);
             lava.setPosY(TANK_RISE * trichaudron.tankLevel(partial) / TrichaudronEntity.TANK_MAX);
         }
-        for (TrichaudronHead head : TrichaudronEntity.HEADS) {
+        for (TrichaudronHead head : TrichaudronEntity.ALL_HEADS) {
+            // the heads it does not show: their whole neck chain, from its root out of the shell
+            GeoBones.hide(getAnimationProcessor(), String.format("neck%s_01", head.suffix()), !trichaudron.showsHead(head.index()));
             GeoBones.hide(getAnimationProcessor(), head.name("vent"), true);
         }
         if (trichaudron.deathTime > 0) return;
@@ -91,8 +122,8 @@ public class TrichaudronModel extends DefaultedEntityGeoModel<TrichaudronEntity>
         GeoBone shell = getAnimationProcessor().getBone("shell");
         if (shell != null) shell.setRotZ(shell.getInitialSnapshot().getRotZ() + trichaudron.moods.shellRoll);
         GeoBone[][] bones = aimBones();
-        for (TrichaudronHead head : TrichaudronEntity.HEADS) {
-            int i = head.index();
+        for (int i : trichaudron.shownHeads()) {
+            TrichaudronHead head = TrichaudronEntity.ALL_HEADS[i];
             if (trichaudron.isPumping() && i == TrichaudronEntity.PUMP_HEAD) continue;
             GeoBone[] turning = bones[i];
             if (turning.length == 0) continue;
@@ -106,7 +137,7 @@ public class TrichaudronModel extends DefaultedEntityGeoModel<TrichaudronEntity>
                 GeoBones.addRotX(bone, pitchShare);
             }
             GeoBone skull = turning[turning.length - 1];
-            GeoBones.addRotZ(skull, trichaudron.moods.roll[i]);
+            if (i < TrichaudronEntity.HEADS.length) GeoBones.addRotZ(skull, trichaudron.moods.roll[i]);
         }
     }
 }

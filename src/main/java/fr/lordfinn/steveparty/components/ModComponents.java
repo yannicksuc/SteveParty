@@ -116,6 +116,12 @@ public class ModComponents {
      */
     public static final ComponentType<Boolean> TRICHAUDRON_ASLEEP =
             registerComponent("trichaudron-asleep", Codec.BOOL);
+    /** Trichaudron Cartridge: always the same prizes (a prize won stays on offer); off: won prizes are consumed for the party. */
+    public static final ComponentType<Boolean> TRICHAUDRON_SAME_PRIZES =
+            registerComponent("trichaudron-same-prizes", Codec.BOOL);
+    /** Trichaudron Cartridge: a true choice (each head shows its prize); off: a blind pick. */
+    public static final ComponentType<Boolean> TRICHAUDRON_TRUE_CHOICE =
+            registerComponent("trichaudron-true-choice", Codec.BOOL);
     /** Frousseux Cartridge: its Frousseux steals stars rather than coins. */
     public static final ComponentType<Boolean> FROUSSEUX_STARS =
             registerComponent("frousseux-stars", Codec.BOOL);
