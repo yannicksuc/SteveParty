@@ -14,6 +14,7 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.world.ServerWorld;
 
 import fr.lordfinn.steveparty.service.ThresholdGates;
+import fr.lordfinn.steveparty.service.TrichaudronPrizes;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,8 @@ public class PartyData {
     private final TrapState traps = new TrapState();
     /** Who cleared each Threshold barrier during this party: saved with the party, see ThresholdGates. */
     private final ThresholdGates.State thresholdGates = new ThresholdGates.State();
+    /** The prizes won at each Trichaudron space during this party: saved with the party, see TrichaudronPrizes. */
+    private final TrichaudronPrizes.Won trichaudronWon = new TrichaudronPrizes.Won();
 
     // Constructor
     public PartyData() {
@@ -80,6 +83,7 @@ public class PartyData {
         });
         traps.readNbt(nbt);
         thresholdGates.readNbt(nbt);
+        trichaudronWon.readNbt(nbt);
         skippedTokens.clear();
         nbt.getList("SkippedTokens", 8).forEach(token -> {
             try {
@@ -113,6 +117,7 @@ public class PartyData {
         }
         traps.writeNbt(nbt);
         thresholdGates.writeNbt(nbt);
+        trichaudronWon.writeNbt(nbt);
         if (!skippedTokens.isEmpty()) {
             NbtList skippedNbt = new NbtList();
             skippedTokens.forEach(uuid -> skippedNbt.add(NbtString.of(uuid.toString())));
@@ -241,6 +246,7 @@ public class PartyData {
         this.steps.clear();
         this.traps.clear();
         this.thresholdGates.reset();
+        this.trichaudronWon.reset();
     }
 
     /** The hidden traps set with the Trap power-up during this party (see {@code TrapEffect}). */
@@ -251,6 +257,11 @@ public class PartyData {
     /** The Threshold barriers cleared during this party (see {@code ThresholdGates}). */
     public ThresholdGates.State getThresholdGates() {
         return thresholdGates;
+    }
+
+    /** The prizes won at the Trichaudron spaces during this party (see {@code TrichaudronPrizes}). */
+    public TrichaudronPrizes.Won getTrichaudronWon() {
+        return trichaudronWon;
     }
 
     public int getNbTurn() {
