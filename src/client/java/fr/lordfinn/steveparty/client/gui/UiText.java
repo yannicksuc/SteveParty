@@ -18,7 +18,7 @@ import java.util.List;
  * Text in a box, whatever its language: it never goes out of its box and is never cut short.
  * <ul>
  *     <li>{@link #wrapped}: on as many lines as it needs (measure the height with {@link #height} to size the box);</li>
- *     <li>{@link #line}: on one line; too long, it scrolls slowly back and forth inside its box, and its whole text is
+ *     <li>{@link #line}: on one line; too long, it scrolls slowly inside its box (in the reading direction), and its whole text is
  *     shown in a tooltip while the mouse is over it (in a screen).</li>
  * </ul>
  * The mod draws every text through here: {@code ./gradlew checkUiText} fails on a {@code drawText} elsewhere.
@@ -174,15 +174,17 @@ public final class UiText {
         noteHover(box, text);
     }
 
-    /** How far a line {@code travel} pixels too long is scrolled now: still, to its end, still, back. */
+    /**
+     * How far a line {@code travel} pixels too long is scrolled now, only in the reading direction: still at its
+     * start, to its end, still at its end, then back to its start at once.
+     */
     static float scrollOffset(int travel) {
         long moveMs = Math.max(1, (long) (travel / SCROLL_SPEED * 1000F));
-        long cycle = 2 * (SCROLL_PAUSE_MS + moveMs);
+        long cycle = 2 * SCROLL_PAUSE_MS + moveMs;
         long t = Util.getMeasuringTimeMs() % cycle;
         if (t < SCROLL_PAUSE_MS) return 0;
         if (t < SCROLL_PAUSE_MS + moveMs) return (t - SCROLL_PAUSE_MS) / (float) moveMs * travel;
-        if (t < 2 * SCROLL_PAUSE_MS + moveMs) return travel;
-        return travel - (t - 2 * SCROLL_PAUSE_MS - moveMs) / (float) moveMs * travel;
+        return travel;
     }
 
     /** The box (x1, y1, x2, y2) on the screen: where the current transformation puts it (a panel sliding in...). */
