@@ -50,6 +50,7 @@ public class EndPartyStep extends PartyStep {
                 Text.translatableWithFallback("message.steveparty.game_ended", "The party is over !"),
                 MessageUtils.MessageType.CHAT);
         partyControllerEntity.markDirty();
+        fr.lordfinn.steveparty.api.event.PartyEvents.ENDED.invoker().onPartyEnded(partyControllerEntity);
     }
 
     @Override

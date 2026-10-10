@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.api.event.PartyEvents;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
@@ -186,6 +187,7 @@ final class PartyFlow {
         if (currentStep != null) {
             currentStep.setStatus(PartyStep.Status.FINISHED);
             currentStep.end(controller);
+            PartyEvents.STEP_ENDED.invoker().onStepEnded(controller, currentStep);
         }
     }
 
@@ -195,8 +197,11 @@ final class PartyFlow {
         PartyData partyData = data();
         partyData.setStepIndex(stepIndex);
         PartyStep currentStep = partyData.getCurrentStep();
-        if (currentStep != null)
+        if (currentStep != null) {
+            // Told first: a step may end within its start (and the next one start)
+            PartyEvents.STEP_STARTED.invoker().onStepStarted(controller, currentStep, stepIndex);
             currentStep.start(controller);
+        }
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
     }

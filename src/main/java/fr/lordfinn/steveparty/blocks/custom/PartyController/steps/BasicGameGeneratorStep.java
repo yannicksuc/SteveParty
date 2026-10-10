@@ -39,6 +39,8 @@ public class BasicGameGeneratorStep extends PartyStep {
         if (world == null) return;
         PartyData partyData = partyControllerEntity.getPartyData();
         generateSteps(partyData, world, partyControllerEntity.getProgramCards());
+        fr.lordfinn.steveparty.api.event.PartyEvents.STEPS_GENERATED.invoker()
+                .onStepsGenerated(partyControllerEntity, partyData.getSteps(), partyData.getSteps().indexOf(this));
         partyControllerEntity.markDirty();
         scheduleStart(partyControllerEntity, world);
     }
