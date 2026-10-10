@@ -13,6 +13,7 @@ import net.minecraft.nbt.NbtString;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.world.ServerWorld;
 
+import fr.lordfinn.steveparty.service.ThresholdGates;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +33,8 @@ public class PartyData {
     private final Set<UUID> skippedTokens = new LinkedHashSet<>();
     /** The hidden traps of the Trap power-up: saved with the party, never sent to the clients. */
     private final TrapState traps = new TrapState();
+    /** Who cleared each Threshold barrier during this party: saved with the party, see ThresholdGates. */
+    private final ThresholdGates.State thresholdGates = new ThresholdGates.State();
 
     // Constructor
     public PartyData() {
@@ -76,6 +79,7 @@ public class PartyData {
             }
         });
         traps.readNbt(nbt);
+        thresholdGates.readNbt(nbt);
         skippedTokens.clear();
         nbt.getList("SkippedTokens", 8).forEach(token -> {
             try {
@@ -108,6 +112,7 @@ public class PartyData {
             nbt.put("ProtectedTokens", protectedNbt);
         }
         traps.writeNbt(nbt);
+        thresholdGates.writeNbt(nbt);
         if (!skippedTokens.isEmpty()) {
             NbtList skippedNbt = new NbtList();
             skippedTokens.forEach(uuid -> skippedNbt.add(NbtString.of(uuid.toString())));
@@ -235,11 +240,17 @@ public class PartyData {
         this.stepIndex = -1;
         this.steps.clear();
         this.traps.clear();
+        this.thresholdGates.reset();
     }
 
     /** The hidden traps set with the Trap power-up during this party (see {@code TrapEffect}). */
     public TrapState getTraps() {
         return traps;
+    }
+
+    /** The Threshold barriers cleared during this party (see {@code ThresholdGates}). */
+    public ThresholdGates.State getThresholdGates() {
+        return thresholdGates;
     }
 
     public int getNbTurn() {

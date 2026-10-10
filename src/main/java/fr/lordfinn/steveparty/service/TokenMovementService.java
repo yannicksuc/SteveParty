@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ThresholdTileBehavior;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DiceThrow;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -67,6 +68,8 @@ public class TokenMovementService {
         DiceRollEffects.setMoveModules(chosenToken, DiceModules.of(dice.lead().getDieStack()));
         DiceOutcome outcome = dice.getOutcome();
         if (outcome.steps() != rollValue) outcome = DiceOutcome.ofSteps(rollValue); // a roll announced by hand (tests, add-ons)
+        // Blocked at a Threshold barrier: this throw is its new try, a miss and the turn ends there
+        if (ThresholdTileBehavior.retry(world, chosenToken, outcome)) return ActionResult.SUCCESS;
         if (outcome.steps() > 0 && !outcome.isSpecial()) {
             // Add small delay so players can appreciate the dice roll value
             SCHEDULER.schedule(chosenToken.getUuid(), DiceRollEffects.APPRECIATE_TICKS, () -> moveEntityOnBoard(chosenToken, rollValue));
