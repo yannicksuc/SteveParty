@@ -319,6 +319,24 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         });
     }
 
+    /** Several prizes of the same item (coins, 5 and 10): winning one consumes that one only. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 3 * WHOLE, batchId = BATCH)
+    public void prizesOfTheSameItemAreConsumedOneByOne(TestContext context) {
+        Show show = show(context, cartridge(new ItemStack(Items.GOLD_NUGGET, 5), new ItemStack(Items.GOLD_NUGGET, 10),
+                new ItemStack(Items.GOLD_NUGGET, 5)), chest(new ItemStack(Items.GOLD_NUGGET, 64)), TrichaudronPrizes.Start.STARTED);
+        MobEntity token = show.token();
+        context.assertEquals(TrichaudronPrizes.actor(token).getHeadCount(), 3, "three heads, all coins");
+        when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, WHOLE, "the choice", () -> {
+            TrichaudronPrizes.pick(token, TrichaudronPrizes.actor(token).shownHeads()[0]);
+            when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {
+                boolean[] again = {false};
+                context.assertTrue(show.again(context, again) == TrichaudronPrizes.Start.STARTED, "the other two still on offer");
+                context.assertEquals(TrichaudronPrizes.actor(token).getHeadCount(), 2, "one head less");
+                context.complete();
+            });
+        });
+    }
+
     /** Its menu filters the chest: only the items set are prizes, one head each. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void theFilterIsRespected(TestContext context) {
