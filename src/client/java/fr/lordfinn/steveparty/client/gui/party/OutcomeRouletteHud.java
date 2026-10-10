@@ -41,7 +41,7 @@ public final class OutcomeRouletteHud {
     /** The result flashes this long when the light stops on it. */
     public static final double FLASH_TICKS = 14;
     /** How the strip stands in for the panel: its width at most, its line's height. */
-    private static final int STRIP_WIDTH = 170, STRIP_PAD = 6, LINE_H = 13, ICON = 10;
+    private static final int STRIP_WIDTH = 210, STRIP_PAD = 6, LINE_H = 13, ICON = 10;
     private static final float IN_TICKS = 6;
     private static final Ramp FLASH = new Ramp(HudPaint.GOLD.outline(), 0xFFFFFFFF, 0xFFFFFFFF, HudPaint.GOLD.hi());
     /** The panel was drawn on screen this recently (nanoseconds): no strip. */
@@ -198,7 +198,7 @@ public final class OutcomeRouletteHud {
         matrices.push();
         matrices.translate(slide, 0, 0);
         HudDraw.plate(context, Plate.TEAL, x, y, width, height, alpha);
-        HudDraw.text(context, roulette.title(), x + STRIP_PAD, y + STRIP_PAD, inner, mine(roulette) ? 0xFFFFE27A : HudDraw.TEXT, alpha);
+        HudDraw.text(context, roulette.title(), x + STRIP_PAD, y + STRIP_PAD, inner, mine(roulette) ? 0xFF9A6200 : HudDraw.TEXT, alpha);
         int lit = OutcomeRoulette.litLine(roulette.lines().size(), times, age);
         double stoppedFor = age - (OutcomeRoulette.REVEAL_TICKS + OutcomeRoulette.SPIN_TICKS);
         int lineY = y + STRIP_PAD + 11;

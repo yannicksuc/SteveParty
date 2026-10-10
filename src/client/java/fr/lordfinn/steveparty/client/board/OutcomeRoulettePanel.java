@@ -39,21 +39,27 @@ import java.util.List;
  * </pre>
  * One whole sentence per line (wrapped on a second row when the panel is too narrow for it), its icon on the left, its
  * chance on the right in its tone's colour. The lines pop in one after the other; the light runs down them and stops
- * on the result, which flashes while the others fade. Seen through the terrain (drawn last, without depth test, each
- * piece over the one before: nothing fights), its scale growing with the distance (up to a cap) to stay readable.
+ * on the result, which flashes while the others fade. Each layer a little in front of the one under it (nothing
+ * fights), high over the board (the terrain rarely hides it), its scale growing with the distance (up to a cap) to stay
+ * readable.
  * Too far, behind the player or off the screen: the HUD's strip stands in for it.
  */
 public final class OutcomeRoulettePanel {
     /** Text pixels: the panel's width bounds, its margin, a line's height, the extra height of a wrapped line. */
     private static final int MIN_WIDTH = 170, MAX_WIDTH = 260, PAD = 7, ICON = 10, LINE_H = 13, LINE_GAP = 3, WRAP_EXTRA = 9;
     /** Blocks per text pixel: near, growing with the distance, at most. */
-    private static final float SCALE_NEAR = 0.018f, SCALE_PER_BLOCK = 0.0023f, SCALE_MAX = 0.045f;
+    private static final float SCALE_NEAR = 0.026f, SCALE_PER_BLOCK = 0.003f, SCALE_MAX = 0.06f;
     /** Beyond this many blocks the HUD's strip takes over. */
     private static final double FAR = 24;
     private static final float POP_TICKS = 6, LINE_STAGGER = 3;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
-    private static final int TEXT = 0xFFFFFFFF, TEXT_DARK = 0xFF404040, CAPTION = 0xFFCFE8EC, TITLE_MINE = 0xFFFFE27A;
-    private static final int ROW = 0xF2FFFFFF, ROW_EDGE = 0xFF003640, FLASH = 0xFFFFFFFF;
+    private static final int TEXT = WorldDraw.PLATE_TEXT, TEXT_DARK = 0xFF404040, CAPTION = 0xFF2C6E78, TITLE_MINE = 0xFF9A6200;
+    private static final int ROW = 0xFFFFFFFF, ROW_EDGE = 0xFF003640, FLASH = 0xFFFFFFFF;
+    /**
+     * Depth of each layer (label space, more negative is farther): the card, a row's edge and shadow, the row, its
+     * icon; the texts lie in front of all (at 0, polygon offset). Depth tested like the mod's other world labels.
+     */
+    private static final float Z_CARD = -4, Z_EDGE = -3, Z_ROW = -2, Z_ICON = -1;
     private static final int WARN = 0xFFA02A1E, MINE = 0xFF1F6E2A, SOFT = 0xFF6B6B6B;
 
     private OutcomeRoulettePanel() {
@@ -144,7 +150,7 @@ public final class OutcomeRoulettePanel {
                              OutcomeRoulettePayload roulette, Layout layout, float alpha) {
         int width = layout.width, inner = width - 2 * PAD;
         double age = OutcomeRouletteHud.age();
-        WorldDraw.plateSeeThrough(matrices, consumers, WorldDraw.Plate.TEAL, 0, 0, width, layout.height);
+        WorldDraw.plate(matrices, consumers, WorldDraw.Plate.TEAL, 0, 0, width, layout.height, Z_CARD);
         Text title = roulette.title().copy().styled(style -> style.withBold(true));
         centered(matrices, consumers, font, title.asOrderedText(), PAD, PAD, inner,
                 Argb.fade(OutcomeRouletteHud.mine(roulette) ? TITLE_MINE : TEXT, alpha));
@@ -172,8 +178,8 @@ public final class OutcomeRoulettePanel {
         if (age < OutcomeRoulette.REVEAL_TICKS) {
             float left = 1 - Easing.clamp01((float) (age / OutcomeRoulette.REVEAL_TICKS));
             float barWidth = inner * left, barX = PAD + (inner - barWidth) / 2;
-            WorldDraw.fillSeeThrough(matrices, consumers, PAD, y + 1, PAD + inner, y + 3, Argb.fade(0x60000000, alpha));
-            if (barWidth > 0) WorldDraw.fillSeeThrough(matrices, consumers, barX, y + 1, barX + barWidth, y + 3, Argb.fade(0xFFFFC900, alpha));
+            WorldDraw.fill(matrices, consumers, PAD, y + 1, PAD + inner, y + 3, Z_EDGE, Argb.fade(0x60000000, alpha));
+            if (barWidth > 0) WorldDraw.fill(matrices, consumers, barX, y + 1, barX + barWidth, y + 3, Z_ROW, Argb.fade(0xFFFFC900, alpha));
         }
     }
 
@@ -192,14 +198,13 @@ public final class OutcomeRoulettePanel {
         matrices.scale(scale, scale, 1);
         matrices.translate(-(x + width / 2f), -(y + height / 2f), 0);
         if (flash) {
-            WorldDraw.fillSeeThrough(matrices, consumers, x - 1, y - 1, x + width + 1, y + height + 1, Argb.fade(0xFFFFC900, alpha));
-            WorldDraw.fillSeeThrough(matrices, consumers, x, y, x + width, y + height, Argb.fade(FLASH, alpha));
+            WorldDraw.fill(matrices, consumers, x - 1, y - 1, x + width + 1, y + height + 1, Z_EDGE, Argb.fade(0xFFFFC900, alpha));
+            WorldDraw.fill(matrices, consumers, x, y, x + width, y + height, Z_ROW, Argb.fade(FLASH, alpha));
         } else if (lit) {
-            WorldDraw.plateSeeThrough(matrices, consumers, WorldDraw.Plate.GOLD, x - 2, y - 2, x + width + 2, y + height + 2);
+            WorldDraw.plate(matrices, consumers, WorldDraw.Plate.GOLD, x - 2, y - 2, x + width + 2, y + height + 2, Z_ROW);
         } else {
-            WorldDraw.fillSeeThrough(matrices, consumers, x, y + 1, x + width, y + height + 1, Argb.fade(0x50000000, alpha)); // its shadow
-            WorldDraw.fillSeeThrough(matrices, consumers, x - 1, y - 1, x + width + 1, y + height, Argb.fade(ROW_EDGE, alpha));
-            WorldDraw.fillSeeThrough(matrices, consumers, x, y, x + width, y + height - 1, Argb.fade(ROW, alpha));
+            WorldDraw.fill(matrices, consumers, x - 1, y - 1, x + width + 1, y + height + 1, Z_EDGE, Argb.fade(ROW_EDGE, alpha));
+            WorldDraw.fill(matrices, consumers, x, y, x + width, y + height, Z_ROW, Argb.fade(ROW, alpha));
         }
         int textY = y + (height - 8 - (text.size() - 1) * WRAP_EXTRA) / 2 + 1;
         if (!line.icon().isEmpty() && alpha > 0.3f) icon(matrices, consumers, line, x + 3, y + (height - ICON) / 2f);
@@ -223,7 +228,7 @@ public final class OutcomeRoulettePanel {
     private static void icon(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, Line line, float x, float y) {
         MinecraftClient client = MinecraftClient.getInstance();
         matrices.push();
-        matrices.translate(x + ICON / 2f, y + ICON / 2f, -0.1f);
+        matrices.translate(x + ICON / 2f, y + ICON / 2f, Z_ICON);
         // Label space is y down: the item's model is y up
         matrices.scale(ICON, -ICON, 0.01f);
         client.getItemRenderer().renderItem(line.icon(), ModelTransformationMode.GUI, LIGHT, OverlayTexture.DEFAULT_UV,
@@ -239,7 +244,7 @@ public final class OutcomeRoulettePanel {
 
     private static void text(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, TextRenderer font,
                              OrderedText text, float x, float y, int argb) {
-        font.draw(text, x, y, argb, false, matrices.peek().getPositionMatrix(), consumers, TextRenderer.TextLayerType.SEE_THROUGH, 0, LIGHT);
+        font.draw(text, x, y, argb, false, matrices.peek().getPositionMatrix(), consumers, TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
         consumers.draw();
     }
 }
