@@ -57,7 +57,7 @@ public final class ToolHudPanel {
         void describe(ToolHudPanel panel, ItemStack held, MinecraftClient client);
     }
 
-    private record Box(ToolHud.Plate frame, Icon icon) {
+    private record Box(ToolHud.Plate frame, int width, Icon icon) {
     }
 
     private record State(Text text, ToolHud.Plate plate) {
@@ -96,7 +96,15 @@ public final class ToolHudPanel {
 
     /** A box framed by {@code frame} (gold: the active one, red: something missing) drawing {@code icon}. */
     public ToolHudPanel box(ToolHud.Plate frame, Icon icon) {
-        boxes.add(new Box(frame, icon));
+        return box(frame, BOX, icon);
+    }
+
+    /**
+     * A box {@code width} pixels wide framed by {@code frame}: {@code icon} draws its content from the top left of the
+     * inside (several icons, an arrow between them...).
+     */
+    public ToolHudPanel box(ToolHud.Plate frame, int width, Icon icon) {
+        boxes.add(new Box(frame, width, icon));
         return this;
     }
 
@@ -142,16 +150,16 @@ public final class ToolHudPanel {
         int bottom = ToolHud.bottom(context);
 
         // Boxes, the first row the lowest
-        List<List<Box>> boxRows = wrap(boxes, box -> BOX, available);
+        List<List<Box>> boxRows = wrap(boxes, Box::width, available);
         for (int i = 0; i < boxRows.size(); i++) {
             List<Box> row = boxRows.get(i);
             int y = bottom - BOX - i * (BOX + GAP);
-            int x = centerX - rowWidth(row, box -> BOX) / 2;
+            int x = centerX - rowWidth(row, Box::width) / 2;
             for (Box box : row) {
-                ToolHud.plate(context, x, y, BOX, BOX, box.frame());
+                ToolHud.plate(context, x, y, box.width(), BOX, box.frame());
                 int ix = x + INSET, iy = y + INSET;
                 HudDepth.item(context, () -> box.icon().draw(context, ix, iy));
-                x += BOX + GAP;
+                x += box.width() + GAP;
             }
         }
         if (!boxRows.isEmpty()) bottom -= boxRows.size() * (BOX + GAP) - GAP + PART_GAP;
