@@ -20,17 +20,19 @@ import java.util.List;
  * with it), with the items the Pie stole. A nest set near the space shows it and the Pie fetches the stakes.
  * <p>
  * Settings ({@link ModComponents#BOARD_CARTRIDGE_SETTINGS}): {@link #STAKE} (coins put in by a passing token, 1 by
- * default, 0 to 100), {@link #LANDER_PAYS} (the winner pays a stake too before taking the pot), {@link #START} (the pot after a
- * win, 0 by default), {@link #CAP} (the most it holds, 0 for no cap), {@link #THIEF} (the thieving Pie: the chance, in
+ * default, 0 to 100), {@link #LANDER_PAYS} (the winner pays a stake too before taking the pot), {@link #START} (the base:
+ * the pot is filled up to it from the party's bank, never made from nothing, when new and after each win; 0 by
+ * default), {@link #CAP} (the most it holds, 0 for no cap), {@link #THIEF} (the thieving Pie: the chance, in
  * percent, that it also steals an item from a passing token's player, 0: never). Remembered
- * ({@link ModComponents#BOARD_CARTRIDGE_STATE}): {@link #COINS}, the coins in the pot; the stolen items in
+ * ({@link ModComponents#BOARD_CARTRIDGE_STATE}): {@link #COINS}, the coins in the pot; {@link #BASE_DUE}, its base still
+ * to be taken from a party's bank (a pot never filled yet: due); the stolen items in
  * {@link ModComponents#POT_ITEMS}.
  */
 public class PotCartridgeItem extends BoardRuleCartridgeItem {
     /** Its tile's straw (the nest's). */
     public static final int COLOR = 0xC0A060;
     public static final String STAKE = "stake", LANDER_PAYS = "lander_pays", START = "start", CAP = "cap", THIEF = "thief",
-            COINS = "coins";
+            COINS = "coins", BASE_DUE = "base_due";
     /** Every number of the menu goes from 0 to 100 (a stake of 0: the pot only grows by what the Pie steals). */
     public static final int MAX = 100;
 
@@ -95,12 +97,23 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
         return THIEF_SETTING.get(stack);
     }
 
-    /** The coins in the pot now (its start until a token passed). */
+    /** The coins in the pot now (none until something is put in: its base comes from a party's bank). */
     public static int coins(ItemStack stack) {
-        return Math.max(0, state(stack, COINS, start(stack)));
+        return Math.max(0, state(stack, COINS, 0));
+    }
+
+    /** Whether its base is still to be taken from a party's bank: a pot never filled yet, or won since. */
+    public static boolean baseDue(ItemStack stack) {
+        return state(stack, BASE_DUE, state(stack, COINS, -1) < 0 ? 1 : 0) == 1;
+    }
+
+    public static void setBaseDue(ItemStack stack, boolean due) {
+        putState(stack, BASE_DUE, due ? 1 : 0);
     }
 
     public static void setCoins(ItemStack stack, int coins) {
+        // A pot never filled yet keeps its base due, whatever comes in first
+        if (state(stack, BASE_DUE, -1) < 0 && state(stack, COINS, -1) < 0) putState(stack, BASE_DUE, 1);
         putState(stack, COINS, Math.max(0, coins));
     }
 

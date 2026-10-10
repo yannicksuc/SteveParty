@@ -2,14 +2,18 @@ package fr.lordfinn.steveparty.client.screens.partycontroller;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.Tooltip;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
@@ -33,6 +37,8 @@ public final class GainsPage {
     private static final int COLOR_SHORT = 0xFFFFB54A;
     /** The button opening the controller's own bank, right of the cartridge slot. */
     private static final int BANK_BUTTON_X = CX + 22, BANK_BUTTON_W = 44;
+    /** The « Infinite bank » switch, right of that button (creative mode or operator only), then the bank's line. */
+    private static final int INFINITE_X = BANK_BUTTON_X + BANK_BUTTON_W + 2, INFINITE_W = 16, BANK_TEXT_X = INFINITE_X + INFINITE_W + 4;
     private static final PartyCurrency[] CURRENCIES = {PartyCurrency.COIN, PartyCurrency.STAR};
 
     private final Dashboard dashboard;
@@ -59,6 +65,18 @@ public final class GainsPage {
                 Text.translatable(KEY + "gains.bank.open"), ConsoleButton.Kind.SCREEN, null, () -> dashboard.click(BUTTON_BANK, 1)));
         bank.active = data.canEdit();
         bank.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "gains.bank.open.hint") : Text.translatable(KEY + "locked")));
+        // The « Infinite bank »: greyed out for a player who is neither in creative mode nor an operator (the server checks again)
+        boolean infinite = data.bank().state() == PartyBank.State.INFINITE;
+        PlayerEntity viewer = MinecraftClient.getInstance().player;
+        boolean allowed = viewer != null && PartyControllerEntity.canSwitchInfiniteBank(viewer);
+        ConsoleButton unlimited = dashboard.add(new ConsoleButton(dashboard.left() + INFINITE_X, dashboard.top() + CY + 2, INFINITE_W, 14,
+                Text.literal("∞").formatted(infinite ? Formatting.GREEN : Formatting.GRAY), ConsoleButton.Kind.SCREEN, null,
+                () -> dashboard.click(BUTTON_INFINITE_BANK, 1)));
+        unlimited.active = data.canEdit() && allowed;
+        Text state = Text.translatable(KEY + "gains.bank.infinite." + (infinite ? "on" : "off"));
+        Text hint = !data.canEdit() ? Text.translatable(KEY + "locked")
+                : !allowed ? Text.translatable(KEY + "gains.bank.infinite.not_allowed") : Text.translatable(KEY + "gains.bank.infinite.switch");
+        unlimited.setTooltip(Tooltip.of(Text.empty().append(state).append(ScreenTexts.LINE_BREAK).append(hint)));
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
             for (PartyCurrency currency : CURRENCIES) {
                 int left = dashboard.left() + (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X), top = dashboard.top() + GAINS_Y + row * GAINS_ROW;
@@ -80,13 +98,14 @@ public final class GainsPage {
     public void draw(DrawContext context, PartyDashboardData data) {
         // The bank's line: its cartridge slot, its name (what it holds in its tooltip)
         PartyBank.Status bank = data.bank();
-        int tx = BANK_BUTTON_X + BANK_BUTTON_W + 4, room = COIN_X - 1 - 4 - tx;
+        int tx = BANK_TEXT_X, room = COIN_X - 1 - 4 - tx;
         switch (bank.state()) {
             case NONE, MISSING -> paint.line(context, Text.translatable(KEY + "gains.bank." + (bank.state() == PartyBank.State.NONE ? "none" : "missing")),
                     tx, CY + 5, room, INK_RED);
             // Some containers skipped (gone, not loaded): said on the line, in the colour of « short »
             case OK, SHORT -> paint.line(context, Text.translatable(KEY + "gains.bank").append(skipped(bank)), tx, CY + 5, room,
                     bank.state() == PartyBank.State.SHORT || !skipped(bank).getString().isEmpty() ? COLOR_SHORT : WHITE);
+            case INFINITE -> paint.line(context, Text.translatable(KEY + "gains.bank.infinite"), tx, CY + 5, room, WHITE);
         }
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
             int top = GAINS_Y + row * GAINS_ROW;
@@ -133,7 +152,7 @@ public final class GainsPage {
 
     /** The bank (its line, its empty slot): what it is, what it holds, why it can't pay; null when the mouse is elsewhere. */
     public @Nullable List<Text> bankTooltip(PartyDashboardData data, @Nullable Slot focused, int mx, int my) {
-        if (!(HitArea.contains(mx, my, BANK_BUTTON_X + BANK_BUTTON_W + 2, CY, COIN_X - 1 - BANK_BUTTON_X - BANK_BUTTON_W - 6, 18) || (focused != null && focused.id == SLOT_BANK && !focused.hasStack())))
+        if (!(HitArea.contains(mx, my, BANK_TEXT_X - 2, CY, COIN_X - 1 - BANK_TEXT_X - 2, 18) || (focused != null && focused.id == SLOT_BANK && !focused.hasStack())))
             return null;
         PartyBank.Status bank = data.bank();
         List<Text> lines = new ArrayList<>();
@@ -141,6 +160,7 @@ public final class GainsPage {
         switch (bank.state()) {
             case NONE -> lines.add(Text.translatable(KEY + "gains.bank.none.hint").formatted(Formatting.GRAY));
             case MISSING -> lines.add(Text.translatable(KEY + "gains.bank.missing.hint").append(skipped(bank)).formatted(Formatting.RED));
+            case INFINITE -> lines.add(Text.translatable(KEY + "gains.bank.infinite.hint").formatted(Formatting.GRAY));
             case OK, SHORT -> {
                 lines.add(Text.translatable(KEY + "gains.bank.holds", bank.coins(), dashboard.currency(PartyCurrency.COIN).getName(),
                         bank.stars(), dashboard.currency(PartyCurrency.STAR).getName()).formatted(Formatting.GRAY));

@@ -7,7 +7,8 @@ import java.util.List;
 
 /**
  * Double pièces / Double Coins: every coin of the party its player gains until the end of the turn is doubled (a coin
- * face, an item space giving the party's coin...). The losses are not.
+ * face, an item space giving the party's coin...), the extra taken from where the coins come from (the party's bank,
+ * the space's chests): never made from nothing. The losses are not.
  */
 public class DoubleCoinsPowerUp extends PowerUp {
     public static final int FACTOR = 2;
@@ -27,6 +28,7 @@ public class DoubleCoinsPowerUp extends PowerUp {
                 Text.translatable("powerup.steveparty.double_coins.desc",
                         keyword(Text.translatable("powerup.steveparty.double_coins.desc.gained")),
                         keyword(Text.translatable("powerup.steveparty.double_coins.desc.doubled"))).formatted(Formatting.GRAY),
+                Text.translatable("powerup.steveparty.double_coins.desc.bank").formatted(Formatting.DARK_GRAY),
                 Text.translatable("powerup.steveparty.double_coins.desc.losses").formatted(Formatting.DARK_GRAY));
     }
 }

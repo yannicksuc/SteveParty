@@ -32,6 +32,12 @@ public final class PartySettings {
     /** Only the allowed dice may be thrown during a party (Settings page); off: every die. */
     private boolean restrictDice;
     /**
+     * « Infinite bank »: the party's bank never runs out, whatever is asked of it is given and whatever is put in it is
+     * absorbed (see {@link PartyResources#of(PartyControllerEntity)}). Only a player in creative mode or an operator
+     * switches it.
+     */
+    private boolean infiniteBank;
+    /**
      * The dice a player may throw during a party while {@link #restrictDice} is on (empty: every die), one of each, in
      * the order they were picked; {@link AllowedDice#defaults} at first.
      */
@@ -45,6 +51,7 @@ public final class PartySettings {
         nbt.putBoolean("PracticeRound", practiceRound);
         nbt.putInt("MaxPowerUps", maxPowerUps);
         nbt.putBoolean("RestrictDice", restrictDice);
+        if (infiniteBank) nbt.putBoolean("InfiniteBank", true);
         // Saved even empty (every die): only a controller without it gets the default dice
         NbtList diceNbt = new NbtList();
         allowedDice.forEach(die -> diceNbt.add(die.encode(wrapper)));
@@ -62,6 +69,7 @@ public final class PartySettings {
                 ? Math.clamp(nbt.getInt("MaxPowerUps"), 0, PowerUpLimit.MAX)
                 : PowerUpLimit.DEFAULT;
         restrictDice = nbt.getBoolean("RestrictDice");
+        infiniteBank = nbt.getBoolean("InfiniteBank");
         allowedDice.clear();
         if (!nbt.contains("AllowedDice")) allowedDice.addAll(AllowedDice.defaults());
         for (NbtElement element : nbt.getList("AllowedDice", NbtElement.COMPOUND_TYPE)) {
@@ -129,6 +137,17 @@ public final class PartySettings {
         int clamped = Math.clamp(maxPowerUps, 0, PowerUpLimit.MAX);
         if (this.maxPowerUps == clamped) return false;
         this.maxPowerUps = clamped;
+        return true;
+    }
+
+    public boolean isInfiniteBank() {
+        return infiniteBank;
+    }
+
+    /** @return true if it changed */
+    boolean setInfiniteBank(boolean infiniteBank) {
+        if (this.infiniteBank == infiniteBank) return false;
+        this.infiniteBank = infiniteBank;
         return true;
     }
 

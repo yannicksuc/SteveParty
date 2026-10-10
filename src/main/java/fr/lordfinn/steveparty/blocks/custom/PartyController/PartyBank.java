@@ -33,8 +33,8 @@ import java.util.List;
  * order; the cartridge's item slots and transfer mode, for board spaces, play no part here. Everything the party pays
  * (mini-game gains, a star bought, the board spaces without a chest of their own...) is taken from it, the first
  * places first, never created: what is not in it is not paid; what the party takes (a star's price, stakes...) goes
- * in the first place with room, in the same order. The one way in: {@link #places}, {@link #inventory},
- * {@link #deposit}.
+ * in the first place with room, in the same order. Nobody uses it directly: everything goes through the party's one
+ * source, {@link PartyResources#of(PartyControllerEntity)} (which may be the « Infinite bank » instead).
  * <p>
  * A bank container is a storage container: a chest (a double chest counts whole, whichever half was chosen, and once
  * even if both halves are in the list), a trapped chest, a barrel or a shulker box; not a hopper, a dropper, a
@@ -54,7 +54,9 @@ public final class PartyBank {
         /** Enough for a whole mini-game, over the containers that are there. */
         OK,
         /** Not enough for a whole mini-game. */
-        SHORT
+        SHORT,
+        /** The « Infinite bank » of the controller: it never runs out (its inventory and chests are not used). */
+        INFINITE
     }
 
     /**
@@ -102,23 +104,6 @@ public final class PartyBank {
     public static @Nullable Inventory chests(MinecraftServer server, ItemStack cartridge) {
         List<Inventory> paying = resolve(server, cartridge).paying();
         return paying.isEmpty() ? null : paying.size() == 1 ? paying.getFirst() : new InventoryChain(paying);
-    }
-
-    /** {@code controller}'s bank as one inventory, its places end to end in order (taking walks them in order). */
-    public static Inventory inventory(PartyControllerEntity controller) {
-        List<Inventory> places = places(controller);
-        return places.size() == 1 ? places.getFirst() : new InventoryChain(places);
-    }
-
-    /**
-     * Puts as much of {@code stack} as fits in {@code controller}'s bank: the first place with room first (merging,
-     * then its empty slots), then the next. {@code stack} is decremented by what went in. @return how many went in
-     */
-    public static int deposit(PartyControllerEntity controller, ItemStack stack) {
-        List<Inventory> places = places(controller);
-        int inserted = CartridgeContainers.insertInOrder(stack, places);
-        if (inserted > 0) places.forEach(Inventory::markDirty);
-        return inserted;
     }
 
     /** Whether a block entity can be a bank: a storage container that does not move items by itself. */
@@ -202,6 +187,7 @@ public final class PartyBank {
      * mini-game for {@code players} players, and how many containers are skipped (gone, not loaded).
      */
     public static Status status(PartyControllerEntity controller, MinecraftServer server, int players) {
+        if (controller.isInfiniteBank()) return new Status(State.INFINITE, 0, 0);
         Resolved resolved = resolve(server, controller.getBank());
         // Its own inventory always pays; empty with no chest linked: none; its linked chests all missing: said
         if (controller.getBankItems().isEmpty() && resolved.paying().isEmpty()) {
