@@ -53,7 +53,7 @@ import java.util.function.Supplier;
  * <p>
  * Texts always fit: the texts of several lines (descriptions, infos, hints) wrap on as many lines as they need and
  * their module takes that height; a one-line text too long for its box (the name, a module's title, a button) scrolls
- * back and forth in it, whole in a tooltip under the mouse ({@link UiText#line}). In a narrow window the columns shrink; when the
+ * in it in the reading direction, whole in a tooltip under the mouse ({@link UiText#line}). In a narrow window the columns shrink; when the
  * modules are taller than the place the shell has, they scroll (mouse wheel, a thin bar on the right).
  * <p>
  * « Current »: copper traces run from the contacts to each module. When the menu opens, a pulse runs from the contacts
