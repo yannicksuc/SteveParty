@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGamesCatalogueScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -24,6 +25,15 @@ public class MiniGamesCatalogueScreen extends HandledScreen<MiniGamesCatalogueSc
         int x = (width - backgroundWidth) / 2;
         int y = (height - backgroundHeight) / 2;
         context.drawTexture(TEXTURE, x, y, 0, 0, backgroundWidth, backgroundHeight, 256, 256);
+    }
+
+    /** The vanilla titles: the catalogue's across the top, the inventory's up to its panel's right padding. */
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        UiText.line(context, textRenderer, title, titleX, titleY, backgroundWidth - 8 - titleX, 0x404040, false);
+        // The inventory panel runs from x 36 to 212 in the texture
+        UiText.line(context, textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY,
+                212 - 8 - playerInventoryTitleX, 0x404040, false);
     }
 
     @Override

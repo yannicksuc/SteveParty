@@ -6,10 +6,10 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.P
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.Page;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
@@ -21,7 +21,7 @@ import static fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScree
 
 /**
  * The dashboard's tabs above its panel: their layout (each its name and 5 px each side, 2 px apart; all of the same
- * width, their names cut, when a wordy language makes them too long), their buttons, the tabs at rest behind the panel,
+ * width, their names scrolling in them, when a wordy language makes them too long), their buttons, the tabs at rest behind the panel,
  * their names (red, or orange, on a tab that blocks the party, or warns).
  */
 public final class DashboardTabs {
@@ -63,7 +63,7 @@ public final class DashboardTabs {
         int left = BEZEL;
         for (Page tab : tabs) {
             int index = tab.ordinal();
-            // Names too long for the row (a wordy language): tabs of the same width, their names cut
+            // Names too long for the row (a wordy language): tabs of the same width, their names scrolling
             tabWide[index] = total > room ? room / tabs.length : dashboard.font().getWidth(name(tab)) - 1 + 2 * TAB_PAD;
             tabLeft[index] = left;
             left += tabWide[index] + TAB_GAP;
@@ -143,12 +143,14 @@ public final class DashboardTabs {
             int index = tab.ordinal(), tw = tabWide[index];
             int tx = x + tabLeft[index], ty = y - TABS_HEIGHT + TAB_LABEL_Y;
             Badge badge = badge(tab);
-            OrderedText label = paint.fit(name(tab), tw - 2 * TAB_PAD + 1);
-            int lx = tx + (tw - dashboard.font().getWidth(label) + 1) / 2;
+            // Centred in the tab; too long (tabs of the same width), it scrolls between its paddings
+            Text label = name(tab);
+            int w = dashboard.font().getWidth(label), room = tw - 2 * TAB_PAD + 2;
+            int lx = w <= room ? tx + (tw - w + 1) / 2 : tx + TAB_PAD - 1, lw = Math.min(w, room);
             if (tab == dashboard.page()) {
-                context.drawText(dashboard.font(), label, lx, ty, badge == null ? WHITE : badge.error ? INK_RED : INK_WARN, true);
+                UiText.line(context, dashboard.font(), label, lx, ty, lw, badge == null ? WHITE : badge.error ? INK_RED : INK_WARN, true);
             } else {
-                paint.dark(context, label, lx, ty, badge == null ? TAB_INK : badge.error ? TAB_RED : TAB_WARN, WHITE);
+                ConsolePaint.darkText(context, dashboard.font(), label.asOrderedText(), lx, ty, lw, badge == null ? TAB_INK : badge.error ? TAB_RED : TAB_WARN, WHITE);
             }
         }
     }

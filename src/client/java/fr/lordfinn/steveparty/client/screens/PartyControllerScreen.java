@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.screens.partycontroller.Dashboard;
 import fr.lordfinn.steveparty.client.screens.partycontroller.DashboardPainter;
 import fr.lordfinn.steveparty.client.screens.partycontroller.DashboardTabs;
@@ -29,7 +30,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
@@ -210,8 +210,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         PartyDashboardData data = data();
         if (data == null) {
-            OrderedText loading = paint.fit(Text.translatable(KEY + "loading"), CW);
-            context.drawText(textRenderer, loading, (WIDTH - textRenderer.getWidth(loading)) / 2, PANEL_HEIGHT / 2 - 4, INK_SOFT, true);
+            UiText.centered(context, textRenderer, Text.translatable(KEY + "loading"), CX, PANEL_HEIGHT / 2 - 4, CW, INK_SOFT, true);
             return;
         }
         int mx = mouseX - x, my = mouseY - y;
@@ -224,12 +223,13 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
         ConsolePaint.infoButton(context, INFO_X, infoY());
         if (flash != null && Util.getMeasuringTimeMs() < flashUntil) {
-            int w = textRenderer.getWidth(flash) + 8;
+            // As wide as its text, at most the content's width (longer, it scrolls in it)
+            int w = Math.min(textRenderer.getWidth(flash) + 8, CW);
             int fx = (WIDTH - w) / 2, fy = CONTENT_BOTTOM - 14;
             context.getMatrices().push();
             context.getMatrices().translate(0, 0, 300);
             ConsolePaint.box(context, fx, fy, w, 14, FLASH, 1, 1);
-            context.drawTextWithShadow(textRenderer, flash, fx + 4, fy + 3, WHITE);
+            UiText.line(context, textRenderer, flash, fx + 4, fy + 3, w - 8, WHITE, true);
             context.getMatrices().pop();
         }
     }

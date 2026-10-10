@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.screens;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
@@ -159,9 +160,14 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         double a = Math.toRadians(StencilGunScreenHandler.HEADER / 2);
         int ty = StencilGunScreenHandler.CENTER_Y - (int) Math.round(Math.cos(a) * r) - 4;
         int dx = (int) Math.round(Math.sin(a) * r);
-        context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.steveparty.stencil_gun.dyes"), StencilGunScreenHandler.CENTER_X - dx, ty, 0xFFFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.steveparty.stencil_gun.stencils"), StencilGunScreenHandler.CENTER_X + dx, ty, 0xFFFFFFFF);
-        context.drawText(textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, TEXT, false);
+        // Each on its plate: from the wheel's vertical axis (2 px off it) to as far on the other side of its centre
+        int room = 2 * dx - 4;
+        UiText.centered(context, textRenderer, Text.translatable("screen.steveparty.stencil_gun.dyes"), StencilGunScreenHandler.CENTER_X - dx - room / 2, ty,
+                room, 0xFFFFFFFF, true);
+        UiText.centered(context, textRenderer, Text.translatable("screen.steveparty.stencil_gun.stencils"), StencilGunScreenHandler.CENTER_X + dx - room / 2, ty,
+                room, 0xFFFFFFFF, true);
+        // Up to the inventory panel's right padding (8 px, as on its left)
+        UiText.line(context, textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, 176 - 16, TEXT, false);
     }
 
     /** The slot plate under the mouse (not the titles' nor the hub), or null. */

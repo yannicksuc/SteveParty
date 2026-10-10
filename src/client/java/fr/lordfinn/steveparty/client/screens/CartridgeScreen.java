@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.cartridge.CartridgePanel;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.payloads.custom.CartridgeSlotScrollPayload;
@@ -92,7 +93,9 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         if (handler.withInventory()) {
-            context.drawText(textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, PartyGui.TEXT_DARK, false);
+            // Up to the inventory panel's right padding (8 px, as on its left)
+            int room = (backgroundWidth + CartridgeLayout.INVENTORY_W) / 2 - 8 - playerInventoryTitleX;
+            UiText.line(context, textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, room, PartyGui.TEXT_DARK, false);
         }
     }
 

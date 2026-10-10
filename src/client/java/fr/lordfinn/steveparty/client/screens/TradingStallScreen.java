@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import net.minecraft.client.gui.DrawContext;
@@ -75,7 +76,8 @@ public class TradingStallScreen extends HandledScreen<TradingStallScreenHandler>
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        //context.drawText(this.textRenderer, this.title, this.titleX, this.titleY, 0xfff1f1f1, false);
-        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX, this.playerInventoryTitleY, 4210752, false);
+        // No title (the awning says it); the inventory's up to its panel's right padding (the panel runs from x 4 to 180)
+        UiText.line(context, this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX, this.playerInventoryTitleY,
+                180 - 8 - this.playerInventoryTitleX, 4210752, false);
     }
 }

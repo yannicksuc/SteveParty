@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.screens;
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.FormatChips;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.client.screens.pageeditor.BinderPage;
 import fr.lordfinn.steveparty.client.screens.pageeditor.BinderTab;
@@ -31,6 +32,7 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.OrderedText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
@@ -408,14 +410,29 @@ public class MiniGamePageEditorScreen extends Screen implements PageEditor {
             int colour = statusIsError ? RED : GREEN2;
             if (tab == BinderTab.PAGE) {
                 // Between the formats and the zone
-                List<OrderedText> lines = textRenderer.wrapLines(status, CW + 1);
-                int top = pageTab.statusTop(data);
-                for (int i = 0; i < Math.min(2, lines.size()) && top + i * 10 + 8 <= pageTab.statusBottom(); i++)
-                    context.drawText(textRenderer, lines.get(i), x + RX, top + i * 10, colour, false);
+                int top = pageTab.statusTop(data), below = pageTab.statusBottom() - top - 8;
+                List<OrderedText> lines = statusLines(status, below < 0 ? 0 : Math.min(2, below / 10 + 1));
+                for (int i = 0; i < lines.size(); i++)
+                    UiText.line(context, textRenderer, lines.get(i), x + RX, top + i * 10, CW + 1, colour, false);
             } else {
-                context.drawText(textRenderer, PagePaint.fit(textRenderer, status, FULL - 124 - 6), x + LX, y + BOTTOM_Y + 4, colour, false);
+                // Up to the « Test » button, 5 px before it
+                UiText.line(context, textRenderer, status, x + LX, y + BOTTOM_Y + 4, FULL - 124 - 5, colour, false);
             }
         }
+    }
+
+    /** The status on lines of the right column, at most {@code max}: what does not fit goes on the last one, which scrolls. */
+    private List<OrderedText> statusLines(Text text, int max) {
+        List<OrderedText> lines = UiText.wrap(textRenderer, text, CW + 1);
+        if (lines.size() <= max) return lines;
+        if (max <= 0) return List.of();
+        List<OrderedText> shown = new ArrayList<>(lines.subList(0, max - 1)), rest = new ArrayList<>();
+        for (OrderedText line : lines.subList(max - 1, lines.size())) {
+            if (!rest.isEmpty()) rest.add(OrderedText.styledForwardsVisitedString(" ", Style.EMPTY));
+            rest.add(line);
+        }
+        shown.add(OrderedText.concat(rest));
+        return shown;
     }
 
     // ------------------------------------------------------------------ input

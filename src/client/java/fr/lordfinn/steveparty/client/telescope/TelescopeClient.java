@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.payloads.custom.TelescopePayloads;
@@ -487,6 +488,15 @@ public final class TelescopeClient {
         context.fill(x - 1, y - 1, x + 2, y + 2, 0xFFFFFFFF);
     }
 
+    /**
+     * The width of a circle of {@code radius} at {@code distance} from its centre, made odd (a text centered in it lands
+     * where drawCenteredText put it).
+     */
+    private static int chord(int radius, int distance) {
+        if (Math.abs(distance) >= radius) return 0;
+        return 2 * (int) Math.sqrt((double) radius * radius - (double) distance * distance) - 1;
+    }
+
     public static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         float tickDelta = tickCounter.getTickDelta(false);
@@ -513,7 +523,11 @@ public final class TelescopeClient {
         TelescopePayloads.Night night = night();
         // inside the opening (the ring is 8 of the texture's 128 pixels from its edge)
         int textTop = Math.max(4, top + size * 12 / 128);
-        context.drawCenteredTextWithShadow(text, Text.translatable("gui.steveparty.telescope.title").formatted(Formatting.GOLD), cx, textTop, 0xFFFFFF);
+        // The opening's width at each line (its radius: the ring is inside the last 8 pixels)
+        int radius = size * 56 / 128;
+        int titleRoom = chord(radius, cy - (textTop + 4));
+        UiText.centered(context, text, Text.translatable("gui.steveparty.telescope.title").formatted(Formatting.GOLD),
+                cx - titleRoom / 2, textTop, titleRoom, 0xFFFFFF, true);
         Text when;
         if (night == null) {
             when = Text.translatable("gui.steveparty.telescope.tonight", today);
@@ -524,16 +538,19 @@ public final class TelescopeClient {
                     : Text.translatable("gui.steveparty.telescope.ago.nights", ago);
             when = Text.translatable("gui.steveparty.telescope.night", night.day(), agoText, index, nights.size());
         }
-        context.drawCenteredTextWithShadow(text, when, cx, textTop + 12, 0xFFFFFF);
+        int whenRoom = chord(radius, cy - (textTop + 16));
+        UiText.centered(context, text, when, cx - whenRoom / 2, textTop + 12, whenRoom, 0xFFFFFF, true);
 
         Text hint;
         if (successTicks >= 0) hint = Text.translatable("gui.steveparty.telescope.found").formatted(Formatting.YELLOW);
         else if (night != null) hint = Text.translatable("gui.steveparty.telescope.hint.track");
         else if (nights.isEmpty()) hint = Text.translatable(foundHere ? "gui.steveparty.telescope.hint.all_found" : "gui.steveparty.telescope.hint.none");
         else hint = Text.translatable("gui.steveparty.telescope.hint.wheel", nights.size());
-        context.drawCenteredTextWithShadow(text, hint, cx, height - 58, 0xFFFFFF);
-        context.drawCenteredTextWithShadow(text, Text.translatable("gui.steveparty.telescope.hint.leave").formatted(Formatting.GRAY),
-                cx, height - 46, 0xFFFFFF);
+        // The hints, at the bottom of the screen (over the opening or the black around it): the screen's width
+        int hintRoom = (width - 8 - 1) | 1;
+        UiText.centered(context, text, hint, cx - hintRoom / 2, height - 58, hintRoom, 0xFFFFFF, true);
+        UiText.centered(context, text, Text.translatable("gui.steveparty.telescope.hint.leave").formatted(Formatting.GRAY),
+                cx - hintRoom / 2, height - 46, hintRoom, 0xFFFFFF, true);
 
         if (night != null) {
             // The reticle: four corners, golden while a star is held, and the gauge under it

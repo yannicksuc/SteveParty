@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
@@ -58,6 +59,7 @@ public class ShopStopScreen extends MerchantScreen {
                         Text.translatable("gui.steveparty.shop_stop.time_left", seconds)
                                 .formatted(seconds <= 10 ? Formatting.RED : Formatting.GOLD));
         int lineY = Math.max(2, this.y - 12);
-        context.drawCenteredTextWithShadow(this.textRenderer, line, this.x + this.backgroundWidth / 2, lineY, 0xFFFFFF);
+        // Centred over the merchant screen, as wide as it
+        UiText.centered(context, this.textRenderer, line, this.x, lineY, this.backgroundWidth, 0xFFFFFF, true);
     }
 }

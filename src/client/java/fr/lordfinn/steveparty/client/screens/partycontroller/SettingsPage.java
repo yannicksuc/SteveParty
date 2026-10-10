@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.P
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.powerups.PowerUpLimit;
@@ -83,9 +84,9 @@ public final class SettingsPage {
         plus.active = editable && data.roundsSetting() < PartyControllerEntity.MAX_ROUNDS;
         minus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.less") : why));
         plus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.more") : why));
-        // A practice round before each mini-game: a switch, its state on its left
+        // A practice round before each mini-game: a switch, its state on its left (at most in the 72 px its label leaves)
         Text state = Text.translatable(KEY + (data.practiceRound() ? "settings.practice.on" : "settings.practice.off"));
-        int width = dashboard.font().getWidth(state) - 1 + 4 + 24;
+        int width = Math.min(dashboard.font().getWidth(state) - 1 + 4 + 24, 68);
         Switch practice = dashboard.add(new Switch(x + CX + CW - width, y + SETTINGS_Y + SETTINGS_ROW, width, BTN_H, state, data.practiceRound(),
                 BUTTON_PRACTICE));
         practice.active = data.canEdit();
@@ -140,7 +141,9 @@ public final class SettingsPage {
             int count = handler().allowedDiceCount();
             Text value = count == 0 ? Text.translatable(KEY + "settings.allowed_dice.all")
                     : Text.translatable(KEY + "settings.allowed_dice.count", count, PartyControllerEntity.MAX_ALLOWED_DICE);
-            paint.light(context, value, DICE_TOGGLE_X - 4 - dashboard.font().getWidth(value), DICE_Y + 5,
+            // At the right, before the toggle; its room is between the switch and the toggle
+            int w = dashboard.font().getWidth(value), room = DICE_TOGGLE_X - 4 - (DICE_SWITCH_X + 24 + 4);
+            paint.light(context, value, w <= room ? DICE_TOGGLE_X - 4 - w : DICE_SWITCH_X + 24 + 4, DICE_Y + 5, Math.min(w, room),
                     !data.restrictDice() ? INK_DIM : count == 0 ? INK_SOFT : WHITE);
         } else {
             int room = CW - 72;
@@ -237,7 +240,8 @@ public final class SettingsPage {
             ConsolePaint.disc(context, sx + (on ? 13 : 1), sy + 1, 10, KNOB);
             if (active && (isHovered() || isFocused())) ConsolePaint.highlight(context, sx - 1, sy - 1, 26, 14, -1, WHITE, 0);
             TextRenderer font = MinecraftClient.getInstance().textRenderer;
-            context.drawText(font, getMessage(), getX(), getY() + 5, !active ? INK_DIM : on ? INK_GREEN : INK_SOFT, true);
+            // Its state, up to 4 px before the switch
+            UiText.line(context, font, getMessage(), getX(), getY() + 5, Math.max(0, width - 27), !active ? INK_DIM : on ? INK_GREEN : INK_SOFT, true);
         }
 
         @Override

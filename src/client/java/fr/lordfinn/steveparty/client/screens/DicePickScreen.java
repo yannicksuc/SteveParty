@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.payloads.custom.DicePromptAnswerPayload;
 import fr.lordfinn.steveparty.payloads.custom.DicePromptPayload;
@@ -143,7 +144,7 @@ public class DicePickScreen extends Screen {
                 int y = i <= step() ? contentY + i * (CELL + SECTION_GAP)
                         : currentY + optionsHeight() + SECTION_GAP + (i - step() - 1) * (CELL + SECTION_GAP);
                 int color = i == step() ? PartyGui.TEXT_DARK : PartyGui.TEXT_SOFT;
-                context.drawText(textRenderer, sectionLabel(i), contentX, y + (CELL - 8) / 2, color, false);
+                UiText.line(context, textRenderer, sectionLabel(i), contentX, y + (CELL - 8) / 2, labelWidth - LABEL_GAP, color, false);
                 int x = contentX + labelWidth;
                 if (i < step()) {
                     // A face already picked
@@ -155,7 +156,7 @@ public class DicePickScreen extends Screen {
                 } else if (i > step()) {
                     // A die still to come
                     PartyGui.button(context, x, y, CELL, CELL, PartyGui.BUTTON_DISABLED, false);
-                    context.drawCenteredTextWithShadow(textRenderer, Text.literal("?"), x + CELL / 2, y + 7, 0xFFFFFFFF);
+                    UiText.centered(context, textRenderer, "?", x, y + 7, CELL, 0xFFFFFFFF, true);
                 }
             }
         }
@@ -169,8 +170,9 @@ public class DicePickScreen extends Screen {
             PartyGui.button(context, b[0], b[1], b[2], b[3], theme, false);
             if (prompt.list()) {
                 if (!option.icon().isEmpty()) context.drawItem(option.icon(), b[0] + 3, b[1] + 3);
-                context.drawText(textRenderer, textRenderer.trimToWidth(option.label(), ROW_WIDTH - 30).getString(),
-                        b[0] + 24, b[1] + 7, PartyGui.TEXT_DARK, false);
+                // Right of the icon, up to the row's right padding
+                UiText.line(context, textRenderer, option.label().getString(), b[0] + 24, b[1] + 7, ROW_WIDTH - 30,
+                        PartyGui.TEXT_DARK, false);
             } else {
                 drawIcon(context, option, b[0], b[1]);
                 if (i == hovered) tooltip = option.label();
@@ -190,7 +192,7 @@ public class DicePickScreen extends Screen {
     /** The option's icon in a cell (its label when it has none). */
     private void drawIcon(DrawContext context, DicePrompts.Option option, int x, int y) {
         if (!option.icon().isEmpty()) context.drawItem(option.icon(), x + 3, y + 3);
-        else context.drawCenteredTextWithShadow(textRenderer, option.label(), x + CELL / 2, y + 7, 0xFFFFFFFF);
+        else UiText.centered(context, textRenderer, option.label(), x, y + 7, CELL, 0xFFFFFFFF, true);
     }
 
     @Override

@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
@@ -31,10 +32,11 @@ public final class PagePaint {
         return Language.getInstance().reorder(GuiText.cut(font, text, width));
     }
 
-    /** {@code text} centred on {@code centerX}, cut to the picture's frame. */
+    /** {@code text} centred on {@code centerX}, in the picture's frame (too long, it scrolls in it). */
     public static void centred(DrawContext context, TextRenderer font, Text text, int centerX, int top, int color) {
-        OrderedText line = fit(font, text, CW - 8);
-        context.drawText(font, line, centerX - (font.getWidth(line) - 1) / 2, top, color, false);
+        int room = CW - 8, w = font.getWidth(text);
+        if (w - 1 <= room) UiText.line(context, font, text, centerX - (w - 1) / 2, top, w, color, false);
+        else UiText.line(context, font, text, centerX - room / 2, top, room, color, false);
     }
 
     /** A tooltip whose long lines are cut (about forty characters wide). */

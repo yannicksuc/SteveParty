@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.client.gui.cartridge;
 
-import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
@@ -41,9 +41,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
@@ -54,8 +52,8 @@ import java.util.function.Supplier;
  * bottom. Shared by the cartridge's own screen and the tile's interface.
  * <p>
  * Texts always fit: the texts of several lines (descriptions, infos, hints) wrap on as many lines as they need and
- * their module takes that height; a one-line text too long for its box (the name, a module's title, a button) is cut
- * with « … » and scrolls back and forth while the mouse is over it. In a narrow window the columns shrink; when the
+ * their module takes that height; a one-line text too long for its box (the name, a module's title, a button) scrolls
+ * back and forth in it, whole in a tooltip under the mouse ({@link UiText#line}). In a narrow window the columns shrink; when the
  * modules are taller than the place the shell has, they scroll (mouse wheel, a thin bar on the right).
  * <p>
  * « Current »: copper traces run from the contacts to each module. When the menu opens, a pulse runs from the contacts
@@ -78,9 +76,6 @@ public final class CartridgePanel {
     private static final long FLASH_MS = 260;
     private static final int NO_PENDING = Integer.MIN_VALUE, PENDING_TICKS = 40, INFO_REFRESH_TICKS = 10;
     private static final int TOGGLE = 9;
-    /** A text too long for its box, under the mouse: pixels per second, and the pause at each end. */
-    private static final float MARQUEE_SPEED = 28F;
-    private static final long MARQUEE_PAUSE_MS = 700;
     private static final int SCROLL_STEP = 14;
 
     private final MinecraftClient client;
@@ -115,12 +110,10 @@ public final class CartridgePanel {
     private List<List<OrderedText>> infoLines = new ArrayList<>();
     private int[][] infoColors = new int[0][];
     private List<OrderedText> ghostHelp = List.of(), emptyLines = List.of();
+    /** The width the ghost slots' help is wrapped at. */
+    private int ghostHelpW;
     private String giveText = "", takeText = "";
     private int infoTicks;
-    /** Texts cut with « … », by text and width (cleared with the layout). */
-    private final Map<String, String> truncated = new HashMap<>();
-    private long marqueeStart;
-    private @Nullable String marqueeText;
     // Traces: per module, 5 points (x, y) from the contacts to the module, and the lengths
     private int[][] paths = new int[0][];
     private int[] pathLength = new int[0];
@@ -234,7 +227,6 @@ public final class CartridgePanel {
 
     /** Measures every text with the font, gives each module its height, and lays the modules out in the place given. */
     private void relayout(ItemStack current) {
-        truncated.clear();
         // The widest column the place leaves room for
         columnW = Math.clamp(Math.max(minWidth, maxWidth) - 2 * CartridgeLayout.PAD_X, CartridgeLayout.MIN_COLUMN_W, CartridgeLayout.COLUMN_W);
         int maxColumns = Math.max(1, (Math.max(minWidth, maxWidth) - 2 * CartridgeLayout.PAD_X + CartridgeLayout.COLUMN_GAP)
@@ -267,8 +259,8 @@ public final class CartridgePanel {
                     giveText = I18n.translate(k + "give");
                     takeText = I18n.translate(k + "take");
                     // Slots that only give (a Trichaudron's prizes): their own help, no give / take legend
-                    ghostHelp = textRenderer.wrapLines(Text.translatable(ghosts.signed() ? k + "wheel" : ghosts.helpKey()),
-                            Math.max(40, columnW - ghostHelpX()));
+                    ghostHelpW = Math.max(40, columnW - ghostHelpX());
+                    ghostHelp = textRenderer.wrapLines(Text.translatable(ghosts.signed() ? k + "wheel" : ghosts.helpKey()), ghostHelpW);
                     int legend = ghosts.signed() ? 26 : 2;
                     yield Math.max(ghosts.rows() * GhostSlotsModule.SLOT, legend + ghostHelp.size() * InfoModule.LINE_H);
                 }
@@ -330,50 +322,6 @@ public final class CartridgePanel {
 
     private boolean inContent(double mouseY) {
         return scrollMax == 0 || (mouseY >= contentTop() && mouseY < contentBottom());
-    }
-
-    // ------------------------------------------------------------------ one-line texts that may not fit
-
-    /**
-     * Draws {@code text} in a box {@code maxWidth} wide: as is when it fits; else cut with « … », and scrolling back
-     * and forth (clipped to the box) while {@code hovered}.
-     */
-    private void drawFitted(DrawContext context, String text, int tx, int ty, int maxWidth, int color, boolean shadow, boolean hovered) {
-        int width = textRenderer.getWidth(text);
-        if (width <= maxWidth) {
-            context.drawText(textRenderer, text, tx, ty, color, shadow);
-            return;
-        }
-        if (!hovered) {
-            String key = maxWidth + "|" + text;
-            String cut = truncated.get(key);
-            if (cut == null) {
-                cut = GuiText.cut(textRenderer, text, maxWidth);
-                truncated.put(key, cut);
-            }
-            context.drawText(textRenderer, cut, tx, ty, color, shadow);
-            return;
-        }
-        long now = Util.getMeasuringTimeMs();
-        if (!text.equals(marqueeText)) {
-            marqueeText = text;
-            marqueeStart = now;
-        }
-        int travel = width - maxWidth;
-        long moveMs = (long) (travel / MARQUEE_SPEED * 1000F);
-        long cycle = 2 * (MARQUEE_PAUSE_MS + moveMs);
-        long t = (now - marqueeStart) % cycle;
-        float offset;
-        if (t < MARQUEE_PAUSE_MS) offset = 0;
-        else if (t < MARQUEE_PAUSE_MS + moveMs) offset = (t - MARQUEE_PAUSE_MS) / (float) moveMs * travel;
-        else if (t < 2 * MARQUEE_PAUSE_MS + moveMs) offset = travel;
-        else offset = travel - (t - 2 * MARQUEE_PAUSE_MS - moveMs) / (float) moveMs * travel;
-        context.enableScissor(tx, ty - 1, tx + maxWidth, ty + 10);
-        context.getMatrices().push();
-        context.getMatrices().translate(-offset, 0, 0);
-        context.drawText(textRenderer, text, tx, ty, color, shadow);
-        context.getMatrices().pop();
-        context.disableScissor();
     }
 
     // ------------------------------------------------------------------ traces
@@ -482,7 +430,7 @@ public final class CartridgePanel {
         }
 
         for (int l = 0; l < emptyLines.size(); l++) {
-            context.drawText(textRenderer, emptyLines.get(l), x + CartridgeLayout.PAD_X, y + CartridgeLayout.TOP + l * InfoModule.LINE_H, TONE_SOFT, false);
+            UiText.line(context, textRenderer, emptyLines.get(l), x + CartridgeLayout.PAD_X, y + CartridgeLayout.TOP + l * InfoModule.LINE_H, columnW, TONE_SOFT, false);
         }
         boolean clipped = scrollMax > 0;
         if (clipped) context.enableScissor(x + 4, contentTop(), x + w - 4, contentBottom());
@@ -556,13 +504,13 @@ public final class CartridgePanel {
         int toggleX = sx + sw - TOGGLE - 4, toggleY = sy + 6;
         int right = toggleX - 4;
         if (slotLabel != null) {
-            int slotWidth = textRenderer.getWidth(slotLabel);
-            context.drawText(textRenderer, slotLabel, right - slotWidth, sy + 7, dark ? 0xFF4A4A4A : 0xFFE8E8E8, false);
+            // Leaves the name at least 10 pixels
+            int slotWidth = Math.max(0, Math.min(textRenderer.getWidth(slotLabel), right - textX - 14));
+            UiText.line(context, textRenderer, slotLabel, right - slotWidth, sy + 7, slotWidth, dark ? 0xFF4A4A4A : 0xFFE8E8E8, false);
             right -= slotWidth + 4;
         }
         int room = Math.max(10, right - textX);
-        boolean hovered = HitArea.contains(mouseX, mouseY, textX, sy, room, sh);
-        drawFitted(context, labelName(current, cartridge, room), textX, sy + 7, room, textColor, !dark, hovered);
+        UiText.line(context, textRenderer, labelName(current, cartridge, room), textX, sy + 7, room, textColor, !dark);
         drawToggle(context, toggleX, toggleY, CartridgeGuiConfig.currentAnimation(), HitArea.contains(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2));
     }
 
@@ -589,9 +537,8 @@ public final class CartridgePanel {
             int chipColor = flash > 0 ? Argb.lerp(CHIP, 0xFFFFC52E, flash) : CHIP;
             int numberWidth = textRenderer.getWidth(number);
             context.fill(mx - 1, my, mx + numberWidth + 2, my + 9, chipColor);
-            context.drawText(textRenderer, number, mx + 1, my + 1, flash > 0.5F ? 0xFF3B2600 : (enabled ? CHIP_TEXT : LABEL_OFF), false);
+            UiText.line(context, textRenderer, number, mx + 1, my + 1, numberWidth, flash > 0.5F ? 0xFF3B2600 : (enabled ? CHIP_TEXT : LABEL_OFF), false);
             int lx = mx + numberWidth + 5, room = columnW - (lx - mx);
-            boolean hovered = HitArea.contains(mouseX, mouseY, mx, my, columnW, CartridgeModule.LABEL_H);
             // A choice of colours: its title names the one chosen (« Réseau : violet »)
             String chosen = null;
             int chosenColor = 0;
@@ -603,14 +550,15 @@ public final class CartridgePanel {
                 }
             }
             if (chosen == null) {
-                drawFitted(context, labels[i], lx, my + 1, room, enabled ? LABEL : LABEL_OFF, false, hovered);
+                UiText.line(context, textRenderer, labels[i], lx, my + 1, room, enabled ? LABEL : LABEL_OFF, false);
             } else {
                 int chosenWidth = Math.min(textRenderer.getWidth(chosen), room / 2);
-                int titleRoom = room - chosenWidth - textRenderer.getWidth(": ");
+                int separatorWidth = textRenderer.getWidth(": ");
+                int titleRoom = room - chosenWidth - separatorWidth;
                 int titleWidth = Math.min(textRenderer.getWidth(labels[i]), titleRoom);
-                drawFitted(context, labels[i], lx, my + 1, titleRoom, enabled ? LABEL : LABEL_OFF, false, hovered);
-                context.drawText(textRenderer, ": ", lx + titleWidth, my + 1, enabled ? LABEL : LABEL_OFF, false);
-                drawFitted(context, chosen, lx + titleWidth + textRenderer.getWidth(": "), my + 1, chosenWidth, chosenColor, false, hovered);
+                UiText.line(context, textRenderer, labels[i], lx, my + 1, titleRoom, enabled ? LABEL : LABEL_OFF, false);
+                UiText.line(context, textRenderer, ": ", lx + titleWidth, my + 1, separatorWidth, enabled ? LABEL : LABEL_OFF, false);
+                UiText.line(context, textRenderer, chosen, lx + titleWidth + separatorWidth, my + 1, chosenWidth, chosenColor, false);
             }
             top += CartridgeModule.LABEL_H;
         }
@@ -648,10 +596,9 @@ public final class CartridgePanel {
                         new PartyGui.Theme(Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), false);
             } else {
                 String text = optionTexts[i][o];
-                int room = bw - 6;
-                int width = Math.min(textRenderer.getWidth(text), room);
                 int color = !choice.enabled(current) ? 0xFF7A7A7A : selected ? 0xFF3B2600 : PartyGui.TEXT_DARK;
-                drawFitted(context, text, bx + (bw - width) / 2 + push, top + 4 + push, room, color, false, over);
+                // Inside the button, 3 pixels from each side
+                UiText.centered(context, textRenderer, text, bx + 3 + push, top + 4 + push, bw - 6, color, false);
             }
         }
     }
@@ -687,13 +634,14 @@ public final class CartridgePanel {
         context.fill(mx + FIGURE_X, top, mx + FIGURE_X + FIGURE_W, top + NumberModule.ROW_H, OUTLINE);
         context.fill(mx + FIGURE_X + 1, top + 1, mx + FIGURE_X + FIGURE_W - 1, top + NumberModule.ROW_H - 1, 0xFF161A14);
         String figure = Integer.toString(value);
-        // Twice the size while it fits (one or two figures), else the plain size
+        // Twice the size while it fits (one or two figures), else the plain size (scrolling in the screen if wider)
         int scale = textRenderer.getWidth(figure) * 2 <= FIGURE_W - 2 ? 2 : 1;
+        int shown = Math.min(textRenderer.getWidth(figure) * scale, FIGURE_W - 2);
         context.getMatrices().push();
-        context.getMatrices().translate(mx + FIGURE_X + (FIGURE_W - textRenderer.getWidth(figure) * scale) / 2F + (scale == 2 ? 1 : 0),
+        context.getMatrices().translate(mx + FIGURE_X + (FIGURE_W - shown) / 2F + (scale == 2 ? 1 : 0),
                 top + (scale == 2 ? 2 : 5), 0);
         context.getMatrices().scale(scale, scale, 1);
-        context.drawText(textRenderer, figure, 0, 0, Argb.lighten(color, 0.3F), false);
+        UiText.line(context, textRenderer, figure, 0, 0, (FIGURE_W - 2) / scale, Argb.lighten(color, 0.3F), false);
         context.getMatrices().pop();
         if (!showsLamps(number)) return;
         int lw = lampWidth(number);
@@ -705,7 +653,7 @@ public final class CartridgePanel {
                     : new PartyGui.Theme(OUTLINE, 0xFF3A3A3A, 0xFF2B2B2B, 0xFF1E1E1E), !on);
             String digit = Integer.toString(v);
             if (lw >= textRenderer.getWidth(digit) + 3) {
-                context.drawText(textRenderer, digit, lx + (lw - textRenderer.getWidth(digit)) / 2 + 1, top + 5, on ? 0xFFFFFFFF : 0xFF6A6A6A, false);
+                UiText.centered(context, textRenderer, digit, lx + 1, top + 5, lw, on ? 0xFFFFFFFF : 0xFF6A6A6A, false);
             }
         }
     }
@@ -713,7 +661,7 @@ public final class CartridgePanel {
     private void stepButton(DrawContext context, int bx, int top, String sign, boolean active, boolean hovered) {
         PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
         PartyGui.button(context, bx, top, STEP_W, NumberModule.ROW_H, theme, false);
-        context.drawText(textRenderer, sign, bx + (STEP_W - textRenderer.getWidth(sign)) / 2, top + 5, active ? PartyGui.TEXT_DARK : 0xFF7A7A7A, false);
+        UiText.centered(context, textRenderer, sign, bx, top + 5, STEP_W, active ? PartyGui.TEXT_DARK : 0xFF7A7A7A, false);
     }
 
     private int colorX(int mx, int value) {
@@ -753,14 +701,14 @@ public final class CartridgePanel {
         // On the right of the slots: green gives, red takes, then how to set the quantity
         int tx = mx + ghostHelpX(), ty = my + CartridgeModule.LABEL_H + 2, room = columnW - ghostHelpX() - 8;
         if (!ghosts.signed()) {
-            for (int l = 0; l < ghostHelp.size(); l++) context.drawText(textRenderer, ghostHelp.get(l), tx, ty + l * InfoModule.LINE_H, TONE_SOFT, false);
+            for (int l = 0; l < ghostHelp.size(); l++) UiText.line(context, textRenderer, ghostHelp.get(l), tx, ty + l * InfoModule.LINE_H, ghostHelpW, TONE_SOFT, false);
             return;
         }
         context.fill(tx, ty + 1, tx + 5, ty + 6, 0xFF46AE2E);
-        drawFitted(context, giveText, tx + 8, ty, room, TONE_NORMAL, false, false);
+        UiText.line(context, textRenderer, giveText, tx + 8, ty, room, TONE_NORMAL, false);
         context.fill(tx, ty + 12, tx + 5, ty + 17, 0xFFD9283B);
-        drawFitted(context, takeText, tx + 8, ty + 11, room, TONE_NORMAL, false, false);
-        for (int l = 0; l < ghostHelp.size(); l++) context.drawText(textRenderer, ghostHelp.get(l), tx, ty + 24 + l * InfoModule.LINE_H, TONE_SOFT, false);
+        UiText.line(context, textRenderer, takeText, tx + 8, ty + 11, room, TONE_NORMAL, false);
+        for (int l = 0; l < ghostHelp.size(); l++) UiText.line(context, textRenderer, ghostHelp.get(l), tx, ty + 24 + l * InfoModule.LINE_H, ghostHelpW, TONE_SOFT, false);
     }
 
     private void drawInfo(DrawContext context, ItemStack current, int i, InfoModule info, int mx, int top) {
@@ -773,7 +721,8 @@ public final class CartridgePanel {
         List<OrderedText> lines = infoLines.get(i);
         int[] colors = infoColors[i];
         for (int l = 0; l < lines.size(); l++) {
-            context.drawText(textRenderer, lines.get(l), tx, top + 1 + l * InfoModule.LINE_H, colors != null && l < colors.length ? colors[l] : TONE_NORMAL, false);
+            UiText.line(context, textRenderer, lines.get(l), tx, top + 1 + l * InfoModule.LINE_H, columnW - (tx - mx),
+                    colors != null && l < colors.length ? colors[l] : TONE_NORMAL, false);
         }
     }
 
@@ -837,8 +786,7 @@ public final class CartridgePanel {
     private void drawContainers(DrawContext context, ItemStack current, int mx, int top, int mouseX, int mouseY, boolean editable) {
         List<ContainerRow> rows = rows(current);
         if (rows.isEmpty()) {
-            drawFitted(context, I18n.translate(CartridgeItem.MENU_KEY + "inventory.chest.none"), mx, top + 1, columnW, TONE_BAD, false,
-                    HitArea.contains(mouseX, mouseY, mx, top, columnW, ContainersModule.ROW_H));
+            UiText.line(context, textRenderer, I18n.translate(CartridgeItem.MENU_KEY + "inventory.chest.none"), mx, top + 1, columnW, TONE_BAD, false);
         }
         int buttons = editable ? 2 * (ROW_BUTTON + 1) : 0;
         for (int r = 0; r < rows.size(); r++) {
@@ -847,24 +795,23 @@ public final class CartridgePanel {
             String number = Integer.toString(r + 1);
             int numberWidth = textRenderer.getWidth(number);
             context.fill(cx, cy, cx + numberWidth + 3, cy + 9, CHIP);
-            context.drawText(textRenderer, number, cx + 2, cy + 1, CHIP_TEXT, false);
+            UiText.line(context, textRenderer, number, cx + 2, cy + 1, numberWidth, CHIP_TEXT, false);
             int tx = cx + numberWidth + 5, room = cellW() - (tx - cx) - buttons;
-            drawFitted(context, row.coords(), tx, cy + 1, room, row.color(), false, HitArea.contains(mouseX, mouseY, tx, cy, room, ContainersModule.ROW_H));
+            UiText.line(context, textRenderer, row.coords(), tx, cy + 1, room, row.color(), false);
             if (!editable) continue;
             rowButton(context, rowButtonX(mx, r, ContainersModule.UP), cy, "◀", r > 0, mouseX, mouseY);
             rowButton(context, rowButtonX(mx, r, ContainersModule.REMOVE), cy, "×", true, mouseX, mouseY);
         }
         // What a click does, under the list
         int hintY = top + (containerRows(rows.size()) - 1) * ContainersModule.ROW_H;
-        drawFitted(context, I18n.translate(CartridgeItem.MENU_KEY + "inventory.click"), mx, hintY + 1, columnW, TONE_SOFT, false,
-                HitArea.contains(mouseX, mouseY, mx, hintY, columnW, ContainersModule.ROW_H));
+        UiText.line(context, textRenderer, I18n.translate(CartridgeItem.MENU_KEY + "inventory.click"), mx, hintY + 1, columnW, TONE_SOFT, false);
     }
 
     private void rowButton(DrawContext context, int bx, int ry, String sign, boolean active, int mouseX, int mouseY) {
         boolean hovered = active && HitArea.contains(mouseX, mouseY, bx, ry, ROW_BUTTON, ROW_BUTTON);
         PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
         PartyGui.button(context, bx, ry, ROW_BUTTON, ROW_BUTTON, theme, false);
-        context.drawText(textRenderer, sign, bx + (ROW_BUTTON - textRenderer.getWidth(sign)) / 2 + 1, ry + 1, active ? PartyGui.TEXT_DARK : 0xFF7A7A7A, false);
+        UiText.centered(context, textRenderer, sign, bx + 1, ry + 1, ROW_BUTTON, active ? PartyGui.TEXT_DARK : 0xFF7A7A7A, false);
     }
 
     /** The give / take marks of the ghost slots (a green or red frame), over their items. */
@@ -886,6 +833,13 @@ public final class CartridgePanel {
     // ------------------------------------------------------------------ tooltips
 
     public boolean renderTooltip(DrawContext context, int mouseX, int mouseY) {
+        // Its own tooltip is the one shown, not the whole text of a scrolling line under it
+        boolean shown = drawTooltip(context, mouseX, mouseY);
+        if (shown) UiText.cancelTooltip();
+        return shown;
+    }
+
+    private boolean drawTooltip(DrawContext context, int mouseX, int mouseY) {
         int sx = x + 6, sw = width() - 12;
         int toggleX = sx + sw - TOGGLE - 4, toggleY = y + 11;
         if (HitArea.contains(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2)) {

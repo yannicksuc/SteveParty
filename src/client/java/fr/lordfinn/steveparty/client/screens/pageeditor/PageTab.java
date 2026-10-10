@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.client.gui.FormatChips;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.RichTextBox;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.client.minigame.PageImagePicker;
@@ -150,7 +151,9 @@ public final class PageTab {
         clearZoneButton.setTooltip(Tooltip.of(Text.translatable(KEY + "zone.clear")));
         // Its options: the restore only with a zone (greyed, with why, without one); the adventure mode always
         Text restoreLabel = Text.translatable(KEY + "option.restore"), adventureLabel = Text.translatable(KEY + "option.adventure");
-        int adventureWidth = CHECK + 4 + font().getWidth(adventureLabel);
+        // Both on one line: too long together, « Mode aventure » keeps at most half of it (each label scrolls in its room)
+        int adventureWidth = CHECK + 4 + font().getWidth(adventureLabel), restoreWidth = CHECK + 4 + font().getWidth(restoreLabel);
+        if (restoreWidth + 4 + adventureWidth > CW) adventureWidth = Math.min(adventureWidth, Math.max(CW - 4 - restoreWidth, (CW - 4) / 2));
         editor.add(new OptionCheck(rx, y + OPTIONS_Y, CW - adventureWidth - 4, restoreLabel, () -> editor.current().restores(),
                 () -> editor.current().zone() != null, () -> action(MiniGamePagePayloads.Action.Kind.RESTORE),
                 () -> editor.current().zone() == null ? Text.empty().append(Text.translatable(KEY + "option.restore.tooltip")).append("\n")
@@ -246,7 +249,7 @@ public final class PageTab {
                     context.fill(left + 4 + d, top + 6 - d, left + 5 + d, top + 8 - d, ink);
                 }
             }
-            context.drawText(font(), PagePaint.fit(font(), getMessage(), width - CHECK - 4), left + CHECK + 3, top + 2, active ? INK : INK3, false);
+            UiText.line(context, font(), getMessage(), left + CHECK + 3, top + 2, width - CHECK - 3, active ? INK : INK3, false);
         }
 
         @Override
@@ -293,8 +296,9 @@ public final class PageTab {
             switch (name) {
                 case "bold" -> {
                     Text letter = Text.translatable(KEY + "format.bold.letter");
-                    context.drawText(font(), letter, left + 4, top + 4, ink, false);
-                    context.drawText(font(), letter, left + 5, top + 4, ink, false);
+                    // Bold (drawn twice), inside the key's frame
+                    UiText.line(context, font(), letter, left + 4, top + 4, TOOL - 6, ink, false);
+                    UiText.line(context, font(), letter, left + 5, top + 4, TOOL - 6, ink, false);
                 }
                 case "italic" -> {
                     for (int i = 0; i < 7; i++) PartyGui.pixel(context, left + 8 - i / 3, top + 3 + i, ink);
@@ -306,7 +310,7 @@ public final class PageTab {
                     if (colour > 0) context.fill(left + 3, top + 11, left + 12, top + 12, swatchColor((char) colour));
                 }
                 default -> {
-                    context.drawText(font(), "T", left + 4, top + 4, ink, false);
+                    UiText.line(context, font(), "T", left + 4, top + 4, TOOL - 6, ink, false);
                     for (int i = 0; i < 8; i++) PartyGui.pixel(context, left + 3 + i, top + 10 - i, active ? RED : INK3);
                 }
             }
@@ -475,9 +479,14 @@ public final class PageTab {
         return Text.translatable(KEY + "formats.modify");
     }
 
+    /** The room of « modifier », at the right of its line: its width, at most half of the column (longer, it scrolls). */
+    private int modifyLinkBox() {
+        return Math.min(font().getWidth(modifyLink()), CW / 2);
+    }
+
     /** Over « modifier », which leads to the Formats tab. */
     public boolean overModifyLink(double mouseX, double mouseY) {
-        int w = font().getWidth(modifyLink());
+        int w = modifyLinkBox();
         return HitArea.contains(mouseX, mouseY, editor.left() + RX + CW - w, editor.top() + FORMATS_Y - 1, w, 11);
     }
 
@@ -512,32 +521,34 @@ public final class PageTab {
         }
 
         // ---- The title, written on its line (highlighted while it is being written)
-        context.drawText(font(), Text.translatable(KEY + "field.title"), rx, top + 2, INK2, false);
+        // (up to the « i » at the top right)
+        UiText.line(context, font(), Text.translatable(KEY + "field.title"), rx, top + 2, CW - 16, INK2, false);
         boolean titleFocused = titleBox != null && titleBox.isFocused();
         if (titleFocused) context.fill(rx, top + 23, rx + CW, top + 27, HIGHLIGHT);
         context.fill(rx, top + 27, rx + CW, top + 28, titleFocused ? TEAL2 : EDGE);
         // ---- The formats: read only, « modifier » leads to their tab
-        context.drawText(font(), Text.translatable(KEY + "tab.formats"), rx, y + FORMATS_Y, INK2, false);
         Text link = modifyLink();
-        int lw = font().getWidth(link) - 1;
+        int linkBox = modifyLinkBox(), lw = linkBox - 1;
+        UiText.line(context, font(), Text.translatable(KEY + "tab.formats"), rx, y + FORMATS_Y, CW - linkBox - 3, INK2, false);
         boolean overLink = editor.popup() == null && overModifyLink(mouseX, mouseY);
-        context.drawText(font(), link, rx + CW - lw, y + FORMATS_Y, overLink ? TEAL : TEAL2, false);
+        UiText.line(context, font(), link, rx + CW - lw, y + FORMATS_Y, linkBox, overLink ? TEAL : TEAL2, false);
         context.fill(rx + CW - lw, y + FORMATS_Y + 8, rx + CW, y + FORMATS_Y + 9, overLink ? TEAL : TEAL2);
         FormatChips.drawFlow(context, font(), data.formats(), i -> look(data, i), rx, y + CHIPS_Y, CW, 3);
         // ---- The zone: its size, or none
         PageZone zone = data.zone();
         if (clearZoneButton != null) clearZoneButton.active = canEdit && zone != null;
         if (zone == null) {
-            context.drawText(font(), Text.translatable(KEY + "zone.none"), rx, y + ZONE_TEXT_Y, INK3, false);
+            UiText.line(context, font(), Text.translatable(KEY + "zone.none"), rx, y + ZONE_TEXT_Y, CW, INK3, false);
         } else {
-            Text label = Text.translatable(KEY + "zone.label");
-            context.drawText(font(), label, rx, y + ZONE_TEXT_Y, INK2, false);
-            context.drawText(font(), PagePaint.fit(font(), PageZoneTool.size(zone.box()), CW - font().getWidth(label) - 3),
-                    rx + font().getWidth(label) + 3, y + ZONE_TEXT_Y, INK, false);
+            // Its label, then its size in the rest of the line (the label keeps at most half of it when both are too long)
+            Text label = Text.translatable(KEY + "zone.label"), size = PageZoneTool.size(zone.box());
+            int labelW = Math.min(font().getWidth(label), Math.max(CW / 2, CW - 3 - font().getWidth(size)));
+            UiText.line(context, font(), label, rx, y + ZONE_TEXT_Y, labelW, INK2, false);
+            UiText.line(context, font(), size, rx + labelW + 3, y + ZONE_TEXT_Y, CW - labelW - 3, INK, false);
         }
 
         // ---- The description, across the page: its label and toolbar, its ruled lines and margin, its counter on the last line
-        context.drawText(font(), Text.translatable(KEY + "field.description"), lx, y + TOOLBAR_Y + 3, INK2, false);
+        UiText.line(context, font(), Text.translatable(KEY + "field.description"), lx, y + TOOLBAR_Y + 3, FULL - 4 * TOOL - 3 * TOOL_GAP - 4, INK2, false);
         int ay = y + AREA_Y;
         boolean descriptionFocused = descriptionBox != null && descriptionBox.isFocused();
         for (int ly = ay + 9; ly < ay + AREA_H; ly += 10) context.fill(lx, ly, lx + FULL, ly + 1, descriptionFocused ? 0xFFA8D2D6 : RULE);
@@ -548,7 +559,8 @@ public final class PageTab {
             boolean refused = Util.getMeasuringTimeMs() - descriptionBox.refusedAt() < 600;
             int color = count >= max || refused ? RED : count >= max * 9 / 10 ? ORANGE2 : INK3;
             String counter = count + "/" + max;
-            context.drawText(font(), counter, lx + FULL - font().getWidth(counter), ay + (AREA_LINES - 1) * 10 + 2, color, false);
+            int counterW = font().getWidth(counter);
+            UiText.line(context, font(), counter, lx + FULL - counterW, ay + (AREA_LINES - 1) * 10 + 2, counterW, color, false);
         }
     }
 

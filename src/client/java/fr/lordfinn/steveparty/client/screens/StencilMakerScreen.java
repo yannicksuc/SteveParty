@@ -3,10 +3,10 @@ package fr.lordfinn.steveparty.client.screens;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
-import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.SaveStencilPayload;
@@ -132,7 +132,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         libraryColumns = Math.clamp((this.width - 8 - fixedWidth - LIBRARY_EXTRA) / CELL, 1, 5);
         libraryBoxWidth = libraryColumns * CELL + LIBRARY_EXTRA;
         backgroundWidth = fixedWidth + libraryBoxWidth;
-        help = textRenderer.wrapLines(Text.translatable("gui.steveparty.stencil_maker.help_draw"), backgroundWidth - 2 * PAD);
+        help = UiText.wrap(textRenderer, Text.translatable("gui.steveparty.stencil_maker.help_draw"), backgroundWidth - 2 * PAD);
         backgroundHeight = TOP + contentHeight + 6 + help.size() * 10 + 4;
         super.init();
         // Centred with the title plate, which sticks out 11 px above the panel
@@ -206,16 +206,15 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
                         drawIcon(context, icon, centerX - ICON_SIZE / 2, centerY - ICON_SIZE / 2, color));
     }
 
-    /** A wide button: its icon, then its text, cut with « … » if too long. */
+    /** A wide button: its icon, then its text (too long, it scrolls beside the icon). */
     private PartyButton labelledButton(int x, int y, int width, Text message, int icon, Consumer<PartyButton> onPress) {
         PartyButton button = new PartyButton(x, y, width, BUTTON_HEIGHT, message, onPress);
         return button.content((context, textRenderer, centerX, centerY, color) -> {
             String text = button.getMessage().getString();
             int room = width - 8 - ICON_SIZE - 4;
-            text = GuiText.fit(textRenderer, text, room);
-            int left = centerX - (ICON_SIZE + 4 + textRenderer.getWidth(text)) / 2;
+            int left = centerX - (ICON_SIZE + 4 + Math.min(textRenderer.getWidth(text), room)) / 2;
             drawIcon(context, icon, left, centerY - ICON_SIZE / 2, color);
-            context.drawText(textRenderer, text, left + ICON_SIZE + 4, centerY - 4, color, false);
+            UiText.line(context, textRenderer, text, left + ICON_SIZE + 4, centerY - 4, room, color, false);
         });
     }
 
@@ -512,7 +511,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         // How to draw, along the bottom of the panel
         int helpY = y + TOP + contentHeight + 6;
         for (OrderedText line : help) {
-            context.drawText(textRenderer, line, x + (backgroundWidth - textRenderer.getWidth(line)) / 2, helpY, PartyGui.TEXT_SOFT, false);
+            UiText.centered(context, textRenderer, line, x + PAD, helpY, backgroundWidth - 2 * PAD, PartyGui.TEXT_SOFT, false);
             helpY += 10;
         }
     }
@@ -534,12 +533,16 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private void drawLibrary(DrawContext context, int mouseX, int mouseY) {
         List<LibraryItem> items = libraryItems();
         libraryScroll = Math.clamp(libraryScroll, 0, maxLibraryScroll());
-        context.drawText(textRenderer, Text.translatable("gui.steveparty.stencil_maker.library"), libraryBoxX + 1, libraryBoxY - 11,
-                PartyGui.TEXT_DARK, false);
+        // Above its box, as wide as it
+        UiText.line(context, textRenderer, Text.translatable("gui.steveparty.stencil_maker.library"), libraryBoxX + 1, libraryBoxY - 11,
+                libraryBoxWidth - 1, PartyGui.TEXT_DARK, false);
         PartyGui.inset(context, libraryBoxX, libraryBoxY, libraryBoxWidth, contentHeight, BOX_BODY, false, false);
         if (items.isEmpty()) {
-            context.drawTextWrapped(textRenderer, Text.translatable("gui.steveparty.stencil_maker.library_empty"), libraryX + 2, libraryY + 2,
-                    libraryBoxWidth - 8, 0xFFB8C2C8);
+            // On lines 9 px apart (as drawTextWrapped did), in the box
+            List<OrderedText> empty = UiText.wrap(textRenderer, Text.translatable("gui.steveparty.stencil_maker.library_empty"), libraryBoxWidth - 8);
+            for (int i = 0; i < empty.size(); i++) {
+                UiText.line(context, textRenderer, empty.get(i), libraryX + 2, libraryY + 2 + i * 9, libraryBoxWidth - 8, 0xFFB8C2C8, false);
+            }
         }
         int first = libraryScroll * libraryColumns;
         int last = Math.min(items.size(), first + libraryRows * libraryColumns);

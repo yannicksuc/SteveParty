@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.entity;
 
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -67,7 +68,10 @@ public final class TrichaudronRiderClient {
         if (filled > 0) context.drawGuiTexture(JUMP_PROGRESS, 182, 5, 0, 0, x, y, filled, 5);
         Text fuel = Text.translatable("screen.steveparty.trichaudron.tank", trichaudron.getTank(), TrichaudronEntity.TANK_MAX);
         int color = trichaudron.getTank() == 0 ? 0xFFFF5555 : 0xFFFF9A3C;
-        context.drawTextWithShadow(client.textRenderer, fuel, x + 182 + 8, context.getScaledWindowHeight() - 15, color);
+        // From the hotbar's right to the screen's edge
+        int fuelX = x + 182 + 8;
+        UiText.line(context, client.textRenderer, fuel, fuelX, context.getScaledWindowHeight() - 15,
+                context.getScaledWindowWidth() - 2 - fuelX, color, true);
     }
 
     private static void click() {

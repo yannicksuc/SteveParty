@@ -3,11 +3,11 @@ package fr.lordfinn.steveparty.client.screens.pageeditor;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.FormatChips;
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 
 import static fr.lordfinn.steveparty.client.screens.pageeditor.PageEditorStyle.*;
@@ -28,8 +28,9 @@ final class FormatGallery extends PagePopup {
     @Override
     protected void content(DrawContext context, int mouseX, int mouseY) {
         Text title = Text.translatable(KEY + "formats.gallery");
-        context.drawText(font(), title, px + 5, py + 4, INK, false);
-        context.drawText(font(), title, px + 6, py + 4, INK, false);
+        // Bold (drawn twice), in the card's width
+        UiText.line(context, font(), title, px + 5, py + 4, pw - 11, INK, false);
+        UiText.line(context, font(), title, px + 6, py + 4, pw - 11, INK, false);
         for (int i = 0; i <= MiniGameFormat.GALLERY.size(); i++) {
             int tx = px + 4 + (i % 2) * (TILE_W + 2), ty = py + 14 + (i / 2) * (TILE_H + 2);
             boolean over = HitArea.contains(mouseX, mouseY, tx, ty, TILE_W, TILE_H);
@@ -38,12 +39,11 @@ final class FormatGallery extends PagePopup {
             MiniGameFormat format = i < MiniGameFormat.GALLERY.size() ? MiniGameFormat.GALLERY.get(i) : null;
             if (format == null) {
                 Text blank = Text.translatable(KEY + "formats.blank");
-                context.drawText(font(), blank, tx + (TILE_W - font().getWidth(blank) + 1) / 2, ty + 8, TEAL2, false);
+                tileLine(context, blank, tx, ty + 8, TEAL2);
             } else {
                 int picW = FormatChips.pictogramWidth(format);
                 FormatChips.drawPictogram(context, format, tx + (TILE_W - picW) / 2, ty + 3);
-                OrderedText name = PagePaint.fit(font(), format.name(), TILE_W - 6);
-                context.drawText(font(), name, tx + (TILE_W - font().getWidth(name) + 1) / 2, ty + 12, INK, false);
+                tileLine(context, format.name(), tx, ty + 12, INK);
             }
             MiniGameFormat added = format == null ? MiniGameFormat.blank() : format;
             hits.add(new Hit(tx, ty, TILE_W, TILE_H, () -> {
@@ -52,5 +52,12 @@ final class FormatGallery extends PagePopup {
                 close();
             }, null));
         }
+    }
+
+    /** {@code text} centred in a tile (3 px from its sides); too long, it scrolls there. */
+    private void tileLine(DrawContext context, Text text, int tx, int top, int colour) {
+        int w = font().getWidth(text), room = TILE_W - 6;
+        if (w - 1 <= room) UiText.line(context, font(), text, tx + (TILE_W - w + 1) / 2, top, w, colour, false);
+        else UiText.line(context, font(), text, tx + 3, top, room, colour, false);
     }
 }

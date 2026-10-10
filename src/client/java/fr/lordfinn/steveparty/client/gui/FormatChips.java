@@ -28,6 +28,8 @@ public final class FormatChips {
     private static final Ramp GOLD = Ramp.of(0x8a5a00, 0xfff2a8, 0xffffff, 0xe8e2c8);
     private static final Ramp BADGE = Ramp.of(0x4a0808, 0xffb7ae, 0xe8413c, 0xb02e26);
     private static final int[][] PAWN = {{1, 0}, {0, 1}, {1, 1}, {2, 1}, {1, 2}, {0, 3}, {1, 3}, {2, 3}, {0, 4}, {1, 4}, {2, 4}};
+    /** The widest a chip goes (PageEditorStyle.CW, the tooltip's WIDTH). */
+    private static final int MAX_WIDTH = 144;
     private static final int[][] PLUS = {{1, 0}, {0, 1}, {1, 1}, {2, 1}, {1, 2}};
 
     private FormatChips() {
@@ -100,10 +102,19 @@ public final class FormatChips {
 
     public static int width(TextRenderer font, MiniGameFormat format, Look look) {
         int w = 5 + pictogramWidth(format) + 5;
-        if (look.name()) w += 4 + font.getWidth(format.name()) - 1;
+        if (look.name()) w += 4 + nameWidth(font, format, look) - 1;
         if (look.invalid()) w += 12;
         if (look.removable()) w += 11;
         return w;
+    }
+
+    /**
+     * The room of a chip's name: its width, but a chip is never wider than {@link #MAX_WIDTH} (the narrowest area chips
+     * flow in: the page's column, the tooltip); a longer name scrolls in it.
+     */
+    private static int nameWidth(TextRenderer font, MiniGameFormat format, Look look) {
+        int others = 5 + pictogramWidth(format) + 5 + 4 - 1 + (look.invalid() ? 12 : 0) + (look.removable() ? 11 : 0);
+        return Math.max(1, Math.min(font.getWidth(format.name()), MAX_WIDTH - others));
     }
 
     /** Draws the chip at ({@code x}, {@code y}); returns its width. */
@@ -115,8 +126,9 @@ public final class FormatChips {
         px += pictogramWidth(format) + 4;
         if (look.name()) {
             Text name = format.name();
-            context.drawText(font, name, px, y + (h - 7) / 2 + ((h - 7) % 2), INK, false);
-            px += font.getWidth(name) - 1 + 4;
+            int nameWidth = nameWidth(font, format, look);
+            UiText.line(context, font, name, px, y + (h - 7) / 2 + ((h - 7) % 2), nameWidth, INK, false);
+            px += nameWidth - 1 + 4;
         }
         if (look.invalid()) {
             int by = y + (h - 9) / 2;
