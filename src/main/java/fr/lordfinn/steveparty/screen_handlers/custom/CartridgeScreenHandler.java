@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenuHost;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
@@ -15,6 +16,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.Property;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
@@ -39,11 +41,15 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
     private final boolean withInventory;
     private final int backgroundWidth, backgroundHeight, shellX;
     private int ghostStart = -1;
+    private final PlayerEntity player;
+    /** Where the cartridge keeps its items ({@link CartridgeContainers.Storage}), sent by the server. */
+    private final Property storage = Property.create();
 
     public CartridgeScreenHandler(int syncId, PlayerInventory playerInventory, CartridgeRef ref) {
         super(ModScreensHandlers.CARTRIDGE_SCREEN_HANDLER, syncId);
         this.ref = ref;
         PlayerEntity player = playerInventory.player;
+        this.player = player;
         this.holder = ref.resolve(player);
         this.holderItem = holder.getItem();
         this.modules = CartridgeMenus.modules(holder);
@@ -53,6 +59,8 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
         this.backgroundWidth = withInventory ? CartridgeLayout.SHELL_W_WITH_INVENTORY : 0;
         this.backgroundHeight = withInventory ? CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP + CartridgeLayout.INVENTORY_H : 0;
         this.shellX = 0;
+        addProperty(storage);
+        updateStorage();
 
         if (withInventory) {
             if (ghost != 0) throw new IllegalStateException("the ghost slots must be a cartridge's first module");
@@ -98,6 +106,25 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
     @Override
     public CartridgeRef editedCartridge(PlayerEntity player) {
         return ref;
+    }
+
+    @Override
+    public CartridgeContainers.Storage storage() {
+        return CartridgeContainers.Storage.byId(storage.get());
+    }
+
+    @Override
+    public void sendContentUpdates() {
+        updateStorage();
+        super.sendContentUpdates();
+    }
+
+    /** Its storage, before the properties are sent (a Party Controller is known on the server only). */
+    private void updateStorage() {
+        if (player.getWorld().isClient) return;
+        ItemStack stack = ref.resolve(player);
+        if (CartridgeContainers.linksContainers(stack))
+            storage.set(CartridgeContainers.storageOf(stack, player.getWorld(), ref.pos().orElse(null)).ordinal());
     }
 
     /** The cartridge is still where it was (the same stack: not dropped, split nor taken out) and in reach. */

@@ -39,8 +39,11 @@ import java.util.List;
  * Each writes what a click of the cartridge on the target writes, with the same feedback, recorded for undo.
  */
 public final class CartridgeLinks {
-    /** Colour of the links to containers (also the chest trail). */
-    public static final int CONTAINER_COLOR = 0x3C8CFF;
+    /**
+     * Colour of the links to a cartridge's storage, its containers or the Party Controller's bank (also the chest
+     * trail): the green of the « Storage » line of its menu.
+     */
+    public static final int CONTAINER_COLOR = 0x7CE06A;
     /** Colour of a router's links to the board spaces it powers: redstone. */
     public static final int ROUTER_COLOR = 0xE03030;
     /** Colour of a Hop Switch's links to the blocks it switches. */

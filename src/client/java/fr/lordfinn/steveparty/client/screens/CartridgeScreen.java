@@ -30,7 +30,7 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
         super(handler, inventory, title);
         MinecraftClient client = MinecraftClient.getInstance();
         boolean fixed = handler.withInventory();
-        this.panel = new CartridgePanel(client, () -> handler.ref().resolve(inventory.player), () -> handler.ref().pos().orElse(null),
+        this.panel = new CartridgePanel(client, () -> handler.ref().resolve(inventory.player), () -> handler.ref().pos().orElse(null), handler::storage,
                 () -> handler.syncId, () -> handler.ref().mayEdit(inventory.player),
                 fixed ? CartridgeLayout.MAX_CONTENT_WITH_INVENTORY : CartridgeLayout.MAX_CONTENT_ALONE,
                 fixed ? CartridgeLayout.SHELL_W_WITH_INVENTORY : 0, fixed ? CartridgeLayout.SHELL_H_WITH_INVENTORY : 0);
