@@ -205,6 +205,15 @@ public final class DiceRollEffects {
         }
     }
 
+    /**
+     * The roll moves nothing (a Threshold barrier not cleared): after a moment to see it, the turn of the token ends
+     * where it stands, without landing. No other roll moves it meanwhile.
+     */
+    public static void skipMove(ServerWorld world, MobEntity token) {
+        RESOLVING.add(token.getUuid());
+        later(APPRECIATE_TICKS + END_TURN_TICKS, () -> endTurn(world, token));
+    }
+
     /** The roll moved nothing: the turn of the token ends where it stands, without landing. */
     private static void endTurn(ServerWorld world, MobEntity token) {
         UUID id = token.getUuid();
