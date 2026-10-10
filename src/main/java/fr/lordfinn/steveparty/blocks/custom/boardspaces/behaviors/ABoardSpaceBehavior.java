@@ -66,6 +66,15 @@ public abstract class ABoardSpaceBehavior {
 
     public void tick(ServerWorld world, BoardSpaceBlockEntity state, ItemStack type, int ticks) {}
 
+    /**
+     * Whether the board spaces of this role tick on the server ({@link #tick} called): false by default, a board
+     * makes many spaces. For a role registered by an addon, it is the answer of the built-in role whose look it
+     * borrows that counts (the ticker follows the block state).
+     */
+    public boolean ticks() {
+        return false;
+    }
+
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         return SUCCESS;
     }

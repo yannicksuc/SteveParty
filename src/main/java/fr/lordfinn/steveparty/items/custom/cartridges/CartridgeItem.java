@@ -53,6 +53,16 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
         return BoardSpaceType.DEFAULT;
     }
 
+    /**
+     * The role this cartridge gives its board space: an id of
+     * {@link fr.lordfinn.steveparty.api.StevePartyRegistries#BOARD_SPACE_ROLES}. By default the role of
+     * {@link #getBoardSpaceType()}; an addon's cartridge returns its own role here, and in {@link #getBoardSpaceType()}
+     * the built-in role whose look (model, block state) its board space borrows.
+     */
+    public net.minecraft.util.Identifier getBoardSpaceRole() {
+        return getBoardSpaceType().id();
+    }
+
     // ---------------------------------------------------------------- its menu
 
     public static final String MENU_KEY = "gui.steveparty.cartridge_menu.";
