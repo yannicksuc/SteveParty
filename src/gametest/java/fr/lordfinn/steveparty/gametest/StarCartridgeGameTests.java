@@ -337,7 +337,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
                     context.assertEquals(count(owner, coin), 5, "the price paid");
                     context.assertEquals(count(owner, starItem), 1, "a star given");
                     context.assertEquals(TestAsserts.count(board.bank(), starItem), BANK_STARS - 1, "the star taken from the bank");
-                    context.assertEquals(TestAsserts.count(board.bank(), coin), PRICE, "the coins paid into the bank");
+                    context.assertEquals(TestAsserts.count(board.party().getBankItems(), coin), PRICE, "the coins paid into the bank (its own inventory first)");
                     BlockPos moved = board.party().getStarSpace();
                     context.assertTrue(context.getAbsolutePos(OTHER).equals(moved) || context.getAbsolutePos(ANOTHER).equals(moved),
                             "the star went to another star space, got " + moved);

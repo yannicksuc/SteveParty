@@ -21,6 +21,8 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -52,7 +54,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
             BUTTON_PRACTICE = 5, BUTTON_MAX_POWER_UPS_DOWN = 6, BUTTON_MAX_POWER_UPS_UP = 7, BUTTON_RESTRICT_DICE = 8,
-            BUTTON_STOP = 9;
+            BUTTON_STOP = 9, BUTTON_BANK = 10;
     /**
      * The steppers of the Gains page: {@code BUTTON_GAINS + row * 4 + column}, the columns being coins less, coins
      * more, stars less, stars more (see {@link #gainButton}).
@@ -543,6 +545,15 @@ public class PartyControllerScreenHandler extends ScreenHandler {
                 if (PartyDashboardData.launchBlocker(controller.getPartyData().isStarted(), board, controller.canEdit(player))
                         != PartyDashboardData.Blocker.NONE) return false;
                 controller.boot();
+            }
+            case BUTTON_BANK -> {
+                // Its own bank, a chest of 27 slots (this screen closes): for those who may change the controller
+                if (!controller.canEdit(player)) return false;
+                PartyControllerEntity bankOf = controller;
+                serverPlayer.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, inventory, opener) ->
+                        GenericContainerScreenHandler.createGeneric9x3(syncId, inventory, bankOf.getBankItems()),
+                        Text.translatable("container.steveparty.party_bank")));
+                return true;
             }
             case BUTTON_STOP -> {
                 // The screen asked for a confirmation first; the same rule as the settings (a party runs: operator or Game Master)

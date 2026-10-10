@@ -4,6 +4,9 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.utils.InventoryChain;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import net.fabricmc.fabric.api.transfer.v1.item.InventoryStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
@@ -25,9 +28,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The bank of a Party Controller: the containers of the Inventory Cartridge in its bank slot (Gains page), in their
- * order; the cartridge's item slots and transfer mode, for board spaces, play no part here. The gains of the party's
- * mini-games are taken from them, the first ones first, never created: what is not in them is not paid.
+ * The bank of a Party Controller: its own inventory (27 slots, opened from its dashboard, filled and emptied by
+ * hoppers) first, then, optional, the containers of the Inventory Cartridge in its bank slot (Gains page), in their
+ * order; the cartridge's item slots and transfer mode, for board spaces, play no part here. Everything the party pays
+ * (mini-game gains, a star bought, the board spaces without a chest of their own...) is taken from it, the first
+ * places first, never created: what is not in it is not paid; what the party takes (a star's price, stakes...) goes
+ * in the first place with room, in the same order. The one way in: {@link #places}, {@link #inventory},
+ * {@link #deposit}.
  * <p>
  * A bank container is a storage container: a chest (a double chest counts whole, whichever half was chosen, and once
  * even if both halves are in the list), a trapped chest, a barrel or a shulker box; not a hopper, a dropper, a
@@ -40,9 +47,9 @@ import java.util.List;
 public final class PartyBank {
     /** What the bank can pay. */
     public enum State {
-        /** No Inventory Cartridge in the controller (or one without containers). */
+        /** Its own inventory empty and no container linked (no Inventory Cartridge, or one without containers). */
         NONE,
-        /** None of its containers is there now (gone, no storage container, or not loaded). */
+        /** Its own inventory empty and none of its linked containers is there now (gone, no storage container, or not loaded). */
         MISSING,
         /** Enough for a whole mini-game, over the containers that are there. */
         OK,
@@ -71,6 +78,47 @@ public final class PartyBank {
     }
 
     private PartyBank() {
+    }
+
+    /** Hoppers (and any Fabric item storage user) fill and empty the controller's own bank, from every side. */
+    public static void initialize() {
+        ItemStorage.SIDED.registerForBlockEntity((controller, side) -> InventoryStorage.of(controller.getBankItems(), side),
+                ModBlockEntities.PARTY_CONTROLLER_ENTITY);
+    }
+
+    /**
+     * The places of {@code controller}'s bank that are there now, in order: its own inventory, then the containers of
+     * its bank cartridge that pay (loaded, still storage containers, not in a zone in session).
+     */
+    public static List<Inventory> places(PartyControllerEntity controller) {
+        List<Inventory> places = new ArrayList<>();
+        places.add(controller.getBankItems());
+        MinecraftServer server = controller.getWorld() == null ? null : controller.getWorld().getServer();
+        if (server != null) places.addAll(resolve(server, controller.getBank()).paying());
+        return places;
+    }
+
+    /** The linked containers of a bank cartridge that pay now, end to end in their order (a double chest whole); null for none. */
+    public static @Nullable Inventory chests(MinecraftServer server, ItemStack cartridge) {
+        List<Inventory> paying = resolve(server, cartridge).paying();
+        return paying.isEmpty() ? null : paying.size() == 1 ? paying.getFirst() : new InventoryChain(paying);
+    }
+
+    /** {@code controller}'s bank as one inventory, its places end to end in order (taking walks them in order). */
+    public static Inventory inventory(PartyControllerEntity controller) {
+        List<Inventory> places = places(controller);
+        return places.size() == 1 ? places.getFirst() : new InventoryChain(places);
+    }
+
+    /**
+     * Puts as much of {@code stack} as fits in {@code controller}'s bank: the first place with room first (merging,
+     * then its empty slots), then the next. {@code stack} is decremented by what went in. @return how many went in
+     */
+    public static int deposit(PartyControllerEntity controller, ItemStack stack) {
+        List<Inventory> places = places(controller);
+        int inserted = CartridgeContainers.insertInOrder(stack, places);
+        if (inserted > 0) places.forEach(Inventory::markDirty);
+        return inserted;
     }
 
     /** Whether a block entity can be a bank: a storage container that does not move items by itself. */
@@ -125,15 +173,6 @@ public final class PartyBank {
         return new Resolved(paying, absent, unloaded);
     }
 
-    /**
-     * The containers a cartridge pays from now, end to end in their order (a double chest whole), or null when none
-     * is there: none, all gone, or none loaded.
-     */
-    public static @Nullable Inventory inventory(MinecraftServer server, ItemStack cartridge) {
-        List<Inventory> paying = resolve(server, cartridge).paying();
-        return paying.isEmpty() ? null : paying.size() == 1 ? paying.getFirst() : new InventoryChain(paying);
-    }
-
     /** The container at {@code pos}, as an inventory (a double chest whole), or null if it is no bank. */
     public static @Nullable Inventory inventory(World world, BlockPos pos) {
         // in a mini-game zone in session or being put back: what it pays would come back with the zone
@@ -163,11 +202,16 @@ public final class PartyBank {
      * mini-game for {@code players} players, and how many containers are skipped (gone, not loaded).
      */
     public static Status status(PartyControllerEntity controller, MinecraftServer server, int players) {
-        ItemStack cartridge = controller.getBank();
-        if (targets(cartridge).isEmpty()) return Status.NONE;
-        Resolved resolved = resolve(server, cartridge);
-        if (resolved.paying().isEmpty()) return new Status(State.MISSING, 0, 0, resolved.absent(), resolved.unloaded());
-        Inventory inventory = new InventoryChain(resolved.paying());
+        Resolved resolved = resolve(server, controller.getBank());
+        // Its own inventory always pays; empty with no chest linked: none; its linked chests all missing: said
+        if (controller.getBankItems().isEmpty() && resolved.paying().isEmpty()) {
+            return targets(controller.getBank()).isEmpty() ? Status.NONE
+                    : new Status(State.MISSING, 0, 0, resolved.absent(), resolved.unloaded());
+        }
+        List<Inventory> places = new ArrayList<>();
+        places.add(controller.getBankItems());
+        places.addAll(resolved.paying());
+        Inventory inventory = new InventoryChain(places);
         int coins = InventoryUtils.count(inventory, controller.getCurrency(PartyCurrency.COIN));
         int stars = InventoryUtils.count(inventory, controller.getCurrency(PartyCurrency.STAR));
         MiniGameGains gains = controller.getGains();
