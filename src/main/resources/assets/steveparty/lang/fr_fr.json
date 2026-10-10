@@ -169,6 +169,7 @@
   "tooltip.steveparty.tile.contents.links": "liens : %s",
   "tooltip.steveparty.tile.contents.hint": "Cassée, elle garde cartouches et look ; ses liens seulement au Toucher de soie",
   "block.steveparty.tile.sized": "%s (%s)",
+  "block.steveparty.tile.holding": "%s %s",
   "block.steveparty.tile_part": "Partie de grande tuile",
   "tooltip.steveparty.tile.size.standard": "2x2, centrée sur son bloc",
   "tooltip.steveparty.tile.size.small": "1x1",

@@ -782,6 +782,7 @@
   "tooltip.steveparty.tile.contents.links": "links: %s",
   "tooltip.steveparty.tile.contents.hint": "Broken, it keeps its cartridges and look; its links only with Silk Touch",
   "block.steveparty.tile.sized": "%s (%s)",
+  "block.steveparty.tile.holding": "%2$s %1$s",
   "block.steveparty.tile_part": "Large Tile Part",
   "tooltip.steveparty.tile.size.standard": "2x2, centred on its block",
   "tooltip.steveparty.tile.size.small": "1x1",

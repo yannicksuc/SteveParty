@@ -69,4 +69,19 @@ public class CartridgeApplicationsGameTests implements SteveGameTest {
         }
         context.complete();
     }
+
+    /** A tile is named after the role of the cartridge in its first slot; a plain cartridge or none: its own name. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aTileIsNamedAfterItsFirstCartridge(TestContext context) {
+        ItemStack tile = new ItemStack(ModBlocks.TILE.asItem());
+        ItemStack mistigri = CartridgeApplications.holding(tile, new ItemStack(fr.lordfinn.steveparty.items.ModItems.MISTIGRI_CARTRIDGE));
+        var named = (net.minecraft.text.TranslatableTextContent) mistigri.getName().getContent();
+        context.assertEquals(named.getKey(), "block.steveparty.tile.holding", "named after its cartridge");
+        context.assertEquals(((net.minecraft.text.TranslatableTextContent) ((net.minecraft.text.Text) named.getArgs()[1]).getContent()).getKey(),
+                "hud.steveparty.tile_info.role.tile_mistigri", "the role's name");
+        ItemStack plain = CartridgeApplications.holding(tile, new ItemStack(fr.lordfinn.steveparty.items.ModItems.BOARD_SPACE_BEHAVIOR));
+        context.assertEquals(((net.minecraft.text.TranslatableTextContent) plain.getName().getContent()).getKey(), "block.steveparty.tile", "a plain cartridge: Tile");
+        context.assertEquals(((net.minecraft.text.TranslatableTextContent) tile.getName().getContent()).getKey(), "block.steveparty.tile", "empty: Tile");
+        context.complete();
+    }
 }
