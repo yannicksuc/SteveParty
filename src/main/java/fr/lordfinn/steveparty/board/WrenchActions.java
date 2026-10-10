@@ -7,22 +7,15 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
-import fr.lordfinn.steveparty.components.ShopLinkComponent;
-import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
-import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.particles.MagicShapeEffect;
-import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.podium.Podiums;
-import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.block.BlockState;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -38,7 +31,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -48,7 +40,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -61,8 +52,7 @@ import java.util.UUID;
  *     <li>The link edits shared by the tools (the Tile Linker Brush paints the links, see {@link TileLinkerBrush}):
  *     adding / removing a link, the undo history ({@link #recorded}), the cartridge supplied to a tile.</li>
  *     <li>What the brush's anchor (the last board space it painted) gives: a chest clicked joins its inventory tile, a
- *     stall, cash register or Boxed Trader clicked becomes its shop, a board space placed with the brush in the off
- *     hand is linked from it.</li>
+ *     board space placed with the brush in the off hand is linked from it.</li>
  * </ul>
  */
 public final class WrenchActions {
@@ -342,7 +332,7 @@ public final class WrenchActions {
 
     public static void initialize() {
         // A click with the Tile Linker Brush on something its anchor's cartridge links (a chest for an Inventory
-        // Cartridge, a trading stall or cash register for a Shop Cartridge, a switchable block for a Hop Switch...):
+        // or Shop Cartridge, a Spawn Marker for a mob space, a switchable block for a Hop Switch...):
         // added, or removed if it is one, as a click with that cartridge would (see BrushLinks). A holder is painted.
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (hand != Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
@@ -362,98 +352,7 @@ public final class WrenchActions {
             recorded(serverPlayer, world, brush, () -> TileLinkerBrush.toggle(serverPlayer, (ServerWorld) world, anchor, kind, clicked));
             return ActionResult.SUCCESS;
         });
-        // A click on a Boxed Trader with the brush whose anchor holds a Shop Cartridge: that trader is the cartridge's shop
-        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
-            ItemStack wrench = player.getMainHandStack();
-            if (!TileLinkerBrush.isBrush(wrench) || !(entity instanceof BoxedTraderEntity trader)) return ActionResult.PASS;
-            ShopOrigin shop = shopOrigin(wrench, world);
-            if (shop == null) return ActionResult.PASS;
-            if (world.isClient) return ActionResult.SUCCESS;
-            ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-            if (isRepeat(serverPlayer, trader.getBlockPos(), world.getTime())) return ActionResult.SUCCESS;
-            if (!ScreenHandlerChecks.canBuildAt(serverPlayer, shop.container().getPos())) {
-                TileLinkerBrush.cannotEdit(serverPlayer, shop.container().getPos());
-                return ActionResult.SUCCESS;
-            }
-            recorded(serverPlayer, world, wrench, () -> linkShop(serverPlayer, (ServerWorld) world, shop,
-                    new ShopLinkComponent(trader.getUuid(), trader.getBlockPos().toImmutable())));
-            return ActionResult.SUCCESS;
-        });
     }
-
-    // ---------------------------------------------------------------- shops of Shop Cartridges
-
-    /** The Shop Cartridge the brush edits: its anchor's cartridge in the slot of its level. */
-    public record ShopOrigin(CartridgeContainerBlockEntity container, int slot) {
-        ItemStack cartridge() {
-            return container.getStack(slot);
-        }
-    }
-
-    /** The Shop Cartridge of the brush's anchor (the slot of its level), or null. */
-    public static @Nullable ShopOrigin shopOrigin(ItemStack brush, World world) {
-        BlockPos origin = TileLinkerBrush.anchor(brush, world);
-        CartridgeContainerBlockEntity container = origin == null ? null : BoardLinks.container(world, origin);
-        if (container == null) return null;
-        int slot = BoardLinks.slotOf(container, TileLinkerBrush.level(brush));
-        return container.getStack(slot).getItem() instanceof ShopCartridgeItem
-                ? new ShopOrigin(container, slot) : null;
-    }
-
-    /** A trading stall or cash register clicked: the Boxed Trader it belongs to (Shopkeeper Key links) becomes the shop. */
-    static void linkShopFromBlock(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin, BlockPos clicked) {
-        VendorLinkPersistentState links = VendorLinkPersistentState.get(world.getServer());
-        Set<UUID> traders = links == null ? Set.of()
-                : links.getVendorsLinkedTo(GlobalPos.create(world.getRegistryKey(), clicked));
-        if (traders.isEmpty()) {
-            say(player, Text.translatable("message.steveparty.wrench.shop.no_trader", BoardText.pos(clicked)));
-            playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 0.7f);
-            return;
-        }
-        // Several traders sharing the block: the loaded one first, else any (sorted: the same one every time)
-        UUID trader = traders.stream().filter(uuid -> world.getEntity(uuid) instanceof BoxedTraderEntity)
-                .findFirst().orElse(traders.stream().sorted().findFirst().orElseThrow());
-        linkShop(player, world, origin, new ShopLinkComponent(trader, clicked));
-    }
-
-    /**
-     * Makes {@code shop} the cartridge's shop, or, if it was already, goes back to the nearest merchant.
-     */
-    private static void linkShop(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin, ShopLinkComponent shop) {
-        ItemStack cartridge = origin.cartridge();
-        ShopLinkComponent before = cartridge.get(ModComponents.SHOP_LINK);
-        BlockPos pos = origin.container().getPos().toImmutable();
-        if (before != null && before.trader().equals(shop.trader())) {
-            unlinkShop(player, world, origin);
-            return;
-        }
-        cartridge.set(ModComponents.SHOP_LINK, shop);
-        BoardLinks.sync(origin.container());
-        LinkHistory.record(player, new LinkHistory.ShopChange(pos, origin.slot(), before, shop));
-        BoardLinks.trail(world, pos, shop.anchor(), SHOP_COLOR);
-        Entity trader = world.getEntity(shop.trader());
-        say(player, Text.translatable("message.steveparty.wrench.shop.linked", BoardText.pos(pos),
-                trader != null ? trader.getDisplayName() : Text.translatable("entity.steveparty.boxed_trader")));
-        world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_VILLAGER_TRADE, SoundCategory.PLAYERS, 0.6f, 1.2f);
-    }
-
-    /** The cartridge's shop is the nearest merchant again. */
-    static void unlinkShop(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin) {
-        ItemStack cartridge = origin.cartridge();
-        ShopLinkComponent before = cartridge.get(ModComponents.SHOP_LINK);
-        if (before == null) return;
-        BlockPos pos = origin.container().getPos().toImmutable();
-        cartridge.remove(ModComponents.SHOP_LINK);
-        BoardLinks.sync(origin.container());
-        LinkHistory.record(player, new LinkHistory.ShopChange(pos, origin.slot(), before, null));
-        BoardLinks.trail(world, pos, before.anchor(), BoardLinks.CUT_COLOR);
-        say(player, Text.translatable("message.steveparty.wrench.shop.unlinked", BoardText.pos(pos)));
-        playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 1f);
-    }
-
-    /** Colour of a shop link (particles, board view): the Shop Cartridge's lime green. */
-    public static final int SHOP_COLOR = ShopCartridgeItem.COLOR;
 
     // ---------------------------------------------------------------- sounds
 

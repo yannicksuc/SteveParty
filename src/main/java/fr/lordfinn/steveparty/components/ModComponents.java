@@ -197,7 +197,10 @@ public class ModComponents {
     /** Price and options of a Star Cartridge (see StarSettingsComponent). */
     public static final ComponentType<StarSettingsComponent> STAR_SETTINGS =
             registerComponent("star-settings", StarSettingsComponent.CODEC);
-    /** The shop chosen for a Shop Cartridge with the Wrench (none: the nearest merchant). */
+    /**
+     * Legacy, never read: the merchant a Shop Cartridge was once linked to (its space now summons its own). Still
+     * registered so that the cartridges carrying it load; dropped with them.
+     */
     public static final ComponentType<ShopLinkComponent> SHOP_LINK =
             registerComponent("shop-link", ShopLinkComponent.CODEC);
 

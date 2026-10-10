@@ -8,7 +8,9 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.CursedRolls;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.BandanaItem;
 import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -125,6 +127,23 @@ public class RecipeGameTests implements SteveGameTest {
         }
         context.assertTrue(missing.isEmpty(), "creative-only items: " + missing);
         context.assertTrue(notMinable.isEmpty(), "blocks without a loot table: " + notMinable);
+        context.complete();
+    }
+
+    /**
+     * The Shop Cartridge: a cartridge and a bandana (any colour), only ever taken from a Boxed Trader: the players trace
+     * it back to the merchant, then to the villager block. Not with the emerald and gold nugget it once took.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theShopCartridgeNeedsABandana(TestContext context) {
+        ItemStack cartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+        for (int color = 0; color < BoxedTraderEntity.BANDANA_COLORS; color++) {
+            ItemStack bandana = BandanaItem.create(color);
+            ItemStack shop = result(context, 2, 1, cartridge.copy(), bandana);
+            context.assertTrue(shop.isOf(ModItems.SHOP_CARTRIDGE), "a cartridge and a bandana " + color + ", got " + shop);
+        }
+        ItemStack old = result(context, 3, 1, cartridge.copy(), new ItemStack(Items.EMERALD), new ItemStack(Items.GOLD_NUGGET));
+        context.assertTrue(!old.isOf(ModItems.SHOP_CARTRIDGE), "no longer from an emerald and a gold nugget");
         context.complete();
     }
 
