@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerSettings;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
@@ -18,14 +19,14 @@ import net.minecraft.util.math.MathHelper;
  * wheel too). Each change is sent at once; the brush, the Wrench or the Explorer's Helmet show where the mob will be.
  */
 public class SpawnMarkerScreen extends Screen {
-    private static final int PANEL_W = 220, PAD = 12, ROW = 26;
+    private static final int PANEL_W = 220, PAD = 12;
     private static final String K = "gui.steveparty.spawn_marker.";
 
     private final BlockPos pos;
     private boolean resident;
     private int lift;
     private PartyButton onLanding, always;
-    private int panelTop, panelHeight, liftY;
+    private int panelTop, panelHeight, whenY, liftY, liftLabelHeight, hintY;
 
     public SpawnMarkerScreen(BlockPos pos, SpawnMarkerBlockEntity marker) {
         super(Text.translatable(K + "title"));
@@ -36,16 +37,24 @@ public class SpawnMarkerScreen extends Screen {
 
     @Override
     protected void init() {
-        panelHeight = 18 + 12 + 20 + ROW + 20 + PAD + 10;
+        int inner = PANEL_W - 2 * PAD;
+        // Measured in the current language: the labels wrap, the panel grows with them
+        int whenHeight = UiText.height(textRenderer, Text.translatable(K + "when"), inner);
+        liftLabelHeight = UiText.height(textRenderer, Text.translatable(K + "lift"), liftLabelWidth());
+        int liftRow = Math.max(20, liftLabelHeight);
+        int hintHeight = UiText.height(textRenderer, Text.translatable(K + "preview"), inner);
+        panelHeight = 18 + whenHeight + 2 + 20 + 6 + liftRow + 6 + hintHeight + PAD;
         panelTop = (height - panelHeight) / 2;
         int left = (width - PANEL_W) / 2 + PAD, right = (width + PANEL_W) / 2 - PAD;
-        int half = (PANEL_W - 2 * PAD - 4) / 2;
-        int y = panelTop + 18 + 12;
+        int half = (inner - 4) / 2;
+        whenY = panelTop + 18;
+        int y = whenY + whenHeight + 2;
         onLanding = addDrawableChild(new PartyButton(left, y, half, 20, Text.translatable(K + "on_landing"), b -> setResident(false)));
         always = addDrawableChild(new PartyButton(left + half + 4, y, half, 20, Text.translatable(K + "resident"), b -> setResident(true)));
         onLanding.setTooltip(Tooltip.of(Text.translatable(K + "on_landing.hint")));
         always.setTooltip(Tooltip.of(Text.translatable(K + "resident.hint")));
-        liftY = y + ROW;
+        liftY = y + 20 + 6 + (liftRow - 20) / 2;
+        hintY = y + 20 + 6 + liftRow + 6;
         addDrawableChild(new PartyButton(right - 70, liftY, 20, 20, Text.literal("-"), b -> step(-1)))
                 .setTooltip(Tooltip.of(Text.translatable(K + "lift.hint")));
         addDrawableChild(new PartyButton(right - 20, liftY, 20, 20, Text.literal("+"), b -> step(1)))
@@ -91,6 +100,11 @@ public class SpawnMarkerScreen extends Screen {
                 || client.player.squaredDistanceTo(pos.toCenterPos()) > 64) close();
     }
 
+    /** Room for the height label, left of its − value + buttons. */
+    private int liftLabelWidth() {
+        return PANEL_W - 2 * PAD - 70 - 4;
+    }
+
     /** -4, -3.5... +8 blocks. */
     private static String lift(int steps) {
         String value = steps % 2 == 0 ? Integer.toString(steps / 2) : (steps / 2.0 + "");
@@ -103,14 +117,15 @@ public class SpawnMarkerScreen extends Screen {
         int left = (width - PANEL_W) / 2;
         PartyGui.panel(context, left, panelTop, PANEL_W, panelHeight, PartyGui.PANEL);
         PartyGui.titlePlate(context, textRenderer, width / 2, panelTop - 11, 0, title, PartyGui.FLAG_RED);
-        context.drawText(textRenderer, Text.translatable(K + "when"), left + PAD, panelTop + 18, PartyGui.TEXT_DARK, false);
-        context.drawText(textRenderer, Text.translatable(K + "lift"), left + PAD, liftY + 6, PartyGui.TEXT_DARK, false);
+        int inner = PANEL_W - 2 * PAD;
+        UiText.wrapped(context, textRenderer, Text.translatable(K + "when"), left + PAD, whenY, inner, PartyGui.TEXT_DARK, false);
+        UiText.wrapped(context, textRenderer, Text.translatable(K + "lift"), left + PAD, liftY + 10 - liftLabelHeight / 2,
+                liftLabelWidth(), PartyGui.TEXT_DARK, false);
         String value = lift(lift);
         int centre = (width + PANEL_W) / 2 - PAD - 35;
         PartyGui.inset(context, centre - 14, liftY, 28, 20, 0xFFFFFFFF, false, false);
-        context.drawText(textRenderer, value, centre - textRenderer.getWidth(value) / 2, liftY + 6, PartyGui.TEXT_DARK, false);
-        Text hint = Text.translatable(K + "preview");
-        context.drawText(textRenderer, hint, width / 2 - textRenderer.getWidth(hint) / 2, liftY + ROW + 2, PartyGui.TEXT_SOFT, false);
+        UiText.centered(context, textRenderer, value, centre - 13, liftY + 6, 26, PartyGui.TEXT_DARK, false);
+        UiText.wrapped(context, textRenderer, Text.translatable(K + "preview"), left + PAD, hintY, inner, PartyGui.TEXT_SOFT, false, true);
         for (var child : children()) {
             if (child instanceof PartyButton button) button.render(context, mouseX, mouseY, delta);
         }
