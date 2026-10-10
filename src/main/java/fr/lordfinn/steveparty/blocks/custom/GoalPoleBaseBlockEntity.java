@@ -9,9 +9,11 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
+import fr.lordfinn.steveparty.payloads.custom.GoalPolePopupsPayload;
 import fr.lordfinn.steveparty.podium.PodiumGroup;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.command.EntitySelector;
@@ -37,7 +39,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
@@ -52,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +64,6 @@ import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock.POWERED;
 import static fr.lordfinn.steveparty.criteria.ModScoreboardCriteria.LANDED_ON_POLE_ID;
-import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloatingText;
 
 /**
  * The goal pole base: it counts points for the players it follows, and tells the poles above it the total.
@@ -123,6 +124,11 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     /** Redstone power into the base that also puts the points back to 0 (below it, the signal only pauses). */
     public static final int RESET_POWER = 15;
 
+    /** Score popups of a base are sent at most once per this many ticks, the points in between summed per holder. */
+    public static final int POPUP_INTERVAL = 10;
+    /** Players this close to a base see its score popups. */
+    public static final int POPUP_RADIUS = 48;
+
     public enum Source {
         /** Landings on this base's own poles. */
         LANDINGS_HERE,
@@ -158,6 +164,12 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     // --- Runtime ---
     /** Set while the base writes its own objectives, so that it does not react to its own changes. */
     private boolean writing = false;
+    /** Points not shown yet, per holder (see {@link #flushPopups}). */
+    private final Map<String, Long> pendingPopups = new LinkedHashMap<>();
+    private long lastPopupTick = Long.MIN_VALUE / 2;
+    /** Popup updates sent and points they carried since loaded, for tests. */
+    private int popupUpdates = 0;
+    private long popupPoints = 0;
     @Nullable private ScoreboardObjective mirror;
     @Nullable private ScoreboardObjective sourceObjective;
     /** The name of the objective of the server it follows (see {@link #followedObjective}), null for none. */
@@ -482,13 +494,52 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
 
     private void onPointsChanged(long delta, String holder) {
         markDirty();
-        if (delta > 0 && world instanceof ServerWorld serverWorld) {
-            pulseRedstone();
-            spawnFloatingText(serverWorld, "+" + delta, pos.toCenterPos().add(0.5, 0.5, 0.5).add(Math.random() - 1, Math.random() / 2, Math.random() - 1).toVector3f(),
-                    TextColor.fromRgb(0xC90E0E), 50);
-        }
+        if (delta > 0) pulseRedstone();
+        queuePopup(holder, delta);
         pushTotal();
         checkPlayerGoals(holder);
+    }
+
+    /** Shown later as one « +N » / « −N » with the holder's other points of the moment ({@link #flushPopups}). */
+    private void queuePopup(String holder, long delta) {
+        if (delta == 0 || world == null || world.isClient) return;
+        pendingPopups.merge(holder, delta, Long::sum);
+        GoalPoleNetwork.requestPopups(this);
+    }
+
+    /**
+     * Sends the points counted since the last popups to the players around, in one payload, if the last one is
+     * {@link #POPUP_INTERVAL} ticks old: a fast objective (distance walked) makes a popup that counts up, not dozens.
+     * @return whether points are still waiting
+     */
+    boolean flushPopups(long now) {
+        if (pendingPopups.isEmpty()) return false;
+        if (now - lastPopupTick < POPUP_INTERVAL) return true;
+        List<GoalPolePopupsPayload.Gain> gains = new ArrayList<>(pendingPopups.size());
+        pendingPopups.forEach((holder, delta) -> {
+            if (delta != 0) gains.add(new GoalPolePopupsPayload.Gain(holder, delta));
+        });
+        pendingPopups.clear();
+        if (gains.isEmpty() || !(world instanceof ServerWorld serverWorld)) return false;
+        lastPopupTick = now;
+        popupUpdates++;
+        for (GoalPolePopupsPayload.Gain gain : gains) popupPoints += gain.delta();
+        GoalPolePopupsPayload payload = new GoalPolePopupsPayload(pos, gains);
+        Vec3d center = pos.toCenterPos();
+        for (ServerPlayerEntity player : serverWorld.getPlayers(p -> p.squaredDistanceTo(center) < POPUP_RADIUS * POPUP_RADIUS)) {
+            ServerPlayNetworking.send(player, payload);
+        }
+        return false;
+    }
+
+    /** Popup updates sent since loaded (for tests). */
+    public int getPopupUpdates() {
+        return popupUpdates;
+    }
+
+    /** Points those popup updates carried, all holders (for tests). */
+    public long getPopupPoints() {
+        return popupPoints;
     }
 
     /**
