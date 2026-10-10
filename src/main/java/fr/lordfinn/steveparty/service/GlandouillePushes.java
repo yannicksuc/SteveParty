@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -211,8 +212,12 @@ public final class GlandouillePushes {
         Vec3d loneAt = Vec3d.ZERO;
         int tick;
 
+        /** The party the token played in when it landed (null: none): its show stops if that party is over. */
+        final @Nullable PartyControllerEntity party;
+
         Show(ServerWorld world, MobEntity token, Runnable onDone) {
             super(world, token, onDone);
+            this.party = PartyControllerEntity.getRunningPartyOf(token.getUuid()).orElse(null);
         }
 
         /** One of its Glandouilles, a board actor (with its hat), at {@code at}. */
@@ -230,8 +235,17 @@ public final class GlandouillePushes {
             return one;
         }
 
+        /** The party it was part of is over (ended, stopped, its controller gone): its tokens are on their way home. */
+        boolean partyOver() {
+            return party != null && (party.isRemoved() || !party.getPartyData().isStarted());
+        }
+
         void tickTower() {
             if (done) return;
+            if (partyOver()) {
+                finish();
+                return;
+            }
             tick++;
             tickFallen();
             if (stoppedAt >= 0) {
@@ -366,6 +380,10 @@ public final class GlandouillePushes {
 
         void tickLone() {
             if (done) return;
+            if (partyOver()) {
+                finish();
+                return;
+            }
             tick++;
             if (bottom == null || bottom.isRemoved()) {
                 finish();
