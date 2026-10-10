@@ -140,8 +140,8 @@ public final class MiniGameCardHud {
         if (hasPicture) {
             HudDraw.fill(context, x + PAD - 1, top, x + PAD + pictureWidth + 1, top + pictureHeight + 2, HudDraw.OUTLINE, alpha);
             MiniGamePageClient.Picture picture = MiniGamePageClient.picture(page.image(), pictureWidth, pictureHeight);
-            int pictureTop = top + 1;
-            if (picture != null) HudDepth.onTop(context, () -> picture.draw(context, x + PAD, pictureTop, pictureWidth, pictureHeight, HudDraw.white(alpha)));
+            int pictureTop = top + 1, drawnWidth = pictureWidth, drawnHeight = pictureHeight;
+            if (picture != null) HudDepth.onTop(context, () -> picture.draw(context, x + PAD, pictureTop, drawnWidth, drawnHeight, HudDraw.white(alpha)));
             top += pictureHeight + 2 + 4;
         }
 
@@ -153,8 +153,8 @@ public final class MiniGameCardHud {
         int rowWidth = 0;
         for (int[] chip : at) if (chip[1] == 0) rowWidth = chip[0] + chip[2];
         if (alpha > 0.6f) {
-            int chipsX = x + (width - rowWidth) / 2, chipsTop = top;
-            HudDepth.onTop(context, () -> FormatChips.drawFlow(context, font, formats, look, chipsX, chipsTop, pictureWidth, 3));
+            int chipsX = x + (width - rowWidth) / 2, chipsTop = top, chipsWidth = pictureWidth;
+            HudDepth.onTop(context, () -> FormatChips.drawFlow(context, font, formats, look, chipsX, chipsTop, chipsWidth, 3));
         }
         top += at.getLast()[1] + 13;
 
