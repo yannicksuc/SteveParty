@@ -77,6 +77,19 @@ public final class PartyControllers {
         return closestSteppable(world, pos, fallbackRadius, includeEnded);
     }
 
+    /**
+     * The controller of the board holding the board space at {@code pos}, whether its party runs or not: the loaded
+     * controller whose board holds it, else the closest one within {@code fallbackRadius} blocks.
+     */
+    static Optional<PartyControllerEntity> ofBoard(World world, BlockPos pos, int fallbackRadius) {
+        PartyControllerEntity owner = BOARD_SPACES.get(GlobalPos.create(world.getRegistryKey(), pos));
+        if (owner != null && !owner.isRemoved() && owner.getWorld() == world) return Optional.of(owner);
+        return ACTIVE.values().stream()
+                .filter(entity -> !entity.isRemoved() && entity.getWorld() == world)
+                .filter(entity -> fallbackRadius <= 0 || entity.getPos().getSquaredDistance(pos) < (double) fallbackRadius * fallbackRadius)
+                .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos)));
+    }
+
     /** Snapshot of the loaded server-side controllers (safe to iterate while steps change). */
     public static List<PartyControllerEntity> all() {
         return List.copyOf(ACTIVE.values());
