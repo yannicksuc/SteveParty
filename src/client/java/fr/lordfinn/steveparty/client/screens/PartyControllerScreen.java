@@ -196,9 +196,8 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, off ? SLOT_OFF_BODY : SLOT_BODY, SLOT_EDGE, off ? SLOT_OFF_LOW : SLOT_LOW);
         }
         if (page() == Page.SETTINGS) settings.drawFreeDie(context);
-        // The empty catalogue and bank slots show, faded, the item they take (the currency slots are never empty)
+        // The empty catalogue slot shows, faded, the item it takes (the currency slots are never empty)
         ghostItem(context, handler.getSlot(SLOT_CATALOGUE), ModItems.MINI_GAMES_CATALOGUE);
-        ghostItem(context, handler.getSlot(SLOT_BANK), ModItems.INVENTORY_CARTRIDGE);
     }
 
     private void ghostItem(DrawContext context, Slot slot, Item item) {

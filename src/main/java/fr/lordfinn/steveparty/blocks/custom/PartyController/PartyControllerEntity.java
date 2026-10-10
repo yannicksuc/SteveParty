@@ -378,6 +378,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         return settings.getBank();
     }
 
+    /** Its linked chests become those of the Inventory Cartridge {@code bank} (tests, migrations). */
     public void setBank(ItemStack bank) {
         settings.setBank(bank);
         markDirty();
@@ -638,6 +639,12 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      * once the party is really playable again (see {@link PartyFlow#tick}).
      */
     public void serverTick(ServerWorld serverWorld) {
+        // The Inventory Cartridge a player had put in it before it kept its chests itself: given back, above it
+        if (settings.takeOldCartridgeReturn()) {
+            net.minecraft.util.ItemScatterer.spawn(serverWorld, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5,
+                    new ItemStack(fr.lordfinn.steveparty.items.ModItems.INVENTORY_CARTRIDGE));
+            markDirty();
+        }
         PartyStars.tick(this, serverWorld);
         if (tokenHomes.hasPending() && serverWorld.getTime() % 20 == 0 && tokenHomes.processPending(serverWorld))
             markDirty();

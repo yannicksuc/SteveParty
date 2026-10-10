@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.items.custom.PartyCardItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.PartyDashboardPayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
@@ -89,15 +88,12 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int PROGRAM_FIRST_SLOT = PLAYER_SLOTS + 36;
     public static final int PROGRAM_COLUMNS = 12;
     public static final int PROGRAM_X = CONTENT_X + (CONTENT_WIDTH - PROGRAM_COLUMNS * 18) / 2 + 1, PROGRAM_Y = CONTENT_Y + 33;
-    /** Gains page: the bank's Inventory Cartridge (after the program's slots), at the content's top left. */
-    public static final int SLOT_BANK = PROGRAM_FIRST_SLOT + PartyControllerEntity.PROGRAM_SLOTS;
-    public static final int BANK_X = CONTENT_X + 1, BANK_Y = CONTENT_Y + 1;
     /**
-     * Settings page: the « Allowed dice » ghost slots after the bank's, the row of the page (its first dice, on the 4th
+     * Settings page: the « Allowed dice » ghost slots after the program's, the row of the page (its first dice, on the 4th
      * setting row, left of the panel's toggle) then the panel (every die, 3 rows of 9 over the other settings).
      */
     public static final int DICE_ROW = 4, DICE_COLUMNS = 9;
-    public static final int DICE_FIRST_SLOT = SLOT_BANK + 1, DICE_PANEL_FIRST_SLOT = DICE_FIRST_SLOT + DICE_ROW;
+    public static final int DICE_FIRST_SLOT = PROGRAM_FIRST_SLOT + PartyControllerEntity.PROGRAM_SLOTS, DICE_PANEL_FIRST_SLOT = DICE_FIRST_SLOT + DICE_ROW;
     public static final int DICE_ROW_Y = CONTENT_Y + 18 + 3 * 22 + 1, DICE_ROW_X = CONTENT_X + CONTENT_WIDTH - 16 - 2 - DICE_ROW * 18 + 1;
     public static final int DICE_PANEL_X = CONTENT_X + (CONTENT_WIDTH - DICE_COLUMNS * 18) / 2 + 1, DICE_PANEL_Y = CONTENT_Y + 21;
 
@@ -121,19 +117,18 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     /** Server side. */
     public PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, PartyControllerEntity controller) {
         this(syncId, playerInventory, controller.getPos(), controller, catalogueInventory(controller), currencyInventory(controller),
-                controller.getProgram(), bankInventory(controller), diceInventory(controller));
+                controller.getProgram(), diceInventory(controller));
     }
 
     /** Client side. */
     public PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload payload) {
         this(syncId, playerInventory, payload.pos(), null, new SimpleInventory(1), new SimpleInventory(2),
-                new SimpleInventory(PartyControllerEntity.PROGRAM_SLOTS), new SimpleInventory(1),
-                new SimpleInventory(PartyControllerEntity.MAX_ALLOWED_DICE));
+                new SimpleInventory(PartyControllerEntity.PROGRAM_SLOTS), new SimpleInventory(PartyControllerEntity.MAX_ALLOWED_DICE));
     }
 
     private PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, BlockPos pos,
                                          @Nullable PartyControllerEntity controller, Inventory catalogue, Inventory currencies,
-                                         Inventory program, Inventory bank, Inventory dice) {
+                                         Inventory program, Inventory dice) {
         super(ModScreensHandlers.PARTY_CONTROLLER_SCREEN_HANDLER, syncId);
         this.controller = controller;
         this.pos = pos;
@@ -151,31 +146,10 @@ public class PartyControllerScreenHandler extends ScreenHandler {
             addSlot(new PageSlot(playerInventory, col, invX + col * 18, INVENTORY_Y + INVENTORY_PAD + 1 + 58, withInventory));
         for (int i = 0; i < PartyControllerEntity.PROGRAM_SLOTS; i++)
             addSlot(new CardSlot(program, i, PROGRAM_X + (i % PROGRAM_COLUMNS) * 18, PROGRAM_Y + (i / PROGRAM_COLUMNS) * 18));
-        addSlot(new BankSlot(bank));
         for (int i = 0; i < DICE_ROW; i++)
             addSlot(new DiceSlot(dice, i, DICE_ROW_X + i * 18, DICE_ROW_Y, false));
         for (int i = 0; i < PartyControllerEntity.MAX_ALLOWED_DICE; i++)
             addSlot(new DiceSlot(dice, i, DICE_PANEL_X + (i % DICE_COLUMNS) * 18, DICE_PANEL_Y + (i / DICE_COLUMNS) * 18, true));
-    }
-
-    /** The bank's cartridge slot (server: the controller's; client: filled by the slot sync). */
-    private static Inventory bankInventory(PartyControllerEntity controller) {
-        return new Inventory() {
-            @Override public int size() { return 1; }
-            @Override public boolean isEmpty() { return controller.getBank().isEmpty(); }
-            @Override public ItemStack getStack(int slot) { return controller.getBank(); }
-            @Override public ItemStack removeStack(int slot, int amount) { return removeStack(slot); }
-            @Override public ItemStack removeStack(int slot) {
-                ItemStack stack = controller.getBank();
-                controller.setBank(ItemStack.EMPTY);
-                return stack;
-            }
-            @Override public void setStack(int slot, ItemStack stack) { controller.setBank(stack); }
-            @Override public int getMaxCountPerStack() { return 1; }
-            @Override public void markDirty() { controller.markDirty(); }
-            @Override public boolean canPlayerUse(PlayerEntity player) { return ScreenHandlerChecks.canUseBlockEntity(controller, player); }
-            @Override public void clear() { controller.setBank(ItemStack.EMPTY); }
-        };
     }
 
     // ------------------------------------------------------------------ inventories (server)
@@ -301,28 +275,6 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         public boolean canBeHighlighted() {
             // The greyed places don't light up
             return isDiceSlotUsable(id);
-        }
-    }
-
-    /** The bank's slot: an Inventory Cartridge (its container is the bank), changed only by a player who may edit the controller. */
-    private class BankSlot extends PageSlot {
-        BankSlot(Inventory inventory) {
-            super(inventory, 0, BANK_X, BANK_Y, EnumSet.of(Page.GAINS));
-        }
-
-        @Override
-        public boolean canInsert(ItemStack stack) {
-            return stack.getItem() instanceof InventoryCartridgeItem && mayEditProgram();
-        }
-
-        @Override
-        public boolean canTakeItems(PlayerEntity playerEntity) {
-            return mayEditProgram();
-        }
-
-        @Override
-        public int getMaxItemCount() {
-            return 1;
         }
     }
 
@@ -470,11 +422,8 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         if (!slot.hasStack()) return ItemStack.EMPTY;
         ItemStack stack = slot.getStack();
         ItemStack original = stack.copy();
-        if (index == SLOT_CATALOGUE || isProgramSlot(index) || index == SLOT_BANK) {
+        if (index == SLOT_CATALOGUE || isProgramSlot(index)) {
             if (!slot.canTakeItems(player) || !insertItem(stack, PLAYER_SLOTS, PROGRAM_FIRST_SLOT, true)) return ItemStack.EMPTY;
-        } else if (stack.getItem() instanceof InventoryCartridgeItem) {
-            Slot bank = slots.get(SLOT_BANK);
-            if (!bank.canInsert(stack) || bank.hasStack() || !insertItem(stack, SLOT_BANK, SLOT_BANK + 1, false)) return ItemStack.EMPTY;
         } else if (stack.getItem() instanceof PartyCardItem) {
             if (!mayEditProgram() || !insertItem(stack, PROGRAM_FIRST_SLOT, PROGRAM_FIRST_SLOT + PartyControllerEntity.PROGRAM_SLOTS, false))
                 return ItemStack.EMPTY;

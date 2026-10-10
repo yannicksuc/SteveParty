@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.powerups.PowerUpLimit;
 import net.minecraft.item.ItemStack;
@@ -23,8 +26,13 @@ public final class PartySettings {
     private ItemStack coinItem = PartyCurrency.COIN.defaultStack();
     /** What the party pays at the end of each mini-game, by place (Gains page). */
     private MiniGameGains gains = MiniGameGains.DEFAULT;
-    /** The Inventory Cartridge whose chest the gains are taken from (Gains page), empty for none: see {@link PartyBank}. */
-    private ItemStack bank = ItemStack.EMPTY;
+    /**
+     * The chests linked to the controller with the Tile Linker Brush, paying after its own bank (see {@link PartyBank}).
+     * Kept inside it as an Inventory Cartridge the player never sees: the brush links it like any cartridge's.
+     */
+    private ItemStack bank = newBank();
+    /** Read from a controller whose bank was an Inventory Cartridge put in it: that cartridge is given back once. */
+    private boolean returnOldCartridge;
     /** A practice round before each mini-game whose page has a Mini-game Controller (Settings page). */
     private boolean practiceRound = true;
     /** The power-ups a player may carry during a party, dice carrying the Power-up module included (0: no limit). */
@@ -47,7 +55,9 @@ public final class PartySettings {
         nbt.put(PartyCurrency.STAR.nbtKey(), starItem.encode(wrapper));
         nbt.put(PartyCurrency.COIN.nbtKey(), coinItem.encode(wrapper));
         nbt.put("MiniGameGains", gains.toNbt());
-        if (!bank.isEmpty()) nbt.put("BankCartridge", bank.encode(wrapper));
+        if (!CartridgeContainers.isEmpty(bank)) nbt.put("BankCartridge", bank.encode(wrapper));
+        nbt.putBoolean("BankInternal", true);
+        if (returnOldCartridge) nbt.putBoolean("ReturnBankCartridge", true);
         nbt.putBoolean("PracticeRound", practiceRound);
         nbt.putInt("MaxPowerUps", maxPowerUps);
         nbt.putBoolean("RestrictDice", restrictDice);
@@ -63,7 +73,10 @@ public final class PartySettings {
         coinItem = readCurrency(nbt, wrapper, PartyCurrency.COIN);
         gains = MiniGameGains.fromNbt(nbt.getCompound("MiniGameGains"));
         NbtElement bankElement = nbt.get("BankCartridge");
-        bank = bankElement == null ? ItemStack.EMPTY : ItemStack.fromNbt(wrapper, bankElement).orElse(ItemStack.EMPTY);
+        ItemStack saved = bankElement == null ? ItemStack.EMPTY : ItemStack.fromNbt(wrapper, bankElement).orElse(ItemStack.EMPTY);
+        // Before, the player put an Inventory Cartridge in it: its chests stay linked, the cartridge goes back to them
+        returnOldCartridge = nbt.getBoolean("ReturnBankCartridge") || (!nbt.getBoolean("BankInternal") && !saved.isEmpty());
+        bank = saved.getItem() instanceof InventoryCartridgeItem ? saved.copyWithCount(1) : newBank();
         practiceRound = !nbt.contains("PracticeRound") || nbt.getBoolean("PracticeRound");
         maxPowerUps = nbt.contains("MaxPowerUps")
                 ? Math.clamp(nbt.getInt("MaxPowerUps"), 0, PowerUpLimit.MAX)
@@ -109,12 +122,25 @@ public final class PartySettings {
         return true;
     }
 
+    /** The chests linked to the controller, as the Inventory Cartridge kept inside it (never empty). */
     public ItemStack getBank() {
         return bank;
     }
 
+    /** Its linked chests become those of {@code bank} (an Inventory Cartridge); none or another item: no chest. */
     void setBank(ItemStack bank) {
-        this.bank = bank == null ? ItemStack.EMPTY : bank;
+        this.bank = bank != null && bank.getItem() instanceof InventoryCartridgeItem ? bank.copyWithCount(1) : newBank();
+    }
+
+    /** @return true once if the Inventory Cartridge a player had put in it is to be given back */
+    boolean takeOldCartridgeReturn() {
+        boolean due = returnOldCartridge;
+        returnOldCartridge = false;
+        return due;
+    }
+
+    private static ItemStack newBank() {
+        return new ItemStack(ModItems.INVENTORY_CARTRIDGE);
     }
 
     public boolean hasPracticeRound() {

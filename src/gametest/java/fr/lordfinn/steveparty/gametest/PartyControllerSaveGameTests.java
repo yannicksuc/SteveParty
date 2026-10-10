@@ -94,7 +94,12 @@ public class PartyControllerSaveGameTests implements SteveGameTest {
         nbt.put(PartyCurrency.STAR.nbtKey(), new ItemStack(Items.DIAMOND).encode(registries));
         nbt.put(PartyCurrency.COIN.nbtKey(), new ItemStack(Items.GOLD_NUGGET).encode(registries));
         nbt.put("MiniGameGains", MiniGameGains.DEFAULT.toNbt());
-        nbt.put("BankCartridge", new ItemStack(Items.CHEST).encode(registries));
+        // The chests linked to the controller (kept inside it as an Inventory Cartridge)
+        ItemStack bank = new ItemStack(fr.lordfinn.steveparty.items.ModItems.INVENTORY_CARTRIDGE);
+        fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(bank,
+                java.util.List.of(net.minecraft.util.math.GlobalPos.create(World.OVERWORLD, new BlockPos(7, 64, 7))));
+        nbt.put("BankCartridge", bank.encode(registries));
+        nbt.putBoolean("BankInternal", true);
         nbt.putBoolean("PracticeRound", false);
         nbt.putInt("MaxPowerUps", 2);
         nbt.putBoolean("RestrictDice", true);

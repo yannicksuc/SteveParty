@@ -191,7 +191,6 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
                 // The party is gone: it stops (its mini-game still reads the catalogue), its players' steps HUD goes too
                 entity.onControllerRemoved();
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.catalogue);
-                ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.getBank());
                 ItemScatterer.spawn(world, pos, entity.getBankItems());
             }
         }
