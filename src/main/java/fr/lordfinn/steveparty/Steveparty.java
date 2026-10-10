@@ -208,6 +208,7 @@ public class Steveparty implements ModInitializer {
 
         // Steve Party's own game content, in the registries of its API (as an addon registers its own)
         fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType.registerAll();
+        fr.lordfinn.steveparty.api.party.PartySteps.registerBuiltIns();
 
         // Last: the addons, once Steve Party's own content is registered
         fr.lordfinn.steveparty.api.StevePartyApi.invokeEntrypoints(fr.lordfinn.steveparty.api.StevePartyApi.ENTRYPOINT,
