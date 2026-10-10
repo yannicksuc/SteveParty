@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyChunkHolds;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
@@ -16,6 +17,7 @@ import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -35,7 +37,8 @@ import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
 
 /**
  * Stopping a party: the dashboard's button / the command ({@link PartyControllerEntity#stopParty}) and a broken
- * controller. The pawns go back to their start tiles, out of the game, and nothing of the party is left.
+ * controller. The pawns go back to their start tiles, out of the game, and nothing of the party is left. A party
+ * reaching its end sends them home too ({@link EndPartyStep}).
  */
 public class PartyStopGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(3, 1, 6);
@@ -108,6 +111,21 @@ public class PartyStopGameTests implements SteveGameTest {
         context.assertEquals(((TokenizedEntityInterface) board.b()).steveparty$getNbSteps(), 0, "b has no steps left");
         context.assertTrue(!PartyControllerEntity.isTokenInRunningParty(board.a().getUuid())
                 && !PartyControllerEntity.isTokenInRunningParty(board.b().getUuid()), "no party holds the pawns");
+    }
+
+    /** The party reaches its end at once: the END step comes right after the current one. */
+    private static void endParty(Board board) {
+        PartyControllerEntity controller = board.controller();
+        var data = controller.getPartyData();
+        data.getSteps().add(data.getStepIndex() + 1, new EndPartyStep(new ArrayList<>(List.of(board.a().getUuid(), board.b().getUuid()))));
+        controller.nextStep();
+    }
+
+    /** b stands on the other plain space, and b's start tile is broken. */
+    private static void breakStartOfB(TestContext context, Board board) {
+        Vec3d away = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(SPACE_B));
+        board.b().requestTeleport(away.x, away.y, away.z);
+        context.setBlockState(START_B, Blocks.AIR);
     }
 
     private static void cleanUp(TestContext context, Board board) {
@@ -188,6 +206,58 @@ public class PartyStopGameTests implements SteveGameTest {
                 "steveparty party stop " + at.getX() + " " + at.getY() + " " + at.getZ());
         context.assertTrue(!board.controller().getPartyData().isStarted(), "the command stopped it");
         assertSentHome(context, board);
+        cleanUp(context, board);
+        context.complete();
+    }
+
+    /** The party reaches its end: the pawns go home, out of the game; brought back from its end, they go back where they stood. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void endSendsThePawnsHome(TestContext context) {
+        Board board = startedParty(context);
+        PartyControllerEntity controller = board.controller();
+        movePawns(context, board);
+        endParty(board);
+        context.assertTrue(controller.getPartyData().isAtEnd(), "the party is over");
+        assertSentHome(context, board);
+        context.waitAndRun(10, () -> {
+            // b's walk was dropped: it stays home
+            assertOn(context, board.b(), START_B, "b stays on its start tile");
+            controller.previousStep();
+            context.assertTrue(controller.getPartyData().isStarted(), "the party is back");
+            assertOn(context, board.a(), SPACE_A, "a back where it stood");
+            assertOn(context, board.b(), START_B, "b had not left its start tile yet");
+            context.assertTrue(inGame(board.a()) && inGame(board.b()), "the pawns are in game again");
+            controller.stopParty(Text.literal("Tester"));
+            assertSentHome(context, board);
+            cleanUp(context, board);
+            context.complete();
+        });
+    }
+
+    /** At the end, a pawn whose start tile is gone stays where it is; the other one goes home. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void endLeavesAPawnWithoutStartTile(TestContext context) {
+        Board board = startedParty(context);
+        movePawns(context, board);
+        breakStartOfB(context, board);
+        endParty(board);
+        assertOn(context, board.a(), START_A, "a back on its start tile");
+        assertOn(context, board.b(), SPACE_B, "b stays where it is");
+        context.assertTrue(!inGame(board.a()) && !inGame(board.b()), "the pawns are out of the game");
+        cleanUp(context, board);
+        context.complete();
+    }
+
+    /** Stopped, a pawn whose start tile is gone stays where it is; the other one goes home. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stopLeavesAPawnWithoutStartTile(TestContext context) {
+        Board board = startedParty(context);
+        movePawns(context, board);
+        breakStartOfB(context, board);
+        context.assertTrue(board.controller().stopParty(Text.literal("Tester")), "stopped");
+        assertOn(context, board.a(), START_A, "a back on its start tile");
+        assertOn(context, board.b(), SPACE_B, "b stays where it is");
+        context.assertTrue(!inGame(board.a()) && !inGame(board.b()), "the pawns are out of the game");
         cleanUp(context, board);
         context.complete();
     }
