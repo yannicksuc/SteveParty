@@ -1,21 +1,17 @@
 package fr.lordfinn.steveparty.board;
 
-import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlock;
 import fr.lordfinn.steveparty.blocks.custom.HopSwitchBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.TradingStallBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.service.MarkerResidents;
 import org.jetbrains.annotations.Nullable;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
-import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -34,9 +30,8 @@ import java.util.List;
  *     <li>{@link BoardPaths}: the destinations of a board space's or router's cartridge, to board spaces (the board's
  *     paths; a cartridge is supplied to an empty slot);</li>
  *     <li>{@link Switches}: the destinations of a Hop Switch's cartridge, to the blocks it switches;</li>
- *     <li>{@link Containers}: the containers of an Inventory Cartridge (board spaces, Looting Box, Piggy Bank, the
- *     Party Controller's bank), at most {@link CartridgeContainers#MAX};</li>
- *     <li>{@link Shop}: the shop of a board space's Shop Cartridge, a trading stall or cash register (its Boxed Trader);</li>
+ *     <li>{@link Containers}: the containers of an Inventory, Trichaudron or Shop Cartridge (board spaces, Looting Box,
+ *     Piggy Bank, the Party Controller's bank), at most {@link CartridgeContainers#MAX};</li>
  *     <li>{@link SpawnPoint}: the Spawn Marker of a mob space's cartridge, where its mob appears (one at most).</li>
  * </ul>
  * The target decides: a board space is a destination, a container a container, a Spawn Marker the spawn point; a
@@ -65,11 +60,6 @@ public final class CartridgeLinks {
             },
             (world, holder, held, out) -> {
                 if (BrushLinks.isInventoryCartridge(held.cartridge()) && BrushLinks.usesContainers(holder)) out.add(new Containers(held));
-            },
-            (world, holder, held, out) -> {
-                if (holder instanceof BoardSpaceBlockEntity space && BrushLinks.isShopCartridge(held.cartridge())) {
-                    out.add(new Shop(space, held.slot()));
-                }
             },
             (world, holder, held, out) -> {
                 if (holder instanceof BoardSpaceBlockEntity && CartridgeSpawnMarker.spawnsMobs(held.cartridge())) out.add(new SpawnPoint(held));
@@ -280,52 +270,6 @@ public final class CartridgeLinks {
             held.sync().run();
             LinkHistory.record(player, new LinkHistory.SpawnChange(held.pos(), held.slot(), before, cartridge.get(ModComponents.SPAWN_MARKER)));
             MarkerResidents.refresh(world, before == null ? marker : before.pos());
-        }
-    }
-
-    // ---------------------------------------------------------------- Shop Cartridge
-
-    /** The shop of a board space's Shop Cartridge: a trading stall or cash register, standing for its Boxed Trader. */
-    public record Shop(BoardSpaceBlockEntity space, int slot) implements BrushLinkable {
-        @Override
-        public BlockPos holder() {
-            return space.getPos();
-        }
-
-        @Override
-        public int color() {
-            return WrenchActions.SHOP_COLOR;
-        }
-
-        @Override
-        public boolean accepts(World world, BlockPos target) {
-            Block block = world.getBlockState(target).getBlock();
-            return block instanceof TradingStallBlock || block instanceof CashRegisterBlock;
-        }
-
-        @Override
-        public List<BlockPos> targets(World world) {
-            ShopLinkComponent link = space.getStack(slot).get(ModComponents.SHOP_LINK);
-            return link == null ? List.of() : List.of(link.anchor());
-        }
-
-        @Override
-        public boolean link(ServerPlayerEntity player, ServerWorld world, BlockPos target) {
-            if (linked(world, target)) return false;
-            WrenchActions.linkShopFromBlock(player, world, new WrenchActions.ShopOrigin(space, slot), target);
-            return true;
-        }
-
-        @Override
-        public boolean unlink(ServerPlayerEntity player, ServerWorld world, BlockPos target) {
-            if (!linked(world, target)) return false;
-            WrenchActions.unlinkShop(player, world, new WrenchActions.ShopOrigin(space, slot));
-            return true;
-        }
-
-        @Override
-        public boolean drawnByBoardView() {
-            return true;
         }
     }
 }

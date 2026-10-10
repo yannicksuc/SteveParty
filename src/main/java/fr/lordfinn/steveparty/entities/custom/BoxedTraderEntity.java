@@ -1,6 +1,9 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.TokenBase;
+import fr.lordfinn.steveparty.service.BoardActors;
+import fr.lordfinn.steveparty.service.BoardShop;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 
 import com.google.gson.JsonElement;
@@ -78,10 +81,11 @@ import software.bernie.geckolib.util.ClientUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
 
-public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
+public class BoxedTraderEntity extends MerchantEntity implements GeoEntity, BoardActor {
 
     private final TradeOfferList tradeOffers = new TradeOfferList();
     private VendorLinkPersistentState vendorLinkPersistentState;
@@ -135,6 +139,19 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
      * the purple and black missing texture, until a player gives him a Box Costume back.
      */
     private static final TrackedData<Boolean> BOX_GLITCHED = DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    /**
+     * The real Trading Stall in front of a merchant summoned by a Shop Cartridge's space, which shows his offers while he
+     * is there (its own contents untouched); empty: none, he brings his own (drawn with him, see {@link #SHOP_ITEMS}).
+     */
+    private static final TrackedData<Optional<BlockPos>> SHOP_STALL = DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
+    /** What a summoned merchant sells (up to {@link #SHOP_DISPLAY}), shown on his stall; empty for a merchant of the world. */
+    @SuppressWarnings("unchecked")
+    private static final TrackedData<ItemStack>[] SHOP_ITEMS = new TrackedData[]{
+            DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.ITEM_STACK),
+            DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.ITEM_STACK),
+            DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.ITEM_STACK)};
+    /** The most items shown on a summoned merchant's stall. */
+    public static final int SHOP_DISPLAY = 3;
     /** After a theft: closed for 20 s, ignoring players. */
     public static final int THEFT_HIDE_TICKS = 400;
     /** fun_shocked (1.3 s) plays before he hides. */
@@ -155,6 +172,13 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
     private boolean gridAligned = false;
     /** Server: age until which a little animation is playing (no wandering meanwhile). */
     private int funBusyUntil = 0;
+    /** Summoned by a board space (see {@link BoardActors}): a hologram, never saved. */
+    private boolean boardActor;
+    /**
+     * Server: the shop of the Shop Cartridge's space that summoned him ({@link fr.lordfinn.steveparty.service.ShopStops}):
+     * his offers, stock and till are its, not those of the Shopkeeper Key's links; null for a merchant of the world.
+     */
+    private @Nullable BoardShop boardShop;
 
     public BoxedTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
         super(type, world);
@@ -220,6 +244,8 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
         builder.add(HAS_BANDANA, true);
         builder.add(HIDE_START, Long.MIN_VALUE);
         builder.add(BOX_GLITCHED, false);
+        builder.add(SHOP_STALL, Optional.empty());
+        for (TrackedData<ItemStack> item : SHOP_ITEMS) builder.add(item, ItemStack.EMPTY);
     }
 
     @Override
@@ -232,6 +258,64 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
                     .filter(BoxedTraderEntity::isValidBoxBlock)
                     .ifPresent(decodedBlockState -> this.blockState = decodedBlockState);
         }
+    }
+
+    @Override
+    public boolean isBoardActor() {
+        return boardActor;
+    }
+
+    @Override
+    public void setBoardActor() {
+        this.boardActor = true;
+    }
+
+    @Override
+    public boolean shouldSave() {
+        return !boardActor && super.shouldSave();
+    }
+
+    @Override
+    protected boolean shouldDropLoot() {
+        return !boardActor && super.shouldDropLoot();
+    }
+
+    /**
+     * Makes him the merchant of a Shop Cartridge's space (summoned, before he is spawned): he sells {@code shop}'s
+     * offers, shown on {@code stall} (a real Trading Stall in front of him) or, null, on his own stall drawn with him.
+     */
+    public void setBoardShop(BoardShop shop, @Nullable BlockPos stall) {
+        this.boardShop = shop;
+        this.dataTracker.set(SHOP_STALL, Optional.ofNullable(stall).map(BlockPos::toImmutable));
+        List<TradingStallBlockEntity.ExactTradeOffer> offers = shop.offers();
+        for (int i = 0; i < SHOP_ITEMS.length; i++) {
+            this.dataTracker.set(SHOP_ITEMS[i], i < offers.size() ? offers.get(i).getSellItem().copy() : ItemStack.EMPTY);
+        }
+    }
+
+    /** Server: the shop of the space that summoned him, null for a merchant of the world. */
+    public @Nullable BoardShop getBoardShop() {
+        return boardShop;
+    }
+
+    /** The real Trading Stall showing his offers (a summoned merchant), null if none. */
+    public @Nullable BlockPos getShopStall() {
+        return this.dataTracker.get(SHOP_STALL).orElse(null);
+    }
+
+    /** What a summoned merchant sells, as his stall shows it (empty for a merchant of the world). */
+    public List<ItemStack> getShopItems() {
+        List<ItemStack> items = new ArrayList<>(SHOP_ITEMS.length);
+        for (TrackedData<ItemStack> item : SHOP_ITEMS) {
+            ItemStack stack = this.dataTracker.get(item);
+            if (!stack.isEmpty()) items.add(stack);
+        }
+        return items;
+    }
+
+    /** Whether his own stall is drawn with him: a summoned merchant selling something, without a real stall in front. */
+    public boolean bringsOwnStall() {
+        return getShopStall() == null && !getShopItems().isEmpty();
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
@@ -470,6 +554,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
 
     private boolean isStockAvailable(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) return true;
+        if (boardShop != null) return boardShop.inStock(itemStack);
         int requiredAmount = itemStack.getCount();
         int stockAmount = 0;
         for (Inventory inventory : storages) {
@@ -494,6 +579,10 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
 
     private void consumeStock(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) return;
+        if (boardShop != null) {
+            boardShop.take(itemStack);
+            return;
+        }
         int remainingAmount = itemStack.getCount();
         for (Inventory inventory : storages) {
             if (isRemovedStorage(inventory)) continue;
@@ -518,6 +607,11 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
 
     public void distributeItemStackAcrossCashRegisters(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        // A space's merchant: the payment goes to its till (the party's bank)
+        if (boardShop != null) {
+            boardShop.pay(stack, this.getPos().add(0, 0.5, 0));
             return;
         }
         for (CashRegisterBlockEntity inventory : cashRegisters) {
@@ -878,7 +972,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
             // Spawned from code without initialize() nor NBT (e.g. the villager block fall)
             rollBandanaColor();
         }
-        if (!this.getWorld().isClient && this.age % OWNER_SYNC_INTERVAL == 0) {
+        if (!this.getWorld().isClient && !boardActor && this.age % OWNER_SYNC_INTERVAL == 0) {
             syncOwner();
             refreshAssigned();
         }
@@ -1027,6 +1121,16 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     protected void fillRecipes() {
+        if (boardShop != null) {
+            // A space's merchant: the offers of its cartridge, its stock and its till (no Shopkeeper Key links)
+            tradingStalls.clear();
+            cashRegisters.clear();
+            storages.clear();
+            tradeOffers.clear();
+            tradeOffers.addAll(boardShop.offers());
+            refreshOfferAvailability();
+            return;
+        }
         updateInventories();
         updateTradeOffers();
     }
@@ -1104,8 +1208,8 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
      * or for a while after a theft.
      */
     private boolean computeHiding() {
-        // A board token is a still pawn: out of his box, whoever is around
-        if (TokenBase.isToken(this)) return false;
+        // A board token is a still pawn, a space's merchant a hologram: out of his box, whoever is around
+        if (TokenBase.isToken(this) || BoardActors.isHologram(this)) return false;
         World world = this.getWorld();
         if (world == null || isLeashed() || isTheftHidden()) return true;
         return world.getClosestPlayer(this.getX(), this.getY(), this.getZ(), OPEN_RANGE,

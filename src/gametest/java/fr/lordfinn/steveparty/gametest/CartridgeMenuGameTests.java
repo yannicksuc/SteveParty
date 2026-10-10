@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -217,7 +216,7 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                 List<ItemStack> states = new ArrayList<>(List.of(new ItemStack(item)));
                 ItemStack other = new ItemStack(item);
                 other.set(ModComponents.INVENTORY_POS, new BlockPos(-29999999, -64, -29999999));
-                other.set(ModComponents.SHOP_LINK, new ShopLinkComponent(UUID.randomUUID(), new BlockPos(-29999999, -64, -29999999)));
+                if (item == ModItems.SHOP_CARTRIDGE) ShopCartridgeItem.setOffers(other, List.of(List.of(new ItemStack(Items.DIAMOND), new ItemStack(Items.EMERALD, 64), new ItemStack(Items.GOLD_INGOT))));
                 other.set(ModComponents.TB_START_OWNER, UUID.randomUUID().toString());
                 other.set(ModComponents.TB_START_BOUND_ENTITY, UUID.randomUUID().toString());
                 states.add(other);
@@ -348,7 +347,7 @@ public class CartridgeMenuGameTests implements SteveGameTest {
             new CartridgeSettingPayload(42, "purchases", 99).handle(player);
             context.assertEquals(ShopCartridgeItem.purchases(shop), 4, "invalid value: ignored");
             context.assertTrue(menu.canUse(player), "the menu stays open while the cartridge is in hand");
-            context.assertTrue(!menu.withInventory() && menu.slots.isEmpty(), "no inventory without ghost slots");
+            context.assertTrue(menu.withInventory() && !menu.slots.isEmpty(), "its offers: ghost slots, with the inventory to pick from");
             player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
             context.assertTrue(!menu.canUse(player), "the cartridge gone: the menu closes");
             player.currentScreenHandler = player.playerScreenHandler;

@@ -9,13 +9,10 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
-import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.ShopLinkComponent;
-import fr.lordfinn.steveparty.entities.TokenBase;
+import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
-import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import fr.lordfinn.steveparty.registry.ModGameRules;
@@ -34,7 +31,6 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,19 +46,23 @@ import java.util.UUID;
  *     <li>a check point holding it stops a token passing through ({@link #onTileReached});</li>
  *     <li>a tile holding it opens the shop when a token ends its move there ({@link #onLanding}); passing tokens go on.</li>
  * </ul>
+ * The space summons its own merchant: a Boxed Trader hologram (a board actor: invulnerable, inert, never saved, see
+ * {@link BoardActors}) appears on the space's Spawn Marker ({@link BoardMobSpots}), else beside the space on the token's
+ * right, facing it. He sells the offers of the cartridge's menu from its stock, the payments going to the party's bank
+ * ({@link BoardShop}). A real Trading Stall right in front of him shows his offers while he is there; without one, his
+ * own stall is drawn with him (not a block). He goes when the stop ends.
+ * <p>
  * The token's owner gets the shop's trade screen wherever they are, with « Buy nothing » and a countdown; the merchant
  * glows meanwhile. The stop ends when the purchases allowed by the cartridge are made, on « Buy nothing » or when the
  * screen is closed, when the time runs out (game rule {@code stevepartyShopStopSeconds}, {@value ModGameRules#DEFAULT_SHOP_STOP_SECONDS} s
  * by default) or when the owner leaves: a paused token walks its remaining steps, a landing ends the turn.
  * <p>
- * The shop is the merchant chosen with the Tile Linker Brush (cartridge {@link ModComponents#SHOP_LINK}), else the nearest one
- * within {@value #SHOP_RADIUS} blocks: a Boxed Trader with trading stalls, the distance counted to him or to his
- * nearest stall. No shop, a token without owner or whose owner is offline: nothing happens, the token goes on. Only the
- * owner shops; the players around get a notice. Stops live in memory (a server stop ends them).
+ * No offer set, a token without owner or whose owner is offline: nothing happens, the token goes on. Only the owner
+ * shops; the players around get a notice. Stops live in memory (a server stop ends them, its merchant with it).
  */
 public final class ShopStops {
-    /** The nearest merchant is looked for this far from the space (to him or to one of his trading stalls). */
-    public static final int SHOP_RADIUS = 32;
+    /** Without a Spawn Marker, the merchant appears this far on the token's right. */
+    public static final double SIDE = 2.0;
     /** The players this far from the space hear about the stop. */
     public static final double AUDIENCE_RADIUS = 100;
     /** How often the others are reminded that someone is shopping (action bar), and the merchant sparkles. */
@@ -86,6 +86,8 @@ public final class ShopStops {
         final ServerWorld world;
         final BlockPos space;
         final UUID trader;
+        /** The BoardActors sequence of the merchant (he goes with it). */
+        final UUID sequence;
         final int limit;
         final long deadline;
         /** The party whose turn waits for the stop (a landing during a party), else null. */
@@ -93,13 +95,14 @@ public final class ShopStops {
         final Text tokenName;
         @Nullable ShopStopScreenHandler handler;
 
-        Stop(UUID token, UUID owner, ServerWorld world, BlockPos space, UUID trader, int limit, long deadline,
+        Stop(UUID token, UUID owner, ServerWorld world, BlockPos space, UUID trader, UUID sequence, int limit, long deadline,
              @Nullable PartyControllerEntity party, Text tokenName) {
             this.token = token;
             this.owner = owner;
             this.world = world;
             this.space = space;
             this.trader = trader;
+            this.sequence = sequence;
             this.limit = limit;
             this.deadline = deadline;
             this.party = party;
@@ -137,41 +140,26 @@ public final class ShopStops {
         return stack.getItem() instanceof ShopCartridgeItem ? stack : null;
     }
 
-    /**
-     * The shop of a Shop Cartridge on the space at {@code space}: the merchant chosen with the Tile Linker Brush (if he is here),
-     * else the nearest Boxed Trader with trading stalls, the distance counted to him or to his nearest stall.
-     */
-    public static @Nullable BoxedTraderEntity findShop(ServerWorld world, BlockPos space, ItemStack cartridge) {
-        ShopLinkComponent link = cartridge.get(ModComponents.SHOP_LINK);
-        if (link != null) {
-            return world.getEntity(link.trader()) instanceof BoxedTraderEntity trader && trader.isAlive() ? trader : null;
-        }
-        Vec3d at = Vec3d.ofCenter(space);
-        VendorLinkPersistentState links = VendorLinkPersistentState.get(world.getServer());
-        BoxedTraderEntity best = null;
-        double bestDistance = (double) SHOP_RADIUS * SHOP_RADIUS;
-        for (BoxedTraderEntity trader : world.getEntitiesByClass(BoxedTraderEntity.class, new Box(space).expand(SHOP_RADIUS + 16),
-                trader -> trader.isAlive() && !TokenBase.isToken(trader))) {
-            List<BlockPos> stalls = stallsOf(world, links, trader);
-            if (stalls.isEmpty()) continue; // a merchant sells what his stalls offer
-            double distance = trader.squaredDistanceTo(at);
-            for (BlockPos stall : stalls) distance = Math.min(distance, Vec3d.ofCenter(stall).squaredDistanceTo(at));
-            if (distance <= bestDistance) {
-                bestDistance = distance;
-                best = trader;
-            }
-        }
-        return best;
+    /** The merchant of the stop of {@code token} (for the GameTests), null if none. */
+    public static @Nullable BoxedTraderEntity merchantOf(UUID token) {
+        Stop stop = STOPS.get(token);
+        return stop != null && stop.world.getEntity(stop.trader) instanceof BoxedTraderEntity trader ? trader : null;
     }
 
-    /** The trading stalls of {@code trader} in its world. */
-    public static List<BlockPos> stallsOf(ServerWorld world, @Nullable VendorLinkPersistentState links, BoxedTraderEntity trader) {
-        List<BlockPos> stalls = new ArrayList<>();
-        if (links == null) return stalls;
-        for (BlockPos pos : links.getLinkedPositionsIn(trader.getUuid(), world.getRegistryKey())) {
-            if (world.isChunkLoaded(pos) && world.getBlockEntity(pos) instanceof TradingStallBlockEntity) stalls.add(pos);
-        }
-        return stalls;
+    /**
+     * Where the merchant of the space at {@code space} appears for {@code mob}: on its Spawn Marker, else {@link #SIDE}
+     * blocks on the token's right, facing it.
+     */
+    public static BoardMobSpots.Spot merchantSpot(ServerWorld world, BlockPos space, MobEntity mob) {
+        Vec3d stand = BoardSpaces.standPos(world, space);
+        Vec3d at = stand.add(Vec3d.fromPolar(0, mob.getYaw() + 90).multiply(SIDE));
+        return BoardMobSpots.spot(world, space, at, BoardSequences.yawToward(at, stand));
+    }
+
+    /** The real Trading Stall right in front of a merchant at {@code spot} (the block he faces), null if none. */
+    public static @Nullable BlockPos stallInFront(ServerWorld world, BoardMobSpots.Spot spot) {
+        BlockPos front = BlockPos.ofFloored(spot.pos().add(Vec3d.fromPolar(0, spot.yaw())).add(0, 0.01, 0));
+        return world.getBlockEntity(front) instanceof TradingStallBlockEntity ? front.toImmutable() : null;
     }
 
     // ---------------------------------------------------------------- start
@@ -216,21 +204,24 @@ public final class ShopStops {
         for (Stop other : STOPS.values()) {
             if (other.owner.equals(ownerUuid)) return false; // already shopping with another token
         }
-        BoxedTraderEntity trader = findShop(world, space.getPos(), cartridge);
-        if (trader == null) {
-            MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.closed").formatted(Formatting.GRAY),
+        if (!ShopCartridgeItem.hasOffers(cartridge)) {
+            MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.no_offer").formatted(Formatting.GRAY),
                     MessageUtils.MessageType.ACTION_BAR);
             return false;
         }
+        UUID sequence = UUID.randomUUID();
+        BoxedTraderEntity trader = summon(world, space.getPos(), mob, sequence);
+        if (trader == null) return false;
         int seconds = world.getGameRules().getInt(ModGameRules.SHOP_STOP_SECONDS);
         int limit = ShopCartridgeItem.purchases(cartridge);
         Text tokenName = mob.getDisplayName();
-        Stop stop = new Stop(mob.getUuid(), ownerUuid, world, space.getPos().toImmutable(), trader.getUuid(), limit,
+        Stop stop = new Stop(mob.getUuid(), ownerUuid, world, space.getPos().toImmutable(), trader.getUuid(), sequence, limit,
                 world.getTime() + 20L * seconds, party, tokenName);
         STOPS.put(mob.getUuid(), stop); // before opening: the screen reads its time left
         ShopStopScreenHandler handler = trader.openShopStop(owner, limit);
         if (handler == null) {
             STOPS.remove(mob.getUuid());
+            BoardActors.end(sequence);
             MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.closed").formatted(Formatting.GRAY),
                     MessageUtils.MessageType.ACTION_BAR);
             return false;
@@ -252,6 +243,29 @@ public final class ShopStops {
                     .formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
         }
         return true;
+    }
+
+    /**
+     * The merchant of the space at {@code space} appears for {@code mob}'s stop (one of {@code sequence}'s actors): on
+     * its spot, selling its cartridge's offers, shown on the real stall in front of him or on his own. Null if he could
+     * not be made.
+     */
+    private static @Nullable BoxedTraderEntity summon(ServerWorld world, BlockPos space, MobEntity mob, UUID sequence) {
+        BoxedTraderEntity trader = ModEntities.BOXED_TRADER_ENTITY.create(world);
+        if (trader == null) return null;
+        trader.makeBoardActor();
+        BoardActors.join(sequence, trader);
+        BoardMobSpots.Spot spot = merchantSpot(world, space, mob);
+        BoardMobSpots.showStarts(world, spot, sequence);
+        BoardMobSpots.hold(trader, spot);
+        trader.setBoardShop(new BoardShop(world, space), stallInFront(world, spot));
+        Vec3d at = spot.pos();
+        trader.refreshPositionAndAngles(at.x, at.y, at.z, spot.yaw(), 0);
+        trader.setHeadYaw(spot.yaw());
+        trader.setBodyYaw(spot.yaw());
+        world.spawnEntity(trader);
+        world.spawnParticles(ParticleTypes.POOF, at.x, at.y + 0.6, at.z, 10, 0.3, 0.4, 0.3, 0.01);
+        return trader;
     }
 
     // ---------------------------------------------------------------- the screen
@@ -314,14 +328,21 @@ public final class ShopStops {
         }
     }
 
-    /** Gold sparkles on the merchant and his stalls: where the shop is. */
+    /** Sparkles on the merchant and his stall: where the shop is. */
     private static void sparkle(ServerWorld world, Stop stop, BoxedTraderEntity trader) {
         world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, trader.getX(), trader.getY() + trader.getHeight() + 0.3, trader.getZ(),
                 4, 0.4, 0.3, 0.4, 0.0);
-        for (BlockPos stall : stallsOf(world, VendorLinkPersistentState.get(world.getServer()), trader)) {
-            world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, stall.getX() + 0.5, stall.getY() + 1.2, stall.getZ() + 0.5,
-                    2, 0.35, 0.2, 0.35, 0.0);
+        Vec3d stall = trader.getShopStall() != null ? Vec3d.ofBottomCenter(trader.getShopStall())
+                : trader.getPos().add(Vec3d.fromPolar(0, trader.getYaw()));
+        world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, stall.x, stall.y + 1.2, stall.z, 2, 0.35, 0.2, 0.35, 0.0);
+    }
+
+    /** The merchant of {@code stop} goes (a puff where he was). */
+    private static void dismiss(Stop stop) {
+        if (stop.world.getEntity(stop.trader) instanceof BoxedTraderEntity trader && !trader.isRemoved()) {
+            stop.world.spawnParticles(ParticleTypes.POOF, trader.getX(), trader.getY() + 0.6, trader.getZ(), 10, 0.3, 0.4, 0.3, 0.01);
         }
+        BoardActors.end(stop.sequence);
     }
 
     // ---------------------------------------------------------------- end
@@ -334,7 +355,7 @@ public final class ShopStops {
         if (owner != null && stop.handler != null && owner.currentScreenHandler == stop.handler) {
             owner.closeHandledScreen(); // back in onScreenClosed: nothing more, the stop is gone
         }
-        if (world.getEntity(stop.trader) instanceof BoxedTraderEntity trader) trader.removeStatusEffect(StatusEffects.GLOWING);
+        dismiss(stop);
         Text who = owner != null ? owner.getDisplayName() : stop.tokenName;
         int purchases = stop.handler == null ? 0 : stop.handler.getPurchases();
         Text message = switch (how) {
@@ -353,14 +374,14 @@ public final class ShopStops {
 
     /**
      * The party of the token was stopped: its stop ends at once, silently, and nothing goes on after it (the screen
-     * closes, the merchant stops glowing).
+     * closes, the merchant goes).
      */
     public static void cancel(UUID token) {
         Stop stop = STOPS.remove(token);
         if (stop == null) return;
         ServerPlayerEntity owner = stop.world.getServer().getPlayerManager().getPlayer(stop.owner);
         if (owner != null && stop.handler != null && owner.currentScreenHandler == stop.handler) owner.closeHandledScreen();
-        if (stop.world.getEntity(stop.trader) instanceof BoxedTraderEntity trader) trader.removeStatusEffect(StatusEffects.GLOWING);
+        dismiss(stop);
     }
 
     /** A paused token walks its remaining steps; a landing during a party ends the turn. */
