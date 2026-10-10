@@ -4,7 +4,11 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.render.geo.EmissiveLayer;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronHead;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -38,14 +42,18 @@ import software.bernie.geckolib.util.RenderUtil;
  *     <li><b>its tank's lava</b> and <b>its vents</b> ({@link TankAndVentLayer}): on the hidden {@code tank_lava} and
  *     {@code vent<suffix>} bones, their own planes (as authored: the cubes' faces) drawn again with our own animated
  *     lava (26 x 28 px of each 34 x 34 frame) and with each head's vent state texture (idle, charging, spitting:
- *     TrichaudronEntity#getVent), both full bright.</li>
+ *     TrichaudronEntity#getVent), both full bright (the shown heads' only);</li>
+ *     <li><b>a true choice's prizes</b> ({@link #renderHeldPrizes}): each head's floating under its mouth.</li>
  * </ul>
  */
 public class TrichaudronRenderer extends GeoEntityRenderer<TrichaudronEntity> {
-    private static final Identifier VEINS = Steveparty.id("textures/entity/trichaudron_veins.png");
+    /** The veins' glow, one per head count like the colour texture (TrichaudronModel#texture). */
+    private static final Identifier[] VEINS = new Identifier[TrichaudronEntity.MAX_HEADS + 1];
     private static final Identifier LAVA = Steveparty.id("textures/entity/trichaudron_lava.png");
     private static final Identifier[] VENT = {Steveparty.id("textures/entity/trichaudron_vent_idle.png"),
             Steveparty.id("textures/entity/trichaudron_vent_charging.png"), Steveparty.id("textures/entity/trichaudron_vent_spitting.png")};
+    /** A true choice's prize at a head's mouth: how far under it (blocks), how big. */
+    private static final float PRIZE_BELOW = 0.45f, PRIZE_SCALE = 1.4f;
     /** The lava texture's frames are 34 px; the tank's plane shows 26 x 28 of them. */
     private static final float LAVA_U = 26 / 34f, LAVA_V = 28 / 34f;
 
@@ -64,7 +72,7 @@ public class TrichaudronRenderer extends GeoEntityRenderer<TrichaudronEntity> {
         super(context, model);
         this.model = model;
         this.shadowRadius = 1.6f;
-        addRenderLayer(new EmissiveLayer<>(this, trichaudron -> VEINS, trichaudron -> true, TrichaudronRenderer::veinsTint).animated());
+        addRenderLayer(new EmissiveLayer<>(this, trichaudron -> TrichaudronModel.texture(trichaudron.getHeadCount(), VEINS, "trichaudron_veins"), trichaudron -> true, TrichaudronRenderer::veinsTint).animated());
         addRenderLayer(new TankAndVentLayer(this));
     }
 
@@ -76,6 +84,34 @@ public class TrichaudronRenderer extends GeoEntityRenderer<TrichaudronEntity> {
         super.render(trichaudron, entityYaw, partialTick, poseStack, bufferSource, packedLight);
         poseStack.pop();
         renderReins(trichaudron, partialTick, poseStack, bufferSource, packedLight);
+        renderHeldPrizes(trichaudron, partialTick, poseStack, bufferSource, packedLight);
+    }
+
+    /**
+     * A true choice (TrichaudronPrizes): each head's prize floats just under its mouth, turning slowly, so the player
+     * sees what he picks. Its mouth is its vent bone as just drawn (it sways with the neck).
+     */
+    private void renderHeldPrizes(TrichaudronEntity trichaudron, float partialTick, MatrixStack poseStack,
+                                  VertexConsumerProvider bufferSource, int light) {
+        if (trichaudron.deathTime > 0) return;
+        float sink = trichaudron.lavaSink(partialTick);
+        float spin = (trichaudron.age + partialTick) * 3;
+        for (int head : trichaudron.shownHeads()) {
+            ItemStack prize = trichaudron.getHeldPrize(head);
+            if (prize.isEmpty()) continue;
+            GeoBone mouth = model.mouthBone(head);
+            Vector3d local = mouth == null ? null : mouth.getLocalPosition();
+            Vec3d at = local == null ? trichaudron.nozzle(head).subtract(trichaudron.getLerpedPos(partialTick))
+                    : new Vec3d(local.x, local.y - sink, local.z);
+            poseStack.push();
+            poseStack.translate(at.x, at.y - PRIZE_BELOW + 0.08 * Math.sin((trichaudron.age + partialTick + head * 7) * 0.15), at.z);
+            poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(spin + head * 72));
+            poseStack.scale(PRIZE_SCALE, PRIZE_SCALE, PRIZE_SCALE);
+            MinecraftClient.getInstance().getItemRenderer().renderItem(prize, ModelTransformationMode.GROUND,
+                    LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, poseStack, bufferSource,
+                    trichaudron.getWorld(), trichaudron.getId() * 5 + head);
+            poseStack.pop();
+        }
     }
 
     /**
@@ -156,7 +192,7 @@ public class TrichaudronRenderer extends GeoEntityRenderer<TrichaudronEntity> {
 
         /** The head whose vent this bone is, or -1. */
         private static int ventOf(String bone) {
-            for (TrichaudronHead head : TrichaudronEntity.HEADS) if (bone.equals(head.name("vent"))) return head.index();
+            for (TrichaudronHead head : TrichaudronEntity.ALL_HEADS) if (bone.equals(head.name("vent"))) return head.index();
             return bone.equals("vent") ? 0 : -1; // a one-headed model
         }
 
@@ -171,7 +207,7 @@ public class TrichaudronRenderer extends GeoEntityRenderer<TrichaudronEntity> {
                 drawPlanes(poseStack, bone, bufferSource.getBuffer(RenderLayer.getEntityTranslucent(LAVA)), LAVA_U, LAVA_V);
             } else {
                 int head = ventOf(name);
-                if (head < 0 || trichaudron.deathTime > 0) return;
+                if (head < 0 || trichaudron.deathTime > 0 || !trichaudron.showsHead(head)) return;
                 Identifier texture = VENT[MathHelper.clamp(trichaudron.getVent(head), 0, VENT.length - 1)];
                 AnimatableTexture.setAndUpdate(texture);
                 drawPlanes(poseStack, bone, bufferSource.getBuffer(RenderLayer.getEntityTranslucent(texture)), 1, 1);
