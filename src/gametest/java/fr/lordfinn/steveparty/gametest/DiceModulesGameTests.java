@@ -71,8 +71,9 @@ public class DiceModulesGameTests implements SteveGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void modulesAreRegisteredWithTheirItems(TestContext context) {
-        context.assertEquals(DiceModules.all().size(), 9, "slow, choice, power-up, lucky, reroll, reversed, skeleton key, homing, firecracker");
-        context.assertEquals(ModItems.DICE_MODULES.size(), DiceModules.all().size(), "one item per module");
+        context.assertEquals(DiceModules.all().stream().filter(m -> m.identifier().getNamespace().equals("steveparty")).count(), 9L,
+                "slow, choice, power-up, lucky, reroll, reversed, skeleton key, homing, firecracker (and the test addon's)");
+        context.assertEquals(ModItems.DICE_MODULES.size(), DiceModules.all().size(), "one item per module, the addon's too");
         for (DiceModule module : DiceModules.all()) {
             Item item = module.item();
             context.assertTrue(item instanceof DiceModuleItem moduleItem && moduleItem.module() == module, module + " has its item");

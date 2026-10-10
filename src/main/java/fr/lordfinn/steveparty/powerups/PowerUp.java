@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.powerups;
 
-import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.api.registry.ContentKeys;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.items.custom.PowerUpItem;
@@ -14,6 +14,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -72,6 +73,7 @@ public abstract class PowerUp {
         }
     }
 
+    private final Identifier identifier;
     private final String id;
     private final int defaultPrice;
     private final Formatting color;
@@ -82,13 +84,30 @@ public abstract class PowerUp {
      * @param color        its colour: its keywords in the tooltip, its announcement
      */
     protected PowerUp(String id, int defaultPrice, Formatting color) {
-        this.id = id;
+        this(java.util.Objects.requireNonNull(ContentKeys.id(id), id), defaultPrice, color);
+    }
+
+    /** A power-up of any namespace (an addon's): its item is {@code <namespace>:powerup_<path>}. */
+    protected PowerUp(Identifier id, int defaultPrice, Formatting color) {
+        this.identifier = id;
+        this.id = ContentKeys.key(id);
         this.defaultPrice = Math.max(1, defaultPrice);
         this.color = color;
     }
 
+    /** Its saved key: {@code mushroom} for Steve Party's, {@code myaddon:banana} for an addon's. */
     public final String id() {
         return id;
+    }
+
+    /** Its id in {@link fr.lordfinn.steveparty.api.StevePartyRegistries#POWER_UPS}. */
+    public final Identifier identifier() {
+        return identifier;
+    }
+
+    /** Start of its lang keys: {@code powerup.<namespace>.<path>}. */
+    protected final String translationKey() {
+        return "powerup." + identifier.getNamespace() + "." + identifier.getPath();
     }
 
     public final int defaultPrice() {
@@ -101,12 +120,17 @@ public abstract class PowerUp {
 
     /** Path of its item: {@code powerup_<id>}. */
     public final String itemPath() {
-        return "powerup_" + id;
+        return "powerup_" + identifier.getPath();
     }
 
     /** Its item (AIR if it is not registered). */
     public final Item item() {
-        return Registries.ITEM.get(Steveparty.id(itemPath()));
+        return Registries.ITEM.get(itemId());
+    }
+
+    /** Id of its item, in the power-up's namespace. */
+    public final Identifier itemId() {
+        return Identifier.of(identifier.getNamespace(), itemPath());
     }
 
     /** Its item, created at registration ({@code ModItems}): a {@link PowerUpItem} unless it needs its own. */
@@ -116,7 +140,7 @@ public abstract class PowerUp {
 
     /** Its name (the item's). */
     public Text name() {
-        return Text.translatable("item.steveparty." + itemPath());
+        return Text.translatable(itemId().toTranslationKey("item"));
     }
 
     // ------------------------------------------------------------------ using it
@@ -174,7 +198,7 @@ public abstract class PowerUp {
      * secret, like a Trap).
      */
     public @Nullable MutableText announcement(PowerUpUse use) {
-        return Text.translatable("powerup.steveparty." + id + ".announce", use.player().getDisplayName());
+        return Text.translatable(translationKey() + ".announce", use.player().getDisplayName());
     }
 
     // ------------------------------------------------------------------ until the end of the turn
@@ -213,7 +237,7 @@ public abstract class PowerUp {
     public List<Text> effectLines() {
         Object[] args = descriptionArgs();
         for (int i = 0; i < args.length; i++) args[i] = keyword(args[i]);
-        return List.of(Text.translatable("powerup.steveparty." + id + ".desc", args).formatted(Formatting.GRAY));
+        return List.of(Text.translatable(translationKey() + ".desc", args).formatted(Formatting.GRAY));
     }
 
     /** The arguments of {@code powerup.steveparty.<id>.desc}: the key words, shown in its colour. */

@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.dice;
 
-import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.api.registry.ContentKeys;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -8,6 +8,7 @@ import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,14 +21,17 @@ import java.util.List;
  * move of the token ({@code TokenMovementService}) ask them what they change. Everything below does nothing by
  * default: a module overrides what it needs. Server side only.
  * <p>
- * A new module: {@code DiceModules.register(new DiceModule("id", maxCount, negative) { ...overrides... })}. Its item
- * ({@code dice_module_<id>}) is registered with it; it needs an item model and texture of that name, the lang keys
- * {@code item.steveparty.dice_module_<id>}, {@code dice_module.steveparty.<id>} (its name on a die) and
- * {@code dice_module.steveparty.<id>.desc} (its effect, {@code %s}: see {@link #description}), a 5 px pictogram
- * ({@code textures/gui/dice_module/<id>.png}, drawn over the icon of the dice carrying it) and its recipes (one line
- * in the recipe data generator, {@code offerModule}: the module item, and the craft that puts it on a die).
+ * A new module: {@code DiceModules.register(new DiceModule("id", maxCount, negative) { ...overrides... })} (an
+ * addon gives an {@link Identifier} of its own namespace). Its item ({@code <namespace>:dice_module_<path>}) is
+ * registered with it; it needs an item model and texture of that name, the lang keys
+ * {@code item.<namespace>.dice_module_<path>}, {@code dice_module.<namespace>.<path>} (its name on a die) and
+ * {@code dice_module.<namespace>.<path>.desc} (its effect, {@code %s}: see {@link #description}), a 5 px pictogram
+ * ({@code textures/gui/dice_module/<path>.png}, drawn over the icon of the dice carrying it) and its recipes (for
+ * Steve Party's, one line in the recipe data generator, {@code offerModule}: the module item, and the craft that puts
+ * it on a die).
  */
 public class DiceModule {
+    private final Identifier identifier;
     private final String id;
     private final int maxCount;
     private final boolean negative;
@@ -37,13 +41,25 @@ public class DiceModule {
      * @param negative it plays against the roller: its line on the die is red
      */
     public DiceModule(String id, int maxCount, boolean negative) {
-        this.id = id;
+        this(java.util.Objects.requireNonNull(ContentKeys.id(id), id), maxCount, negative);
+    }
+
+    /** A module of any namespace (an addon's). */
+    public DiceModule(Identifier id, int maxCount, boolean negative) {
+        this.identifier = id;
+        this.id = ContentKeys.key(id);
         this.maxCount = Math.max(1, maxCount);
         this.negative = negative;
     }
 
+    /** Its key on a die ({@link DiceModulesComponent}): {@code lucky} for Steve Party's, {@code myaddon:sticky} for an addon's. */
     public final String id() {
         return id;
+    }
+
+    /** Its id in {@link fr.lordfinn.steveparty.api.StevePartyRegistries#DICE_MODULES}. */
+    public final Identifier identifier() {
+        return identifier;
     }
 
     public final int maxCount() {
@@ -63,24 +79,34 @@ public class DiceModule {
         return negative ? Formatting.RED : Formatting.AQUA;
     }
 
-    /** Path of the module item: {@code dice_module_<id>}. */
+    /** Path of the module item: {@code dice_module_<path>}. */
     public final String itemPath() {
-        return "dice_module_" + id;
+        return "dice_module_" + identifier.getPath();
+    }
+
+    /** Id of the module item, in the module's namespace. */
+    public final Identifier itemId() {
+        return Identifier.of(identifier.getNamespace(), itemPath());
     }
 
     /** The module item (AIR if it is not registered). */
     public final Item item() {
-        return Registries.ITEM.get(Steveparty.id(itemPath()));
+        return Registries.ITEM.get(itemId());
+    }
+
+    /** Start of its lang keys: {@code dice_module.<namespace>.<path>}. */
+    protected final String translationKey() {
+        return "dice_module." + identifier.getNamespace() + "." + identifier.getPath();
     }
 
     /** Its name on a die. */
     public Text name() {
-        return Text.translatable("dice_module.steveparty." + id);
+        return Text.translatable(translationKey());
     }
 
     /** What {@code count} of it do, in one line ({@code %s} of the lang entry: see {@link #descriptionValue}). */
     public Text description(int count) {
-        return Text.translatable("dice_module.steveparty." + id + ".desc", descriptionValue(count));
+        return Text.translatable(translationKey() + ".desc", descriptionValue(count));
     }
 
     /** What it does, on the tooltip of its item (its description by default). */

@@ -235,7 +235,7 @@ public class SteveReiPlugin implements REIClientPlugin {
             registry.add(DefaultCustomShapelessDisplay.simple(
                     List.of(EntryIngredients.ofItemStacks(dice), EntryIngredients.of(module.item())),
                     List.of(EntryIngredients.ofItemStacks(results)),
-                    Optional.of(Steveparty.id("dice_module/" + module.id()))));
+                    Optional.of(Identifier.of(module.identifier().getNamespace(), "dice_module/" + module.identifier().getPath()))));
         }
         ItemStack lucky = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(DiceModules.LUCKY, 2));
         ItemStack slow = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(DiceModules.SLOW, 1));

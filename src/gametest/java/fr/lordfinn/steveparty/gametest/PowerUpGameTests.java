@@ -71,7 +71,8 @@ public class PowerUpGameTests implements SteveGameTest {
         context.assertEquals(ModItems.POWER_UPS.size(), PowerUps.all().size(), "one item per power-up");
         for (PowerUp powerUp : PowerUps.all()) {
             context.assertTrue(powerUp.item() instanceof PowerUpItem item && item.powerUp() == powerUp, powerUp + " has its item");
-            context.assertEquals(Registries.ITEM.getId(powerUp.item()).getPath(), "powerup_" + powerUp.id(), "its item id");
+            context.assertEquals(Registries.ITEM.getId(powerUp.item()), powerUp.itemId(), "its item id");
+            context.assertEquals(powerUp.itemId().getPath(), "powerup_" + powerUp.identifier().getPath(), "powerup_<path>");
             context.assertTrue(PartyLiveData.isPowerUp(new ItemStack(powerUp.item())), "the HUD counts it as a power-up");
             context.assertTrue(powerUp.defaultPrice() > 0, "it has a price");
         }
