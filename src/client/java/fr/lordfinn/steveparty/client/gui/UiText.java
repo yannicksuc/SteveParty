@@ -99,6 +99,48 @@ public final class UiText {
         line(context, font, Text.literal(text), x, y, width, color, shadow, true);
     }
 
+    /**
+     * Draws a line already cut (an {@link OrderedText}) in the box: as {@link #line(DrawContext, TextRenderer, Text, int,
+     * int, int, int, boolean)}, its tooltip under the mouse included.
+     */
+    public static void line(DrawContext context, TextRenderer font, OrderedText text, int x, int y, int width, int color, boolean shadow) {
+        orderedLine(context, font, text, x, y, width, color, shadow, false);
+    }
+
+    /** Same, centered in the box when it fits. */
+    public static void centered(DrawContext context, TextRenderer font, OrderedText text, int x, int y, int width, int color, boolean shadow) {
+        orderedLine(context, font, text, x, y, width, color, shadow, true);
+    }
+
+    private static void orderedLine(DrawContext context, TextRenderer font, OrderedText text, int x, int y, int width, int color,
+                                    boolean shadow, boolean center) {
+        int textWidth = font.getWidth(text);
+        if (textWidth <= width) {
+            context.drawText(font, text, center ? x + (width - textWidth) / 2 : x, y, color, shadow);
+            return;
+        }
+        if (width <= 0) return;
+        float offset = scrollOffset(textWidth - width);
+        int[] box = onScreen(context, x, y - 1, x + width, y + LINE_H);
+        context.enableScissor(box[0], box[1], box[2], box[3]);
+        context.getMatrices().push();
+        context.getMatrices().translate(-offset, 0, 0);
+        context.drawText(font, text, x, y, color, shadow);
+        context.getMatrices().pop();
+        context.disableScissor();
+        noteHover(box, Text.literal(plain(text)));
+    }
+
+    /** The characters of an {@link OrderedText}, its styles dropped (for its tooltip). */
+    private static String plain(OrderedText text) {
+        StringBuilder out = new StringBuilder();
+        text.accept((index, style, codePoint) -> {
+            out.appendCodePoint(codePoint);
+            return true;
+        });
+        return out.toString();
+    }
+
     private static void line(DrawContext context, TextRenderer font, Text text, int x, int y, int width, int color,
                              boolean shadow, boolean center) {
         int textWidth = font.getWidth(text);
