@@ -755,6 +755,69 @@ public final class TileStampTextures {
         return values;
     }
 
+    // ---------------------------------------------------------------- the Start face
+
+    /** The start tile model's top: its layers (lightest grey to the symbol), and where its top sits in them (30x30). */
+    private static final int START_LAYERS = 6;
+    private static final int START_U = 34, START_V = 0, START_SIDE = 30;
+    /** The start symbol (a flag at its line) on a 16x16 face, by hand: brought down from the 30x30 top it blurs. */
+    private static final String[] SMALL_START = {
+            "#.##..",
+            "#.###.",
+            "#.####",
+            "#.###.",
+            "#.##..",
+            "......",
+            "######"};
+    private static final int SMALL_START_LEFT = 5, SMALL_START_TOP = 4;
+
+    /**
+     * The Start tile's face, as its block model draws its top (tile_start_layer_0..5, each in its shade of the
+     * colour, see {@link TileColors#tint}) brought to the face's size: what a tile item holding a Start cartridge
+     * shows. The blank face when the layers are missing.
+     */
+    public static Identifier startFace(int rgb, boolean small) {
+        return TEXTURES.get(new Key("start", rgb, small), key -> register(startValues(small), rgb, small));
+    }
+
+    private static float[] startValues(boolean small) {
+        int side = small ? SMALL_SIDE : SIDE;
+        int margin = small ? 0 : MARGIN;
+        int inner = side - 2 * margin;
+        float[] values = frame(small).clone();
+        // On a small face the symbol (the last layer) is drawn by hand over the flat middle
+        int layers = small ? START_LAYERS - 1 : START_LAYERS;
+        for (int layer = 0; layer < layers; layer++) {
+            Identifier file = Steveparty.id("textures/block/tile_start_layer_" + layer + ".png");
+            Optional<Resource> resource = MinecraftClient.getInstance().getResourceManager().getResource(file);
+            if (resource.isEmpty()) continue;
+            float darkness = TileColors.tintDarkness(layer + 1);
+            try (InputStream stream = resource.get().getInputStream(); NativeImage image = NativeImage.read(stream)) {
+                for (int x = 0; x < inner; x++) {
+                    for (int y = 0; y < inner; y++) {
+                        int u = START_U + (int) ((x + 0.5f) * START_SIDE / inner), v = START_V + (int) ((y + 0.5f) * START_SIDE / inner);
+                        if (u >= image.getWidth() || v >= image.getHeight()) continue;
+                        if (((image.getColor(u, v) >>> 24) & 0xFF) < 128) continue;
+                        values[(y + margin) * side + x + margin] = darkness;
+                    }
+                }
+            } catch (IOException e) {
+                Steveparty.LOGGER.error("Can't read start tile layer {}", file, e);
+            }
+        }
+        if (small) {
+            float symbol = TileColors.tintDarkness(START_LAYERS);
+            for (int row = 0; row < SMALL_START.length; row++) {
+                for (int col = 0; col < SMALL_START[row].length(); col++) {
+                    int i = (SMALL_START_TOP + row) * side + SMALL_START_LEFT + col;
+                    // The symbol's layer is left out: its pixels show the flat middle around it
+                    values[i] = SMALL_START[row].charAt(col) == '#' ? symbol : TileColors.tintDarkness(1);
+                }
+            }
+        }
+        return values;
+    }
+
     // ---------------------------------------------------------------- the pipe pictogram (for a pipe cartridge to come)
 
     /** A travel pipe seen from the side (rim over its body), '#' in the darkest shade, 'o' its light highlight. */
