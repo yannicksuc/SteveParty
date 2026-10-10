@@ -50,14 +50,23 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         return wrap(textRenderer, text, WIDTH, max);
     }
 
-    /** The text wrapped to {@code width}, on {@code max} lines at most: when it is longer, the last line ends with « … ». */
+    /**
+     * The text wrapped to {@code width}, on {@code max} lines at most: when it is longer, the last line holds all the rest
+     * (wider than {@code width}: drawn with {@link UiText#line}, it scrolls in its box, nothing cut).
+     */
     public static List<OrderedText> wrap(TextRenderer textRenderer, Text text, int width, int max) {
         List<StringVisitable> wrapped = textRenderer.getTextHandler().wrapLines(text, width, Style.EMPTY);
         List<OrderedText> lines = new ArrayList<>(Math.min(max, wrapped.size()));
         for (int i = 0; i < wrapped.size() && i < max; i++) {
             StringVisitable line = wrapped.get(i);
             if (i == max - 1 && wrapped.size() > max) {
-                line = GuiText.cut(textRenderer, line, width);
+                // The lines left joined again (the spaces they were broken at put back)
+                List<StringVisitable> rest = new ArrayList<>();
+                for (int j = i; j < wrapped.size(); j++) {
+                    if (j > i) rest.add(StringVisitable.plain(" "));
+                    rest.add(wrapped.get(j));
+                }
+                line = StringVisitable.concat(rest);
             }
             lines.add(Language.getInstance().reorder(line));
         }

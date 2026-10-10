@@ -35,6 +35,8 @@ public final class DashboardTimeline {
     private static final int PROGRAM_WIDTH = PROGRAM_COLUMNS * 18 - 2;
     /** The rows of round numbers above the chips of a timeline, the gap between two chips. */
     private static final int TIMELINE_LABELS = 10, TIMELINE_GAP = 2;
+    /** The margin on each side of a timeline (its « ‹ » and « › », its hit area). */
+    private static final int MARGIN = 6;
     /** The running party's timeline keeps this many past steps on the left of the current one. */
     private static final int TIMELINE_PAST = 2;
 
@@ -87,8 +89,8 @@ public final class DashboardTimeline {
         if (data == null) return false;
         int mx = (int) mouseX - dashboard.left(), my = (int) mouseY - dashboard.top();
         if (dashboard.page() == Page.STATE && data.phase() == Phase.RUNNING)
-            return HitArea.contains(mx, my, STEPS_LEFT - 6, STEPS_LABELS_Y, STEPS_WIDTH + 12, TIMELINE_LABELS + STEPS_CHIP);
-        return dashboard.page() == Page.PROGRAM && HitArea.contains(mx, my, PROGRAM_LEFT - 6, PROGRAM_LABELS_Y, PROGRAM_WIDTH + 12, TIMELINE_LABELS + PROGRAM_CHIP);
+            return HitArea.contains(mx, my, STEPS_LEFT - MARGIN, STEPS_LABELS_Y, STEPS_WIDTH + 2 * MARGIN, TIMELINE_LABELS + STEPS_CHIP);
+        return dashboard.page() == Page.PROGRAM && HitArea.contains(mx, my, PROGRAM_LEFT - MARGIN, PROGRAM_LABELS_Y, PROGRAM_WIDTH + 2 * MARGIN, TIMELINE_LABELS + PROGRAM_CHIP);
     }
 
     /** The timeline of the page shown, by {@code steps} chips. */
@@ -155,17 +157,18 @@ public final class DashboardTimeline {
         int total = steps.size() + (timeline.more() > 0 ? 2 : 0);
         scroll = Math.clamp(scroll, 0, Math.max(0, total - shown));
         int chipY = top + TIMELINE_LABELS;
-        // More on the left
-        if (scroll > 0 || timeline.offset() > 0) paint.light(context, Text.literal("‹"), left - 5, chipY + (chip - 8) / 2, INK_SOFT);
-        // More on the right: steps (or the « +N » after them) past the last chip shown
+        // More on the left, in the margin before the first chip
+        if (scroll > 0 || timeline.offset() > 0) paint.light(context, Text.literal("‹"), left - 5, chipY + (chip - 8) / 2, 5, INK_SOFT);
+        // More on the right: steps (or the « +N » after them) past the last chip shown, up to the end of the margin after it
+        int arrowX = left + shown * pitch - TIMELINE_GAP + 2;
         if (scroll + shown < steps.size() + (timeline.more() > 0 ? 1 : 0))
-            paint.light(context, Text.literal("›"), left + shown * pitch - TIMELINE_GAP + 2, chipY + (chip - 8) / 2, INK_SOFT);
+            paint.light(context, Text.literal("›"), arrowX, chipY + (chip - 8) / 2, left + width + MARGIN - arrowX, INK_SOFT);
         for (int slot = 0; slot < shown; slot++) {
             int index = scroll + slot, cx = left + slot * pitch;
             if (index >= steps.size()) {
-                // « +N »: the steps the party has after those sent
+                // « +N »: the steps the party has after those sent, up to the end of the margin after the timeline
                 if (index == steps.size() && timeline.more() > 0)
-                    paint.light(context, Text.literal("+" + timeline.more()), cx + 2, chipY + (chip - 8) / 2, INK_SOFT);
+                    paint.light(context, Text.literal("+" + timeline.more()), cx + 2, chipY + (chip - 8) / 2, left + width + MARGIN - cx - 2, INK_SOFT);
                 break;
             }
             PartyDashboardData.TimelineStep step = steps.get(index);
@@ -178,7 +181,7 @@ public final class DashboardTimeline {
                 for (int next = index + 1; next < steps.size() && steps.get(next).round() == step.round() && next - scroll < shown; next++) room += pitch;
                 Text label = Text.translatable(KEY + "timeline.round", step.round());
                 if (dashboard.font().getWidth(label) - 1 > room - 2) label = Text.translatable(KEY + "timeline.round.short", step.round());
-                paint.light(context, label, cx + 1, top, past ? INK_DIM : step.round() == highlight ? INK_GOLD : INK_SOFT);
+                paint.light(context, label, cx + 1, top, room - 1, past ? INK_DIM : step.round() == highlight ? INK_GOLD : INK_SOFT);
             }
             PartyLiveData.Standing player = step.player() >= 0 && step.player() < data.players().size() ? data.players().get(step.player()) : null;
             Ramp ramp = step.kind() == PartyDashboardData.StepKind.MINI_GAME ? CHIP_GAME

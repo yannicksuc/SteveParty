@@ -65,14 +65,9 @@ public final class DashboardPainter {
         ConsolePaint.darkText(context, font(), label.asOrderedText(), CX + 5, CY + 2, w - 9, GOLD_DARK, GOLD_LIGHT);
     }
 
-    /** Dark text with a light shadow (the mock-ups' {@code dark}). */
-    public void dark(DrawContext context, OrderedText text, int tx, int ty, int colour, int shade) {
-        ConsolePaint.darkText(context, font(), text, tx, ty, colour, shade);
-    }
-
-    /** Light text in a box of its own width: for short symbols whose place follows them (« ‹ », « +3 »). */
-    public void light(DrawContext context, Text text, int tx, int ty, int colour) {
-        UiText.line(context, font(), text, tx, ty, font().getWidth(text), colour, true);
+    /** Dark text with a light shadow (the mock-ups' {@code dark}) in a box {@code width} wide: too long, it scrolls in it. */
+    public void dark(DrawContext context, OrderedText text, int tx, int ty, int width, int colour, int shade) {
+        ConsolePaint.darkText(context, font(), text, tx, ty, width, colour, shade);
     }
 
     /** Light text in a box {@code width} wide: too long, it scrolls in it. */
@@ -180,7 +175,9 @@ public final class DashboardPainter {
         Ramp ramp = rankRamp(rank);
         ConsolePaint.disc(context, dx, dy, ROW_H, ramp);
         Text number = Text.literal(Integer.toString(Math.min(rank, 9)));
-        dark(context, number.asOrderedText(), dx + (ROW_H - font().getWidth(number) + 1) / 2, dy + 2, ramp.outline(), ramp.hi());
+        int tx = dx + (ROW_H - font().getWidth(number) + 1) / 2;
+        // Up to the disc's outline on the right
+        dark(context, number.asOrderedText(), tx, dy + 2, dx + ROW_H - 1 - tx, ramp.outline(), ramp.hi());
     }
 
     /** Indexes sorted by rank, the turn order between ties. */

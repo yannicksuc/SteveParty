@@ -170,6 +170,12 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
         return tooltip;
     }
 
+    /** The titles are in the tile part (the cartridge's menu is on its right). */
+    @Override
+    protected int titlesWidth() {
+        return BoardSpaceScreenHandler.TILE_W;
+    }
+
     @Override
     protected boolean hasPipette() {
         return true;

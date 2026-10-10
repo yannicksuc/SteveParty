@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.screen_handlers.custom.CashRegisterScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -27,6 +28,14 @@ public class CashRegisterScreen extends HandledScreen<CashRegisterScreenHandler>
         context.drawTexture(TEXTURE, x, y, 0,0,
                 this.backgroundWidth, this.backgroundHeight, 256, 256);
     }
+    /** The titles as vanilla places them, each on one line up to 8 px before the panel's right edge (too long, it scrolls). */
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        UiText.line(context, textRenderer, title, titleX, titleY, backgroundWidth - 8 - titleX, 0x404040, false);
+        UiText.line(context, textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY,
+                backgroundWidth - 8 - playerInventoryTitleX, 0x404040, false);
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);

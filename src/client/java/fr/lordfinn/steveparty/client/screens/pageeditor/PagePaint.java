@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.client.screens.pageeditor;
 
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
-import fr.lordfinn.steveparty.client.gui.GuiText;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
@@ -14,7 +13,6 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Language;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +22,6 @@ import static fr.lordfinn.steveparty.client.screens.pageeditor.PageEditorStyle.*
 /** The page editor's small drawing helpers, shared by its tabs and popups. */
 public final class PagePaint {
     private PagePaint() {
-    }
-
-    /** {@code text} as it fits in {@code width} pixels (its last column of shadow left out): as is, or cut with « … ». */
-    public static OrderedText fit(TextRenderer font, Text text, int width) {
-        if (font.getWidth(text) - 1 <= width) return text.asOrderedText();
-        return Language.getInstance().reorder(GuiText.cut(font, text, width));
     }
 
     /** {@code text} centred on {@code centerX}, in the picture's frame (too long, it scrolls in it). */

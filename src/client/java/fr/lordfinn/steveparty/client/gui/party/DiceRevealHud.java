@@ -122,13 +122,19 @@ public final class DiceRevealHud {
         DiceRevealPayload reveal = shown;
         boolean mine = client.player != null && reveal.roller().map(client.player.getUuid()::equals).orElse(false);
         TextRenderer font = HudDraw.font();
-        DiceRevealLayout.Measure measure = font::getWidth;
-        String plate = cut(font, Text.translatable("hud.steveparty.dice_reveal.who", reveal.name()).getString(), MAX_PLATE_TEXT);
+        String plate = Text.translatable("hud.steveparty.dice_reveal.who", reveal.name()).getString();
         List<DiceFace> faces = reveal.faces();
         int dice = Math.max(reveal.dice(), faces.size());
         List<String> faceTexts = new ArrayList<>();
         for (DiceFace face : faces) faceTexts.add(face.asText().getString());
-        String total = reveal.total().map(text -> cut(font, text.getString(), MAX_TOTAL_TEXT)).orElse(null);
+        String total = reveal.total().map(Text::getString).orElse(null);
+        // The roller's plate and the total keep a bounded size: a longer text scrolls in it (UiText)
+        DiceRevealLayout.Measure measure = text -> {
+            int width = font.getWidth(text);
+            if (text.equals(plate)) return Math.min(width, MAX_PLATE_TEXT + 1);
+            if (text.equals(total)) return Math.min(width, MAX_TOTAL_TEXT + 1);
+            return width;
+        };
         String badge = reveal.combo() >= 2 ? badge(reveal.combo()) : null;
         List<DiceRevealLayout.Box> boxes = DiceRevealLayout.layout(measure, plate, dice, faceTexts, total, badge);
 
@@ -175,12 +181,6 @@ public final class DiceRevealHud {
 
     private static String badge(int combo) {
         return Text.translatable(combo >= 3 ? "hud.steveparty.dice_reveal.triple" : "hud.steveparty.dice_reveal.double").getString();
-    }
-
-    /** The text, cut with an ellipsis to fit in {@code width} pixels. */
-    private static String cut(TextRenderer font, String text, int width) {
-        if (font.getWidth(text) - 1 <= width) return text;
-        return font.trimToWidth(text, width - font.getWidth("…")) + "…";
     }
 
     /** The pill of a face, by its kind (the colours of the faces' texts). */
