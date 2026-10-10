@@ -8,11 +8,8 @@ import net.minecraft.util.math.BlockPos;
 import java.util.UUID;
 
 /**
- * The shop chosen for a Shop Cartridge with the Tile Linker Brush (without it, the nearest merchant is the shop).
- *
- * @param trader the Boxed Trader selling there
- * @param anchor what was clicked to choose it (the trader's position then, a trading stall, a cash register): where
- *               the board view draws the link
+ * Legacy, never read: the merchant a Shop Cartridge was once linked to with the Tile Linker Brush (a Shop Cartridge's
+ * space now summons its own merchant, see ShopStops). Kept so that old cartridges carrying it still load.
  */
 public record ShopLinkComponent(UUID trader, BlockPos anchor) {
     public static final Codec<ShopLinkComponent> CODEC = RecordCodecBuilder.create(builder -> builder.group(

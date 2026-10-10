@@ -35,6 +35,7 @@ public final class CartridgeSpawnMarker {
         if (item instanceof GlandouilleCartridgeItem) return ModEntities.GLANDOUILLE;
         if (item instanceof MistigriCartridgeItem) return ModEntities.MISTIGRI;
         if (item instanceof TrichaudronCartridgeItem) return ModEntities.TRICHAUDRON;
+        if (item instanceof ShopCartridgeItem) return ModEntities.BOXED_TRADER_ENTITY;
         return null;
     }
 

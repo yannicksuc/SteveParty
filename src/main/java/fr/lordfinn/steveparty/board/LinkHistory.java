@@ -1,10 +1,8 @@
 package fr.lordfinn.steveparty.board;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -42,7 +40,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, ShopChange, SpawnChange, BlockChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, BlockChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -86,23 +84,6 @@ public final class LinkHistory {
                     .equals(undo ? after : before)) return false;
             CartridgeContainers.set(cartridge, undo ? before : after);
             held.sync().run();
-            return true;
-        }
-    }
-
-    /** The shop chosen for the Shop Cartridge in {@code slot} (null: the nearest merchant). */
-    public record ShopChange(BlockPos pos, int slot, @Nullable ShopLinkComponent before,
-                             @Nullable ShopLinkComponent after) implements Change {
-        @Override
-        public boolean apply(ServerWorld world, boolean undo) {
-            CartridgeContainerBlockEntity container = BoardLinks.container(world, pos);
-            if (container == null) return false;
-            ItemStack cartridge = container.getStack(slot);
-            if (cartridge.isEmpty() || !Objects.equals(cartridge.get(ModComponents.SHOP_LINK), undo ? after : before)) return false;
-            ShopLinkComponent value = undo ? before : after;
-            if (value == null) cartridge.remove(ModComponents.SHOP_LINK);
-            else cartridge.set(ModComponents.SHOP_LINK, value);
-            BoardLinks.sync(container);
             return true;
         }
     }

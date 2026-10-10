@@ -3,11 +3,7 @@ package fr.lordfinn.steveparty.client.board;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
-import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.ShopLinkComponent;
-import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
-import fr.lordfinn.steveparty.service.ShopStops;
 import net.minecraft.block.RedstoneWireBlock;
 import net.minecraft.item.ItemStack;
 import fr.lordfinn.steveparty.board.BoardGraph;
@@ -77,10 +73,6 @@ public final class BoardView {
     static final int TELEPORT_SPARKLE = 0xFFB8F6FF;
     /** Chevrons: size, gap and speed (blocks, blocks per second). */
     private static final double DOT = 0.56, SPACING = 0.72, SPEED = 1.4;
-    /** The Shop Cartridge's lime green. */
-    private static final int SHOP = 0xFF000000 | ShopCartridgeItem.COLOR;
-    /** Where the merchants of the shop spaces are is looked up again every this many ticks. */
-    private static final int SHOP_REFRESH_TICKS = 10;
     private static final Text SHOP_LABEL = Text.translatable("hud.steveparty.board.shop"),
             SHOP_MISSING_LABEL = Text.translatable("hud.steveparty.board.shop_missing");
 
@@ -101,7 +93,7 @@ public final class BoardView {
         final WorldDraw.Plate numberPlate;
         final boolean deadEnd, unreachable, fork, alone;
         double distanceSq;
-        /** A shop space: its « Shop » plate, gold when its merchant is around ({@link #shopLinked}). */
+        /** A shop space: its « Shop » plate, gold when it has offers to sell ({@link #shopLinked}). */
         boolean shop, shopLinked;
         /** A teleport tile alone in its network: a purple « ! ». */
         boolean teleportAlone;
@@ -122,25 +114,6 @@ public final class BoardView {
     private static List<DrawnEdge> edges = List.of();
     private static List<Label> labels = List.of();
     private static List<DrawnArc> arcs = List.of();
-    /** The shop spaces around (Shop Cartridge), and where their merchant is (null: none around). */
-    private static List<ShopSpace> shops = List.of();
-    private static int shopAge;
-
-    private static final class ShopSpace {
-        final BlockPos pos;
-        final Vec3d anchor;
-        final @Nullable ShopLinkComponent link;
-        final Label label;
-        @Nullable Vec3d target;
-        @Nullable Box bounds;
-
-        ShopSpace(BlockPos pos, Vec3d anchor, @Nullable ShopLinkComponent link, Label label) {
-            this.pos = pos;
-            this.anchor = anchor;
-            this.link = link;
-            this.label = label;
-        }
-    }
     /** The labels near enough to be drawn this frame, reused from frame to frame. */
     private static final List<Label> SHOWN = new ArrayList<>();
     private static final Comparator<Label> FARTHEST_FIRST = (a, b) -> Double.compare(b.distanceSq, a.distanceSq);
@@ -168,8 +141,6 @@ public final class BoardView {
             if (graph == null || builtRevision != BoardRevision.client() || builtAt == null || level != builtLevel
                     || builtAt.getManhattanDistance(at) >= MOVE_REBUILD || ++age >= SAFETY_REFRESH_TICKS) {
                 build(client.world, at, level);
-            } else if (!shops.isEmpty() && ++shopAge >= SHOP_REFRESH_TICKS) {
-                refreshShops(client.world);
             }
         });
         // Board spaces and routers (their links), chests (inventory tiles) appearing or going away
@@ -188,7 +159,6 @@ public final class BoardView {
         edges = List.of();
         labels = List.of();
         arcs = List.of();
-        shops = List.of();
         SHOWN.clear();
         counts = new int[]{0, 0, 0};
         builtAt = null;
@@ -223,7 +193,6 @@ public final class BoardView {
         List<DrawnEdge> drawnEdges = new ArrayList<>();
         List<Label> builtLabels = new ArrayList<>();
         List<DrawnArc> drawnArcs = new ArrayList<>();
-        List<ShopSpace> shopSpaces = new ArrayList<>();
         int deadEnds = 0, unreachable = 0;
         boolean hasStart = built.hasStart();
         for (BoardGraph.Node node : built.nodes()) {
@@ -271,7 +240,7 @@ public final class BoardView {
                 ItemStack cartridge = space.getActiveCartridgeItemStack();
                 if (cartridge.getItem() instanceof ShopCartridgeItem) {
                     label.shop = true;
-                    shopSpaces.add(new ShopSpace(node.pos(), from, cartridge.get(ModComponents.SHOP_LINK), label));
+                    label.shopLinked = ShopCartridgeItem.hasOffers(cartridge);
                 }
             }
         }
@@ -279,39 +248,12 @@ public final class BoardView {
         edges = drawnEdges;
         labels = builtLabels;
         arcs = drawnArcs;
-        shops = shopSpaces;
-        refreshShops(world);
         counts = new int[]{built.nodes().size(), deadEnds, unreachable};
     }
 
-    /**
-     * Where the merchant of each shop space stands: the one chosen with the Tile Linker Brush (or where he was chosen), else the
-     * nearest Boxed Trader around (the client doesn't know which stalls are whose: an estimate).
-     */
     /** How high the arc between two teleport tiles {@code length} blocks apart goes. */
     private static double arcHeight(double length) {
         return Math.clamp(0.6 + 0.2 * length, 0.8, 4.0);
-    }
-
-    private static void refreshShops(ClientWorld world) {
-        shopAge = 0;
-        for (ShopSpace shop : shops) {
-            ShopLinkComponent link = shop.link;
-            Vec3d at = Vec3d.ofCenter(shop.pos);
-            BoxedTraderEntity nearest = null;
-            double best = Double.MAX_VALUE;
-            for (BoxedTraderEntity trader : world.getEntitiesByClass(BoxedTraderEntity.class, new Box(shop.pos).expand(ShopStops.SHOP_RADIUS),
-                    trader -> link == null || trader.getUuid().equals(link.trader()))) {
-                double distance = trader.squaredDistanceTo(at);
-                if (distance < best) {
-                    best = distance;
-                    nearest = trader;
-                }
-            }
-            shop.target = nearest != null ? nearest.getPos().add(0, 0.5, 0) : link != null ? Vec3d.ofCenter(link.anchor()) : null;
-            shop.bounds = shop.target == null ? null : new Box(shop.anchor, shop.target).expand(0.5);
-            shop.label.shopLinked = shop.target != null;
-        }
     }
 
     /** The current graph (null when the board view is not shown). */
@@ -386,13 +328,6 @@ public final class BoardView {
             if (frustum != null && !frustum.isVisible(arc.arc().bounds)) continue;
             WorldDraw.arc(matrices, consumers, camera, arc.arc(), arc.color(), TELEPORT_SPARKLE, phase, 0.07, 0.3);
         }
-        // Shop check points: a path to their shop
-        for (ShopSpace shop : shops) {
-            Vec3d target = shop.target;
-            if (target == null || (frustum != null && shop.bounds != null && !frustum.isVisible(shop.bounds))) continue;
-            WorldDraw.path(matrices, consumers, camera, shop.anchor.x, shop.anchor.y, shop.anchor.z, target.x, target.y, target.z,
-                    SHOP, DOT * 0.8, SPACING, phase, 0.45, 0);
-        }
         // Labels from the farthest to the nearest: the nearest ones on top
         SHOWN.clear();
         for (Label label : labels) {
@@ -435,7 +370,7 @@ public final class BoardView {
             WorldDraw.plateLabel(matrices, consumers, camera, beside, FORK, WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, scale);
         }
         if (label.shop) {
-            // Above the other plates of the space: « Shop », orange « Shop ? » while no merchant is around
+            // Above the other plates of the space: « Shop », orange « Shop ? » while it has no offer
             Vec3d at = label.anchor.add(0, 0.25 + 16 * scale * 2.6, 0);
             WorldDraw.plateLabel(matrices, consumers, camera, at, label.shopLinked ? SHOP_LABEL : SHOP_MISSING_LABEL,
                     label.shopLinked ? WorldDraw.Plate.GOLD : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale);

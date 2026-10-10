@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.board;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.service.ShopStops;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.item.ItemStack;
@@ -51,12 +52,12 @@ public final class BoardValidator {
     public static Report check(ServerWorld world, BlockPos center) {
         BoardGraph graph = BoardGraph.collect(world, center, RADIUS);
         Report report = check(graph);
-        // Shop spaces without a merchant around (or whose chosen merchant is away): nothing happens there
+        // Shop spaces without an offer set: their merchant would have nothing to sell, nothing happens there
         List<BlockPos> noShop = new ArrayList<>();
         for (BoardGraph.Node node : graph.nodes()) {
             if (!(world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space)) continue;
             ItemStack cartridge = ShopStops.shopCartridge(space);
-            if (cartridge != null && ShopStops.findShop(world, node.pos(), cartridge) == null) noShop.add(node.pos());
+            if (cartridge != null && !ShopCartridgeItem.hasOffers(cartridge)) noShop.add(node.pos());
         }
         if (noShop.isEmpty()) return report;
         List<Issue> issues = new ArrayList<>(report.issues());

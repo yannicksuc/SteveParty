@@ -115,28 +115,29 @@ public class TradingStallBlockEntity extends SyncedBlockEntity implements NamedS
 
     public List<TradeOffer> getTradeOffers() {
         List<TradeOffer> offers = new ArrayList<>();
-
         for (int column = 0; column < 9; column++) {
-            ItemStack firstBuyItem = getStack(column);
-            ItemStack secondBuyItem = getStack(column + 9);
-            ItemStack sellItem = getStack(column + 18);
-
-            if (firstBuyItem.isEmpty() && !secondBuyItem.isEmpty()) {
-                firstBuyItem = secondBuyItem;
-                secondBuyItem = ItemStack.EMPTY;
-            }
-            // A power-up without a price sells at its default price, in the mod's coins
-            if (firstBuyItem.isEmpty() && sellItem.getItem() instanceof PowerUpItem powerUp) {
-                firstBuyItem = new ItemStack(ModItems.COIN, powerUp.powerUp().defaultPrice());
-            }
-
-            if (!firstBuyItem.isEmpty() && !sellItem.isEmpty() &&
-                    !(firstBuyItem.getItem() instanceof AirBlockItem) &&
-                    !(sellItem.getItem() instanceof AirBlockItem)) {
-                offers.add(new ExactTradeOffer(firstBuyItem, secondBuyItem, sellItem.copy()));
-            }
+            TradeOffer offer = offerOf(getStack(column), getStack(column + 9), getStack(column + 18));
+            if (offer != null) offers.add(offer);
         }
         return offers;
+    }
+
+    /**
+     * The offer of one column of a stall (also of a Shop Cartridge's menu): {@code sold} for {@code firstPrice}, plus
+     * {@code secondPrice} if any (a lone second price is the first one); a power-up without a price sells at its
+     * default price, in the mod's coins. Null when something is missing.
+     */
+    public static @Nullable ExactTradeOffer offerOf(ItemStack firstPrice, ItemStack secondPrice, ItemStack sold) {
+        if (firstPrice.isEmpty() && !secondPrice.isEmpty()) {
+            firstPrice = secondPrice;
+            secondPrice = ItemStack.EMPTY;
+        }
+        if (firstPrice.isEmpty() && sold.getItem() instanceof PowerUpItem powerUp) {
+            firstPrice = new ItemStack(ModItems.COIN, powerUp.powerUp().defaultPrice());
+        }
+        if (firstPrice.isEmpty() || sold.isEmpty() || firstPrice.getItem() instanceof AirBlockItem
+                || sold.getItem() instanceof AirBlockItem) return null;
+        return new ExactTradeOffer(firstPrice, secondPrice, sold.copy());
     }
 
     /**
