@@ -108,7 +108,9 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        if (world.isClient || state.get(TILE_TYPE) != BoardSpaceType.TILE_START && state.get(TILE_TYPE) != BoardSpaceType.TILE_POT) return null;
+        BoardSpaceType role = state.get(TILE_TYPE);
+        // A Threshold barrier keeps its mark over the space (see ThresholdTileBehavior#tick)
+        if (world.isClient || role != BoardSpaceType.TILE_START && role != BoardSpaceType.TILE_POT && role != BoardSpaceType.TILE_THRESHOLD) return null;
         return TickableBlockEntity.getTicker(world);
     }
     /**
