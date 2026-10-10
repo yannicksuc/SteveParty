@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
+import net.minecraft.entity.mob.MobEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ThresholdTileBehavior;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -111,6 +113,8 @@ public class TokenTurnPartyStep extends PartyStep {
             }
             if (isTokenAvailable(serverWorld)) {
                 grantMove(serverWorld);
+                // Blocked at a Threshold barrier: this turn's throw is a new try, told now
+                if (serverWorld.getEntity(tokenUUID) instanceof MobEntity mob) ThresholdTileBehavior.announce(serverWorld, mob);
             } else {
                 // Absent token: the turn waits for it for a while instead of being skipped right away
                 startAbsentCountdown(partyControllerEntity, serverWorld, ABSENT_TURN_DELAY_TICKS);
