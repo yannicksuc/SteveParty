@@ -148,7 +148,8 @@ public final class ToolHudPanel {
             int x = centerX - rowWidth(row, box -> BOX) / 2;
             for (Box box : row) {
                 ToolHud.plate(context, x, y, BOX, BOX, box.frame());
-                box.icon().draw(context, x + INSET, y + INSET);
+                int ix = x + INSET, iy = y + INSET;
+                HudDepth.item(context, () -> box.icon().draw(context, ix, iy));
                 x += BOX + GAP;
             }
         }
@@ -163,7 +164,8 @@ public final class ToolHudPanel {
             for (State state : row) {
                 int width = stateWidth(textRenderer, state.text());
                 ToolHud.plate(context, x, y, width, STATE, state.plate());
-                context.drawText(textRenderer, state.text(), x + 5, y + (STATE - 8) / 2, ToolHud.TEXT, false);
+                int tx = x + 5;
+                HudDepth.onTop(context, () -> context.drawText(textRenderer, state.text(), tx, y + (STATE - 8) / 2, ToolHud.TEXT, false));
                 x += width + GAP;
             }
         }
@@ -175,7 +177,7 @@ public final class ToolHudPanel {
             for (int i = 0; i < lines.size(); i++) {
                 var line = lines.get(i);
                 int y = bottom - LINE * (lines.size() - i) + 1;
-                context.drawCenteredTextWithShadow(textRenderer, line, centerX, y, ToolHud.HINT);
+                HudDepth.onTop(context, () -> context.drawCenteredTextWithShadow(textRenderer, line, centerX, y, ToolHud.HINT));
             }
             bottom -= LINE * lines.size();
         }
