@@ -51,6 +51,11 @@ public class TrichaudronCartridgeItem extends CartridgeItem implements Container
     }
 
     @Override
+    public net.minecraft.entity.EntityType<?> spawnedMob() {
+        return fr.lordfinn.steveparty.entities.ModEntities.TRICHAUDRON;
+    }
+
+    @Override
     public BoardSpaceType getBoardSpaceType() {
         return BoardSpaceType.TILE_TRICHAUDRON;
     }

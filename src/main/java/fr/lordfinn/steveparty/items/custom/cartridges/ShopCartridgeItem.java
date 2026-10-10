@@ -65,6 +65,11 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
     }
 
     @Override
+    public net.minecraft.entity.EntityType<?> spawnedMob() {
+        return fr.lordfinn.steveparty.entities.ModEntities.BOXED_TRADER_ENTITY;
+    }
+
+    @Override
     public BoardSpaceType getBoardSpaceType() {
         return BoardSpaceType.BOARD_SPACE_SHOP;
     }

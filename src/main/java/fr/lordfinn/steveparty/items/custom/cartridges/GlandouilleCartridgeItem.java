@@ -49,6 +49,11 @@ public class GlandouilleCartridgeItem extends CartridgeItem implements MobSpawnC
     }
 
     @Override
+    public net.minecraft.entity.EntityType<?> spawnedMob() {
+        return fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE;
+    }
+
+    @Override
     public BoardSpaceType getBoardSpaceType() {
         return BoardSpaceType.TILE_GLANDOUILLE;
     }

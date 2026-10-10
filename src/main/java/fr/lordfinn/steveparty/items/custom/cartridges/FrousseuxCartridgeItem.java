@@ -42,6 +42,11 @@ public class FrousseuxCartridgeItem extends CartridgeItem implements MobSpawnCar
     }
 
     @Override
+    public net.minecraft.entity.EntityType<?> spawnedMob() {
+        return fr.lordfinn.steveparty.entities.ModEntities.FROUSSEUX;
+    }
+
+    @Override
     public BoardSpaceType getBoardSpaceType() {
         return BoardSpaceType.TILE_FROUSSEUX;
     }

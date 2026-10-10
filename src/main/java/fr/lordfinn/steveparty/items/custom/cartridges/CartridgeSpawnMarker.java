@@ -5,9 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.entities.ModEntities;
 import net.minecraft.entity.EntityType;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
@@ -30,13 +28,7 @@ public final class CartridgeSpawnMarker {
 
     /** The kind of mob the space of {@code stack} summons (for the previews), null for none. */
     public static @Nullable EntityType<?> mobOf(ItemStack stack) {
-        Item item = stack.getItem();
-        if (item instanceof FrousseuxCartridgeItem) return ModEntities.FROUSSEUX;
-        if (item instanceof GlandouilleCartridgeItem) return ModEntities.GLANDOUILLE;
-        if (item instanceof MistigriCartridgeItem) return ModEntities.MISTIGRI;
-        if (item instanceof TrichaudronCartridgeItem) return ModEntities.TRICHAUDRON;
-        if (item instanceof ShopCartridgeItem) return ModEntities.BOXED_TRADER_ENTITY;
-        return null;
+        return stack.getItem() instanceof MobSpawnCartridge cartridge ? cartridge.spawnedMob() : null;
     }
 
     /** Whether the block at {@code pos} is a Spawn Marker. */
