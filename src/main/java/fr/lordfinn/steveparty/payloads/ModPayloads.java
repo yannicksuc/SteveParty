@@ -26,6 +26,7 @@ public class ModPayloads {
         c2s(TrapSetupPayloads.Sign.ID, TrapSetupPayloads.Sign.CODEC);
         s2c(DicePromptPayload.ID, DicePromptPayload.CODEC);
         s2c(DiceRevealPayload.ID, DiceRevealPayload.CODEC);
+        s2c(OutcomeRoulettePayload.ID, OutcomeRoulettePayload.CODEC);
         s2c(SixSevenPayload.ID, SixSevenPayload.CODEC);
         s2c(JumpShoesPayloads.Seen.ID, JumpShoesPayloads.Seen.CODEC);
 
