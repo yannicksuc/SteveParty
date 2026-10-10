@@ -294,6 +294,31 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /**
+     * Left alone, it never picks by itself: past {@link TrichaudronPrizes#CHOOSE_TICKS} it still waits, and only then
+     * may the button in the chat pick a head at random; its prize is given as if clicked.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 60, batchId = BATCH)
+    public void leftAloneItWaitsForTheRandomButton(TestContext context) {
+        Show show = show(context, cartridge(new ItemStack(Items.DIAMOND, 1), new ItemStack(Items.EMERALD, 1)),
+                chest(new ItemStack(Items.DIAMOND, 5), new ItemStack(Items.EMERALD, 5)), TrichaudronPrizes.Start.STARTED);
+        MobEntity token = show.token();
+        when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, TO_CHOICE, "its heads held out", () -> {
+            context.assertFalse(TrichaudronPrizes.pickAtRandom(token.getUuid(), show.player()), "too early for the button");
+            long from = context.getTick();
+            when(context, () -> context.getTick() >= from + TrichaudronPrizes.CHOOSE_TICKS + 10, WHOLE, "a long wait", () -> {
+                context.assertEquals(TrichaudronPrizes.phase(token), TrichaudronPrizes.Phase.CHOOSE, "still waiting");
+                context.assertEquals(TrichaudronPrizes.picked(token), -1, "no head picked by itself");
+                context.assertTrue(TrichaudronPrizes.pickAtRandom(token.getUuid(), show.player()), "the button picks one");
+                context.assertTrue(TrichaudronPrizes.picked(token) >= 0, "a head picked");
+                when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {
+                    context.assertEquals(count(show.player(), Items.DIAMOND) + count(show.player(), Items.EMERALD), 1, "one prize");
+                    context.complete();
+                });
+            });
+        });
+    }
+
     /** Its menu filters the chest: only the items set are prizes, one head each. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void theFilterIsRespected(TestContext context) {
