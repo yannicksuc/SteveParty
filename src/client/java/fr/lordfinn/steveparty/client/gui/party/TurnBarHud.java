@@ -265,7 +265,7 @@ final class TurnBarHud {
         if (el.halo) HudPaint.draw(context, HudPaint.halo(Form.CHEVRON, el.w, el.h), x, y, alpha);
         int d = el.h / 4, size = TurnStripLayout.FRAME[el.level];
         int fx = x + PAD + d + 3, fy = y + PAD + (el.h - size) / 2;
-        HudPaint.draw(context, HudPaint.shape(Form.CUT1, size, size, HudPaint.white(ramp.outline()), HudPaint.OUTLINE), fx - PAD, fy - PAD, alpha);
+        HudPaint.draw(context, HudPaint.headFrame(size, ramp.outline()), fx - PAD, fy - PAD, alpha);
         head(context, player, fx + (size - 8) / 2, fy + (size - 8) / 2, alpha);
         if (!el.label.isEmpty()) HudDraw.shadowed(context, el.label, fx + size + 4, y + PAD + (el.h - 8) / 2, HudPaint.TEXT, alpha);
     }

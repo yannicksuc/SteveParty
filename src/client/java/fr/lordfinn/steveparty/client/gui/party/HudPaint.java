@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.math.ColorHelper;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -105,6 +106,20 @@ public final class HudPaint {
     static Tex shape(Form form, int w, int h, Ramp ramp, int flags) {
         String key = "s" + form + w + "x" + h + ramp + flags;
         return texture(key, w + 2 * HudShapes.PAD, h + 2 * HudShapes.PAD, out -> paint(out, HudShapes.padded(HudShapes.mask(form, w, h)), ramp, flags));
+    }
+
+    /**
+     * The white frame round a head ({@code size} square, the outline in {@code outline}), open where the 8 x 8 face
+     * goes: the face never lies under it, so it shows whatever order the draws end up in (ImmediatelyFast's HUD
+     * batching draws each texture in the order of its first use: a frame first used after the skins covered them).
+     */
+    static Tex headFrame(int size, int outline) {
+        Ramp ramp = white(outline);
+        return texture("f" + size + ramp, size + 2 * HudShapes.PAD, size + 2 * HudShapes.PAD, out -> {
+            paint(out, HudShapes.padded(HudShapes.mask(Form.CUT1, size, size)), ramp, OUTLINE);
+            int o = HudShapes.PAD + (size - 8) / 2;
+            for (int y = o; y < o + 8; y++) Arrays.fill(out[y], o, o + 8, 0);
+        });
     }
 
     private static void paint(int[][] out, boolean[][] m, Ramp ramp, int flags) {
