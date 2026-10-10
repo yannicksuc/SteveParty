@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
@@ -9,14 +10,19 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.Action;
+import fr.lordfinn.steveparty.hud.OutcomeRoulette;
 import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.payloads.custom.OutcomeRoulettePayload;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.Easing;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -30,6 +36,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
@@ -37,7 +45,10 @@ import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
 /**
  * What a Mistigri space does (see MistigriTileBehavior): the Mistigri leaps onto the space beside the token, swats his
  * giant loaded die into the air, and the die passes a sentence on the token's player, drawn by the cartridge's weights
- * ({@link Sentence}). He reacts (a hiss, or a yawn for the lenient one) and leaps away in a puff of smoke.
+ * ({@link Sentence}). The sentence is drawn first, then the whole party watches it come: every sentence that may fall
+ * is listed on an {@link OutcomeRoulettes outcome roulette}, with its chance, the light runs down the list slower and
+ * slower while his die hangs in the air, and stops on the drawn one as the die lands. Only then does it happen. He
+ * reacts (a hiss, or a yawn for the lenient one) and leaps away in a puff of smoke.
  * <p>
  * A move back is walked once he is gone (the token's turn goes on until it lands: AdvanceBackMoves); every other
  * sentence ends the turn. What he takes (coins, a star) goes into the party's bank: nothing is lost. He and his die are board actors: invulnerable, never saved, always removed at the end
@@ -87,12 +98,24 @@ public final class MistigriSentences {
         }
     }
 
+    /**
+     * His leap in; the roulette of the sentences while his die is in the air ({@link OutcomeRoulette}); the sentence;
+     * his leaving.
+     */
     public enum Phase { LEAP_IN, ROLL, SENTENCE, LEAVE }
 
     public enum Start { STARTED, NO_PLAYER, NO_SENTENCE }
 
-    /** Timing (ticks). */
-    public static final int LEAP_TICKS = 20, ROLL_TICKS = 40, DIE_LANDS_AT = 30, SENTENCE_TICKS = 60, LEAVE_TICKS = 20;
+    /**
+     * Timing (ticks). The roll lasts the whole roulette: he swats his die up as the light starts running, it hangs
+     * spinning in the air and lands when the light stops on the sentence.
+     */
+    public static final int LEAP_TICKS = 20, ROLL_TICKS = OutcomeRoulette.TOTAL_TICKS,
+            DIE_LANDS_AT = OutcomeRoulette.REVEAL_TICKS + OutcomeRoulette.SPIN_TICKS, SENTENCE_TICKS = 60, LEAVE_TICKS = 20;
+    /** In the roll: he swats, his die flies up (until it hangs at the top), then falls (ticks). */
+    /** The roulette's panel: this high over his seat (blocks), clear of his die hanging in the air. */
+    private static final double PANEL_ABOVE = 5.8;
+    private static final int SWAT_AT = OutcomeRoulette.REVEAL_TICKS - 8, DIE_UP_TICKS = 12, DIE_FALL_TICKS = 6;
     /** The whole show, at most (for the tests). */
     public static final int WHOLE = LEAP_TICKS + ROLL_TICKS + SENTENCE_TICKS + LEAVE_TICKS;
     /** His leap starts this far from the space (blocks, to the token's side). */
@@ -131,6 +154,37 @@ public final class MistigriSentences {
         return show == null ? null : show.sentence;
     }
 
+    /** The roulette of {@code token}'s show, null before it starts (or without a show). */
+    public static @Nullable OutcomeRoulettes.Roulette roulette(MobEntity token) {
+        Show show = RUNNING.get(token);
+        return show == null ? null : show.roulette;
+    }
+
+    /** The sentences listed on the roulette: every one that may be drawn from {@code cartridge}, and {@code forced}. */
+    public static List<Sentence> listed(ItemStack cartridge, @Nullable Sentence forced) {
+        List<Sentence> listed = new ArrayList<>();
+        for (Sentence sentence : Sentence.values()) {
+            if (sentence == forced || MistigriCartridgeItem.weight(cartridge, sentence) > 0) listed.add(sentence);
+        }
+        return listed;
+    }
+
+    /** A sentence's line on the roulette: its icon, short text, tone and chance. */
+    static OutcomeRoulettePayload.Line line(Sentence sentence, ItemStack cartridge, PartyControllerEntity party) {
+        ItemStack icon = switch (sentence) {
+            case COINS_SMALL, COINS_BIG, COINS_HALF -> party.getCurrency(PartyCurrency.COIN);
+            case STAR -> party.getCurrency(PartyCurrency.STAR);
+            case EVERYONE -> new ItemStack(Items.PLAYER_HEAD);
+            case BACK -> new ItemStack(Items.ARROW);
+            case CURSED -> new ItemStack(Registries.ITEM.get(Steveparty.id("cursed_dice_face_3")));
+            case JOKE -> new ItemStack(Items.COD);
+        };
+        return new OutcomeRoulettePayload.Line(icon.copyWithCount(1),
+                Text.translatable("hud.steveparty.mistigri_space.line." + sentence.id, sentence.amount(cartridge)),
+                sentence.harsh ? OutcomeRoulettePayload.Tone.BAD : OutcomeRoulettePayload.Tone.GOOD,
+                MistigriCartridgeItem.chance(cartridge, sentence));
+    }
+
     /** A sentence drawn by the weights of {@code cartridge}; null if every weight is 0. */
     public static @Nullable Sentence draw(ItemStack cartridge, Random random) {
         int total = 0;
@@ -163,7 +217,12 @@ public final class MistigriSentences {
             tell(party, player, Text.translatable("message.steveparty.mistigri_space.no_sentence").formatted(Formatting.GRAY));
             return Start.NO_SENTENCE;
         }
+        List<Sentence> listed = listed(cartridge, sentence);
+        List<OutcomeRoulettePayload.Line> lines = new ArrayList<>();
+        for (Sentence each : listed) lines.add(line(each, cartridge, party));
         Show show = new Show(world, tile.toImmutable(), token, player.getUuid(), party, sentence, sentence.amount(cartridge), onDone);
+        show.lines = lines;
+        show.result = listed.indexOf(sentence);
         if (!show.spawn()) return Start.NO_SENTENCE;
         RUNNING.run(show, show::tick);
         return Start.STARTED;
@@ -182,6 +241,10 @@ public final class MistigriSentences {
         final int amount;
         MistigriEntity actor;
         @Nullable MistigriDieEntity die;
+        /** The roulette's lines (every sentence that may be drawn) and the one drawn; the roulette once started. */
+        List<OutcomeRoulettePayload.Line> lines = List.of();
+        int result;
+        @Nullable OutcomeRoulettes.Roulette roulette;
         Phase phase = Phase.LEAP_IN;
         int phaseTick;
         Vec3d from = Vec3d.ZERO, seat = Vec3d.ZERO, away = Vec3d.ZERO, dieFrom = Vec3d.ZERO, dieTo = Vec3d.ZERO;
@@ -282,13 +345,23 @@ public final class MistigriSentences {
             }
         }
 
-        /** He swats his die up: it tumbles in an arc and lands in front of him on a low face. */
+        /**
+         * The roulette of the sentences, shown to the whole party; as its light starts running he swats his die up: it
+         * tumbles up, hangs spinning in the air while the light runs, and lands in front of him on a low face as it
+         * stops. The sentence comes once the roulette is over.
+         */
         void tickRoll() {
             if (phaseTick == 1) {
                 face(seat.add(Vec3d.fromPolar(0, yaw).multiply(DIE_AHEAD)));
-                actor.act(Action.SWAT);
+                ServerPlayerEntity player = player();
+                // Its panel floats over him, above where his die will hang
+                roulette = OutcomeRoulettes.start(world, party, player, seat.add(Vec3d.fromPolar(0, yaw).multiply(DIE_AHEAD / 2)).add(0, PANEL_ABOVE, 0),
+                        Text.translatable("hud.steveparty.mistigri_space.roulette",
+                                player == null ? Text.literal("?") : player.getDisplayName()),
+                        Text.translatable("hud.steveparty.mistigri_space.roulette.caption"), lines, result);
             }
-            if (phaseTick == 8) {
+            if (phaseTick == SWAT_AT) actor.act(Action.SWAT);
+            if (phaseTick == SWAT_AT + 8) {
                 MistigriDieEntity one = ModEntities.MISTIGRI_DIE.create(world);
                 if (one != null) {
                     castProp(one);
@@ -301,10 +374,22 @@ public final class MistigriSentences {
                     world.playSound(null, dieFrom.x, dieFrom.y, dieFrom.z, SoundEvents.ENTITY_BREEZE_SHOOT, SoundCategory.NEUTRAL, 0.5f, 0.7f);
                 }
             }
-            if (die != null && phaseTick > 8 && phaseTick <= DIE_LANDS_AT) {
-                float t = (phaseTick - 8) / (float) (DIE_LANDS_AT - 8);
-                Vec3d at = dieFrom.lerp(dieTo, t).add(0, Math.sin(t * Math.PI) * 2.5, 0);
-                die.refreshPositionAndAngles(at.x, at.y, at.z, yaw + phaseTick * 25, 0);
+            int thrown = SWAT_AT + 8, falls = DIE_LANDS_AT - DIE_FALL_TICKS;
+            if (die != null && phaseTick > thrown && phaseTick <= DIE_LANDS_AT) {
+                Vec3d top = dieFrom.lerp(dieTo, 0.5).add(0, 2.5, 0);
+                Vec3d at;
+                if (phaseTick <= thrown + DIE_UP_TICKS) {
+                    float t = (phaseTick - thrown) / (float) DIE_UP_TICKS;
+                    at = dieFrom.lerp(top, Easing.easeOutCubic(t));
+                } else if (phaseTick < falls) {
+                    at = top.add(0, Math.sin((phaseTick - thrown) * 0.25) * 0.15, 0); // hangs, bobbing
+                } else {
+                    float t = (phaseTick - falls) / (float) DIE_FALL_TICKS;
+                    at = top.lerp(dieTo, t * t);
+                }
+                // Spins fast as it goes up, slower and slower with the light
+                float spin = phaseTick < falls ? 25 - 18 * (phaseTick - thrown) / (float) (falls - thrown) : 25;
+                die.refreshPositionAndAngles(at.x, at.y, at.z, die.getYaw() + spin, 0);
                 if (phaseTick == DIE_LANDS_AT) {
                     die.setRolling(false);
                     die.setFace(1 + world.getRandom().nextInt(3) / 2); // loaded: mostly a 1
@@ -324,11 +409,8 @@ public final class MistigriSentences {
             else actor.act(Action.YAWN);
             world.playSound(null, actor.getX(), actor.getY(), actor.getZ(), sentence.harsh ? ModSounds.MISTIGRI_HISS : ModSounds.MISTIGRI_PURR,
                     SoundCategory.NEUTRAL, 1.0f, 1.0f);
-            if (player != null) {
-                MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.mistigri_space.title")
-                        .formatted(Formatting.DARK_PURPLE), MessageUtils.MessageType.TITLE);
-                MessageUtils.sendToPlayer(player, name.copy().formatted(Formatting.LIGHT_PURPLE), MessageUtils.MessageType.ACTION_BAR);
-            }
+            // The roulette announced it to everyone: no title over it, the action bar reminds the player
+            if (player != null) MessageUtils.sendToPlayer(player, name.copy().formatted(Formatting.LIGHT_PURPLE), MessageUtils.MessageType.ACTION_BAR);
             MutableText result = apply(player);
             tell(party, player, Text.translatable("message.steveparty.mistigri_space.passed",
                     player == null ? Text.literal("?") : player.getDisplayName(), name).formatted(Formatting.DARK_PURPLE)
@@ -418,6 +500,7 @@ public final class MistigriSentences {
         /** Over: the actors go; the move back starts (it then holds the turn), else the turn goes on. */
         void finish(boolean completed) {
             if (!close()) return;
+            if (!completed) OutcomeRoulettes.stop(roulette); // off the screens if it was still on
             for (Vec3d at : new Vec3d[]{actor == null ? null : actor.getPos(), die == null ? null : die.getPos()}) {
                 if (at == null) continue;
                 world.spawnParticles(ParticleTypes.LARGE_SMOKE, at.x, at.y + 0.6, at.z, 10, 0.4, 0.4, 0.4, 0.02);

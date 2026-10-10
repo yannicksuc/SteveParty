@@ -84,7 +84,10 @@ public class BoardSpaceScreenHandler extends CartridgeContainerScreenHandler imp
             int index = i;
             // Shown for a cartridge with ghost slots (Inventory, Trichaudron): all at the same place, its first module
             addSlot(new GhostSlot(ghosts, i, MENU_X + CartridgeLayout.PAD_X + module.slotX(i), CartridgeLayout.TOP + module.slotY(i),
-                    () -> index < GhostSlotsModule.countOf(selectedStack())));
+                    () -> index < GhostSlotsModule.countOf(selectedStack()), () -> {
+                        GhostSlotsModule ghostsOf = GhostSlotsModule.of(selectedStack());
+                        return ghostsOf == null || ghostsOf.signed();
+                    }));
         }
     }
 

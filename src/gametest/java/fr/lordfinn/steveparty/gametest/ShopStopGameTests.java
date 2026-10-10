@@ -134,7 +134,7 @@ public class ShopStopGameTests implements SteveGameTest {
 
     /** A Spawn Marker at {@link #MARKER} facing north (the board), linked to the shop space; its absolute position. */
     private static BlockPos marker(TestContext context, Board board) {
-        context.setBlockState(MARKER, ModBlocks.SPAWN_MARKER.getDefaultState().with(SpawnMarkerBlock.FACING, Direction.NORTH));
+        context.setBlockState(MARKER, ModBlocks.SPAWN_MARKER.getDefaultState().with(SpawnMarkerBlock.ROTATION, SpawnMarkerBlock.rotation(Direction.NORTH)));
         BlockPos marker = context.getAbsolutePos(MARKER);
         CartridgeSpawnMarker.set(board.cartridge(), context.getWorld(), marker);
         CartridgeSpawnMarker.own(context.getWorld(), marker, board.shop().getPos());

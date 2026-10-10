@@ -53,6 +53,7 @@
       "fr.lordfinn.steveparty.gametest.ThiefBellGameTests",
       "fr.lordfinn.steveparty.gametest.FrousseuxSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.MistigriSpaceGameTests",
+      "fr.lordfinn.steveparty.gametest.OutcomeRouletteGameTests",
       "fr.lordfinn.steveparty.gametest.TrichaudronSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.MistigriGameTests",
       "fr.lordfinn.steveparty.gametest.JumpShoesGameTests",

@@ -20,10 +20,17 @@ import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
 public class GhostSlot extends Slot {
     public static final int MAX_COUNT = 1028;
     private final BooleanSupplier enabled;
+    /** Whether its item may be taken (negative) as well as given: otherwise the wheel stops at 1. */
+    private final BooleanSupplier signed;
 
     public GhostSlot(Inventory inventory, int index, int x, int y, BooleanSupplier enabled) {
+        this(inventory, index, x, y, enabled, () -> true);
+    }
+
+    public GhostSlot(Inventory inventory, int index, int x, int y, BooleanSupplier enabled, BooleanSupplier signed) {
         super(inventory, index, x, y);
         this.enabled = enabled;
+        this.signed = signed;
     }
 
     @Override
@@ -83,7 +90,10 @@ public class GhostSlot extends Slot {
         return !stack.contains(IS_NEGATIVE) || Boolean.FALSE.equals(stack.get(IS_NEGATIVE));
     }
 
-    /** One more / one less of the item: going under 1 turns a given item into a taken one (and back). */
+    /**
+     * One more / one less of the item: going under 1 turns a given item into a taken one (and back), on a slot that
+     * may take; on one that only gives, it stops at 1.
+     */
     public void onScroll(double amount) {
         ItemStack stack = this.getStack();
         if (stack.isEmpty()) return;
@@ -91,6 +101,7 @@ public class GhostSlot extends Slot {
         int change = amount > 0 ? 1 : -1;
         if (!positive) change = -change;
         int count = stack.getCount() + change;
+        if (count <= 0 && !signed.getAsBoolean()) return;
         if (count <= 0) stack.set(IS_NEGATIVE, positive);
         if (count > 0 && count <= MAX_COUNT) stack.setCount(count);
         markDirty();

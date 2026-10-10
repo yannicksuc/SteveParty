@@ -237,7 +237,7 @@ public final class WorldDraw {
         int width = textRenderer.getWidth(text);
         float w = Math.max(PLATE_SIZE, width + 9), h = PLATE_SIZE;
         RenderLayer plateLayer = RenderLayer.getText(plate.texture);
-        nineSlice(consumers.getBuffer(plateLayer), matrices.peek().getPositionMatrix(), -w / 2, -h / 2, w / 2, h / 2);
+        nineSlice(consumers.getBuffer(plateLayer), matrices.peek().getPositionMatrix(), -w / 2, -h / 2, w / 2, h / 2, BEHIND);
         // Drawn right away, then its text: the buffers of several layers are otherwise drawn together at the end, in
         // the order the layers first came, and a plate could cover the text of a label drawn before it
         if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(plateLayer);
@@ -253,7 +253,30 @@ public final class WorldDraw {
      */
     public static void plate(MatrixStack matrices, VertexConsumerProvider consumers, Plate plate, float x0, float y0, float x1, float y1) {
         RenderLayer layer = RenderLayer.getText(plate.texture);
-        nineSlice(consumers.getBuffer(layer), matrices.peek().getPositionMatrix(), x0, y0, x1, y1);
+        nineSlice(consumers.getBuffer(layer), matrices.peek().getPositionMatrix(), x0, y0, x1, y1, BEHIND);
+        if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
+    }
+
+    /**
+     * {@code plate} stretched over (x0, y0)-(x1, y1) in label space, {@code z} deep (label space: more negative is
+     * farther from the camera): for a stack of plates (a panel and its rows), each in front of the one under it.
+     * Drawn right away.
+     */
+    public static void plate(MatrixStack matrices, VertexConsumerProvider consumers, Plate plate, float x0, float y0, float x1, float y1, float z) {
+        RenderLayer layer = RenderLayer.getText(plate.texture);
+        nineSlice(consumers.getBuffer(layer), matrices.peek().getPositionMatrix(), x0, y0, x1, y1, z);
+        if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
+    }
+
+    /** A plain rectangle (x0, y0)-(x1, y1) in label space, {@code z} deep (as {@link #plate}), drawn right away. */
+    public static void fill(MatrixStack matrices, VertexConsumerProvider consumers, float x0, float y0, float x1, float y1, float z, int argb) {
+        RenderLayer layer = RenderLayer.getTextBackground();
+        VertexConsumer consumer = consumers.getBuffer(layer);
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+        consumer.vertex(matrix, x0, y0, z).color(argb).light(LIGHT);
+        consumer.vertex(matrix, x0, y1, z).color(argb).light(LIGHT);
+        consumer.vertex(matrix, x1, y1, z).color(argb).light(LIGHT);
+        consumer.vertex(matrix, x1, y0, z).color(argb).light(LIGHT);
         if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
     }
 
@@ -271,17 +294,17 @@ public final class WorldDraw {
     }
 
     /** The plate stretched over (x0, y0)-(x1, y1), its 4 pixel border kept. */
-    private static void nineSlice(VertexConsumer consumer, Matrix4f matrix, float x0, float y0, float x1, float y1) {
+    private static void nineSlice(VertexConsumer consumer, Matrix4f matrix, float x0, float y0, float x1, float y1, float z) {
         float b = PLATE_BORDER;
         float[] xs = {x0, x0 + b, x1 - b, x1}, ys = {y0, y0 + b, y1 - b, y1};
         float[] us = {0, b / PLATE_SIZE, 1 - b / PLATE_SIZE, 1};
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 // Same winding as the font's glyphs: seen from the camera
-                consumer.vertex(matrix, xs[i], ys[j], BEHIND).color(0xFFFFFFFF).texture(us[i], us[j]).light(LIGHT);
-                consumer.vertex(matrix, xs[i], ys[j + 1], BEHIND).color(0xFFFFFFFF).texture(us[i], us[j + 1]).light(LIGHT);
-                consumer.vertex(matrix, xs[i + 1], ys[j + 1], BEHIND).color(0xFFFFFFFF).texture(us[i + 1], us[j + 1]).light(LIGHT);
-                consumer.vertex(matrix, xs[i + 1], ys[j], BEHIND).color(0xFFFFFFFF).texture(us[i + 1], us[j]).light(LIGHT);
+                consumer.vertex(matrix, xs[i], ys[j], z).color(0xFFFFFFFF).texture(us[i], us[j]).light(LIGHT);
+                consumer.vertex(matrix, xs[i], ys[j + 1], z).color(0xFFFFFFFF).texture(us[i], us[j + 1]).light(LIGHT);
+                consumer.vertex(matrix, xs[i + 1], ys[j + 1], z).color(0xFFFFFFFF).texture(us[i + 1], us[j + 1]).light(LIGHT);
+                consumer.vertex(matrix, xs[i + 1], ys[j], z).color(0xFFFFFFFF).texture(us[i + 1], us[j]).light(LIGHT);
             }
         }
     }
