@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import net.minecraft.client.MinecraftClient;
@@ -9,6 +10,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,10 +34,30 @@ public class DiceEntityRenderer extends GeoEntityRenderer<DiceEntity> {
         if (dice.isRolling() && !dice.isFaceShown()) {
             MinecraftClient client = MinecraftClient.getInstance();
             long worldTicks = client.world != null ? client.world.getTime() : 0;
-            // Per-dice fake face, changing every 4 ticks (deterministic: no state shared between dice)
+            // Per-dice fake face, changing every 4 ticks (deterministic: no state shared between dice): one of the die's
+            // own faces (by weight), or 1 to 10 for a plain die
+            DiceFacesComponent forged = dice.getDieStack().get(DiceFacesComponent.TYPE);
+            List<DiceFacesComponent.DiceFace> faces = forged == null ? List.of() : forged.faces();
+            if (!faces.isEmpty()) {
+                DiceFacesComponent.DiceFace face = flickerFace(dice, worldTicks, faces);
+                return getTexture(face.kind(), face.value());
+            }
             return getTexture(Kind.NORMAL, fakeValue(dice, worldTicks));
         }
         return getTexture(dice.getRollKind(), dice.getRollValue());
+    }
+
+    /** One of {@code faces} by weight, picked like {@link #fakeValue}. */
+    private static DiceFacesComponent.DiceFace flickerFace(DiceEntity dice, long worldTicks, List<DiceFacesComponent.DiceFace> faces) {
+        long hash = MathHelper.hashCode(dice.getId(), (int) (worldTicks >> 2), 0x5EED);
+        int total = 0;
+        for (DiceFacesComponent.DiceFace face : faces) total += face.weight();
+        int pick = (int) Math.floorMod(hash ^ (hash >>> 32), (long) Math.max(1, total));
+        for (DiceFacesComponent.DiceFace face : faces) {
+            pick -= face.weight();
+            if (pick < 0) return face;
+        }
+        return faces.getFirst();
     }
 
     private static int fakeValue(DiceEntity dice, long worldTicks) {
