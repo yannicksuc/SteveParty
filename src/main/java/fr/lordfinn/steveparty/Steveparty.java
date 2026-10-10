@@ -205,6 +205,10 @@ public class Steveparty implements ModInitializer {
                 LootingBoxBlock.testForCollision(player);
             }
         });
+
+        // Last: the addons, once Steve Party's own content is registered
+        fr.lordfinn.steveparty.api.StevePartyApi.invokeEntrypoints(fr.lordfinn.steveparty.api.StevePartyApi.ENTRYPOINT,
+                fr.lordfinn.steveparty.api.StevePartyAddon.class, fr.lordfinn.steveparty.api.StevePartyAddon::onStevePartyInitialize);
     }
 
     private void onServerStopped(MinecraftServer minecraftServer) {
