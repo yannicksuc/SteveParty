@@ -96,6 +96,11 @@ public final class TileColors {
     private static final float[] TINT_DARKNESS = {0.25f, 0.0f, 0.1f, 0.2f, 0.3f, 0.42f, 0.72f};
 
     /** The colour of the tint index {@code tintIndex} of a tile model coloured {@code rgb}. */
+    /** The darkness of the tint index {@code tintIndex} (0: none). */
+    public static float tintDarkness(int tintIndex) {
+        return tintIndex < 0 || tintIndex >= TINT_DARKNESS.length ? 0 : TINT_DARKNESS[tintIndex];
+    }
+
     public static int tint(int rgb, int tintIndex) {
         if (tintIndex < 0 || tintIndex >= TINT_DARKNESS.length) return rgb;
         return shade(rgb, TINT_DARKNESS[tintIndex]);
