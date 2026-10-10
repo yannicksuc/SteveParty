@@ -100,6 +100,11 @@ public class MistigriCartridgeItem extends CartridgeItem implements MobSpawnCart
     }
 
     @Override
+    public net.minecraft.entity.EntityType<?> spawnedMob() {
+        return fr.lordfinn.steveparty.entities.ModEntities.MISTIGRI;
+    }
+
+    @Override
     public BoardSpaceType getBoardSpaceType() {
         return BoardSpaceType.TILE_MISTIGRI;
     }
