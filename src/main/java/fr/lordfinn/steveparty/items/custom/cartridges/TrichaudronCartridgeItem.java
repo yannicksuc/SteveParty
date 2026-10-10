@@ -152,16 +152,48 @@ public class TrichaudronCartridgeItem extends CartridgeItem implements Container
      */
     public static List<ItemStack> offered(ItemStack stack, World world, @Nullable BlockPos space,
                                           @Nullable PartyControllerEntity party) {
-        List<ItemStack> prizes = available(stack, world, space);
-        if (party == null || space == null || samePrizes(stack)) return prizes;
-        Set<String> won = party.getPartyData().getTrichaudronWon().wonAt(space);
-        if (!won.isEmpty()) prizes.removeIf(prize -> won.contains(prizeKey(prize)));
+        List<ItemStack> prizes = new ArrayList<>();
+        for (Prize prize : offeredPrizes(stack, world, space, party)) prizes.add(prize.stack());
         return prizes;
     }
 
-    /** What makes two prizes the same one (consumed together): the item and its components, never the count. */
+    /** A prize on offer and its key in the party's record of prizes won ({@link #prizeKeys}). */
+    public record Prize(ItemStack stack, String key) {
+    }
+
+    /** {@link #offered}, each prize with its key: the one to record when it is won. */
+    public static List<Prize> offeredPrizes(ItemStack stack, World world, @Nullable BlockPos space,
+                                            @Nullable PartyControllerEntity party) {
+        List<ItemStack> all = available(stack, world, space);
+        List<String> keys = prizeKeys(all);
+        List<Prize> prizes = new ArrayList<>();
+        Set<String> won = party == null || space == null || samePrizes(stack) ? Set.of()
+                : party.getPartyData().getTrichaudronWon().wonAt(space);
+        for (int i = 0; i < all.size(); i++) {
+            if (!won.contains(keys.get(i))) prizes.add(new Prize(all.get(i), keys.get(i)));
+        }
+        return prizes;
+    }
+
+    /** What makes two prizes the same one: the item and its components, never the count. */
     public static String prizeKey(ItemStack prize) {
         return Registries.ITEM.getId(prize.getItem()) + "#" + prize.getComponentChanges().hashCode();
+    }
+
+    /**
+     * The key of each prize of {@code prizes} (in their menu's order) in the party's record of prizes won: its
+     * {@link #prizeKey}, numbered from the second prize of the same item on (« …@1 », « …@2 »), so that winning one of
+     * several prizes of coins consumes that one only.
+     */
+    public static List<String> prizeKeys(List<ItemStack> prizes) {
+        java.util.Map<String, Integer> seen = new java.util.HashMap<>();
+        List<String> keys = new ArrayList<>();
+        for (ItemStack prize : prizes) {
+            String key = prizeKey(prize);
+            int before = seen.merge(key, 1, Integer::sum) - 1;
+            keys.add(before == 0 ? key : key + "@" + before);
+        }
+        return keys;
     }
 
     /** Always the same prizes: a prize won stays on offer (off: consumed for the rest of the party). */
