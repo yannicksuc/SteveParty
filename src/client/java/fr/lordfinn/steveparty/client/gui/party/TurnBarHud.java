@@ -270,18 +270,29 @@ final class TurnBarHud {
         if (!el.label.isEmpty()) HudDraw.shadowed(context, el.label, fx + size + 4, y + PAD + (el.h - 8) / 2, HudPaint.TEXT, alpha);
     }
 
+    /** How far in front of the HUD shapes the faces are drawn (depth, GUI units). */
+    private static final float FACE_Z = 40;
+
     /** A player's face, 8 x 8 (its skin's face and hat); the initial of its name without player. */
     static void head(DrawContext context, PartyHudModel.Player player, int x, int y, float alpha) {
         UUID owner = player == null ? null : player.owner;
         if (owner != null) {
             Identifier skin = SkinUtils.getPlayerSkin(owner);
             Identifier fallback = DefaultSkinHelper.getSkinTextures(owner).texture();
+            // In front of the plates by depth, not by drawing order: HUD batching mods (ImmediatelyFast) draw each texture
+            // in the order it was first used, which put a chip's plate drawn later over the face
+            MatrixStack matrices = context.getMatrices();
+            matrices.push();
             HudDraw.faded(alpha, () -> {
                 // The default face of the UUID under it: a skin that is not (or no longer) there never leaves a blank
+                matrices.translate(0, 0, FACE_Z);
                 if (!fallback.equals(skin)) context.drawTexture(fallback, x, y, 8, 8, 8, 8, 8, 8, 64, 64);
+                matrices.translate(0, 0, 1);
                 context.drawTexture(skin, x, y, 8, 8, 8, 8, 8, 8, 64, 64);
+                matrices.translate(0, 0, 1);
                 context.drawTexture(skin, x, y, 8, 8, 40, 8, 8, 8, 64, 64);
             });
+            matrices.pop();
             return;
         }
         context.fill(x, y, x + 8, y + 8, Argb.fade(0xFF3F3F3F, alpha));
