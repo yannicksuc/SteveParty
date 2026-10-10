@@ -81,10 +81,22 @@ public class TrichaudronTileBehavior extends MobTileBehavior {
         }
         landPlain(world, tile, token, party);
         if (start == TrichaudronPrizes.Start.EMPTY && party != null) {
-            boolean chests = TrichaudronCartridgeItem.hasChests(tile.getActiveCartridgeItemStack());
-            BoardSequences.tell(party, Text.translatable(chests ? "message.steveparty.trichaudron_space.asleep"
-                    : "message.steveparty.trichaudron_space.no_chest").formatted(Formatting.GRAY));
+            BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space." + whyEmpty(world, pos,
+                    tile.getActiveCartridgeItemStack())).formatted(Formatting.GRAY));
         }
+    }
+
+    /**
+     * Why it has nothing to offer: its prizes were all won already in this party (« all_won »: consumed), its chests
+     * are empty (« asleep »), it has none and the party's storage holds nothing (« no_chest »), or it draws on a bank
+     * without end that lists nothing: its prizes must be set in its menu (« no_prizes_set »).
+     */
+    private static String whyEmpty(ServerWorld world, BlockPos pos, ItemStack cartridge) {
+        // Its prizes are there, but all won already in this party (consumed)
+        if (!TrichaudronCartridgeItem.available(cartridge, world, pos).isEmpty()) return "all_won";
+        if (TrichaudronCartridgeItem.filters(cartridge).isEmpty() && TrichaudronCartridgeItem.chests(cartridge, world, pos).isUnlimited())
+            return "no_prizes_set";
+        return TrichaudronCartridgeItem.hasChests(cartridge) ? "asleep" : "no_chest";
     }
 
     /** Asleep (as last seen in its chests): a plain landing. */
@@ -107,7 +119,8 @@ public class TrichaudronTileBehavior extends MobTileBehavior {
         List<ItemStack> prizes = offered(world, space, stack);
         refreshSleep(space, !prizes.isEmpty());
         if (prizes.isEmpty()) {
-            info.line(TileInfo.dim(TileInfo.line(TrichaudronCartridgeItem.hasChests(stack) ? "trichaudron.empty" : "trichaudron.no_chest")));
+            String why = whyEmpty(world, space.getPos(), stack);
+            info.line(TileInfo.dim(TileInfo.line(why.equals("asleep") ? "trichaudron.empty" : "trichaudron." + why)));
             return;
         }
         info.line(TileInfo.good(TileInfo.line("trichaudron.prizes", prizes.size())));
