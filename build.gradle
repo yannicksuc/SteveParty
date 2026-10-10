@@ -222,3 +222,26 @@ if (System.getenv('CURSEFORGE_TOKEN') != null) {
         mainFile.addRequirement('geckolib')
     }
 }
+
+// Every text of the mod's screens and HUD goes through UiText (wrapped, or scrolling with its tooltip): it never
+// leaves its box nor is cut short, in any language. The files still drawing text by hand are listed in
+// gradle/ui-text-allowlist.txt, the list only shrinks.
+tasks.register('checkUiText') {
+    group = 'verification'
+    description = 'Fails on a text drawn outside UiText in the client code'
+    def sources = fileTree('src/client/java') { include '**/*.java' }
+    def allowlist = file('gradle/ui-text-allowlist.txt')
+    inputs.files(sources, allowlist)
+    doLast {
+        def allowed = allowlist.exists() ? allowlist.readLines()*.trim().findAll { it && !it.startsWith('#') } as Set : [] as Set
+        def pattern = ~/\.(drawText|drawTextWithShadow|drawCenteredTextWithShadow|drawCenteredText)\s*\(/
+        def offenders = []
+        sources.each { File source ->
+            def path = file('src/client/java').toPath().relativize(source.toPath()).toString().replace('\\', '/')
+            if (path.endsWith('gui/UiText.java') || allowed.contains(path)) return
+            source.readLines().eachWithIndex { line, i -> if (pattern.matcher(line).find()) offenders << "${path}:${i + 1}: ${line.trim()}" }
+        }
+        if (!offenders.isEmpty()) throw new GradleException("Text drawn outside UiText:\n" + offenders.join('\n'))
+    }
+}
+tasks.named('check') { dependsOn 'checkUiText' }

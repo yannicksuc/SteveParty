@@ -6,7 +6,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.text.Text;
-import net.minecraft.util.Util;
 
 import java.util.function.Consumer;
 
@@ -93,50 +92,13 @@ public class PartyButton extends PressableWidget {
         } else {
             Text message = getMessage();
             int room = w - 6 - reservedRight;
-            if (textRenderer.getWidth(message) > room) {
-                // Too long for the button: cut with « … », scrolling back and forth while hovered
-                drawLong(context, textRenderer, message, x + 3, centerY - 4, room, textColor);
-                return;
-            }
-            int textX = centerX - textRenderer.getWidth(message) / 2;
-            if (style == Style.PRIMARY && active) {
-                context.drawTextWithShadow(textRenderer, message, textX, centerY - 4, textColor);
-            } else {
-                context.drawText(textRenderer, message, textX, centerY - 4, textColor, false);
-            }
+            boolean shadow = style == Style.PRIMARY && active;
+            // Too long for the button: it scrolls slowly in it, whole in a tooltip under the mouse (UiText)
+            if (textRenderer.getWidth(message) <= room) UiText.centered(context, textRenderer, message, x, centerY - 4, w, textColor, shadow);
+            else UiText.line(context, textRenderer, message, x + 3, centerY - 4, room, textColor, shadow);
         }
     }
 
-    private static final float MARQUEE_SPEED = 28F;
-    private static final long MARQUEE_PAUSE_MS = 700;
-    private long marqueeStart = -1;
-
-    private void drawLong(DrawContext context, TextRenderer textRenderer, Text message, int left, int top, int room, int color) {
-        boolean shadow = style == Style.PRIMARY && active;
-        if (!isHovered()) {
-            marqueeStart = -1;
-            String cut = GuiText.cut(textRenderer, message.getString(), room);
-            Text shown = Text.literal(cut).setStyle(message.getStyle());
-            context.drawText(textRenderer, shown, left + (room - textRenderer.getWidth(shown)) / 2, top, color, shadow);
-            return;
-        }
-        long now = Util.getMeasuringTimeMs();
-        if (marqueeStart < 0) marqueeStart = now;
-        int travel = textRenderer.getWidth(message) - room;
-        long moveMs = Math.max(1, (long) (travel / MARQUEE_SPEED * 1000F));
-        long t = (now - marqueeStart) % (2 * (MARQUEE_PAUSE_MS + moveMs));
-        float offset;
-        if (t < MARQUEE_PAUSE_MS) offset = 0;
-        else if (t < MARQUEE_PAUSE_MS + moveMs) offset = (t - MARQUEE_PAUSE_MS) / (float) moveMs * travel;
-        else if (t < 2 * MARQUEE_PAUSE_MS + moveMs) offset = travel;
-        else offset = travel - (t - 2 * MARQUEE_PAUSE_MS - moveMs) / (float) moveMs * travel;
-        context.enableScissor(left, top - 1, left + room, top + 10);
-        context.getMatrices().push();
-        context.getMatrices().translate(-offset, 0, 0);
-        context.drawText(textRenderer, message, left, top, color, shadow);
-        context.getMatrices().pop();
-        context.disableScissor();
-    }
 
     @Override
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {
