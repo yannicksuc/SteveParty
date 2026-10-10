@@ -167,7 +167,8 @@ public final class TrichaudronPrizes {
         BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, tile);
         ItemStack cartridge = space == null ? ItemStack.EMPTY : space.getActiveCartridgeItemStack();
         // What its chests really hold (never anything made from nothing), less what was already won
-        List<ItemStack> stock = space == null ? List.of() : TrichaudronCartridgeItem.offered(cartridge, world, tile, party);
+        List<TrichaudronCartridgeItem.Prize> stock = space == null ? List.of()
+                : TrichaudronCartridgeItem.offeredPrizes(cartridge, world, tile, party);
         if (space != null) TrichaudronTileBehavior.refreshSleep(space, !stock.isEmpty());
         if (stock.isEmpty()) return Start.EMPTY;
         ServerPlayerEntity player = BoardSequences.tokenPlayer(world, token);
@@ -176,13 +177,17 @@ public final class TrichaudronPrizes {
             return Start.NO_PLAYER;
         }
         // One head per prize, the prizes shuffled into them each time (a head's place never tells its prize)
-        List<ItemStack> prizes = new ArrayList<>(stock.subList(0, Math.min(TrichaudronEntity.MAX_HEADS, stock.size())));
+        List<TrichaudronCartridgeItem.Prize> prizes = new ArrayList<>(stock.subList(0, Math.min(TrichaudronEntity.MAX_HEADS, stock.size())));
         Collections.shuffle(prizes, new java.util.Random(world.getRandom().nextLong()));
         int[] shown = TrichaudronEntity.headsShown(prizes.size());
         ItemStack[] held = new ItemStack[TrichaudronEntity.MAX_HEADS];
+        String[] keys = new String[TrichaudronEntity.MAX_HEADS];
         Arrays.fill(held, ItemStack.EMPTY);
-        for (int i = 0; i < shown.length; i++) held[shown[i]] = prizes.get(i);
-        Show show = new Show(world, tile.toImmutable(), token, player.getUuid(), party, held, prizes.size(),
+        for (int i = 0; i < shown.length; i++) {
+            held[shown[i]] = prizes.get(i).stack();
+            keys[shown[i]] = prizes.get(i).key();
+        }
+        Show show = new Show(world, tile.toImmutable(), token, player.getUuid(), party, held, keys, prizes.size(),
                 TrichaudronCartridgeItem.trueChoice(cartridge), TrichaudronCartridgeItem.samePrizes(cartridge), onDone);
         if (!show.spawn()) return Start.EMPTY;
         RUNNING.run(show, show::tick);
@@ -196,6 +201,8 @@ public final class TrichaudronPrizes {
         final PartyControllerEntity party;
         /** The prize of each head (ALL_HEADS), empty for a head not shown. */
         final ItemStack[] held;
+        /** The key of each head's prize in the party's record of prizes won (TrichaudronCartridgeItem#prizeKeys). */
+        final String[] keys;
         final int count;
         final boolean trueChoice, samePrizes;
         TrichaudronEntity actor;
@@ -207,12 +214,13 @@ public final class TrichaudronPrizes {
         float yaw;
 
         Show(ServerWorld world, BlockPos tile, MobEntity token, UUID playerId, PartyControllerEntity party,
-             ItemStack[] held, int count, boolean trueChoice, boolean samePrizes, Runnable onDone) {
+             ItemStack[] held, String[] keys, int count, boolean trueChoice, boolean samePrizes, Runnable onDone) {
             super(world, token, onDone);
             this.tile = tile;
             this.playerId = playerId;
             this.party = party;
             this.held = held;
+            this.keys = keys;
             this.count = count;
             this.trueChoice = trueChoice;
             this.samePrizes = samePrizes;
@@ -448,7 +456,7 @@ public final class TrichaudronPrizes {
             if (moved > 0) {
                 ItemStack won = prize.copyWithCount(moved);
                 if (!samePrizes) {
-                    party.getPartyData().getTrichaudronWon().add(tile, TrichaudronCartridgeItem.prizeKey(prize));
+                    party.getPartyData().getTrichaudronWon().add(tile, keys[head]);
                     party.markDirty();
                     BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, tile);
                     if (space != null) TrichaudronTileBehavior.refreshSleep(world, space);
