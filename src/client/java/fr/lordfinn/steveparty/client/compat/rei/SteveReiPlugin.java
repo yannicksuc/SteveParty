@@ -39,6 +39,7 @@ import me.shedaniel.rei.api.common.util.EntryStacks;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -70,6 +71,8 @@ public class SteveReiPlugin implements REIClientPlugin {
 
     @Override
     public void registerDisplays(DisplayRegistry registry) {
+        // First: the one recipe of each tile with its role (shown before the others when looking one up)
+        registerRoleTileDisplays(registry);
         int count = 0;
         for (CartridgeApplications.Application application : CartridgeApplications.all()) {
             List<EntryStack<ItemStack>> results = new ArrayList<>();
@@ -174,19 +177,34 @@ public class SteveReiPlugin implements REIClientPlugin {
     }
 
     /**
-     * The crafts of TileCartridgeRecipe (a special recipe REI can't read): a Tile + a cartridge (its old one back, said
-     * by the tooltips), and an Advanced Tile filled with Tiles (slot 0, then 15).
+     * The recipe of each tile with a role, one per tile and cartridge (TileCartridgeRecipe): a Tile + its cartridge gives
+     * that Tile (« Tuile Mistigri »), an Advanced Tile + its cartridge that Advanced Tile (the cartridge in its first
+     * slot). Registered before every other display: the first recipe shown for that tile.
+     */
+    private static void registerRoleTileDisplays(DisplayRegistry registry) {
+        List<ItemStack> cartridges = CartridgeApplications.cartridges();
+        for (int i = 0; i < cartridges.size(); i++) {
+            ItemStack cartridge = cartridges.get(i);
+            String id = Registries.ITEM.getId(cartridge.getItem()).getPath() + "_" + i;
+            registry.add(DefaultCustomShapelessDisplay.simple(
+                    List.of(EntryIngredients.of(ModBlocks.TILE), EntryIngredients.of(cartridge)),
+                    List.of(EntryIngredient.of(roleTile(CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), cartridge)))),
+                    Optional.of(Steveparty.id("tile_cartridge/tile/" + id))));
+            ItemStack advanced = TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE), List.of(cartridge.copy()));
+            if (advanced != null) registry.add(DefaultCustomShapelessDisplay.simple(
+                    List.of(EntryIngredients.of(ModBlocks.ADVANCED_TILE), EntryIngredients.of(cartridge)),
+                    List.of(EntryIngredient.of(roleTile(advanced))),
+                    Optional.of(Steveparty.id("tile_cartridge/advanced_tile/" + id))));
+        }
+    }
+
+    /**
+     * The other crafts of TileCartridgeRecipe (a special recipe REI can't read): an Advanced Tile filled with Tiles
+     * (slot 0, then 15).
      */
     private static void registerTileCartridgeDisplays(DisplayRegistry registry) {
         ItemStack plain = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
         ItemStack tile = CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), plain);
-        List<ItemStack> cartridges = CartridgeApplications.cartridges();
-        List<ItemStack> results = new ArrayList<>();
-        for (ItemStack cartridge : cartridges) results.add(CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), cartridge));
-        registry.add(DefaultCustomShapelessDisplay.simple(
-                List.of(EntryIngredients.of(tile), EntryIngredients.ofItemStacks(cartridges)),
-                List.of(EntryIngredients.ofItemStacks(results)),
-                Optional.of(Steveparty.id("tile_cartridge/tile"))));
         ItemStack stop = CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
         ItemStack filled = TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE),
                 List.of(plain, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP)));
