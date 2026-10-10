@@ -176,7 +176,7 @@ public final class MarkerResidents {
         ItemStack cartridge = space.getActiveCartridgeItemStack();
         if (!pos.equals(CartridgeSpawnMarker.linked(cartridge, world)) || !MOBS.containsKey(cartridge.getItem().getClass())) return null;
         // Only while a party runs on its board
-        if (PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, owner, PartyControllerEntity.START_TILES_SEARCH_RADIUS, false).isEmpty())
+        if (PartyControllerEntity.getPartyOfBoardSpace(world, owner, PartyControllerEntity.BOARD_NEARBY_RADIUS, false).isEmpty())
             return null;
         return cartridge.getItem();
     }

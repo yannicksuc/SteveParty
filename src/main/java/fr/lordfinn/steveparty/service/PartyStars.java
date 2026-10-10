@@ -53,8 +53,8 @@ import static net.minecraft.server.command.CommandManager.literal;
 /**
  * The star of a party, as in party board games, on the star spaces given by the {@link StarCartridgeItem Star Cartridge}:
  * <ul>
- *     <li>when the party starts, the star stands on one of the active star spaces of its board (those within
- *     {@link PartyControllerEntity#START_TILES_SEARCH_RADIUS} blocks of the controller), at random;</li>
+ *     <li>when the party starts, the star stands on one of the active star spaces of its board (the board the paths
+ *     from its start tiles join, see {@code PartyBoard}), at random;</li>
  *     <li>a token reaching it (passing over it, or only stopping on it, as its cartridge says; on a check point,
  *     always passing) pauses there if its owner has the coins: the owner chooses in the chat to buy it or not
  *     ({@value #DECISION_SECONDS} s, then it is bought); the Skeleton Key never walks past it;</li>
@@ -120,7 +120,7 @@ public final class PartyStars {
 
     /** The active star spaces of the party's board (loaded chunks only), sorted by position. */
     public static List<BlockPos> activeStarSpaces(ServerWorld world, PartyControllerEntity party) {
-        return PartyControllerEntity.findBoardSpaces(world, party.getPos(), BoardSpaceType.TILE_STAR);
+        return party.boardSpaces(world, BoardSpaceType.TILE_STAR);
     }
 
     /**
@@ -178,7 +178,7 @@ public final class PartyStars {
             if (from == BoardSpaceType.TILE_STAR && pos.equals(party.getStarSpace())) {
                 onSwitchedOff(party, world, pos);
             } else if (to == BoardSpaceType.TILE_STAR && party.getStarSpace() == null
-                    && pos.isWithinDistance(party.getPos(), PartyControllerEntity.START_TILES_SEARCH_RADIUS * 1.75)) {
+                    && party.board(world, true).contains(pos)) {
                 place(party, world, null);
             }
         }

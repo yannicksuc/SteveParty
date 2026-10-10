@@ -106,7 +106,7 @@ public final class ThresholdGates {
             if (party.getWorld() == world && !party.isRemoved() && party.getPartyData().isStarted()
                     && !party.getPartyData().getThresholdGates().clearedAt(pos).isEmpty()) return party;
         }
-        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, pos, PARTY_RADIUS, false).orElse(null);
+        return PartyControllerEntity.getPartyOfBoardSpace(world, pos, PARTY_RADIUS, false).orElse(null);
     }
 
     private static Set<UUID> cleared(ServerWorld world, BlockPos pos, @Nullable PartyControllerEntity party) {

@@ -309,6 +309,21 @@ public final class BoardGraph {
         return routers;
     }
 
+    /**
+     * The board of {@code pos}: one of its spaces, the same for all the spaces paths join (links of any cartridge,
+     * whichever way); null for a position that is no space of the graph.
+     */
+    public @Nullable BlockPos boardOf(BlockPos pos) {
+        return boards.get(pos);
+    }
+
+    /** The same graph with only the spaces {@code keep} (and its routers). */
+    public BoardGraph only(Set<BlockPos> keep) {
+        Map<BlockPos, Node> kept = new LinkedHashMap<>();
+        for (Node node : nodes.values()) if (keep.contains(node.pos())) kept.put(node.pos(), node);
+        return new BoardGraph(kept, routers);
+    }
+
     public boolean hasStart() {
         return nodes.values().stream().anyMatch(Node::start);
     }

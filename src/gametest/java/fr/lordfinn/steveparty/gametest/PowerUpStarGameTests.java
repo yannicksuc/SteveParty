@@ -57,8 +57,9 @@ public class PowerUpStarGameTests implements SteveGameTest {
         space(context, START, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), STAR);
         space(context, STAR, new ItemStack(ModItems.STAR_CARTRIDGE), END);
         space(context, END, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), null);
-        space(context, OTHER, new ItemStack(ModItems.STAR_CARTRIDGE), null);
-        space(context, ANOTHER, new ItemStack(ModItems.STAR_CARTRIDGE), null);
+        // Off the path, linking to its first space: on the board
+        space(context, OTHER, new ItemStack(ModItems.STAR_CARTRIDGE), START);
+        space(context, ANOTHER, new ItemStack(ModItems.STAR_CARTRIDGE), START);
         CowEntity cow = context.spawnEntity(EntityType.COW, on);
         TokenizedEntityInterface token = (TokenizedEntityInterface) cow;
         token.steveparty$setTokenized(true);

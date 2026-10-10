@@ -25,7 +25,7 @@ import java.util.List;
  * the party still starts).
  */
 public final class BoardValidator {
-    /** Same reach as the Party Controller's search for start tiles. */
+    /** How far around a point the board is checked (the Wrench, the board command). */
     public static final int RADIUS = 100;
     /** Positions listed per problem in the chat (the others are counted). */
     private static final int LISTED = 5;
@@ -33,8 +33,16 @@ public final class BoardValidator {
     private BoardValidator() {
     }
 
-    /** The problems found, each with the positions concerned. */
-    public record Report(int boardSpaces, int starts, List<Issue> issues) {
+    /**
+     * The problems found, each with the positions concerned.
+     *
+     * @param radius how far the board (or its start tiles) was looked for, for the messages
+     */
+    public record Report(int boardSpaces, int starts, List<Issue> issues, int radius) {
+        public Report(int boardSpaces, int starts, List<Issue> issues) {
+            this(boardSpaces, starts, issues, RADIUS);
+        }
+
         public boolean ok() {
             return issues.stream().noneMatch(i -> i.severity() == Severity.ERROR || i.severity() == Severity.WARNING);
         }
@@ -50,7 +58,22 @@ public final class BoardValidator {
     }
 
     public static Report check(ServerWorld world, BlockPos center) {
-        BoardGraph graph = BoardGraph.collect(world, center, RADIUS);
+        return check(world, BoardGraph.collect(world, center, RADIUS));
+    }
+
+    /**
+     * The board of a Party Controller: the spaces its start tiles' paths join (see PartyBoard), and its start tiles
+     * it remembers in chunks that are not loaded (their players can't be seen).
+     */
+    public static Report check(ServerWorld world, fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBoard.Snapshot board) {
+        Report report = check(world, board.graph());
+        int radius = fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.START_TILES_SEARCH_RADIUS;
+        List<Issue> issues = new ArrayList<>(report.issues());
+        add(issues, Severity.WARNING, "unloaded_starts", board.unloadedStarts());
+        return new Report(report.boardSpaces(), report.starts() + board.unloadedStarts().size(), issues, radius);
+    }
+
+    private static Report check(ServerWorld world, BoardGraph graph) {
         Report report = check(graph);
         // Shop spaces without an offer set: their merchant would have nothing to sell, nothing happens there
         List<BlockPos> noShop = new ArrayList<>();
@@ -113,7 +136,7 @@ public final class BoardValidator {
         lines.add(Text.translatable("message.steveparty.board.check.title", report.boardSpaces(), report.starts())
                 .formatted(Formatting.GOLD, Formatting.BOLD));
         if (report.boardSpaces() == 0) {
-            lines.add(Text.translatable("message.steveparty.board.check.empty", RADIUS).formatted(Formatting.GRAY));
+            lines.add(Text.translatable("message.steveparty.board.check.empty", report.boardSpaces(), report.radius()).formatted(Formatting.GRAY));
             return lines;
         }
         if (report.ok()) lines.add(Text.translatable("message.steveparty.board.check.ok").formatted(Formatting.GREEN));
@@ -129,7 +152,7 @@ public final class BoardValidator {
                 case INFO -> "ℹ ";
             };
             MutableText line = Text.literal(mark).formatted(color)
-                    .append(Text.translatable("message.steveparty.board.check." + issue.key(), issue.positions().size(), RADIUS).formatted(color));
+                    .append(Text.translatable("message.steveparty.board.check." + issue.key(), issue.positions().size(), report.radius()).formatted(color));
             List<BlockPos> positions = issue.positions();
             for (int i = 0; i < Math.min(LISTED, positions.size()); i++) line.append(" ").append(clickable(positions.get(i)));
             if (positions.size() > LISTED) {
@@ -141,10 +164,10 @@ public final class BoardValidator {
     }
 
     /** At the start of a party: one line for the players around the controller if the board has problems. */
-    public static void warnAtStart(ServerWorld world, BlockPos controller) {
-        Report report = check(world, controller);
+    public static void warnAtStart(ServerWorld world, fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller) {
+        Report report = check(world, controller.board(world, true));
         if (report.ok()) return;
-        MessageUtils.sendToNearby(world, controller.toCenterPos(), RADIUS, summary(report),
+        MessageUtils.sendToNearby(world, controller.getPos().toCenterPos(), RADIUS, summary(report),
                 MessageUtils.MessageType.CHAT);
     }
 

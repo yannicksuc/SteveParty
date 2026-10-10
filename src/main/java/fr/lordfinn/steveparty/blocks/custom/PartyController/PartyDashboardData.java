@@ -222,7 +222,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
 
     /** Checks the board around the controller (costly: only on demand, and every few seconds while no party runs). */
     public static Board checkBoard(PartyControllerEntity controller, ServerWorld world) {
-        BoardValidator.Report report = BoardValidator.check(world, controller.getPos());
+        BoardValidator.Report report = BoardValidator.check(world, controller.board(world, true));
         List<Issue> issues = new ArrayList<>();
         for (BoardValidator.Issue issue : report.issues()) {
             if (issue.severity() == BoardValidator.Severity.INFO) continue;

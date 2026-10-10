@@ -24,6 +24,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,16 +37,44 @@ import java.util.UUID;
 public final class PartyControllers {
     private static final Map<GlobalPos, PartyControllerEntity> ACTIVE = ServerMemory.forgetOnStop(new LinkedHashMap<>());
 
+    /** The board spaces of the loaded controllers' boards (as they remember them), each with its controller. */
+    private static final Map<GlobalPos, PartyControllerEntity> BOARD_SPACES = ServerMemory.forgetOnStop(new HashMap<>());
+
     private PartyControllers() {}
 
     static void register(PartyControllerEntity controller) {
-        if (controller.getWorld() instanceof ServerWorld && !controller.isRemoved())
+        if (controller.getWorld() instanceof ServerWorld && !controller.isRemoved()) {
             ACTIVE.put(GlobalPos.create(controller.getWorld().getRegistryKey(), controller.getPos()), controller);
+            indexBoard(controller, Set.of(), controller.rememberedBoardSpaces());
+        }
     }
 
     static void unregister(PartyControllerEntity controller) {
-        if (controller.getWorld() instanceof ServerWorld)
+        if (controller.getWorld() instanceof ServerWorld) {
             ACTIVE.remove(GlobalPos.create(controller.getWorld().getRegistryKey(), controller.getPos()), controller);
+            indexBoard(controller, controller.rememberedBoardSpaces(), Set.of());
+        }
+    }
+
+    /** Its board was {@code before}, it is {@code now}. */
+    static void indexBoard(PartyControllerEntity controller, Collection<BlockPos> before, Collection<BlockPos> now) {
+        if (controller.getWorld() == null) return;
+        var dimension = controller.getWorld().getRegistryKey();
+        for (BlockPos pos : before) BOARD_SPACES.remove(GlobalPos.create(dimension, pos), controller);
+        for (BlockPos pos : now) BOARD_SPACES.put(GlobalPos.create(dimension, pos), controller);
+    }
+
+    /**
+     * The party of the board space at {@code pos}: the loaded controller whose board holds it, else the closest one
+     * within {@code fallbackRadius} blocks; only a running party (or one standing on its end if {@code includeEnded}).
+     */
+    static Optional<PartyControllerEntity> ofBoardSpace(World world, BlockPos pos, int fallbackRadius, boolean includeEnded) {
+        PartyControllerEntity owner = BOARD_SPACES.get(GlobalPos.create(world.getRegistryKey(), pos));
+        if (owner != null && !owner.isRemoved() && owner.getWorld() == world) {
+            boolean steppable = owner.getPartyData().isStarted() || (includeEnded && owner.getPartyData().isAtEnd());
+            return steppable ? Optional.of(owner) : Optional.empty();
+        }
+        return closestSteppable(world, pos, fallbackRadius, includeEnded);
     }
 
     /** Snapshot of the loaded server-side controllers (safe to iterate while steps change). */

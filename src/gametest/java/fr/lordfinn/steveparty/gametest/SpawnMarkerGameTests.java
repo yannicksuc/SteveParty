@@ -78,8 +78,8 @@ public class SpawnMarkerGameTests implements SteveGameTest {
 
     /** No running party within reach of {@code pos} (tests of other batches may be playing one nearby). */
     private static boolean noPartyAround(TestContext context, BlockPos pos) {
-        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(context.getWorld(), pos,
-                PartyControllerEntity.START_TILES_SEARCH_RADIUS, false).isEmpty();
+        return PartyControllerEntity.getPartyOfBoardSpace(context.getWorld(), pos,
+                PartyControllerEntity.BOARD_NEARBY_RADIUS, false).isEmpty();
     }
 
     private static boolean near(Vec3d a, Vec3d b) {

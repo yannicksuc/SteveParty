@@ -1429,7 +1429,7 @@
   "gui.steveparty.party_controller.badge.empty_catalogue": "The mini-game catalogue is empty",
   "gui.steveparty.party_controller.blocker.none": "Ready!",
   "gui.steveparty.party_controller.blocker.running": "A party is already running.",
-  "gui.steveparty.party_controller.blocker.no_board": "No board space within 100 blocks of the controller.",
+  "gui.steveparty.party_controller.blocker.no_board": "No start tile or board space within 32 blocks of the controller.",
   "gui.steveparty.party_controller.blocker.no_start": "No start space (a space with a Start Cartridge).",
   "gui.steveparty.party_controller.blocker.no_token": "No token on the start spaces: walk a token onto one.",
   "gui.steveparty.party_controller.blocker.not_allowed": "You can't start a party here (Adventure mode, protected area).",
@@ -1454,7 +1454,7 @@
   "gui.steveparty.party_controller.state.ended": "Party over!",
   "gui.steveparty.party_controller.state.winner": "%s wins the party!",
   "gui.steveparty.party_controller.check.board.none": "No board around the controller",
-  "gui.steveparty.party_controller.check.board.none.hint": "Place §eboard spaces§7 within 100 blocks of the controller\nLink them with the §eTile Linker Brush",
+  "gui.steveparty.party_controller.check.board.none.hint": "Place the §estart tiles§7 within 32 blocks of the controller\nLink the board to them with the §eTile Linker Brush",
   "gui.steveparty.party_controller.check.board.no_start": "Board: %s spaces, no start space",
   "gui.steveparty.party_controller.check.board.no_start.hint": "Put a §eStart cartridge§7 in a space: the tokens start there",
   "gui.steveparty.party_controller.check.board.ok": "Board: %s spaces, %s start spaces",
@@ -3151,5 +3151,7 @@
   "gui.steveparty.spawn_marker.resident.hint": "All the party long: it waits on the marker, plays its show when a token lands, comes back, and goes when the party ends",
   "gui.steveparty.spawn_marker.lift": "Height above the marker",
   "gui.steveparty.spawn_marker.lift.hint": "Half a block up or down (Shift: a block; the wheel too). The mob floats there: the marker can hide under the floor or in a wall",
-  "gui.steveparty.spawn_marker.preview": "The brush, the Wrench or the helmet show where it will be"
+  "gui.steveparty.spawn_marker.preview": "The brush, the Wrench or the helmet show where it will be",
+  "message.steveparty.board.check.unloaded_starts": "%s start tiles in unloaded chunks (their tokens can't be seen):",
+  "message.steveparty.board.summary.unloaded_starts": "%s start tiles not loaded"
 }

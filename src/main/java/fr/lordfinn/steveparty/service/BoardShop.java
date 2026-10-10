@@ -77,8 +77,8 @@ public final class BoardShop {
 
     /** The party running on its board, whose bank is its till; null outside a party. */
     public @Nullable PartyControllerEntity party() {
-        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, space,
-                PartyControllerEntity.START_TILES_SEARCH_RADIUS, false).orElse(null);
+        return PartyControllerEntity.getPartyOfBoardSpace(world, space,
+                PartyControllerEntity.BOARD_NEARBY_RADIUS, false).orElse(null);
     }
 
     /** {@code payment} (emptied) goes to its till; what does not fit is dropped at {@code dropAt}. */
