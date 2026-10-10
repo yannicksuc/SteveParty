@@ -171,7 +171,7 @@ public class PotGameTests implements SteveGameTest {
 
     // ---------------------------------------------------------------- wins
 
-    /** Outside a party: stopping exactly on the pot wins it, the pot starts again from its start. */
+    /** Outside a party: stopping exactly on the pot wins it; no party, no bank: its base is not refilled (nothing made). */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "pot_win")
     public void stoppingOnThePotWinsIt(TestContext context) {
         ItemStack pot = pot(1);
@@ -183,7 +183,8 @@ public class PotGameTests implements SteveGameTest {
             when(context, () -> isOn(context, board.token(), PATH.get(POT)), 200, "it stops on the pot", () -> {
                 context.waitAndRun(2, () -> {
                     context.assertEquals(board.coins(), 7, "the whole pot");
-                    context.assertEquals(PotCartridgeItem.coins(board.cartridge()), 1, "the pot starts again from its start");
+                    context.assertEquals(PotCartridgeItem.coins(board.cartridge()), 0, "no bank: the pot starts again empty");
+                    context.assertTrue(PotCartridgeItem.baseDue(board.cartridge()), "its base still due");
                     context.complete();
                 });
             });

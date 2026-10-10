@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -41,8 +42,10 @@ import java.util.UUID;
 /**
  * The Common pots ({@link PotCartridgeItem}): a token passing over a pot space puts its stake in (all its player has
  * if less, no debt; up to the pot's cap), the token stopping exactly on it wins the pot (its coins, and the items the
- * thieving Pie stole) and the pot starts again from its start. Coins only: the party's coin (the mod's coin outside a
- * party). Several pots are independent: each cartridge holds its own (saved with its tile).
+ * thieving Pie stole) and the pot starts again. Coins only: the party's coin (the mod's coin outside a party). Its base
+ * ({@link PotCartridgeItem#START}) is never made from nothing: it is taken from the party's bank ({@link PartyResources})
+ * when a pot never filled is first used in a party and right after each win (a bank short of coins gives what it has;
+ * outside a party, nothing). Several pots are independent: each cartridge holds its own (saved with its tile).
  * <p>
  * The Pie ({@link MagpieEntity}) lives on the nest ({@link MagpieNestBlock}) nearest to the space, within
  * {@link #NEST_RADIUS} blocks: it flies to fetch the stakes and brings the pot to its winner. The nest is linked to
@@ -109,6 +112,7 @@ public final class CommonPots {
         ItemStack pot = potOf(space);
         ServerPlayerEntity player = playerOf(world, token);
         if (pot == null || player == null) return Stake.NONE;
+        fillBase(pot, token);
         Stake stake = collect(world, space, pot, token, player, true);
         space.update();
         Text name = token.getDisplayName();
@@ -124,6 +128,28 @@ public final class CommonPots {
         }
         if (stake.coins() > 0 || !stake.stolen().isEmpty()) fetch(world, space, token, stake.stolen().isEmpty() ? coinOf(token) : stake.stolen());
         return stake;
+    }
+
+    /**
+     * Its base still due (a pot never filled, or won since) and {@code token} in a running party: the pot is filled up
+     * to its base from that party's bank, as far as the bank and the cap allow, and is no longer due. Outside a party,
+     * nothing (it stays due). @return the coins taken from the bank
+     */
+    public static int fillBase(ItemStack pot, MobEntity token) {
+        if (!PotCartridgeItem.baseDue(pot)) return 0;
+        return fillBase(pot, PartyControllerEntity.getRunningPartyOf(token.getUuid()).orElse(null));
+    }
+
+    /** The same from the bank of {@code party} (null: nothing). */
+    public static int fillBase(ItemStack pot, @Nullable PartyControllerEntity party) {
+        if (!PotCartridgeItem.baseDue(pot) || party == null) return 0;
+        int coins = PotCartridgeItem.coins(pot), cap = PotCartridgeItem.cap(pot);
+        int wanted = Math.max(0, PotCartridgeItem.start(pot) - coins);
+        if (cap > 0) wanted = Math.min(wanted, Math.max(0, cap - coins));
+        int taken = PartyResources.of(party).take(party.getCurrency(PartyCurrency.COIN), wanted);
+        PotCartridgeItem.setCoins(pot, coins + taken);
+        PotCartridgeItem.setBaseDue(pot, false);
+        return taken;
     }
 
     /** Takes the stake (and maybe an item) from {@code player} into {@code pot}. */
@@ -183,14 +209,18 @@ public final class CommonPots {
         ItemStack pot = potOf(space);
         ServerPlayerEntity player = playerOf(world, token);
         if (pot == null || player == null) return Win.NONE;
+        fillBase(pot, token);
         if (PotCartridgeItem.landerPays(pot)) collect(world, space, pot, token, player, false);
         int coins = PotCartridgeItem.coins(pot);
         List<ItemStack> items = PotCartridgeItem.items(pot);
         Win win = new Win(coins, items);
         if (coins > 0) InventoryUtils.giveOrDrop(player, coinOf(token), coins);
         for (ItemStack item : items) player.getInventory().offerOrDrop(item.copy());
-        PotCartridgeItem.setCoins(pot, PotCartridgeItem.start(pot));
+        // It starts again: its base from the party's bank, nothing made
+        PotCartridgeItem.setCoins(pot, 0);
         PotCartridgeItem.setItems(pot, List.of());
+        PotCartridgeItem.setBaseDue(pot, true);
+        fillBase(pot, token);
         updateNest(world, space, pot);
         space.update();
         Vec3d at = BoardSpaces.standPos(world, space.getPos());
@@ -272,11 +302,21 @@ public final class CommonPots {
     }
 
     /**
-     * Every {@link #CARE_INTERVAL} ticks, by the pot space: the nest is linked to it (its coins are the pot), a nest
-     * without its Pie gets one.
+     * Every {@link #CARE_INTERVAL} ticks, by the pot space: a party running on its board fills its base due from its
+     * bank, the nest is linked to it (its coins are the pot), a nest without its Pie gets one.
      * The Pie leaves by itself when the cartridge or the nest goes (MagpieEntity).
      */
     public static void care(ServerWorld world, BoardSpaceBlockEntity space, ItemStack pot) {
+        // A party running on its board: its base, still due, comes from that party's bank at once
+        if (PotCartridgeItem.baseDue(pot)) {
+            PartyControllerEntity party = PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, space.getPos(),
+                    PartyControllerEntity.START_TILES_SEARCH_RADIUS, false).orElse(null);
+            if (party != null) {
+                fillBase(pot, party);
+                updateNest(world, space, pot);
+                space.update();
+            }
+        }
         BlockPos nest = nestOf(world, space.getPos());
         if (nest == null) return;
         updateNest(world, space, pot);
