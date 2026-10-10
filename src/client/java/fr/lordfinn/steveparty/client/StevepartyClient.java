@@ -359,6 +359,10 @@ public class StevepartyClient implements ClientModInitializer {
             }
         });
 
+        // Last: the addons' client side, once Steve Party's own client is set up
+        fr.lordfinn.steveparty.api.StevePartyApi.invokeEntrypoints(fr.lordfinn.steveparty.api.StevePartyApi.CLIENT_ENTRYPOINT,
+                fr.lordfinn.steveparty.api.client.StevePartyClientAddon.class,
+                fr.lordfinn.steveparty.api.client.StevePartyClientAddon::onStevePartyInitializeClient);
     }
 
     private static void initBlockEntitiesRenderers() {
