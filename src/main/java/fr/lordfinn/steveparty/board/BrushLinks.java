@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.block.Block;
@@ -126,9 +127,28 @@ public final class BrushLinks {
         return null;
     }
 
-    /** Whether {@code target} (not a holder) is something the holder at {@code from} links or could link: the brush aims at it. */
+    /**
+     * Whether {@code target} (not a holder) is something the holder at {@code from} links or could link, or a container
+     * or a Spawn Marker its cartridge refuses (said when reached): the brush aims at it.
+     */
     public static boolean aims(World world, @Nullable BlockPos from, int level, BlockPos target) {
-        return from != null && !target.equals(from) && kindFor(of(world, from, level), world, target) != null;
+        if (from == null || target.equals(from)) return false;
+        List<BrushLinkable> kinds = of(world, from, level);
+        return kindFor(kinds, world, target) != null || refusal(world, from, level, target) != null;
+    }
+
+    /**
+     * Why the board space at {@code from} links nothing to {@code target}, a container or a Spawn Marker its cartridge
+     * takes none of (« its cartridge takes no chest », « ...summons no mob »); null when it does, or for anything else.
+     */
+    public static @Nullable String refusal(World world, @Nullable BlockPos from, int level, BlockPos target) {
+        if (from == null) return null;
+        Held held = holder(world, from, level);
+        if (held == null || !(world.getBlockEntity(held.pos()) instanceof BoardSpaceBlockEntity)) return null;
+        if (kindFor(of(world, from, level), world, target) != null) return null;
+        if (CartridgeSpawnMarker.accepts(world, target)) return "message.steveparty.tile_linker_brush.no_spawn";
+        if (CartridgeContainers.accepts(world, target)) return "message.steveparty.tile_linker_brush.no_container";
+        return null;
     }
 
     /** What reaching {@code to} from the holder at {@code from} does, as the client previews it. */

@@ -212,7 +212,7 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         Show show = show(context, cartridge(), chest(new ItemStack(Items.DIRT, 5), new ItemStack(Items.DIRT, 7),
                 new ItemStack(Items.APPLE, 2), new ItemStack(Items.BREAD, 1), new ItemStack(Items.STICK, 3),
                 new ItemStack(Items.STONE, 4), new ItemStack(Items.FEATHER, 9)), TrichaudronPrizes.Start.STARTED);
-        List<ItemStack> available = TrichaudronCartridgeItem.available(show.cartridge(), context.getWorld());
+        List<ItemStack> available = TrichaudronCartridgeItem.available(show.cartridge(), context.getWorld(), null);
         context.assertEquals(available.size(), TrichaudronCartridgeItem.PRIZES, "the first 5 different items");
         context.assertTrue(available.getFirst().isOf(Items.DIRT) && available.getFirst().getCount() == 12, "all the dirt there is");
         context.assertTrue(available.stream().noneMatch(item -> item.isOf(Items.FEATHER)), "not the 6th");
@@ -262,5 +262,39 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         context.assertTrue(left.stream().anyMatch(stack -> stack.isOf(Items.BUCKET)), "the bucket comes back");
         context.assertTrue(TrichaudronCartridgeItem.filters(result).isEmpty() && !TrichaudronCartridgeItem.hasChests(result), "nothing set, no chest");
         context.complete();
+    }
+
+    /**
+     * No chest linked, in a party: its prizes come out of the Party Controller's bank (its own inventory, then its
+     * linked chests), shown over the space as « Party Controller's bank »; the bank empty, it sleeps.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = "trichaudron_party_bank")
+    public void noChestTakesItsPrizesFromThePartyBank(TestContext context) {
+        ServerPlayerEntity player = player(context);
+        BoardSpaceBlockEntity tile = tile(context, TILE, cartridge(new ItemStack(Items.DIAMOND, 2)));
+        MobEntity token = token(context, TILE, player.getUuid());
+        PartyControllerEntity party = DiceTestKit.party(context, player.getUuid(), token);
+        party.getBankItems().setStack(3, new ItemStack(Items.DIAMOND, 5));
+        TrichaudronTileBehavior.refreshSleep(context.getWorld(), tile);
+        context.assertFalse(TrichaudronCartridgeItem.isAsleep(tile.getActiveCartridgeItemStack()), "awake: the bank holds diamonds");
+        TileInfo info = TileInfos.of(tile);
+        context.assertTrue(info.ring().size() == 1 && info.ring().getFirst().isOf(Items.DIAMOND) && has(info, "party_bank"),
+                "the bank's diamonds circle over it, « Party Controller's bank »");
+        boolean[] done = {false};
+        context.assertTrue(TrichaudronPrizes.start(context.getWorld(), tile.getPos(), token, party, () -> done[0] = true)
+                == TrichaudronPrizes.Start.STARTED, "the show starts");
+        List<ItemStack> heads = TrichaudronPrizes.heads(token);
+        int face = faceOf(heads, Items.DIAMOND);
+        when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, WHOLE, "the choice", () -> {
+            TrichaudronPrizes.pick(token, face);
+            when(context, () -> done[0], WHOLE, "the show ends", () -> {
+                context.assertEquals(count(player, Items.DIAMOND), 2, "the prize");
+                context.assertEquals(party.getBankItems().getStack(3).getCount(), 3, "taken out of the Party Controller's bank");
+                party.getBankItems().clear();
+                TrichaudronTileBehavior.refreshSleep(context.getWorld(), tile);
+                context.assertTrue(TrichaudronCartridgeItem.isAsleep(tile.getActiveCartridgeItemStack()), "the bank empty: it sleeps");
+                context.complete();
+            });
+        });
     }
 }

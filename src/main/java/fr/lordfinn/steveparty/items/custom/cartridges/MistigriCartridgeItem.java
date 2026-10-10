@@ -26,7 +26,7 @@ import java.util.Map;
  * The settings live in one component ({@link ModComponents#MISTIGRI_SETTINGS}), by name: {@code w_<sentence>} for the
  * weights, then {@link #COINS_SMALL}, {@link #COINS_BIG}, {@link #EVERYONE}, {@link #BACK}; a missing one is its default.
  */
-public class MistigriCartridgeItem extends CartridgeItem {
+public class MistigriCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** Its tile's witch plum. */
     public static final int COLOR = 0x8A2A6E;
     public static final int MAX_WEIGHT = 9, MAX_COINS = 99, MAX_BACK = 6;

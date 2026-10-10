@@ -195,16 +195,22 @@ public final class FrousseuxThefts {
             return player == null || player.isDisconnected() || !player.isAlive() ? null : player;
         }
 
-        /** It pops up beside the tile, on the token's right, low, and will rise. */
+        /**
+         * It pops up on the space's Spawn Marker, facing its way, or without one beside the tile, on the token's
+         * right; low, and will rise.
+         */
         boolean spawn() {
             FrousseuxEntity one = ModEntities.FROUSSEUX.create(world);
             if (one == null) return false;
             one.setColor(FrousseuxColor.random(world.getRandom()));
             cast(one);
+            BoardMobSpots.Spot spot = BoardMobSpots.marker(world, tile);
+            BoardMobSpots.showStarts(world, spot, task);
             Vec3d stand = BoardSpaces.standPos(world, tile);
             Vec3d side = Vec3d.fromPolar(0, token.getYaw() + 90).multiply(0.9);
-            appearAt = stand.add(side);
-            float yaw = token.getYaw();
+            appearAt = spot != null ? spot.pos() : stand.add(side);
+            float yaw = spot != null ? spot.yaw() : token.getYaw();
+            BoardMobSpots.hold(one, spot);
             one.refreshPositionAndAngles(appearAt.x, appearAt.y - 0.5, appearAt.z, yaw, 0);
             one.setHeadYaw(yaw);
             one.setBodyYaw(yaw);

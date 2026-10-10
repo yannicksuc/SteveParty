@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
+import fr.lordfinn.steveparty.board.BoardText;
+import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import net.minecraft.item.Items;
@@ -80,6 +83,19 @@ public final class TileInfos {
         });
     }
 
+    /** A mob space, for the builders: where its mob appears (its Spawn Marker and when it shows, or beside the space). */
+    private static void spawnMarker(ServerWorld world, ItemStack cartridge, TileInfo.Builder info) {
+        if (!CartridgeSpawnMarker.spawnsMobs(cartridge)) return;
+        BlockPos marker = CartridgeSpawnMarker.marker(cartridge, world);
+        if (marker == null) {
+            info.line(new ItemStack(ModItems.SPAWN_MARKER), TileInfo.dim(TileInfo.line("spawn_marker.none")), TileInfo.Layer.BUILD);
+            return;
+        }
+        boolean resident = world.getBlockEntity(marker) instanceof SpawnMarkerBlockEntity entity && entity.isResident();
+        info.line(new ItemStack(ModItems.SPAWN_MARKER), TileInfo.value(TileInfo.line(resident ? "spawn_marker.resident" : "spawn_marker.on_landing",
+                BoardText.pos(marker))), TileInfo.Layer.BUILD);
+    }
+
     // ---------------------------------------------------------------- what a space tells
 
     /** The game info of {@code space}: its role's ({@code describe}), then a Trap set on it. */
@@ -90,6 +106,7 @@ public final class TileInfos {
         if (cartridge.getItem() instanceof CartridgeItem item) {
             info.title(title(space, item.getBoardSpaceType()), item.menuColor(cartridge));
             space.getBoardSpaceBehavior(cartridge).describe(world, space, cartridge, info);
+            spawnMarker(world, cartridge, info);
         }
         // A role with nothing to tell (a plain space): a trap set on it is what it is
         boolean told = !info.isEmpty();

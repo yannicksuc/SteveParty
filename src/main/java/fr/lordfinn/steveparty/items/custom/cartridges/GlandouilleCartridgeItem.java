@@ -23,7 +23,7 @@ import java.util.List;
  * lone Glandouille that tries to push, can't, and sulks (the tokens stay put). Its tile is brown; a dye on it changes
  * that.
  */
-public class GlandouilleCartridgeItem extends CartridgeItem {
+public class GlandouilleCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** Its tile's brown. */
     public static final int COLOR = 0x9A5A2A;
     public static final int MIN_DISTANCE = -50, MAX_DISTANCE = 50;
