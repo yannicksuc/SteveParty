@@ -85,7 +85,8 @@ final class StandingsHud {
             Row row = rows.getOrDefault(player.token, new Row());
             row.entry = r.entry();
             row.player = player;
-            row.name = ClientHudTexts.INSTANCE.fit(player.name, layout.nameWidth());
+            // Whole: a name wider than the names' column scrolls in it
+            row.name = player.name;
             row.y = r.y();
             if (Float.isNaN(row.shownY)) row.shownY = row.y;
             if (row.lastStars != Integer.MIN_VALUE && row.lastStars != player.stars) row.starsAt = now;
@@ -114,8 +115,9 @@ final class StandingsHud {
         if (layout.bonuses()) {
             int bx = px + layout.bonusColumn() - 2;
             HudPaint.draw(context, HudPaint.shape(Form.PILL, 34 + 4, 12, HudPaint.NEUTRAL, HudPaint.OUTLINE), bx - PAD, StandingsLayout.TOP + 2 - PAD, alpha);
+            // In the pill: from 5 pixels after its left edge to 3 before its right one
             TurnBarHud.darkText(context, Text.translatable("hud.steveparty.party.bonus").getString(),
-                    px + layout.bonusColumn() + 3, StandingsLayout.TOP + 4, HudPaint.NEUTRAL.outline(), 0xFFFFFFFF, alpha);
+                    px + layout.bonusColumn() + 3, StandingsLayout.TOP + 4, 34 + 4 - 5 - 3, HudPaint.NEUTRAL.outline(), 0xFFFFFFFF, alpha);
         }
         for (StandingsLayout.Row gap : gaps) {
             String n = Integer.toString(gap.hidden());
@@ -144,7 +146,9 @@ final class StandingsHud {
             HudPaint.draw(context, HudPaint.shape(Form.PILL, d, d, rampRank, HudPaint.OUTLINE | HudPaint.BAND), rx - PAD, y + 1 - PAD, alpha);
             String r = Integer.toString(rank);
             int rw = ClientHudTexts.INSTANCE.width(r);
-            TurnBarHud.darkText(context, r, rx + (d - rw - 1) / 2, y + 1 + (d - 8) / 2, rampRank.outline(),
+            // Centred in the medallion, inside its outline (a rank too wide scrolls there)
+            int tx = rx + Math.max(1, (d - rw - 1) / 2);
+            TurnBarHud.darkText(context, r, tx, y + 1 + (d - 8) / 2, rx + d - 1 - tx, rampRank.outline(),
                     rampRank == HudPaint.NEUTRAL ? 0xFFFFFFFF : rampRank.hi(), alpha);
         }
         // The plate (mine: a gold outline round it), the head, the pawn's name
@@ -156,7 +160,8 @@ final class StandingsHud {
                 px + 3 - PAD, y + (h - head) / 2 - PAD, alpha);
         TurnBarHud.head(context, player, px + 3 + (head - 8) / 2, y + (h - head) / 2 + (head - 8) / 2, alpha);
         int textY = y + (h - 8) / 2;
-        TurnBarHud.darkText(context, row.name, px + layout.nameX(), textY, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
+        // The names' column, the font's trailing pixel included (the stars' column is 6 pixels further)
+        TurnBarHud.darkText(context, row.name, px + layout.nameX(), textY, layout.nameWidth() + 1, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
         // Stars and coins, right-aligned three-digit columns
         digits(context, player.stars, px + layout.starColumn(), textY, row.starsAt, alpha, now);
         digits(context, player.coins, px + layout.coinColumn(), textY, row.coinsAt, alpha, now);
@@ -176,10 +181,11 @@ final class StandingsHud {
     private void digits(DrawContext context, int value, int x, int y, double changedAt, float alpha, double now) {
         String s = Integer.toString(value);
         int w = ClientHudTexts.INSTANCE.width(s);
-        int tx = x + layout.digitsWidth() - w;
+        // Right-aligned in the column (the font's trailing pixel after it); a number too wide scrolls in it
+        int tx = Math.max(x, x + layout.digitsWidth() - w), room = x + layout.digitsWidth() + 1 - tx;
         float pop = (float) ((now - changedAt) / POP_TICKS);
         if (pop >= 1) {
-            TurnBarHud.darkText(context, s, tx, y, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
+            TurnBarHud.darkText(context, s, tx, y, room, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
             return;
         }
         float scale = 1 + 0.5f * (1 - Easing.easeOutBack(pop));
@@ -189,7 +195,7 @@ final class StandingsHud {
         matrices.translate(cx, cy, 50);
         matrices.scale(scale, scale, 1);
         matrices.translate(-cx, -cy, 0);
-        TurnBarHud.darkText(context, s, tx, y, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
+        TurnBarHud.darkText(context, s, tx, y, room, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
         matrices.pop();
     }
 

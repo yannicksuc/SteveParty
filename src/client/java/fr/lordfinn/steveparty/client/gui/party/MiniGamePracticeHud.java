@@ -12,7 +12,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -97,12 +96,13 @@ public final class MiniGamePracticeHud {
         Text label = voter
                 ? Text.translatable(ready ? "hud.steveparty.minigame.practice.ready" : "hud.steveparty.minigame.practice", keyText(), count, total)
                 : Text.translatable("hud.steveparty.minigame.practice.watching", count, total);
-        OrderedText text = HudDraw.fit(label, screenWidth - 40);
+        // One line at most screenWidth - 40 wide: a longer one scrolls in the chip
+        int textWidth = Math.min(font.getWidth(label), screenWidth - 40);
         // Under the party's notice (or turn bar) when it is at the top of the screen, centred on it, clear of the
         // standings
         float[] spot = PartyHud.practiceSpot(screenWidth);
         int y = Math.round(spot[1]);
-        int width = font.getWidth(text) + 14;
+        int width = textWidth + 14;
         float centre = spot[0];
         float[] list = PartyHud.standingsBounds();
         if (list != null) {
@@ -114,7 +114,7 @@ public final class MiniGamePracticeHud {
         }
         int x = Math.round(centre - width / 2f);
         HudDraw.plate(context, ready ? Plate.GREEN : Plate.ORANGE, x, y, width, CHIP_HEIGHT, 1);
-        HudDraw.text(context, text, x + 7, y + 4, HudDraw.TEXT, 1);
+        HudDraw.text(context, label, x + 7, y + 4, textWidth, HudDraw.TEXT, 1);
 
         // Who is ready: a plate per player, on as many rows as needed
         List<List<MiniGamePagePayloads.Practice.Voter>> rows = new ArrayList<>();
@@ -139,7 +139,7 @@ public final class MiniGamePracticeHud {
             for (MiniGamePagePayloads.Practice.Voter each : line) {
                 int w = nameWidth(font, each);
                 HudDraw.plate(context, each.ready() ? Plate.GREEN : Plate.TEAL, left, top, w, NAME_HEIGHT, 1);
-                HudDraw.text(context, HudDraw.fit(Text.literal(each.name()), NAME_MAX), left + 5, top + 3, each.ready() ? HudDraw.TEXT : HudDraw.TEXT_SOFT, 1);
+                HudDraw.text(context, each.name(), left + 5, top + 3, w - 10, each.ready() ? HudDraw.TEXT : HudDraw.TEXT_SOFT, 1);
                 left += w + GAP;
             }
             top += NAME_HEIGHT + GAP;

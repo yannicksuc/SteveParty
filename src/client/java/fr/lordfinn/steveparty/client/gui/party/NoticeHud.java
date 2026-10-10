@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -31,7 +30,9 @@ final class NoticeHud {
     /** A notice, laid out. */
     private static final class Line {
         Identifier icon;
-        OrderedText text;
+        Text text;
+        /** The room of the text on the plate: its width, at most what the notice has (a longer one scrolls). */
+        int textWidth;
         int plateWidth;
         boolean gold;
         String badge;
@@ -87,14 +88,16 @@ final class NoticeHud {
         line.replay = model.replay && model.stepType == PartyStepType.TOKEN_TURN ? Text.translatable("hud.steveparty.party.replay") : null;
         line.replayWidth = line.replay == null ? 0 : font.getWidth(line.replay) - 1 + 10;
         int fixed = 4 + 9 + 4 + 5 + (line.badge != null ? line.badgeWidth + GAP + 1 : 0) + (line.replay != null ? line.replayWidth + GAP + 1 : 0);
-        line.text = HudDraw.fit(model.actionText, Math.max(30, room - fixed));
-        line.plateWidth = 4 + 9 + 4 + Math.max(0, font.getWidth(line.text) - 1) + 5;
+        line.text = model.actionText;
+        line.textWidth = Math.min(font.getWidth(line.text), Math.max(30, room - fixed));
+        line.plateWidth = 4 + 9 + 4 + Math.max(0, line.textWidth - 1) + 5;
         line.width = 2 * PAD + line.plateWidth + (line.badge != null ? GAP + 1 + line.badgeWidth : 0) + (line.replay != null ? GAP + 1 + line.replayWidth : 0);
     }
 
     private static void copy(Line from, Line to) {
         to.icon = from.icon;
         to.text = from.text;
+        to.textWidth = from.textWidth;
         to.plateWidth = from.plateWidth;
         to.gold = from.gold;
         to.badge = from.badge;
@@ -130,7 +133,7 @@ final class NoticeHud {
         HudPaint.draw(context, HudPaint.shape(Form.CUT1, line.plateWidth, H, line.gold ? HudPaint.PLATE_GOLD : HudPaint.PLATE,
                 HudPaint.SHADOW | HudPaint.OUTLINE), x, y, alpha);
         HudDraw.icon(context, line.icon, x + PAD + 4, y + PAD + 3, alpha);
-        HudDraw.text(context, line.text, x + PAD + 17, y + PAD + 4, HudPaint.TEXT_DARK, alpha);
+        HudDraw.text(context, line.text, x + PAD + 17, y + PAD + 4, line.textWidth, HudPaint.TEXT_DARK, alpha);
         int cx = x + line.plateWidth + GAP + 1;
         if (line.badge != null) {
             Ramp ramp = line.warn ? RED : HudPaint.GOLD;
@@ -143,13 +146,13 @@ final class NoticeHud {
             matrices.scale(scale, scale, 1);
             matrices.translate(-mx, -my, 0);
             HudPaint.draw(context, HudPaint.shape(Form.PILL, line.badgeWidth, H, ramp, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), cx, y, alpha);
-            HudDraw.text(context, line.badge, cx + PAD + 5, y + PAD + 4, line.warn ? 0xFFFFFFFF : ramp.outline(), alpha);
+            HudDraw.text(context, line.badge, cx + PAD + 5, y + PAD + 4, line.badgeWidth - 9, line.warn ? 0xFFFFFFFF : ramp.outline(), alpha);
             matrices.pop();
             cx += line.badgeWidth + GAP + 1;
         }
         if (line.replay != null) {
             HudPaint.draw(context, HudPaint.shape(Form.PILL, line.replayWidth, H, GREEN, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), cx, y, alpha);
-            HudDraw.text(context, line.replay, cx + PAD + 5, y + PAD + 4, GREEN.outline(), alpha);
+            HudDraw.text(context, line.replay, cx + PAD + 5, y + PAD + 4, line.replayWidth - 9, GREEN.outline(), alpha);
         }
     }
 }

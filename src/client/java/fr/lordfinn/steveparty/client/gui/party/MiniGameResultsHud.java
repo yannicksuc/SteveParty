@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.gui.party;
 
 import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.utils.Argb;
@@ -17,6 +18,8 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * The end of a party's mini-game, in the style of the mini-game card ({@link MiniGameCardHud}): the results card, in
@@ -85,20 +88,26 @@ public final class MiniGameResultsHud {
     private static void drawTestLabel(DrawContext context, String title) {
         TextRenderer font = HudDraw.font();
         Text name = title.isEmpty() ? Text.translatable("item.steveparty.mini_game_page") : Text.literal(title);
-        OrderedText text = HudDraw.fit(Text.translatable("hud.steveparty.minigame.test", name), context.getScaledWindowWidth() - 40);
-        int width = font.getWidth(text) + 14, x = (context.getScaledWindowWidth() - width) / 2, y = 6;
+        Text text = Text.translatable("hud.steveparty.minigame.test", name);
+        // One line at most the screen's width - 40: a longer one scrolls in the chip
+        int textWidth = Math.min(font.getWidth(text), context.getScaledWindowWidth() - 40);
+        int width = textWidth + 14, x = (context.getScaledWindowWidth() - width) / 2, y = 6;
         HudDraw.plate(context, Plate.ORANGE, x, y, width, 15, 1);
-        HudDraw.text(context, text, x + 7, y + 4, HudDraw.TEXT, 1);
+        HudDraw.text(context, text, x + 7, y + 4, textWidth, HudDraw.TEXT, 1);
     }
 
     private static void drawResults(DrawContext context, MiniGameResults shown, float alpha, float slide) {
         TextRenderer font = HudDraw.font();
         int screenWidth = context.getScaledWindowWidth(), screenHeight = context.getScaledWindowHeight();
         int room = screenHeight - ROOM_ABOVE - ROOM_BELOW;
-        boolean hasTitle = !shown.title().isEmpty();
-        int head = PAD + 12 + (hasTitle ? 10 : 0) + 3;
+        // The title and the note under the rows wrap: the card grows with them
+        List<OrderedText> title = shown.title().isEmpty() ? List.of() : UiText.wrap(font, Text.literal(shown.title()), WIDTH - 2 * PAD);
+        Text note = Text.translatable(shown.kind() == MiniGameResults.Kind.PRACTICE
+                ? "hud.steveparty.minigame.results.practice" : "hud.steveparty.minigame.results.test");
+        List<OrderedText> noteLines = shown.test() ? UiText.wrap(font, note, WIDTH - 2 * PAD) : List.of();
+        int head = PAD + 12 + UiText.LINE_H * title.size() + 3;
         int rows = Math.max(1, Math.min(shown.rows().size(), Math.max(1, (room - head - PAD) / ROW)));
-        int height = head + rows * ROW + PAD - 2 + (shown.test() ? 11 : 0);
+        int height = head + rows * ROW + PAD - 2 + (noteLines.isEmpty() ? 0 : 1 + UiText.LINE_H * noteLines.size());
         int x = (screenWidth - WIDTH) / 2;
         int y = Math.max(4, ROOM_ABOVE + (room - height) / 2);
 
@@ -107,20 +116,17 @@ public final class MiniGameResultsHud {
         matrices.translate(0, slide, 0);
         HudDraw.plate(context, Plate.TEAL, x, y, WIDTH, height, alpha);
         Text heading = Text.translatable("hud.steveparty.minigame.results").styled(style -> style.withBold(true));
-        HudDraw.text(context, heading, x + (WIDTH - font.getWidth(heading)) / 2, y + PAD, HudDraw.TEXT, alpha);
-        if (hasTitle) {
-            OrderedText title = HudDraw.fit(Text.literal(shown.title()), WIDTH - 2 * PAD);
-            HudDraw.text(context, title, x + (WIDTH - font.getWidth(title)) / 2, y + PAD + 11, HudDraw.TEXT_SOFT, alpha);
+        HudDraw.centered(context, heading, x + PAD, y + PAD, WIDTH - 2 * PAD, HudDraw.TEXT, alpha);
+        for (int i = 0; i < title.size(); i++) {
+            HudDraw.centered(context, title.get(i), x + PAD, y + PAD + 11 + UiText.LINE_H * i, WIDTH - 2 * PAD, HudDraw.TEXT_SOFT, alpha);
         }
         int top = y + head;
         for (int i = 0; i < rows && i < shown.rows().size(); i++) {
             drawRow(context, font, shown, shown.rows().get(i), x + PAD, top, WIDTH - 2 * PAD, alpha);
             top += ROW;
         }
-        if (shown.test()) {
-            Text note = Text.translatable(shown.kind() == MiniGameResults.Kind.PRACTICE
-                    ? "hud.steveparty.minigame.results.practice" : "hud.steveparty.minigame.results.test");
-            HudDraw.text(context, note, x + (WIDTH - font.getWidth(note)) / 2, top + 1, HudDraw.TEXT_WARN, alpha);
+        for (int i = 0; i < noteLines.size(); i++) {
+            HudDraw.centered(context, noteLines.get(i), x + PAD, top + 1 + UiText.LINE_H * i, WIDTH - 2 * PAD, HudDraw.TEXT_WARN, alpha);
         }
         matrices.pop();
     }
@@ -134,7 +140,7 @@ public final class MiniGameResultsHud {
             HudDraw.fill(context, x, y, x + CHIP, y + ROW - 2, HudDraw.OUTLINE, alpha);
             HudDraw.fill(context, x + 1, y + 1, x + CHIP - 1, y + ROW - 3, color, alpha);
             Text place = row.place() <= 9 ? Text.translatable("hud.steveparty.party.rank." + row.place()) : Text.literal(String.valueOf(row.place()));
-            HudDraw.text(context, place, x + (CHIP - font.getWidth(place)) / 2, y + 2, HudDraw.TEXT, alpha);
+            HudDraw.centered(context, place, x + 1, y + 2, CHIP - 2, HudDraw.TEXT, alpha);
             left += CHIP + 4;
         }
         // What was paid, from the right
@@ -153,7 +159,7 @@ public final class MiniGameResultsHud {
             names.append(Text.translatable("hud.steveparty.minigame.results.participant")).append(" ");
         }
         names.append(String.join(", ", row.names()));
-        HudDraw.text(context, HudDraw.fit(names, right - left - 4), left, y + 2, color, alpha);
+        HudDraw.text(context, names, left, y + 2, right - left - 4, color, alpha);
     }
 
     /** « +10 [item] », right-aligned on {@code right}. @return the new right edge */
@@ -169,8 +175,9 @@ public final class MiniGameResultsHud {
             HudDepth.item(context, () -> context.drawItem(item, 0, 0));
             matrices.pop();
         }
-        int textX = iconX - 2 - font.getWidth(text);
-        HudDraw.text(context, text, textX, y + 2, HudDraw.TEXT_MINE, alpha);
+        // The row makes room for it (the names take what is left)
+        int textWidth = font.getWidth(text), textX = iconX - 2 - textWidth;
+        HudDraw.text(context, text, textX, y + 2, textWidth, HudDraw.TEXT_MINE, alpha);
         return textX - 6;
     }
 }

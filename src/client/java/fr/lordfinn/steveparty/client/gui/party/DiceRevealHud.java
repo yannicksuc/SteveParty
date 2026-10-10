@@ -150,8 +150,8 @@ public final class DiceRevealHud {
             int x = x0 + box.x();
             switch (box.kind()) {
                 case PLATE -> drawPlate(context, box, x, y, plate, mine, alpha);
-                case PLUS -> HudDraw.shadowed(context, "+", x, y + 4, HudPaint.TEXT, alpha);
-                case EQUALS -> HudDraw.shadowed(context, "=", x, y + 4, HudPaint.TEXT, alpha);
+                case PLUS -> HudDraw.shadowed(context, "+", x, y + 4, box.width(), HudPaint.TEXT, alpha);
+                case EQUALS -> HudDraw.shadowed(context, "=", x, y + 4, box.width(), HudPaint.TEXT, alpha);
                 case DIE -> {
                     int i = box.index();
                     if (i < faces.size()) {
@@ -199,7 +199,9 @@ public final class DiceRevealHud {
         HudPaint.draw(context, HudPaint.shape(Form.CUT1, box.width(), H, gold ? HudPaint.PLATE_GOLD : HudPaint.PLATE,
                 HudPaint.SHADOW | HudPaint.OUTLINE), x - PAD, y - PAD, alpha);
         HudDraw.icon(context, HudDraw.ICON_DICE, x + DiceRevealLayout.PLATE_ICON_X, y + 3, alpha);
-        HudDraw.text(context, text, x + DiceRevealLayout.PLATE_TEXT_X, y + 4, HudPaint.TEXT_DARK, alpha);
+        // Its room: the plate less the icon and the right margin (the font's trailing pixel in it)
+        HudDraw.text(context, text, x + DiceRevealLayout.PLATE_TEXT_X, y + 4,
+                box.width() - DiceRevealLayout.PLATE_TEXT_X - DiceRevealLayout.PLATE_RIGHT + 1, HudPaint.TEXT_DARK, alpha);
     }
 
     /**
@@ -228,8 +230,8 @@ public final class DiceRevealHud {
         matrices.translate(-mx, -my, 0);
         float a = waiting ? alpha * 0.8f : alpha;
         HudPaint.draw(context, HudPaint.shape(Form.PILL, w, H, ramp, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), x - PAD, y - PAD, a);
-        int textWidth = HudDraw.font().getWidth(text) - 1;
-        HudDraw.text(context, text, x + (w - textWidth + 1) / 2, y + 4, colour, a);
+        // Centred in the pill less 5 pixels on the left and 3 on the right (the font's trailing pixel), as before
+        HudDraw.centered(context, text, x + 5, y + 4, w - 8, colour, a);
         matrices.pop();
     }
 }
