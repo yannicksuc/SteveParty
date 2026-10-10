@@ -18,7 +18,13 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.Mode;
+import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.Opening;
 import fr.lordfinn.steveparty.items.custom.cartridges.ThresholdCartridgeItem.Operator;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ThresholdTileBehavior;
+import fr.lordfinn.steveparty.dice.DiceOutcome;
+import fr.lordfinn.steveparty.service.ThresholdGates;
+import net.minecraft.nbt.NbtCompound;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.service.TurnMoves;
 import net.minecraft.block.Block;
@@ -35,6 +41,8 @@ import net.minecraft.util.math.BlockPos;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -78,16 +86,17 @@ public class ThresholdGameTests implements SteveGameTest {
         return pig;
     }
 
-    private static PartyControllerEntity party(TestContext context, MobEntity token) {
+    /** A party of {@code tokens}, three rounds, each token's turn in order; the first turn started. */
+    private static PartyControllerEntity party(TestContext context, MobEntity... tokens) {
         context.setBlockState(CONTROLLER.down(), Blocks.STONE);
         context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
         PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
         PartyData data = new PartyData();
-        data.addToken(token.getUuid());
+        for (MobEntity token : tokens) data.addToken(token.getUuid());
         data.addStep(new PartyStep());
-        data.addStep(new TokenTurnPartyStep(token.getUuid(), null));
-        data.addStep(new TokenTurnPartyStep(token.getUuid(), null));
-        data.addStep(new TokenTurnPartyStep(token.getUuid(), null));
+        for (int round = 0; round < 3; round++) {
+            for (MobEntity token : tokens) data.addStep(new TokenTurnPartyStep(token.getUuid(), null));
+        }
         controller.setPartyData(data);
         controller.nextStep();
         controller.nextStep();
@@ -137,7 +146,10 @@ public class ThresholdGameTests implements SteveGameTest {
         context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
     }
 
-    /** Rolls {@code faces} for {@code token} (as a die would: see TokenMovementService) and moves it. */
+    /**
+     * Rolls {@code faces} for {@code token} (as a die would: see TokenMovementService) and moves it, unless the throw is
+     * a missed try at a barrier.
+     */
     private static void roll(TestContext context, MobEntity token, int... faces) {
         int total = 0;
         List<Integer> list = new ArrayList<>();
@@ -147,7 +159,8 @@ public class ThresholdGameTests implements SteveGameTest {
         }
         BoardSpaceBlockEntity from = BoardSpaces.boardSpaceOf(token);
         TurnMoves.record(token, total, list, from == null ? null : from.getPos());
-        TokenMovementService.moveEntityOnBoard(token, total);
+        if (!ThresholdTileBehavior.retry(context.getWorld(), token, DiceOutcome.ofSteps(total)))
+            TokenMovementService.moveEntityOnBoard(token, total);
     }
 
     private static int steps(MobEntity token) {
@@ -156,6 +169,14 @@ public class ThresholdGameTests implements SteveGameTest {
 
     private static ItemStack obstacle(Operator operator, int value) {
         return ThresholdCartridgeItem.with(ModItems.THRESHOLD_CARTRIDGE, operator, value);
+    }
+
+    private static ItemStack barrier(Operator operator, int value, Opening opening) {
+        return ThresholdCartridgeItem.barrier(ModItems.THRESHOLD_CARTRIDGE, operator, value, opening);
+    }
+
+    private static int step(PartyControllerEntity controller) {
+        return controller.getPartyData().getStepIndex();
     }
 
     // ---------------------------------------------------------------- the conditions
@@ -182,6 +203,11 @@ public class ThresholdGameTests implements SteveGameTest {
         context.assertEquals(ThresholdCartridgeItem.value(plain), ThresholdCartridgeItem.DEFAULT_VALUE, "7 by default");
         context.assertEquals(ThresholdCartridgeItem.label(plain), Text.translatable("gui.steveparty.threshold.at_least", 7), "its label");
         context.assertEquals(ThresholdCartridgeItem.label(obstacle(Operator.LESS, 4)), Text.translatable("gui.steveparty.threshold.less", 4), "another label");
+        // A cartridge set before the modes is tested at each passage
+        context.assertEquals(ThresholdCartridgeItem.mode(plain), Mode.EACH_PASSAGE, "each passage by default");
+        context.assertEquals(ThresholdCartridgeItem.opening(plain), Opening.SHARED, "opened for all by default");
+        context.assertTrue(ThresholdCartridgeItem.opensForAll(barrier(Operator.AT_LEAST, 5, Opening.SHARED)), "a barrier for all");
+        context.assertTrue(!ThresholdCartridgeItem.opensForAll(barrier(Operator.AT_LEAST, 5, Opening.EACH)), "a barrier for each");
         context.complete();
     }
 
@@ -297,5 +323,115 @@ public class ThresholdGameTests implements SteveGameTest {
                 context.complete();
             });
         });
+    }
+
+    // ---------------------------------------------------------------- barriers
+
+    /**
+     * A barrier >= 5: a roll of 3 is stopped there (a « Stop » landing); its next throw, 4, is a try that misses: it
+     * stays there and its turn ends; then a 5 clears it and it walks those 5 steps from the barrier.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 900)
+    public void aBarrierIsTriedAgainEachTurn(TestContext context) {
+        path(context, 1, barrier(Operator.AT_LEAST, 5, Opening.SHARED), false);
+        List<Played> played = record(context);
+        PigEntity pig = token(context, PATH.get(0));
+        PartyControllerEntity controller = party(context, pig);
+        context.waitAndRun(2, () -> {
+            roll(context, pig, 1, 2);
+            when(context, () -> step(controller) >= 2, 200, "the first turn ends", () -> {
+                context.assertTrue(isOn(context, pig, PATH.get(1)), "stopped by the barrier");
+                context.assertTrue(landed(played, context, PATH.get(1), Landing.STOP), "a « Stop » landing");
+                roll(context, pig, 4);
+                when(context, () -> step(controller) >= 3, 200, "the missed try ends the turn", () -> {
+                    context.assertTrue(isOn(context, pig, PATH.get(1)), "still blocked");
+                    context.assertEquals(steps(pig), 0, "no step walked");
+                    roll(context, pig, 2, 3);
+                    when(context, () -> step(controller) >= 4, 250, "the third turn ends", () -> {
+                        context.assertTrue(isOn(context, pig, PATH.get(6)), "cleared: it walked its 5 steps");
+                        context.complete();
+                    });
+                });
+            });
+        });
+    }
+
+    /** Opened for all: the first success opens it, the next token goes by with a low roll, untested. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void aBarrierOpenedForAllLetsEveryoneThrough(TestContext context) {
+        path(context, 1, barrier(Operator.AT_LEAST, 5, Opening.SHARED), false);
+        PigEntity first = token(context, PATH.get(0));
+        PigEntity second = token(context, PATH.get(0));
+        PartyControllerEntity controller = party(context, first, second);
+        context.waitAndRun(2, () -> {
+            roll(context, first, 5);
+            when(context, () -> step(controller) >= 2, 250, "the first token's turn ends", () -> {
+                context.assertTrue(isOn(context, first, PATH.get(5)), "it cleared it and walked 5 steps");
+                BlockPos at = context.getAbsolutePos(PATH.get(1));
+                context.assertTrue(ThresholdGates.isOpenFor(context.getWorld(), at, second, true), "open for the others");
+                roll(context, second, 2);
+                when(context, () -> step(controller) >= 3, 200, "the second token's turn ends", () -> {
+                    context.assertTrue(isOn(context, second, PATH.get(2)), "it went by with a 2");
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    /** Each their own: the first token clears it, the next one still has to: a 2 is stopped there. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 600)
+    public void aBarrierForEachStopsEveryToken(TestContext context) {
+        path(context, 1, barrier(Operator.AT_LEAST, 5, Opening.EACH), false);
+        PigEntity first = token(context, PATH.get(0));
+        PigEntity second = token(context, PATH.get(0));
+        PartyControllerEntity controller = party(context, first, second);
+        context.waitAndRun(2, () -> {
+            roll(context, first, 5);
+            when(context, () -> step(controller) >= 2, 250, "the first token's turn ends", () -> {
+                context.assertTrue(isOn(context, first, PATH.get(5)), "it cleared it");
+                roll(context, second, 2);
+                when(context, () -> step(controller) >= 3, 200, "the second token's turn ends", () -> {
+                    context.assertTrue(isOn(context, second, PATH.get(1)), "stopped: it has not cleared it");
+                    BlockPos at = context.getAbsolutePos(PATH.get(1));
+                    context.assertTrue(controller.getPartyData().getThresholdGates().clearedAt(at)
+                            .equals(Set.of(first.getUuid())), "only the first cleared it");
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    /** Stopping exactly on a barrier not cleared is a test too: a miss is a « Stop » landing, the barrier closed. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
+    public void stoppingOnABarrierIsATest(TestContext context) {
+        path(context, 1, barrier(Operator.DOUBLE, 0, Opening.SHARED), false);
+        List<Played> played = record(context);
+        PigEntity pig = token(context, PATH.get(0));
+        PartyControllerEntity controller = party(context, pig);
+        context.waitAndRun(2, () -> {
+            roll(context, pig, 1);
+            when(context, () -> step(controller) >= 2, 200, "the turn ends", () -> {
+                context.assertTrue(isOn(context, pig, PATH.get(1)), "on the barrier");
+                context.assertTrue(landed(played, context, PATH.get(1), Landing.STOP), "a « Stop » landing");
+                context.assertTrue(!ThresholdGates.isOpenFor(context.getWorld(), context.getAbsolutePos(PATH.get(1)), pig, true), "still closed");
+                context.complete();
+            });
+        });
+    }
+
+    /** Who cleared the barriers is saved with the party, and a new party starts with them all closed. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void barriersAreSavedWithTheParty(TestContext context) {
+        PartyData data = new PartyData();
+        BlockPos at = new BlockPos(12, 64, -3);
+        UUID a = UUID.randomUUID(), b = UUID.randomUUID();
+        data.getThresholdGates().add(at, a);
+        data.getThresholdGates().add(at, b);
+        PartyData loaded = new PartyData(data.toNbt(new NbtCompound()));
+        context.assertTrue(loaded.getThresholdGates().clearedAt(at).equals(Set.of(a, b)), "reloaded");
+        context.assertTrue(loaded.getThresholdGates().clearedAt(at.up()).isEmpty(), "another space: closed");
+        loaded.reset();
+        context.assertTrue(loaded.getThresholdGates().isEmpty(), "a new party: every barrier closed");
+        context.complete();
     }
 }
