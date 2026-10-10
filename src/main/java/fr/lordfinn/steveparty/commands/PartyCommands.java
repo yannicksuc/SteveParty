@@ -6,6 +6,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
+import fr.lordfinn.steveparty.service.TrichaudronPrizes;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.argument.BlockPosArgumentType;
@@ -70,6 +71,11 @@ public class PartyCommands {
                                 .then(argument("controller", BlockPosArgumentType.blockPos())
                                         .executes(context -> exclude(context.getSource(),
                                                 UuidArgumentType.getUuid(context, "token"), getPos(context))))))
+                // The button in the chat once a Trichaudron space's player has been choosing too long
+                .then(literal("trichaudron_random")
+                        .then(argument("token", UuidArgumentType.uuid())
+                                .executes(context -> TrichaudronPrizes.pickAtRandom(UuidArgumentType.getUuid(context, "token"),
+                                        context.getSource().getPlayerOrThrow()) ? 1 : 0)))
                 .then(literal("party").requires(source -> source.hasPermissionLevel(OP_LEVEL))
                         .then(literal("stop")
                                 .executes(context -> stop(context.getSource(), null))
