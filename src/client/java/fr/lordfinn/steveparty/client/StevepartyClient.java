@@ -440,6 +440,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.GLANDOUILLE, GlandouilleRenderer::new);
         EntityRendererRegistry.register(ModEntities.FROUSSEUX, FrousseuxRenderer::new);
         EntityRendererRegistry.register(ModEntities.TRICHAUDRON, TrichaudronRenderer::new);
+        EntityRendererRegistry.register(ModEntities.TRICHAUDRON_PART, EmptyEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.BOOMCART, BoomcartRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI, MistigriRenderer::new);
         EntityRendererRegistry.register(ModEntities.MISTIGRI_DIE, MistigriDieRenderer::new);

@@ -5,8 +5,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TrichaudronTileBehavior;
 import fr.lordfinn.steveparty.board.TileInfo;
-import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronPartEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
@@ -27,28 +28,39 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.TranslatableTextContent;
+import net.minecraft.util.Hand;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
+import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
 import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
- * The Trichaudron space: its prizes come out of its linked chests (never from nothing): the chosen head's prize is taken
- * out of them, as many as set but never more than they hold; its menu's items filter them, without any the first items
- * found; without chest or with nothing to give it sleeps; the Trichaudron and its die are board actors removed at the
- * end (or when the party ends in the middle); the recipe.
+ * The Trichaudron space: one head per prize on offer (1 to 5), each head a distinct prize, shuffled in unseen (a blind
+ * pick) or shown at its mouth (a true choice); its player picks a head by hitting or clicking its hit box; the chosen
+ * head spits (harmlessly, whoever stands at the token) and its prize is taken out of the chests (never from nothing):
+ * as many as set but never more than they hold; a prize won is no longer offered for the rest of the party unless the
+ * cartridge always offers the same; its menu's items filter them, without any the first items found; without chest
+ * or with nothing to offer it sleeps; the Trichaudron is a board actor removed at the end (or when the party ends in
+ * the middle), its hit boxes with it; the recipe. And its hit boxes on a wild one: a blow on a head or a neck goes to
+ * its body, a head's harder.
  */
 public class TrichaudronSpaceGameTests implements FabricGameTest {
     private static final String BATCH = "trichaudron_space";
     private static final BlockPos TILE = new BlockPos(3, 1, 3), CHEST = new BlockPos(5, 1, 3);
     private static final int WHOLE = TrichaudronPrizes.WHOLE + 20;
+    /** Until its heads are held out (rise, dive, emerge), with some margin. */
+    private static final int TO_CHOICE = TrichaudronPrizes.RISE_TICKS + TrichaudronPrizes.DIVE_TICKS + TrichaudronPrizes.EMERGE_TICKS + 20;
 
     private record Show(ServerPlayerEntity player, MobEntity token, PartyControllerEntity party, BoardSpaceBlockEntity tile,
                         boolean[] done, ChestBlockEntity chest) {
@@ -60,6 +72,11 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
             int count = 0;
             for (int i = 0; i < chest.size(); i++) if (chest.getStack(i).isOf(item)) count += chest.getStack(i).getCount();
             return count;
+        }
+
+        /** The show again (another landing of the same token), a fresh {@code done}. */
+        TrichaudronPrizes.Start again(TestContext context, boolean[] done) {
+            return TrichaudronPrizes.start(context.getWorld(), tile.getPos(), token, party, () -> done[0] = true);
         }
     }
 
@@ -101,13 +118,27 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         return new Show(player, token, party, tile, done, chest);
     }
 
-    /** The face whose head holds {@code item} (null: an empty head), -1 for none. */
-    private static int faceOf(List<ItemStack> heads, @Nullable Item item) {
-        for (int i = 0; i < heads.size(); i++) {
-            ItemStack head = heads.get(i);
-            if (item == null ? head.isEmpty() : head.isOf(item)) return i + 1;
-        }
+    /** The head holding {@code item}, -1 for none. */
+    private static int headOf(List<ItemStack> heads, Item item) {
+        for (int i = 0; i < heads.size(); i++) if (heads.get(i).isOf(item)) return i;
         return -1;
+    }
+
+    /** The prizes in the heads it shows, checked: one per head shown, none in the others, all different. */
+    private static List<ItemStack> checkHeads(TestContext context, MobEntity token, int count) {
+        TrichaudronEntity actor = TrichaudronPrizes.actor(token);
+        List<ItemStack> heads = TrichaudronPrizes.heads(token);
+        context.assertEquals(actor.getHeadCount(), count, "one head per prize on offer");
+        List<ItemStack> prizes = new ArrayList<>();
+        for (int head = 0; head < TrichaudronEntity.MAX_HEADS; head++) {
+            boolean shown = actor.showsHead(head);
+            context.assertTrue(shown != heads.get(head).isEmpty(), "head " + head + ": a prize if and only if shown");
+            if (shown) prizes.add(heads.get(head));
+        }
+        Set<Item> items = new HashSet<>();
+        for (ItemStack prize : prizes) items.add(prize.getItem());
+        context.assertEquals(items.size(), count, "each head a different prize");
+        return prizes;
     }
 
     private static boolean has(TileInfo info, String key) {
@@ -115,77 +146,180 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
                 && content.getKey().equals("hud.steveparty.tile_info." + key));
     }
 
-    /** Its player stops the slow die by hitting it: the head of that face gives its prize, taken out of the chest. */
+    /** 1 to 5 heads: the centre one, the side ones, three, side and outer, all; never the same head twice. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
+    public void theHeadsShownForEachCount(TestContext context) {
+        for (int count = 1; count <= TrichaudronEntity.MAX_HEADS; count++) {
+            int[] shown = TrichaudronEntity.headsShown(count);
+            context.assertEquals(shown.length, count, count + " heads shown");
+            context.assertEquals((int) java.util.Arrays.stream(shown).distinct().count(), count, "distinct heads");
+        }
+        context.assertTrue(TrichaudronEntity.headsShown(1)[0] == 0, "one: the centre head");
+        context.assertTrue(java.util.Arrays.equals(TrichaudronEntity.headsShown(3), new int[]{0, 1, 2}), "three: a wild one's");
+        context.complete();
+    }
+
+    /**
+     * A blind pick (default): 4 prizes, 4 heads, each a different prize, nothing shown at their mouths; its player
+     * clicks a head's hit box: that head's prize, taken out of the chest; standing at the token, the spit splashes him
+     * harmlessly; at the end the Trichaudron and its hit boxes are gone.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
-    public void theChosenHeadGivesItsPrizeFromTheChest(TestContext context) {
+    public void clickingAHeadGivesItsPrizeFromTheChest(TestContext context) {
         Show show = show(context, cartridge(new ItemStack(Items.DIAMOND, 2), new ItemStack(Items.EMERALD, 5),
                         new ItemStack(Items.GOLD_INGOT, 3), new ItemStack(Items.APPLE, 1)),
                 chest(new ItemStack(Items.DIAMOND, 10), new ItemStack(Items.EMERALD, 10), new ItemStack(Items.GOLD_INGOT, 10),
                         new ItemStack(Items.APPLE, 10)), TrichaudronPrizes.Start.STARTED);
         MobEntity token = show.token();
         TrichaudronEntity actor = TrichaudronPrizes.actor(token);
-        List<ItemStack> heads = TrichaudronPrizes.heads(token);
-        context.assertTrue(heads.size() == 3 && heads.stream().noneMatch(ItemStack::isEmpty), "4 prizes: three full heads");
-        context.assertTrue(heads.stream().map(ItemStack::getItem).distinct().count() == 3, "three different prizes");
-        when(context, () -> {
-            DiceEntity die = TrichaudronPrizes.die(token);
-            return die != null && die.age > DiceEntity.THROW_GRACE_TICKS + 2;
-        }, WHOLE, "the slow die rolls under the heads", () -> {
-            DiceEntity die = TrichaudronPrizes.die(token);
-            context.assertTrue(die.isShowDie() && !die.shouldSave() && die.isInvulnerable(), "a board prop, never saved");
-            hit(context, die, show.player());
-            when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.GIVE, 60, "the die picks a head", () -> {
-                int face = die.getRolledFaces().getFirst().value();
-                context.assertTrue(face >= 1 && face <= 3, "a face 1 to 3");
-                ItemStack prize = heads.get(face - 1);
-                when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {
-                    context.assertEquals(count(show.player(), prize.getItem()), prize.getCount(), "the chosen head's prize");
-                    context.assertEquals(show.inChest(prize.getItem()), 10 - prize.getCount(), "taken out of the chest");
-                    for (ItemStack other : heads) {
-                        if (other.getItem() != prize.getItem()) context.assertEquals(show.inChest(other.getItem()), 10, "the others stay in the chest");
-                    }
-                    context.assertTrue(actor.isRemoved() && die.isRemoved(), "the Trichaudron and its die are gone");
-                    context.assertFalse(TrichaudronPrizes.isRunning(token), "over");
-                    context.complete();
+        List<ItemStack> prizes = checkHeads(context, token, 4);
+        context.assertFalse(actor.showsHead(0), "four heads: the centre one hidden");
+        when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, TO_CHOICE, "its heads held out", () -> {
+            for (int head : actor.shownHeads()) {
+                context.assertTrue(actor.getHeldPrize(head).isEmpty(), "a blind pick: nothing shown at its mouth");
+                context.assertTrue(actor.getParts().of(head, false) != null && actor.getParts().of(head, true) != null,
+                        "a hit box on head " + head + " and its neck");
+            }
+            context.assertTrue(actor.getParts().of(0, false) == null, "none on the hidden head");
+            int head = actor.shownHeads()[context.getWorld().getRandom().nextInt(4)];
+            ItemStack prize = TrichaudronPrizes.heads(token).get(head);
+            // he stands at the token: the spit splashes him too
+            Vec3d at = token.getPos();
+            show.player().refreshPositionAndAngles(at.x + 0.5, at.y, at.z, 0, 0);
+            float health = show.player().getHealth();
+            TrichaudronPartEntity part = actor.getParts().of(head, false);
+            part.interact(show.player(), Hand.MAIN_HAND);
+            context.assertEquals(TrichaudronPrizes.picked(token), head, "the head clicked is picked");
+            when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {
+                context.assertEquals(count(show.player(), prize.getItem()), prize.getCount(), "the clicked head's prize");
+                context.assertEquals(show.inChest(prize.getItem()), 10 - prize.getCount(), "taken out of the chest");
+                for (ItemStack other : prizes) {
+                    if (other.getItem() != prize.getItem()) context.assertEquals(show.inChest(other.getItem()), 10, "the others stay in the chest");
+                }
+                context.assertEquals(show.player().getHealth(), health, "the spit hurts no one");
+                context.assertTrue(show.player().isAlive(), "alive");
+                context.assertTrue(actor.isRemoved() && part.isRemoved(), "the Trichaudron and its hit boxes are gone");
+                context.assertFalse(TrichaudronPrizes.isRunning(token), "over");
+                context.complete();
+            });
+        });
+    }
+
+    /** A true choice: each head shows its own prize at its mouth; hitting a head (attack) picks it too. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
+    public void aTrueChoiceShowsEachHeadsPrize(TestContext context) {
+        ItemStack cartridge = cartridge(new ItemStack(Items.DIAMOND, 1), new ItemStack(Items.EMERALD, 1), new ItemStack(Items.APPLE, 1));
+        TrichaudronCartridgeItem.setTrueChoice(cartridge, true);
+        Show show = show(context, cartridge, chest(new ItemStack(Items.DIAMOND, 5), new ItemStack(Items.EMERALD, 5),
+                new ItemStack(Items.APPLE, 5)), TrichaudronPrizes.Start.STARTED);
+        MobEntity token = show.token();
+        TrichaudronEntity actor = TrichaudronPrizes.actor(token);
+        checkHeads(context, token, 3);
+        when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, TO_CHOICE, "its heads held out", () -> {
+            List<ItemStack> heads = TrichaudronPrizes.heads(token);
+            for (int head : actor.shownHeads()) {
+                context.assertTrue(ItemStack.areItemsEqual(actor.getHeldPrize(head), heads.get(head)), "head " + head + " shows its prize");
+            }
+            int emerald = headOf(heads, Items.EMERALD);
+            actor.getParts().of(emerald, false).damage(context.getWorld().getDamageSources().playerAttack(show.player()), 5);
+            context.assertEquals(TrichaudronPrizes.picked(token), emerald, "the head hit is picked");
+            context.assertEquals(actor.getHealth(), actor.getMaxHealth(), "a board actor takes no harm");
+            when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {
+                context.assertEquals(count(show.player(), Items.EMERALD), 1, "the emerald he chose");
+                context.assertEquals(count(show.player(), Items.DIAMOND) + count(show.player(), Items.APPLE), 0, "nothing else");
+                context.complete();
+            });
+        });
+    }
+
+    /**
+     * Prizes consumed (default): a prize won is no longer offered at that space for the rest of the party, one head
+     * less the next time; the last one won, it sleeps though its chest still holds them. Always the same prizes: they
+     * stay on offer.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 3 * WHOLE, batchId = BATCH)
+    public void aPrizeWonIsConsumedForTheParty(TestContext context) {
+        Show show = show(context, cartridge(new ItemStack(Items.DIAMOND, 1), new ItemStack(Items.EMERALD, 1)),
+                chest(new ItemStack(Items.DIAMOND, 10), new ItemStack(Items.EMERALD, 10)), TrichaudronPrizes.Start.STARTED);
+        MobEntity token = show.token();
+        checkHeads(context, token, 2);
+        when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, TO_CHOICE, "the choice", () -> {
+            TrichaudronPrizes.pick(token, headOf(TrichaudronPrizes.heads(token), Items.DIAMOND));
+            when(context, () -> show.done()[0], WHOLE, "the first show ends", () -> {
+                context.assertEquals(count(show.player(), Items.DIAMOND), 1, "a diamond won");
+                List<ItemStack> offered = TrichaudronTileBehavior.offered(context.getWorld(), show.tile(), show.cartridge());
+                context.assertTrue(offered.size() == 1 && offered.getFirst().isOf(Items.EMERALD), "only the emerald still on offer");
+                boolean[] again = {false};
+                context.assertTrue(show.again(context, again) == TrichaudronPrizes.Start.STARTED, "it rises again");
+                List<ItemStack> heads = checkHeads(context, token, 1);
+                context.assertTrue(heads.getFirst().isOf(Items.EMERALD), "its one head: the emerald");
+                when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, TO_CHOICE, "the second choice", () -> {
+                    TrichaudronPrizes.pick(token, 0);
+                    when(context, () -> again[0], WHOLE, "the second show ends", () -> {
+                        context.assertEquals(count(show.player(), Items.EMERALD), 1, "the emerald won");
+                        context.assertTrue(show.inChest(Items.DIAMOND) == 9 && show.inChest(Items.EMERALD) == 9, "the chest still holds both");
+                        context.assertTrue(TrichaudronCartridgeItem.isAsleep(show.cartridge()), "everything won: it sleeps");
+                        context.assertTrue(show.again(context, new boolean[1]) == TrichaudronPrizes.Start.EMPTY, "no show any more");
+                        // Always the same prizes: both on offer again
+                        TrichaudronCartridgeItem.setSamePrizes(show.cartridge(), true);
+                        context.assertEquals(TrichaudronTileBehavior.offered(context.getWorld(), show.tile(), show.cartridge()).size(), 2,
+                                "always the same prizes: both on offer");
+                        TrichaudronTileBehavior.refreshSleep(context.getWorld(), show.tile());
+                        context.assertFalse(TrichaudronCartridgeItem.isAsleep(show.cartridge()), "awake again");
+                        context.complete();
+                    });
                 });
             });
         });
     }
 
-    /** Its menu filters the chest: only the items set are prizes; fewer than three, the other heads come out empty. */
+    /** Each time it rises, the prizes are shuffled into its heads anew (a head's place never tells its prize). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40, batchId = BATCH)
+    public void thePrizesAreShuffledEachTime(TestContext context) {
+        ItemStack cartridge = cartridge(new ItemStack(Items.DIAMOND, 1), new ItemStack(Items.EMERALD, 1),
+                new ItemStack(Items.APPLE, 1), new ItemStack(Items.BREAD, 1), new ItemStack(Items.STICK, 1));
+        TrichaudronCartridgeItem.setSamePrizes(cartridge, true);
+        Show show = show(context, cartridge, chest(new ItemStack(Items.DIAMOND, 5), new ItemStack(Items.EMERALD, 5),
+                new ItemStack(Items.APPLE, 5), new ItemStack(Items.BREAD, 5), new ItemStack(Items.STICK, 5)), TrichaudronPrizes.Start.STARTED);
+        MobEntity token = show.token();
+        Set<Integer> seen = new HashSet<>();
+        for (int i = 0; i < 20; i++) {
+            if (i > 0) context.assertTrue(show.again(context, new boolean[1]) == TrichaudronPrizes.Start.STARTED, "it rises again");
+            checkHeads(context, token, 5);
+            seen.add(headOf(TrichaudronPrizes.heads(token), Items.DIAMOND));
+            TrichaudronPrizes.stop(token);
+            context.assertFalse(TrichaudronPrizes.isRunning(token), "stopped");
+        }
+        context.assertTrue(seen.size() > 1, "the diamond in different heads, got " + seen);
+        context.complete();
+    }
+
+    /** Its menu filters the chest: only the items set are prizes, one head each. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void theFilterIsRespected(TestContext context) {
         Show show = show(context, cartridge(new ItemStack(Items.DIAMOND, 4)),
                 chest(new ItemStack(Items.DIRT, 64), new ItemStack(Items.DIAMOND, 6), new ItemStack(Items.COBBLESTONE, 64)),
                 TrichaudronPrizes.Start.STARTED);
         MobEntity token = show.token();
-        List<ItemStack> heads = TrichaudronPrizes.heads(token);
-        context.assertEquals((int) heads.stream().filter(ItemStack::isEmpty).count(), 2, "one item set: two empty heads");
-        context.assertTrue(heads.stream().noneMatch(head -> head.isOf(Items.DIRT) || head.isOf(Items.COBBLESTONE)), "only the items set");
-        int emptyFace = faceOf(heads, null);
-        when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, WHOLE, "the choice", () -> {
-            TrichaudronPrizes.pick(token, emptyFace);
-            when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {
-                context.assertEquals(count(show.player(), Items.DIAMOND), 0, "an empty head: nothing");
-                context.assertEquals(show.inChest(Items.DIAMOND), 6, "the chest is untouched");
-                context.complete();
-            });
-        });
+        List<ItemStack> heads = checkHeads(context, token, 1);
+        context.assertTrue(heads.getFirst().isOf(Items.DIAMOND) && heads.getFirst().getCount() == 4, "only the item set, as many as set");
+        context.complete();
     }
 
     /** More set than the chest holds: the prize is what it holds; then nothing is left and the space sleeps. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void theQuantityIsCappedThenItSleeps(TestContext context) {
-        Show show = show(context, cartridge(new ItemStack(Items.EMERALD, 10)), chest(new ItemStack(Items.EMERALD, 3)),
-                TrichaudronPrizes.Start.STARTED);
+        ItemStack cartridge = cartridge(new ItemStack(Items.EMERALD, 10));
+        TrichaudronCartridgeItem.setSamePrizes(cartridge, true); // so that, refilled, it is on offer again
+        Show show = show(context, cartridge, chest(new ItemStack(Items.EMERALD, 3)), TrichaudronPrizes.Start.STARTED);
         MobEntity token = show.token();
         List<ItemStack> heads = TrichaudronPrizes.heads(token);
-        int prizeFace = faceOf(heads, Items.EMERALD);
-        context.assertEquals(heads.get(prizeFace - 1).getCount(), 3, "as many as the chest holds");
+        int prizeHead = headOf(heads, Items.EMERALD);
+        context.assertEquals(heads.get(prizeHead).getCount(), 3, "as many as the chest holds");
         TileInfo info = TileInfos.of(show.tile());
         context.assertTrue(info.ring().size() == 1 && info.ring().getFirst().getCount() == 3, "what is really there circles over the space");
         when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, WHOLE, "the choice", () -> {
-            TrichaudronPrizes.pick(token, prizeFace);
+            TrichaudronPrizes.pick(token, prizeHead);
             when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {
                 context.assertEquals(count(show.player(), Items.EMERALD), 3, "3 emeralds, no more");
                 context.assertEquals(show.inChest(Items.EMERALD), 0, "the chest is empty");
@@ -194,8 +328,7 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
                 TileInfo asleep = TileInfos.of(show.tile());
                 context.assertTrue(asleep.ring().isEmpty() && has(asleep, "trichaudron.empty"), "its panel: empty");
                 boolean[] again = {false};
-                context.assertTrue(TrichaudronPrizes.start(context.getWorld(), show.tile().getPos(), token, show.party(),
-                        () -> again[0] = true) == TrichaudronPrizes.Start.EMPTY, "no show any more");
+                context.assertTrue(show.again(context, again) == TrichaudronPrizes.Start.EMPTY, "no show any more");
                 context.assertTrue(TrichaudronPrizes.actor(token) == null && !again[0], "no Trichaudron");
                 // Refilled: awake again
                 show.chest().setStack(0, new ItemStack(Items.EMERALD, 2));
@@ -216,6 +349,7 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         context.assertEquals(available.size(), TrichaudronCartridgeItem.PRIZES, "the first 5 different items");
         context.assertTrue(available.getFirst().isOf(Items.DIRT) && available.getFirst().getCount() == 12, "all the dirt there is");
         context.assertTrue(available.stream().noneMatch(item -> item.isOf(Items.FEATHER)), "not the 6th");
+        checkHeads(context, show.token(), 5);
         context.complete();
     }
 
@@ -230,18 +364,20 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** The party ending in the middle: the show stops, its actors are removed, nothing leaves the chest. */
+    /** The party ending in the middle: the show stops, its actor and its hit boxes are removed, nothing leaves the chest. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void partyEndingRemovesIt(TestContext context) {
         Show show = show(context, cartridge(), chest(new ItemStack(Items.DIAMOND)), TrichaudronPrizes.Start.STARTED);
         TrichaudronEntity actor = TrichaudronPrizes.actor(show.token());
         context.assertTrue(show.tile().getBoardSpaceBehavior().keepsTurn(show.token()), "it holds the turn");
-        when(context, () -> TrichaudronPrizes.die(show.token()) != null, WHOLE, "its die", () -> {
-            DiceEntity die = TrichaudronPrizes.die(show.token());
+        when(context, () -> TrichaudronPrizes.phase(show.token()) == TrichaudronPrizes.Phase.CHOOSE, WHOLE, "its heads held out", () -> {
+            List<TrichaudronPartEntity> parts = actor.getParts().all();
+            context.assertEquals(parts.size(), 2, "one head (and its neck) for one prize");
             context.removeBlock(DiceTestKit.CONTROLLER);
             context.waitAndRun(2, () -> {
                 context.assertTrue(show.done()[0] && !TrichaudronPrizes.isRunning(show.token()), "stopped");
-                context.assertTrue(actor.isRemoved() && die.isRemoved(), "the Trichaudron and its die are gone");
+                context.assertTrue(actor.isRemoved() && parts.stream().allMatch(TrichaudronPartEntity::isRemoved),
+                        "the Trichaudron and its hit boxes are gone");
                 context.assertEquals(show.inChest(Items.DIAMOND), 1, "nothing taken");
                 context.complete();
             });
@@ -261,6 +397,8 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         DefaultedList<ItemStack> left = recipe.get().value().getRemainder(input);
         context.assertTrue(left.stream().anyMatch(stack -> stack.isOf(Items.BUCKET)), "the bucket comes back");
         context.assertTrue(TrichaudronCartridgeItem.filters(result).isEmpty() && !TrichaudronCartridgeItem.hasChests(result), "nothing set, no chest");
+        context.assertFalse(TrichaudronCartridgeItem.samePrizes(result) || TrichaudronCartridgeItem.trueChoice(result),
+                "by default: prizes consumed, a blind pick");
         context.complete();
     }
 
@@ -283,16 +421,46 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         boolean[] done = {false};
         context.assertTrue(TrichaudronPrizes.start(context.getWorld(), tile.getPos(), token, party, () -> done[0] = true)
                 == TrichaudronPrizes.Start.STARTED, "the show starts");
-        List<ItemStack> heads = TrichaudronPrizes.heads(token);
-        int face = faceOf(heads, Items.DIAMOND);
+        int head = headOf(TrichaudronPrizes.heads(token), Items.DIAMOND);
         when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, WHOLE, "the choice", () -> {
-            TrichaudronPrizes.pick(token, face);
+            TrichaudronPrizes.pick(token, head);
             when(context, () -> done[0], WHOLE, "the show ends", () -> {
                 context.assertEquals(count(player, Items.DIAMOND), 2, "the prize");
                 context.assertEquals(party.getBankItems().getStack(3).getCount(), 3, "taken out of the Party Controller's bank");
                 party.getBankItems().clear();
                 TrichaudronTileBehavior.refreshSleep(context.getWorld(), tile);
                 context.assertTrue(TrichaudronCartridgeItem.isAsleep(tile.getActiveCartridgeItemStack()), "the bank empty: it sleeps");
+                context.complete();
+            });
+        });
+    }
+
+    /**
+     * A wild Trichaudron: a hit box on each of its three heads and on each neck; a blow on a head or a neck goes to its
+     * body (a head's harder than a neck's); its outer heads have none (not shown).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40, batchId = "trichaudron_parts")
+    public void aBlowOnAHeadOrANeckHurtsItsBody(TestContext context) {
+        ServerPlayerEntity player = player(context);
+        TrichaudronEntity byHead = context.spawnEntity(ModEntities.TRICHAUDRON, new BlockPos(2, 1, 2));
+        TrichaudronEntity byNeck = context.spawnEntity(ModEntities.TRICHAUDRON, new BlockPos(2, 1, 12));
+        byHead.setAiDisabled(true);
+        byNeck.setAiDisabled(true);
+        context.waitAndRun(3, () -> {
+            context.assertEquals(byHead.getParts().all().size(), 6, "three heads, three necks");
+            context.assertTrue(byHead.getParts().of(3, false) == null && byHead.getParts().of(4, false) == null, "no outer head");
+            TrichaudronPartEntity head = byHead.getParts().of(1, false);
+            TrichaudronPartEntity neck = byNeck.getParts().of(1, true);
+            context.assertTrue(head.getBoundingBox().getCenter().distanceTo(byHead.headCenter(1)) < 0.01, "on its head");
+            float full = byHead.getHealth();
+            context.assertTrue(head.damage(context.getWorld().getDamageSources().playerAttack(player), 6), "a head hit lands");
+            context.assertTrue(neck.damage(context.getWorld().getDamageSources().playerAttack(player), 6), "a neck hit lands");
+            float headLoss = full - byHead.getHealth(), neckLoss = full - byNeck.getHealth();
+            context.assertTrue(neckLoss > 0, "a neck hit hurts its body");
+            context.assertTrue(headLoss > neckLoss, "a head hit hurts more: " + headLoss + " vs " + neckLoss);
+            byHead.discard();
+            context.waitAndRun(1, () -> {
+                context.assertTrue(head.isRemoved(), "its hit boxes go with it");
                 context.complete();
             });
         });

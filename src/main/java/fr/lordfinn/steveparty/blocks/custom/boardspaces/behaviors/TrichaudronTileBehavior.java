@@ -20,9 +20,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * The role of a Trichaudron Cartridge: a token stopping here meets the Trichaudron, whose three heads hold hidden prizes
- * taken from the cartridge's linked chests; a slow die picks the head whose prize the token's player wins (see
- * {@link TrichaudronPrizes}). The turn goes on once it has gone. Only in a running party. Nothing to give (no chest,
+ * The role of a Trichaudron Cartridge: a token stopping here meets the Trichaudron, one head per prize on offer (1 to
+ * 5, taken from the cartridge's linked chests, those already won in the party left out); its player picks a head by
+ * hitting or clicking it and wins its prize (see {@link TrichaudronPrizes}). The turn goes on once it has gone. Only in a running party. Nothing to give (no chest,
  * empty chests, none of the items set) and the space sleeps (its face dimmed, its panel « empty » or « no chest »): a
  * plain landing. Going over the tile does nothing.
  */
@@ -41,11 +41,21 @@ public class TrichaudronTileBehavior extends MobTileBehavior {
         if (ticks % SLEEP_CHECK_TICKS == Math.floorMod(space.getPos().hashCode(), SLEEP_CHECK_TICKS)) refreshSleep(world, space);
     }
 
-    /** Whether {@code space}'s chests have anything to give, recorded on its cartridge (its face). */
+    /**
+     * Whether {@code space} has anything to offer (its chests' prizes, less those already won in the party running on
+     * its board: TrichaudronCartridgeItem#offered), recorded on its cartridge (its face).
+     */
     public static void refreshSleep(ServerWorld world, BoardSpaceBlockEntity space) {
         ItemStack cartridge = space.getActiveCartridgeItemStack();
         if (!(cartridge.getItem() instanceof TrichaudronCartridgeItem)) return;
-        refreshSleep(space, !TrichaudronCartridgeItem.available(cartridge, world, space.getPos()).isEmpty());
+        refreshSleep(space, !offered(world, space, cartridge).isEmpty());
+    }
+
+    /** What {@code space} offers now: its chests' prizes, less those already won in the party running on its board. */
+    public static List<ItemStack> offered(ServerWorld world, BoardSpaceBlockEntity space, ItemStack cartridge) {
+        PartyControllerEntity party = PartyControllerEntity.getPartyOfBoardSpace(world, space.getPos(),
+                PartyControllerEntity.BOARD_NEARBY_RADIUS, false).orElse(null);
+        return TrichaudronCartridgeItem.offered(cartridge, world, space.getPos(), party);
     }
 
     /** {@code space} has prizes to give or not: its cartridge records it, its tile is sent again if that changed. */
@@ -89,12 +99,12 @@ public class TrichaudronTileBehavior extends MobTileBehavior {
     }
 
     /**
-     * In game: what its chests can give now, circling over the space, and how many; nothing: « no chest » or « empty ».
+     * In game: what it offers now (its chests' prizes, less those won in the party), circling over the space, and how many; nothing: « no chest » or « empty ».
      */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof TrichaudronCartridgeItem)) return;
-        List<ItemStack> prizes = TrichaudronCartridgeItem.available(stack, world, space.getPos());
+        List<ItemStack> prizes = offered(world, space, stack);
         refreshSleep(space, !prizes.isEmpty());
         if (prizes.isEmpty()) {
             info.line(TileInfo.dim(TileInfo.line(TrichaudronCartridgeItem.hasChests(stack) ? "trichaudron.empty" : "trichaudron.no_chest")));
