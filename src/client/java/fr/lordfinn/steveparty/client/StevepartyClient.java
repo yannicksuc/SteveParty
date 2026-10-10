@@ -34,6 +34,8 @@ import fr.lordfinn.steveparty.client.gui.StencilGunHud;
 import fr.lordfinn.steveparty.client.gui.TileStampTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.TitleScreenBackground;
 import fr.lordfinn.steveparty.client.gui.party.DiceRevealHud;
+import fr.lordfinn.steveparty.client.gui.party.OutcomeRouletteHud;
+import fr.lordfinn.steveparty.client.board.OutcomeRoulettePanel;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud;
@@ -267,6 +269,8 @@ public class StevepartyClient implements ClientModInitializer {
 
         PartyHud.initialize();
         DiceRevealHud.initialize();
+        OutcomeRouletteHud.initialize();
+        OutcomeRoulettePanel.initialize();
         MiniGamePageClient.initialize();
         MiniGameCardHud.initialize();
         MiniGameResultsHud.initialize();
@@ -525,6 +529,7 @@ public class StevepartyClient implements ClientModInitializer {
     private static void resetClientState() {
         PartyHud.clear();
         DiceRevealHud.clear();
+        OutcomeRouletteHud.clear();
         MiniGamePageClient.clear();
         FloatingTextRenderer.clear();
         GoalPolePopupRenderer.clear();
