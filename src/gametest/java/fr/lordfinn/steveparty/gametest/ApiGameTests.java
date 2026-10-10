@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.api.party.PartySteps;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepFactory;
@@ -161,6 +162,32 @@ public class ApiGameTests implements SteveGameTest {
         PowerUp banana = TestAddon.BANANA;
         context.assertEquals(Registries.ITEM.getId(banana.item()), Identifier.of(TestAddon.NAMESPACE, "powerup_banana"), "the power-up's item");
         context.assertTrue(PowerUps.byId(banana.id()) == banana && ModItems.POWER_UPS.contains(banana.item()), "found by its key, listed");
+        context.complete();
+    }
+
+    /** An addon's party card in the program: its steps come in their place, the loops of the program included. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void anAddonPartyCardAddsItsSteps(TestContext context) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        context.setBlockState(pos.down(), Blocks.STONE);
+        context.setBlockState(pos, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(pos);
+        controller.getProgram().setStack(0, new ItemStack(ModItems.PARTY_CARD_TURNS));
+        controller.getProgram().setStack(1, new ItemStack(TestAddon.PROBE_CARD_ITEM, 3));
+        controller.getProgram().setStack(2, new ItemStack(ModItems.PARTY_CARD_REPEAT, 2));
+        UUID a = UUID.randomUUID();
+        PartyData data = new PartyData();
+        data.addToken(a);
+        data.addStep(new BasicGameGeneratorStep());
+        controller.setPartyData(data);
+        controller.nextStep();
+        // generator, (turn of a, probe 3) x 2, end
+        List<PartyStep> steps = data.getSteps();
+        context.assertEquals(steps.size(), 6, "steps generated");
+        context.assertTrue(steps.get(2) instanceof TestAddon.ProbeStep probe && probe.value == 3, "the addon's card, its number");
+        context.assertTrue(steps.get(4) instanceof TestAddon.ProbeStep, "repeated with the others");
+        context.assertTrue(steps.get(5) instanceof EndPartyStep, "the end last");
+        context.removeBlock(pos);
         context.complete();
     }
 }

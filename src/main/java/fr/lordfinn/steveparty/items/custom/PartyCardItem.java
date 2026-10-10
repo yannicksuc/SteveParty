@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
+import net.minecraft.util.Identifier;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -31,7 +33,9 @@ public class PartyCardItem extends Item {
          * A marker: where the next "repeat" card starts repeating from. Without a "repeat" card after it, it does
          * nothing; a stack of several is the same as one.
          */
-        SEQUENCE_START("sequence_start");
+        SEQUENCE_START("sequence_start"),
+        /** A card of an addon: what it plays is the {@link fr.lordfinn.steveparty.api.party.PartyCard} of its id ({@link #getCardId}). */
+        CUSTOM("custom");
 
         private final String name;
 
@@ -45,21 +49,36 @@ public class PartyCardItem extends Item {
     }
 
     private final CardType cardType;
+    private final Identifier cardId;
 
     public PartyCardItem(CardType cardType, Settings settings) {
         super(settings);
         this.cardType = cardType;
+        this.cardId = Steveparty.id(cardType.getName());
+    }
+
+    /** A card of an addon, playing the {@link fr.lordfinn.steveparty.api.party.PartyCard} registered under {@code cardId}. */
+    public PartyCardItem(Identifier cardId, Settings settings) {
+        super(settings);
+        this.cardType = CardType.CUSTOM;
+        this.cardId = cardId;
     }
 
     public CardType getCardType() {
         return cardType;
     }
 
+    /** What it plays: an id of {@link fr.lordfinn.steveparty.api.StevePartyRegistries#PARTY_CARDS} ({@code steveparty:turns}...). */
+    public Identifier getCardId() {
+        return cardId;
+    }
+
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
         Tooltips.of(tooltip)
-                .summary("item.steveparty.party_card_" + cardType.getName() + ".tooltip", Tooltips.value(stack.getCount()))
+                .summary(cardType == CardType.CUSTOM ? getTranslationKey() + ".tooltip"
+                        : "item.steveparty.party_card_" + cardType.getName() + ".tooltip", Tooltips.value(stack.getCount()))
                 .more(more -> more.use("tooltip.steveparty.party_card.use"));
     }
 }

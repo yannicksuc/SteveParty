@@ -193,6 +193,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
                 case TURNS -> all.add(new TimelineStep(StepKind.TURNS, round, -1, 0));
                 case MINIGAME -> all.add(new TimelineStep(StepKind.MINI_GAME, round++, -1, 0));
                 case EVENT -> all.add(new TimelineStep(StepKind.EVENT, round, -1, card.count()));
+                // An addon's card: its steps are its own (one mark for the card)
+                case CUSTOM -> all.add(new TimelineStep(StepKind.OTHER, round, -1, 0));
                 default -> {
                 }
             }

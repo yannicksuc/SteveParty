@@ -277,6 +277,18 @@ public class ModItems {
         return item;
     }
 
+    /** The item of one of Steve Party's party cards (AIR for {@link PartyCardItem.CardType#CUSTOM}: an addon's card has its own). */
+    public static Item partyCard(PartyCardItem.CardType type) {
+        return switch (type) {
+            case TURNS -> PARTY_CARD_TURNS;
+            case MINIGAME -> PARTY_CARD_MINIGAME;
+            case EVENT -> PARTY_CARD_EVENT;
+            case REPEAT -> PARTY_CARD_REPEAT;
+            case SEQUENCE_START -> PARTY_CARD_SEQUENCE_START;
+            case CUSTOM -> net.minecraft.item.Items.AIR;
+        };
+    }
+
     private static Item registerCard(PartyCardItem.CardType type) {
         String id = "party_card_" + type.getName();
         Item item = new PartyCardItem(type, new Item.Settings());
