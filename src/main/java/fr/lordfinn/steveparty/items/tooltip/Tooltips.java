@@ -88,7 +88,7 @@ public final class Tooltips {
      */
     public enum Tag {
         POWER_UP(0xFF77FF), NEGATIVE(0xFF5555), CONFIGURABLE(0xFCB017), STAMPED(0xFF77FF), SWITCHABLE(0x55FFFF),
-        LINKED_COPY(0x55FFFF);
+        LINKED_COPY(0x55FFFF), GLOWING(0x7FFFD4);
 
         public final int color;
 
