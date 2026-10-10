@@ -287,6 +287,22 @@ public class FrousseuxCandleHolderBlock extends BlockWithEntity {
         return stack;
     }
 
+    /**
+     * Its item with a wild Frousseux of that colour asleep in it (the creative tab's): placed, its candle that colour;
+     * woken, a wild Frousseux of that colour. The plain one keeps nothing (an empty candle holder wakes a wild plain one).
+     */
+    public static ItemStack asleep(FrousseuxColor color) {
+        ItemStack stack = new ItemStack(ModBlocks.FROUSSEUX_CANDLE_HOLDER);
+        if (color == FrousseuxColor.PLAIN) return stack;
+        NbtCompound frousseux = new NbtCompound();
+        frousseux.putString("Color", color.asString());
+        NbtCompound data = new NbtCompound();
+        data.putString("id", Registries.BLOCK_ENTITY_TYPE.getId(ModBlockEntities.FROUSSEUX_CANDLE_HOLDER).toString());
+        data.put(FrousseuxCandleHolderBlockEntity.KEY, frousseux);
+        stack.set(DataComponentTypes.BLOCK_ENTITY_DATA, NbtComponent.of(data));
+        return stack;
+    }
+
     /** Whether its item stands on a saucer. */
     public static boolean isOnSaucer(ItemStack stack) {
         BlockStateComponent state = stack.get(DataComponentTypes.BLOCK_STATE);

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
+import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.FormatChips;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
@@ -7,7 +8,6 @@ import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
-import fr.lordfinn.steveparty.utils.Argb;
 import fr.lordfinn.steveparty.utils.Easing;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
@@ -138,9 +138,10 @@ public final class MiniGameCardHud {
 
         // Picture, in a dark frame
         if (hasPicture) {
-            context.fill(x + PAD - 1, top, x + PAD + pictureWidth + 1, top + pictureHeight + 2, Argb.fade(HudDraw.OUTLINE, alpha));
+            HudDraw.fill(context, x + PAD - 1, top, x + PAD + pictureWidth + 1, top + pictureHeight + 2, HudDraw.OUTLINE, alpha);
             MiniGamePageClient.Picture picture = MiniGamePageClient.picture(page.image(), pictureWidth, pictureHeight);
-            if (picture != null) picture.draw(context, x + PAD, top + 1, pictureWidth, pictureHeight, HudDraw.white(alpha));
+            int pictureTop = top + 1;
+            if (picture != null) HudDepth.onTop(context, () -> picture.draw(context, x + PAD, pictureTop, pictureWidth, pictureHeight, HudDraw.white(alpha)));
             top += pictureHeight + 2 + 4;
         }
 
@@ -152,7 +153,8 @@ public final class MiniGameCardHud {
         int rowWidth = 0;
         for (int[] chip : at) if (chip[1] == 0) rowWidth = chip[0] + chip[2];
         if (alpha > 0.6f) {
-            FormatChips.drawFlow(context, font, formats, look, x + (width - rowWidth) / 2, top, pictureWidth, 3);
+            int chipsX = x + (width - rowWidth) / 2, chipsTop = top;
+            HudDepth.onTop(context, () -> FormatChips.drawFlow(context, font, formats, look, chipsX, chipsTop, pictureWidth, 3));
         }
         top += at.getLast()[1] + 13;
 

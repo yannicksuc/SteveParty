@@ -95,7 +95,7 @@ public final class HudPaint {
 
     static void draw(DrawContext context, Tex tex, int x, int y, float alpha) {
         if (alpha <= 0.02f) return;
-        HudDraw.faded(alpha, () -> tex.draw(context, x, y));
+        HudDraw.faded(context, alpha, () -> tex.draw(context, x, y));
     }
 
     // ------------------------------------------------------------------ shapes

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
+import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.hud.HudPlacements.Hud;
 import fr.lordfinn.steveparty.hud.HudPlacements;
 import net.minecraft.client.MinecraftClient;
@@ -164,7 +165,11 @@ public class PartyHudEditScreen extends Screen {
             if (snapLineY >= 0) context.fill(0, Math.round(snapLineY), width, Math.round(snapLineY) + 1, 0x80FFD23A);
         }
         PartyHudModel real = PartyHud.model();
+        // The HUDs stack by depth (HudDepth): here right over the screen's shade, the frames and widgets in front of them
+        HudDepth.restart(context, 1);
         PartyHud.draw(context, real != null ? real : sample, true, true, true);
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, HudDepth.top(context));
         for (Hud hud : Hud.values()) drawFrame(context, hud, mouseX, mouseY);
 
         // While a HUD is dragged: the nine anchors, the one it will stick to lit
@@ -174,6 +179,7 @@ public class PartyHudEditScreen extends Screen {
         context.drawTextWithShadow(textRenderer, title, 4, under, 0xFFFFFFFF);
         if (real == null) context.drawTextWithShadow(textRenderer, Text.translatable("screen.steveparty.party_hud_layout.sample"), 4, under + 11, 0xFF9A9A9A);
         super.render(context, mouseX, mouseY, delta);
+        context.getMatrices().pop();
     }
 
     /** The nine anchor points of the screen, the dragged HUD's (the zone its centre is in) lit. */

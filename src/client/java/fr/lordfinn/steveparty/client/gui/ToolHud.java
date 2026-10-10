@@ -67,9 +67,11 @@ public final class ToolHud {
 
     /** A plate (nine-slice) over (x, y, width, height). */
     public static void plate(DrawContext context, int x, int y, int width, int height, Plate plate) {
-        RenderSystem.enableBlend();
-        context.drawGuiTexture(plate.sprite, x, y, width, height);
-        RenderSystem.disableBlend();
+        HudDepth.onTop(context, () -> {
+            RenderSystem.enableBlend();
+            context.drawGuiTexture(plate.sprite, x, y, width, height);
+            RenderSystem.disableBlend();
+        });
     }
 
     /** A box: a gold plate when it is the active one, teal otherwise. */
@@ -82,7 +84,7 @@ public final class ToolHud {
         MinecraftClient client = MinecraftClient.getInstance();
         int width = client.textRenderer.getWidth(text) + 12;
         plate(context, x, y, width, BOX, plate);
-        context.drawText(client.textRenderer, text, x + 6, y + (BOX - 8) / 2, TEXT, false);
+        HudDepth.onTop(context, () -> context.drawText(client.textRenderer, text, x + 6, y + (BOX - 8) / 2, TEXT, false));
         return width;
     }
 
@@ -101,7 +103,7 @@ public final class ToolHud {
         for (int i = 0; i < lines.size(); i++) {
             var line = lines.get(i);
             int y = boxesTop - 10 * (lines.size() - i);
-            context.drawCenteredTextWithShadow(textRenderer, line, centerX, y, HINT);
+            HudDepth.onTop(context, () -> context.drawCenteredTextWithShadow(textRenderer, line, centerX, y, HINT));
         }
     }
 
@@ -180,7 +182,8 @@ public final class ToolHud {
             int y = bottom - (rows.size() - 1 - i) * (BOX + 2);
             int x = centerX - width(row, gap) / 2;
             for (Element element : row) {
-                element.draw(context, x, y);
+                int ex = x;
+                HudDepth.item(context, () -> element.draw(context, ex, y)); // it may hold items
                 x += element.width() + gap;
             }
         }

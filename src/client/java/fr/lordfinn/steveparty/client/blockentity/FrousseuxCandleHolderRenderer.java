@@ -98,14 +98,28 @@ public class FrousseuxCandleHolderRenderer implements BlockEntityRenderer<Frouss
         float half = stage[2] / 32f, height = stage[3] / 16f;
         int argb = FrousseuxRenderer.shade(color.flameEdge, flame.brightness),
                 pale = FrousseuxRenderer.shade(color.flameHeart, flame.brightness);
+        // Drawn in this order, now: the candle (writing its depth), its flame, its heart and wick over it. Both see-through
+        // layers write no depth, so only their order puts them right; left to the buffers, it was theirs: the flame
+        // (not a buffered layer) went out first, before the candle, which then covered it (its item in hand, in a
+        // slot), and a renderer grouping layers its own way could put the heart under the flame (the placed block)
+        flush(vertexConsumers, TexturedRenderLayers.getEntityCutout());
         AnimatableTexture.setAndUpdate(FrousseuxRenderer.FLAME); // its frames (frousseux_flame.png.mcmeta)
-        VertexConsumer flameBuffer = vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(FrousseuxRenderer.FLAME, true));
+        RenderLayer flameLayer = RenderLayer.getBeaconBeam(FrousseuxRenderer.FLAME, true);
+        VertexConsumer flameBuffer = vertexConsumers.getBuffer(flameLayer);
         for (float angle : new float[]{45, -45}) plane(matrices, flameBuffer, angle, half, 0, height, u0, v0, u1, v1, argb);
+        flush(vertexConsumers, flameLayer);
         // its heart and its wick, on the same faces (drawn over them, nothing fights)
         AnimatableTexture.setAndUpdate(FrousseuxRenderer.CORE);
-        VertexConsumer coreBuffer = vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(FrousseuxRenderer.CORE, true));
+        RenderLayer coreLayer = RenderLayer.getBeaconBeam(FrousseuxRenderer.CORE, true);
+        VertexConsumer coreBuffer = vertexConsumers.getBuffer(coreLayer);
         for (float angle : new float[]{45, -45}) plane(matrices, coreBuffer, angle, half, 0, height, u0, v0, u1, v1, pale);
+        flush(vertexConsumers, coreLayer);
         matrices.pop();
+    }
+
+    /** Draws what {@code layer} holds now, when the buffers can (vanilla's): its place in the order is now. */
+    private static void flush(VertexConsumerProvider vertexConsumers, RenderLayer layer) {
+        if (vertexConsumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
     }
 
     /** A vertical plane turned {@code angle} degrees about the flame's axis, seen from both sides. */
