@@ -1,10 +1,13 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.api.StevePartyRegistries;
+import fr.lordfinn.steveparty.api.event.PartyEvents;
 import fr.lordfinn.steveparty.api.board.BoardSpaceRoles;
 import fr.lordfinn.steveparty.api.party.PartySteps;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepFactory;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
@@ -24,6 +27,8 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
@@ -91,6 +96,46 @@ public class ApiGameTests implements SteveGameTest {
         NbtCompound unknown = new NbtCompound();
         unknown.putString("Type", "missing-addon:gone");
         context.assertTrue(PartyStepFactory.get(unknown).getClass() == PartyStep.class, "an unknown kind: a placeholder");
+        context.complete();
+    }
+
+    /** What the party events told for the party under test (the listeners stay: they only note this one). */
+    private static PartyControllerEntity watched;
+    private static final List<String> EVENTS = new ArrayList<>();
+
+    static {
+        PartyEvents.STEP_STARTED.register((controller, step, index) -> {
+            if (controller == watched) EVENTS.add("start " + step.getTypeId().getPath() + " " + index);
+        });
+        PartyEvents.STEP_ENDED.register((controller, step) -> {
+            if (controller == watched) EVENTS.add("end " + step.getTypeId().getPath());
+        });
+        PartyEvents.ENDED.register(controller -> {
+            if (controller == watched) EVENTS.add("party over");
+        });
+    }
+
+    /** The steps start and end in order, an addon's step among them, and the end of the party is told. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void thePartyEventsFollowTheSteps(TestContext context) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        context.setBlockState(pos.down(), Blocks.STONE);
+        context.setBlockState(pos, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(pos);
+        UUID token = UUID.randomUUID();
+        PartyData data = new PartyData();
+        data.addToken(token);
+        data.addStep(new PartyStep());
+        data.addStep(new TestAddon.ProbeStep(7));
+        data.addStep(new EndPartyStep(new ArrayList<>(List.of(token))));
+        controller.setPartyData(data);
+        EVENTS.clear();
+        watched = controller;
+        context.addFinalTask(() -> watched = null);
+        controller.nextStep();
+        controller.nextStep(); // the probe step ends right away: the end comes
+        context.assertEquals(EVENTS, List.of("start default 0", "end default", "start probe_step 1", "end probe_step",
+                "start end 2", "party over"), "the events in order");
         context.complete();
     }
 }

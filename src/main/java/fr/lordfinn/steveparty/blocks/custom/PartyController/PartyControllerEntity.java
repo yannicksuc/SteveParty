@@ -611,6 +611,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         sendStartGameInfos();
         // The star stands on one of the board's star spaces, at random
         PartyStars.onPartyStarted(this, serverWorld);
+        fr.lordfinn.steveparty.api.event.PartyEvents.STARTED.invoker().onPartyStarted(this);
         nextStep();
         markDirty();
         // Goal pole bases linked to this party start again from 0

@@ -346,6 +346,7 @@ public class MiniGamePartyStep extends PartyStep {
                     .formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
         }
         departure.sendOut(controller, Phase.PLAYING);
+        if (phase == Phase.PLAYING) fr.lordfinn.steveparty.api.event.MiniGameEvents.STARTED.invoker().onMiniGameStarted(controller, this);
     }
 
     // ---------------------------------------------------------------- the practice round
@@ -558,6 +559,7 @@ public class MiniGamePartyStep extends PartyStep {
             Text note = payout.payGains(controller, server, places);
             screens.tellResults(controller, MiniGamePayout.results(controller, server, places, payout.paid()), note);
         }
+        fr.lordfinn.steveparty.api.event.MiniGameEvents.ENDED.invoker().onMiniGameEnded(controller, this, Map.copyOf(places), List.copyOf(winners));
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
     }
