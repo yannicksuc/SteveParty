@@ -2924,7 +2924,6 @@
   "gui.steveparty.cartridge_menu.trichaudron.consumed.tooltip": "Un lot gagné n'est plus proposé jusqu'à la fin de la partie : une tête de moins à chaque fois",
   "gui.steveparty.cartridge_menu.trichaudron.same": "Permanents",
   "gui.steveparty.cartridge_menu.trichaudron.same.tooltip": "Un lot gagné reste en jeu, tant que le stockage en a",
-  "gui.steveparty.cartridge_menu.trichaudron.pick": "Le choix",
   "gui.steveparty.cartridge_menu.trichaudron.blind": "À l'aveugle",
   "gui.steveparty.cartridge_menu.trichaudron.blind.tooltip": "Les têtes ne montrent rien : les lots y sont mélangés à chaque fois, révélés quand la tête crache",
   "gui.steveparty.cartridge_menu.trichaudron.true_choice": "Vrai choix",
