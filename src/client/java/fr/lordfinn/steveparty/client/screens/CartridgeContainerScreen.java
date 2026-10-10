@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.board.Pipette;
 import fr.lordfinn.steveparty.client.gui.HandCursor;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.payloads.custom.PipettePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeContainerScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -36,6 +37,8 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
     /** Coordinates listed in the box at most. */
     private static final int SHOWN_LINKS = 6;
     private static final int COPY_COLOR = 0xFF4CFF4C;
+    /** The titles' colour (vanilla's), and their margin before the panel's right edge or the pipette button. */
+    private static final int TITLE_COLOR = 0x404040, TITLE_MARGIN = 8, PIPETTE_GAP = 4;
 
     private boolean pipetteOn;
     /** The slot copied (-1: none yet) and its destinations (as the client sees them). */
@@ -56,6 +59,30 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
     }
 
     public abstract Identifier getTexture();
+
+    /** The width of the part the titles are in (the whole interface by default). */
+    protected int titlesWidth() {
+        return backgroundWidth;
+    }
+
+    /** The titles as vanilla places them, each on one line in its room (too long, it scrolls in it). */
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        UiText.line(context, textRenderer, title, titleX, titleY, titleRoom(titleX, titleY), TITLE_COLOR, false);
+        UiText.line(context, textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY,
+                titleRoom(playerInventoryTitleX, playerInventoryTitleY), TITLE_COLOR, false);
+    }
+
+    /**
+     * The room of a title at ({@code tx}, {@code ty}) (from the interface's corner): up to 8 px before the panel's right
+     * edge, or 4 px before the pipette button when it is on its row, on its right.
+     */
+    private int titleRoom(int tx, int ty) {
+        int right = titlesWidth() - TITLE_MARGIN;
+        int px = pipetteX() - x, py = pipetteY() - y;
+        if (hasPipette() && px > tx && py < ty + UiText.LINE_H && py + PIPETTE_BUTTON > ty) right = Math.min(right, px - PIPETTE_GAP);
+        return right - tx;
+    }
 
     @Override
     protected void init() {
