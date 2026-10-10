@@ -1,20 +1,25 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
-import fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -31,15 +36,15 @@ import java.util.UUID;
 
 /**
  * Where the tokens of a party come from and go back to: the start tile each token started from, the tokens to take
- * out of the game and the tokens of a stopped party to send back to their start tile, both as soon as they are
- * loaded when they were not. Saved with the controller.
+ * out of the game and the tokens of a party that is over (ended or stopped) to send back to their start tile, both as
+ * soon as they are loaded when they were not. Saved with the controller.
  */
 public final class PartyTokenHomes {
     /** Tokens that left the party (excluded / party over) while not loaded: released as soon as they are loaded. */
     private final Set<UUID> tokensToRelease = new LinkedHashSet<>();
-    /** The start tile each token of the running party started from (where a stopped party sends it back). */
+    /** The start tile each token of the party started from (where it goes back once the party is over). */
     private final Map<UUID, BlockPos> startTiles = new LinkedHashMap<>();
-    /** Tokens of a stopped party that were not loaded: sent back to their start tile as soon as they are loaded. */
+    /** Tokens of a party that is over that were not loaded: sent back to their start tile as soon as they are loaded. */
     private final Map<UUID, BlockPos> tokensToSendHome = new LinkedHashMap<>();
 
     void writeNbt(NbtCompound nbt) {
@@ -128,10 +133,17 @@ public final class PartyTokenHomes {
         }
     }
 
-    /** A token of a stopped party: sent back to {@code home} now if loaded, else as soon as it is. */
+    /**
+     * A token of a party that is over (ended or stopped): sent back to {@code home} now if it and its start tile are
+     * loaded, else as soon as they are. It stays where it is if its start tile is gone by then.
+     */
     void sendHome(ServerWorld serverWorld, UUID tokenUUID, BlockPos home) {
-        if (serverWorld.getEntity(tokenUUID) instanceof MobEntity mob) sendHome(serverWorld, mob, home);
-        else tokensToSendHome.put(tokenUUID, home);
+        if (serverWorld.getEntity(tokenUUID) instanceof MobEntity mob && serverWorld.isChunkLoaded(home)) {
+            tokensToSendHome.remove(tokenUUID);
+            sendHome(serverWorld, mob, home);
+        } else {
+            tokensToSendHome.put(tokenUUID, home);
+        }
     }
 
     /**
@@ -159,7 +171,7 @@ public final class PartyTokenHomes {
             if (PartyControllers.isTokenInRunningParty(home.getKey())) {
                 homes.remove(); // it plays again: it stays where it is
                 changed = true;
-            } else if (serverWorld.getEntity(home.getKey()) instanceof MobEntity mob) {
+            } else if (serverWorld.getEntity(home.getKey()) instanceof MobEntity mob && serverWorld.isChunkLoaded(home.getValue())) {
                 sendHome(serverWorld, mob, home.getValue());
                 homes.remove();
                 changed = true;
@@ -178,11 +190,24 @@ public final class PartyTokenHomes {
     }
 
     /**
-     * Puts a token of a stopped party back on its start tile, standing still as at the beginning: out of a pipe or a
-     * teleport, its move and the destinations it was choosing from forgotten.
+     * Puts a token of a party that is over back on its start tile {@code home}, standing still as at the beginning (see
+     * {@link #place}). A start tile that is gone (broken, or no longer a start tile) leaves it where it is, only still.
      */
     private static void sendHome(ServerWorld serverWorld, MobEntity mob, BlockPos home) {
-        if (mob.getVehicle() instanceof PipeCarrierEntity) mob.stopRiding();
+        BlockState state = serverWorld.getBlockState(home);
+        boolean startTile = state.getBlock() instanceof ABoardSpaceBlock
+                && state.get(ABoardSpaceBlock.TILE_TYPE) == BoardSpaceType.TILE_START;
+        place(serverWorld, mob, startTile ? home : null);
+    }
+
+    /**
+     * Puts a token on the board space {@code tile} (null: where it is), standing still as at the beginning: off its
+     * vehicle (a pipe...), out of a teleport, its move (a dice roll, a Move tile or a Mistigri's move back) and the
+     * destinations it was choosing from forgotten. Its riders come along. A puff of smoke and a pop where it leaves
+     * and where it lands, when it really moves.
+     */
+    static void place(ServerWorld serverWorld, MobEntity mob, @Nullable BlockPos tile) {
+        if (mob.hasVehicle()) mob.stopRiding();
         TileTeleport.cancel(mob);
         BoardSpaceBlockEntity space = BoardSpaces.boardSpaceOf(mob);
         if (space != null) space.hideDestinations();
@@ -191,12 +216,24 @@ public final class PartyTokenHomes {
             token.steveparty$stopMoving();
         }
         DiceRollEffects.clearMoveModules(mob.getUuid());
-        Vec3d stand = BoardSpaces.standPos(serverWorld, home);
-        mob.requestTeleport(stand.x, stand.y, stand.z);
+        AdvanceBackMoves.cancel(mob);
         mob.setVelocity(Vec3d.ZERO);
         mob.fallDistance = 0;
+        if (tile == null) return;
+        Vec3d stand = BoardSpaces.standPos(serverWorld, tile);
+        Vec3d from = mob.getPos();
+        if (from.squaredDistanceTo(stand) > 0.25) {
+            puff(serverWorld, from);
+            puff(serverWorld, stand);
+        }
+        mob.requestTeleport(stand.x, stand.y, stand.z);
         // Its path starts again there
         AdvanceBackMoves.forgetTrail(mob.getUuid());
-        AdvanceBackMoves.noteAt(mob, home);
+        AdvanceBackMoves.noteAt(mob, tile);
+    }
+
+    private static void puff(ServerWorld serverWorld, Vec3d at) {
+        serverWorld.spawnParticles(ParticleTypes.POOF, at.x, at.y + 0.4, at.z, 8, 0.25, 0.3, 0.25, 0.02);
+        serverWorld.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_CHICKEN_EGG, SoundCategory.NEUTRAL, 0.6f, 1.4f);
     }
 }
