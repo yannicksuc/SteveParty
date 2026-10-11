@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopStock;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenuHost;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
@@ -44,6 +45,8 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
     private final PlayerEntity player;
     /** Where the cartridge keeps its items ({@link CartridgeContainers.Storage}), sent by the server. */
     private final Property storage = Property.create();
+    /** A Shop Cartridge's stock, per offer, sent by the server. */
+    private final ShopStock.Synced shopStock = new ShopStock.Synced(this::addProperty);
 
     public CartridgeScreenHandler(int syncId, PlayerInventory playerInventory, CartridgeRef ref) {
         super(ModScreensHandlers.CARTRIDGE_SCREEN_HANDLER, syncId);
@@ -115,17 +118,23 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
     }
 
     @Override
+    public int shopStock(int column) {
+        return shopStock.get(column);
+    }
+
+    @Override
     public void sendContentUpdates() {
         updateStorage();
         super.sendContentUpdates();
     }
 
-    /** Its storage, before the properties are sent (a Party Controller is known on the server only). */
+    /** Its storage and a shop's stock, before the properties are sent (a Party Controller is known on the server only). */
     private void updateStorage() {
         if (player.getWorld().isClient) return;
         ItemStack stack = ref.resolve(player);
         if (CartridgeContainers.linksContainers(stack))
             storage.set(CartridgeContainers.storageOf(stack, player.getWorld(), ref.pos().orElse(null)).ordinal());
+        shopStock.update(stack, player.getWorld(), ref.pos().orElse(null));
     }
 
     /** The cartridge is still where it was (the same stack: not dropped, split nor taken out) and in reach. */

@@ -501,6 +501,7 @@ public class StevepartyClient implements ClientModInitializer {
                 (handler, inventory, title) -> new ShopStopScreen(
                         (ShopStopScreenHandler) handler, inventory, title));
         HandledScreens.register(CARTRIDGE_SCREEN_HANDLER, CartridgeScreen::new);
+        HandledScreens.register(SHOP_STALL_SCREEN_HANDLER, ShopStallScreen::new);
         HandledScreens.register(MINI_GAMES_CATALOGUE_SCREEN_HANDLER, MiniGamesCatalogueScreen::new);
         HandledScreens.register(STENCIL_MAKER_SCREEN_HANDLER, StencilMakerScreen::new);
         HandledScreens.register(STENCIL_GUN_SCREEN_HANDLER, StencilGunScreen::new);

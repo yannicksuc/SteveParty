@@ -18,8 +18,9 @@ import java.util.List;
  * Text in a box, whatever its language: it never goes out of its box and is never cut short.
  * <ul>
  *     <li>{@link #wrapped}: on as many lines as it needs (measure the height with {@link #height} to size the box);</li>
- *     <li>{@link #line}: on one line; too long, it scrolls slowly inside its box (in the reading direction), and its whole text is
- *     shown in a tooltip while the mouse is over it (in a screen).</li>
+ *     <li>{@link #line}: on one line; too long, in a screen it stays still, cut at its box, and scrolls slowly (in the
+ *     reading direction, from its start) only while the mouse is over it, its whole text in a tooltip; in the HUD,
+ *     where no mouse goes, it keeps scrolling.</li>
  * </ul>
  * The mod draws every text through here: {@code ./gradlew checkUiText} fails on a {@code drawText} elsewhere.
  */
@@ -34,6 +35,9 @@ public final class UiText {
 
     /** The text of the line under the mouse that does not fit, shown in a tooltip after the screen (see {@link #initialize}). */
     private static @Nullable Text hovered;
+    /** The box of the line the mouse is over (screen pixels), and since when: its scroll starts from its beginning. */
+    private static int[] hoveredBox = new int[4];
+    private static long hoveredSince, hoveredSeen;
 
     private UiText() {
     }
@@ -133,15 +137,14 @@ public final class UiText {
             return;
         }
         if (width <= 0) return;
-        float offset = scrollOffset(textWidth - width);
         int[] box = onScreen(context, x, y - 1, x + width, y + LINE_H);
+        float offset = offset(box, textWidth - width, Text.literal(plain(text)));
         context.enableScissor(box[0], box[1], box[2], box[3]);
         context.getMatrices().push();
         context.getMatrices().translate(-offset, 0, 0);
         context.drawText(font, text, x, y, color, shadow);
         context.getMatrices().pop();
         context.disableScissor();
-        noteHover(box, Text.literal(plain(text)));
     }
 
     /** The characters of an {@link OrderedText}, its styles dropped (for its tooltip). */
@@ -162,16 +165,15 @@ public final class UiText {
             return;
         }
         if (width <= 0) return;
-        // Too long: it scrolls inside its box, and the mouse over it shows it whole
-        float offset = scrollOffset(textWidth - width);
+        // Too long: cut at its box, scrolling under the mouse (always in the HUD), the mouse over it shows it whole
         int[] box = onScreen(context, x, y - 1, x + width, y + LINE_H);
+        float offset = offset(box, textWidth - width, text);
         context.enableScissor(box[0], box[1], box[2], box[3]);
         context.getMatrices().push();
         context.getMatrices().translate(-offset, 0, 0);
         context.drawText(font, text, x, y, color, shadow);
         context.getMatrices().pop();
         context.disableScissor();
-        noteHover(box, text);
     }
 
     /**
@@ -179,9 +181,14 @@ public final class UiText {
      * start, to its end, still at its end, then back to its start at once.
      */
     static float scrollOffset(int travel) {
+        return scrollOffset(travel, Util.getMeasuringTimeMs());
+    }
+
+    /** Same, {@code elapsedMs} into its scroll. */
+    static float scrollOffset(int travel, long elapsedMs) {
         long moveMs = Math.max(1, (long) (travel / SCROLL_SPEED * 1000F));
         long cycle = 2 * SCROLL_PAUSE_MS + moveMs;
-        long t = Util.getMeasuringTimeMs() % cycle;
+        long t = elapsedMs % cycle;
         if (t < SCROLL_PAUSE_MS) return 0;
         if (t < SCROLL_PAUSE_MS + moveMs) return (t - SCROLL_PAUSE_MS) / (float) moveMs * travel;
         return travel;
@@ -195,12 +202,25 @@ public final class UiText {
                 Math.round(Math.max(a.x, b.x)), Math.round(Math.max(a.y, b.y))};
     }
 
-    /** In a screen, the mouse over a line that does not fit: its whole text in a tooltip. */
-    private static void noteHover(int[] box, Text text) {
+    /**
+     * How far a line {@code travel} pixels too long, drawn in {@code box}, is scrolled now: in the HUD it keeps
+     * scrolling; in a screen it stays at its start unless the mouse is over it, then it scrolls from its start and its
+     * whole text is shown in a tooltip.
+     */
+    private static float offset(int[] box, int travel, Text text) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.currentScreen == null) return;
+        if (client.currentScreen == null) return scrollOffset(travel);
         double scale = client.getWindow().getScaleFactor();
         double mouseX = client.mouse.getX() / scale, mouseY = client.mouse.getY() / scale;
-        if (mouseX >= box[0] && mouseX < box[2] && mouseY >= box[1] && mouseY < box[3]) hovered = text;
+        if (mouseX < box[0] || mouseX >= box[2] || mouseY < box[1] || mouseY >= box[3]) return 0;
+        hovered = text;
+        long now = Util.getMeasuringTimeMs();
+        // Another line, or the same one hovered again: from its start
+        if (!java.util.Arrays.equals(box, hoveredBox) || now - hoveredSeen > 250) {
+            hoveredBox = box;
+            hoveredSince = now;
+        }
+        hoveredSeen = now;
+        return scrollOffset(travel, now - hoveredSince);
     }
 }

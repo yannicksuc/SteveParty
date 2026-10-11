@@ -14,6 +14,13 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopStock;
+import fr.lordfinn.steveparty.client.gui.HandCursor;
+import fr.lordfinn.steveparty.client.gui.StallArt;
+import fr.lordfinn.steveparty.components.InventoryComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.CartridgeSettingPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GhostSlot;
 import fr.lordfinn.steveparty.utils.Argb;
@@ -44,6 +51,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
+import java.util.function.IntUnaryOperator;
 import java.util.function.Supplier;
 
 /**
@@ -119,6 +127,12 @@ public final class CartridgePanel {
     /** The storage the containers' module was laid out for, null without such a module. */
     private @Nullable CartridgeContainers.Storage shownStorage;
     private int infoTicks;
+    /** A Shop Cartridge's stock per offer, as the screen's handler last got it (see {@link #setStock}). */
+    private IntUnaryOperator stock = column -> ShopStock.NO_OFFER;
+    /** The small stall's offers ({@link ShopCartridgeItem#stallSlots}), read again only when they change. */
+    private List<ItemStack> stallSlots = List.of();
+    private @Nullable InventoryComponent stallFrom;
+    private @Nullable Item stallItem;
     // Traces: per module, 5 points (x, y) from the contacts to the module, and the lengths
     private int[][] paths = new int[0][];
     private int[] pathLength = new int[0];
@@ -166,6 +180,11 @@ public final class CartridgePanel {
         int w = width(), h = height();
         relayout(stack.get());
         return w != width() || h != height();
+    }
+
+    /** Where a Shop Cartridge's stock comes from: the screen handler's (sent by the server). */
+    public void setStock(IntUnaryOperator stock) {
+        this.stock = stock;
     }
 
     /** A note in the label (e.g. the slot of an Advanced Tile). */
@@ -258,6 +277,7 @@ public final class CartridgePanel {
                     yield choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                 }
                 case NumberModule number -> NumberModule.ROW_H;
+                case StallOffersModule stall -> StallOffersModule.PREVIEW_H;
                 case ContainersModule containers -> containersHeight(current);
                 case ColorModule color -> {
                     int rows = (ColorModule.DEFAULT + colorsPerRow()) / colorsPerRow();
@@ -444,12 +464,15 @@ public final class CartridgePanel {
         boolean clipped = scrollMax > 0;
         if (clipped) context.enableScissor(x + 4, contentTop(), x + w - 4, contentBottom());
         boolean mouseInContent = inContent(mouseY);
+        stallHovered = false;
         for (int i = 0; i < modules.size(); i++) {
             int my = moduleY(i);
             if (clipped && (my + heights[i] < contentTop() || my > contentBottom())) continue;
             float flash = animate && flashStart[i] != 0 ? 1F - (now - flashStart[i]) / (float) FLASH_MS : 0F;
             drawModule(context, current, i, x + layout.x(i), my, mouseInContent ? mouseX : -1, mouseInContent ? mouseY : -1, Math.clamp(flash, 0F, 1F));
         }
+        // A small stall to click: the hand over it (the screen resets the cursor when it closes)
+        if (CartridgeLayout.indexOf(modules, StallOffersModule.class) >= 0) HandCursor.update(stallHovered);
         if (clipped) {
             context.disableScissor();
             // The scroll bar: a thin track on the right, its thumb where the modules shown are
@@ -577,6 +600,7 @@ public final class CartridgePanel {
             case NumberModule number -> drawNumber(context, current, i, number, mx, top, mouseX, mouseY, editable);
             case ColorModule color -> drawColors(context, current, i, color, mx, top, mouseX, mouseY, editable);
             case GhostSlotsModule ghosts -> drawGhostSlots(context, ghosts, mx, my);
+            case StallOffersModule stall -> drawStall(context, current, mx, top, mouseX, mouseY, editable);
             case InfoModule info -> drawInfo(context, current, i, info, mx, top);
             case ContainersModule containers -> drawContainers(context, current, mx, top, mouseX, mouseY, editable);
             default -> {
@@ -719,6 +743,64 @@ public final class CartridgePanel {
         UiText.line(context, textRenderer, takeText, tx + 8, ty + 11, room, TONE_NORMAL, false);
         for (int l = 0; l < ghostHelp.size(); l++) UiText.line(context, textRenderer, ghostHelp.get(l), tx, ty + 24 + l * InfoModule.LINE_H, ghostHelpW, TONE_SOFT, false);
     }
+
+    // ------------------------------------------------------------------ the Shop Cartridge's small stall
+
+    /** The scale of the small stall: as large as the column allows, up to {@link StallOffersModule#SCALE}. */
+    private float stallScale() {
+        return Math.min(StallOffersModule.SCALE, (float) columnW / StallOffersModule.STALL_W);
+    }
+
+    private int stallW() {
+        return Math.round(StallOffersModule.STALL_W * stallScale());
+    }
+
+    private int stallH() {
+        return Math.round(StallOffersModule.STALL_H * stallScale());
+    }
+
+    /** Its left edge: centred in the column. */
+    private int stallX(int mx) {
+        return mx + (columnW - stallW()) / 2;
+    }
+
+    /** The offers of {@code current}, read again when they changed. */
+    private List<ItemStack> stallSlots(ItemStack current) {
+        InventoryComponent offers = current.get(ModComponents.INVENTORY_COMPONENT);
+        if (offers != stallFrom || current.getItem() != stallItem || stallSlots.isEmpty()) {
+            stallFrom = offers;
+            stallItem = current.getItem();
+            stallSlots = ShopCartridgeItem.stallSlots(current);
+        }
+        return stallSlots;
+    }
+
+    /**
+     * The Trading Stall in small, drawn with its own texture: the items sold over the awning, the stock on the arrows,
+     * the prices under them. Under the mouse (the player may edit): outlined, the hand cursor; a click opens it.
+     */
+    private void drawStall(DrawContext context, ItemStack current, int mx, int top, int mouseX, int mouseY, boolean editable) {
+        int sx = stallX(mx), sy = top + 1;
+        boolean over = editable && HitArea.contains(mouseX, mouseY, sx, sy, stallW(), stallH());
+        stallHovered |= over;
+        float scale = stallScale();
+        context.getMatrices().push();
+        context.getMatrices().translate(sx, sy, 0);
+        context.getMatrices().scale(scale, scale, 1);
+        StallArt.drawTop(context, 0, 0);
+        StallArt.drawItems(context, textRenderer, stallSlots(current), 0, 0);
+        for (int column = 0; column < ShopCartridgeItem.OFFERS; column++) StallArt.drawStock(context, textRenderer, 0, 0, column, stock.applyAsInt(column));
+        context.getMatrices().pop();
+        if (over) {
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 300);
+            context.drawBorder(sx - 1, sy - 1, stallW() + 2, stallH() + 2, 0xFFFFFFFF);
+            context.getMatrices().pop();
+        }
+    }
+
+    /** Whether the mouse is over a small stall this frame (the hand cursor). */
+    private boolean stallHovered;
 
     private void drawInfo(DrawContext context, ItemStack current, int i, InfoModule info, int mx, int top) {
         int tx = mx;
@@ -924,6 +1006,16 @@ public final class CartridgePanel {
                         return true;
                     }
                 }
+            } else if (module instanceof StallOffersModule) {
+                if (HitArea.contains(mouseX, mouseY, stallX(mx), top + 1, stallW(), stallH())) {
+                    int offers = ShopCartridgeItem.offers(current).size();
+                    List<Text> lines = new ArrayList<>();
+                    lines.add(Text.translatable(CartridgeItem.MENU_KEY + "shop.offers.count", offers, ShopCartridgeItem.OFFERS)
+                            .formatted(offers == 0 ? Formatting.RED : Formatting.WHITE));
+                    if (canEdit.getAsBoolean()) lines.add(Text.translatable(CartridgeItem.MENU_KEY + "shop.offers.open").formatted(Formatting.YELLOW));
+                    context.drawTooltip(textRenderer, lines, mouseX, mouseY);
+                    return true;
+                }
             } else if (module instanceof ColorModule) {
                 for (int v = 0; v <= ColorModule.DEFAULT; v++) {
                     if (!HitArea.contains(mouseX, mouseY, colorX(mx, v), colorY(top, v), ColorModule.SWATCH, ColorModule.SWATCH)) continue;
@@ -1000,6 +1092,15 @@ public final class CartridgePanel {
                 case ColorModule color -> {
                     for (int v = 0; v <= ColorModule.DEFAULT; v++) {
                         if (HitArea.contains(mouseX, mouseY, colorX(mx, v), colorY(top, v), ColorModule.SWATCH, ColorModule.SWATCH)) return change(i, v, value);
+                    }
+                }
+                case StallOffersModule stall -> {
+                    if (HitArea.contains(mouseX, mouseY, stallX(mx), top + 1, stallW(), stallH())) {
+                        // Not a value: the server opens the stall (the spark runs while it opens)
+                        sparkStart[i] = Util.getMeasuringTimeMs();
+                        ClientPlayNetworking.send(new CartridgeSettingPayload(syncId.getAsInt(), stall.id(), StallOffersModule.OPEN));
+                        click();
+                        return true;
                     }
                 }
                 case ContainersModule containers -> {

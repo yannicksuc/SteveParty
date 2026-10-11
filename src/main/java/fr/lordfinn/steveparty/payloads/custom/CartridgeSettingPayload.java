@@ -4,7 +4,9 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenuHost;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.payloads.ServerboundPayload;
+import fr.lordfinn.steveparty.screen_handlers.custom.ShopStallScreenHandler;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
@@ -35,6 +37,11 @@ public record CartridgeSettingPayload(int syncId, String module, int value) impl
         if (!(player.currentScreenHandler instanceof CartridgeMenuHost host) || player.currentScreenHandler.syncId != syncId) return;
         CartridgeRef ref = host.editedCartridge(player);
         if (ref == null) return;
+        // The Shop Cartridge's offers: a click on its small stall opens the stall itself
+        if (CartridgeMenus.module(ref.resolve(player), module) instanceof StallOffersModule) {
+            if (value == StallOffersModule.OPEN) ShopStallScreenHandler.open(player, ref);
+            return;
+        }
         if (CartridgeMenus.apply(player, ref, module, value)) {
             player.playSoundToPlayer(SoundEvents.UI_BUTTON_CLICK.value(), SoundCategory.PLAYERS, 0.3F, 1.4F);
         }
