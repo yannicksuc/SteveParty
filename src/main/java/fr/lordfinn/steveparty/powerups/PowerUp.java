@@ -40,7 +40,7 @@ import java.util.function.Consumer;
  * Everything does nothing by default: a power-up overrides what it needs. Server side only, except the tooltip.
  * <p>
  * A new power-up: one class extending this one, and one line in {@link PowerUps}
- * ({@code register(new MyPowerUp())}). See {@code docs/powerups.md} for the assets and lang keys it needs.
+ * ({@code register(new MyPowerUp())}). See the wiki page « Power-ups » for the assets and lang keys it needs.
  */
 public abstract class PowerUp {
     /** What a power-up aims at when used. */

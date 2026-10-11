@@ -16,7 +16,7 @@ ASSETS = os.path.join(RES, "assets", "steveparty")
 PENDING = os.path.join(ROOT, "docs", "advancements-pending", "data", "steveparty")
 JAVA = os.path.join(ROOT, "src", "main", "java", "fr", "lordfinn", "steveparty")
 
-# Custom triggers specified in docs/advancements.md, implemented after the 1.21.1 port
+# Custom triggers implemented after the 1.21.1 port
 CUSTOM_TRIGGERS = {
     "pawn_spell", "dice_rolled", "dice_coins", "dice_forged", "dice_forge_level", "entity_orbiting",
     "forge_core_exploded", "mula_burst", "mula_lifted", "ephemeride_seen", "telescope_star_found",
