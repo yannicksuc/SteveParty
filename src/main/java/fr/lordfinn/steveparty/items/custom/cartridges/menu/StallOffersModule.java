@@ -16,8 +16,8 @@ public final class StallOffersModule extends CartridgeModule {
      * The part of the stall's texture shown (the sold row, the awning, the arrows and the two price rows, its bottom
      * edge redrawn under them), and the scale it is drawn at in a column of the menu.
      */
-    public static final int STALL_W = 184, STALL_H = 89;
-    public static final float SCALE = 0.7F;
+    public static final int STALL_W = 184, STALL_H = 95;
+    public static final float SCALE = 0.5F;
     /** The preview's height in the menu (its label excluded). */
     public static final int PREVIEW_H = Math.round(STALL_H * SCALE) + 1;
     /** The value a click sends: open the stall. */

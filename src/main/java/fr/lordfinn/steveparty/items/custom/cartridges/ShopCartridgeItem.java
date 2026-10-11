@@ -60,8 +60,7 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
 
     private static final String K = MENU_KEY + "shop.";
     private static final List<CartridgeModule> MODULES = List.of(
-            // No title: the small stall says what it is
-            new StallOffersModule("offers", null),
+            new StallOffersModule("offers", K + "offers"),
             new NumberModule("purchases", K + "purchases", 1, MAX_PURCHASES, ShopCartridgeItem::purchases,
                     (edit, value) -> setPurchases(edit.stack(), value), stack -> COLOR),
             // No title: its hint row says what it is

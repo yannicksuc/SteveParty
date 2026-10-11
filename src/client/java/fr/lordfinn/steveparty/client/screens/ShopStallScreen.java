@@ -2,12 +2,13 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.gui.HandCursor;
 import fr.lordfinn.steveparty.client.gui.HitArea;
-import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.StallArt;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStallScreenHandler;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -54,6 +55,18 @@ public class ShopStallScreen extends HandledScreen<ShopStallScreenHandler> {
     }
 
     @Override
+    protected void init() {
+        super.init();
+        // Back to the menu it was opened from: a button of the mod's, as on its other screens
+        PartyButton back = new PartyButton(backX(), backY(), BACK_SIZE, BACK_SIZE, Text.literal("◀"), button -> {
+            if (client != null && client.interactionManager != null)
+                client.interactionManager.clickButton(handler.syncId, ShopStallScreenHandler.BACK);
+        });
+        back.setTooltip(Tooltip.of(Text.translatable(KEY + "back")));
+        addDrawableChild(back);
+    }
+
+    @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         // No title (the awning says it); the inventory's up to its panel's right padding, as on the stall
         UiText.line(context, textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY,
@@ -67,13 +80,8 @@ public class ShopStallScreen extends HandledScreen<ShopStallScreenHandler> {
             StallArt.drawStock(context, textRenderer, x, y, column, handler.stock(column));
         }
         boolean back = overBack(mouseX, mouseY);
-        PartyGui.button(context, backX(), backY(), BACK_SIZE, BACK_SIZE, back ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON, false);
-        UiText.centered(context, textRenderer, "◀", backX() + 1, backY() + 5, BACK_SIZE, PartyGui.TEXT_DARK, false);
         HandCursor.update(back);
-        if (back) {
-            context.drawTooltip(textRenderer, Text.translatable(KEY + "back"), mouseX, mouseY);
-            return;
-        }
+        if (back) return;
         // An empty slot says what it takes; an arrow, its column's stock
         if (focusedSlot != null && !focusedSlot.hasStack() && handler.getCursorStack().isEmpty()
                 && focusedSlot.id < ShopCartridgeItem.SLOTS) {
@@ -110,10 +118,6 @@ public class ShopStallScreen extends HandledScreen<ShopStallScreenHandler> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && overBack(mouseX, mouseY) && client != null && client.interactionManager != null) {
-            client.interactionManager.clickButton(handler.syncId, ShopStallScreenHandler.BACK);
-            return true;
-        }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 

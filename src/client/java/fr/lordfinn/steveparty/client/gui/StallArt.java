@@ -24,10 +24,12 @@ import java.util.List;
  */
 public final class StallArt {
     public static final Identifier TEXTURE = Steveparty.id("textures/gui/trading_stall.png");
-    /** The stall's body edges (the texture's), to close its bottom under the price rows. */
-    private static final int EDGE = 0xFF3D1C04, BEVEL = 0xFF68340C;
-    /** The texture rows drawn as they are for the stall's top (the rows under them hold the inventory's tab). */
-    private static final int TOP_ROWS = 86;
+    /** The stall's body edges (the texture's), to close its bottom on the left, where the texture holds the inventory's tab. */
+    private static final int EDGE = 0xFF3D1C04, BEVEL = 0xFF68340C, LIGHT = 0xFFB97333;
+    /** The texture rows drawn as they are (under them, its left part holds the inventory's tab). */
+    private static final int TOP_ROWS = 88;
+    /** The stall's bottom rows: the texture's from this x on, its left corner redrawn. */
+    private static final int BOTTOM_FROM = 70;
     /** Where a column's stock is written: on its arrow's shaft. */
     public static final int STOCK_Y = 41;
     private static final int STOCK = 0xFFFFFFFF, STOCK_OUT = 0xFFFF5555, STOCK_INFINITE = 0xFFFFD34A;
@@ -43,11 +45,23 @@ public final class StallArt {
      */
     public static void drawTop(DrawContext context, int x, int y) {
         context.drawTexture(TEXTURE, x, y, 0, 0, StallOffersModule.STALL_W, TOP_ROWS, 256, 256);
-        int bottom = y + TOP_ROWS;
-        context.fill(x + 5, bottom, x + 179, bottom + 2, BEVEL);
-        context.fill(x + 4, bottom, x + 5, bottom + 3, EDGE);
-        context.fill(x + 179, bottom, x + 180, bottom + 3, EDGE);
-        context.fill(x + 5, bottom + 2, x + 179, bottom + 3, EDGE);
+        // Its bottom as on the stall's screen: three more rows of wood, its light edge, its bevel and edge, rounded
+        for (int row = TOP_ROWS; row < TOP_ROWS + 3; row++)
+            context.drawTexture(TEXTURE, x, y + row, 0, TOP_ROWS - 1, 180, 1, 256, 256);
+        int[] right = {180, 179, 178, 177};
+        for (int i = 0; i < 4; i++) {
+            int row = TOP_ROWS + 3 + i;
+            context.drawTexture(TEXTURE, x + BOTTOM_FROM, y + row, BOTTOM_FROM, row, right[i] - BOTTOM_FROM, 1, 256, 256);
+        }
+        int b = y + TOP_ROWS + 3, end = x + BOTTOM_FROM;
+        context.fill(x + 4, b, x + 5, b + 1, EDGE);
+        context.fill(x + 5, b, x + 8, b + 1, BEVEL);
+        context.fill(x + 8, b, end, b + 1, LIGHT);
+        context.fill(x + 5, b + 1, x + 6, b + 2, EDGE);
+        context.fill(x + 6, b + 1, end, b + 2, BEVEL);
+        context.fill(x + 6, b + 2, x + 7, b + 3, EDGE);
+        context.fill(x + 7, b + 2, end, b + 3, BEVEL);
+        context.fill(x + 7, b + 3, end, b + 4, EDGE);
     }
 
     /** Where slot {@code slot} (a stall's order: prices, second prices, items sold) draws its item, from the stall's corner. */

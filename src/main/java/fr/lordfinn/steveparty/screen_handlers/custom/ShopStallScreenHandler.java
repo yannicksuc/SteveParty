@@ -37,7 +37,7 @@ public class ShopStallScreenHandler extends ScreenHandler implements GhostSlotHo
     /** The stall's slots, as on the Trading Stall's screen: the columns, the sold row, the two price rows. */
     public static final int SLOTS_X = 12, SOLD_Y = 0, PRICE_Y = 53, SLOT = 18;
     /** The player's inventory, as on the Trading Stall's screen. */
-    public static final int INVENTORY_X = 12, INVENTORY_Y = 105;
+    public static final int INVENTORY_X = 12, INVENTORY_Y = 103;
 
     private final CartridgeRef ref;
     private final PlayerEntity player;

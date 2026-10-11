@@ -31,7 +31,7 @@ public class TradingStallScreenHandler extends ScreenHandler {
 
     // Player inventory position
     private static final int PLAYER_INV_X = 12;
-    private static final int PLAYER_INV_Y = 105;
+    private static final int PLAYER_INV_Y = 103;
 
     private final Inventory inventory;
 
