@@ -9,7 +9,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.SneakScrollItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ContainersModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,6 +21,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +37,9 @@ import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
  *     <li>in a tile: the shop opens when a token ends its move there (passing tokens are not stopped).</li>
  * </ul>
  * The space summons its own merchant, a Boxed Trader hologram, on its Spawn Marker ({@link MobSpawnCartridge}). What he
- * sells is set in the cartridge's menu: up to {@link #OFFERS} offers, one per column of its slots like a trading stall's
- * (the item sold, its price, a second price), quantities with the mouse wheel. Each sale is taken from its linked
+ * sells is set on a Trading Stall of its own: its menu shows the stall in small ({@link StallOffersModule}), a click opens
+ * the stall's screen, up to {@link #OFFERS} offers, one per column (the item sold over the awning, its price and a second
+ * price under it), ghost copies with their quantities set with the mouse wheel. Each sale is taken from its linked
  * containers ({@link ContainerCartridge}), or without any from the bank of the party running on its board; the payment
  * goes to that bank (or to its containers outside a party). The cartridge also sets how many items may be bought per
  * stop ({@link #purchases}): its menu, or sneak + mouse wheel with it in the main hand.
@@ -47,14 +49,19 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
     public static final int MAX_PURCHASES = 9;
     /** The shop cartridge's colour: the tile, the check point and the landing burst. */
     public static final int COLOR = 0xA6E22E;
-    /** The most offers (the columns of its menu's slots). */
-    public static final int OFFERS = GhostSlotsModule.COLUMNS;
-    /** The rows of its menu's slots: the item sold, its price, a second price (optional). */
+    /** The most offers: the columns of a Trading Stall. */
+    public static final int OFFERS = 9;
+    /** The rows of an offer: the item sold, its price, a second price (optional). */
     public static final int ROW_SOLD = 0, ROW_PRICE = 1, ROW_SECOND_PRICE = 2;
+    /** Its slots, in a Trading Stall's order ({@link TradingStallBlockEntity#SIZE}): the prices, the second prices, the items sold. */
+    public static final int SLOTS = TradingStallBlockEntity.SIZE;
+    /** The slots of a cartridge made before it had a stall's 9 offers: 3 columns of 3 (row by row: sold, price, 2nd price). */
+    private static final int OLD_SLOTS = 9, OLD_COLUMNS = 3;
 
     private static final String K = MENU_KEY + "shop.";
     private static final List<CartridgeModule> MODULES = List.of(
-            new GhostSlotsModule("offers", K + "offers", GhostSlotsModule.COUNT, K + "offers.help"),
+            // No title: the small stall says what it is
+            new StallOffersModule("offers", null),
             new NumberModule("purchases", K + "purchases", 1, MAX_PURCHASES, ShopCartridgeItem::purchases,
                     (edit, value) -> setPurchases(edit.stack(), value), stack -> COLOR),
             // No title: its hint row says what it is
@@ -101,9 +108,59 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
         else stack.set(ModComponents.SHOP_PURCHASES, purchases);
     }
 
-    /** The slot of its menu holding {@code row} ({@link #ROW_SOLD}, {@link #ROW_PRICE}...) of offer {@code column}. */
+    /**
+     * The slot holding {@code row} ({@link #ROW_SOLD}, {@link #ROW_PRICE}...) of offer {@code column}: a Trading Stall's
+     * (0-8 the prices, 9-17 the second prices, 18-26 the items sold), so that its editor is the stall's screen.
+     */
     public static int slot(int column, int row) {
-        return row * GhostSlotsModule.COLUMNS + column;
+        return switch (row) {
+            case ROW_PRICE -> column;
+            case ROW_SECOND_PRICE -> OFFERS + column;
+            default -> 2 * OFFERS + column;
+        };
+    }
+
+    /**
+     * Its {@value #SLOTS} slots in a Trading Stall's order (copies, never taken items). A cartridge made when it had 3
+     * offers (3 columns of 3: sold, price, 2nd price) reads as the stall's first 3 columns: its offers are kept, and
+     * written in the new order at its next change.
+     */
+    public static List<ItemStack> stallSlots(ItemStack stack) {
+        List<ItemStack> slots = new ArrayList<>(SLOTS);
+        for (int i = 0; i < SLOTS; i++) slots.add(ItemStack.EMPTY);
+        InventoryComponent stored = stack == null ? null : stack.get(INVENTORY_COMPONENT);
+        if (stored == null) return slots;
+        if (isOldLayout(stored)) {
+            for (int i = 0; i < Math.min(OLD_SLOTS, stored.size()); i++) {
+                slots.set(slot(i % OLD_COLUMNS, i / OLD_COLUMNS), ghost(stored, i));
+            }
+        } else {
+            for (int i = 0; i < Math.min(SLOTS, stored.size()); i++) slots.set(i, ghost(stored, i));
+        }
+        return slots;
+    }
+
+    /** Whether its slots were written before the stall's 9 offers (9 slots or fewer: 3 columns of 3). */
+    public static boolean isOldLayout(InventoryComponent stored) {
+        return stored.size() <= OLD_SLOTS;
+    }
+
+    /** Writes its {@value #SLOTS} slots (a Trading Stall's order); all empty: none stored. */
+    public static void setStallSlots(ItemStack stack, List<ItemStack> stall) {
+        SimpleInventory slots = new SimpleInventory(SLOTS);
+        for (int i = 0; i < Math.min(SLOTS, stall.size()); i++) {
+            ItemStack item = stall.get(i).copy();
+            item.remove(IS_NEGATIVE);
+            slots.setStack(i, item);
+        }
+        if (slots.isEmpty()) stack.remove(INVENTORY_COMPONENT);
+        else InventoryComponent.writeToStack(stack, slots);
+    }
+
+    /** Offer {@code column}, as a Trading Stall makes it ({@link TradingStallBlockEntity#offerOf}), or null (none there). */
+    public static TradingStallBlockEntity.@Nullable ExactTradeOffer offer(List<ItemStack> slots, int column) {
+        return TradingStallBlockEntity.offerOf(slots.get(slot(column, ROW_PRICE)), slots.get(slot(column, ROW_SECOND_PRICE)),
+                slots.get(slot(column, ROW_SOLD)));
     }
 
     /**
@@ -112,19 +169,17 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
      */
     public static List<TradingStallBlockEntity.ExactTradeOffer> offers(ItemStack stack) {
         List<TradingStallBlockEntity.ExactTradeOffer> offers = new ArrayList<>();
-        InventoryComponent slots = stack == null ? null : stack.get(INVENTORY_COMPONENT);
-        if (slots == null) return offers;
+        if (stack == null || !stack.contains(INVENTORY_COMPONENT)) return offers;
+        List<ItemStack> slots = stallSlots(stack);
         for (int column = 0; column < OFFERS; column++) {
-            TradingStallBlockEntity.ExactTradeOffer offer = TradingStallBlockEntity.offerOf(ghost(slots, slot(column, ROW_PRICE)),
-                    ghost(slots, slot(column, ROW_SECOND_PRICE)), ghost(slots, slot(column, ROW_SOLD)));
+            TradingStallBlockEntity.ExactTradeOffer offer = offer(slots, column);
             if (offer != null) offers.add(offer);
         }
         return offers;
     }
 
     private static ItemStack ghost(InventoryComponent slots, int slot) {
-        if (slot >= slots.size()) return ItemStack.EMPTY;
-        ItemStack stack = slots.getStack(slot).copy();
+        ItemStack stack = slots.getStack(slot);
         stack.remove(IS_NEGATIVE);
         return stack;
     }
@@ -139,13 +194,13 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
      * its second price; at most {@link #OFFERS}, none: no offer.
      */
     public static void setOffers(ItemStack stack, List<List<ItemStack>> offers) {
-        SimpleInventory slots = new SimpleInventory(GhostSlotsModule.COUNT);
+        List<ItemStack> slots = new ArrayList<>(SLOTS);
+        for (int i = 0; i < SLOTS; i++) slots.add(ItemStack.EMPTY);
         for (int column = 0; column < Math.min(OFFERS, offers.size()); column++) {
             List<ItemStack> offer = offers.get(column);
-            for (int row = 0; row < Math.min(3, offer.size()); row++) slots.setStack(slot(column, row), offer.get(row).copy());
+            for (int row = 0; row < Math.min(3, offer.size()); row++) slots.set(slot(column, row), offer.get(row).copy());
         }
-        if (slots.isEmpty()) stack.remove(INVENTORY_COMPONENT);
-        else InventoryComponent.writeToStack(stack, slots);
+        setStallSlots(stack, slots);
     }
 
     @Override

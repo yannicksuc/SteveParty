@@ -53,6 +53,11 @@ public class ModScreensHandlers {
             Registry.register(Registries.SCREEN_HANDLER, Steveparty.id("cartridge_screen_handler"),
                     new ExtendedScreenHandlerType<>(CartridgeScreenHandler::new, CartridgeRef.PACKET_CODEC));
 
+    /** A Shop Cartridge's offers on a Trading Stall (opening data: where the cartridge is, see ShopStallScreenHandler). */
+    public static final ExtendedScreenHandlerType<ShopStallScreenHandler, CartridgeRef> SHOP_STALL_SCREEN_HANDLER =
+            Registry.register(Registries.SCREEN_HANDLER, Steveparty.id("shop_stall_screen_handler"),
+                    new ExtendedScreenHandlerType<>(ShopStallScreenHandler::new, CartridgeRef.PACKET_CODEC));
+
 
     public static final ScreenHandlerType<MiniGamesCatalogueScreenHandler> MINI_GAMES_CATALOGUE_SCREEN_HANDLER =
             register("mini_games_catalogue_screen_handler", MiniGamesCatalogueScreenHandler::new, FeatureSet.empty());

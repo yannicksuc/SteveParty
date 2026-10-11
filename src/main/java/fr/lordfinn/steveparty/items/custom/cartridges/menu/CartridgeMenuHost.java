@@ -20,4 +20,12 @@ public interface CartridgeMenuHost {
     default CartridgeContainers.Storage storage() {
         return CartridgeContainers.Storage.NONE;
     }
+
+    /**
+     * A Shop Cartridge edited: how many times its storage can still give offer {@code column}, as the server last sent
+     * it ({@link fr.lordfinn.steveparty.items.custom.cartridges.ShopStock}).
+     */
+    default int shopStock(int column) {
+        return fr.lordfinn.steveparty.items.custom.cartridges.ShopStock.NO_OFFER;
+    }
 }

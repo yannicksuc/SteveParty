@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopStock;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenuHost;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
@@ -34,6 +35,8 @@ public class BoardSpaceScreenHandler extends CartridgeContainerScreenHandler imp
     private final Property selected = Property.create();
     /** Where the selected cartridge keeps its items ({@link CartridgeContainers.Storage}), sent by the server. */
     private final Property storage = Property.create();
+    /** The selected Shop Cartridge's stock, per offer, sent by the server. */
+    private final ShopStock.Synced shopStock = new ShopStock.Synced(this::addProperty);
     private final BoardSpaceBlockEntity boardSpace;
     private int ghostStart = -1;
 
@@ -139,17 +142,26 @@ public class BoardSpaceScreenHandler extends CartridgeContainerScreenHandler imp
     }
 
     @Override
+    public int shopStock(int column) {
+        return shopStock.get(column);
+    }
+
+    @Override
     public void sendContentUpdates() {
         updateStorage();
         super.sendContentUpdates();
     }
 
-    /** The selected cartridge's storage, before the properties are sent (a Party Controller is known on the server only). */
+    /**
+     * The selected cartridge's storage and a shop's stock, before the properties are sent (a Party Controller is known
+     * on the server only).
+     */
     private void updateStorage() {
         if (boardSpace == null || boardSpace.getWorld() == null || boardSpace.getWorld().isClient) return;
         ItemStack stack = selectedStack();
         if (CartridgeContainers.linksContainers(stack))
             storage.set(CartridgeContainers.storageOf(stack, boardSpace.getWorld(), boardSpace.getPos()).ordinal());
+        shopStock.update(stack, boardSpace.getWorld(), boardSpace.getPos());
     }
 
     private boolean isGhost(int slotIndex) {

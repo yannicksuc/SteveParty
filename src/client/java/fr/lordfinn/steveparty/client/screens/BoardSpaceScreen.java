@@ -61,6 +61,7 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
         this.panel = new CartridgePanel(MinecraftClient.getInstance(), handler::selectedStack, () -> pos, handler::storage, () -> handler.syncId,
                 () -> pos != null && CartridgeRef.slot(pos, handler.getSelectedSlot()).mayEdit(inventory.player),
                 CartridgeLayout.MAX_CONTENT_BESIDE_TILE, 0, TILE_H);
+        this.panel.setStock(handler::shopStock);
     }
 
     /**

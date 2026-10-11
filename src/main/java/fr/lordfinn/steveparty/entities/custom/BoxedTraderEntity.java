@@ -17,6 +17,7 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.BandanaItem;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.CustomizableMerchantScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler;
@@ -146,12 +147,16 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity, Boar
     private static final TrackedData<Optional<BlockPos>> SHOP_STALL = DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
     /** What a summoned merchant sells (up to {@link #SHOP_DISPLAY}), shown on his stall; empty for a merchant of the world. */
     @SuppressWarnings("unchecked")
-    private static final TrackedData<ItemStack>[] SHOP_ITEMS = new TrackedData[]{
-            DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.ITEM_STACK),
-            DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.ITEM_STACK),
-            DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.ITEM_STACK)};
-    /** The most items shown on a summoned merchant's stall. */
-    public static final int SHOP_DISPLAY = 3;
+    private static final TrackedData<ItemStack>[] SHOP_ITEMS = new TrackedData[ShopCartridgeItem.OFFERS];
+
+    static {
+        for (int i = 0; i < SHOP_ITEMS.length; i++) {
+            SHOP_ITEMS[i] = DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
+        }
+    }
+
+    /** The most items shown on a summoned merchant's stall: a Shop Cartridge's offers, the 9 columns of a stall. */
+    public static final int SHOP_DISPLAY = ShopCartridgeItem.OFFERS;
     /** After a theft: closed for 20 s, ignoring players. */
     public static final int THEFT_HIDE_TICKS = 400;
     /** fun_shocked (1.3 s) plays before he hides. */

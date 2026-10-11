@@ -22,6 +22,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ColorModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import fr.lordfinn.steveparty.payloads.custom.CartridgeSettingPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
@@ -171,6 +172,7 @@ public class CartridgeMenuGameTests implements SteveGameTest {
         return label + switch (module) {
             case ChoiceModule choice -> choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
             case NumberModule number -> NumberModule.ROW_H;
+            case StallOffersModule stall -> StallOffersModule.PREVIEW_H;
             case ColorModule color -> {
                 int perRow = (columnW + ColorModule.GAP) / (ColorModule.SWATCH + ColorModule.GAP);
                 int rows = (ColorModule.DEFAULT + perRow) / perRow;
@@ -347,7 +349,7 @@ public class CartridgeMenuGameTests implements SteveGameTest {
             new CartridgeSettingPayload(42, "purchases", 99).handle(player);
             context.assertEquals(ShopCartridgeItem.purchases(shop), 4, "invalid value: ignored");
             context.assertTrue(menu.canUse(player), "the menu stays open while the cartridge is in hand");
-            context.assertTrue(menu.withInventory() && !menu.slots.isEmpty(), "its offers: ghost slots, with the inventory to pick from");
+            context.assertTrue(!menu.withInventory() && menu.slots.isEmpty(), "its offers: a small stall opening the stall, no slots here");
             player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
             context.assertTrue(!menu.canUse(player), "the cartridge gone: the menu closes");
             player.currentScreenHandler = player.playerScreenHandler;

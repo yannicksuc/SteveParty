@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.client.gui.HandCursor;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.cartridge.CartridgePanel;
@@ -34,6 +35,7 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
                 () -> handler.syncId, () -> handler.ref().mayEdit(inventory.player),
                 fixed ? CartridgeLayout.MAX_CONTENT_WITH_INVENTORY : CartridgeLayout.MAX_CONTENT_ALONE,
                 fixed ? CartridgeLayout.SHELL_W_WITH_INVENTORY : 0, fixed ? CartridgeLayout.SHELL_H_WITH_INVENTORY : 0);
+        panel.setStock(handler::shopStock);
     }
 
     /** With the inventory: the handler's fixed size (its slots); alone: the shell's own size, within the window. */
@@ -118,6 +120,12 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
         if (scrollGhost(handler.slots, handler.syncId, x, y, mouseX, mouseY, amount)) return true;
         if (panel.mouseScrolled(mouseX, mouseY, amount)) return true;
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        HandCursor.reset();
     }
 
     /** The wheel over a ghost slot: its quantity (predicted here, applied by the server). */
