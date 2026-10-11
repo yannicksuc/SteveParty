@@ -13,7 +13,6 @@ import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.TexturedRenderLayers;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.block.entity.BeaconBlockEntityRenderer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
@@ -30,7 +29,7 @@ import java.util.List;
 /**
  * The party stars (see fr.lordfinn.steveparty.service.PartyStars): a big Party Star floating and turning over each
  * star space holding one, drawn at any distance (no entity, nothing ticks on the server), with a few gold sparks rising
- * from it and a golden beacon beam up to the build height, so that it is seen from afar. The spaces come from
+ * from it and a gold {@link HaloBeam} up to the build height, so that it is seen from afar. The spaces come from
  * {@link StarSpacesPayload}.
  */
 @Environment(EnvType.CLIENT)
@@ -40,8 +39,8 @@ public final class StarSpaceRenderer {
     private static final float SCALE = 1.26F, SPIN = 3.0F;
     /** Farther than this, the star and its beam are not drawn (beyond any board; a beacon's range too), in blocks. */
     private static final double MAX_DISTANCE = 256;
-    /** The beam's colour: the Star space's yellow (ARGB). */
-    private static final int BEAM_COLOR = 0xFFFFD83D;
+    /** The beam's colour: a warm gold, a little deeper than the Star space's yellow (see {@link HaloBeam}). */
+    private static final int BEAM_COLOR = 0xFFFFC93C;
     /** Every how many ticks a spark rises from a star. */
     private static final int SPARK_INTERVAL = 3;
 
@@ -73,8 +72,8 @@ public final class StarSpaceRenderer {
             float time = world.getTime() + tickDelta;
             VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
             // The stars first, opaque: the item layer is translucent, and its faces (unsorted, partly see-through on the
-            // texture's mipmaps from afar) showed the cubes behind them through the front ones. Drawn before the beams
-            // so that the beam's glow tints the part of the star inside it.
+            // texture's mipmaps from afar) showed the cubes behind them through the front ones. Drawn before the beams,
+            // which are see-through: the star shows inside its beam.
             BakedModel model = client.getItemRenderer().getModel(star, world, null, 0);
             VertexConsumerProvider opaque = layer -> consumers.getBuffer(
                     layer == TexturedRenderLayers.getEntityTranslucentCull() ? TexturedRenderLayers.getEntityCutout() : layer);
@@ -92,15 +91,15 @@ public final class StarSpaceRenderer {
                 matrices.pop();
             }
             consumers.draw();
-            // The beams: from each space's surface up to the build height (the vanilla beam, centred on its cell)
+            // The beams: from each space's surface up to the build height, centred on its cell
             for (BlockPos space : stars) {
                 Vec3d at = BoardSpaces.standPos(world, space);
                 if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
                 int bottom = MathHelper.floor(at.y);
                 matrices.push();
-                matrices.translate(at.x - 0.5 - camera.x, bottom - camera.y, at.z - 0.5 - camera.z);
-                BeaconBlockEntityRenderer.renderBeam(matrices, consumers, BeaconBlockEntityRenderer.BEAM_TEXTURE, tickDelta,
-                        1.0F, world.getTime(), 0, Math.max(1, world.getTopY() - bottom), BEAM_COLOR, 0.2F, 0.25F);
+                matrices.translate(at.x - camera.x, bottom - camera.y, at.z - camera.z);
+                HaloBeam.render(matrices, consumers, BEAM_COLOR, HaloBeam.DEFAULT_RADIUS, Math.max(1, world.getTopY() - bottom),
+                        1.0F, time);
                 matrices.pop();
             }
             consumers.draw();
