@@ -99,6 +99,44 @@ public class MistigriSpaceGameTests implements SteveGameTest {
         });
     }
 
+    /**
+     * During the spin he lies on his back juggling his small die low over his chest, the roulette's panel just over
+     * them (never overlapping); at the stop he is back on his feet and the die has landed in front of him.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
+    public void heJugglesHisDieOnHisBack(TestContext context) {
+        ServerPlayerEntity player = player(context);
+        List<MobEntity> tokens = new ArrayList<>();
+        PartyControllerEntity party = party(context, tokens, player);
+        MobEntity token = tokens.getFirst();
+        boolean[] done = {false};
+        context.assertTrue(start(context, party, token, Sentence.JOKE, done) == MistigriSentences.Start.STARTED, "started");
+        MistigriEntity actor = MistigriSentences.actor(token);
+        when(context, () -> MistigriSentences.die(token) != null, WHOLE, "his die appears", () -> {
+            MistigriDieEntity die = MistigriSentences.die(token);
+            context.assertEquals(actor.getPlayPose(), MistigriEntity.PlayPose.JUGGLE, "on his back, juggling");
+            context.assertTrue(die.isRolling(), "it tumbles");
+            context.assertTrue(die.getWidth() <= 0.75f, "a small die");
+            double up = die.getY() - actor.getY();
+            context.assertTrue(up > 0.9 && up < 1.6, "held low, over his chest: " + up);
+            context.assertTrue(Math.hypot(die.getX() - actor.getX(), die.getZ() - actor.getZ()) < 0.8, "between his paws");
+            var anchor = MistigriSentences.roulette(token).anchor();
+            context.assertTrue(anchor != null, "the panel floats in the world");
+            double panel = anchor.y - actor.getY();
+            context.assertTrue(panel >= 2.4 && panel <= 3.0, "the panel just over him: " + panel);
+            double[] top = {0};
+            when(context, () -> {
+                top[0] = Math.max(top[0], die.getY() + die.getHeight());
+                return !die.isRolling();
+            }, WHOLE, "his die lands", () -> {
+                context.assertTrue(top[0] < anchor.y, "never up into the panel: " + top[0] + " < " + anchor.y);
+                context.assertEquals(actor.getPlayPose(), MistigriEntity.PlayPose.NONE, "off his back");
+                context.assertTrue(Math.abs(die.getY() - actor.getY()) < 0.1, "landed on the ground");
+                when(context, () -> done[0], WHOLE, "the show ends", context::complete);
+            });
+        });
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void theSmallFine(TestContext context) {
         ServerPlayerEntity player = player(context);
