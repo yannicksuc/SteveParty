@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.client.screens.TrapSetupScreen;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.*;
+import fr.lordfinn.steveparty.client.entity.BoardActorStates;
 import fr.lordfinn.steveparty.client.entity.SixSevenClient;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -64,6 +65,7 @@ public class PayloadReceivers {
         });
         ClientPayloads.receive(GoalPolePopupsPayload.ID, (payload, context) -> GoalPolePopupRenderer.receive(payload));
 
+        ClientPayloads.receive(BoardActorStatePayload.ID, (payload, context) -> BoardActorStates.receive(context.client().world, payload));
         ClientPayloads.receive(SquishAnimationPayload.ID, (payload, context) -> SquishAnimations.start(context.client().world, payload));
 
         // The server accepted a Tokenizer Wand use: open the token spell (size slider), unless another screen is open

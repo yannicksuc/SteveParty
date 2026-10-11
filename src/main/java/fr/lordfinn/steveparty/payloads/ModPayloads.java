@@ -29,6 +29,7 @@ public class ModPayloads {
         s2c(OutcomeRoulettePayload.ID, OutcomeRoulettePayload.CODEC);
         s2c(SixSevenPayload.ID, SixSevenPayload.CODEC);
         s2c(JumpShoesPayloads.Seen.ID, JumpShoesPayloads.Seen.CODEC);
+        s2c(BoardActorStatePayload.ID, BoardActorStatePayload.CODEC);
 
         // Client → server
         c2s(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
