@@ -2,13 +2,18 @@ package fr.lordfinn.steveparty.client.renderer;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.utils.DynamicTextureCache;
+import fr.lordfinn.steveparty.client.utils.ShaderPacks;
 import fr.lordfinn.steveparty.client.utils.TileColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.BuiltBuffer;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormat;
@@ -22,6 +27,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
+import org.joml.Vector3f;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +44,11 @@ import java.util.function.Function;
  * chevrons ({@link TileColors#shade}), each grey level is mapped onto a ramp of the colour, its shadows hue-shifted (a
  * yellow's toward orange) rather than greyed, its lightest pixels a highlight. One small texture per colour, made on
  * first use (the least recently used freed past {@link #MAX_CACHED}), remade after a resource reload.
+ * <p>
+ * Seen through the clouds: they are drawn after it and, as it writes no depth, they covered it, both where it rises
+ * in front of them and above them seen from the ground. So right before the clouds ({@link #maskClouds}), each beam
+ * drawn in the frame leaves its silhouette in the depth buffer, just in front of the cloud layer: they are not drawn
+ * there, and the beam shows through them, a landmark.
  * <p>
  * Use: translate the matrices to the centre of the beam's foot, then {@link #render}; drawn in whatever buffers are
  * given (a block entity renderer's, or the world's entity buffers after the entities). A block entity drawing one
@@ -60,6 +71,18 @@ public final class HaloBeam {
     /** The colour ramp: how dark its darkest grey gets (TileColors darkness), how light its lightest. */
     private static final float DARKEST = 0.3F, LIGHTEST = -0.4F;
 
+    /**
+     * The cloud layer, from the dimension's cloud height (vanilla clouds are 4 blocks thick, drawn a third of a block
+     * above it): its thickness, and how far in front of it the mask lies, in blocks. Nearer than this to the camera's
+     * height, the beam is seen almost level: the clouds behind it are too far to be drawn.
+     */
+    private static final float CLOUD_THICKNESS = 4.33F, CLOUD_MARGIN = 1F, LEVEL = 1F;
+    /** The beams drawn in the frame, for {@link #maskClouds}: their foot (camera-relative), half-width, height, turn. */
+    private static final int MAX_MASKED = 64, MASK_STRIDE = 6;
+    private static final float[] MASKED = new float[MAX_MASKED * MASK_STRIDE];
+    private static int maskedCount;
+    private static final Vector3f FOOT = new Vector3f();
+
     private static final int MAX_CACHED = 32;
     private static final DynamicTextureCache<Integer> TEXTURES = new DynamicTextureCache<>(MAX_CACHED);
     private static NativeImage source;
@@ -68,8 +91,12 @@ public final class HaloBeam {
     private HaloBeam() {
     }
 
-    /** Frees the coloured textures and the base read on each resource reload: a resource pack may change it. */
-    public static void registerReloadListener() {
+    /**
+     * Frees the coloured textures and the base read on each resource reload (a resource pack may change it), and
+     * forgets the beams of the last frame when a new one starts (the clouds may be off: nothing then used them).
+     */
+    public static void initialize() {
+        WorldRenderEvents.START.register(context -> maskedCount = 0);
         DynamicTextureCache.onResourceReload("halo_beam_textures", () -> {
             TEXTURES.clear();
             if (source != null) source.close();
@@ -94,6 +121,7 @@ public final class HaloBeam {
         float v0 = -MathHelper.fractionalPart(time * RISE);
         // Wrapped below 360°, so that the angle keeps its precision on a long-running world
         float turn = (time * TURN) % 360F;
+        remember(matrices.peek(), radius, height, 45F - turn);
 
         matrices.push();
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(turn));
@@ -106,6 +134,89 @@ public final class HaloBeam {
         shell(consumers.getBuffer(Layers.OUTER.apply(texture)), matrices.peek(), radius, height, v0 * 0.7F + 0.5F,
                 OUTER_ALPHA * pulse);
         matrices.pop();
+    }
+
+    /**
+     * Keeps a beam drawn in the frame for {@link #maskClouds}: its foot in camera-relative world space (the matrices
+     * are, as for any block entity or the world's entity buffers; the camera's turn is not in them). Not during a
+     * shader pack's shadow pass (seen from the sun), whose clouds are its own.
+     */
+    private static void remember(MatrixStack.Entry entry, float radius, float height, float outerTurn) {
+        if (maskedCount >= MAX_MASKED || ShaderPacks.renderingShadows()) return;
+        entry.getPositionMatrix().transformPosition(0, 0, 0, FOOT);
+        int i = maskedCount++ * MASK_STRIDE;
+        MASKED[i] = FOOT.x;
+        MASKED[i + 1] = FOOT.y;
+        MASKED[i + 2] = FOOT.z;
+        MASKED[i + 3] = radius;
+        MASKED[i + 4] = height;
+        MASKED[i + 5] = outerTurn * MathHelper.RADIANS_PER_DEGREE;
+    }
+
+    /**
+     * Right before the clouds are drawn (WorldRendererCloudMaskMixin): each beam drawn in the frame written in the depth
+     * buffer only, its outer shell's square column, so that the clouds are not drawn over it.
+     * <p>
+     * Written at its own depth, the part of it beyond the clouds (above them seen from below, below them seen from above)
+     * would still be behind them. So each of its points is moved along its line of sight (the camera's eye to it) onto
+     * a plane just in front of the cloud layer: on screen the column covers the very same pixels, but at the depth of
+     * that plane, in front of every cloud, behind anything nearer (the terrain in front of the beam keeps hiding it;
+     * the rain and the world border, drawn later, are never cut by it). The part at the camera's height or on the other
+     * side (seen level or looking away from the clouds) has no cloud behind it: left out. With the Fabulous graphics,
+     * the clouds are drawn into their own target, bound by then: the mask goes there (the main depth untouched), and
+     * the composite finds no cloud in the beam. None with a shader pack, which draws its own clouds. One column per
+     * beam, nothing allocated.
+     */
+    public static void maskClouds() {
+        int count = maskedCount;
+        maskedCount = 0;
+        if (count == 0 || ShaderPacks.inUse()) return;
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.world == null) return;
+        float cloudHeight = client.world.getDimensionEffects().getCloudsHeight();
+        if (Float.isNaN(cloudHeight)) return;
+        double cameraY = client.gameRenderer.getCamera().getPos().y;
+        // The planes just under and just over the cloud layer, camera-relative
+        float under = (float) (cloudHeight - CLOUD_MARGIN - cameraY);
+        float over = (float) (cloudHeight + CLOUD_THICKNESS + CLOUD_MARGIN - cameraY);
+        // In the clouds: they are all around, nothing to see through
+        if (under <= 0 && over >= 0) return;
+        float plane = under > 0 ? under : over;
+
+        RenderLayer layer = Layers.CLOUD_MASK;
+        BufferBuilder builder = Tessellator.getInstance().begin(layer.getDrawMode(), layer.getVertexFormat());
+        for (int b = 0; b < count; b++) {
+            int i = b * MASK_STRIDE;
+            float x = MASKED[i], foot = MASKED[i + 1], z = MASKED[i + 2], r = MASKED[i + 3];
+            float top = foot + MASKED[i + 4], angle = MASKED[i + 5];
+            // The part above the camera's eye seen from under the clouds, below it seen from over them
+            float from = under > 0 ? Math.max(foot, LEVEL) : foot;
+            float to = under > 0 ? top : Math.min(top, -LEVEL);
+            if (to <= from) continue;
+            // The outer shell's corners, turned like it (RotationAxis.POSITIVE_Y: x' = x cos + z sin, z' = z cos - x sin)
+            float cos = MathHelper.cos(angle), sin = MathHelper.sin(angle);
+            float ax = -r * cos - r * sin, az = -r * cos + r * sin;
+            float bx = r * cos - r * sin, bz = -r * cos - r * sin;
+            float[] cx = {ax, bx, -ax, -bx}, cz = {az, bz, -az, -bz};
+            for (int c = 0; c < 4; c++) {
+                int n = (c + 1) % 4;
+                maskVertex(builder, plane, x + cx[c], to, z + cz[c]);
+                maskVertex(builder, plane, x + cx[n], to, z + cz[n]);
+                maskVertex(builder, plane, x + cx[n], from, z + cz[n]);
+                maskVertex(builder, plane, x + cx[c], from, z + cz[c]);
+            }
+        }
+        BuiltBuffer built = builder.endNullable();
+        if (built != null) layer.draw(built);
+    }
+
+    /**
+     * A point of the column (camera-relative) moved along its line of sight onto the plane at height {@code plane}: the
+     * same place on screen. A quad's edges stay on the same lines on screen, so the column covers the same pixels.
+     */
+    private static void maskVertex(BufferBuilder builder, float plane, float x, float y, float z) {
+        float scale = plane / y;
+        builder.vertex(x * scale, plane, z * scale);
     }
 
     /** The 4 sides of a square column of half-size {@code r}, its alpha fading toward its top. */
@@ -208,5 +319,13 @@ public final class HaloBeam {
                             .writeMaskState(COLOR_MASK)
                             .build(false));
         }
+
+        /** Depth only, both sides: the beam's silhouette kept free of clouds ({@link #maskClouds}). */
+        static final RenderLayer CLOUD_MASK = RenderLayer.of("steveparty_halo_beam_cloud_mask", VertexFormats.POSITION,
+                VertexFormat.DrawMode.QUADS, 256, false, false, MultiPhaseParameters.builder()
+                        .program(POSITION_PROGRAM)
+                        .cull(DISABLE_CULLING)
+                        .writeMaskState(DEPTH_MASK)
+                        .build(false));
     }
 }
