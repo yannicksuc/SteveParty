@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
+import fr.lordfinn.steveparty.service.BoardActors;
 import fr.lordfinn.steveparty.service.FrousseuxThefts;
 import fr.lordfinn.steveparty.service.FrousseuxThefts.Phase;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
@@ -105,12 +106,15 @@ public class FrousseuxSpaceGameTests implements SteveGameTest {
         boolean[] done = {false};
         start(context, party, tokens.getFirst(), thief, false, 15, done);
         MobEntity token = tokens.getFirst();
+        context.assertFalse(FrousseuxThefts.actor(token).canHit(), "a hologram until its defence: not aimed at");
         when(context, () -> FrousseuxThefts.phase(token) == Phase.DEFENCE, WHOLE_THEFT, "the defence", () -> {
             FrousseuxEntity actor = FrousseuxThefts.actor(token);
             float health = actor.getHealth();
+            context.assertTrue(actor.canHit() && BoardActors.isTouchable(actor), "its defence: the victim can aim at it");
             context.waitAndRun(FrousseuxThefts.HIT_COOLDOWN, () -> {
                 hit(actor, thief); // not the victim: nothing
-                hit(actor, victim);
+                // a real blow, as the attack packet does it
+                victim.attack(actor);
                 hit(actor, victim); // too soon: nothing
                 context.assertEquals(FrousseuxThefts.carried(token), 14, "one blow, one coin back");
                 context.assertEquals(count(victim, Items.GOLD_INGOT), 16, "back to the victim");
@@ -119,6 +123,8 @@ public class FrousseuxSpaceGameTests implements SteveGameTest {
                     context.waitAndRun(FrousseuxThefts.HIT_COOLDOWN, () -> {
                         hit(actor, victim);
                         context.assertEquals(FrousseuxThefts.carried(token), 12, "three blows");
+                        when(context, () -> FrousseuxThefts.phase(token) != Phase.DEFENCE, WHOLE_THEFT, "the defence ends",
+                                () -> context.assertFalse(actor.canHit(), "its defence over: a hologram again"));
                         context.assertTrue(actor.isAlive() && actor.getHealth() == health, "the blows never hurt it");
                         when(context, () -> done[0], WHOLE_THEFT, "the theft ends", () -> {
                             context.assertEquals(count(thief, Items.GOLD_INGOT), 12, "the sender gets what is left");

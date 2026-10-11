@@ -188,6 +188,9 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
             show.player().refreshPositionAndAngles(at.x + 0.5, at.y, at.z, 0, 0);
             float health = show.player().getHealth();
             TrichaudronPartEntity part = actor.getParts().of(head, false);
+            // a hologram the crosshair goes through, but its heads' hit boxes are aimed at
+            context.assertFalse(actor.canHit(), "the Trichaudron itself is not aimed at");
+            context.assertTrue(part.canHit(), "its heads are");
             part.interact(show.player(), Hand.MAIN_HAND);
             context.assertEquals(TrichaudronPrizes.picked(token), head, "the head clicked is picked");
             when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {

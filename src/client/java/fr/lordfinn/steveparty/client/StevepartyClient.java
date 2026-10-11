@@ -101,6 +101,7 @@ import fr.lordfinn.steveparty.client.particle.MagicShapeParticle;
 import fr.lordfinn.steveparty.client.particle.StarFlareParticle;
 import fr.lordfinn.steveparty.client.particle.MulaSparkleParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
+import fr.lordfinn.steveparty.client.entity.BoardActorStates;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.client.tokenspell.MobTextureColors;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
@@ -219,6 +220,7 @@ public class StevepartyClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         PayloadReceivers.initialize();
+        BoardActorStates.initialize();
         fr.lordfinn.steveparty.client.gui.UiText.initialize();
         ClientOptions.initialize();
         TelescopeClient.initialize();
