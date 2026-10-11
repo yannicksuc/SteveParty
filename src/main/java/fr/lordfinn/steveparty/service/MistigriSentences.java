@@ -14,7 +14,6 @@ import fr.lordfinn.steveparty.hud.OutcomeRoulette;
 import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
 import fr.lordfinn.steveparty.payloads.custom.OutcomeRoulettePayload;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import fr.lordfinn.steveparty.utils.Easing;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.mob.MobEntity;
@@ -43,12 +42,13 @@ import java.util.UUID;
 import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
 
 /**
- * What a Mistigri space does (see MistigriTileBehavior): the Mistigri leaps onto the space beside the token, swats his
- * giant loaded die into the air, and the die passes a sentence on the token's player, drawn by the cartridge's weights
- * ({@link Sentence}). The sentence is drawn first, then the whole party watches it come: every sentence that may fall
- * is listed on an {@link OutcomeRoulettes outcome roulette}, with its chance, the light runs down the list slower and
- * slower while his die hangs in the air, and stops on the drawn one as the die lands. Only then does it happen. He
- * reacts (a hiss, or a yawn for the lenient one) and leaps away in a puff of smoke.
+ * What a Mistigri space does (see MistigriTileBehavior): the Mistigri leaps onto the space beside the token, rolls onto
+ * his back juggling his loaded die between his fore paws, and the die passes a sentence on the token's player, drawn by
+ * the cartridge's weights ({@link Sentence}). The sentence is drawn first, then the whole party watches it come: every
+ * sentence that may fall is listed on an {@link OutcomeRoulettes outcome roulette}, with its chance, floating just over
+ * him; the light runs down the list slower and slower while he juggles, and stops on the drawn one as he tosses the die
+ * and it lands in front of him. Only then does it happen. He reacts (a hiss, or a yawn for the lenient one) and leaps
+ * away in a puff of smoke.
  * <p>
  * A move back is walked once he is gone (the token's turn goes on until it lands: AdvanceBackMoves); every other
  * sentence ends the turn. What he takes (coins, a star) goes into the party's bank: nothing is lost. He and his die are board actors: invulnerable, never saved, always removed at the end
@@ -99,7 +99,7 @@ public final class MistigriSentences {
     }
 
     /**
-     * His leap in; the roulette of the sentences while his die is in the air ({@link OutcomeRoulette}); the sentence;
+     * His leap in; the roulette of the sentences while he juggles his die ({@link OutcomeRoulette}); the sentence;
      * his leaving.
      */
     public enum Phase { LEAP_IN, ROLL, SENTENCE, LEAVE }
@@ -107,19 +107,32 @@ public final class MistigriSentences {
     public enum Start { STARTED, NO_PLAYER, NO_SENTENCE }
 
     /**
-     * Timing (ticks). The roll lasts the whole roulette: he swats his die up as the light starts running, it hangs
-     * spinning in the air and lands when the light stops on the sentence.
+     * Timing (ticks). The roll lasts the whole roulette: he rolls onto his back as the light starts running, juggles his
+     * die between his fore paws while it runs, and tosses it to land in front of him when the light stops on the
+     * sentence.
      */
     public static final int LEAP_TICKS = 20, ROLL_TICKS = OutcomeRoulette.TOTAL_TICKS,
             DIE_LANDS_AT = OutcomeRoulette.REVEAL_TICKS + OutcomeRoulette.SPIN_TICKS, SENTENCE_TICKS = 60, LEAVE_TICKS = 20;
-    /** In the roll: he swats, his die flies up (until it hangs at the top), then falls (ticks). */
-    /** The roulette's panel: this high over his seat (blocks), clear of his die hanging in the air. */
-    private static final double PANEL_ABOVE = 5.8;
-    private static final int SWAT_AT = OutcomeRoulette.REVEAL_TICKS - 8, DIE_UP_TICKS = 12, DIE_FALL_TICKS = 6;
+    /**
+     * In the roll (ticks): he rolls onto his back (his roll_on_back act), his die appears between his paws, he tosses it
+     * (juggle_toss: the paws shove it after {@link #TOSS_SHOVE}) and it flies until it lands.
+     */
+    private static final int ROLL_OVER_AT = OutcomeRoulette.REVEAL_TICKS - 12, DIE_HELD_AT = OutcomeRoulette.REVEAL_TICKS - 2,
+            TOSS_AT = DIE_LANDS_AT - 14, TOSS_SHOVE = 5;
+    /** Juggled: one bounce off a fore paw every this many ticks (his on_back_juggle taps, left then right). */
+    private static final int BOUNCE_TICKS = 10;
+    /**
+     * Where his die is juggled, from his seat (blocks): this far ahead, this high (between his fore paws, over his
+     * chest); how high its bounces go; its toss's arc over the straight line to where it lands (its top: ~0.7 over
+     * where he juggled it, under the panel).
+     */
+    public static final double DIE_HELD_AHEAD = 0.45, DIE_HELD_UP = 1.1, BOUNCE = 0.22, TOSS_UP = 1.2;
+    /** The roulette's panel: this high over his seat (blocks), just over him on his back and his die's toss. */
+    public static final double PANEL_ABOVE = 2.6;
     /** The whole show, at most (for the tests). */
     public static final int WHOLE = LEAP_TICKS + ROLL_TICKS + SENTENCE_TICKS + LEAVE_TICKS;
     /** His leap starts this far from the space (blocks, to the token's side). */
-    private static final double APPEAR_SIDE = 4.5, SEAT_SIDE = 1.5, DIE_AHEAD = 2.2;
+    private static final double APPEAR_SIDE = 4.5, SEAT_SIDE = 1.5, DIE_AHEAD = 1.9;
 
     private static final BoardSequences<Show> RUNNING = new BoardSequences<>();
 
@@ -346,49 +359,62 @@ public final class MistigriSentences {
         }
 
         /**
-         * The roulette of the sentences, shown to the whole party; as its light starts running he swats his die up: it
-         * tumbles up, hangs spinning in the air while the light runs, and lands in front of him on a low face as it
-         * stops. The sentence comes once the roulette is over.
+         * The roulette of the sentences, shown to the whole party; as its light starts running he rolls onto his back and
+         * juggles his die between his fore paws, bouncing and spinning over his chest while the light runs; as it stops
+         * he tosses it up, rolls back onto his feet, and it lands in front of him on a low face. The sentence comes once
+         * the roulette is over.
          */
         void tickRoll() {
+            Vec3d ahead = Vec3d.fromPolar(0, yaw);
             if (phaseTick == 1) {
-                face(seat.add(Vec3d.fromPolar(0, yaw).multiply(DIE_AHEAD)));
+                face(seat.add(ahead.multiply(DIE_AHEAD)));
                 ServerPlayerEntity player = player();
-                // Its panel floats over him, above where his die will hang
-                roulette = OutcomeRoulettes.start(world, party, player, seat.add(Vec3d.fromPolar(0, yaw).multiply(DIE_AHEAD / 2)).add(0, PANEL_ABOVE, 0),
+                // Its panel floats just over him lying on his back, clear of his die's toss
+                roulette = OutcomeRoulettes.start(world, party, player, seat.add(ahead.multiply(DIE_HELD_AHEAD)).add(0, PANEL_ABOVE, 0),
                         Text.translatable("hud.steveparty.mistigri_space.roulette",
                                 player == null ? Text.literal("?") : player.getDisplayName()),
                         Text.translatable("hud.steveparty.mistigri_space.roulette.caption"), lines, result);
             }
-            if (phaseTick == SWAT_AT) actor.act(Action.SWAT);
-            if (phaseTick == SWAT_AT + 8) {
+            if (phaseTick == ROLL_OVER_AT) {
+                actor.act(Action.ROLL_ON_BACK);
+                actor.setJuggling(true); // once rolled over
+            }
+            if (phaseTick == DIE_HELD_AT) {
                 MistigriDieEntity one = ModEntities.MISTIGRI_DIE.create(world);
                 if (one != null) {
                     castProp(one);
-                    dieFrom = seat.add(Vec3d.fromPolar(0, yaw).multiply(0.9)).add(0, 1.0, 0);
-                    dieTo = seat.add(Vec3d.fromPolar(0, yaw).multiply(DIE_AHEAD));
+                    dieFrom = seat.add(ahead.multiply(DIE_HELD_AHEAD)).add(0, DIE_HELD_UP, 0);
+                    dieTo = seat.add(ahead.multiply(DIE_AHEAD));
                     one.refreshPositionAndAngles(dieFrom.x, dieFrom.y, dieFrom.z, yaw, 0);
                     one.setRolling(true);
                     world.spawnEntity(one);
                     die = one;
+                    world.spawnParticles(ParticleTypes.WITCH, dieFrom.x, dieFrom.y + 0.3, dieFrom.z, 12, 0.25, 0.25, 0.25, 0.04);
                     world.playSound(null, dieFrom.x, dieFrom.y, dieFrom.z, SoundEvents.ENTITY_BREEZE_SHOOT, SoundCategory.NEUTRAL, 0.5f, 0.7f);
                 }
             }
-            int thrown = SWAT_AT + 8, falls = DIE_LANDS_AT - DIE_FALL_TICKS;
-            if (die != null && phaseTick > thrown && phaseTick <= DIE_LANDS_AT) {
-                Vec3d top = dieFrom.lerp(dieTo, 0.5).add(0, 2.5, 0);
+            if (phaseTick == TOSS_AT) {
+                actor.setJuggling(false);
+                actor.act(Action.JUGGLE_TOSS);
+            }
+            int launched = TOSS_AT + TOSS_SHOVE;
+            if (die != null && phaseTick > DIE_HELD_AT && phaseTick <= DIE_LANDS_AT) {
                 Vec3d at;
-                if (phaseTick <= thrown + DIE_UP_TICKS) {
-                    float t = (phaseTick - thrown) / (float) DIE_UP_TICKS;
-                    at = dieFrom.lerp(top, Easing.easeOutCubic(t));
-                } else if (phaseTick < falls) {
-                    at = top.add(0, Math.sin((phaseTick - thrown) * 0.25) * 0.15, 0); // hangs, bobbing
+                if (phaseTick < TOSS_AT) {
+                    // Juggled: a hop off each paw in turn, nudged a little toward the other
+                    int juggled = phaseTick - DIE_HELD_AT;
+                    double hop = Math.abs(Math.sin(Math.PI * juggled / BOUNCE_TICKS));
+                    double sway = 0.06 * Math.sin(Math.PI * juggled / BOUNCE_TICKS - Math.PI / 2);
+                    at = dieFrom.add(Vec3d.fromPolar(0, yaw + 90).multiply(sway)).add(0, hop * BOUNCE, 0);
+                } else if (phaseTick < launched) {
+                    at = dieFrom.add(0, -0.08, 0); // his paws load it
                 } else {
-                    float t = (phaseTick - falls) / (float) DIE_FALL_TICKS;
-                    at = top.lerp(dieTo, t * t);
+                    // Tossed: an arc up over his chest and down in front of him
+                    float t = (phaseTick - launched) / (float) (DIE_LANDS_AT - launched);
+                    at = dieFrom.lerp(dieTo, t).add(0, 4 * TOSS_UP * t * (1 - t), 0);
                 }
-                // Spins fast as it goes up, slower and slower with the light
-                float spin = phaseTick < falls ? 25 - 18 * (phaseTick - thrown) / (float) (falls - thrown) : 25;
+                // Spins fast as he starts juggling, slower and slower with the light, fast again when tossed
+                float spin = phaseTick < TOSS_AT ? 25 - 18 * (phaseTick - DIE_HELD_AT) / (float) (TOSS_AT - DIE_HELD_AT) : 25;
                 die.refreshPositionAndAngles(at.x, at.y, at.z, die.getYaw() + spin, 0);
                 if (phaseTick == DIE_LANDS_AT) {
                     die.setRolling(false);
