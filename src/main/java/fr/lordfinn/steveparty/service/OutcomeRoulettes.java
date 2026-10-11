@@ -91,6 +91,11 @@ public final class OutcomeRoulettes {
             return elapsed() >= OutcomeRoulette.TOTAL_TICKS;
         }
 
+        /** Where its panel floats (the middle of its bottom edge), null for the HUD only. */
+        public @Nullable Vec3d anchor() {
+            return anchor;
+        }
+
         /** The players it was sent to. */
         public Set<UUID> sentTo() {
             return Set.copyOf(sentTo);

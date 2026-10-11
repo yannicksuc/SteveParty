@@ -101,7 +101,10 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         NONE("", 0), GROOM("groom", 64), STRETCH("stretch", 52), YAWN("yawn", 44), SWAT("swat", 22), EAT("eat", 32),
         LEAP("leap", 20), SUMMON("summon", 52),
         // playing (an acorn, a Glandouille): a paw tap, a toss in the air, a pounce
-        BAT("bat", 18), TOSS("toss", 26), POUNCE("pounce", 26);
+        BAT("bat", 18), TOSS("toss", 26), POUNCE("pounce", 26),
+        // his board space's roulette: rolls onto his back (then juggles his die, see PlayPose.JUGGLE), tosses it up
+        // and rolls back onto his feet at the stop
+        ROLL_ON_BACK("roll_on_back", 12), JUGGLE_TOSS("juggle_toss", 20);
 
         public final String animation;
         /** Its length (ticks): the animation's. */
@@ -322,9 +325,12 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         return isLoafing() ? chest : null;
     }
 
-    /** A held playing posture (its animation loops). */
+    /**
+     * A held playing posture (its animation loops); {@link #JUGGLE}: on his back juggling his board space's die between
+     * his fore paws (the roulette's spin, see MistigriSentences).
+     */
     public enum PlayPose {
-        NONE, STALK, ON_BACK
+        NONE, STALK, ON_BACK, JUGGLE
     }
 
     public PlayPose getPlayPose() {
@@ -334,6 +340,11 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
 
     void setPlayPose(PlayPose pose) {
         this.dataTracker.set(PLAY_POSE, pose.ordinal());
+    }
+
+    /** A board space's Mistigri lies on his back juggling his die (or stops). */
+    public void setJuggling(boolean juggling) {
+        setPlayPose(juggling ? PlayPose.JUGGLE : PlayPose.NONE);
     }
 
     /** Playing (an acorn, cat and mouse with a Glandouille): see MistigriPlay. */
@@ -645,6 +656,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
     private static final RawAnimation STARE = RawAnimation.begin().thenLoop("stare");
     private static final RawAnimation STALK = RawAnimation.begin().thenLoop("stalk");
     private static final RawAnimation ON_BACK = RawAnimation.begin().thenLoop("on_back");
+    private static final RawAnimation JUGGLE = RawAnimation.begin().thenLoop("on_back_juggle");
     private static final RawAnimation ANGRY_ANIM = RawAnimation.begin().thenPlay("angry_in").thenLoop("angry");
     private static final Map<Action, RawAnimation> ACTS = new EnumMap<>(Action.class);
 
@@ -665,6 +677,7 @@ public class MistigriEntity extends TameableEntity implements GeoEntity, Follows
         PlayPose play = getPlayPose();
         if (play == PlayPose.STALK) return state.setAndContinue(STALK);
         if (play == PlayPose.ON_BACK) return state.setAndContinue(ON_BACK);
+        if (play == PlayPose.JUGGLE) return state.setAndContinue(JUGGLE);
         if (isAngry()) return state.setAndContinue(ANGRY_ANIM);
         if (isInSittingPose()) return state.setAndContinue(SIT);
         if (isAsleepOnChest()) return state.setAndContinue(SLEEP);

@@ -16,11 +16,14 @@ import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.RawAnimation;
 
 /**
- * The Mistigri's giant loaded die, rolled on his board space (MistigriSentences): a prop moved by the board, the mod's
- * die model with the cursed faces, big. It tumbles while {@link #isRolling()}, then shows {@link #getFace()} (always
- * a low one: it is loaded). A board actor: never saved, never hit.
+ * The Mistigri's loaded die, juggled on his board space (MistigriSentences): a prop moved by the board, the mod's die
+ * model with the cursed faces, {@link #SIZE} blocks wide (it fits between his fore paws). It tumbles while
+ * {@link #isRolling()}, then shows {@link #getFace()} (always a low one: it is loaded). A board actor: never saved,
+ * never hit.
  */
 public class MistigriDieEntity extends Entity implements GeoEntity {
+    /** Its size (blocks): its model's scale and its box. */
+    public static final float SIZE = 0.6f;
     private static final TrackedData<Boolean> ROLLING =
             DataTracker.registerData(MistigriDieEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Integer> FACE =
