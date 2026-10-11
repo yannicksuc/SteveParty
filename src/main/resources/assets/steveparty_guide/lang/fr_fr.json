@@ -106,7 +106,7 @@
   "book.steveparty.guide.cartridges.replay.page1.text": "Cartouche + répéteur.",
   "book.steveparty.guide.cartridges.shop.description": "Un arrêt boutique",
   "book.steveparty.guide.cartridges.shop.name": "Cartouche Boutique",
-  "book.steveparty.guide.cartridges.shop.page0.text": "Sur une **tuile**, la boutique s'ouvre quand un pion y **termine** son déplacement ; dans un **point de déclenchement**, tout pion qui passe s'arrête.\n\nUn **marchand en carton** apparaît au Repère de la case (sinon à côté) et vend les offres réglées dans la cartouche, prises dans la banque de la partie. Accroupi + molette : nombre d'achats (1 à 9). Sans choix, elle ferme au bout de 60 s.",
+  "book.steveparty.guide.cartridges.shop.page0.text": "Sur une **tuile**, la boutique s'ouvre quand un pion y **termine** son déplacement ; dans un **point de déclenchement**, tout pion qui passe s'arrête.\n\nUn **marchand en carton** apparaît dans la Bulle d'apparition de la case (sinon à côté) et vend les offres réglées dans la cartouche, prises dans la banque de la partie. Accroupi + molette : nombre d'achats (1 à 9). Sans choix, elle ferme au bout de 60 s.",
   "book.steveparty.guide.cartridges.shop.page0.title": "Cartouche Boutique",
   "book.steveparty.guide.cartridges.shop.page1.text": "Cartouche + bandana (volé à un Marchand en carton).",
   "book.steveparty.guide.cartridges.star.description": "Acheter l'étoile",

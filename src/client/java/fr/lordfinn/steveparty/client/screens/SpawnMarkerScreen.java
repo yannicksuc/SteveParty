@@ -14,9 +14,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 /**
- * The menu of a Spawn Marker (an empty hand on it): when its mob shows (only when a token lands on its space, or all
- * the party long) and how high above the marker it appears (-4 to +8 blocks, by half blocks; Shift: by blocks; the
- * wheel too). Each change is sent at once; the brush, the Wrench or the Explorer's Helmet show where the mob will be.
+ * The menu of a Spawn Bubble (an empty hand on its plate): when its mob shows (only when a token lands on its space, or all
+ * the party long) and how high above the plate its bubble floats (-4 to +8 blocks, by half blocks; Shift: by blocks; the
+ * wheel too). Each change is sent at once; the bubble shows where the mob will be.
  */
 public class SpawnMarkerScreen extends Screen {
     private static final int PANEL_W = 220, PAD = 12;

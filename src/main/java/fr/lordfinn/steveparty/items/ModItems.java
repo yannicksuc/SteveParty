@@ -121,7 +121,7 @@ public class ModItems {
     /** Its tile's face is straw until dyed; passing tokens feed its pot, the token stopping on it wins it. */
     public static final Item POT_CARTRIDGE = register("pot_cartridge", PotCartridgeItem::new,
             new Item.Settings().component(ModComponents.COLOR, PotCartridgeItem.COLOR));
-    /** The Spawn Marker (ModBlocks.SPAWN_MARKER): where a mob space's mob appears. */
+    /** The Spawn Bubble (ModBlocks.SPAWN_MARKER): where a mob space's mob appears. */
     public static final Item SPAWN_MARKER = ModBlocks.SPAWN_MARKER.asItem();
     /** The Magpie's nest (ModBlocks.MAGPIE_NEST): a decorative block, a Common pot's nest when set near its space. */
     public static final Item MAGPIE_NEST = ModBlocks.MAGPIE_NEST.asItem();
