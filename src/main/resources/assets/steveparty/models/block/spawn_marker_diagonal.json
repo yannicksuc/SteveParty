@@ -1,0 +1,7 @@
+{
+  "parent": "steveparty:block/spawn_marker_plate",
+  "textures": {
+    "top": "steveparty:block/spawn_marker_diagonal",
+    "side": "steveparty:block/spawn_marker_side"
+  }
+}

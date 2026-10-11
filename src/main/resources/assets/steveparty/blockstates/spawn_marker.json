@@ -5,60 +5,60 @@
       "y": 180
     },
     "rotation=1": {
-      "model": "steveparty:block/spawn_marker_22",
+      "model": "steveparty:block/spawn_marker",
       "y": 180
     },
     "rotation=2": {
-      "model": "steveparty:block/spawn_marker_45",
+      "model": "steveparty:block/spawn_marker_diagonal",
       "y": 180
     },
     "rotation=3": {
-      "model": "steveparty:block/spawn_marker_minus_22",
-      "y": 270
+      "model": "steveparty:block/spawn_marker_diagonal",
+      "y": 180
     },
     "rotation=4": {
       "model": "steveparty:block/spawn_marker",
       "y": 270
     },
     "rotation=5": {
-      "model": "steveparty:block/spawn_marker_22",
+      "model": "steveparty:block/spawn_marker",
       "y": 270
     },
     "rotation=6": {
-      "model": "steveparty:block/spawn_marker_45",
+      "model": "steveparty:block/spawn_marker_diagonal",
       "y": 270
     },
     "rotation=7": {
-      "model": "steveparty:block/spawn_marker_minus_22"
+      "model": "steveparty:block/spawn_marker_diagonal",
+      "y": 270
     },
     "rotation=8": {
       "model": "steveparty:block/spawn_marker"
     },
     "rotation=9": {
-      "model": "steveparty:block/spawn_marker_22"
+      "model": "steveparty:block/spawn_marker"
     },
     "rotation=10": {
-      "model": "steveparty:block/spawn_marker_45"
+      "model": "steveparty:block/spawn_marker_diagonal"
     },
     "rotation=11": {
-      "model": "steveparty:block/spawn_marker_minus_22",
-      "y": 90
+      "model": "steveparty:block/spawn_marker_diagonal"
     },
     "rotation=12": {
       "model": "steveparty:block/spawn_marker",
       "y": 90
     },
     "rotation=13": {
-      "model": "steveparty:block/spawn_marker_22",
+      "model": "steveparty:block/spawn_marker",
       "y": 90
     },
     "rotation=14": {
-      "model": "steveparty:block/spawn_marker_45",
+      "model": "steveparty:block/spawn_marker_diagonal",
       "y": 90
     },
     "rotation=15": {
-      "model": "steveparty:block/spawn_marker_minus_22",
-      "y": 180
+      "model": "steveparty:block/spawn_marker_diagonal",
+      "y": 90
     }
   }
 }

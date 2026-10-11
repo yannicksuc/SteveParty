@@ -94,6 +94,7 @@ import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
 import fr.lordfinn.steveparty.client.model.BrickShadeModelPlugin;
 import fr.lordfinn.steveparty.client.model.ConnectedPlasticModelPlugin;
 import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
+import fr.lordfinn.steveparty.client.blockentity.SpawnBubbleRenderer;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
 import fr.lordfinn.steveparty.client.particle.ForgeBeamParticle;
@@ -235,6 +236,10 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.MINIGAME_PIPE_ENTITY, MiniGamePipeNotchRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.MAGPIE_NEST_ENTITY, fr.lordfinn.steveparty.client.blockentity.MagpieNestRenderer::new);
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAGPIE_NEST, fr.lordfinn.steveparty.client.blockentity.MagpieNestRenderer.ITEM);
+        // The Spawn Bubble: its plate is its block model, its bubble (and what is inside) its renderer; its item, both
+        SpawnBubbleRenderer.registerModels();
+        BlockEntityRendererFactories.register(ModBlockEntities.SPAWN_MARKER_ENTITY, SpawnBubbleRenderer::new);
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.SPAWN_MARKER, SpawnBubbleRenderer.ITEM);
         MiniGamePipeNotchRenderer.registerHint();
         // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
         for (PipeKind kind : PipeKind.values()) {
