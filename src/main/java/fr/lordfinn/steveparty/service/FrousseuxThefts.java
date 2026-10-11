@@ -271,6 +271,8 @@ public final class FrousseuxThefts {
         void go(Phase next) {
             phase = next;
             phaseTick = 0;
+            // Only its defence wants blows: then (and only then) the victim can aim at it, a hologram the rest of the time
+            if (actor != null) BoardActors.setTouchable(actor, next == Phase.DEFENCE);
         }
 
         /** It rises beside the tile, its flame flaring up, then bobs there until the victim is picked. */

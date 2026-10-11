@@ -15,7 +15,13 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.math.Vec3d;
 
 import fr.lordfinn.steveparty.entities.BoardActor;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.projectile.ProjectileUtil;
+import net.minecraft.util.hit.EntityHitResult;
 import fr.lordfinn.steveparty.mixin.MobEntityGoalsAccessor;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.ExperienceOrbEntity;
@@ -37,7 +43,8 @@ import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 
 /**
  * The mobs board spaces summon (BoardActors): nothing hurts them but commands and the void, a creative player
- * included; they go when their sequence ends; a stray one (tagged, unknown) is removed as it loads.
+ * included; they go when their sequence ends; a stray one (tagged, unknown) is removed as it loads; they are never
+ * aimed at but while their show wants it.
  */
 public class BoardActorsGameTests implements SteveGameTest {
     private static final String BATCH = "board_actors";
@@ -174,5 +181,54 @@ public class BoardActorsGameTests implements SteveGameTest {
             context.assertTrue(context.getWorld().getEntitiesByClass(ExperienceOrbEntity.class, box, e -> true).isEmpty(), "no experience");
             context.complete();
         });
+    }
+
+    /**
+     * A hologram is never aimed at (canHit, what the crosshair and projectiles ask): the crosshair goes through it to
+     * the block behind, and a block can be placed in its box; only while its show wants blows or clicks on it
+     * (BoardActors#setTouchable) can it be aimed at. A mob that is no actor is aimed at and stops blocks as usual.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
+    public void theyAreNeverAimedAt(TestContext context) {
+        ServerPlayerEntity player = player(context);
+        UUID sequence = UUID.randomUUID();
+        BoxedTraderEntity merchant = ModEntities.BOXED_TRADER_ENTITY.create(context.getWorld());
+        merchant.makeBoardActor();
+        merchant.setNoGravity(true);
+        spawn(context, merchant, sequence);
+        PigEntity wild = EntityType.PIG.create(context.getWorld());
+        Vec3d wildAt = context.getAbsolute(new Vec3d(5.5, 2, 5.5));
+        wild.refreshPositionAndAngles(wildAt.x, wildAt.y, wildAt.z, 0, 0);
+        wild.setNoGravity(true);
+        wild.setAiDisabled(true);
+        context.getWorld().spawnEntity(wild);
+        atEnd(context, wild::discard);
+
+        context.assertFalse(merchant.canHit(), "a board actor is not aimed at");
+        context.assertTrue(wild.canHit(), "a mob that is no actor is");
+        // the crosshair: through the merchant, onto the wild pig
+        Vec3d eye = context.getAbsolute(new Vec3d(2.5, 2.5, 0.5));
+        context.assertTrue(aimed(player, eye, merchant) == null, "the crosshair goes through it");
+        context.assertTrue(aimed(player, context.getAbsolute(new Vec3d(5.5, 2.5, 3.5)), wild) == wild, "not through a wild mob");
+        // a block in its box
+        BlockState stone = Blocks.STONE.getDefaultState();
+        context.assertTrue(context.getWorld().canPlace(stone, merchant.getBlockPos(), ShapeContext.absent()),
+                "a block can be placed in its box");
+        context.assertFalse(context.getWorld().canPlace(stone, wild.getBlockPos(), ShapeContext.absent()),
+                "not in a wild mob's");
+        // its show wants clicks: aimed at, then a hologram again
+        BoardActors.setTouchable(merchant, true);
+        context.assertTrue(merchant.canHit() && aimed(player, eye, merchant) == merchant, "aimed at while its show wants it");
+        BoardActors.setTouchable(merchant, false);
+        context.assertFalse(merchant.canHit(), "then no more");
+        context.complete();
+    }
+
+    /** What a crosshair from {@code eye} toward {@code target} picks among the entities (as the client does), or null. */
+    private static Entity aimed(ServerPlayerEntity player, Vec3d eye, Entity target) {
+        Vec3d end = eye.add(target.getBoundingBox().getCenter().subtract(eye).normalize().multiply(8));
+        EntityHitResult hit = ProjectileUtil.raycast(player, eye, end, new Box(eye, end).expand(1),
+                e -> !e.isSpectator() && e.canHit(), eye.squaredDistanceTo(end));
+        return hit == null ? null : hit.getEntity();
     }
 }
