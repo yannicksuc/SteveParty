@@ -236,10 +236,11 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.MINIGAME_PIPE_ENTITY, MiniGamePipeNotchRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.MAGPIE_NEST_ENTITY, fr.lordfinn.steveparty.client.blockentity.MagpieNestRenderer::new);
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAGPIE_NEST, fr.lordfinn.steveparty.client.blockentity.MagpieNestRenderer.ITEM);
-        // The Spawn Bubble: its plate is its block model, its bubble (and what is inside) its renderer; its item, both
+        // The Spawn Bubble: its plate is its block model, its bubble (and what is inside) its renderer. Translucent: its
+        // item (a plain block model: the plate, the arrow and the bubble's cube) is drawn on a translucent layer too
         SpawnBubbleRenderer.registerModels();
         BlockEntityRendererFactories.register(ModBlockEntities.SPAWN_MARKER_ENTITY, SpawnBubbleRenderer::new);
-        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.SPAWN_MARKER, SpawnBubbleRenderer.ITEM);
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.SPAWN_MARKER, RenderLayer.getTranslucent());
         MiniGamePipeNotchRenderer.registerHint();
         // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
         for (PipeKind kind : PipeKind.values()) {

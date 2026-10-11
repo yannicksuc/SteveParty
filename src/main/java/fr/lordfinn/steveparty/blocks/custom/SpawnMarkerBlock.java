@@ -40,7 +40,7 @@ import java.util.function.Consumer;
 
 /**
  * The Spawn Bubble (its code names stay « spawn marker », so that the worlds keep theirs): a thin blue plate (its
- * outline and its collision, {@link #SHAPE}) under a floating soap bubble, where the mob of a board space appears,
+ * outline and its collision, {@link #SHAPE}) under a floating bubble (a translucent 10-pixel cube), where the mob of a board space appears,
  * facing its way ({@link #ROTATION}: one of 16, like a sign, toward whoever placed it; the plate marks the nearest of 8,
  * the mob in the bubble the exact one). Linked to a mob space with the Tile Linker Brush (from the space to the bubble,
  * see CartridgeLinks.SpawnPoint); a space without one summons its mob beside it, as always. Broken by hand; broken, its
