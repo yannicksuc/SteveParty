@@ -57,6 +57,7 @@ import fr.lordfinn.steveparty.client.pawn.PlayerPawnRenderer;
 import fr.lordfinn.steveparty.client.pipe.MiniGamePipeNotchRenderer;
 import fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer;
 import fr.lordfinn.steveparty.client.pipe.PipeModelPlugin;
+import fr.lordfinn.steveparty.client.renderer.HaloBeam;
 import fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer;
 import fr.lordfinn.steveparty.client.board.TileInfoClient;
 import fr.lordfinn.steveparty.client.screens.CartridgeScreen;
@@ -247,6 +248,7 @@ public class StevepartyClient implements ClientModInitializer {
         MobTextureColors.registerReloadListener();
         FlagPalettes.registerReloadListener();
         ChevronSprites.registerReloadListener();
+        HaloBeam.registerReloadListener();
         StencilGunHud.initialize();
         ToolWheel.initialize();
         GlandouilleCarryClient.initialize();
