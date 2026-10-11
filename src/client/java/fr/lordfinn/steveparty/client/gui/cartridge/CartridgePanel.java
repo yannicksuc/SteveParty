@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.gui.cartridge;
 
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import fr.lordfinn.steveparty.client.gui.LinksHelp;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -122,8 +123,6 @@ public final class CartridgePanel {
     /** The width the ghost slots' help is wrapped at. */
     private int ghostHelpW;
     private String giveText = "", takeText = "";
-    /** The containers' module: what to do for another storage (none linked), wrapped. */
-    private List<OrderedText> storageHint = List.of();
     /** The storage the containers' module was laid out for, null without such a module. */
     private @Nullable CartridgeContainers.Storage shownStorage;
     private int infoTicks;
@@ -862,15 +861,26 @@ public final class CartridgePanel {
         return sent == CartridgeContainers.Storage.LINKED ? CartridgeContainers.Storage.NONE : sent;
     }
 
-    /** The module's height: the storage, its containers two per row (or how to link some, wrapped), then the hint. */
+    /** The module's height: the storage, its containers two per row, then the hint (how to link: the command). */
     private int containersHeight(ItemStack current) {
         int count = rows(current).size();
-        CartridgeContainers.Storage now = storage(count);
-        shownStorage = now;
-        storageHint = now == CartridgeContainers.Storage.LINKED ? List.of() : textRenderer.wrapLines(Text.translatable(
-                CartridgeItem.MENU_KEY + (now == CartridgeContainers.Storage.PARTY_CONTROLLER ? "storage.party.hint" : "storage.none.hint")), columnW);
-        int body = count > 0 ? (count + ContainersModule.PER_ROW - 1) / ContainersModule.PER_ROW : Math.max(1, storageHint.size());
-        return (1 + body + 1) * ContainersModule.ROW_H;
+        shownStorage = storage(count);
+        return (1 + containersBody(count) + 1) * ContainersModule.ROW_H;
+    }
+
+    /** The rows of its containers, two per row. */
+    private static int containersBody(int count) {
+        return (count + ContainersModule.PER_ROW - 1) / ContainersModule.PER_ROW;
+    }
+
+    /** The y of the hint row, under the list: clicked, the chat explains how to link. */
+    private static int containersHintY(int top, int count) {
+        return top + (1 + containersBody(count)) * ContainersModule.ROW_H;
+    }
+
+    /** The hint: how to link (with the order of the list when there is one); a click runs the command. */
+    private static Text containersHint(int count) {
+        return count > 0 ? Text.translatable(CartridgeItem.MENU_KEY + "inventory.click") : LinksHelp.hint();
     }
 
     private int cellW() {
@@ -903,10 +913,6 @@ public final class CartridgePanel {
             case NONE -> I18n.translate(CartridgeItem.MENU_KEY + "storage.none");
         };
         UiText.line(context, textRenderer, title, mx, top + 1, columnW, now == CartridgeContainers.Storage.NONE ? TONE_BAD : TONE_GOOD, false);
-        if (rows.isEmpty()) {
-            for (int l = 0; l < storageHint.size(); l++)
-                UiText.line(context, textRenderer, storageHint.get(l), mx, top + 1 + (1 + l) * ContainersModule.ROW_H, columnW, TONE_SOFT, false);
-        }
         int buttons = editable ? 2 * (ROW_BUTTON + 1) : 0;
         for (int r = 0; r < rows.size(); r++) {
             ContainerRow row = rows.get(r);
@@ -921,10 +927,10 @@ public final class CartridgePanel {
             rowButton(context, rowButtonX(mx, r, ContainersModule.UP), cy, "◀", r > 0, mouseX, mouseY);
             rowButton(context, rowButtonX(mx, r, ContainersModule.REMOVE), cy, "×", true, mouseX, mouseY);
         }
-        // What a click does, under the list
-        int body = rows.isEmpty() ? Math.max(1, storageHint.size()) : (rows.size() + ContainersModule.PER_ROW - 1) / ContainersModule.PER_ROW;
-        int hintY = top + (1 + body) * ContainersModule.ROW_H;
-        UiText.line(context, textRenderer, I18n.translate(CartridgeItem.MENU_KEY + "inventory.click"), mx, hintY + 1, columnW, TONE_SOFT, false);
+        // How to link, under the list: a click shows it in the chat
+        int hintY = containersHintY(top, rows.size());
+        boolean hintHovered = HitArea.contains(mouseX, mouseY, mx, hintY, columnW, ContainersModule.ROW_H);
+        UiText.line(context, textRenderer, containersHint(rows.size()), mx, hintY + 1, columnW, hintHovered ? LinksHelp.HOVER_COLOR : TONE_SOFT, false);
     }
 
     private void rowButton(DrawContext context, int bx, int ry, String sign, boolean active, int mouseX, int mouseY) {
@@ -1065,8 +1071,20 @@ public final class CartridgePanel {
             click();
             return true;
         }
-        if (!canEdit.getAsBoolean() || !inContent(mouseY)) return false;
+        if (!inContent(mouseY)) return false;
         ItemStack current = stack.get();
+        // The containers' hint, for anyone who sees it: how to link, in the chat
+        for (int i = 0; i < modules.size(); i++) {
+            CartridgeModule module = modules.get(i);
+            if (!(module instanceof ContainersModule) || !module.enabled(current)) continue;
+            int mx = x + layout.x(i), top = moduleY(i) + (module.labelKey() != null ? CartridgeModule.LABEL_H : 0);
+            if (HitArea.contains(mouseX, mouseY, mx, containersHintY(top, rows(current).size()), columnW, ContainersModule.ROW_H)) {
+                click();
+                LinksHelp.show();
+                return true;
+            }
+        }
+        if (!canEdit.getAsBoolean()) return false;
         for (int i = 0; i < modules.size(); i++) {
             CartridgeModule module = modules.get(i);
             if (!module.editable() || !module.enabled(current)) continue;

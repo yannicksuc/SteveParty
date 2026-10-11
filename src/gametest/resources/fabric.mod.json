@@ -106,6 +106,7 @@
       "fr.lordfinn.steveparty.gametest.GoalPolePopupGameTests",
       "fr.lordfinn.steveparty.gametest.BoxedTraderGameTests",
       "fr.lordfinn.steveparty.gametest.LangGameTests",
+      "fr.lordfinn.steveparty.gametest.LinksCommandGameTests",
       "fr.lordfinn.steveparty.gametest.CreativeTabsGameTests",
       "fr.lordfinn.steveparty.gametest.TooltipGameTests",
       "fr.lordfinn.steveparty.gametest.StarFragmentsBlockGameTests",

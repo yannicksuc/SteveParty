@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.board.ExplorerHelmet;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.commands.BoardCommands;
+import fr.lordfinn.steveparty.commands.LinksCommand;
 import fr.lordfinn.steveparty.commands.MiniGamePageCommand;
 import fr.lordfinn.steveparty.commands.MoveTokenCommand;
 import fr.lordfinn.steveparty.commands.MulaCommand;
@@ -182,6 +183,7 @@ public class Steveparty implements ModInitializer {
         BoardCommands.initialize();
         MiniGamePageCommand.initialize();
         PodiumCommand.initialize();
+        LinksCommand.initialize();
         WrenchActions.initialize();
         TileLinkerBrush.initialize();
         new TokenMovementService();
