@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.service.MarkerMobs;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
@@ -13,9 +14,10 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The Spawn Marker of a cartridge whose space summons a mob ({@link MobSpawnCartridge}): one at most, saved on the
- * cartridge ({@link ModComponents#SPAWN_MARKER}), linked with the Tile Linker Brush. None, or one that is no Spawn
- * Marker any more: the mob appears beside its space, as always.
+ * The Spawn Bubble (« spawn marker » in the code) of a cartridge whose space summons a mob ({@link MobSpawnCartridge}):
+ * one at most, saved on the cartridge ({@link ModComponents#SPAWN_MARKER}), linked with the Tile Linker Brush. None,
+ * or one that is no Spawn Bubble any more: the mob appears beside its space, as always. The bubble is told which mobs
+ * are linked to it ({@link MarkerMobs}).
  */
 public final class CartridgeSpawnMarker {
     private CartridgeSpawnMarker() {
@@ -50,15 +52,26 @@ public final class CartridgeSpawnMarker {
         return pos;
     }
 
-    /** Links the marker at {@code pos} (the one before, if any, is forgotten); null: none. */
+    /**
+     * Links the marker at {@code pos} (the one before, if any, is forgotten); null: none. Both bubbles show their
+     * mobs again (see {@link MarkerMobs}).
+     */
     public static void set(ItemStack stack, World world, @Nullable BlockPos pos) {
+        MarkerMobs.touch(world, linked(stack, world));
         if (pos == null) stack.remove(ModComponents.SPAWN_MARKER);
         else stack.set(ModComponents.SPAWN_MARKER, GlobalPos.create(world.getRegistryKey(), pos.toImmutable()));
+        MarkerMobs.touch(world, pos);
     }
 
-    /** The marker at {@code marker} is told the space at {@code tile} links it (breaking it unlinks it). */
+    /**
+     * The marker at {@code marker} is told the space at {@code tile} links it (breaking it unlinks it; its bubble
+     * shows the space's mob).
+     */
     public static void own(World world, BlockPos marker, BlockPos tile) {
-        if (world.getBlockEntity(marker) instanceof SpawnMarkerBlockEntity entity) entity.setOwner(tile);
+        if (!(world.getBlockEntity(marker) instanceof SpawnMarkerBlockEntity entity)) return;
+        entity.setOwner(tile);
+        entity.addLinker(tile);
+        MarkerMobs.touch(world, marker);
     }
 
     /** The marker at {@code marker} is gone: the cartridges of the space at {@code tile} linked to it forget it. */

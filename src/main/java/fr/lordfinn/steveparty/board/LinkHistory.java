@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
+import fr.lordfinn.steveparty.service.MarkerMobs;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -103,6 +104,9 @@ public final class LinkHistory {
                 if (value.dimension().equals(world.getRegistryKey())) CartridgeSpawnMarker.own(world, value.pos(), pos);
             }
             held.sync().run();
+            // Both bubbles show their mobs again
+            for (GlobalPos marker : new GlobalPos[]{before, after})
+                if (marker != null && marker.dimension().equals(world.getRegistryKey())) MarkerMobs.touch(world, marker.pos());
             return true;
         }
     }

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
+import fr.lordfinn.steveparty.service.MarkerMobs;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.*;
@@ -80,6 +81,8 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         if (state.getBlock() != newState.getBlock()) {
             world.updateComparators(pos,this);
             tileEntity.hideDestinations();
+            // Its Spawn Bubbles forget its mobs (at the end of the tick, once it is gone)
+            MarkerMobs.spaceChanged(world, pos);
         }
         super.onStateReplaced(state, world, pos, newState, moved);
     }

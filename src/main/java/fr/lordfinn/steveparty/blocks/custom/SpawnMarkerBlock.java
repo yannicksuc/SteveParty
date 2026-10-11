@@ -13,6 +13,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -31,7 +32,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationPropertyHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -39,10 +39,16 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Consumer;
 
 /**
- * The Spawn Marker: a little stake on a plate, all but invisible during a party, where the mob of a board space
- * appears, facing its way ({@link #ROTATION}: one of 16, like a sign, toward whoever placed it). Linked to a mob space with the Tile Linker
- * Brush (from the space to the marker, see CartridgeLinks.SpawnPoint); a space without one summons its mob beside it,
- * as always. Walked through, broken by hand; broken, the space forgets it.
+ * The Spawn Bubble (its code names stay « spawn marker », so that the worlds keep theirs): a thin blue plate (its
+ * outline and its collision, {@link #SHAPE}) under a floating soap bubble, where the mob of a board space appears,
+ * facing its way ({@link #ROTATION}: one of 16, like a sign, toward whoever placed it; the plate marks the nearest of 8,
+ * the mob in the bubble the exact one). Linked to a mob space with the Tile Linker Brush (from the space to the bubble,
+ * see CartridgeLinks.SpawnPoint); a space without one summons its mob beside it, as always. Broken by hand; broken, its
+ * bubble pops and the spaces linking it forget it.
+ * <p>
+ * Its bubble ({@link #bubbleCenter}) floats in the middle of the block, lifted as set; the mob appears
+ * {@link #SPAWN_UNDER_BUBBLE} under its centre ({@link #spawnPos}: on the plate by default). It has no collision and
+ * cannot be aimed at: only its plate can.
  * <p>
  * An empty hand opens its menu (client side, {@link #openMenu}): when its mob shows ({@link SpawnMarkerBlockEntity#isResident}:
  * only when a token lands, or all the party long, see {@link MarkerResidents}) and how high above it the mob appears
@@ -53,12 +59,19 @@ public class SpawnMarkerBlock extends BlockWithEntity {
     public static final MapCodec<SpawnMarkerBlock> CODEC = createCodec(SpawnMarkerBlock::new);
     /**
      * The way its mob faces, in 16 steps of 22.5° like a sign's: 0 south, 4 west, 8 north, 12 east (see
-     * {@link RotationPropertyHelper}). The model turns with it: a quarter by the blockstate, the rest by its elements.
+     * {@link RotationPropertyHelper}). The plate marks the nearest of 8 (blockstate: an odd step shows the one before it); the mob in the bubble shows the exact one.
      */
     public static final IntProperty ROTATION = Properties.ROTATION;
     /** The compass point of each step, from north clockwise: the end of its lang key. */
     private static final String[] COMPASS = {"n", "nne", "ne", "ene", "e", "ese", "se", "sse", "s", "ssw", "sw", "wsw", "w", "wnw", "nw", "nnw"};
-    private static final VoxelShape SHAPE = Block.createCuboidShape(5, 0, 5, 11, 3, 11);
+    /** The plate: 14 x 14 pixels, 2 high. */
+    private static final VoxelShape SHAPE = Block.createCuboidShape(1, 0, 1, 15, 2, 15);
+    /** How high the plate is (blocks). */
+    public static final double PLATE_HEIGHT = 2 / 16.0;
+    /** How high the centre of the bubble is above the bottom of the block, unlifted (blocks): the block's centre. */
+    public static final double BUBBLE_HEIGHT = 8 / 16.0;
+    /** How far under the bubble's centre its mob appears (blocks): on the plate when unlifted. */
+    public static final double SPAWN_UNDER_BUBBLE = 6 / 16.0;
     /** Opens the menu of the marker at a position: set by the client. */
     public static Consumer<BlockPos> openMenu = pos -> {
     };
@@ -99,9 +112,10 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return SHAPE;
     }
 
+    /** Its plate only: the bubble floats free (a mob appears standing on the plate). */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return VoxelShapes.empty();
+        return SHAPE;
     }
 
     @Override
@@ -114,12 +128,17 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return new SpawnMarkerBlockEntity(pos, state);
     }
 
-    /** The middle of its plate. */
-    public static Vec3d standPos(BlockPos pos) {
-        return Vec3d.ofBottomCenter(pos);
+    /** The centre of its bubble {@code lift} blocks up ({@link SpawnMarkerBlockEntity#getLift}): the block's centre unlifted. */
+    public static Vec3d bubbleCenter(BlockPos pos, double lift) {
+        return Vec3d.ofBottomCenter(pos).add(0, BUBBLE_HEIGHT + lift, 0);
     }
 
-    /** Where its mob appears: the middle of its plate, lifted as set ({@link SpawnMarkerBlockEntity#getLift}). */
+    /** Where its mob appears unlifted: {@link #SPAWN_UNDER_BUBBLE} under its bubble's centre, standing on the plate. */
+    public static Vec3d standPos(BlockPos pos) {
+        return bubbleCenter(pos, 0).subtract(0, SPAWN_UNDER_BUBBLE, 0);
+    }
+
+    /** Where its mob appears: under its bubble, lifted as set ({@link SpawnMarkerBlockEntity#getLift}). */
     public static Vec3d spawnPos(BlockView world, BlockPos pos) {
         double lift = world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity marker ? marker.getLift() : 0;
         return standPos(pos).add(0, lift, 0);
@@ -174,15 +193,33 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return ActionResult.SUCCESS;
     }
 
-    /** Broken (or replaced): the space linked to it forgets it, its resident mob goes. */
+    /** Placed (by hand, a command, a paste...): its bubble comes out of the plate, inflating (on the clients around). */
+    @Override
+    protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
+        super.onBlockAdded(state, world, pos, oldState, notify);
+        if (!world.isClient && !oldState.isOf(this)) world.addSyncedBlockEvent(pos, this, SpawnMarkerBlockEntity.INFLATE, 0);
+    }
+
+    /** Broken (or replaced): its bubble pops, the spaces linked to it forget it, its resident mob goes. */
     @Override
     protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (!state.isOf(newState.getBlock()) && world instanceof ServerWorld serverWorld) {
-            if (world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity marker && marker.getOwner() != null) {
-                CartridgeSpawnMarker.forget(serverWorld, marker.getOwner(), pos);
+            double lift = 0;
+            if (world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity marker) {
+                lift = marker.getLift();
+                for (BlockPos tile : marker.getLinkers()) CartridgeSpawnMarker.forget(serverWorld, tile, pos);
             }
+            pop(serverWorld, bubbleCenter(pos, lift));
             MarkerResidents.remove(serverWorld, pos);
         }
         super.onStateReplaced(state, world, pos, newState, moved);
+    }
+
+    /** A bubble popping at {@code center}: a little pop, a few droplets. */
+    private static void pop(ServerWorld world, Vec3d center) {
+        world.playSound(null, center.x, center.y, center.z, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, SoundCategory.BLOCKS,
+                1.0f, 1.3f + world.getRandom().nextFloat() * 0.3f);
+        world.spawnParticles(ParticleTypes.BUBBLE_POP, center.x, center.y, center.z, 6, 0.18, 0.18, 0.18, 0.02);
+        world.spawnParticles(ParticleTypes.SPLASH, center.x, center.y, center.z, 10, 0.2, 0.15, 0.2, 0.1);
     }
 }

@@ -25,6 +25,11 @@ import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.service.BoardActors;
 import fr.lordfinn.steveparty.service.FrousseuxThefts;
 import fr.lordfinn.steveparty.service.MarkerResidents;
+import fr.lordfinn.steveparty.service.MarkerMobs;
+import net.minecraft.entity.EntityType;
+import net.minecraft.item.Item;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.GlobalPos;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.dice.DicePrompts;
@@ -357,21 +362,23 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         });
         context.assertTrue(entity.isResident() && entity.getLift() == 3, "always visible, 3 blocks up");
         BoardMobSpots.Spot spot = BoardMobSpots.spot(context.getWorld(), tile.getPos(), Vec3d.ZERO, 0);
-        context.assertTrue(spot.onMarker() && spot.lifted() && Math.abs(spot.pos().y - (marker.getY() + 3)) < 1.0E-6
+        context.assertTrue(spot.onMarker() && spot.lifted() && Math.abs(spot.pos().y - (marker.getY() + 3 + SpawnMarkerBlock.PLATE_HEIGHT)) < 1.0E-6
                 && spot.yaw() == Direction.NORTH.asRotation(), "on the marker, 3 blocks up, facing its way");
         ServerPlayerEntity a = player(context), b = player(context);
         party(context, new ArrayList<>(), a, b);
         atEnd(context, () -> MarkerResidents.remove(context.getWorld(), marker));
+        MarkerMobs.refresh(context.getWorld(), marker);
+        context.assertTrue(entity.isPartyRunning() && !entity.getLinkedMobs().isEmpty(), "the bubble knows a party runs there");
         MarkerResidents.update(context.getWorld().getServer());
         MobEntity resident = MarkerResidents.resident(context.getWorld(), marker);
-        context.assertTrue(resident != null && resident.hasNoGravity() && Math.abs(resident.getY() - (marker.getY() + 3)) < 0.01, "it appears 3 blocks up");
+        context.assertTrue(resident != null && resident.hasNoGravity() && Math.abs(resident.getY() - (marker.getY() + 3 + SpawnMarkerBlock.PLATE_HEIGHT)) < 0.01, "it appears 3 blocks up");
         context.waitAndRun(30, () -> {
-            context.assertTrue(!resident.isRemoved() && Math.abs(resident.getY() - (marker.getY() + 3)) < 0.01, "and floats there");
+            context.assertTrue(!resident.isRemoved() && Math.abs(resident.getY() - (marker.getY() + 3 + SpawnMarkerBlock.PLATE_HEIGHT)) < 0.01, "and floats there");
             // under the floor: -2 blocks
             entity.setLiftSteps(-4);
             MarkerResidents.refresh(context.getWorld(), marker);
             MobEntity low = MarkerResidents.resident(context.getWorld(), marker);
-            context.assertTrue(low != null && Math.abs(low.getY() - (marker.getY() - 2)) < 0.01, "2 blocks under the marker");
+            context.assertTrue(low != null && Math.abs(low.getY() - (marker.getY() - 2 + SpawnMarkerBlock.PLATE_HEIGHT)) < 0.01, "2 blocks under the marker");
             context.complete();
         });
     }
@@ -459,5 +466,93 @@ public class SpawnMarkerGameTests implements SteveGameTest {
             context.assertTrue(checkpoint.getStack(3).isOf(ModItems.BOARD_SPACE_BEHAVIOR) && checkpoint.getStack(0).isOf(ModItems.SHOP_CARTRIDGE),
                     "both slots unchanged");
         });
+    }
+
+    // ---------------------------------------------------------------- the Spawn Bubble
+
+    private static EntityType<?> mob(Item cartridge) {
+        return CartridgeSpawnMarker.mobOf(new ItemStack(cartridge));
+    }
+
+    /** The mobs linked to the bubble are {@code expected} within a couple of ticks (told at the end of the tick). */
+    private static void shows(TestContext context, SpawnMarkerBlockEntity bubble, List<EntityType<?>> expected, String what, Runnable then) {
+        when(context, () -> bubble.getLinkedMobs().equals(expected), 2, what, then);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void theBubbleKnowsTheMobsLinkedToIt(TestContext context) {
+        BoardSpaceBlockEntity frousseux = tile(context, TILE, new ItemStack(ModItems.FROUSSEUX_CARTRIDGE));
+        BlockPos second = new BlockPos(3, 1, 7);
+        BoardSpaceBlockEntity mistigri = tile(context, second, new ItemStack(ModItems.MISTIGRI_CARTRIDGE));
+        BlockPos marker = marker(context, MARKER, Direction.NORTH);
+        SpawnMarkerBlockEntity bubble = (SpawnMarkerBlockEntity) context.getWorld().getBlockEntity(marker);
+        context.assertTrue(bubble != null && bubble.getLinkedMobs().isEmpty(), "nothing linked: its arrow");
+        link(context, frousseux, marker);
+        shows(context, bubble, List.of(mob(ModItems.FROUSSEUX_CARTRIDGE)), "linked: its mob in the bubble", () -> {
+            link(context, mistigri, marker);
+            shows(context, bubble, List.of(mob(ModItems.FROUSSEUX_CARTRIDGE), mob(ModItems.MISTIGRI_CARTRIDGE)), "two spaces: both, in turn", () -> {
+                CartridgeSpawnMarker.set(frousseux.getStack(0), context.getWorld(), null);
+                shows(context, bubble, List.of(mob(ModItems.MISTIGRI_CARTRIDGE)), "unlinked: forgotten", () -> {
+                    // its cartridge replaced by another linked to the bubble (a hopper, the menu...)
+                    ItemStack trichaudron = new ItemStack(ModItems.TRICHAUDRON_CARTRIDGE);
+                    trichaudron.set(ModComponents.SPAWN_MARKER, GlobalPos.create(context.getWorld().getRegistryKey(), marker));
+                    mistigri.setStack(0, trichaudron);
+                    shows(context, bubble, List.of(mob(ModItems.TRICHAUDRON_CARTRIDGE)), "the cartridge changed: its mob", () -> {
+                        context.setBlockState(second, Blocks.AIR);
+                        shows(context, bubble, List.of(), "the space broken: its arrow again", context::complete);
+                    });
+                });
+            });
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void anOldMarkerKeepsItsWayAndItsHeight(TestContext context) {
+        BoardSpaceBlockEntity tile = tile(context, TILE, new ItemStack(ModItems.MISTIGRI_CARTRIDGE));
+        BlockPos marker = marker(context, MARKER, 5);
+        // saved before the bubble: no links known, only its last space
+        tile.getStack(0).set(ModComponents.SPAWN_MARKER, GlobalPos.create(context.getWorld().getRegistryKey(), marker));
+        SpawnMarkerBlockEntity entity = (SpawnMarkerBlockEntity) context.getWorld().getBlockEntity(marker);
+        NbtCompound old = new NbtCompound();
+        old.putBoolean("Resident", true);
+        old.putInt("Lift", 6);
+        old.putLong("Owner", tile.getPos().asLong());
+        entity.read(old, context.getWorld().getRegistryManager());
+        BlockState state = context.getWorld().getBlockState(marker);
+        context.assertTrue(state.get(SpawnMarkerBlock.ROTATION) == 5 && facing(SpawnMarkerBlock.yaw(state), 112.5f), "its way kept (a sixteenth)");
+        context.assertTrue(entity.isResident() && entity.getLiftSteps() == 6, "its height and its mode kept");
+        context.assertTrue(Math.abs(SpawnMarkerBlock.spawnPos(context.getWorld(), marker).y - (marker.getY() + 3 + SpawnMarkerBlock.PLATE_HEIGHT)) < 1.0E-6,
+                "its mob 3 blocks up");
+        context.assertTrue(entity.getLinkedMobs().isEmpty(), "its mobs not known yet");
+        MarkerMobs.refresh(context.getWorld(), marker);
+        context.assertEquals(entity.getLinkedMobs(), List.of(mob(ModItems.MISTIGRI_CARTRIDGE)), "learnt from its space");
+        // saved and read again: the same
+        SpawnMarkerBlockEntity copy = new SpawnMarkerBlockEntity(marker, state);
+        copy.read(entity.createNbt(context.getWorld().getRegistryManager()), context.getWorld().getRegistryManager());
+        context.assertTrue(copy.getLinkedMobs().equals(entity.getLinkedMobs()) && copy.getLiftSteps() == 6 && copy.isResident()
+                && tile.getPos().equals(copy.getOwner()), "saved");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theMobAppearsSixPixelsUnderTheBubble(TestContext context) {
+        BlockPos marker = marker(context, MARKER, Direction.EAST);
+        Vec3d center = SpawnMarkerBlock.bubbleCenter(marker, 0);
+        context.assertTrue(center.equals(Vec3d.ofCenter(marker)), "the bubble in the middle of the block");
+        Vec3d spawn = SpawnMarkerBlock.spawnPos(context.getWorld(), marker);
+        context.assertTrue(near(spawn, center) && Math.abs(center.y - spawn.y - 6 / 16.0) < 1.0E-9, "its mob 6 pixels under its centre");
+        context.assertTrue(Math.abs(spawn.y - (marker.getY() + SpawnMarkerBlock.PLATE_HEIGHT)) < 1.0E-9, "on the plate");
+        BlockState state = context.getWorld().getBlockState(marker);
+        context.assertTrue(Math.abs(state.getCollisionShape(context.getWorld(), marker).getMax(Direction.Axis.Y) - SpawnMarkerBlock.PLATE_HEIGHT) < 1.0E-9
+                && Math.abs(state.getOutlineShape(context.getWorld(), marker).getMax(Direction.Axis.Y) - SpawnMarkerBlock.PLATE_HEIGHT) < 1.0E-9,
+                "only the plate is solid and aimed at");
+        SpawnMarkerBlockEntity entity = (SpawnMarkerBlockEntity) context.getWorld().getBlockEntity(marker);
+        entity.setLiftSteps(3);
+        Vec3d lifted = SpawnMarkerBlock.bubbleCenter(marker, entity.getLift());
+        Vec3d spot = BoardMobSpots.at(context.getWorld(), marker).pos();
+        context.assertTrue(Math.abs(lifted.y - center.y - 1.5) < 1.0E-9, "lifted: the bubble goes up as much");
+        context.assertTrue(near(spot, lifted) && Math.abs(lifted.y - spot.y - 6 / 16.0) < 1.0E-9
+                && spot.equals(SpawnMarkerBlock.spawnPos(context.getWorld(), marker)), "its mob still 6 pixels under it");
+        context.complete();
     }
 }

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
+import fr.lordfinn.steveparty.service.MarkerMobs;
 import fr.lordfinn.steveparty.service.MarkerResidents;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerSettings;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
@@ -124,6 +125,7 @@ public class Steveparty implements ModInitializer {
         BoardActors.initialize();
         PartyBank.initialize();
         MarkerResidents.initialize();
+        MarkerMobs.initialize();
         SpawnMarkerSettings.initialize();
         FrousseuxThefts.initialize();
         MistigriSentences.initialize();

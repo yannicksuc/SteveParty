@@ -4,6 +4,8 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.board.BoardRevision;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.service.MarkerMobs;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
@@ -127,6 +129,8 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     public void markDirty() {
         super.markDirty();
         BoardRevision.changed(world); // a cartridge shown in an open screen, client side
+        // The Spawn Bubbles linked to its cartridges show their mobs
+        if (world instanceof ServerWorld serverWorld && serverWorld.getServer().isOnThread()) MarkerMobs.spaceChanged(serverWorld, pos);
     }
 
     /** The block state changed (role, support, size...): the client's board view reads it. */
