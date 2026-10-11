@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.GuiItems;
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import fr.lordfinn.steveparty.client.gui.LinksHelp;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -46,6 +47,8 @@ public final class StoragePage {
     private static final int COUNTS_Y = CY + 20, STATE_Y = CY + 32, LINKED_Y = CY + 46, USED_Y = CY + 68;
     /** The list of the linked containers, over the slots and the bar: its title, its rows, the hint at its foot. */
     private static final int LIST_X = GRID_X + 4, LIST_W = BAR_X + BAR_W - GRID_X - 8, LIST_Y = GRID_Y + 18, LIST_ROW = 12, LIST_ROWS = 6;
+    /** The hint at the list's foot: how to link a chest (a click runs the command). */
+    private static final int HINT_Y = GRID_Y + GRID_H - 12;
     private static final int COLOR_SHORT = 0xFFFFB54A;
 
     private final Dashboard dashboard;
@@ -173,7 +176,9 @@ public final class StoragePage {
             if (maxScroll > 0)
                 DashboardPainter.scrollbar(context, LIST_X + LIST_W - 3, LIST_Y - 1, LIST_ROWS * LIST_ROW, listScroll, maxScroll, LIST_ROWS, storages.size());
         }
-        paint.line(context, Text.translatable(KEY + "storage.linked.hint"), LIST_X, GRID_Y + GRID_H - 12, LIST_W, INK_SOFT);
+        // How to link a chest: clicked, the chat explains it
+        paint.line(context, Text.translatable(KEY + "storage.linked.hint"), LIST_X, HINT_Y, LIST_W,
+                HitArea.contains(mx, my, LIST_X, HINT_Y - 1, LIST_W, 10) ? LinksHelp.HOVER_COLOR : INK_SOFT);
     }
 
     private static int stateColour(PartyBank.LinkState state) {
@@ -251,6 +256,10 @@ public final class StoragePage {
 
     /** A press on the scroll bar (screen coordinates): the rows follow the mouse until it is released. */
     public boolean pressed(double mouseX, double mouseY) {
+        if (handler().isLinkedOpen() && HitArea.contains(mouseX - dashboard.left(), mouseY - dashboard.top(), LIST_X, HINT_Y - 1, LIST_W, 10)) {
+            LinksHelp.show();
+            return true;
+        }
         dragging = !handler().isLinkedOpen()
                 && HitArea.contains(mouseX - dashboard.left(), mouseY - dashboard.top(), BAR_X - 2, GRID_Y, BAR_W + 4, GRID_H);
         if (dragging) dragged(mouseY);
