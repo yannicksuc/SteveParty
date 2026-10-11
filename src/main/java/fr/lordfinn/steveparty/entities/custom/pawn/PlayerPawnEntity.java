@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.pawn;
 
+import fr.lordfinn.steveparty.entities.TokenWax;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -34,7 +35,8 @@ import java.util.UUID;
  * {@link PawnPossessions}); the pawn itself never depends on it: when the player leaves, it stays, empty, playable.
  * <p>
  * The statue: right click cycles its {@linkplain PlayerPawnPose poses}; sneak + right click with an item makes it hold
- * the item (swapped with what it held), sneak + right click with an empty hand takes the item back. The held item is
+ * the item (swapped with what it held), sneak + right click with an empty hand takes the item back. Waxed (a
+ * honeycomb, see {@link TokenWax}), its pose stays until an axe scrapes the wax off; the held item can still be swapped. The held item is
  * its main hand: saved with it, kept in a Token, dropped when it dies (never lost, never copied).
  */
 public class PlayerPawnEntity extends MobEntity {
@@ -122,6 +124,11 @@ public class PlayerPawnEntity extends MobEntity {
         if (hand != Hand.MAIN_HAND && !player.isSneaking()) return ActionResult.PASS;
         if (PawnPossessions.isInsideAPawn(player)) return ActionResult.FAIL;
         if (player.isSneaking()) return this.swapHeldItem(player, hand);
+        if (TokenWax.isWaxed(this)) {
+            // Waxed: its statue pose stays (an axe scrapes the wax off)
+            TokenWax.refusePose(this, player);
+            return ActionResult.success(this.getWorld().isClient);
+        }
         if (this.getWorld().isClient) return ActionResult.SUCCESS;
         PlayerPawnPose pose = this.getStatuePose().next();
         this.setStatuePose(pose);

@@ -97,6 +97,7 @@
       "fr.lordfinn.steveparty.gametest.TokenSpellGameTests",
       "fr.lordfinn.steveparty.gametest.PlayerPawnGameTests",
       "fr.lordfinn.steveparty.gametest.TokenPoseGameTests",
+      "fr.lordfinn.steveparty.gametest.TokenWaxGameTests",
       "fr.lordfinn.steveparty.gametest.TokenBaseGameTests",
       "fr.lordfinn.steveparty.gametest.TokenDropsGameTests",
       "fr.lordfinn.steveparty.gametest.TokenPawnGameTests",

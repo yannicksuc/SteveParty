@@ -54,6 +54,8 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     @Unique
     private static final TrackedData<Integer> TOKEN_POSE = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique
+    private static final TrackedData<Boolean> TOKEN_WAXED = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.BOOLEAN);
+    @Unique
     private Vec3d targetPosition;
     @Unique
     private double targetPositionSpeed;
@@ -106,6 +108,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         builder.add(NB_STEPS, 0);
         builder.add(TOKEN_STATUS, 0);
         builder.add(TOKEN_POSE, 0);
+        builder.add(TOKEN_WAXED, false);
     }
 
     public boolean steveparty$isTokenized() {
@@ -178,6 +181,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             this.targetPosition = null;
             this.steveparty$tokenSize = 0;
             this.steveparty$tokenColor = -1;
+            this.dataTracker.set(TOKEN_WAXED, false);
             // Restaure les AI goals vanilla (cleared first so they are not duplicated)
             this.goalSelector.clear(goal -> true);
             this.targetSelector.clear(goal -> true);
@@ -203,6 +207,14 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
 
     public void steveparty$setTokenPose(int pose) {
         this.dataTracker.set(TOKEN_POSE, Math.max(0, pose));
+    }
+
+    public boolean steveparty$isTokenWaxed() {
+        return this.dataTracker.get(TOKEN_WAXED);
+    }
+
+    public void steveparty$setTokenWaxed(boolean waxed) {
+        this.dataTracker.set(TOKEN_WAXED, waxed);
     }
 
     public UUID steveparty$getTokenOwner() {
@@ -263,6 +275,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         }
 
         this.steveparty$setTokenPose(nbt.getInt("TokenPose"));
+        this.steveparty$setTokenWaxed(nbt.getBoolean("TokenWaxed"));
         this.steveparty$setTokenSize(nbt.contains("TokenSize", NbtElement.NUMBER_TYPE) ? nbt.getFloat("TokenSize") : 0);
         this.steveparty$setTokenColor(nbt.contains("TokenColor", NbtElement.NUMBER_TYPE) ? nbt.getInt("TokenColor") : -1);
 
@@ -284,6 +297,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         }
         nbt.putInt("TokenStatus", this.steveparty$getStatus());
         if (this.steveparty$getTokenPose() != 0) nbt.putInt("TokenPose", this.steveparty$getTokenPose());
+        if (this.steveparty$isTokenWaxed()) nbt.putBoolean("TokenWaxed", true);
         if (this.steveparty$tokenSize > 0) {
             nbt.putFloat("TokenSize", this.steveparty$tokenSize);
         }

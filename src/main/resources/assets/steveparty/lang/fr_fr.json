@@ -3234,5 +3234,10 @@
   "gui.steveparty.spawn_marker.lift.hint": "Un demi-bloc plus haut ou plus bas (Maj : un bloc ; la molette aussi). Le mob flotte là : le repère peut se cacher sous le sol ou dans un mur",
   "gui.steveparty.spawn_marker.preview": "Le pinceau, la Clé ou le casque montrent où il sera",
   "message.steveparty.board.check.unloaded_starts": "%s cases de départ dans des chunks non chargés (leurs pions ne sont pas vus) :",
-  "message.steveparty.board.summary.unloaded_starts": "%s cases de départ non chargées"
+  "message.steveparty.board.summary.unloaded_starts": "%s cases de départ non chargées",
+  "tooltip.steveparty.token.waxed": "Ciré",
+  "tooltip.steveparty.token.wax": "Un pion ciré avec un rayon de miel garde sa pose ; une hache retire la cire",
+  "message.steveparty.token_wax.on": "Ciré : ce pion garde sa pose",
+  "message.steveparty.token_wax.off": "Cire retirée : ce pion peut de nouveau changer de pose",
+  "message.steveparty.token_wax.frozen": "Ciré : sa pose ne changera pas (gratte-le avec une hache)"
 }

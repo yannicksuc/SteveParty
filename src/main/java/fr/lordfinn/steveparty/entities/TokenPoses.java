@@ -46,6 +46,7 @@ public final class TokenPoses {
     /** The next pose (server side; the client shows which one it will be). */
     public static void nextPose(MobEntity mob) {
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
+        if (TokenWax.isWaxed(mob)) return; // a waxed pawn keeps its pose
         int next = (token.steveparty$getTokenPose() + 1) % WRAP;
         if (mob.getWorld().isClient) {
             clientFeedback.accept(mob, next);

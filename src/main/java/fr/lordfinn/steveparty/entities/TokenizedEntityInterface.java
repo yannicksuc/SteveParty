@@ -54,4 +54,9 @@ public interface TokenizedEntityInterface {
     int steveparty$getTokenPose();
 
     void steveparty$setTokenPose(int pose);
+
+    /** Waxed with a honeycomb (see {@code TokenWax}): its pose never changes until an axe scrapes the wax off. Saved, synced. */
+    boolean steveparty$isTokenWaxed();
+
+    void steveparty$setTokenWaxed(boolean waxed);
 }

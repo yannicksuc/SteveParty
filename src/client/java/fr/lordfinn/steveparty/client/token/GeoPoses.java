@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.token;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.TokenBase;
+import fr.lordfinn.steveparty.entities.TokenWax;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -50,6 +51,8 @@ public final class GeoPoses {
     public record Pose(String animation, double tick, List<BonePose> bones) {
     }
 
+    /** Every bone at rest (a waxed pawn with no pose). */
+    private static final Pose REST = new Pose("", 0, List.of());
     private static final Map<EntityType<?>, List<Pose>> POSES = new HashMap<>();
     /**
      * The bones of the model are shared by every mob of the type: what a pose changed is put back once the posed pawn
@@ -74,13 +77,15 @@ public final class GeoPoses {
     public static <T extends GeoAnimatable> void apply(GeoModel<T> model, T animatable) {
         if (!(animatable instanceof Entity entity) || !TokenBase.isToken(entity)) return;
         int number = ((TokenizedEntityInterface) entity).steveparty$getTokenPose();
-        if (number <= 0) return;
-        List<Pose> poses = POSES.computeIfAbsent(entity.getType(), type -> find(model, animatable));
-        if (poses.isEmpty()) return;
-        int index = number % (poses.size() + 1);
-        if (index == 0) return;
+        // A waxed pawn without a pose: still in its rest pose, its own animations no longer play (see TokenWax)
+        boolean waxed = TokenWax.isWaxed(entity);
+        if (number <= 0 && !waxed) return;
+        List<Pose> poses = number <= 0 ? List.of() : POSES.computeIfAbsent(entity.getType(), type -> find(model, animatable));
+        if (poses.isEmpty() && !waxed) return;
+        int index = poses.isEmpty() ? 0 : number % (poses.size() + 1);
+        if (index == 0 && !waxed) return;
         try {
-            freeze(model, poses.get(index - 1));
+            freeze(model, index == 0 ? REST : poses.get(index - 1));
         } catch (Throwable error) {
             LOGGER.warn("Pose of the pawn of {} not applied: {}", EntityType.getId(entity.getType()), error.toString());
         }

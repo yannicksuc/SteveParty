@@ -40,6 +40,8 @@ import static fr.lordfinn.steveparty.components.ModComponents.ENTITY_DATA_COMPON
 import static net.minecraft.sound.SoundEvents.BLOCK_ENCHANTMENT_TABLE_USE;
 
 public class TokenItem extends Item {
+    /** Honeycomb orange, the badge of a waxed pawn. */
+    private static final int WAXED_COLOR = 0xFAB431;
 
     public TokenItem(Settings settings) {
         super(settings.maxCount(1));
@@ -48,9 +50,15 @@ public class TokenItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        boolean full = stack.get(ENTITY_DATA_COMPONENT) != null;
+        EntityDataComponent data = stack.get(ENTITY_DATA_COMPONENT);
+        boolean full = data != null;
+        // The pawn inside is waxed (TokenWax): its pose won't change
+        if (full && data.entityData() != null && data.entityData().getBoolean("TokenWaxed")) {
+            Tooltips.tag(tooltip, Text.translatable("tooltip.steveparty.token.waxed"), WAXED_COLOR);
+        }
         Tooltips.of(tooltip).summary("tooltip.steveparty.token.summary")
-                .more(more -> more.use(Tooltips.Keys.use(), full ? "tooltip.steveparty.token.summon" : "tooltip.steveparty.token.store"));
+                .more(more -> more.use(Tooltips.Keys.use(), full ? "tooltip.steveparty.token.summon" : "tooltip.steveparty.token.store")
+                        .note("tooltip.steveparty.token.wax"));
     }
 
     @Override

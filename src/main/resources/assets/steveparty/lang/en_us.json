@@ -3234,5 +3234,10 @@
   "gui.steveparty.spawn_marker.lift.hint": "Half a block up or down (Shift: a block; the wheel too). The mob floats there: the marker can hide under the floor or in a wall",
   "gui.steveparty.spawn_marker.preview": "The brush, the Wrench or the helmet show where it will be",
   "message.steveparty.board.check.unloaded_starts": "%s start tiles in unloaded chunks (their tokens can't be seen):",
-  "message.steveparty.board.summary.unloaded_starts": "%s start tiles not loaded"
+  "message.steveparty.board.summary.unloaded_starts": "%s start tiles not loaded",
+  "tooltip.steveparty.token.waxed": "Waxed",
+  "tooltip.steveparty.token.wax": "A pawn waxed with a honeycomb keeps its pose; an axe scrapes the wax off",
+  "message.steveparty.token_wax.on": "Waxed: this pawn keeps its pose",
+  "message.steveparty.token_wax.off": "Wax scraped off: this pawn can change its pose again",
+  "message.steveparty.token_wax.frozen": "Waxed: its pose won't change (scrape it with an axe)"
 }

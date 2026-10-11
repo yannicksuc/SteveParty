@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.mixin;
 
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenPoses;
+import fr.lordfinn.steveparty.entities.TokenWax;
 import net.minecraft.entity.Bucketable;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -37,6 +38,12 @@ public abstract class TokenVanillaActionsMixin {
     private void steveparty$keepPawnsIntact(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         MobEntity mob = (MobEntity) (Object) this;
         if (!TokenBase.isToken(mob)) return;
+        // A honeycomb waxes it, an axe scrapes the wax off (TokenWax): before anything else, these two items only
+        ActionResult wax = TokenWax.use(mob, player, hand);
+        if (wax != ActionResult.PASS) {
+            cir.setReturnValue(wax);
+            return;
+        }
         // An empty hand poses it (TokenPoseInteractMixin), even a pet's
         if (TokenPoses.posesOnClick(mob, player, hand)) return;
         if (steveparty$breaksPawn(mob, player.getStackInHand(hand))) cir.setReturnValue(ActionResult.PASS);

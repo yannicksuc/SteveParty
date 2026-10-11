@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.mixin;
 
 import fr.lordfinn.steveparty.entities.TokenPoses;
+import fr.lordfinn.steveparty.entities.TokenWax;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
@@ -17,6 +18,12 @@ public abstract class TokenPoseInteractMixin {
     private void steveparty$nextPose(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         MobEntity mob = (MobEntity) (Object) this;
         if (!TokenPoses.posesOnClick(mob, player, hand)) return;
+        // Waxed: the click is still taken (no trade screen, no mount), the pose stays
+        if (TokenWax.isWaxed(mob)) {
+            TokenWax.refusePose(mob, player);
+            cir.setReturnValue(ActionResult.success(mob.getWorld().isClient));
+            return;
+        }
         TokenPoses.nextPose(mob);
         cir.setReturnValue(ActionResult.success(mob.getWorld().isClient));
     }
