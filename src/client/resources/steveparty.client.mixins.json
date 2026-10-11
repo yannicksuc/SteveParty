@@ -70,6 +70,7 @@
     "TokenBaseRenderStateMixin",
     "WindowBackgroundDevMixin",
     "WorldRendererBreakingAccessor",
+    "WorldRendererCloudMaskMixin",
     "WorldRendererDeferredGlowsMixin",
     "DrownedModelPipeSwimMixin",
     "PiglinModelPipeSwimMixin",

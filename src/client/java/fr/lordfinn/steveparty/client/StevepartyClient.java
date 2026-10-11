@@ -254,7 +254,7 @@ public class StevepartyClient implements ClientModInitializer {
         MobTextureColors.registerReloadListener();
         FlagPalettes.registerReloadListener();
         ChevronSprites.registerReloadListener();
-        HaloBeam.registerReloadListener();
+        HaloBeam.initialize();
         StencilGunHud.initialize();
         ToolWheel.initialize();
         GlandouilleCarryClient.initialize();
