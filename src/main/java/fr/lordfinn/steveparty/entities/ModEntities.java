@@ -209,13 +209,13 @@ public class ModEntities {
                     .build(MISTIGRI_KEY.getValue().toString())
     );
 
-    /** The Mistigri's giant loaded die, a prop of his board space (see MistigriSentences). */
+    /** The Mistigri's loaded die, a prop of his board space (see MistigriSentences). */
     public static final RegistryKey<EntityType<?>> MISTIGRI_DIE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mistigri_die"));
     public static final EntityType<MistigriDieEntity> MISTIGRI_DIE = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("mistigri_die"),
             EntityType.Builder
                     .<MistigriDieEntity>create(MistigriDieEntity::new, SpawnGroup.MISC)
-                    .dimensions(1.5f, 1.5f)
+                    .dimensions(MistigriDieEntity.SIZE, MistigriDieEntity.SIZE)
                     .makeFireImmune()
                     .maxTrackingRange(10)
                     .trackingTickInterval(1)
