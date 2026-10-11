@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
+import org.lwjgl.opengl.GL11;
 
 /**
  * The depth of the mod's HUD (party HUD, tool HUD, tile panel): each of its draws a step in front of the one before,
@@ -9,6 +11,10 @@ import net.minecraft.client.util.math.MatrixStack;
  * batching mods (ImmediatelyFast) draw each texture in the order it was first used in the frame, which put a plate
  * drawn later over an icon or a face; and the vanilla HUD draws its layers 200 apart in depth (LayeredDrawer), so the
  * scoreboard sidebar or a tooltip overlay drawn before ours still came out in front of it.
+ * <p>
+ * The depth test is on while the mod's HUD draws (textures, unlike text and fills, don't turn it on themselves): a
+ * face, a plate or a frame is in front by its depth, never by when it is drawn, and an overlay drawn later behind it
+ * (Jade's text) stays behind it.
  * <p>
  * Depth restarts at {@link #BASE} every frame (a frame: a new {@link DrawContext}), and nested draws add up right
  * (each draw is placed at its own depth, whatever its enclosing draws already moved).
@@ -72,9 +78,18 @@ public final class HudDepth {
         matrices.push();
         matrices.translate(0, 0, depth - outer);
         applied = depth;
+        // The outermost draw turns the depth test on, as it was found after it
+        boolean outermost = outer == 0;
+        boolean depthTest = outermost && GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        if (outermost) {
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            RenderSystem.depthMask(true);
+        }
         try {
             draw.run();
         } finally {
+            if (outermost && !depthTest) RenderSystem.disableDepthTest();
             applied = outer;
             matrices.pop();
             next = Math.max(next, depth + room);
