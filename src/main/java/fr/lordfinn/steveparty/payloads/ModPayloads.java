@@ -19,6 +19,7 @@ public class ModPayloads {
         s2c(GoalPolePopupsPayload.ID, GoalPolePopupsPayload.CODEC);
         s2c(SwitchableBlocksPayload.ID, SwitchableBlocksPayload.CODEC);
         s2c(StarSpacesPayload.ID, StarSpacesPayload.CODEC);
+        s2c(PawnBeamsPayload.ID, PawnBeamsPayload.CODEC);
         s2c(SquishAnimationPayload.ID, SquishAnimationPayload.CODEC);
         s2c(StencilHammerStrikePayload.ID, StencilHammerStrikePayload.CODEC);
         s2c(OpenTokenSpellPayload.ID, OpenTokenSpellPayload.CODEC);

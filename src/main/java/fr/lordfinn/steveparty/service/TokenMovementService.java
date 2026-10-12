@@ -189,6 +189,7 @@ public class TokenMovementService {
         if (token.steveparty$getNbSteps() == 0) {
             DiceRollEffects.clearMoveModules(mob.getUuid());
             if (mob.getWorld() instanceof ServerWorld world) TileInfos.arrived(world, mob);
+            PawnBeams.onLanded(mob);
         }
     }
 

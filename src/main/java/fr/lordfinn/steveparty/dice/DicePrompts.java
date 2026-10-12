@@ -141,6 +141,11 @@ public final class DicePrompts {
         return PENDING.get(player.getUuid());
     }
 
+    /** True while the player {@code player} has a prompt to answer. */
+    public static boolean isAsking(UUID player) {
+        return PENDING.containsKey(player);
+    }
+
     /** Shows the player their pending prompt again (they closed it). */
     public static void resend(ServerPlayerEntity player) {
         Prompt prompt = PENDING.get(player.getUuid());

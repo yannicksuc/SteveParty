@@ -140,6 +140,14 @@ public class PartyStep {
     }
 
     /**
+     * @return true while this step waits for the player of {@code token} to do something (roll their die...): its
+     * pawn then shows a light beam (see fr.lordfinn.steveparty.service.PendingChoices)
+     */
+    public boolean waitsForChoiceOf(UUID token) {
+        return false;
+    }
+
+    /**
      * @return true if a delayed callback started by this step may still act on the controller.
      */
     protected boolean isStillActive(PartyControllerEntity partyControllerEntity) {

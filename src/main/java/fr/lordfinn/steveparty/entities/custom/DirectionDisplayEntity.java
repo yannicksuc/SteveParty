@@ -226,4 +226,9 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
     public BlockPos getTileOrigin() {
         return tileOrigin;
     }
+
+    /** The token this direction was displayed for, null if unknown. */
+    public @Nullable UUID getTokenUuid() {
+        return tokenUuid;
+    }
 }

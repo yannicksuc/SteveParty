@@ -95,6 +95,12 @@ public class StartRollsStep extends PartyStep {
         return ActionResult.PASS;
     }
 
+    /** Each player rolls for the turn order: their token waits until it has its roll. */
+    @Override
+    public boolean waitsForChoiceOf(UUID token) {
+        return status == Status.IN_PROGRESS && !rolls.containsKey(token);
+    }
+
     @Override
     public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
         if (rolls.remove(tokenUUID) != null)
