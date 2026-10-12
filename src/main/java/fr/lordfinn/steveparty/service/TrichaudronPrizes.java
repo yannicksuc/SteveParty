@@ -122,6 +122,12 @@ public final class TrichaudronPrizes {
         return Arrays.stream(show.held).map(ItemStack::copy).toList();
     }
 
+    /** True while the Trichaudron holds its heads out to the token's player, who has not picked one yet. */
+    public static boolean isChoosing(MobEntity token) {
+        Show show = RUNNING.get(token);
+        return show != null && !show.done && show.phase == Phase.CHOOSE;
+    }
+
     /** The head picked (its index in {@link TrichaudronEntity#ALL_HEADS}), -1 until then or without a show. */
     public static int picked(MobEntity token) {
         Show show = RUNNING.get(token);

@@ -219,6 +219,15 @@ public class TokenTurnPartyStep extends PartyStep {
         return outcome.steps() != 0 || outcome.isSpecial() || outcome.zero();
     }
 
+    /**
+     * Its player has to roll (or use a power-up first): from the start of the turn until a roll that plays, its
+     * token present.
+     */
+    @Override
+    public boolean waitsForChoiceOf(UUID token) {
+        return status == Status.IN_PROGRESS && token.equals(tokenUUID) && absentDeadline < 0 && !hasRolled();
+    }
+
     /** The coins the roll gave (negative: took): what it really did once applied, what it is about to do before. */
     public int getRollCoins() {
         return rollCoins != null ? rollCoins : outcome.coins();

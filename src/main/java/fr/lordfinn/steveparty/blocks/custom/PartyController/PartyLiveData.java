@@ -236,7 +236,8 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         return world.getServer().getUserCache().getByUuid(player).map(GameProfile::getName).orElse("");
     }
 
-    private static int colorOf(@Nullable Entity entity) {
+    /** The token's colour (0xRRGGBB): the one given by the Tokenizer Wand, else the colour of its name; -1: none. */
+    public static int colorOf(@Nullable Entity entity) {
         if (!(entity instanceof TokenizedEntityInterface tokenized)) return -1;
         int color = tokenized.steveparty$getTokenColor();
         if (color >= 0) return color;

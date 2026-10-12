@@ -82,6 +82,7 @@ import fr.lordfinn.steveparty.service.MistigriSentences;
 import fr.lordfinn.steveparty.service.TrichaudronPrizes;
 import fr.lordfinn.steveparty.service.TileInfos;
 import fr.lordfinn.steveparty.service.PartyStars;
+import fr.lordfinn.steveparty.service.PawnBeams;
 import fr.lordfinn.steveparty.service.ShopStops;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -191,6 +192,7 @@ public class Steveparty implements ModInitializer {
         new TokenMovementService();
         ShopStops.initialize();
         PartyStars.initialize();
+        PawnBeams.initialize();
         GlandouilleSpawns.initialize();
         GlandouilleTowers.initialize();
         GlandouilleCarrySave.initialize();

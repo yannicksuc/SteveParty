@@ -58,6 +58,7 @@ import fr.lordfinn.steveparty.client.pipe.MiniGamePipeNotchRenderer;
 import fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer;
 import fr.lordfinn.steveparty.client.pipe.PipeModelPlugin;
 import fr.lordfinn.steveparty.client.renderer.HaloBeam;
+import fr.lordfinn.steveparty.client.renderer.PawnBeamRenderer;
 import fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer;
 import fr.lordfinn.steveparty.client.board.TileInfoClient;
 import fr.lordfinn.steveparty.client.screens.CartridgeScreen;
@@ -538,6 +539,7 @@ public class StevepartyClient implements ClientModInitializer {
         FloatingTextRenderer.registerRenderCallback();
         GoalPolePopupRenderer.register();
         StarSpaceRenderer.initialize();
+        PawnBeamRenderer.initialize();
     }
 
     /** Client caches are per server connection: drop them on disconnect. */
@@ -549,6 +551,7 @@ public class StevepartyClient implements ClientModInitializer {
         FloatingTextRenderer.clear();
         GoalPolePopupRenderer.clear();
         StarSpaceRenderer.clear();
+        PawnBeamRenderer.clear();
         TileInfoClient.clear();
         GoalPoleFlipTracker.clear();
         GoalPoleCameraRoll.clear();
