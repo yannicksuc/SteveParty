@@ -4,6 +4,7 @@
   "package": "fr.lordfinn.steveparty.gametest.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "GameTestStateMixin",
     "ServerChunkManagerTestInvoker",
     "ServerWorldTestAccessor",
     "TestContextAccessor"

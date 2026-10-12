@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.gametest.kit;
 import com.mojang.logging.LogUtils;
 import fr.lordfinn.steveparty.gametest.mixin.TestContextAccessor;
 import net.minecraft.block.Block;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.ServerTask;
 import net.minecraft.test.GameTestState;
 import net.minecraft.test.TestContext;
 import net.minecraft.test.TestListener;
@@ -43,7 +45,10 @@ public final class TestCleanup {
         if (context.getBlockState(pos).isOf(block)) context.removeBlock(pos);
     }
 
-    /** Runs the tasks once, when the test passes or fails; one failing task does not keep the others from running. */
+    /**
+     * Runs the tasks once, when the test passes or fails, right after the tick it ended in (it may end inside its own
+     * wait loop, other waits of that tick still to run); one failing task does not keep the others from running.
+     */
     private record Ending(List<Runnable> tasks) implements TestListener {
         @Override
         public void onStarted(GameTestState test) {
@@ -66,6 +71,11 @@ public final class TestCleanup {
         private void run(GameTestState test) {
             List<Runnable> pending = List.copyOf(tasks);
             tasks.clear();
+            MinecraftServer server = test.getWorld().getServer();
+            server.send(new ServerTask(server.getTicks(), () -> runAll(test, pending)));
+        }
+
+        private static void runAll(GameTestState test, List<Runnable> pending) {
             for (Runnable task : pending) {
                 try {
                     task.run();
