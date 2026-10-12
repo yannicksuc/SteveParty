@@ -2,23 +2,17 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
-import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -35,8 +29,9 @@ import java.util.Map;
 /**
  * Piggy bank (see {@link PiggyBankBlockEntity}).
  * <ul>
- *     <li>Wrench (or cartridge) + right-click: its inventory cartridge slot.</li>
- *     <li>Right-click (empty hand): next target (player of the turn, winners, everyone, nearest player).</li>
+ *     <li>Wrench (or cartridge) + right-click: its menu (inventory cartridge slot, target).</li>
+ *     <li>Right-click (empty hand): the same menu, where its target is chosen (player of the turn, winners,
+ *     everyone, nearest player).</li>
  *     <li>Redstone pulse: gives / takes the cartridge items.</li>
  * </ul>
  */
@@ -103,22 +98,15 @@ public class PiggyBankBlock extends CartridgeContainer {
 
     @Override
     protected ItemActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        // Other items keep their own use; an empty hand goes to onUse (target)
+        // Other items keep their own use; an empty hand goes to onUse (its menu)
         return stack.isEmpty() ? ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION : ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 
+    /** An empty hand opens its menu (its cartridge, its target), as the Wrench does. */
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (!world.isClient && world.getBlockEntity(pos) instanceof PiggyBankBlockEntity bank) {
-            bank.cycleTarget();
-            world.playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.BLOCKS, 0.6f,
-                    0.8f + 0.2f * bank.getTarget().ordinal());
-            if (player instanceof ServerPlayerEntity serverPlayer)
-                MessageUtils.sendToPlayer(serverPlayer, Text.translatableWithFallback("message.steveparty.piggy_bank.target",
-                        "Piggy bank: gives to %s", bank.getTarget().getText().copy().formatted(Formatting.YELLOW)),
-                        MessageUtils.MessageType.ACTION_BAR);
-        }
-        return ActionResult.SUCCESS;
+        if (world.isClient) return ActionResult.SUCCESS;
+        return openContainerScreen(state, world, pos, player);
     }
 
     @Override

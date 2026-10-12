@@ -312,7 +312,7 @@
   "book.steveparty.guide.party.name": "Mener une partie",
   "book.steveparty.guide.party.piggy_bank.description": "Donner et prendre à l'impulsion",
   "book.steveparty.guide.party.piggy_bank.name": "Tirelire",
-  "book.steveparty.guide.party.piggy_bank.page0.text": "Un cochon en céramique avec une fente. À chaque impulsion, il applique sa cartouche d'inventaire : donne les objets du coffre lié, prend les objets négatifs. Clic droit pour la cible : joueur du tour, derniers gagnants, tous, ou le plus proche.\n\nEn mode *tous*, c'est tout ou rien : de quoi vendre une étoile contre des pièces !",
+  "book.steveparty.guide.party.piggy_bank.page0.text": "Un cochon en céramique avec une fente. À chaque impulsion, il applique sa cartouche d'inventaire : donne les objets du coffre lié (aucun lié : la banque de la partie), prend les objets négatifs. Clic droit : son menu, pour choisir qui il paie : joueur du tour (en fin de tour, celui qui vient de jouer), derniers gagnants, tous, ou le plus proche. Regarde-le pour voir qui et quoi.\n\nEn mode *tous*, c'est tout ou rien : de quoi vendre une étoile contre des pièces !",
   "book.steveparty.guide.party.piggy_bank.page0.title": "Tirelire",
   "book.steveparty.guide.party.powerups.description": "Un coup de pouce pour ton tour",
   "book.steveparty.guide.party.powerups.name": "Bonus",
