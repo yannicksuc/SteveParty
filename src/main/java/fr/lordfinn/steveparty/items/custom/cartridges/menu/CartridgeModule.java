@@ -12,8 +12,9 @@ import java.util.List;
  * {@code (module id, int value)}, which the server checks with {@link #accepts} then applies with {@link #set}.
  * <p>
  * Kinds: {@link ChoiceModule} (buttons or colour swatches), {@link NumberModule} (a − / + stepper),
- * {@link ColorModule} (the dyes), {@link GhostSlotsModule} (the Inventory Cartridge's item slots) and
- * {@link InfoModule} (read-only lines). A new cartridge only declares modules of these kinds.
+ * {@link ColorModule} (the dyes), {@link GhostSlotsModule} (the Inventory Cartridge's item slots),
+ * {@link OutcomeListModule} (the Mistigri's editable list of sentences) and {@link InfoModule} (read-only lines). A new
+ * cartridge only declares modules of these kinds.
  */
 public abstract class CartridgeModule {
     /** The height of a module's label line. */
