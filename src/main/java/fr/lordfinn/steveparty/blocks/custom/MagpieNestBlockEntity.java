@@ -47,12 +47,11 @@ import java.util.Set;
  * among the rest. Nothing is ever made in it: what goes in came from somewhere, what comes out (to a hand, to a hopper
  * under it, or everything, the nest broken, in stacks of their usual size) leaves it.
  * <p>
- * Linked to a Common pot space ({@link CommonPots#nestOf}, the link saved here as {@link #getPot}), its whole content
- * <em>is</em> the pot: its coins are the pot's coins and its other things the pot's items ({@link PotCartridgeItem#coins},
- * {@link PotCartridgeItem#items}), kept in the pot cartridge only, so a pot saved
- * before nests held anything keeps its amount. What goes into the nest goes into the pot (coins up to its cap); the
- * winner of the pot takes it all and empties the nest. What a nest held on its own goes into the pot when it gets
- * linked. Nothing comes out of a pot's nest but by winning the pot (its slots look empty to a hopper).
+ * Linked to a Common pot space (its cartridge links this nest, {@link PotCartridgeItem#linkedNest}; the space saved
+ * here as {@link #getPot}), its whole content <em>is</em> the pot: its coins are the pot's coins, real items in its
+ * slots, and its other things go to the winner too. What goes into the nest goes into the pot (coins up to its cap); the
+ * winner of the pot takes it all and empties the nest. Nothing comes out of a pot's nest but by winning the pot (its
+ * slots look empty to a hopper), or at the party's end (back to a storage, see CommonPots).
  * <p>
  * Things go in by hand ({@link MagpieNestBlock}), from a hopper, from a pot space's stakes, or in a wild Pie's beak.
  * A hopper fills its slots as a chest's, a kind it already holds going onto its slot (up to {@link #SLOT_LIMIT}).
@@ -69,8 +68,6 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
     public static final int SLOTS = 27;
     /** How many things of a kind a slot holds, whatever their stack size. */
     public static final int SLOT_LIMIT = 256;
-    /** How many stacks of things a pot holds at most. */
-    public static final int POT_ITEM_STACKS = 27;
     /** How many kinds the clients get at most (a pot's things can be more kinds than a nest's slots). */
     public static final int SHOWN_KINDS = 64;
     /** How often a linked nest checks its pot space is still a pot. */
@@ -128,10 +125,11 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         return pot;
     }
 
-    /** The pot cartridge of its linked space, null if it is on its own or the space is no pot any more. */
-    private @Nullable ItemStack potCartridge() {
+    /** The pot cartridge of its linked space, null if on its own, the space no pot any more or its pot linked to another nest. */
+    public @Nullable ItemStack potCartridge() {
         if (pot == null || world == null || !world.isChunkLoaded(pot)) return null;
-        return world.getBlockEntity(pot) instanceof BoardSpaceBlockEntity space ? CommonPots.potOf(space) : null;
+        ItemStack cartridge = world.getBlockEntity(pot) instanceof BoardSpaceBlockEntity space ? CommonPots.potOf(space) : null;
+        return cartridge != null && pos.equals(PotCartridgeItem.linkedNest(cartridge, world)) ? cartridge : null;
     }
 
     private void potChanged() {
@@ -144,36 +142,17 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         return !world.isChunkLoaded(pot) || potCartridge() != null;
     }
 
-    /**
-     * Server, by the pot space ({@link CommonPots}): the nest is the pot of {@code space} now; what it held on its own
-     * goes into the pot (its coins as the pot's coins). Shows the pot.
-     */
+    /** Server, by the pot space ({@link CommonPots}) whose cartridge links it: the nest is the pot of {@code space} now. */
     public void link(BlockPos space) {
         if (!space.equals(pot)) {
             pot = space.toImmutable();
             markDirty();
         }
-        ItemStack cartridge = potCartridge();
-        if (cartridge != null && !slots.stream().allMatch(ItemStack::isEmpty)) {
-            int coins = 0;
-            List<ItemStack> items = PotCartridgeItem.items(cartridge);
-            for (int i = 0; i < SLOTS; i++) {
-                ItemStack slot = slots.get(i);
-                if (slot.isOf(ModItems.COIN)) coins += slot.getCount();
-                else if (!slot.isEmpty()) merge(items, slot, Integer.MAX_VALUE);
-                slots.set(i, ItemStack.EMPTY);
-            }
-            PotCartridgeItem.setCoins(cartridge, PotCartridgeItem.coins(cartridge) + coins);
-            PotCartridgeItem.setItems(cartridge, items);
-            markDirty();
-            potChanged();
-        }
-        refresh();
     }
 
     /**
-     * Server, now and then: a link to a space that is no pot any more is dropped (its content stays in the
-     * cartridge). What an old nest could not fit in its slots falls.
+     * Server, now and then: a link to a space that is no pot any more (or whose pot links another nest) is dropped,
+     * its content staying in it. What an old nest could not fit in its slots falls.
      */
     public static void tick(World world, BlockPos pos, BlockState state, MagpieNestBlockEntity nest) {
         if (!nest.overflow.isEmpty()) {
@@ -195,59 +174,72 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         return ItemStack.areItemsAndComponentsEqual(a, b);
     }
 
-    /** Server: the coins it holds (its pot's when linked). */
+    /** Server: the coins it holds (the mod's coin, or its pot's party coin when linked). */
     public int getCoins() {
-        ItemStack cartridge = potCartridge();
-        if (cartridge != null) return PotCartridgeItem.coins(cartridge);
         int coins = 0;
-        for (ItemStack slot : slots) if (slot.isOf(ModItems.COIN)) coins += slot.getCount();
+        for (ItemStack slot : slots) if (!slot.isEmpty() && isCoin(slot)) coins += slot.getCount();
         return coins;
     }
 
-    /**
-     * Server: its things that are not coins, in its slots' order (copies, a count up to {@link #SLOT_LIMIT}; its
-     * pot's items when linked).
-     */
+    /** Server: how many things of the kind of {@code kind} it holds. */
+    public int count(ItemStack kind) {
+        int count = 0;
+        for (ItemStack slot : slots) if (!slot.isEmpty() && sameKind(slot, kind)) count += slot.getCount();
+        return count;
+    }
+
+    /** Server: its things that are not coins, in its slots' order (copies, a count up to {@link #SLOT_LIMIT}). */
     public List<ItemStack> getTreasures() {
-        ItemStack cartridge = potCartridge();
-        if (cartridge != null) return PotCartridgeItem.items(cartridge);
         List<ItemStack> copies = new ArrayList<>();
-        for (ItemStack slot : slots) if (!slot.isEmpty() && !slot.isOf(ModItems.COIN)) copies.add(slot.copy());
+        for (ItemStack slot : slots) if (!slot.isEmpty() && !isCoin(slot)) copies.add(slot.copy());
         return copies;
     }
 
-    /**
-     * Server: everything it holds, a stack per slot in their order, its count maybe above its stack size (copies).
-     * Linked: the pot's coins first (the mod's coin), then its items, the stacks of a kind together.
-     */
+    /** Server: everything it holds, a stack per slot in their order, its count maybe above its stack size (copies). */
     public List<ItemStack> getContents() {
         List<ItemStack> contents = new ArrayList<>();
-        ItemStack cartridge = potCartridge();
-        if (cartridge == null) {
-            for (ItemStack slot : slots) if (!slot.isEmpty()) contents.add(slot.copy());
-            return contents;
-        }
-        int coins = PotCartridgeItem.coins(cartridge);
-        if (coins > 0) contents.add(new ItemStack(ModItems.COIN, coins));
-        for (ItemStack item : PotCartridgeItem.items(cartridge)) {
-            if (item.isEmpty()) continue;
-            ItemStack same = contents.stream().filter(kind -> sameKind(kind, item)).findFirst().orElse(null);
-            if (same != null) same.increment(item.getCount());
-            else contents.add(item.copy());
-        }
+        for (ItemStack slot : slots) if (!slot.isEmpty()) contents.add(slot.copy());
         return contents;
     }
 
-    /**
-     * Server: how many things it holds, coins and the rest, one coin of its pile each (as last seen while its pot's
-     * chunk is unloaded). Client: {@link #getShownPile}.
-     */
+    /** Server: how many things it holds, coins and the rest, one coin of its pile each. Client: {@link #getShownPile}. */
     public int getPileCount() {
         if (world != null && world.isClient) return shownPile;
-        if (pot != null && world != null && !world.isChunkLoaded(pot)) return shownPile;
-        long count = getCoins();
-        for (ItemStack stack : getTreasures()) count += stack.getCount();
+        long count = 0;
+        for (ItemStack slot : slots) count += slot.getCount();
         return (int) Math.min(Integer.MAX_VALUE, count);
+    }
+
+    /**
+     * Server, the pot won: everything it holds comes out (copies, a stack per slot, its count maybe above its stack
+     * size), the nest empty.
+     */
+    public List<ItemStack> takeAll() {
+        List<ItemStack> all = getContents();
+        for (int i = 0; i < SLOTS; i++) slots.set(i, ItemStack.EMPTY);
+        changed();
+        return all;
+    }
+
+    /** Server: takes out up to {@code count} things of the kind of {@code kind}, the last slots first. @return how many came out */
+    public int take(ItemStack kind, int count) {
+        int taken = 0;
+        for (int i = SLOTS - 1; i >= 0 && taken < count; i--) {
+            ItemStack slot = slots.get(i);
+            if (slot.isEmpty() || !sameKind(slot, kind)) continue;
+            int out = Math.min(slot.getCount(), count - taken);
+            slot.decrement(out);
+            if (slot.isEmpty()) slots.set(i, ItemStack.EMPTY);
+            taken += out;
+        }
+        if (taken > 0) changed();
+        return taken;
+    }
+
+    /** Saved, shown, and its pot space's info follows. */
+    private void changed() {
+        markDirty();
+        potChanged();
     }
 
     /** How many things it holds, as the clients see it. */
@@ -306,27 +298,21 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         return stack;
     }
 
-    /** How many more coins it takes (a linked pot's cap). */
-    public int coinRoom() {
+    /** How many more coins like {@code coin} it takes (its slots' room, and a linked pot's cap). */
+    public int coinRoom(ItemStack coin) {
+        int room = slotRoom(coin);
         ItemStack cartridge = potCartridge();
-        if (cartridge == null) return slotRoom(new ItemStack(ModItems.COIN));
-        int cap = PotCartridgeItem.cap(cartridge);
-        return cap > 0 ? Math.max(0, cap - PotCartridgeItem.coins(cartridge)) : Integer.MAX_VALUE;
+        int cap = cartridge == null ? 0 : PotCartridgeItem.cap(cartridge);
+        return cap > 0 ? Math.min(room, Math.max(0, cap - getCoins())) : room;
     }
 
-    /** Server: puts in up to {@code count} coins (into the pot when linked). @return how many went in */
-    public int addCoins(int count) {
-        int added = Math.min(Math.max(0, count), coinRoom());
+    /** Server: puts in up to {@code count} coins like {@code coin} (as far as {@link #coinRoom} lets in). @return how many went in */
+    public int addCoins(ItemStack coin, int count) {
+        int added = Math.min(Math.max(0, count), coinRoom(coin));
         if (added <= 0) return 0;
-        ItemStack cartridge = potCartridge();
-        if (cartridge != null) {
-            PotCartridgeItem.setCoins(cartridge, PotCartridgeItem.coins(cartridge) + added);
-            potChanged();
-        } else {
-            store(new ItemStack(ModItems.COIN, added));
-            markDirty();
-        }
-        refresh();
+        ItemStack left = store(coin.copyWithCount(added));
+        added -= left.getCount();
+        changed();
         return added;
     }
 
@@ -352,7 +338,7 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
     /** Server: the clients see what it holds ({@link #getContents}, {@link #getPileCount}) when that changed. */
     public void refresh() {
         int now = getPileCount();
-        List<ItemStack> contents = pot != null && world != null && !world.isChunkLoaded(pot) ? shown : getContents();
+        List<ItemStack> contents = getContents();
         if (contents.size() > SHOWN_KINDS) contents = List.copyOf(contents.subList(0, SHOWN_KINDS));
         if (now != shownPile || !sameContents(contents, shown)) {
             shownPile = now;
@@ -373,8 +359,8 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
     /** Server: puts in {@code stack} (coins or a shiny thing), as much as it takes. @return what is left */
     public ItemStack insert(ItemStack stack) {
         if (stack.isEmpty()) return stack;
-        if (isCoin(stack) && isLinked()) {
-            int added = addCoins(stack.getCount());
+        if (isCoin(stack)) {
+            int added = addCoins(stack, stack.getCount());
             ItemStack left = stack.copy();
             left.decrement(added);
             return left;
@@ -383,57 +369,18 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         return putTreasure(stack);
     }
 
-    /**
-     * Server: {@code stack} among its things (the pot's items when linked, its slots on its own), whatever it is.
-     * @return what is left
-     */
+    /** Server: {@code stack} among its things, whatever it is. @return what is left */
     public ItemStack putTreasure(ItemStack stack) {
-        ItemStack cartridge = potCartridge();
-        ItemStack left;
-        if (cartridge != null) {
-            List<ItemStack> items = PotCartridgeItem.items(cartridge);
-            left = merge(items, stack, POT_ITEM_STACKS);
-            PotCartridgeItem.setItems(cartridge, items);
-            potChanged();
-        } else {
-            left = store(stack);
-            markDirty();
-        }
-        refresh();
-        return left;
-    }
-
-    /** {@code added} into {@code items}: onto stacks like it, then as new stacks while there are fewer than {@code maxStacks}. */
-    private static ItemStack merge(List<ItemStack> items, ItemStack added, int maxStacks) {
-        ItemStack left = added.copy();
-        for (ItemStack item : items) {
-            if (left.isEmpty()) break;
-            if (ItemStack.areItemsAndComponentsEqual(item, left) && item.getCount() < item.getMaxCount()) {
-                int moved = Math.min(left.getCount(), item.getMaxCount() - item.getCount());
-                item.increment(moved);
-                left.decrement(moved);
-            }
-        }
-        while (!left.isEmpty() && items.size() < maxStacks) {
-            items.add(left.split(left.getMaxCount()));
-        }
+        ItemStack left = store(stack);
+        changed();
         return left;
     }
 
     /** Whether it takes some of {@code stack}. */
     public boolean accepts(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        if (isCoin(stack)) return coinRoom() > 0;
-        if (!isTreasure(stack)) return false;
-        ItemStack cartridge = potCartridge();
-        if (cartridge == null) return slotRoom(stack) > 0;
-        int stacks = 0;
-        for (ItemStack slot : PotCartridgeItem.items(cartridge)) {
-            if (slot.isEmpty()) continue;
-            stacks++;
-            if (ItemStack.areItemsAndComponentsEqual(slot, stack) && slot.getCount() < slot.getMaxCount()) return true;
-        }
-        return stacks < POT_ITEM_STACKS;
+        if (isCoin(stack)) return coinRoom(stack) > 0;
+        return isTreasure(stack) && slotRoom(stack) > 0;
     }
 
     /**
@@ -462,11 +409,10 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         }
     }
 
-    /** Server, the nest broken: its own things fall, in stacks of their usual size (a pot's stay in the pot). */
+    /** Server, the nest broken: everything it holds falls (a pot's too), in stacks of their usual size. */
     public void dropContents(World world, BlockPos at) {
         for (ItemStack stack : overflow) scatter(world, at, stack);
         overflow.clear();
-        if (isLinked()) return;
         for (int i = 0; i < SLOTS; i++) {
             ItemStack slot = slots.get(i);
             if (!slot.isEmpty()) scatter(world, at, slot);
@@ -685,10 +631,8 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         NbtCompound nbt = new NbtCompound();
         if (world != null && !world.isClient) {
             shownPile = getPileCount();
-            if (pot == null || world.isChunkLoaded(pot)) {
-                List<ItemStack> contents = getContents();
-                shown = contents.size() > SHOWN_KINDS ? List.copyOf(contents.subList(0, SHOWN_KINDS)) : contents;
-            }
+            List<ItemStack> contents = getContents();
+            shown = contents.size() > SHOWN_KINDS ? List.copyOf(contents.subList(0, SHOWN_KINDS)) : contents;
         }
         nbt.putInt("Shown", shownPile);
         nbt.put("Kinds", writeStacks(shown, registries));

@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.utils.Easing;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.item.ItemStack;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -194,13 +195,14 @@ public class MagpieEntity extends Entity implements GeoEntity {
         }
     }
 
-    /** Its board space still holds a Common pot as its active cartridge, and its nest is still there. */
+    /** Its board space still holds a Common pot as its active cartridge, linked to its nest, still there. */
     private boolean isHomeValid(ServerWorld world) {
         if (home == null || nest == null) return false;
         if (!world.isChunkLoaded(home) || !world.isChunkLoaded(nest)) return true; // not known yet: kept
         if (!(world.getBlockState(nest).getBlock() instanceof MagpieNestBlock)) return false;
-        return world.getBlockEntity(home) instanceof BoardSpaceBlockEntity space
-                && space.getActiveCartridgeItemStack().getItem() instanceof PotCartridgeItem;
+        if (!(world.getBlockEntity(home) instanceof BoardSpaceBlockEntity space)) return false;
+        ItemStack pot = space.getActiveCartridgeItemStack();
+        return pot.getItem() instanceof PotCartridgeItem && nest.equals(PotCartridgeItem.linkedNest(pot, world));
     }
 
     // ---------------------------------------------------------------- a part of its space

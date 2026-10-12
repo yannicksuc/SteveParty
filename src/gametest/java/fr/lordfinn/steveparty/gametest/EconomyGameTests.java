@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
@@ -12,6 +14,7 @@ import fr.lordfinn.steveparty.powerups.PowerUps;
 import fr.lordfinn.steveparty.service.CommonPots;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -27,7 +30,7 @@ import net.minecraft.world.GameMode;
  * pot's base, and the sum of everything across a sequence of them.
  */
 public class EconomyGameTests implements SteveGameTest {
-    private static final BlockPos POT = new BlockPos(5, 1, 3);
+    private static final BlockPos POT = new BlockPos(5, 1, 3), NEST = new BlockPos(5, 1, 6);
 
     private record Party(PartyControllerEntity controller, ServerPlayerEntity a, ServerPlayerEntity b, MobEntity tokenA,
                          MobEntity tokenB, ItemStack coin) {
@@ -94,22 +97,31 @@ public class EconomyGameTests implements SteveGameTest {
         context.complete();
     }
 
+    /** A pot space whose cartridge links a nest; the nest. */
+    private static MagpieNestBlockEntity potNest(TestContext context, ItemStack cartridge) {
+        context.setBlockState(NEST.down(), Blocks.STONE);
+        context.setBlockState(NEST, ModBlocks.MAGPIE_NEST);
+        PotCartridgeItem.setNest(cartridge, context.getWorld(), context.getAbsolutePos(NEST));
+        return context.getBlockEntity(NEST);
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "economy_pot_base")
     public void thePotsBaseComesFromTheBank(TestContext context) {
         Party party = party(context, 7);
         ItemStack cartridge = new ItemStack(ModItems.POT_CARTRIDGE);
         BoardRuleCartridgeItem.putSetting(cartridge, PotCartridgeItem.START, 5);
+        MagpieNestBlockEntity nest = potNest(context, cartridge);
         BoardSpaceBlockEntity space = DiceTestKit.tile(context, POT, cartridge);
         ItemStack pot = space.getActiveCartridgeItemStack();
-        context.assertEquals(PotCartridgeItem.coins(pot), 0, "a new pot holds nothing of its own");
+        context.assertEquals(nest.count(party.coin()), 0, "a new pot holds nothing");
         context.assertTrue(PotCartridgeItem.baseDue(pot), "its base is due");
-        context.assertEquals(CommonPots.fillBase(pot, party.tokenA()), 5, "its base, from the bank");
-        context.assertTrue(PotCartridgeItem.coins(pot) == 5 && party.bank() == 2, "5 in the pot, 2 left in the bank");
-        context.assertEquals(CommonPots.fillBase(pot, party.tokenA()), 0, "only once");
+        context.assertEquals(CommonPots.fillBase(context.getWorld(), space, party.controller()), 5, "its base, from the bank");
+        context.assertTrue(nest.count(party.coin()) == 5 && party.bank() == 2, "5 in the nest, 2 left in the bank");
+        context.assertEquals(CommonPots.fillBase(context.getWorld(), space, party.controller()), 0, "only once");
         // Won: it starts again, from what the bank has left
         CommonPots.win(context.getWorld(), space, party.tokenA());
         context.assertEquals(party.coins(party.a()), 5, "the winner takes the 5");
-        context.assertTrue(PotCartridgeItem.coins(pot) == 2 && party.bank() == 0, "the bank had 2: the pot starts again at 2");
+        context.assertTrue(nest.count(party.coin()) == 2 && party.bank() == 0, "the bank had 2: the pot starts again at 2");
         context.complete();
     }
 
@@ -122,20 +134,22 @@ public class EconomyGameTests implements SteveGameTest {
         ItemStack cartridge = new ItemStack(ModItems.POT_CARTRIDGE);
         BoardRuleCartridgeItem.putSetting(cartridge, PotCartridgeItem.START, 3);
         BoardRuleCartridgeItem.putSetting(cartridge, PotCartridgeItem.STAKE, 2);
+        MagpieNestBlockEntity nest = potNest(context, cartridge);
         BoardSpaceBlockEntity space = DiceTestKit.tile(context, POT, cartridge);
-        ItemStack pot = space.getActiveCartridgeItemStack();
         int total = 20 + 5 + 5;
         Runnable conserved = () -> context.assertEquals(party.bank() + party.coins(party.a()) + party.coins(party.b())
-                + PotCartridgeItem.coins(pot), total, "bank + players + pot: always " + total);
+                + nest.count(party.coin()), total, "bank + players + pot: always " + total);
         DiceRollEffects.applyCoins(context.getWorld(), party.tokenA(), party.a().getUuid(), 4);
         conserved.run();
         DiceRollEffects.applyCoins(context.getWorld(), party.tokenB(), party.b().getUuid(), -3);
         conserved.run();
-        CommonPots.fillBase(pot, party.tokenA());
+        CommonPots.fillBase(context.getWorld(), space, party.controller());
         conserved.run();
         CommonPots.pass(context.getWorld(), space, party.tokenB());
         conserved.run();
         CommonPots.win(context.getWorld(), space, party.tokenA());
+        conserved.run();
+        CommonPots.giveBack(context.getWorld(), space, party.controller());
         conserved.run();
         party.controller().payGains(party.a(), 1, PartyResources.of(party.controller()));
         conserved.run();

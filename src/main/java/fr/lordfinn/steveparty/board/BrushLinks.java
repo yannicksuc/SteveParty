@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockE
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
+import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -148,7 +149,11 @@ public final class BrushLinks {
         Held held = holder(world, from, level);
         if (held == null || !(world.getBlockEntity(held.pos()) instanceof BoardSpaceBlockEntity)) return null;
         if (kindFor(of(world, from, level), world, target) != null) return null;
-        if (CartridgeSpawnMarker.accepts(world, target)) return "message.steveparty.tile_linker_brush.no_spawn";
+        if (CartridgeSpawnMarker.accepts(world, target)) {
+            // A pot's Pie lives on a nest, not in a bubble
+            Held pot = withRole(world, world.getBlockEntity(held.pos()), held, BrushLinks::isPotCartridge);
+            return pot != null ? "message.steveparty.tile_linker_brush.pot_needs_nest" : "message.steveparty.tile_linker_brush.no_spawn";
+        }
         if (CartridgeContainers.accepts(world, target)) return "message.steveparty.tile_linker_brush.no_container";
         return null;
     }
@@ -237,6 +242,10 @@ public final class BrushLinks {
     }
 
     /** A cartridge linked to containers (Inventory, Trichaudron). */
+    static boolean isPotCartridge(ItemStack stack) {
+        return stack.getItem() instanceof PotCartridgeItem;
+    }
+
     static boolean isInventoryCartridge(ItemStack stack) {
         return CartridgeContainers.linksContainers(stack);
     }

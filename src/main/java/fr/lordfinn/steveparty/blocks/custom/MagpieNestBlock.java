@@ -4,6 +4,8 @@ import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
+import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
+import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.HorizontalFacingBlock;
@@ -42,8 +44,8 @@ import org.jetbrains.annotations.Nullable;
  * to 256 things each). Each thing in it is one more coin on its pile
  * ({@link MagpieNestPile}, drawn by its block entity renderer, as high as they go: the block stays a nest).
  * <p>
- * Set near a Common pot space (within {@link fr.lordfinn.steveparty.service.CommonPots#NEST_RADIUS} blocks), it
- * becomes that pot's nest: all it holds is the pot, the Pie lives on it. Wild Pies sleep in a free one at night and
+ * Linked to a Common pot cartridge (a click of the cartridge on it, or the Tile Linker Brush), it becomes that pot's
+ * nest: all it holds is the pot, the Pie lives on it. Wild Pies sleep in a free one at night and
  * bring it the shiny things they find.
  */
 public class MagpieNestBlock extends BlockWithEntity {
@@ -109,6 +111,17 @@ public class MagpieNestBlock extends BlockWithEntity {
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player,
                                              Hand hand, BlockHitResult hit) {
         if (!(world.getBlockEntity(pos) instanceof MagpieNestBlockEntity nest)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        // A Common pot cartridge: this nest becomes its pot (or is no longer, clicked again)
+        if (stack.getItem() instanceof PotCartridgeItem) {
+            if (world.isClient) return ItemActionResult.SUCCESS;
+            boolean linked = pos.equals(PotCartridgeItem.linkedNest(stack, world));
+            PotCartridgeItem.setNest(stack, world, linked ? null : pos);
+            if (linked) ModSounds.playCancel(world, pos);
+            else ModSounds.playSelect(world, pos);
+            player.sendMessage(Text.translatable(linked ? "message.steveparty.pot_cartridge.nest_unlinked" : "message.steveparty.pot_cartridge.nest_linked",
+                    pos.getX(), pos.getY(), pos.getZ()), true);
+            return ItemActionResult.SUCCESS;
+        }
         if (!nest.isCoin(stack) && !nest.isTreasure(stack)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (world.isClient) return ItemActionResult.SUCCESS;
         if (!nest.accepts(stack)) {

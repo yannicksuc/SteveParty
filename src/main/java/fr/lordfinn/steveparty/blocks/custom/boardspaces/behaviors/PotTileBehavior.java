@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.service.TileInfos;
 import net.minecraft.item.Items;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.board.TileInfo;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -81,9 +82,14 @@ public class PotTileBehavior extends ABoardSpaceBehavior {
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof PotCartridgeItem)) return;
         ItemStack coin = TileInfos.coin(space);
-        info.line(coin, TileInfo.line("pot", TileInfo.coins(PotCartridgeItem.coins(stack))));
+        MagpieNestBlockEntity nest = CommonPots.nestEntityOf(world, space);
+        if (nest == null) {
+            info.line(new ItemStack(ModItems.MAGPIE_NEST), TileInfo.bad(TileInfo.line("pot.no_nest")));
+        } else {
+            info.line(coin, TileInfo.line("pot", TileInfo.coins(nest.count(coin))));
+            for (ItemStack item : nest.getContents()) if (!ItemStack.areItemsAndComponentsEqual(item, coin)) info.item(item);
+        }
         if (PotCartridgeItem.stake(stack) > 0) info.line(coin, TileInfo.bad(TileInfo.line("pot.stake", PotCartridgeItem.stake(stack))));
-        for (ItemStack item : PotCartridgeItem.items(stack)) info.item(item);
         if (PotCartridgeItem.start(stack) > 0) info.build(coin, TileInfo.line("pot.start", TileInfo.value(PotCartridgeItem.start(stack))));
         if (PotCartridgeItem.cap(stack) > 0) info.build(coin, TileInfo.line("pot.cap", TileInfo.value(PotCartridgeItem.cap(stack))));
         if (PotCartridgeItem.landerPays(stack)) info.build(TileInfo.line("pot.lander_pays"));

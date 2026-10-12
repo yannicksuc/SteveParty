@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -107,18 +108,30 @@ public class TileInfoGameTests implements SteveGameTest {
         context.complete();
     }
 
-    /** The Common pot tells its coins and its stake, and circles the items in it; it follows the pot. */
+    /** A Common pot cartridge linked to a new nest at (1, 1, 4); the nest. */
+    private static MagpieNestBlockEntity potNest(TestContext context, ItemStack pot) {
+        BlockPos nest = new BlockPos(1, 1, 4);
+        context.setBlockState(nest.down(), Blocks.STONE);
+        context.setBlockState(nest, ModBlocks.MAGPIE_NEST);
+        PotCartridgeItem.setNest(pot, context.getWorld(), context.getAbsolutePos(nest));
+        return context.getBlockEntity(nest);
+    }
+
+    /** The Common pot tells its nest's coins and its stake, and circles the other things in it; it follows the nest. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void thePotTellsWhatItHolds(TestContext context) {
-        BoardSpaceBlockEntity space = tile(context, new ItemStack(ModItems.POT_CARTRIDGE));
-        ItemStack pot = space.getActiveCartridgeItemStack();
-        PotCartridgeItem.setCoins(pot, 7);
+        ItemStack cartridge = new ItemStack(ModItems.POT_CARTRIDGE);
+        BoardSpaceBlockEntity unlinked = tile(context, new BlockPos(3, 1, 1), cartridge.copy());
+        context.assertTrue(line(TileInfos.of(unlinked), "pot.no_nest") != null, "no nest: said");
+        MagpieNestBlockEntity nest = potNest(context, cartridge);
+        BoardSpaceBlockEntity space = tile(context, cartridge);
+        nest.addCoins(new ItemStack(ModItems.COIN), 7);
         TileInfo before = TileInfos.of(space);
         context.assertEquals(arg(before, "pot", 0), "7", "7 coins in the pot");
         context.assertTrue(line(before, "pot.stake") != null, "its stake");
         context.assertTrue(before.ring().isEmpty(), "no item yet");
-        PotCartridgeItem.setCoins(pot, 12);
-        PotCartridgeItem.setItems(pot, List.of(new ItemStack(Items.DIAMOND, 2)));
+        nest.addCoins(new ItemStack(ModItems.COIN), 5);
+        nest.putTreasure(new ItemStack(Items.DIAMOND, 2));
         TileInfo after = TileInfos.of(space);
         context.assertEquals(arg(after, "pot", 0), "12", "12 coins now");
         context.assertTrue(after.ring().size() == 1 && after.ring().getFirst().isOf(Items.DIAMOND), "the diamonds circle it");
@@ -228,8 +241,10 @@ public class TileInfoGameTests implements SteveGameTest {
     /** The info goes over the network as it is. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theInfoCrossesTheNetwork(TestContext context) {
-        BoardSpaceBlockEntity space = tile(context, new ItemStack(ModItems.POT_CARTRIDGE));
-        PotCartridgeItem.setItems(space.getActiveCartridgeItemStack(), List.of(new ItemStack(Items.EMERALD, 3)));
+        ItemStack cartridge = new ItemStack(ModItems.POT_CARTRIDGE);
+        MagpieNestBlockEntity nest = potNest(context, cartridge);
+        BoardSpaceBlockEntity space = tile(context, cartridge);
+        nest.putTreasure(new ItemStack(Items.EMERALD, 3));
         TileInfo info = TileInfos.of(space);
         RegistryByteBuf buf = new RegistryByteBuf(Unpooled.buffer(), context.getWorld().getRegistryManager());
         TileInfo.PACKET_CODEC.encode(buf, info);
