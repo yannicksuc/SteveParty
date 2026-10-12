@@ -155,7 +155,7 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
     /** A chick on the ground walks to a spot this close; one rest in this many it hops up with a flap instead. */
     private static final int WANDER_RADIUS = 5, WANDER_HOP_ODDS = 8;
     /** How far apart chicks sit in their nest (blocks from its middle). */
-    private static final double CHICK_SPREAD = 0.16;
+    private static final double CHICK_SPREAD = 0.22;
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     /** The block it stands on (null: in flight, or not settled yet). */
