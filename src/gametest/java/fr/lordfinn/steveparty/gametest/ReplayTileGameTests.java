@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -72,7 +73,7 @@ public class ReplayTileGameTests implements SteveGameTest {
             if (event.kind() == Kind.LAND) played.add(event);
         };
         TileFeedback.LISTENERS.add(listener);
-        context.addFinalTask(() -> TileFeedback.LISTENERS.remove(listener));
+        TestCleanup.atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return played;
     }
 
@@ -186,7 +187,7 @@ public class ReplayTileGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theSpentDieComesBackAndTheReplayIsSaved(TestContext context) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
-        context.addFinalTask(() -> TestPlayers.remove(context, player));
+        TestCleanup.atEnd(context, () -> TestPlayers.remove(context, player));
         BlockPos pos = new BlockPos(2, 1, 2);
         BoardSpaceBlockEntity tile = placeTile(context, pos, new ItemStack(ModItems.REPLAY_CARTRIDGE));
         PigEntity token = spawnToken(context, pos, player.getUuid());

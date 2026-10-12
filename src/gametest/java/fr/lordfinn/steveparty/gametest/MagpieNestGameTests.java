@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.HopperBlock;
@@ -81,7 +82,7 @@ public class MagpieNestGameTests implements SteveGameTest {
         player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
         player.getAbilities().creativeMode = false;
         player.getInventory().clear();
-        ThresholdGameTests.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
+        TestCleanup.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
         return player;
     }
 
@@ -386,7 +387,7 @@ public class MagpieNestGameTests implements SteveGameTest {
         player.refreshPositionAndAngles(playerAt.x, playerAt.y, playerAt.z, 0, 0);
         player.getInventory().clear();
         player.getInventory().insertStack(new ItemStack(Items.DIAMOND, 3));
-        ThresholdGameTests.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
+        TestCleanup.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
         when(context, () -> nest.getTreasures().stream().anyMatch(stack -> stack.isOf(Items.GOLD_NUGGET)), 450, () -> "the nugget in the nest" + state(magpie), () -> {
             context.assertEquals(nest.getPileCount(), 1, "one nugget in the beak, one in the nest");
             context.assertEquals(nugget.isAlive() ? nugget.getStack().getCount() : 0, 1, "the other one still lying there");
@@ -428,7 +429,7 @@ public class MagpieNestGameTests implements SteveGameTest {
 
     /**
      * Something in its beak, it brings it home first, seeds or not: a player holding seeds tempts it afterwards. (Its
-     * player is removed by hand, not by a final task: {@code addFinalTask} ends the test on its first tick.)
+     * player is removed by hand, not by a final task: the test ends with its last check.)
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400, batchId = "magpie_nest_carry_seeds")
     public void itBringsItsLootHomeBeforeComingToTheSeeds(TestContext context) {

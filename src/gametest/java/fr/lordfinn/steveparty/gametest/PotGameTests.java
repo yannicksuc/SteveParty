@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -104,7 +105,7 @@ public class PotGameTests implements SteveGameTest {
         token.steveparty$setTokenized(true);
         token.steveparty$setTokenOwner(player.getUuid());
         token.steveparty$setStatus(TokenStatus.IN_GAME);
-        ThresholdGameTests.atEnd(context, () -> {
+        TestCleanup.atEnd(context, () -> {
             token.steveparty$setTokenized(false);
             TurnMoves.forget(cow.getUuid());
             context.getWorld().getServer().getPlayerManager().remove(player);
@@ -156,7 +157,7 @@ public class PotGameTests implements SteveGameTest {
         controller.nextStep();
         controller.nextStep();
         controller.getBankItems().clear();
-        ThresholdGameTests.atEnd(context, () -> context.removeBlock(CONTROLLER));
+        TestCleanup.atEnd(context, () -> context.removeBlock(CONTROLLER));
         return controller;
     }
 
