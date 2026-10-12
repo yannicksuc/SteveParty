@@ -362,7 +362,7 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         });
         context.assertTrue(entity.isResident() && entity.getLift() == 3, "always visible, 3 blocks up");
         BoardMobSpots.Spot spot = BoardMobSpots.spot(context.getWorld(), tile.getPos(), Vec3d.ZERO, 0);
-        context.assertTrue(spot.onMarker() && spot.lifted() && Math.abs(spot.pos().y - (marker.getY() + 3 + SpawnMarkerBlock.PLATE_HEIGHT)) < 1.0E-6
+        context.assertTrue(spot.onMarker() && spot.lifted() && Math.abs(spot.pos().y - (marker.getY() + 3)) < 1.0E-6
                 && spot.yaw() == Direction.NORTH.asRotation(), "on the marker, 3 blocks up, facing its way");
         ServerPlayerEntity a = player(context), b = player(context);
         party(context, new ArrayList<>(), a, b);
@@ -371,14 +371,14 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         context.assertTrue(entity.isPartyRunning() && !entity.getLinkedMobs().isEmpty(), "the bubble knows a party runs there");
         MarkerResidents.update(context.getWorld().getServer());
         MobEntity resident = MarkerResidents.resident(context.getWorld(), marker);
-        context.assertTrue(resident != null && resident.hasNoGravity() && Math.abs(resident.getY() - (marker.getY() + 3 + SpawnMarkerBlock.PLATE_HEIGHT)) < 0.01, "it appears 3 blocks up");
+        context.assertTrue(resident != null && resident.hasNoGravity() && Math.abs(resident.getY() - (marker.getY() + 3)) < 0.01, "it appears 3 blocks up");
         context.waitAndRun(30, () -> {
-            context.assertTrue(!resident.isRemoved() && Math.abs(resident.getY() - (marker.getY() + 3 + SpawnMarkerBlock.PLATE_HEIGHT)) < 0.01, "and floats there");
+            context.assertTrue(!resident.isRemoved() && Math.abs(resident.getY() - (marker.getY() + 3)) < 0.01, "and floats there");
             // under the floor: -2 blocks
             entity.setLiftSteps(-4);
             MarkerResidents.refresh(context.getWorld(), marker);
             MobEntity low = MarkerResidents.resident(context.getWorld(), marker);
-            context.assertTrue(low != null && Math.abs(low.getY() - (marker.getY() - 2 + SpawnMarkerBlock.PLATE_HEIGHT)) < 0.01, "2 blocks under the marker");
+            context.assertTrue(low != null && Math.abs(low.getY() - (marker.getY() - 2)) < 0.01, "2 blocks under the marker");
             context.complete();
         });
     }
@@ -521,7 +521,7 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         BlockState state = context.getWorld().getBlockState(marker);
         context.assertTrue(state.get(SpawnMarkerBlock.ROTATION) == 5 && facing(SpawnMarkerBlock.yaw(state), 112.5f), "its way kept (a sixteenth)");
         context.assertTrue(entity.isResident() && entity.getLiftSteps() == 6, "its height and its mode kept");
-        context.assertTrue(Math.abs(SpawnMarkerBlock.spawnPos(context.getWorld(), marker).y - (marker.getY() + 3 + SpawnMarkerBlock.PLATE_HEIGHT)) < 1.0E-6,
+        context.assertTrue(Math.abs(SpawnMarkerBlock.spawnPos(context.getWorld(), marker).y - (marker.getY() + 3)) < 1.0E-6,
                 "its mob 3 blocks up");
         context.assertTrue(entity.getLinkedMobs().isEmpty(), "its mobs not known yet");
         MarkerMobs.refresh(context.getWorld(), marker);
@@ -535,24 +535,24 @@ public class SpawnMarkerGameTests implements SteveGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void theMobAppearsSixPixelsUnderTheBubble(TestContext context) {
+    public void theMobAppearsOnTheGroundUnderTheBubble(TestContext context) {
         BlockPos marker = marker(context, MARKER, Direction.EAST);
         Vec3d center = SpawnMarkerBlock.bubbleCenter(marker, 0);
         context.assertTrue(center.equals(Vec3d.ofCenter(marker)), "the bubble in the middle of the block");
         Vec3d spawn = SpawnMarkerBlock.spawnPos(context.getWorld(), marker);
-        context.assertTrue(near(spawn, center) && Math.abs(center.y - spawn.y - 6 / 16.0) < 1.0E-9, "its mob 6 pixels under its centre");
-        context.assertTrue(Math.abs(spawn.y - (marker.getY() + SpawnMarkerBlock.PLATE_HEIGHT)) < 1.0E-9, "on the plate");
+        context.assertTrue(near(spawn, center) && Math.abs(center.y - spawn.y - 8 / 16.0) < 1.0E-9, "its mob 8 pixels under its centre");
+        context.assertTrue(Math.abs(spawn.y - marker.getY()) < 1.0E-9, "on the ground");
         BlockState state = context.getWorld().getBlockState(marker);
-        context.assertTrue(Math.abs(state.getCollisionShape(context.getWorld(), marker).getMax(Direction.Axis.Y) - SpawnMarkerBlock.PLATE_HEIGHT) < 1.0E-9
+        context.assertTrue(state.getCollisionShape(context.getWorld(), marker).isEmpty()
                 && Math.abs(state.getOutlineShape(context.getWorld(), marker).getMax(Direction.Axis.Y) - SpawnMarkerBlock.PLATE_HEIGHT) < 1.0E-9,
-                "only the plate is solid and aimed at");
+                "nothing to stand on, only the plate is aimed at");
         SpawnMarkerBlockEntity entity = (SpawnMarkerBlockEntity) context.getWorld().getBlockEntity(marker);
         entity.setLiftSteps(3);
         Vec3d lifted = SpawnMarkerBlock.bubbleCenter(marker, entity.getLift());
         Vec3d spot = BoardMobSpots.at(context.getWorld(), marker).pos();
         context.assertTrue(Math.abs(lifted.y - center.y - 1.5) < 1.0E-9, "lifted: the bubble goes up as much");
-        context.assertTrue(near(spot, lifted) && Math.abs(lifted.y - spot.y - 6 / 16.0) < 1.0E-9
-                && spot.equals(SpawnMarkerBlock.spawnPos(context.getWorld(), marker)), "its mob still 6 pixels under it");
+        context.assertTrue(near(spot, lifted) && Math.abs(lifted.y - spot.y - 8 / 16.0) < 1.0E-9
+                && spot.equals(SpawnMarkerBlock.spawnPos(context.getWorld(), marker)), "its mob still 8 pixels under it");
         context.complete();
     }
 }

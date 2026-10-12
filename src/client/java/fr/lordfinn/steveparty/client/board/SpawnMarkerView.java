@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.client.screens.SpawnMarkerScreen;
 import fr.lordfinn.steveparty.board.ExplorerHelmet;
+import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -34,7 +35,7 @@ import java.util.List;
  * mob or arrow inside, see SpawnBubbleRenderer). The bubbles around are looked for every {@link #REFRESH} ticks, only
  * then.
  */
-final class SpawnMarkerView {
+public final class SpawnMarkerView {
     private static final int REFRESH = 10;
     private static final double RADIUS = 32;
     /** Over the bubble's top (blocks). */
@@ -61,12 +62,12 @@ final class SpawnMarkerView {
     }
 
     /** Whether {@code player} sees the labels: a board tool or a cartridge in hand, or a lit Explorer's Helmet on. */
-    static boolean sees(ClientPlayerEntity player) {
+    public static boolean sees(ClientPlayerEntity player) {
         return ExplorerHelmet.view(player).shown() || shows(player.getMainHandStack().getItem()) || shows(player.getOffHandStack().getItem());
     }
 
     private static boolean shows(Item item) {
-        return item instanceof WrenchItem || item instanceof CartridgeItem;
+        return item instanceof TileLinkerBrushItem || item instanceof WrenchItem || item instanceof CartridgeItem;
     }
 
     private static void tick(MinecraftClient client) {
