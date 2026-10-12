@@ -21,7 +21,13 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
+import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
+import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartEntity;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
+import fr.lordfinn.steveparty.service.BoardActors;
+import fr.lordfinn.steveparty.service.BoomcartLaunches;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
@@ -32,6 +38,9 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +53,8 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Move Forward / Back tile: forward N, back N the way it came, a fork asking the owner, no chain, a start tile
- * stopping a token going back, and the cartridge's setting.
+ * stopping a token going back, and the cartridge's setting. Its Boomcart: a hologram blowing up behind the token
+ * (forward) or charging it from the front (back), touching nothing, gone at the end, on its Spawn Bubble if linked.
  */
 public class AdvanceBackGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(0, 1, 7);
@@ -127,6 +137,31 @@ public class AdvanceBackGameTests implements SteveGameTest {
 
     private static BooleanSupplier turnEnded(PartyControllerEntity controller) {
         return () -> controller.getPartyData().getStepIndex() >= 2;
+    }
+
+    /** Every Boomcart of a show, as it appears. */
+    private static List<BoomcartEntity> carts(TestContext context) {
+        List<BoomcartEntity> carts = new ArrayList<>();
+        Consumer<BoomcartEntity> listener = carts::add;
+        BoomcartLaunches.SPAWN_LISTENERS.add(listener);
+        atEnd(context, () -> BoomcartLaunches.SPAWN_LISTENERS.remove(listener));
+        return carts;
+    }
+
+    /** {@code cart} is a board actor: a hologram, invulnerable, never saved. */
+    private static void assertHologram(TestContext context, BoomcartEntity cart) {
+        context.assertTrue(BoardActors.isBoardActor(cart) && cart.isBoardActor() && cart.isAiDisabled(), "the Boomcart is a hologram");
+        context.assertTrue(cart.isInvulnerable() && !cart.shouldSave(), "invulnerable, never saved");
+        context.assertTrue(!cart.damage(cart.getDamageSources().generic(), 50f) && cart.isAlive(), "nothing hurts it");
+    }
+
+    /** The tiles of the path and a glass block by the blast are all still there. */
+    private static void assertNothingBroken(TestContext context, int count, BlockPos glass) {
+        for (int i = 0; i < count; i++) {
+            context.expectBlock(ModBlocks.TILE, PATH.get(i));
+            context.expectBlock(Blocks.STONE, PATH.get(i).down());
+        }
+        context.expectBlock(Blocks.GLASS, glass);
     }
 
     // ---------------------------------------------------------------- tests
@@ -249,6 +284,106 @@ public class AdvanceBackGameTests implements SteveGameTest {
                 context.waitAndRun(40, () -> {
                     assertOn(context, pig, PATH.get(2), "still there");
                     context.assertEquals(((TokenizedEntityInterface) pig).steveparty$getNbSteps(), 0, "no step left");
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    /**
+     * Forward: a hologram Boomcart rolls in behind the token and blows up, touching nothing; the token flies (hops)
+     * to the space 2 further, exactly as before; the Boomcart is gone.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
+    public void forwardBoomcartBlowsTheTokenOn(TestContext context) {
+        path(context, 6, 2, AdvanceBackCartridgeItem.withSteps(2));
+        BlockPos glass = new BlockPos(4, 1, 0);
+        context.setBlockState(glass, Blocks.GLASS);
+        List<BoomcartEntity> carts = carts(context);
+        PigEntity pig = token(context, PATH.get(0));
+        PartyControllerEntity controller = party(context, pig);
+        float health = pig.getHealth();
+        context.waitAndRun(2, () -> {
+            TokenMovementService.moveEntityOnBoard(pig, 2);
+            when(context, () -> !carts.isEmpty(), 100, "a Boomcart appears", () -> {
+                BoomcartEntity cart = carts.getFirst();
+                assertHologram(context, cart);
+                context.assertTrue(cart.getX() < context.getAbsolutePos(PATH.get(2)).getX() + 0.5, "it comes from behind");
+                double ground = pig.getY();
+                when(context, () -> AdvanceBackMoves.isFlying(pig) && pig.getY() > ground + 0.3, 80, "the token flies", () -> {
+                    context.assertTrue(cart.isRemoved(), "the blast consumed the Boomcart");
+                    when(context, turnEnded(controller), 150, "turn ends", () -> {
+                        assertOn(context, pig, PATH.get(4), "2 spaces further");
+                        context.assertTrue(!BoomcartLaunches.isRunning(pig) && !AdvanceBackMoves.isFlying(pig), "the show is over");
+                        context.assertTrue(pig.getHealth() == health && pig.isAlive(), "the token is not hurt");
+                        context.assertEquals(carts.size(), 1, "one Boomcart");
+                        assertNothingBroken(context, 6, glass);
+                        context.complete();
+                    });
+                });
+            });
+        });
+    }
+
+    /** Back: the Boomcart charges from the front (the way ahead), the token is knocked back 2 spaces facing it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
+    public void backBoomcartChargesFromTheFront(TestContext context) {
+        path(context, 5, 3, AdvanceBackCartridgeItem.withSteps(-2));
+        BlockPos glass = new BlockPos(6, 1, 0);
+        context.setBlockState(glass, Blocks.GLASS);
+        List<BoomcartEntity> carts = carts(context);
+        PigEntity pig = token(context, PATH.get(0));
+        PartyControllerEntity controller = party(context, pig);
+        context.waitAndRun(2, () -> {
+            TokenMovementService.moveEntityOnBoard(pig, 3);
+            when(context, () -> !carts.isEmpty(), 150, "a Boomcart appears", () -> {
+                BoomcartEntity cart = carts.getFirst();
+                assertHologram(context, cart);
+                // The token came along +x to the tile at (7, 1, 1): its front is +x, it goes back along -x
+                context.assertTrue(cart.getX() > context.getAbsolutePos(PATH.get(3)).getX() + 1.5, "it comes from the front");
+                when(context, () -> AdvanceBackMoves.isFlying(pig), 80, "the token is knocked back", () -> {
+                    context.assertTrue(cart.isRemoved(), "the crash consumed the Boomcart");
+                    Float facing = AdvanceBackMoves.flightFacing(pig);
+                    context.assertTrue(facing != null && Math.abs(MathHelper.wrapDegrees(facing + 90)) < 1,
+                            "it keeps facing the crash (east, +x)");
+                    when(context, turnEnded(controller), 150, "turn ends", () -> {
+                        assertOn(context, pig, PATH.get(1), "2 spaces back");
+                        assertNothingBroken(context, 5, glass);
+                        context.complete();
+                    });
+                });
+            });
+        });
+    }
+
+    /** Linked to a Spawn Bubble, the Boomcart appears on it (and the bubble knows the kind of mob). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
+    public void theBoomcartAppearsOnItsSpawnBubble(TestContext context) {
+        ItemStack cartridge = AdvanceBackCartridgeItem.withSteps(1);
+        context.assertTrue(CartridgeSpawnMarker.spawnsMobs(cartridge), "its space summons a mob");
+        context.assertEquals(CartridgeSpawnMarker.mobOf(cartridge), ModEntities.BOOMCART, "a Boomcart");
+        path(context, 4, 1, cartridge);
+        BlockPos relative = new BlockPos(3, 1, 6);
+        context.setBlockState(relative.down(), Blocks.STONE);
+        context.setBlockState(relative, ModBlocks.SPAWN_MARKER.getDefaultState()
+                .with(SpawnMarkerBlock.ROTATION, SpawnMarkerBlock.rotation(Direction.NORTH)));
+        BlockPos marker = context.getAbsolutePos(relative);
+        BoardSpaceBlockEntity tile = context.getBlockEntity(PATH.get(1));
+        CartridgeSpawnMarker.set(tile.getStack(0), context.getWorld(), marker);
+        CartridgeSpawnMarker.own(context.getWorld(), marker, tile.getPos());
+        List<BoomcartEntity> carts = carts(context);
+        PigEntity pig = token(context, PATH.get(0));
+        PartyControllerEntity controller = party(context, pig);
+        context.waitAndRun(2, () -> {
+            TokenMovementService.moveEntityOnBoard(pig, 1);
+            when(context, () -> !carts.isEmpty(), 100, "a Boomcart appears", () -> {
+                Vec3d stand = SpawnMarkerBlock.standPos(marker);
+                BoomcartEntity cart = carts.getFirst();
+                context.assertTrue(Math.abs(cart.getX() - stand.x) < 0.3 && Math.abs(cart.getZ() - stand.z) < 0.3, "on its Spawn Bubble");
+                assertHologram(context, cart);
+                when(context, turnEnded(controller), 200, "turn ends", () -> {
+                    assertOn(context, pig, PATH.get(2), "1 space further");
+                    context.assertTrue(cart.isRemoved(), "gone");
                     context.complete();
                 });
             });

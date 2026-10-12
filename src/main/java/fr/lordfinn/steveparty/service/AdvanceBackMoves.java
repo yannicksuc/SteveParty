@@ -41,7 +41,8 @@ import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
  *     landing): one landing gives at most one extra move, so two tiles sending a token to each other never loop.</li>
  * </ul>
  * The token's steps are set as soon as the move is decided (its turn goes on until it lands), the walk itself starts
- * {@link #START_DELAY_TICKS} later, once the landing jingle is heard. Server thread only, not saved (a restart in the
+ * {@link #START_DELAY_TICKS} later, once the landing jingle is heard (a tile's extra move: once its Boomcart has blown
+ * or crashed into the token, see {@link BoomcartLaunches}, the token then flying over the spaces: {@link #isFlying}). Server thread only, not saved (a restart in the
  * middle of an extra move ends it as an ordinary move).
  */
 public final class AdvanceBackMoves {
@@ -62,6 +63,10 @@ public final class AdvanceBackMoves {
         boolean waiting = true;
         /** The extra move of a tile (true), or the move of a roll going backward (the Reversed dice module). */
         final boolean extra;
+        /** Launched by a Boomcart: the token hops over the spaces (see {@link #isFlying}). */
+        boolean flies;
+        /** Knocked back: the way it keeps facing while it flies backward (null: it faces where it goes). */
+        @Nullable Float facing;
 
         Move(boolean backward, @Nullable Deque<BlockPos> route, boolean extra) {
             this.backward = backward;
@@ -138,6 +143,38 @@ public final class AdvanceBackMoves {
         return move != null && move.route != null;
     }
 
+    /** The first board space of the route going back that is left (not taken off), null for none or going forward. */
+    public static @Nullable BlockPos peekRouted(MobEntity token) {
+        Move move = MOVES.get(token.getUuid());
+        return move == null || move.route == null ? null : move.route.peekFirst();
+    }
+
+    /**
+     * True while the token, launched by a Boomcart, walks its extra move: it hops from space to space in an arc
+     * (TokenEntityMixin) instead of sliding along.
+     */
+    public static boolean isFlying(MobEntity token) {
+        Move move = MOVES.get(token.getUuid());
+        return move != null && move.flies && !move.waiting;
+    }
+
+    /** Flying back (knocked back): the yaw it keeps, facing the way it was hit from; null otherwise. */
+    public static @Nullable Float flightFacing(MobEntity token) {
+        Move move = MOVES.get(token.getUuid());
+        return move == null || !move.flies || move.waiting ? null : move.facing;
+    }
+
+    /**
+     * The extra move just {@link #launch launched} for {@code token} is staged by a Boomcart: the token will fly over
+     * the spaces, keeping {@code facing} (null: facing where it goes).
+     */
+    static void flyWhenLaunched(MobEntity token, @Nullable Float facing) {
+        Move move = MOVES.get(token.getUuid());
+        if (move == null) return;
+        move.flies = true;
+        move.facing = facing;
+    }
+
     /** The next board space of the route going back, or null at its end. */
     static @Nullable BlockPos nextRouted(MobEntity token) {
         Move move = MOVES.get(token.getUuid());
@@ -172,6 +209,11 @@ public final class AdvanceBackMoves {
      * Forward / Back tile it ends on plays as usual.
      */
     public static int launch(ServerWorld world, MobEntity token, BlockPos from, int steps, boolean extra) {
+        return launch(world, token, from, steps, extra, START_DELAY_TICKS);
+    }
+
+    /** Same, the walk starting {@code delay} ticks later (a Boomcart's show first, see {@link BoomcartLaunches}). */
+    public static int launch(ServerWorld world, MobEntity token, BlockPos from, int steps, boolean extra, int delay) {
         if (steps == 0) return 0;
         Move move;
         int walked;
@@ -190,7 +232,7 @@ public final class AdvanceBackMoves {
         TokenizedEntityInterface tokenized = (TokenizedEntityInterface) token;
         tokenized.steveparty$setNbSteps(walked); // the turn goes on until it lands (see BoardSpaceBlockEntity)
         // Under the token's UUID: the turn sees the token as moving (TokenTurnPartyStep#isTokenMoving)
-        SCHEDULER.schedule(uuid, START_DELAY_TICKS, () -> {
+        SCHEDULER.schedule(uuid, delay, () -> {
             if (MOVES.get(uuid) != move) return;
             move.waiting = false;
             if (token.isRemoved() || !tokenized.steveparty$isTokenized()) {
