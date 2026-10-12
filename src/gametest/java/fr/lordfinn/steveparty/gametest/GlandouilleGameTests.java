@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -1329,16 +1331,15 @@ public class GlandouilleGameTests implements SteveGameTest {
         return pig;
     }
 
-    private static ItemStack cartridge(int distance, boolean lone, int tower) {
-        ItemStack stack = cartridge(distance, lone);
+    private static ItemStack cartridge(int distance, int tower) {
+        ItemStack stack = cartridge(distance);
         stack.set(ModComponents.GLANDOUILLE_TOWER, tower);
         return stack;
     }
 
-    private static ItemStack cartridge(int distance, boolean lone) {
+    private static ItemStack cartridge(int distance) {
         ItemStack stack = new ItemStack(ModItems.GLANDOUILLE_CARTRIDGE);
         stack.set(ModComponents.GLANDOUILLE_DISTANCE, distance);
-        stack.set(ModComponents.GLANDOUILLE_LONE, lone);
         return stack;
     }
 
@@ -1358,7 +1359,7 @@ public class GlandouilleGameTests implements SteveGameTest {
     /** A cartridge without destination (0 spaces): nothing happens, no Glandouille. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aSpaceWithoutDestinationDoesNothing(TestContext context) {
-        BoardSpaceBlockEntity tile = path(context, cartridge(0, false));
+        BoardSpaceBlockEntity tile = path(context, cartridge(0));
         List<GlandouilleEntity> spawned = spawned(context);
         PigEntity pig = token(context, PATH.getFirst());
         context.waitAndRun(2, () -> {
@@ -1376,7 +1377,7 @@ public class GlandouilleGameTests implements SteveGameTest {
     /** With a destination 2 spaces on: the tower pushes the token and the one it meets there; then it is gone. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
     public void theTowerPushesTheTokensToItsDestination(TestContext context) {
-        BoardSpaceBlockEntity tile = path(context, cartridge(2, false));
+        BoardSpaceBlockEntity tile = path(context, cartridge(2));
         List<GlandouilleEntity> spawned = spawned(context);
         PigEntity lander = token(context, PATH.get(0));
         PigEntity met = token(context, PATH.get(1));
@@ -1405,7 +1406,7 @@ public class GlandouilleGameTests implements SteveGameTest {
     /** Each token met on the way makes the top one fall off; the tower still brings everyone to its destination. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
     public void eachTokenMetMakesOneFallOff(TestContext context) {
-        BoardSpaceBlockEntity tile = path(context, cartridge(3, false, 4));
+        BoardSpaceBlockEntity tile = path(context, cartridge(3, 4));
         List<GlandouilleEntity> spawned = spawned(context);
         PigEntity lander = token(context, PATH.get(0));
         PigEntity first = token(context, PATH.get(1));
@@ -1434,7 +1435,7 @@ public class GlandouilleGameTests implements SteveGameTest {
     /** Out of Glandouilles (a tower of 2 meeting 2 tokens), it stops on the second one's space, short of 3 spaces. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
     public void outOfGlandouillesTheTowerStopsShort(TestContext context) {
-        BoardSpaceBlockEntity tile = path(context, cartridge(3, false, 2));
+        BoardSpaceBlockEntity tile = path(context, cartridge(3, 2));
         PigEntity lander = token(context, PATH.get(0));
         PigEntity first = token(context, PATH.get(1));
         PigEntity second = token(context, PATH.get(2));
@@ -1455,7 +1456,7 @@ public class GlandouilleGameTests implements SteveGameTest {
     /** The cartridge goes up to 50 spaces and 25 Glandouilles (5 by default); the route follows 50 spaces. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
     public void theCartridgeGoesUpTo50Spaces(TestContext context) {
-        ItemStack stack = cartridge(50, false);
+        ItemStack stack = cartridge(50);
         context.assertEquals(GlandouilleCartridgeItem.distance(stack), 50, "50 spaces");
         context.assertEquals(GlandouilleCartridgeItem.tower(new ItemStack(ModItems.GLANDOUILLE_CARTRIDGE)), 5, "5 by default");
         List<BlockPos> snake = new ArrayList<>();
@@ -1478,7 +1479,7 @@ public class GlandouilleGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
     public void aNegativeDistancePushesBack(TestContext context) {
         context.assertEquals(GlandouilleCartridgeItem.distance(new ItemStack(ModItems.GLANDOUILLE_CARTRIDGE)), -5, "-5 by default");
-        BoardSpaceBlockEntity tile = pathEndingWith(context, cartridge(-2, false, 5));
+        BoardSpaceBlockEntity tile = pathEndingWith(context, cartridge(-2, 5));
         PigEntity lander = token(context, PATH.get(3));
         PigEntity met = token(context, PATH.get(2));
         PigEntity beyond = token(context, PATH.get(0));
@@ -1500,7 +1501,7 @@ public class GlandouilleGameTests implements SteveGameTest {
     /** Going back too, out of Glandouilles (2 meeting 2 tokens) it stops on the second one's space. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
     public void goingBackOutOfGlandouillesItStopsShort(TestContext context) {
-        BoardSpaceBlockEntity tile = pathEndingWith(context, cartridge(-3, false, 2));
+        BoardSpaceBlockEntity tile = pathEndingWith(context, cartridge(-3, 2));
         PigEntity lander = token(context, PATH.get(3));
         PigEntity first = token(context, PATH.get(2));
         PigEntity second = token(context, PATH.get(1));
@@ -1518,10 +1519,10 @@ public class GlandouilleGameTests implements SteveGameTest {
         });
     }
 
-    /** The lone one: it tries, can't, sulks and goes; the token stays. */
+    /** A tower of 1, the lone one: it tries, can't, sulks and goes; the token stays. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
     public void theLoneOneCannotPush(TestContext context) {
-        BoardSpaceBlockEntity tile = path(context, cartridge(2, true));
+        BoardSpaceBlockEntity tile = path(context, cartridge(2, 1));
         List<GlandouilleEntity> spawned = spawned(context);
         PigEntity lander = token(context, PATH.get(0));
         context.waitAndRun(2, () -> {
@@ -1534,6 +1535,35 @@ public class GlandouilleGameTests implements SteveGameTest {
                 context.complete();
             });
         });
+    }
+
+    /**
+     * Its menu: one height from 1 (the lone one) to 25, no separate crew choice; a stack still flagged lone reads as a
+     * tower of 1, and the next height written clears the flag.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void theHeightOf1IsTheLoneOne(TestContext context) {
+        ItemStack flagged = cartridge(2, 5);
+        flagged.set(ModComponents.GLANDOUILLE_LONE, true);
+        context.assertEquals(GlandouilleCartridgeItem.tower(flagged), 1, "flagged lone: a tower of 1");
+        context.assertTrue(GlandouilleCartridgeItem.lone(flagged), "the lone one");
+        GlandouilleCartridgeItem.setTower(flagged, 3);
+        context.assertFalse(flagged.contains(ModComponents.GLANDOUILLE_LONE), "flag cleared");
+        context.assertEquals(GlandouilleCartridgeItem.tower(flagged), 3, "a tower of 3");
+
+        BoardSpaceBlockEntity tile = path(context, cartridge(2, 4));
+        CartridgeRef ref = CartridgeRef.slot(tile.getPos(), 0);
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        Vec3d near = tile.getPos().toCenterPos().add(1.5, 0.5, 0);
+        player.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
+        context.assertFalse(CartridgeMenus.apply(player, ref, "crew", 1), "no crew choice");
+        context.assertFalse(CartridgeMenus.apply(player, ref, "hint", 0), "no hint");
+        context.assertFalse(CartridgeMenus.apply(player, ref, "tower", 0), "0 refused");
+        context.assertTrue(CartridgeMenus.apply(player, ref, "tower", 1), "1 allowed");
+        context.assertTrue(GlandouilleCartridgeItem.lone(tile.getStack(0)), "1: the lone one");
+        context.assertTrue(CartridgeMenus.apply(player, ref, "tower", 2), "2 allowed");
+        context.assertFalse(GlandouilleCartridgeItem.lone(tile.getStack(0)), "2: a tower");
+        context.complete();
     }
 
     private static double horizontal(Vec3d a, Vec3d b) {

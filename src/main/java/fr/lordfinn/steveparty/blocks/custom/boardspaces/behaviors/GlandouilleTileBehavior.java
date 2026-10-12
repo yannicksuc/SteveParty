@@ -27,7 +27,7 @@ import java.util.List;
  * {@link GlandouilleCartridgeItem#tower} Glandouilles, with the tokens the tower meets (one
  * falls off for each; out of Glandouilles, it stops short, see {@link GlandouillePushes}); the turn
  * goes on once the tower has gone. A cartridge without destination (0 spaces), or a tile leading nowhere: nothing
- * happens (a plain landing). The lone Glandouille setting: it tries, fails, sulks; nobody moves. Going over the tile
+ * happens (a plain landing). A tower of 1, the lone Glandouille: it tries, fails, sulks; nobody moves. Going over the tile
  * does nothing. Outside a party it plays too, when a token's move ends here.
  */
 public class GlandouilleTileBehavior extends MobTileBehavior {

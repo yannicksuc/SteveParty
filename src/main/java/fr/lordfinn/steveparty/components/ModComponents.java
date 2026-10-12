@@ -107,7 +107,7 @@ public class ModComponents {
     /** Glandouille Cartridge: how many Glandouilles in its tower (one falls off for each token it starts pushing). */
     public static final ComponentType<Integer> GLANDOUILLE_TOWER =
             registerComponent("glandouille-tower", Codec.intRange(1, 25));
-    /** Glandouille Cartridge: a lone Glandouille that tries to push and can't, instead of a tower. */
+    /** Glandouille Cartridge, older data: a lone Glandouille, now a tower of 1 (still read, cleared on the next edit). */
     public static final ComponentType<Boolean> GLANDOUILLE_LONE =
             registerComponent("glandouille-lone", Codec.BOOL);
     /**

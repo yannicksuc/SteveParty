@@ -4,8 +4,6 @@ import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -19,9 +17,8 @@ import java.util.List;
  * tower of {@link #tower} Glandouilles, with every token the tower meets on the way (see GlandouilleTileBehavior). Each
  * token it meets on the way makes one fall off the top; out of Glandouilles, it stops there, short of its destination.
  * Its destination is that number of spaces ahead, or back along the path if negative (the way a Reversed die moves
- * a token): 0 is no destination, and nothing happens. Its menu also has the crew: the tower, or a
- * lone Glandouille that tries to push, can't, and sulks (the tokens stay put). Its tile is brown; a dye on it changes
- * that.
+ * a token): 0 is no destination, and nothing happens. A tower of 1 is a lone Glandouille that tries to push, can't, and
+ * sulks (the tokens stay put). Its tile is brown; a dye on it changes that.
  */
 public class GlandouilleCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** Its tile's brown. */
@@ -33,16 +30,14 @@ public class GlandouilleCartridgeItem extends CartridgeItem implements MobSpawnC
 
     private static final IntSetting DISTANCE = new IntSetting(ModComponents.GLANDOUILLE_DISTANCE, MIN_DISTANCE, MAX_DISTANCE, DEFAULT_DISTANCE);
     private static final IntSetting TOWER = new IntSetting(ModComponents.GLANDOUILLE_TOWER, MIN_TOWER, MAX_TOWER, DEFAULT_TOWER);
-    private static final BoolSetting LONE = new BoolSetting(ModComponents.GLANDOUILLE_LONE);
 
     private static final String K = MENU_KEY + "glandouille.";
     private static final List<CartridgeModule> MODULES = List.of(
             description("glandouille_cartridge", 3),
             new NumberModule("distance", K + "distance", MIN_DISTANCE, MAX_DISTANCE, GlandouilleCartridgeItem::distance,
                     (edit, value) -> DISTANCE.set(edit.stack(), value), stack -> COLOR),
-            InfoModule.hint("hint", K + "hint", 1),
-            TOWER.module("tower", K + "tower_size", stack -> COLOR),
-            LONE.choice("crew", K + "crew", new ChoiceModule.Option(K + "tower"), new ChoiceModule.Option(K + "lone")));
+            new NumberModule("tower", K + "tower_size", MIN_TOWER, MAX_TOWER, GlandouilleCartridgeItem::tower,
+                    (edit, value) -> setTower(edit.stack(), value), stack -> COLOR));
 
     public GlandouilleCartridgeItem(Settings settings) {
         super(settings);
@@ -74,14 +69,20 @@ public class GlandouilleCartridgeItem extends CartridgeItem implements MobSpawnC
         return stack == null || stack.isEmpty() ? 0 : DISTANCE.get(stack);
     }
 
-    /** Glandouilles in its tower: {@link #MIN_TOWER} to {@link #MAX_TOWER}. */
+    /** Glandouilles in its tower: {@link #MIN_TOWER} to {@link #MAX_TOWER} (the old lone flag reads as 1). */
     public static int tower(ItemStack stack) {
+        if (stack != null && !stack.isEmpty() && stack.getOrDefault(ModComponents.GLANDOUILLE_LONE, false)) return 1;
         return TOWER.get(stack);
     }
 
-    /** The lone Glandouille (it can't push) rather than the tower. */
+    public static void setTower(ItemStack stack, int value) {
+        stack.remove(ModComponents.GLANDOUILLE_LONE);
+        TOWER.set(stack, value);
+    }
+
+    /** A tower of 1: the lone Glandouille, who can't push. */
     public static boolean lone(ItemStack stack) {
-        return LONE.get(stack);
+        return tower(stack) == 1;
     }
 
     @Override
