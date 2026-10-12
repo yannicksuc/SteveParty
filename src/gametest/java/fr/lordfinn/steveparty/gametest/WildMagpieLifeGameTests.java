@@ -316,6 +316,76 @@ public class WildMagpieLifeGameTests implements SteveGameTest {
         });
     }
 
+    // ---------------------------------------------------------------- tempted by seeds
+
+    private static double horizontal(WildMagpieEntity magpie, ServerPlayerEntity player) {
+        return Math.sqrt(magpie.getPos().subtract(player.getPos()).horizontalLengthSquared());
+    }
+
+    /** Facing {@code player} (within 25 degrees). */
+    private static boolean faces(WildMagpieEntity magpie, ServerPlayerEntity player) {
+        Vec3d to = player.getPos().subtract(magpie.getPos());
+        float yaw = (float) (Math.atan2(to.z, to.x) * (180 / Math.PI)) - 90;
+        return Math.abs(net.minecraft.util.math.MathHelper.wrapDegrees(magpie.getHeadYaw() - yaw)) < 25;
+    }
+
+    private static void floor(TestContext context) {
+        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.GRASS_BLOCK);
+    }
+
+    /**
+     * A player holding seeds 8 blocks away: the Pie looks at him and hops to him (not away), lands about 2 blocks from
+     * him, follows him when he goes; the seeds put away, it is no longer tempted.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400, batchId = "wild_magpie_tempt_adult")
+    public void seedsTemptAPie(TestContext context) {
+        floor(context);
+        WildMagpieEntity magpie = perchedPie(context, new BlockPos(1, 1, 1));
+        ServerPlayerEntity player = survivalPlayer(context, new Vec3d(6.5, 1, 6.5));
+        when(context, () -> magpie.getPerch() != null, 20, () -> "perched" + state(magpie), () -> {
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.BEETROOT_SEEDS, 3));
+            when(context, () -> !magpie.isInFlight() && magpie.getPerch() != null && horizontal(magpie, player) <= WildMagpieEntity.TEMPT_FOLLOW,
+                    150, () -> "close to him" + state(magpie), () -> {
+                        context.assertEquals(magpie.getTempter(), player, "tempted by him");
+                        context.assertTrue(horizontal(magpie, player) >= 0.9, "beside him, not on him: " + horizontal(magpie, player));
+                        context.waitAndRun(WildMagpieEntity.TEMPT_CHECK_INTERVAL + 1, () -> {
+                            context.assertTrue(faces(magpie, player), "looking at him: " + magpie.getHeadYaw());
+                            Vec3d moved = context.getAbsolute(new Vec3d(1.5, 1, 6.5));
+                            player.refreshPositionAndAngles(moved.x, moved.y, moved.z, 0, 0);
+                            when(context, () -> !magpie.isInFlight() && magpie.getPerch() != null && horizontal(magpie, player) <= WildMagpieEntity.TEMPT_FOLLOW,
+                                    150, () -> "followed him" + state(magpie), () -> {
+                                        player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+                                        when(context, () -> magpie.getTempter() == null, WildMagpieEntity.TEMPT_CHECK_INTERVAL + 2,
+                                                () -> "no longer tempted" + state(magpie), () -> {
+                                                    magpie.discard();
+                                                    context.complete();
+                                                });
+                                    });
+                        });
+                    });
+        });
+    }
+
+    /** A chick on foot waddles to a player holding seeds and looks at him; the seeds put away, it is no longer tempted. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "wild_magpie_tempt_chick")
+    public void seedsTemptAChick(TestContext context) {
+        floor(context);
+        WildMagpieEntity chick = context.spawnEntity(ModEntities.WILD_MAGPIE, new Vec3d(1.5, 1, 1.5));
+        chick.setBaby(true);
+        chick.setPersistent();
+        chick.setNightOverride(false);
+        ServerPlayerEntity player = survivalPlayer(context, new Vec3d(6.5, 1, 6.5));
+        player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.MELON_SEEDS, 3));
+        when(context, () -> chick.isWalking() && horizontal(chick, player) <= 2.3, 200, () -> "waddled to him" + state(chick), () -> {
+            context.assertEquals(chick.getTempter(), player, "tempted by him");
+            player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
+            when(context, () -> chick.getTempter() == null, WildMagpieEntity.TEMPT_CHECK_INTERVAL + 2, () -> "no longer tempted" + state(chick), () -> {
+                chick.discard();
+                context.complete();
+            });
+        });
+    }
+
     // ---------------------------------------------------------------- long flights
 
     /** The reach of a long flight stops short of the land that does not tick, with a margin; all of it where it all ticks. */
