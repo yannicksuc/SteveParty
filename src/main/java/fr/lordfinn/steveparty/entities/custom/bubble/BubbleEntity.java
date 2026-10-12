@@ -58,7 +58,8 @@ import java.util.function.Function;
  *     ({@link BubbleRiding}); every rider's keys count.</li>
  *     <li><b>Merging</b>: two bubbles with riders touching become one bigger bubble with all of them
  *     ({@link #absorb}), the one with more riders (else the older) taking the other in.</li>
- *     <li><b>Popping</b> ({@link #pop}): a rider's punch (any rider leaving), bumping into a block (a wall, the floor, a
+ *     <li><b>Popping</b> ({@link #pop}): a rider's punch (any rider leaving), a puff too many (puffs chained too
+ *     fast strain it: {@link #strainedPuff}), bumping into a block (a wall, the floor, a
  *     ceiling) or touching a mob, a player, a boat... ({@link #popsOnTouch}; not in its first moments, rising from its
  *     Bubbler), an arrow or any projectile from outside but a snowball (a snowball pushes it its way; what its riders
  *     shoot from inside flies out through it, {@link #letsOut}), a hit by luck ({@link BubbleRiding#HIT_POP_CHANCE}; never with a Silk Touch
@@ -78,6 +79,15 @@ public class BubbleEntity extends Entity {
     private static final TrackedData<ItemStack> ITEM = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
     /** The ticks before it bursts by itself, in its last {@link BubbleRiding#WARNING_TICKS} (-1 before: see {@link #weaken}). */
     private static final TrackedData<Integer> FADING = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /**
+     * Its strain right after its last puff, and how many strained puffs it took (each one tells its clients to start
+     * their own count down from there: see {@link #strain}).
+     */
+    private static final TrackedData<Float> STRAIN = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Integer> STRAINED_PUFFS = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** How long it trembles after a puff that left it badly strained (ticks), and from what strain. */
+    private static final int TREMBLE_TICKS = 12;
+    private static final float TREMBLE_FROM = 0.6f;
     /** How much of the gap to the server's position a client closes a tick, and from how far it jumps there at once. */
     private static final double CORRECTION = 0.3, SNAP = 4;
 
@@ -106,6 +116,13 @@ public class BubbleEntity extends Entity {
      * effect, never merges, and its pop ends the effect.
      */
     private boolean fromEffect;
+    /**
+     * Its strain (0..1, see {@link BubbleRiding#strainPopChance}): its puffs add to it, it eases off by itself. The
+     * server's; a client counts it down the same way from each strained puff it learns of. A client: the ticks it
+     * still trembles after a hard puff.
+     */
+    private float strain;
+    private int trembling;
     /** Server: its riders going over to a bigger bubble (they don't pop it), it popping, one of its riders gone. */
     private boolean transferring, popping, popPending;
     /** Client: the server's last position, and the ticks since. */
@@ -205,12 +222,18 @@ public class BubbleEntity extends Entity {
         builder.add(HOVER_Y, Float.NaN);
         builder.add(ITEM, ItemStack.EMPTY);
         builder.add(FADING, -1);
+        builder.add(STRAIN, 0f);
+        builder.add(STRAINED_PUFFS, 0);
     }
 
     @Override
     public void onTrackedDataSet(TrackedData<?> data) {
         super.onTrackedDataSet(data);
         if (SIDE.equals(data)) calculateDimensions();
+        if (STRAINED_PUFFS.equals(data) && getWorld().isClient) {
+            strain = dataTracker.get(STRAIN);
+            trembling = strain >= TREMBLE_FROM ? TREMBLE_TICKS : 0;
+        }
     }
 
     // ---------------------------------------------------------------- state
@@ -340,7 +363,10 @@ public class BubbleEntity extends Entity {
         }
         Vec3d drift = BubbleRiding.drift(getPassengerList());
         if (drift.lengthSquared() > 1.0E-8) stir();
-        Vec3d speed = getVelocity().add(drift).add(puffs(world));
+        strain = Math.max(0, strain - BubbleRiding.STRAIN_DECAY);
+        Vec3d puffed = puffs(world);
+        if (isRemoved()) return; // a puff too many
+        Vec3d speed = getVelocity().add(drift).add(puffed);
         setVelocity(floatAlong(speed));
         boolean bumped = moveAndBounce();
         if (life > BubbleRiding.LAUNCH_GRACE && !inColumn() && ((bumped && touchesBlock(world)) || touchesEntity(world))) {
@@ -444,6 +470,8 @@ public class BubbleEntity extends Entity {
      * toward where the server has it (moved on since by its speed): no jerk, no lag on its own keys.
      */
     private void clientTick() {
+        strain = Math.max(0, strain - BubbleRiding.STRAIN_DECAY);
+        if (trembling > 0) trembling--;
         setVelocity(floatAlong(getVelocity().add(clientSteer.apply(this))));
         moveAndBounce();
         if (serverPos == null) return;
@@ -512,6 +540,10 @@ public class BubbleEntity extends Entity {
                 world.spawnParticles(ParticleTypes.BUBBLE_POP, behind.x, behind.y, behind.z, 8, 0.2, 0.2, 0.2, 0.05);
                 world.playSound(null, behind.x, behind.y, behind.z, ModSounds.BUBBLE_WHOOSH, SoundCategory.PLAYERS, 0.7f,
                         1.2f - (float) BubbleRiding.puffStrength(charge) * 0.3f);
+                if (strainedPuff(world)) {
+                    pop();
+                    return Vec3d.ZERO;
+                }
             }
         }
         if (push != Vec3d.ZERO) {
@@ -520,6 +552,44 @@ public class BubbleEntity extends Entity {
             velocityModified = true;
         }
         return push;
+    }
+
+    /**
+     * A puff strains it ({@link BubbleRiding#STRAIN_PER_PUFF}); already strained, it may pop
+     * ({@link BubbleRiding#strainedPuffPops}). Shown to all, the more the more strained: its clients learn its strain
+     * (its film stretches, see BubbleEntityRenderer; its rider's charge bar reddens), its film creaks higher and higher
+     * and sheds droplets.
+     *
+     * @return whether it pops
+     */
+    private boolean strainedPuff(ServerWorld world) {
+        float before = strain;
+        if (BubbleRiding.strainedPuffPops(before, random)) return true;
+        strain = Math.min(1, before + BubbleRiding.STRAIN_PER_PUFF);
+        dataTracker.set(STRAIN, strain);
+        dataTracker.set(STRAINED_PUFFS, dataTracker.get(STRAINED_PUFFS) + 1);
+        if (before > 0.05f) {
+            Vec3d center = center();
+            double spread = getSide() / 2;
+            world.playSound(null, center.x, center.y, center.z, SoundEvents.ENTITY_SLIME_SQUISH_SMALL, SoundCategory.PLAYERS,
+                    0.4f + 0.5f * strain, 0.9f + 0.9f * strain);
+            world.spawnParticles(ParticleTypes.SPLASH, center.x, center.y, center.z, 2 + Math.round(12 * strain), spread, spread, spread, 0.15);
+        }
+        return false;
+    }
+
+    /** Its strain (0..1): the server's, or as its client counts it down. */
+    public float strain() {
+        return strain;
+    }
+
+    public void setStrain(float strain) {
+        this.strain = strain;
+    }
+
+    /** How hard it still trembles after a puff that left it badly strained (client, 0..1). */
+    public float trembling() {
+        return trembling / (float) TREMBLE_TICKS;
     }
 
     /** A push (blocks a tick, before its weight): it floats freely from then on. */
@@ -565,6 +635,7 @@ public class BubbleEntity extends Entity {
         Vec3d speed = getVelocity().multiply(mine / all).add(other.getVelocity().multiply(theirs / all));
         if (other.isHovering()) setHoverY(isHovering() ? Math.max(getHoverY(), other.getHoverY()) : other.getHoverY());
         life = Math.min(life, other.life);
+        strain = Math.max(strain, other.strain);
         other.transferring = true;
         for (Entity rider : List.copyOf(other.getPassengerList())) {
             rider.stopRiding();

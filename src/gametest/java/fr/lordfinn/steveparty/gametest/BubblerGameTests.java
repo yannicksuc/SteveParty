@@ -36,6 +36,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
 
 import java.util.List;
@@ -211,6 +212,71 @@ public class BubblerGameTests implements SteveGameTest {
         context.assertTrue(Math.abs(two - one / 2) < 1.0E-6, "a puff pushes a bubble of two half as far");
         context.assertTrue(BubbleRiding.puffStrength(BubbleRiding.CHARGE_MIN - 1) == 0, "too short a charge: no puff");
         context.complete();
+    }
+
+    // ---------------------------------------------------------------- strain
+
+    /** The strain a bubble has at each of {@code puffs} puffs {@code apart} ticks apart, and the chance each one pops it. */
+    private static float[] chancesOfPuffs(int puffs, int apart) {
+        float[] chances = new float[puffs];
+        float strain = 0;
+        for (int i = 0; i < puffs; i++) {
+            chances[i] = BubbleRiding.strainPopChance(strain);
+            strain = Math.min(1, strain + BubbleRiding.STRAIN_PER_PUFF);
+            strain = Math.max(0, strain - apart * BubbleRiding.STRAIN_DECAY);
+        }
+        return chances;
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void onePuffNeverPopsCalmPuffsAreSafeSpamGetsRisky(TestContext context) {
+        context.assertTrue(BubbleRiding.strainPopChance(0) == 0, "a single puff never pops it");
+        context.assertTrue(BubbleRiding.strainPopChance(BubbleRiding.STRAIN_PER_PUFF - 0.05f) < 0.2f, "nor one right after another");
+        float[] calm = chancesOfPuffs(10, 40);
+        for (float chance : calm) context.assertTrue(chance == 0, "a puff every 2 s: always safe");
+        // as fast as the charge and its cooldown allow
+        float[] spam = chancesOfPuffs(5, BubbleRiding.CHARGE_MIN + BubbleRiding.PUFF_COOLDOWN);
+        context.assertTrue(spam[0] == 0 && spam[1] == 0, "the first two quick puffs are safe: " + spam[1]);
+        context.assertTrue(spam[2] > 0.15f, "the third gets risky: " + spam[2]);
+        context.assertTrue(spam[3] > spam[2] && spam[4] >= spam[3] && spam[4] > 0.5f, "and riskier: " + spam[3] + ", " + spam[4]);
+        // drawn with a seeded random: spam pops bubbles, calm never does
+        Random random = Random.create(42);
+        int spamPops = 0, calmPops = 0;
+        for (int trial = 0; trial < 1000; trial++) {
+            for (float chance : spam) if (random.nextFloat() < chance) { spamPops++; break; }
+            for (float chance : calm) if (chance > 0 && random.nextFloat() < chance) { calmPops++; break; }
+        }
+        context.assertTrue(calmPops == 0, "calm: never popped");
+        context.assertTrue(spamPops > 700, "five quick puffs: most bubbles pop (" + spamPops + "/1000)");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_strain", tickLimit = 160)
+    public void aPuffStrainsTheBubbleTheStrainEasesOff(TestContext context) {
+        clear(context, 0, 1, 1, 26, 9, 7);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
+        BubbleEntity bubble = riding(context, player, new BlockPos(2, 1, 4), 3);
+        context.waitAndRun(40, () -> {
+            context.assertTrue(bubble.strain() == 0, "calm");
+            player.setYaw(-90);
+            player.setPitch(0);
+            player.setJumping(true);
+            context.waitAndRun(BubbleRiding.CHARGE_MIN + 2, () -> player.setJumping(false));
+            context.waitAndRun(BubbleRiding.CHARGE_MIN + 4, () -> {
+                context.assertFalse(bubble.isRemoved(), "one puff never pops it");
+                context.assertTrue(Math.abs(bubble.strain() - BubbleRiding.STRAIN_PER_PUFF) < 0.05f, "strained: " + bubble.strain());
+            });
+            context.waitAndRun(BubbleRiding.CHARGE_MIN + 4 + 50, () -> {
+                context.assertTrue(bubble.strain() == 0, "calm again within a few seconds: " + bubble.strain());
+                bubble.setStrain(1);
+            });
+            context.waitAndRun(BubbleRiding.CHARGE_MIN + 4 + 100, () -> {
+                context.assertTrue(Math.abs(bubble.strain() - 0.5f) < 0.02f, "half eased off in 2.5 s: " + bubble.strain());
+                TestPlayers.remove(context, player);
+                bubble.discard();
+                context.complete();
+            });
+        });
     }
 
     // ---------------------------------------------------------------- popping

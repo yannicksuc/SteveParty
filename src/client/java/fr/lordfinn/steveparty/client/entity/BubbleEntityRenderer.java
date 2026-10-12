@@ -41,6 +41,10 @@ import java.util.List;
  * <p>
  * About to burst by itself ({@link BubbleEntity#weakness}: its last seconds left still, or its Bubbled effect ending),
  * it weakens for all to see: its wobble quickens and shakes, its film thins and flickers.
+ * <p>
+ * Strained by puffs chained too fast ({@link BubbleEntity#strain}), it shows it like an over-blown balloon, for its
+ * riders inside as for everyone around: it swells, its film thins and blushes toward a warning pink-red, its wobble
+ * gets tighter and quicker; right after a hard puff it trembles. Calm again, it settles back as the strain eases.
  */
 public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
     /** Its film's wobble: how much it squashes and stretches (share of its size), how fast (radians per tick). */
@@ -53,12 +57,18 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
     private static final float INSIDE_ALPHA = 0.6f;
     /** Weakening: how much faster it wobbles, how much wider, its shake (share of its size), how thin its film gets. */
     private static final float WEAK_SPEED = 3f, WEAK_WOBBLE = 1.5f, WEAK_SHAKE = 0.02f, WEAK_THIN = 0.5f;
+    /**
+     * Strain: how much it swells (share of its size), how much faster and tighter it wobbles, how thin its film gets,
+     * how far its green and blue fade (toward pink-red), and how hard it trembles after a hard puff (share of its size).
+     */
+    private static final float STRAIN_SWELL = 0.07f, STRAIN_SPEED = 2f, STRAIN_TIGHT = 0.4f, STRAIN_THIN = 0.35f,
+            STRAIN_GREEN = 0.55f, STRAIN_BLUE = 0.4f, TREMBLE = 0.035f;
 
     /** The films to draw this frame, once every entity is drawn. */
     private static final List<Film> FILMS = new ArrayList<>();
 
-    /** A film to draw: its centre, side, place in its wobble, light, alpha, and how weak it is (0..1). */
-    private record Film(Vec3d center, float side, int phase, int light, float alpha, float weakness) {
+    /** A film to draw: its centre, side, place in its wobble, light, alpha, how weak, strained and trembling it is (0..1). */
+    private record Film(Vec3d center, float side, int phase, int light, float alpha, float weakness, float strain, float tremble) {
     }
 
     private final ItemRenderer items;
@@ -93,7 +103,7 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
                 && client.getCameraEntity().getVehicle() == bubble;
         Vec3d at = bubble.getLerpedPos(tickDelta);
         FILMS.add(new Film(new Vec3d(at.x, at.y + side / 2, at.z), side, bubble.getId() & 63, light, inside ? INSIDE_ALPHA : 1,
-                bubble.weakness()));
+                bubble.weakness(), bubble.strain(), bubble.trembling()));
         super.render(bubble, yaw, tickDelta, matrices, consumers, light);
     }
 
@@ -118,18 +128,22 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
         VertexConsumer buffer = consumers.getBuffer(layer);
         float time = clock();
         for (Film film : FILMS) {
-            float phase = film.phase() * 0.1f, weak = film.weakness();
-            float squash = WOBBLE * (1 + WEAK_WOBBLE * weak) * MathHelper.sin(time * WOBBLE_SPEED * (1 + WEAK_SPEED * weak) + phase)
-                    + WEAK_SHAKE * weak * MathHelper.sin(time * 2.3f + phase * 3);
-            float alpha = film.alpha() * (1 - WEAK_THIN * weak) * (1 - 0.25f * weak * (0.5f + 0.5f * MathHelper.sin(time * (1.5f + 2 * weak))));
+            float phase = film.phase() * 0.1f, weak = film.weakness(), strain = film.strain();
+            float wobbleSpeed = WOBBLE_SPEED * (1 + WEAK_SPEED * weak + STRAIN_SPEED * strain);
+            float squash = WOBBLE * (1 + WEAK_WOBBLE * weak) * (1 - STRAIN_TIGHT * strain) * MathHelper.sin(time * wobbleSpeed + phase)
+                    + WEAK_SHAKE * weak * MathHelper.sin(time * 2.3f + phase * 3)
+                    + TREMBLE * film.tremble() * MathHelper.sin(time * 4.7f + phase);
+            float alpha = film.alpha() * (1 - WEAK_THIN * weak) * (1 - STRAIN_THIN * strain)
+                    * (1 - 0.25f * weak * (0.5f + 0.5f * MathHelper.sin(time * (1.5f + 2 * weak))));
+            float swell = 1 + STRAIN_SWELL * strain;
             matrices.push();
             matrices.translate(film.center().x - eye.x, film.center().y - eye.y, film.center().z - eye.z);
             matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(SWAY * MathHelper.sin(time * SWAY_SPEED_X + phase)));
             matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(SWAY * MathHelper.sin(time * SWAY_SPEED_Z + phase * 1.7f)));
-            matrices.scale(1 - squash / 2, 1 + squash, 1 - squash / 2);
+            matrices.scale(swell * (1 - squash / 2), swell * (1 + squash), swell * (1 - squash / 2));
             BubbleFilm.Tier tier = BubbleFilm.tier(film.side());
             BubbleFilm.cube(matrices.peek(), buffer, tier.sprite().getSprite(), 0, 0, 0, film.side() / 2, tier.from(), tier.to(),
-                    1, 1, 1, alpha, film.light());
+                    1, 1 - STRAIN_GREEN * strain, 1 - STRAIN_BLUE * strain, alpha, film.light());
             matrices.pop();
         }
         consumers.draw(layer);
