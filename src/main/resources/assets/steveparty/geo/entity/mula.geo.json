@@ -181,7 +181,8 @@
 							}
 						}
 					]
-				}
+				},
+				{"name": "held_item", "parent": "head", "pivot": [0, 6.5, 0], "cubes": []}
 			]
 		}
 	]

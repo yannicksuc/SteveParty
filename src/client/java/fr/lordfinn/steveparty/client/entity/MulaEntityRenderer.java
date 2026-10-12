@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.client.utils.ShaderPacks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
@@ -18,6 +19,7 @@ import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -27,6 +29,7 @@ import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
+import software.bernie.geckolib.util.RenderUtil;
 
 import java.util.Map;
 
@@ -61,9 +64,18 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
      */
     private static final double WISPS_RANGE = 24;
 
+    private final HeldItemLayer heldItem = new HeldItemLayer(this);
+
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new MulaModel());
         addRenderLayer(new HalloLayer(this, HALLO_TEXTURE)); // add the custom billboard
+        addRenderLayer(heldItem);
+    }
+
+    /** Its gift flying to the buyer is drawn even when the Mula itself is off screen. */
+    @Override
+    public boolean shouldRender(MulaEntity mula, Frustum frustum, double x, double y, double z) {
+        return super.shouldRender(mula, frustum, x, y, z) || mula.getEffects().giftFlying();
     }
 
     @Override
@@ -114,8 +126,10 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             }
             spawnParticles(animatable);
             renderFloatingItem(poseStack, animatable, bufferSource, partialTick);
+            renderGift(poseStack, animatable, bufferSource, partialTick);
         }
         super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer, isReRender, partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, packedOverlay, renderColor);
+        if (!isReRender) heldItem.draw(poseStack, animatable, bufferSource, partialTick);
     }
 
     /**
@@ -141,6 +155,32 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         poseStack.scale(size / ratio, size / ratio, size / ratio);
         MinecraftClient.getInstance().getItemRenderer().renderItem(stack, ModelTransformationMode.GROUND, LightmapTextureManager.MAX_LIGHT_COORDINATE,
                 OverlayTexture.DEFAULT_UV, poseStack, bufferSource, mula.getWorld(), mula.getId() + 1);
+        poseStack.pop();
+    }
+
+    /**
+     * The item a star space's host gives, flying from its hands to the buyer, spinning, in a trail of sparkles (its
+     * path comes from MulaEffects).
+     */
+    private static void renderGift(MatrixStack poseStack, MulaEntity mula, VertexConsumerProvider bufferSource, float partialTick) {
+        MulaEffects effects = mula.getEffects();
+        if (!effects.giftFlying()) return;
+        ItemStack stack = effects.giftStack();
+        float ratio = drawnRatio(mula, partialTick);
+        if (stack.isEmpty() || ratio <= 0.01f) return;
+        Vec3d at = effects.giftPos(partialTick);
+        if (at == null) return;
+        float size = effects.giftScale(partialTick);
+        double mx = MathHelper.lerp(partialTick, mula.prevX, mula.getX());
+        double my = MathHelper.lerp(partialTick, mula.prevY, mula.getY());
+        double mz = MathHelper.lerp(partialTick, mula.prevZ, mula.getZ());
+        poseStack.push();
+        poseStack.translate((at.x - mx) / ratio, (at.y - my) / ratio, (at.z - mz) / ratio);
+        poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(effects.giftSpin(partialTick)));
+        poseStack.scale(size / ratio, size / ratio, size / ratio);
+        MinecraftClient.getInstance().getItemRenderer().renderItem(stack, ModelTransformationMode.GROUND,
+                LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, poseStack, bufferSource,
+                mula.getWorld(), mula.getId() + 2);
         poseStack.pop();
     }
 
@@ -182,6 +222,69 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             world.addParticle(mula.starDust(), mula.prevX + (random.nextDouble() - 0.5) * 0.25,
                     mula.prevY + mula.getHeight() * 0.3 + (random.nextDouble() - 0.5) * 0.2,
                     mula.prevZ + (random.nextDouble() - 0.5) * 0.25, 0, -0.01, 0);
+        }
+    }
+
+    /**
+     * The item a star space's host holds (MulaEntity#getHeldItem), whatever it is, on the "held_item" bone its
+     * animations move (tossed, spun, juggled, hidden behind its back...). Drawn as on the ground: a flat item as a
+     * little sprite with depth, a block as a little block (a bit bigger, a block's ground model being small), full
+     * bright like the Mula's own glow.
+     */
+    private static class HeldItemLayer extends GeoRenderLayer<MulaEntity> {
+        /** The bone of the held item (mula_animations.py). */
+        static final String BONE = "held_item";
+        /** Its size (a flat item, then a block). */
+        private static final float ITEM_SCALE = 0.9f, BLOCK_SCALE = 1.15f;
+        /** The bone, posed this frame, null when it was not (or holds nothing). */
+        private @Nullable GeoBone posed;
+
+        HeldItemLayer(GeoRenderer<MulaEntity> renderer) {
+            super(renderer);
+        }
+
+        /**
+         * Only notes the bone: drawn from here, in the middle of the model's own vertices, the item never showed. It is
+         * drawn after the model ({@link #draw}).
+         */
+        @Override
+        public void renderForBone(MatrixStack poseStack, MulaEntity mula, GeoBone bone, @Nullable RenderLayer renderType,
+                                  VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
+                                  int packedLight, int packedOverlay) {
+            if (!BONE.equals(bone.getName())) return;
+            if (!mula.getHeldItem().isEmpty() && bone.getScaleY() >= 0.01f) posed = bone;
+        }
+
+        /**
+         * Draws the item on its bone (posed this frame), after the model. The pose stack is at the Mula's feet, scaled by
+         * its drawn size: the model's frame is made again as GeckoLib makes it (the body's turn, the entity's scale),
+         * then each bone's animated transform from the root down, up to the item bone's pivot. (GeckoLib's own matrices
+         * for the bone were not usable here: drawn with them, the item was out of place or not drawn at all.)
+         */
+        void draw(MatrixStack poseStack, MulaEntity mula, VertexConsumerProvider bufferSource, float partialTick) {
+            GeoBone bone = posed;
+            posed = null;
+            ItemStack stack = mula.getHeldItem();
+            if (bone == null || stack.isEmpty() || ShaderPacks.renderingShadows()) return;
+            var client = MinecraftClient.getInstance();
+            poseStack.push();
+            // the model's frame, as GeckoLib poses it: turned with the body, at the entity's own scale...
+            poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f - MathHelper.lerpAngleDegrees(partialTick, mula.prevBodyYaw, mula.bodyYaw)));
+            float own = mula.getScale();
+            poseStack.scale(own, own, own);
+            // ...then each bone from the root down to the item's (place, turn, size as animated), and its pivot
+            java.util.ArrayDeque<GeoBone> chain = new java.util.ArrayDeque<>();
+            for (GeoBone b = bone; b != null; b = b.getParent()) chain.push(b);
+            for (GeoBone b : chain) RenderUtil.prepMatrixForBone(poseStack, b);
+            RenderUtil.translateToPivotPoint(poseStack, bone);
+            boolean block = client.getItemRenderer().getModel(stack, mula.getWorld(), null, 0).hasDepth();
+            float scale = block ? BLOCK_SCALE : ITEM_SCALE;
+            poseStack.scale(scale, scale, scale);
+            // the ground model is lifted on its foot (2 px, a block 3): centred on the pivot
+            poseStack.translate(0, block ? -0.1875 : -0.125, 0);
+            client.getItemRenderer().renderItem(stack, ModelTransformationMode.GROUND, LightmapTextureManager.MAX_LIGHT_COORDINATE,
+                    OverlayTexture.DEFAULT_UV, poseStack, bufferSource, mula.getWorld(), mula.getId() + 3);
+            poseStack.pop();
         }
     }
 

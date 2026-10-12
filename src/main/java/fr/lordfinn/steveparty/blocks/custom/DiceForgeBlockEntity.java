@@ -754,7 +754,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         double cx = pos.getX() + 0.5, cz = pos.getZ() + 0.5;
         List<MulaEntity> around = world.getEntitiesByClass(MulaEntity.class,
                 new Box(pos).expand(r, MulaHome.ABOVE, r),
-                m -> m.isAlive() && !m.isToken() && !m.isBursting() && !m.isLedByOwner() && !m.isLeashed()
+                m -> m.isAlive() && !m.isToken() && !m.isBoardActor() && !m.isBursting() && !m.isLedByOwner() && !m.isLeashed()
                         && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= r * r);
         if (around.isEmpty()) return;
         List<MulaEntity> dancers = new ArrayList<>();

@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import fr.lordfinn.steveparty.utils.Easing;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
@@ -10,8 +11,10 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -163,6 +166,7 @@ public final class MulaEffects {
         }
 
         if (itemAge >= 0) tickItem(world);
+        if (giftAge >= 0) tickGift(world);
 
         // named with a name tag, or leashed: a little twinkle of acknowledgement (the tools act as before)
         Text name = mula.getCustomName();
@@ -324,6 +328,17 @@ public final class MulaEffects {
                 case "refuse" -> refuse();
                 case "ouch" -> seeStars();
                 case "glow_in" -> shimmer();
+                // a star space's host (StarHosts)
+                case "give" -> startGift();
+                case "clap" -> clap();
+                case "toss" -> allay(SoundEvents.ENTITY_ALLAY_ITEM_THROWN, 0.25f, 1.4f);
+                case "catch" -> {
+                    sound(SoundEvents.ENTITY_ITEM_PICKUP, 0.3f, 1.5f);
+                    sparkleSmall();
+                }
+                case "gleam" -> gleam();
+                case "sigh" -> sigh();
+                case "vanish" -> vanish();
                 default -> { }
             }
         }
@@ -542,6 +557,143 @@ public final class MulaEffects {
     public float itemSpin() { return itemSpin; }
 
     // ------------------------------------------------------------------------------------------ particles
+
+    // ------------------------------------------------------------------------------------------ a host's gift
+
+    /** The gift flies this long (ticks), arcing this high above the straight line (blocks, more for a long throw). */
+    private static final int GIFT_TICKS = 16;
+    private static final double GIFT_ARC = 0.9, GIFT_ARC_PER_BLOCK = 0.12, GIFT_ARC_MAX = 3.0;
+    /** Where on its target it lands (a fraction of its height): a player's chest, under the eyes. */
+    private static final double GIFT_AIM = 0.45;
+    /** The item a host gives, flying (age -1: none), where it left from, and who it flies to. */
+    private ItemStack giftStack = ItemStack.EMPTY;
+    private int giftAge = -1;
+    private int giftTarget = -1;
+    private double giftFromX, giftFromY, giftFromZ;
+
+    /** The "give" of its animation: the item it holds leaves its hands for the buyer (MulaEntity#giftTarget). */
+    private void startGift() {
+        ItemStack held = mula.getHeldItem();
+        if (held.isEmpty() || mula.giftTarget() < 0) return;
+        giftStack = held.copy();
+        giftTarget = mula.giftTarget();
+        giftAge = 0;
+        // from just above its head, where its throw lets go of it
+        giftFromX = mula.getX();
+        giftFromY = mula.getY() + mula.getHeight() * 1.05;
+        giftFromZ = mula.getZ();
+        allay(SoundEvents.ENTITY_ALLAY_ITEM_GIVEN, 0.45f, 1.3f);
+        chime(1.5f);
+    }
+
+    /** Its gift is in the air. */
+    public boolean giftFlying() {
+        return giftAge >= 0;
+    }
+
+    public ItemStack giftStack() {
+        return giftStack;
+    }
+
+    private @Nullable Entity giftEntity() {
+        return mula.getWorld().getEntityById(giftTarget);
+    }
+
+    /** Where its gift is drawn now, null when it is not flying (or its target is gone). */
+    public @Nullable Vec3d giftPos(float partialTick) {
+        Entity target = giftEntity();
+        if (giftAge < 0 || target == null) return null;
+        double u = MathHelper.clamp((giftAge + partialTick) / GIFT_TICKS, 0, 1);
+        double e = u * u * (3 - 2 * u);
+        Vec3d to = target.getLerpedPos(partialTick).add(0, target.getHeight() * GIFT_AIM, 0);
+        double dx = to.x - giftFromX, dy = to.y - giftFromY, dz = to.z - giftFromZ;
+        double arc = Math.min(GIFT_ARC_MAX, GIFT_ARC + GIFT_ARC_PER_BLOCK * Math.sqrt(dx * dx + dz * dz));
+        return new Vec3d(giftFromX + dx * e, giftFromY + dy * e + arc * Math.sin(Math.PI * u), giftFromZ + dz * e);
+    }
+
+    /** Its gift's size (times the ground model): a little bigger mid-flight, shrinking as it arrives. */
+    public float giftScale(float partialTick) {
+        float u = MathHelper.clamp((giftAge + partialTick) / GIFT_TICKS, 0f, 1f);
+        return 0.9f * (1f + 0.25f * MathHelper.sin(u * MathHelper.PI)) * (u > 0.6f ? 1f - (u - 0.6f) / 0.4f * 0.85f : 1f);
+    }
+
+    /** It spins as it flies (degrees). */
+    public float giftSpin(float partialTick) {
+        return (giftAge + partialTick) * 40f;
+    }
+
+    /** A trail of sparkles behind the gift; at the end, a ring of twinkles and a chime on the buyer. */
+    private void tickGift(World world) {
+        Vec3d at = giftPos(0f);
+        if (at == null) {
+            giftAge = -1;
+            return;
+        }
+        Random random = mula.getRandom();
+        world.addImportantParticle(ParticleTypes.WAX_OFF, at.x, at.y, at.z, 0, 0, 0);
+        world.addParticle(RAINBOW_BITS[giftAge % RAINBOW_BITS.length], at.x + random.nextGaussian() * 0.08,
+                at.y + random.nextGaussian() * 0.08, at.z + random.nextGaussian() * 0.08, 0, -0.02, 0);
+        if ((giftAge & 1) == 0) world.addParticle(ParticleTypes.END_ROD, at.x, at.y, at.z, 0, 0, 0);
+        if (++giftAge < GIFT_TICKS) return;
+        giftAge = -1;
+        Entity target = giftEntity();
+        if (target == null) return;
+        double x = target.getX(), y = target.getY() + target.getHeight() * GIFT_AIM, z = target.getZ();
+        // on the player of this game, seen from their own eyes: a smaller ring, lower and wider (not in their face)
+        boolean self = target instanceof PlayerEntity player && player.isMainPlayer();
+        int count = self ? 8 : 14;
+        double radius = self ? 0.6 : 0.3, ringY = self ? target.getY() + 0.2 : y;
+        for (int i = 0; i < count; i++) {
+            double a = MathHelper.TAU * i / count;
+            world.addParticle(i % 2 == 0 ? WHITE_TWINKLE : RAINBOW_BITS[i % RAINBOW_BITS.length], x + Math.cos(a) * radius, ringY,
+                    z + Math.sin(a) * radius, Math.cos(a) * 0.12, 0.05, Math.sin(a) * 0.12);
+        }
+        world.playSound(x, y, z, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.NEUTRAL, 0.6f, 1.2f, false);
+        world.playSound(x, y, z, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.NEUTRAL, 0.7f, 1.9f, false);
+    }
+
+    /** A clap of its little hands over its head: a soft pop and a puff of twinkles. */
+    private void clap() {
+        sound(SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, 0.5f, 1.9f);
+        World world = mula.getWorld();
+        double y = mula.getY() + mula.getHeight() * 1.1;
+        for (int i = 0; i < 4; i++) {
+            world.addParticle(i % 2 == 0 ? WHITE_TWINKLE : mula.getVariant().getTwinkle(), mula.getX(), y, mula.getZ(),
+                    mula.getRandom().nextGaussian() * 0.05, 0.05, mula.getRandom().nextGaussian() * 0.05);
+        }
+    }
+
+    /** Polished: the item it holds gleams (a big twinkle on it, a high chime). */
+    private void gleam() {
+        World world = mula.getWorld();
+        float yaw = mula.bodyYaw * MathHelper.RADIANS_PER_DEGREE;
+        double x = mula.getX() - MathHelper.sin(yaw) * mula.getWidth() * 0.8;
+        double z = mula.getZ() + MathHelper.cos(yaw) * mula.getWidth() * 0.8;
+        world.addParticle(BIG_WHITE_TWINKLE, x, centerY(), z, 0, 0.01, 0);
+        world.addParticle(ParticleTypes.WAX_OFF, x, centerY() + 0.1, z, 0, 0, 0);
+        chime(2.0f, 0.3f);
+    }
+
+    /** Disappointed: a long low sigh and a little grey puff over its head. */
+    private void sigh() {
+        allay(SoundEvents.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, 0.4f, 0.6f);
+        World world = mula.getWorld();
+        Random random = mula.getRandom();
+        double top = mula.getY() + mula.getHeight() + 0.05;
+        for (int i = 0; i < 5; i++) {
+            world.addParticle(ParticleTypes.SMOKE, mula.getX() + random.nextGaussian() * 0.12, top + random.nextDouble() * 0.15,
+                    mula.getZ() + random.nextGaussian() * 0.12, 0, 0.02, 0);
+        }
+        world.addParticle(ParticleTypes.POOF, mula.getX(), top, mula.getZ(), 0, 0.01, 0);
+    }
+
+    /** Gone in a twinkle: a ring of light, star bits and a rising chime. */
+    private void vanish() {
+        sparkleRing(14, 0.09);
+        shower(10);
+        chime(1.9f);
+        mula.getMotion().flare();
+    }
 
     /** Height of the middle of the model (the model fills its hitbox: its centre is half way up). */
     private double centerY() {

@@ -17,6 +17,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.MobSpawnCartridge;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
@@ -90,6 +91,8 @@ public final class MarkerResidents {
             if (one != null) one.setTank(TrichaudronEntity.TANK_MAX);
             return one;
         });
+        // the star space's host, empty-handed on its bubble (it holds the star when a token comes, see StarHosts)
+        register(StarCartridgeItem.class, ModEntities.MULA_ENTITY::create);
     }
 
     private MarkerResidents() {

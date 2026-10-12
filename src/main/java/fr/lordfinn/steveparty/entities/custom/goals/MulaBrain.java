@@ -166,7 +166,7 @@ public final class MulaBrain {
 
     private void refreshNeighbours() {
         List<MulaEntity> around = mula.getWorld().getEntitiesByClass(MulaEntity.class,
-                mula.getBoundingBox().expand(NEIGHBOUR_RANGE), other -> other != mula && other.isAlive());
+                mula.getBoundingBox().expand(NEIGHBOUR_RANGE), other -> other != mula && other.isAlive() && !other.isBoardActor());
         neighbourCount = 0;
         // keep the MAX_NEIGHBOURS nearest (insertion into a tiny sorted array)
         for (MulaEntity other : around) {

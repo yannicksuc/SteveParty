@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.HologramTargeting;
+import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.payloads.custom.BoardActorStatePayload;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -87,7 +88,8 @@ public final class BoardActors {
         if (entity == null) return false;
         if (!entity.getWorld().isClient) return isBoardActor(entity);
         if (((HologramTargeting) entity).steveparty$isSyncedHologram()) return true;
-        return entity instanceof BoardActor && entity instanceof MobEntity mob && mob.isAiDisabled();
+        // (a board token has no AI either, and stays a mob the players aim at: a Mula pawn, a Mistigri pawn...)
+        return entity instanceof BoardActor && entity instanceof MobEntity mob && mob.isAiDisabled() && !TokenBase.isToken(entity);
     }
 
     /**
