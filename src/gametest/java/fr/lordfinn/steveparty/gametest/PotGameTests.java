@@ -327,6 +327,10 @@ public class PotGameTests implements SteveGameTest {
             context.assertEquals(PotCartridgeItem.coins(board.cartridge()), 5, "the coins in the pot");
             context.assertEquals(PotCartridgeItem.items(board.cartridge()).getFirst().getCount(), 2, "the emeralds in the pot");
             context.assertEquals(nest.getPileCount(), 7, "one coin of the pile a thing: 5 coins, 2 emeralds");
+            java.util.List<ItemStack> shown = nest.getContents();
+            context.assertTrue(shown.size() == 2 && shown.get(0).isOf(ModItems.COIN) && shown.get(0).getCount() == 5
+                    && shown.get(1).isOf(Items.EMERALD), "its card shows the pot: 5 coins, then the emeralds");
+            context.assertTrue(nest.isEmpty() && nest.getStack(0).isEmpty(), "a hopper sees nothing to take");
             context.assertTrue(nest.takeTreasure().isEmpty() && nest.takeCoins(5) == 0, "nobody takes from a pot's nest");
             int before = board.coins();
             CommonPots.win(context.getWorld(), board.pot(), board.token());
