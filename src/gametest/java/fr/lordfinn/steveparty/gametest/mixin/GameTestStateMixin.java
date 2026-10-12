@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Why a test failed, written in the console. A test's tasks scheduled while its tasks run wait until they are all run:
+ * Why a test failed, written in the console. An ended test runs none of its tasks left. A test's tasks scheduled while its tasks run wait until they are all run:
  * the timed tasks' map, growing while it is walked, crashed the test server (fastutil's iterator lost, "wrapped is
  * null").
  */
@@ -33,6 +34,9 @@ public abstract class GameTestStateMixin {
     public abstract String getTemplatePath();
 
     @Shadow
+    public abstract boolean isCompleted();
+
+    @Shadow
     public abstract void runAtTick(long tick, Runnable runnable);
 
     @Inject(method = "tickTests", at = @At("HEAD"))
@@ -46,6 +50,14 @@ public abstract class GameTestStateMixin {
         List<Map.Entry<Long, Runnable>> scheduled = List.copyOf(steveparty$scheduled);
         steveparty$scheduled.clear();
         for (Map.Entry<Long, Runnable> task : scheduled) runAtTick(task.getKey(), task.getValue());
+    }
+
+    /** A test that has ended (passed in one of this tick's tasks) runs none of its tasks left. */
+    @ModifyVariable(method = "runAtTick", at = @At("HEAD"), argsOnly = true)
+    private Runnable steveparty$notOnceEnded(Runnable runnable) {
+        return () -> {
+            if (!isCompleted()) runnable.run();
+        };
     }
 
     @Inject(method = "runAtTick", at = @At("HEAD"), cancellable = true)
