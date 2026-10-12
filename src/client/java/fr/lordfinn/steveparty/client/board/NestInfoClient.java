@@ -50,9 +50,12 @@ public final class NestInfoClient {
     private static final int PAD = 5, ICON = 9, ICON_GAP = 2, CELL_GAP = 6, DOT = 2, DOT_GAP = 3, DOTS_GAP = 3;
     /** Text pixel size near by (block); it grows with the distance, up to {@link #MAX_GROW} times. */
     private static final float SCALE = 1f / 48f, MAX_GROW = 2.5f;
-    /** Above the nest's block (a Pie on its rim stays clear). */
-    private static final double ABOVE = 1.15;
-    private static final int DOT_ON = 0xFF3F3F3F, DOT_OFF = 0x553F3F3F;
+    /**
+     * Above the nest's block (a Pie on its rim stays clear), and that far towards the camera: in front of its pile of
+     * coins, however high it goes.
+     */
+    private static final double ABOVE = 1.15, AHEAD = 0.75;
+    private static final int DOT_ON = 0xFF3F3F3F, DOT_OFF = 0xFF9A9A9A;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
 
     private record CardKey(BlockPos pos) {
@@ -123,12 +126,15 @@ public final class NestInfoClient {
     /** Text pixels: the row of the widest page (so that turning pages does not resize it). */
     private static int rowWidth(TextRenderer font, List<ItemStack> contents) {
         int widest = 0;
-        for (int start = 0; start < contents.size(); start += PAGE) {
-            int width = -CELL_GAP;
-            for (int i = start; i < Math.min(contents.size(), start + PAGE); i++) width += cellWidth(font, contents.get(i)) + CELL_GAP;
-            widest = Math.max(widest, width);
-        }
+        for (int page = 0; page < pages(contents); page++) widest = Math.max(widest, pageWidth(font, contents, page));
         return widest;
+    }
+
+    /** Text pixels: the row of page {@code page} (centred in the panel). */
+    private static int pageWidth(TextRenderer font, List<ItemStack> contents, int page) {
+        int width = -CELL_GAP;
+        for (int i = page * PAGE; i < Math.min(contents.size(), (page + 1) * PAGE); i++) width += cellWidth(font, contents.get(i)) + CELL_GAP;
+        return width;
     }
 
     private static int height(List<ItemStack> contents) {
@@ -145,7 +151,9 @@ public final class NestInfoClient {
         if (contents == null || pos == null || matrices == null || client.options.hudHidden) return;
         TextRenderer font = client.textRenderer;
         Camera camera = context.camera();
-        Vec3d anchor = new Vec3d(pos.getX() + 0.5, pos.getY() + ABOVE, pos.getZ() + 0.5);
+        Vec3d toCamera = new Vec3d(camera.getPos().x - pos.getX() - 0.5, 0, camera.getPos().z - pos.getZ() - 0.5);
+        toCamera = toCamera.lengthSquared() < 1.0E-4 ? Vec3d.ZERO : toCamera.normalize().multiply(AHEAD);
+        Vec3d anchor = new Vec3d(pos.getX() + 0.5, pos.getY() + ABOVE, pos.getZ() + 0.5).add(toCamera);
         double distance = Math.sqrt(anchor.squaredDistanceTo(camera.getPos()));
         float scale = SCALE * (float) Math.clamp(distance / 7.0, 1.0, MAX_GROW);
         int width = rowWidth(font, contents) + 2 * PAD, height = height(contents);
@@ -161,7 +169,7 @@ public final class NestInfoClient {
         float left = -width / 2f, top = -height / 2f;
         WorldDraw.plate(matrices, consumers, WorldDraw.Plate.TEAL, left, top, -left, -top);
         int page = page(contents), pages = pages(contents);
-        float x = left + PAD, y = top + PAD;
+        float x = -pageWidth(font, contents, page) / 2f, y = top + PAD;
         for (int i = page * PAGE; i < Math.min(contents.size(), (page + 1) * PAGE); i++) {
             ItemStack stack = contents.get(i);
             matrices.push();
@@ -178,7 +186,7 @@ public final class NestInfoClient {
             float dotsLeft = -(pages * (DOT + DOT_GAP) - DOT_GAP) / 2f, dotsTop = y + 8 + DOTS_GAP;
             for (int p = 0; p < pages; p++) {
                 float dx = dotsLeft + p * (DOT + DOT_GAP);
-                WorldDraw.fill(matrices, consumers, dx, dotsTop, dx + DOT, dotsTop + DOT, 0.1f, p == page ? DOT_ON : DOT_OFF);
+                WorldDraw.fill(matrices, consumers, dx, dotsTop, dx + DOT, dotsTop + DOT, -0.25f, p == page ? DOT_ON : DOT_OFF);
             }
         }
         consumers.draw();
@@ -200,7 +208,7 @@ public final class NestInfoClient {
         int pages = pages(contents), page = page(contents);
         int height = FloatingInfo.PAD + 8 + (pages > 1 ? DOTS_GAP + DOT : 0) + FloatingInfo.PAD;
         FloatingInfo.card(context, key, width, height, ToolHud.Plate.TEAL, 1f, 0, card -> {
-            int x = FloatingInfo.PAD, y = FloatingInfo.PAD;
+            int x = (width - pageWidth(font, contents, page)) / 2, y = FloatingInfo.PAD;
             for (int i = page * PAGE; i < Math.min(contents.size(), (page + 1) * PAGE); i++) {
                 ItemStack stack = contents.get(i);
                 int ix = x;
