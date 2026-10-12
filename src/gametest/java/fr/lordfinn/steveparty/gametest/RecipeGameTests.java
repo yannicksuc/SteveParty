@@ -136,7 +136,7 @@ public class RecipeGameTests implements SteveGameTest {
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theShopCartridgeNeedsABandana(TestContext context) {
-        ItemStack cartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+        ItemStack cartridge = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
         for (int color = 0; color < BoxedTraderEntity.BANDANA_COLORS; color++) {
             ItemStack bandana = BandanaItem.create(color);
             ItemStack shop = result(context, 2, 1, cartridge.copy(), bandana);
