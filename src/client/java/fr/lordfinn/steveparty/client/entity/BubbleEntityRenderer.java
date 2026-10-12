@@ -5,9 +5,7 @@ import fr.lordfinn.steveparty.entities.custom.bubble.BubbleEntity;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRenderer;
@@ -31,11 +29,13 @@ import java.util.List;
  * A Bubbler's bubble: a cube of the Spawn Bubble's soap film (see {@link BubbleFilm}) wobbling and swaying, its riders
  * drawn by their own renderers inside it (they ride it), or its item turning slowly in its middle.
  * <p>
- * The film is drawn last of the world's see-through things ({@link #drawFilms}, after the translucent terrain, from the
- * farthest to the nearest, {@link BubbleLayers}), once every entity is drawn and flushed: whatever lies inside it (its
- * riders' skin, armour, cape and held items, an item, other passengers) is already in the depth, so its faces in front
- * of them tint them and its faces behind them stay hidden, whatever order the world (or a batching mod) draws the
- * entities in. A first-person player sees his own bubble around him, its film's inner faces (both sides of a face are
+ * The film is a see-through volume writing no depth (minecraft-rendering rules): drawn in AFTER_TRANSLUCENT
+ * ({@link #drawFilms}, from the farthest to the nearest, {@link BubbleLayers}), into the translucent target, once every
+ * entity is drawn and flushed: whatever lies inside it (its riders' skin, armour, cape and held items, an item, other
+ * passengers) is already in the depth, so its faces in front of them tint them and its faces behind them stay hidden,
+ * whatever order the world (or a batching mod) draws the entities in. After the translucent terrain, the water and the
+ * glass behind it never paint over it; tested against the depth from before them ({@link BubbleFilmDepth}), it is not
+ * cut either where it lies behind them (half under water, behind a window). A first-person player sees his own bubble around him, its film's inner faces (both sides of a face are
  * drawn), fainter ({@link #INSIDE_ALPHA}): he is at least a few tenths of a block from its walls, far beyond the near
  * plane, and his hand and held item are drawn after the world, over it.
  * <p>
@@ -107,10 +107,16 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
         super.render(bubble, yaw, tickDelta, matrices, consumers, light);
     }
 
+    /** Whether a film is to be drawn this frame (see {@link BubbleFilmDepth}). */
+    static boolean hasFilms() {
+        return !FILMS.isEmpty();
+    }
+
     /**
      * The films of this frame, from the farthest to the nearest, wobbling and swaying like soap bubbles. The entity
      * buffers still pending are drawn first (a batching mod such as ImmediatelyFast holds the riders' bodies until the
-     * end of the frame): drawn after the film, they would cover it.
+     * end of the frame): drawn after the film, they would cover it. Tested against the depth before the translucent
+     * terrain ({@link BubbleFilmDepth}); with the Fabulous graphics, then written into the translucent target's depth.
      */
     private static void drawFilms(WorldRenderContext context) {
         if (FILMS.isEmpty()) return;
@@ -119,14 +125,24 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
             FILMS.clear();
             return;
         }
-        Camera camera = context.camera();
-        Vec3d eye = camera.getPos();
+        Vec3d eye = context.camera().getPos();
         FILMS.sort(Comparator.comparingDouble((Film film) -> film.center().squaredDistanceTo(eye)).reversed());
         VertexConsumerProvider.Immediate consumers = MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers();
         consumers.draw();
-        RenderLayer layer = BubbleLayers.film();
-        VertexConsumer buffer = consumers.getBuffer(layer);
         float time = clock();
+        boolean swapped = BubbleFilmDepth.begin();
+        emitFilms(matrices, eye, consumers.getBuffer(BubbleLayers.FILM), time);
+        consumers.draw(BubbleLayers.FILM);
+        if (swapped) BubbleFilmDepth.end();
+        if (MinecraftClient.isFabulousGraphicsOrBetter()) {
+            emitFilms(matrices, eye, consumers.getBuffer(BubbleLayers.FILM_DEPTH), time);
+            consumers.draw(BubbleLayers.FILM_DEPTH);
+        }
+        FILMS.clear();
+    }
+
+    /** The cubes of this frame's films, camera-relative, into {@code buffer}. */
+    private static void emitFilms(MatrixStack matrices, Vec3d eye, VertexConsumer buffer, float time) {
         for (Film film : FILMS) {
             float phase = film.phase() * 0.1f, weak = film.weakness(), strain = film.strain();
             float wobbleSpeed = WOBBLE_SPEED * (1 + WEAK_SPEED * weak + STRAIN_SPEED * strain);
@@ -146,8 +162,6 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
                     1, 1 - STRAIN_GREEN * strain, 1 - STRAIN_BLUE * strain, alpha, film.light());
             matrices.pop();
         }
-        consumers.draw(layer);
-        FILMS.clear();
     }
 
     /** The clock in ticks, wrapped each hour (precise as a float; see SpawnBubbleRenderer). */

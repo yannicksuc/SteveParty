@@ -1,26 +1,25 @@
 package fr.lordfinn.steveparty.client.entity;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 
 /**
- * The layers a Bubbler's bubbles are drawn in: the soap film of the block atlas, translucent, both sides, lit like the
- * world, its quads sorted back to front, drawn into the translucent target (the main one but with the Fabulous
- * graphics), tested against the depth of everything drawn before it (its riders, the water).
+ * The layers a Bubbler's bubbles are drawn in, both into the translucent target (the main one but with the Fabulous
+ * graphics), depth-tested against the world before the translucent terrain ({@link BubbleFilmDepth}):
  * <ul>
- *     <li>{@link #FILM}: never writing depth, so that what is drawn after it in the main target (the clouds, the rain,
- *     the particles behind it) still shows through it.</li>
- *     <li>{@link #FILM_DEPTH}, with the Fabulous graphics: writing the translucent target's depth, so that the
- *     composite puts its film in front of what lies in the other targets inside it (the items, drawn in the item
- *     target: a rider's held item, an item bubble's item), as it does with the water.</li>
+ *     <li>{@link #FILM}: the soap film of the block atlas, translucent, both sides, lit like the world, its quads
+ *     sorted back to front, never writing depth: what is drawn after it (the clouds, the rain, the particles behind
+ *     it) still shows through it;</li>
+ *     <li>{@link #FILM_DEPTH}, with the Fabulous graphics only: the same film writing the translucent target's depth
+ *     and no colour, once that depth is back (with the water), so that the composite puts the film in front of what
+ *     lies behind it in the other targets (a rider's held item, an item bubble's item, the particles).</li>
  * </ul>
  */
 final class BubbleLayers extends RenderLayer {
     static final RenderLayer FILM = film("steveparty_bubble_film", COLOR_MASK);
-    static final RenderLayer FILM_DEPTH = film("steveparty_bubble_film_depth", ALL_MASK);
+    static final RenderLayer FILM_DEPTH = film("steveparty_bubble_film_depth", DEPTH_MASK);
 
     private static RenderLayer film(String name, WriteMaskState mask) {
         return RenderLayer.of(
@@ -35,11 +34,6 @@ final class BubbleLayers extends RenderLayer {
                         .target(TRANSLUCENT_TARGET)
                         .writeMaskState(mask)
                         .build(false));
-    }
-
-    /** The film's layer for the current graphics ({@link #FILM_DEPTH} with Fabulous). */
-    static RenderLayer film() {
-        return MinecraftClient.isFabulousGraphicsOrBetter() ? FILM_DEPTH : FILM;
     }
 
     private BubbleLayers(String name, VertexFormat format, VertexFormat.DrawMode mode, int size, boolean crumbling,
