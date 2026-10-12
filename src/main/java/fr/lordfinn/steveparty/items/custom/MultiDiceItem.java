@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.dice.AllowedDice;
+import fr.lordfinn.steveparty.dice.OneThrowPerRoll;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import net.minecraft.entity.player.PlayerEntity;
@@ -35,6 +36,9 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
         // A party listing its allowed dice refuses the others
         if (isServerWorld(world) && AllowedDice.refusesThrow(player, player.getStackInHand(hand)))
             return TypedActionResult.fail(player.getStackInHand(hand));
+        // In a party, one throw per roll: the roll is in (or on its way)
+        if (isServerWorld(world) && OneThrowPerRoll.refusesThrow(player))
+            return TypedActionResult.fail(player.getStackInHand(hand));
         if (isServerWorld(world)) {
             List<DiceEntity> diceEntities = new ArrayList<>();
             for (int i = 0; i < numberOfDice; i++) {
@@ -54,6 +58,7 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
                     playSounds(world, dice);
                     if (i > 0) dice.follow(thrown.copy());
                 }
+                OneThrowPerRoll.onThrown(player, diceEntities.getFirst());
                 PowerUpService.onDieThrown(player, thrown);
                 decrementDiceInHand(player, hand);
                 diceEntities.getFirst().startRoll();

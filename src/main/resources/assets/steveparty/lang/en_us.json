@@ -1938,6 +1938,7 @@
   "gui.steveparty.party_controller.settings.allowed_dice.switch.on": "On: only the listed dice may be thrown",
   "gui.steveparty.party_controller.settings.allowed_dice.off": "Turn « Restrict dice » on first",
   "message.steveparty.dice.not_allowed": "This die is not allowed in this party",
+  "message.steveparty.dice.already_rolled": "You already rolled",
   "message.steveparty.powerup.limit": "You carry %s/%s power-ups: no more during this party",
   "key.steveparty.minigame_ready": "Mini-game: ready (practice round)",
   "hud.steveparty.minigame.practice": "Practice — [%1$s] Ready %2$s/%3$s",
