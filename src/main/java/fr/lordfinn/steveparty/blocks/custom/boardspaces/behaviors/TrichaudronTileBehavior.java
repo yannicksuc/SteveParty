@@ -48,7 +48,19 @@ public class TrichaudronTileBehavior extends MobTileBehavior {
     public static void refreshSleep(ServerWorld world, BoardSpaceBlockEntity space) {
         ItemStack cartridge = space.getActiveCartridgeItemStack();
         if (!(cartridge.getItem() instanceof TrichaudronCartridgeItem)) return;
-        refreshSleep(space, !offered(world, space, cartridge).isEmpty());
+        refreshSleep(space, awake(world, space, cartridge));
+    }
+
+    /**
+     * Whether it is shown awake: in a party running on its board, while it still has something to offer (its storage
+     * not empty, its prizes not all won); out of a party, as soon as it has a storage (chests linked, or the Party
+     * Controller of its board, whose storage it will draw on): nothing is won yet.
+     */
+    public static boolean awake(ServerWorld world, BoardSpaceBlockEntity space, ItemStack cartridge) {
+        boolean running = PartyControllerEntity.getPartyOfBoardSpace(world, space.getPos(), PartyControllerEntity.BOARD_NEARBY_RADIUS, false).isPresent();
+        if (running) return !offered(world, space, cartridge).isEmpty();
+        return TrichaudronCartridgeItem.hasChests(cartridge)
+                || PartyControllerEntity.getControllerOfBoardSpace(world, space.getPos(), PartyControllerEntity.BOARD_NEARBY_RADIUS).isPresent();
     }
 
     /** What {@code space} offers now: its chests' prizes, less those already won in the party running on its board. */
@@ -117,7 +129,7 @@ public class TrichaudronTileBehavior extends MobTileBehavior {
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof TrichaudronCartridgeItem)) return;
         List<ItemStack> prizes = offered(world, space, stack);
-        refreshSleep(space, !prizes.isEmpty());
+        refreshSleep(space, awake(world, space, stack));
         if (prizes.isEmpty()) {
             String why = whyEmpty(world, space.getPos(), stack);
             info.line(TileInfo.dim(TileInfo.line(why.equals("asleep") ? "trichaudron.empty" : "trichaudron." + why)));

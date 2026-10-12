@@ -662,9 +662,15 @@ public final class TileStampTextures {
         if (pictogram == null) return null;
         return TEXTURES.get(new Key(pictogram.id(), rgb, small), key -> {
             float[] painted = painted(Steveparty.id("block/tile_face/" + pictogram.id() + (small ? "_small" : "")), small);
-            if (painted == null) return register(glyphValues(small ? pictogram.small() : pictogram.big(), small, pictogram.shades()), rgb, small);
-            float[] values = frame(small).clone();
-            for (int i = 0; i < values.length; i++) if (!Float.isNaN(painted[i])) values[i] = painted[i];
+            float[] values;
+            if (painted == null) values = glyphValues(small ? pictogram.small() : pictogram.big(), small, pictogram.shades());
+            else {
+                values = frame(small).clone();
+                for (int i = 0; i < values.length; i++) if (!Float.isNaN(painted[i])) values[i] = painted[i];
+            }
+            // On a dark colour (the Mistigri's black), the pictogram in light ink, as the Stop face does: its darker
+            // shades become lighter ones (the bevel kept as it is)
+            if (TileColors.isDark(rgb)) invertFeatures(values, frame(small));
             return register(values, rgb, small);
         });
     }
@@ -695,6 +701,14 @@ public final class TileStampTextures {
                 return Optional.empty();
             }
         }).orElse(null);
+    }
+
+    /** The pixels of {@code values} that differ from the blank face {@code frame}, their shade turned over (dark ↔ light). */
+    private static void invertFeatures(float[] values, float[] frame) {
+        for (int i = 0; i < values.length; i++) {
+            if (Float.isNaN(values[i]) || values[i] == frame[i]) continue;
+            values[i] = -values[i];
+        }
     }
 
     // ---------------------------------------------------------------- the Teleport face

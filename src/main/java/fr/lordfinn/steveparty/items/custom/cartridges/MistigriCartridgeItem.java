@@ -28,7 +28,7 @@ import java.util.Map;
  */
 public class MistigriCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** Its tile's witch plum. */
-    public static final int COLOR = 0x8A2A6E;
+    public static final int COLOR = 0x23202A;
     public static final int MAX_WEIGHT = 9, MAX_COINS = 99, MAX_BACK = 6;
     public static final String COINS_SMALL = "coins_small", COINS_BIG = "coins_big", EVERYONE = "everyone", BACK = "back";
     private static final Map<String, Integer> DEFAULTS = Map.of(COINS_SMALL, 10, COINS_BIG, 20, EVERYONE, 5, BACK, 3);
