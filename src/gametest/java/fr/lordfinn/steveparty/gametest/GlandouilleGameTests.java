@@ -775,7 +775,7 @@ public class GlandouilleGameTests implements SteveGameTest {
                 context.assertTrue(b.getVehicle() == null && !GlandouilleTowers.hasRider(b), "b alone");
                 context.assertTrue(c.getVehicle() == a, "c back on a");
                 context.assertEquals(GlandouilleTowers.height(a), 2, "a tower of 2");
-                context.assertTrue(horizontal(a.getPos(), aStart) < 0.05, "a not pushed");
+                context.assertTrue(horizontal(a.getPos(), aStart) < 0.05, "a not pushed: " + a.getPos().subtract(aStart) + " " + a.getMood());
                 context.complete();
             });
         });
@@ -991,6 +991,10 @@ public class GlandouilleGameTests implements SteveGameTest {
         GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 90f);
         frosty.startSlide(new Vec3d(0.6, 0, 0));
+        // it slides on and on (bouncing): once it has dazed him, it is taken away, or it would come back and daze him again
+        context.runAtEveryTick(() -> {
+            if (player.hasStatusEffect(ModEffects.DAZED)) frosty.discard();
+        });
         assertDazed(context, player);
     }
 
@@ -1026,7 +1030,7 @@ public class GlandouilleGameTests implements SteveGameTest {
             context.assertTrue(player.getVelocity().horizontalLengthSquared() < 1.0E-6, "rooted to the spot, not thrown");
             context.assertEquals(player.getHealth(), health, "not hurt");
             context.waitAndRun(DazedEffect.TICKS + 5, () -> {
-                context.assertFalse(player.hasStatusEffect(ModEffects.DAZED), "free again");
+                context.assertFalse(player.hasStatusEffect(ModEffects.DAZED), "free again: " + player.getStatusEffect(ModEffects.DAZED));
                 context.assertTrue(player.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) > 0.05, "walks again");
                 context.assertEquals(player.getHealth(), health, "never hurt");
                 context.complete();
