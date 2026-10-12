@@ -36,26 +36,23 @@ public class KeyGateCartridgeItem extends BoardRuleCartridgeItem {
     public static final int FOREVER = 10;
     /** The sides, in the order of the menu's buttons. */
     public static final List<Direction> SIDES = List.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST);
-    /** The side being edited in the menu. */
-    private static final Setting EDITED = new Setting("side", 0, 0, SIDES.size() - 1);
     private static final Setting WITHOUT_KEY_SETTING = new Setting(WITHOUT_KEY, REPLAY | BACK_TO_START, 0, 3);
     private static final Setting STAY_OPEN_SETTING = new Setting(STAY_OPEN, 0, 0, FOREVER);
 
     private static final String K = MENU_KEY + "key_gate.";
     private static final List<CartridgeModule> MODULES = List.of(
             description("key_gate_cartridge", 2),
-            EDITED.choice("side", K + "side", SIDES.stream().map(side -> ChoiceModule.Option.tipped(K + "side." + side.asString())).toList()),
-            new ChoiceModule("locked", K + "locked", List.of(new ChoiceModule.Option(K + "free"), new ChoiceModule.Option(K + "locked_option")),
-                    stack -> isLocked(stack, edited(stack)) ? 1 : 0,
-                    (edit, value) -> putSetting(edit.stack(), lockKey(edited(edit.stack())), value)),
+            exit(Direction.NORTH), exit(Direction.EAST), exit(Direction.SOUTH), exit(Direction.WEST),
             WITHOUT_KEY_SETTING.choice("without_key", K + "without_key", List.of(ChoiceModule.Option.tipped(K + "without_key.wait"),
                     ChoiceModule.Option.tipped(K + "without_key.replay"), ChoiceModule.Option.tipped(K + "without_key.start"),
                     ChoiceModule.Option.tipped(K + "without_key.all"))),
             STAY_OPEN_SETTING.number("stay_open", K + "stay_open", stack -> COLOR));
 
-    /** The side the menu edits now. */
-    private static Direction edited(ItemStack stack) {
-        return SIDES.get(EDITED.get(stack));
+    /** The exit on {@code side}, free or locked: half a column, two exits a row. */
+    private static CartridgeModule exit(Direction side) {
+        return new ChoiceModule("lock_" + side.asString(), K + "exit." + side.asString(),
+                List.of(ChoiceModule.Option.tipped(K + "free"), ChoiceModule.Option.tipped(K + "locked_option")),
+                stack -> isLocked(stack, side) ? 1 : 0, (edit, value) -> putSetting(edit.stack(), lockKey(side), value)).half();
     }
 
     /** The setting of the exit on {@code side}: 0 free, 1 locked. */

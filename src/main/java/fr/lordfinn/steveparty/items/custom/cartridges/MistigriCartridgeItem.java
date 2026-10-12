@@ -4,8 +4,6 @@ import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import fr.lordfinn.steveparty.service.MistigriSentences.Sentence;
 import net.minecraft.item.ItemStack;
@@ -39,37 +37,32 @@ public class MistigriCartridgeItem extends CartridgeItem implements MobSpawnCart
     private static final List<CartridgeModule> MODULES = modules0();
 
     /**
-     * One column beside a tile: the sentence picked in a row of swatches, then its weight, its amount (greyed out for
-     * the sentences without one) and how often it is drawn.
+     * Each sentence its own weight stepper (its name for label, its swatch's colour), the sentences with an amount
+     * that amount beside it, two steppers a row.
      */
     private static List<CartridgeModule> modules0() {
-        List<ChoiceModule.Option> options = new ArrayList<>();
+        List<CartridgeModule> modules = new ArrayList<>();
+        modules.add(description("mistigri_cartridge", 3));
+        List<Sentence> plain = new ArrayList<>();
         for (Sentence sentence : Sentence.values()) {
-            options.add(new ChoiceModule.Option(K + "sentence." + sentence.id, SWATCHES[sentence.ordinal()],
-                    "message.steveparty.mistigri_space.sentence." + sentence.id));
+            String key = amountKey(sentence);
+            if (key == null) {
+                plain.add(sentence);
+                continue;
+            }
+            modules.add(weightModule(sentence));
+            modules.add(new NumberModule(key, K + (BACK.equals(key) ? "spaces" : "coins"), 1, BACK.equals(key) ? MAX_BACK : MAX_COINS,
+                    stack -> amount(stack, key), (edit, value) -> put(edit.stack(), key, value),
+                    stack -> SWATCHES[sentence.ordinal()]).half());
         }
-        return List.of(
-                description("mistigri_cartridge", 3),
-                new ChoiceModule("sentence", K + "sentence", options, stack -> selected(stack).ordinal(),
-                        (edit, value) -> put(edit.stack(), EDITED, value)),
-                new NumberModule("weight", K + "weight", 0, MAX_WEIGHT, stack -> weight(stack, selected(stack)),
-                        (edit, value) -> put(edit.stack(), "w_" + selected(edit.stack()).id, value), stack -> COLOR),
-                new NumberModule("amount", K + "amount", 1, MAX_COINS, stack -> amountOf(stack, selected(stack)),
-                        (edit, value) -> {
-                            String key = amountKey(selected(edit.stack()));
-                            if (key != null) put(edit.stack(), key, value);
-                        }, stack -> COLOR, stack -> amountKey(selected(stack)) != null),
-                new InfoModule("chance", null, 1, context -> List.of(new InfoModule.Line(
-                        Text.translatable(K + "chance", chance(context.stack(), selected(context.stack()))), InfoModule.Tone.SOFT))));
+        for (Sentence sentence : plain) modules.add(weightModule(sentence));
+        return List.copyOf(modules);
     }
 
-    /** The settings key of the sentence being edited in the menu. */
-    private static final String EDITED = "edited";
-
-    /** The sentence the menu edits now. */
-    public static Sentence selected(ItemStack stack) {
-        int index = settings(stack).getOrDefault(EDITED, 0);
-        return Sentence.values()[Math.clamp(index, 0, Sentence.values().length - 1)];
+    private static CartridgeModule weightModule(Sentence sentence) {
+        return new NumberModule("w_" + sentence.id, K + "sentence." + sentence.id, 0, MAX_WEIGHT, stack -> weight(stack, sentence),
+                (edit, value) -> put(edit.stack(), "w_" + sentence.id, value), stack -> SWATCHES[sentence.ordinal()])
+                .half().tipped(K + "sentence." + sentence.id + ".tooltip", K + "weight.tooltip");
     }
 
     /** The amount setting of {@code sentence}, null if it has none. */
@@ -81,11 +74,6 @@ public class MistigriCartridgeItem extends CartridgeItem implements MobSpawnCart
             case BACK -> BACK;
             default -> null;
         };
-    }
-
-    private static int amountOf(ItemStack stack, Sentence sentence) {
-        String key = amountKey(sentence);
-        return key == null ? sentence.amount(stack) : amount(stack, key);
     }
 
     /** How often {@code sentence} is drawn, in percent. */

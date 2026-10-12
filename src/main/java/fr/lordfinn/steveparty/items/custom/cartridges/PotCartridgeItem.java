@@ -4,8 +4,6 @@ import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
-import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
@@ -36,22 +34,14 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
     public static final int MAX = 100;
 
     private static final String K = MENU_KEY + "pot.";
-    /** The numbers of the menu, edited one at a time (picked in a row of buttons): stake, start, cap. */
-    private static final String[] NUMBERS = {STAKE, START, CAP};
     private static final Setting STAKE_SETTING = new Setting(STAKE, 1, 0, MAX), START_SETTING = new Setting(START, 0, 0, MAX),
-            CAP_SETTING = new Setting(CAP, 0, 0, MAX),
-            LANDER_PAYS_SETTING = new Setting(LANDER_PAYS, 0, 0, 1);
-    /** The numbers of the menu, in the order of its buttons. */
-    private static final List<Setting> NUMBER_SETTINGS = List.of(STAKE_SETTING, START_SETTING, CAP_SETTING);
-    /** The number being edited in the menu. */
-    private static final Setting EDITED = new Setting("edited", 0, 0, NUMBERS.length - 1);
+            CAP_SETTING = new Setting(CAP, 0, 0, MAX), LANDER_PAYS_SETTING = new Setting(LANDER_PAYS, 0, 0, 1);
+    /** Each number its own stepper, two a row (its meaning in its label's tooltip). */
     private static final List<CartridgeModule> MODULES = List.of(
             description("pot_cartridge", 2),
-            EDITED.choice("number", K + "number", List.of(ChoiceModule.Option.tipped(K + "stake"),
-                    ChoiceModule.Option.tipped(K + "start"), ChoiceModule.Option.tipped(K + "cap"))),
-            new NumberModule("amount", K + "amount", 0, MAX, stack -> NUMBER_SETTINGS.get(EDITED.get(stack)).get(stack),
-                    (edit, value) -> NUMBER_SETTINGS.get(EDITED.get(edit.stack())).put(edit.stack(), Math.clamp(value, 0, MAX)),
-                    stack -> COLOR),
+            STAKE_SETTING.number(STAKE, K + STAKE, stack -> COLOR).half().tipped(),
+            START_SETTING.number(START, K + START, stack -> COLOR).half().tipped(),
+            CAP_SETTING.number(CAP, K + CAP, stack -> COLOR).half().tipped(),
             LANDER_PAYS_SETTING.yesNo("lander_pays", K + "lander_pays"));
 
     public PotCartridgeItem(Settings settings) {

@@ -377,9 +377,16 @@ public final class CartridgePanel {
         for (int i = 0; i < n; i++) {
             int gutter = x + layout.x(i) - 5, end = x + layout.x(i) - 2;
             int target = Math.clamp(moduleY(i) + 4, contentTop() + 2, Math.max(contentTop() + 2, contentBottom() - 4));
-            paths[i] = new int[]{cx, bottom, cx, bus, gutter, bus, gutter, target, end, target};
+            if (layout.right(i)) {
+                // The right half of a row: up the column's gutter to the gap above the row, along it, down beside the module
+                int column = x + layout.x(i - 1) - 5, above = Math.clamp(moduleY(i) - 3, contentTop() + 1, Math.max(contentTop() + 1, contentBottom() - 4));
+                int side = x + layout.x(i) - 4;
+                paths[i] = new int[]{cx, bottom, cx, bus, column, bus, column, above, side, above, side, target, end, target};
+            } else {
+                paths[i] = new int[]{cx, bottom, cx, bus, gutter, bus, gutter, target, end, target};
+            }
             int length = 0;
-            for (int p = 0; p < 8; p += 2) length += Math.abs(paths[i][p + 2] - paths[i][p]) + Math.abs(paths[i][p + 3] - paths[i][p + 1]);
+            for (int p = 0; p < paths[i].length - 2; p += 2) length += Math.abs(paths[i][p + 2] - paths[i][p]) + Math.abs(paths[i][p + 3] - paths[i][p + 1]);
             pathLength[i] = length;
         }
     }
@@ -388,7 +395,7 @@ public final class CartridgePanel {
     private void pointAt(int i, int distance) {
         int[] path = paths[i];
         int left = Math.max(0, distance);
-        for (int p = 0; p < 8; p += 2) {
+        for (int p = 0; p < path.length - 2; p += 2) {
             int dx = path[p + 2] - path[p], dy = path[p + 3] - path[p + 1];
             int length = Math.abs(dx) + Math.abs(dy);
             if (left <= length) {
@@ -398,15 +405,15 @@ public final class CartridgePanel {
             }
             left -= length;
         }
-        pointX = path[8];
-        pointY = path[9];
+        pointX = path[path.length - 2];
+        pointY = path[path.length - 1];
     }
 
     /** Draws path {@code i}: lit from the contacts up to {@code lit} pixels, dim after. */
     private void drawTrace(DrawContext context, int i, int lit) {
         int[] path = paths[i];
         int walked = 0;
-        for (int p = 0; p < 8; p += 2) {
+        for (int p = 0; p < path.length - 2; p += 2) {
             int x1 = path[p], y1 = path[p + 1], x2 = path[p + 2], y2 = path[p + 3];
             int length = Math.abs(x2 - x1) + Math.abs(y2 - y1);
             if (length == 0) continue;
@@ -579,7 +586,7 @@ public final class CartridgePanel {
             int numberWidth = textRenderer.getWidth(number);
             context.fill(mx - 1, my, mx + numberWidth + 2, my + 9, chipColor);
             UiText.line(context, textRenderer, number, mx + 1, my + 1, numberWidth, flash > 0.5F ? 0xFF3B2600 : (enabled ? CHIP_TEXT : LABEL_OFF), false);
-            int lx = mx + numberWidth + 5, room = columnW - (lx - mx);
+            int lx = mx + numberWidth + 5, room = layout.w(i) - (lx - mx);
             // An inline module next: its title takes the right of the line
             if (i + 1 < modules.size() && modules.get(i + 1).inline() && labels[i + 1] != null) room -= inlineTitleW(i + 1) + 6;
             // A choice of colours: its title names the one chosen (« Réseau : violet »)
@@ -626,7 +633,7 @@ public final class CartridgePanel {
         int value = value(current, i);
         boolean swatches = choice.swatches();
         for (int o = 0; o < n; o++) {
-            int bx = choiceX(choice, mx, o), bw = choiceW(choice), bh = swatches ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
+            int bx = choiceX(choice, i, mx, o), bw = choiceW(choice, i), bh = swatches ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
             boolean selected = o == value && choice.enabled(current);
             boolean over = HitArea.contains(mouseX, mouseY, bx, top, bw, bh);
             boolean hovered = active && over;
@@ -648,26 +655,26 @@ public final class CartridgePanel {
         }
     }
 
-    private int choiceW(ChoiceModule choice) {
+    private int choiceW(ChoiceModule choice, int i) {
         int n = choice.options().size();
-        int w = (columnW - (n - 1) * 3) / n;
+        int w = (layout.w(i) - (n - 1) * 3) / n;
         return choice.swatches() ? Math.min(34, w) : w;
     }
 
-    private int choiceX(ChoiceModule choice, int mx, int option) {
-        return mx + option * (choiceW(choice) + 3);
+    private int choiceX(ChoiceModule choice, int i, int mx, int option) {
+        return mx + option * (choiceW(choice, i) + 3);
     }
 
     // Number: [-] figure [+] lamps
     private static final int MINUS_X = 0, FIGURE_X = 18, FIGURE_W = 26, PLUS_X = 46, LAMPS_X = 66, STEP_W = 16;
 
-    private int lampWidth(NumberModule number) {
+    private int lampWidth(NumberModule number, int i) {
         int count = number.max() - number.min() + 1;
-        return Math.min(12, (columnW - LAMPS_X) / count - 2);
+        return Math.min(12, (layout.w(i) - LAMPS_X) / count - 2);
     }
 
-    private boolean showsLamps(NumberModule number) {
-        return number.max() - number.min() + 1 <= 9 && lampWidth(number) >= 3;
+    private boolean showsLamps(NumberModule number, int i) {
+        return number.max() - number.min() + 1 <= 9 && lampWidth(number, i) >= 3;
     }
 
     private void drawNumber(DrawContext context, ItemStack current, int i, NumberModule number, int mx, int top,
@@ -688,8 +695,8 @@ public final class CartridgePanel {
         context.getMatrices().scale(scale, scale, 1);
         UiText.line(context, textRenderer, figure, 0, 0, (FIGURE_W - 2) / scale, Argb.lighten(color, 0.3F), false);
         context.getMatrices().pop();
-        if (!showsLamps(number)) return;
-        int lw = lampWidth(number);
+        if (!showsLamps(number, i)) return;
+        int lw = lampWidth(number, i);
         for (int v = number.min(); v <= number.max(); v++) {
             int lx = mx + LAMPS_X + (v - number.min()) * (lw + 2);
             boolean on = v <= value;
@@ -1068,10 +1075,18 @@ public final class CartridgePanel {
         for (int i = 0; i < modules.size(); i++) {
             CartridgeModule module = modules.get(i);
             int mx = x + layout.x(i), top = moduleY(i) + (module.labelKey() != null ? CartridgeModule.LABEL_H : 0);
+            if (!module.tooltipKeys().isEmpty() && module.labelKey() != null
+                    && HitArea.contains(mouseX, mouseY, mx, moduleY(i), layout.w(i), CartridgeModule.LABEL_H)) {
+                List<Text> lines = new ArrayList<>();
+                lines.add(Text.translatable(module.labelKey()));
+                for (String key : module.tooltipKeys()) lines.add(Text.translatable(key).formatted(Formatting.GRAY));
+                context.drawTooltip(textRenderer, wrap(lines), mouseX, mouseY);
+                return true;
+            }
             if (module instanceof ChoiceModule choice) {
                 int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                 for (int o = 0; o < choice.options().size(); o++) {
-                    if (!HitArea.contains(mouseX, mouseY, choiceX(choice, mx, o), top, choiceW(choice), bh)) continue;
+                    if (!HitArea.contains(mouseX, mouseY, choiceX(choice, i, mx, o), top, choiceW(choice, i), bh)) continue;
                     ChoiceModule.Option option = choice.options().get(o);
                     List<Text> lines = new ArrayList<>();
                     lines.add(Text.translatable(option.key()));
@@ -1190,14 +1205,14 @@ public final class CartridgePanel {
                 case ChoiceModule choice -> {
                     int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                     for (int o = 0; o < choice.options().size(); o++) {
-                        if (HitArea.contains(mouseX, mouseY, choiceX(choice, mx, o), top, choiceW(choice), bh)) return change(i, o, value);
+                        if (HitArea.contains(mouseX, mouseY, choiceX(choice, i, mx, o), top, choiceW(choice, i), bh)) return change(i, o, value);
                     }
                 }
                 case NumberModule number -> {
                     if (HitArea.contains(mouseX, mouseY, mx + MINUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.max(number.min(), value - step(number)), value);
                     if (HitArea.contains(mouseX, mouseY, mx + PLUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.min(number.max(), value + step(number)), value);
-                    if (showsLamps(number)) {
-                        int lw = lampWidth(number);
+                    if (showsLamps(number, i)) {
+                        int lw = lampWidth(number, i);
                         for (int v = number.min(); v <= number.max(); v++) {
                             if (HitArea.contains(mouseX, mouseY, mx + LAMPS_X + (v - number.min()) * (lw + 2), top + 3, lw, 12)) return change(i, v, value);
                         }
@@ -1273,7 +1288,7 @@ public final class CartridgePanel {
         if (canEdit.getAsBoolean() && inContent(mouseY)) {
             for (int i = 0; i < modules.size(); i++) {
                 if (!(modules.get(i) instanceof NumberModule number) || !number.enabled(current)) continue;
-                if (!HitArea.contains(mouseX, mouseY, x + layout.x(i), moduleY(i), columnW, heights[i])) continue;
+                if (!HitArea.contains(mouseX, mouseY, x + layout.x(i), moduleY(i), layout.w(i), heights[i])) continue;
                 int value = value(current, i);
                 return change(i, Math.clamp(value + (amount > 0 ? step(number) : -step(number)), number.min(), number.max()), value);
             }

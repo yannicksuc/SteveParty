@@ -12,6 +12,8 @@ public final class CartridgeLayout {
     /** Shell margins: the side bevel and the traces' gutter; the label on top; the contacts at the bottom. */
     public static final int PAD_X = 10, TOP = 30, BOTTOM = 14;
     public static final int COLUMN_W = 140, COLUMN_GAP = 12, MODULE_GAP = 5;
+    /** Between two half modules side by side; the narrowest half (a number's stepper). */
+    public static final int HALF_GAP = 8, MIN_HALF_W = 62;
     /** The narrowest column (a narrow window: the widgets shrink, the texts wrap or scroll). */
     public static final int MIN_COLUMN_W = 96;
     /** The player inventory's panel under the shell (its tab, 3 rows and the hotbar). */
@@ -29,12 +31,15 @@ public final class CartridgeLayout {
     /** The empty shell (no cartridge): a few lines. */
     public static final int EMPTY_CONTENT = 40;
 
-    private final int[] xs, ys;
+    private final int[] xs, ys, ws;
+    private final boolean[] rights;
     private final int width, height, columns;
 
-    private CartridgeLayout(int[] xs, int[] ys, int width, int height, int columns) {
+    private CartridgeLayout(int[] xs, int[] ys, int[] ws, boolean[] rights, int width, int height, int columns) {
         this.xs = xs;
         this.ys = ys;
+        this.ws = ws;
+        this.rights = rights;
         this.width = width;
         this.height = height;
         this.columns = columns;
@@ -56,16 +61,31 @@ public final class CartridgeLayout {
      */
     public static CartridgeLayout of(List<CartridgeModule> modules, int maxContentHeight, int[] heights, int maxColumns, int columnW) {
         int n = modules.size();
-        int[] xs = new int[n], ys = new int[n];
+        int[] xs = new int[n], ys = new int[n], ws = new int[n];
+        boolean[] rights = new boolean[n];
+        boolean pairs = halfWidth(columnW) >= MIN_HALF_W;
         int column = 0, y = 0, tallest = 0;
         for (int i = 0; i < n; i++) {
             // Inside the previous module's box: its place, no height of its own
             if (i > 0 && modules.get(i).inline()) {
                 xs[i] = xs[i - 1];
                 ys[i] = ys[i - 1];
+                ws[i] = ws[i - 1];
                 continue;
             }
             int h = heights[i];
+            boolean half = pairs && modules.get(i).isHalf();
+            ws[i] = half ? halfWidth(columnW) : columnW;
+            // The right half of a row started by a left half: beside it, the row as high as the higher one
+            if (half && i > 0 && ws[i - 1] == ws[i] && !rights[i - 1] && modules.get(i - 1).isHalf() && !modules.get(i - 1).inline()) {
+                rights[i] = true;
+                xs[i] = xs[i - 1] + ws[i] + HALF_GAP;
+                ys[i] = ys[i - 1];
+                int bottom = ys[i] - TOP + Math.max(heights[i - 1], h);
+                tallest = Math.max(tallest, bottom);
+                y = bottom + MODULE_GAP;
+                continue;
+            }
             if (y > 0 && y + h > maxContentHeight && column + 1 < maxColumns) {
                 column++;
                 y = 0;
@@ -78,7 +98,12 @@ public final class CartridgeLayout {
         }
         int columns = column + 1;
         int content = n == 0 ? EMPTY_CONTENT : tallest;
-        return new CartridgeLayout(xs, ys, width(columns, columnW), TOP + content + BOTTOM, columns);
+        return new CartridgeLayout(xs, ys, ws, rights, width(columns, columnW), TOP + content + BOTTOM, columns);
+    }
+
+    /** The width of a half module in a column {@code columnW} wide. */
+    public static int halfWidth(int columnW) {
+        return (columnW - HALF_GAP) / 2;
     }
 
     /** The shell's width for that many columns. */
@@ -92,6 +117,16 @@ public final class CartridgeLayout {
 
     public int y(int module) {
         return ys[module];
+    }
+
+    /** Its width: the column's, or half of it. */
+    public int w(int module) {
+        return ws[module];
+    }
+
+    /** Whether it is the right half of a row (beside the module before it). */
+    public boolean right(int module) {
+        return rights[module];
     }
 
     public int width() {
