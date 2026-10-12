@@ -8,7 +8,6 @@ import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -17,9 +16,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
-import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -57,14 +54,10 @@ import java.util.Optional;
  */
 public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlockEntity> {
     public static final Identifier ARROW_MODEL = Steveparty.id("block/spawn_bubble_arrow");
-    private static final SpriteIdentifier BUBBLE = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_iridescent"));
-    private static final SpriteIdentifier TINY = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_small"));
     private static final RenderLayer BUBBLE_LAYER = RenderLayer.getEntityTranslucent(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
     private static final RenderLayer ARROW_LAYER = RenderLayer.getEntityCutoutNoCull(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
-    /** Half the side of the bubble's cube (blocks), and where its face is in its texture (pixels). */
-    private static final float HALF = 5 / 16f, FACE_FROM = 3, FACE_TO = 13;
-    /** Half the side of a tiny cube of the trail (blocks), and where its face is in its texture (pixels). */
-    private static final float TINY_HALF = 1.5f / 16, TINY_FROM = 6, TINY_TO = 9;
+    /** Half the side of the bubble's cube (blocks). */
+    private static final float HALF = 5 / 16f;
     /** How big the miniature mob is at most (blocks): well inside the cube. */
     private static final float MINIATURE = 5f / 16;
     /** How long the bubble takes to come out of its plate (ticks). */
@@ -79,8 +72,6 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     private static final float TRAIL_STEP = 3 / 16f;
     /** How far from the middle a tiny bubble starts at most (blocks): anywhere under the bubble. */
     private static final float SCATTER = 4.5f / 16;
-    /** How fast a tiny bubble rises on average (blocks per tick). */
-    private static final float TRAIL_SPEED = 0.022f;
     /** How high the bubble floats over its rest height at most (blocks): never down into its plate. */
     private static final float BOB_HEIGHT = 3f / 16;
     /** How fast it floats up and down (radians per tick: about 4 s up and down). */
@@ -89,18 +80,6 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     private static final float WOBBLE = 0.05f, WOBBLE_SPEED = 0.17f;
     /** How far it sways off upright (degrees), and how fast (radians per tick, two slightly different ways). */
     private static final float SWAY = 4f, SWAY_SPEED_X = 0.05f, SWAY_SPEED_Z = 0.037f;
-    /** The tints of the tiny bubbles, from blue to pink (RGB, 0..1). */
-    private static final float[] TINT_BLUE = {0.70f, 0.85f, 1f}, TINT_PINK = {1f, 0.75f, 0.92f};
-    /** The faces of a cube: their corners (bit 0: x, bit 1: y, bit 2: z), the first one at the top left of the texture, and normals. */
-    private static final int[][] FACES = {
-            {0b010, 0b000, 0b100, 0b110}, // west (x0): z0..z1
-            {0b111, 0b101, 0b001, 0b011}, // east (x1)
-            {0b011, 0b001, 0b000, 0b010}, // north (z0)
-            {0b110, 0b100, 0b101, 0b111}, // south (z1)
-            {0b010, 0b110, 0b111, 0b011}, // up (y1)
-            {0b100, 0b000, 0b001, 0b101}}; // down (y0)
-    private static final float[][] NORMALS = {{-1, 0, 0}, {1, 0, 0}, {0, 0, -1}, {0, 0, 1}, {0, 1, 0}, {0, -1, 0}};
-
     /** The miniatures, one per kind of mob (empty: it cannot be made on the client), made again in another world. */
     private static final Map<EntityType<?>, Optional<Entity>> MINIATURES = new HashMap<>();
     private static World miniaturesWorld;
@@ -171,7 +150,8 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_X + phase)));
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_Z + phase * 1.7f)));
         matrices.scale(1 - squash / 2, 1 + squash, 1 - squash / 2);
-        cube(matrices.peek(), buffer, BUBBLE.getSprite(), 0, 0, 0, HALF * grown, FACE_FROM, FACE_TO, 1, 1, 1, 1, bubbleLight);
+        BubbleFilm.cube(matrices.peek(), buffer, BubbleFilm.FILM.getSprite(), 0, 0, 0, HALF * grown, BubbleFilm.FACE_FROM, BubbleFilm.FACE_TO,
+                1, 1, 1, 1, bubbleLight);
         matrices.pop();
         if (Math.abs(lift) >= 0.25f && risen >= 1) trail(matrices, buffer, plateTop, height, bob, anim, pos.hashCode(), light);
     }
@@ -250,90 +230,16 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     }
 
     /**
-     * A cube of half side {@code half} around ({@code x}, {@code y}, {@code z}), each face the square of pixels
-     * {@code from}..{@code to} of {@code sprite} tinted {@code r}, {@code g}, {@code b}, {@code a}; both sides of each
-     * face drawn (the layer does not cull).
-     */
-    private static void cube(MatrixStack.Entry entry, VertexConsumer buffer, Sprite sprite, float x, float y, float z, float half,
-                             float from, float to, float r, float g, float b, float a, int light) {
-        float u0 = sprite.getFrameU(from / 16), u1 = sprite.getFrameU(to / 16);
-        float v0 = sprite.getFrameV(from / 16), v1 = sprite.getFrameV(to / 16);
-        float[] us = {u0, u0, u1, u1}, vs = {v0, v1, v1, v0};
-        for (int face = 0; face < FACES.length; face++) {
-            float[] n = NORMALS[face];
-            for (int corner = 0; corner < 4; corner++) {
-                int bits = FACES[face][corner];
-                buffer.vertex(entry, (bits & 0b001) != 0 ? x + half : x - half, (bits & 0b010) != 0 ? y + half : y - half,
-                                (bits & 0b100) != 0 ? z + half : z - half)
-                        .color(r, g, b, a).texture(us[corner], vs[corner]).overlay(OverlayTexture.DEFAULT_UV).light(light)
-                        .normal(entry, n[0], n[1], n[2]);
-            }
-        }
-    }
-
-    /**
      * Tiny bubbles rising between the plate and the lifted bubble (from the plate up to it, or from it up to the plate's
-     * underside when it hangs below). Each one lives one rise: its size, pace, sway and tint drawn at random for that
-     * life (from {@code seed}, the life's number and its index), its start staggered and its spot anywhere under the
-     * bubble ({@link #SCATTER}); it swells out of nothing, goes
-     * faster as it rises, sways more and more, grows a little and pops (shrinks and fades) at the top. A few cubes per
-     * bubble, no state kept.
+     * underside when it hangs below), anywhere under the bubble ({@link #SCATTER}; see {@link BubbleFilm#trail}).
      */
     private static void trail(MatrixStack matrices, VertexConsumer buffer, float plateTop, float rest, float bob, float time, int seed,
                               int light) {
         float center = rest + bob;
         boolean up = center > plateTop;
         float low = up ? plateTop : center + HALF, high = up ? center - HALF : 0;
-        float length = high - low;
-        if (length <= TINY_HALF * 2) return;
-        // Their pace and number from the trail at rest: the floating must not change them (its length changing, each
-        // tiny bubble's place in its rise, time / its life, would jump back and forth hundreds of rises every frame)
-        float restLength = Math.max(up ? rest - HALF - plateTop : -rest - HALF, TINY_HALF * 2);
-        int count = Math.max(2, Math.round(restLength / TRAIL_STEP));
-        Sprite sprite = TINY.getSprite();
-        MatrixStack.Entry entry = matrices.peek();
-        for (int i = 0; i < count; i++) {
-            // Its own pace, the same all its lives (so lives follow each other without a jump)
-            float pace = 0.7f + 0.6f * random(seed, i, -1);
-            float lifeTicks = restLength / (TRAIL_SPEED * pace);
-            float age = time / lifeTicks + (i + 0.5f * random(seed, i, -2)) / count;
-            int life = MathHelper.floor(age);
-            float progress = age - life;
-            // This life's look
-            float size = 0.5f + 0.6f * random(seed ^ life, i, 0);
-            float swayAt = random(seed ^ life, i, 1) * MathHelper.TAU;
-            float swaySpeed = 0.12f + 0.12f * random(seed ^ life, i, 2);
-            float swayWide = (0.4f + 0.8f * random(seed ^ life, i, 3)) / 16;
-            float pink = random(seed ^ life, i, 4);
-            // Faster as it rises, sways more, swells out of the plate and pops at the top
-            float along = length * progress * (0.6f + 0.4f * progress);
-            float sway = swayWide * (0.3f + 0.7f * progress);
-            float swell = MathHelper.clamp(progress / 0.12f, 0, 1);
-            float pop = MathHelper.clamp((1 - progress) / 0.15f, 0, 1);
-            float half = TINY_HALF * size * (0.85f + 0.3f * progress) * swell * (0.4f + 0.6f * pop);
-            if (half <= 0.002f) continue;
-            float alpha = 0.35f + 0.65f * pop;
-            // Its own spot over the plate for this life (evenly over a disc under the bubble), drawn a little toward
-            // the middle as it rises
-            float spotAngle = random(seed ^ life, i, 5) * MathHelper.TAU;
-            float spotRadius = SCATTER * MathHelper.sqrt(random(seed ^ life, i, 6)) * (1 - 0.3f * progress);
-            float x = 0.5f + MathHelper.cos(spotAngle) * spotRadius + MathHelper.sin(time * swaySpeed + swayAt) * sway;
-            float z = 0.5f + MathHelper.sin(spotAngle) * spotRadius + MathHelper.cos(time * swaySpeed * 0.8f + swayAt * 1.3f) * sway * 0.7f;
-            float y = Math.min(low + along, high - half);
-            cube(entry, buffer, sprite, x, y, z, half, TINY_FROM, TINY_TO, MathHelper.lerp(pink, TINT_BLUE[0], TINT_PINK[0]),
-                    MathHelper.lerp(pink, TINT_BLUE[1], TINT_PINK[1]), MathHelper.lerp(pink, TINT_BLUE[2], TINT_PINK[2]), alpha, light);
-        }
-    }
-
-    /** A number in [0, 1) the same for the same {@code a}, {@code b}, {@code c}, scattered otherwise. */
-    private static float random(int a, int b, int c) {
-        int h = a * 0x9E3779B1 ^ b * 0x85EBCA77 ^ c * 0xC2B2AE3D;
-        h ^= h >>> 15;
-        h *= 0x2C1B3C6D;
-        h ^= h >>> 12;
-        h *= 0x297A2D39;
-        h ^= h >>> 15;
-        return (h >>> 8) / 16777216f;
+        float restLength = up ? rest - HALF - plateTop : -rest - HALF;
+        BubbleFilm.trail(matrices.peek(), buffer, 0.5f, 0.5f, low, high, restLength, TRAIL_STEP, SCATTER, time, seed, light);
     }
 
     @Override
