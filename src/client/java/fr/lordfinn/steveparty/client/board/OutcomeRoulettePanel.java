@@ -55,6 +55,8 @@ public final class OutcomeRoulettePanel {
     private static final float POP_TICKS = 6, LINE_STAGGER = 3;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
     private static final int TEXT = WorldDraw.PLATE_TEXT, TEXT_DARK = 0xFF404040, CAPTION = 0xFF2C6E78, TITLE_MINE = 0xFF9A6200;
+    /** The chance bar's track: a dark shade of the plate, opaque (see {@link WorldDraw#onPlate}). */
+    private static final int TRACK = WorldDraw.onPlate(0x60000000);
     private static final int ROW = 0xFFFFFFFF, ROW_EDGE = 0xFF003640, FLASH = 0xFFFFFFFF;
     /**
      * Depth of each layer (label space, more negative is farther): the card, a row's edge and shadow, the row, its
@@ -164,7 +166,7 @@ public final class OutcomeRoulettePanel {
         if (age < OutcomeRoulette.REVEAL_TICKS) {
             float left = 1 - Easing.clamp01((float) (age / OutcomeRoulette.REVEAL_TICKS));
             float barWidth = inner * left, barX = PAD + (inner - barWidth) / 2;
-            WorldDraw.fill(matrices, consumers, PAD, y + 1, PAD + inner, y + 3, Z_EDGE, Argb.fade(0x60000000, alpha));
+            WorldDraw.fill(matrices, consumers, PAD, y + 1, PAD + inner, y + 3, Z_EDGE, Argb.fade(TRACK, alpha));
             if (barWidth > 0) WorldDraw.fill(matrices, consumers, barX, y + 1, barX + barWidth, y + 3, Z_ROW, Argb.fade(0xFFFFC900, alpha));
         }
     }

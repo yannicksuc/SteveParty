@@ -33,6 +33,8 @@ public final class WorldDraw {
     private static final float BEHIND = -0.5f;
     /** Text on the plates: the dark grey of the mod's screen titles. */
     public static final int PLATE_TEXT = 0xFF3F3F3F;
+    /** The plates' face (the middle of their texture): what a detail drawn on a plate lies on. */
+    private static final int PLATE_FACE = 0xFFC4C4C4;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
 
     /** Plate colours (the frame): teal like the Tile screen, gold like the Advanced Tile's... */
@@ -356,16 +358,33 @@ public final class WorldDraw {
         if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
     }
 
-    /** A horizontal rule one text pixel thick from x0 to x1 at y, in label space, on a plate (drawn right away). */
+    /**
+     * {@code argb} laid over the plates' face, made opaque. A see-through detail on a plate writes depth like the plate:
+     * flushed before it (batching and render mods reorder the buffers), it hides the plate under it and lets the world
+     * show through. Opaque, it looks the same whichever is drawn first.
+     */
+    public static int onPlate(int argb) {
+        float a = (argb >>> 24) / 255f;
+        int r = Math.round(((argb >> 16) & 0xFF) * a + ((PLATE_FACE >> 16) & 0xFF) * (1 - a));
+        int g = Math.round(((argb >> 8) & 0xFF) * a + ((PLATE_FACE >> 8) & 0xFF) * (1 - a));
+        int b = Math.round((argb & 0xFF) * a + (PLATE_FACE & 0xFF) * (1 - a));
+        return 0xFF000000 | r << 16 | g << 8 | b;
+    }
+
+    /**
+     * A horizontal rule one text pixel thick from x0 to x1 at y, in label space, on a plate (drawn right away), in front
+     * of it. {@code argb}'s alpha blends it with the plate's face ({@link #onPlate}): never with what lies behind.
+     */
     public static void rule(MatrixStack matrices, VertexConsumerProvider consumers, float x0, float x1, float y, int argb) {
         RenderLayer layer = RenderLayer.getTextBackground();
         VertexConsumer consumer = consumers.getBuffer(layer);
         Matrix4f matrix = matrices.peek().getPositionMatrix();
         float z = BEHIND / 2;
-        consumer.vertex(matrix, x0, y, z).color(argb).light(LIGHT);
-        consumer.vertex(matrix, x0, y + 1, z).color(argb).light(LIGHT);
-        consumer.vertex(matrix, x1, y + 1, z).color(argb).light(LIGHT);
-        consumer.vertex(matrix, x1, y, z).color(argb).light(LIGHT);
+        int color = onPlate(argb);
+        consumer.vertex(matrix, x0, y, z).color(color).light(LIGHT);
+        consumer.vertex(matrix, x0, y + 1, z).color(color).light(LIGHT);
+        consumer.vertex(matrix, x1, y + 1, z).color(color).light(LIGHT);
+        consumer.vertex(matrix, x1, y, z).color(color).light(LIGHT);
         if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw(layer);
     }
 
