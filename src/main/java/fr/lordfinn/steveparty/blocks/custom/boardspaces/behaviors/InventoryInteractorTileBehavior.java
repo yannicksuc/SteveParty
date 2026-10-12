@@ -250,6 +250,12 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
     /** Up to this many items, each is a line; more circle the space. */
     private static final int LISTED = 4;
 
+    /** Its colour is worked out from its settings: no dye stays on it (see TileDye). */
+    @Override
+    public boolean keepsDye() {
+        return false;
+    }
+
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
         Status status = getStatus(boardSpaceBlockEntity, stack);

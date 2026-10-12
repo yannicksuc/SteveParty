@@ -83,6 +83,12 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
                 ? TileFeedback.Landing.TELEPORT : TileFeedback.Landing.DEFAULT;
     }
 
+    /** Its colour is worked out from its settings: no dye stays on it (see TileDye). */
+    @Override
+    public boolean keepsDye() {
+        return false;
+    }
+
     /** Always its network's colour. */
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {

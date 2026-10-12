@@ -117,4 +117,13 @@ public final class BoardSpaces {
         double height = shape.isEmpty() ? 0 : shape.getMax(Direction.Axis.Y);
         return new Vec3d(pos.getX() + 0.5, pos.getY() + height, pos.getZ() + 0.5);
     }
+
+    /**
+     * Where what is done to the board space at {@code pos} shows (glow ink, a sponge...): on the tile as it is seen
+     * (lowered, sloped, a large tile's middle), in the middle of a check point's floating cube.
+     */
+    public static Vec3d effectsPos(World world, BlockState state, BlockPos pos) {
+        if (state.getBlock() instanceof ATileBlock) return standPos(world, pos).add(0, 0.1, 0);
+        return state.getOutlineShape(world, pos).getBoundingBox().getCenter().add(Vec3d.of(pos));
+    }
 }

@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.items.ModItems;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -25,10 +26,15 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
+import java.util.List;
+
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.GLOWING;
 
-/** Glow ink on a tile, as on a sign: a glow ink sac lights it up, an ink sac puts it out; its item keeps it. */
+/**
+ * Glow ink on a tile or a check point, as on a sign: a glow ink sac lights it up, an ink sac puts it out; its item
+ * keeps it.
+ */
 public class TileGlowGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(2, 2, 2);
     private static final BlockPos ELSEWHERE = new BlockPos(6, 1, 2);
@@ -137,6 +143,89 @@ public class TileGlowGameTests implements SteveGameTest {
         BlockPos otherAbs = context.getAbsolutePos(other);
         plain.useOnBlock(new ItemUsageContext(holding(context, plain), Hand.MAIN_HAND,
                 new BlockHitResult(otherAbs.toCenterPos().add(0, 0.5, 0), Direction.UP, otherAbs, false)));
+        context.expectBlockProperty(other.up(), GLOWING, false);
+        context.complete();
+    }
+
+    // ---------------------------------------------------------------- check points, as tiles
+
+    private static BoardSpaceBlockEntity checkPoint(TestContext context) {
+        context.setBlockState(TILE.down(), Blocks.STONE);
+        context.setBlockState(TILE, ModBlocks.CHECK_POINT);
+        return context.getBlockEntity(TILE);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void glowInkLightsTheCheckPointAndInkPutsItOut(TestContext context) {
+        checkPoint(context);
+        context.expectBlockProperty(TILE, GLOWING, false);
+        context.assertTrue(context.getBlockState(TILE).getRenderType() == BlockRenderType.MODEL, "baked in the chunk");
+        PlayerEntity player = holding(context, new ItemStack(Items.GLOW_INK_SAC, 3));
+        context.assertEquals(use(context, player, TILE), ItemActionResult.SUCCESS, "glow ink used");
+        context.expectBlockProperty(TILE, GLOWING, true);
+        context.assertEquals(player.getMainHandStack().getCount(), 2, "one glow ink sac used");
+        context.assertTrue(context.getBlockState(TILE).getRenderType() == BlockRenderType.INVISIBLE,
+                "drawn by its renderer at full light, not baked in the chunk");
+        use(context, player, TILE);
+        context.assertEquals(player.getMainHandStack().getCount(), 2, "no glow ink used on a glowing check point");
+
+        PlayerEntity inker = holding(context, new ItemStack(Items.INK_SAC, 2));
+        context.assertEquals(use(context, inker, TILE), ItemActionResult.SUCCESS, "ink used");
+        context.expectBlockProperty(TILE, GLOWING, false);
+        context.assertEquals(inker.getMainHandStack().getCount(), 1, "one ink sac used");
+        context.assertTrue(context.getBlockState(TILE).getRenderType() == BlockRenderType.MODEL, "baked again");
+        use(context, inker, TILE);
+        context.assertEquals(inker.getMainHandStack().getCount(), 1, "no ink used on a check point that doesn't glow");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void creativeUsesNoInkOnACheckPoint(TestContext context) {
+        checkPoint(context);
+        PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.GLOW_INK_SAC));
+        use(context, player, TILE);
+        context.expectBlockProperty(TILE, GLOWING, true);
+        context.assertEquals(player.getMainHandStack().getCount(), 1, "nothing used in creative");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theCheckPointGlowStaysWithACartridgeInserted(TestContext context) {
+        BoardSpaceBlockEntity checkPoint = checkPoint(context);
+        use(context, holding(context, new ItemStack(Items.GLOW_INK_SAC)), TILE);
+        checkPoint.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
+        context.expectBlockProperty(TILE, TILE_TYPE, BoardSpaceType.BOARD_SPACE_STOP);
+        context.expectBlockProperty(TILE, GLOWING, true);
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theCheckPointGlowIsKeptByItsItem(TestContext context) {
+        TestBoards.floor(context, 9, 6, 1);
+        checkPoint(context);
+        use(context, holding(context, new ItemStack(Items.GLOW_INK_SAC)), TILE);
+        // Broken: its item keeps the glow
+        BlockPos abs = context.getAbsolutePos(TILE);
+        List<ItemStack> drops = Block.getDroppedStacks(context.getBlockState(TILE), context.getWorld(), abs,
+                context.getWorld().getBlockEntity(abs));
+        ItemStack item = drops.stream().filter(stack -> stack.isOf(ModBlocks.CHECK_POINT.asItem())).findFirst()
+                .orElse(ItemStack.EMPTY);
+        context.assertFalse(item.isEmpty(), "a check point dropped: " + drops);
+        context.assertTrue(item.contains(ModComponents.GLOWING_TILE), "its item keeps the glow: " + item.getComponents());
+        // Placed again: glowing
+        BlockPos at = context.getAbsolutePos(ELSEWHERE);
+        item.useOnBlock(new ItemUsageContext(holding(context, item), Hand.MAIN_HAND,
+                new BlockHitResult(at.toCenterPos().add(0, 0.5, 0), Direction.UP, at, false)));
+        context.expectBlock(ModBlocks.CHECK_POINT, ELSEWHERE.up());
+        context.expectBlockProperty(ELSEWHERE.up(), GLOWING, true);
+        // A plain check point item places a plain check point
+        ItemStack plain = new ItemStack(ModBlocks.CHECK_POINT);
+        BlockPos other = ELSEWHERE.add(0, 0, 2);
+        BlockPos otherAbs = context.getAbsolutePos(other);
+        plain.useOnBlock(new ItemUsageContext(holding(context, plain), Hand.MAIN_HAND,
+                new BlockHitResult(otherAbs.toCenterPos().add(0, 0.5, 0), Direction.UP, otherAbs, false)));
+        context.expectBlock(ModBlocks.CHECK_POINT, other.up());
         context.expectBlockProperty(other.up(), GLOWING, false);
         context.complete();
     }

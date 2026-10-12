@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.items.custom.StencilHammerStrike;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
@@ -34,7 +35,8 @@ import java.util.Objects;
  * <ul>
  *     <li>a stencil and a dye (one in each hand), or the Stencil Hammer (its selected stencil and dye, with its
  *     strike): the whole face takes the dye's colour, the pattern drawn on it in a darker shade;</li>
- *     <li>a wet sponge washes the look off.</li>
+ *     <li>a wet sponge washes the look off, a brush scrubs it off (it wears as when it brushes). On the next click
+ *     they take the tile's dye off (TileDye).</li>
  * </ul>
  * Where the look goes: on the tile itself while it holds no cartridge; on its (active) cartridge otherwise. The
  * cartridge prevails: a tile shows its cartridge's look (or its plain cartridge face), and its own look again once the
@@ -113,6 +115,22 @@ public final class TileStamping {
                 if (world instanceof ServerWorld serverWorld) {
                     Vec3d at = BoardSpaces.standPos(serverWorld, pos);
                     serverWorld.spawnParticles(ParticleTypes.SPLASH, at.x, at.y + 0.1, at.z, 12, 0.3, 0.1, 0.3, 0.1);
+                }
+                world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Emitter.of(player, state));
+            }
+            return ActionResult.SUCCESS;
+        }
+
+        // A brush scrubs the look off, as on a sign
+        if (main.isOf(Items.BRUSH)) {
+            if (current == null) return null;
+            if (!world.isClient) {
+                apply(tile, cartridge, null);
+                main.damage(1, player, EquipmentSlot.MAINHAND);
+                play(world, pos, SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, 1.0F);
+                if (world instanceof ServerWorld serverWorld) {
+                    Vec3d at = BoardSpaces.standPos(serverWorld, pos);
+                    serverWorld.spawnParticles(ParticleTypes.WHITE_ASH, at.x, at.y + 0.1, at.z, 10, 0.3, 0.1, 0.3, 0.05);
                 }
                 world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Emitter.of(player, state));
             }
