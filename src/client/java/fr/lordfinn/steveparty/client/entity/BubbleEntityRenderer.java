@@ -108,8 +108,9 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
             matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(SWAY * MathHelper.sin(time * SWAY_SPEED_X + phase)));
             matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(SWAY * MathHelper.sin(time * SWAY_SPEED_Z + phase * 1.7f)));
             matrices.scale(1 - squash / 2, 1 + squash, 1 - squash / 2);
-            BubbleFilm.cube(matrices.peek(), buffer, BubbleFilm.FILM.getSprite(), 0, 0, 0, film.side() / 2, BubbleFilm.FACE_FROM,
-                    BubbleFilm.FACE_TO, 1, 1, 1, 1, film.light());
+            BubbleFilm.Tier tier = BubbleFilm.tier(film.side());
+            BubbleFilm.cube(matrices.peek(), buffer, tier.sprite().getSprite(), 0, 0, 0, film.side() / 2, tier.from(), tier.to(),
+                    1, 1, 1, 1, film.light());
             matrices.pop();
         }
         consumers.draw(BubbleLayers.FILM);

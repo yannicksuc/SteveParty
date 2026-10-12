@@ -20,6 +20,24 @@ public final class BubbleFilm {
     public static final SpriteIdentifier TINY = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_small"));
     /** Where the film's face is in its texture (pixels). */
     public static final float FACE_FROM = 3, FACE_TO = 13;
+    /**
+     * Whether a big bubble's film has more pixels ({@link #tier}): off, every bubble has the 10 x 10 film, its pixels
+     * as big as the bubble (like a ghast).
+     */
+    public static final boolean TIERS = true;
+    /**
+     * The film with more pixels, for the Bubbler's bubbles as they grow (spawn_bubble_iridescent_N.png, N pixels a
+     * face): 10, 20, 40 and 64. Same design and cycle, an L-shaped highlight.
+     */
+    private static final Tier[] FILM_TIERS = {
+            new Tier(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_iridescent_10")), 10, FACE_FROM, FACE_TO),
+            new Tier(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_iridescent_20")), 20, 3, 13),
+            new Tier(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_iridescent_40")), 40, 3, 13),
+            new Tier(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_iridescent_64")), 64, 0, 16)};
+
+    /** A film's texture, its pixels a face, and where the face is in it (sixteenths of it, as for a 16 x 16 one). */
+    public record Tier(SpriteIdentifier sprite, int pixels, float from, float to) {
+    }
     /** Half the side of a tiny cube of a trail (blocks), and where its face is in its texture (pixels). */
     public static final float TINY_HALF = 1.5f / 16, TINY_FROM = 6, TINY_TO = 9;
     /** How fast a tiny bubble rises on average (blocks per tick). */
@@ -37,6 +55,20 @@ public final class BubbleFilm {
     private static final float[][] NORMALS = {{-1, 0, 0}, {1, 0, 0}, {0, 0, -1}, {0, 0, 1}, {0, 1, 0}, {0, -1, 0}};
 
     private BubbleFilm() {
+    }
+
+    /**
+     * The film for a cube of {@code side} blocks: the one nearest the world's 16 pixels per block (nearest by ratio),
+     * the 10 x 10 one if {@link #TIERS} is off.
+     */
+    public static Tier tier(float side) {
+        if (!TIERS) return FILM_TIERS[0];
+        float wanted = side * 16;
+        Tier best = FILM_TIERS[0];
+        for (Tier tier : FILM_TIERS) {
+            if (Math.abs(Math.log(tier.pixels() / wanted)) < Math.abs(Math.log(best.pixels() / wanted))) best = tier;
+        }
+        return best;
     }
 
     /**
