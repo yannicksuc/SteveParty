@@ -33,10 +33,10 @@ public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHan
         return TEXTURE;
     }
 
-    /** The pink tab's right edge (its outline is at 157). */
+    /** The pink tab's right edge (its outline is at 147). */
     @Override
     protected int wireFromX() {
-        return 158;
+        return 148;
     }
 
     private int buttonX(int index) {
