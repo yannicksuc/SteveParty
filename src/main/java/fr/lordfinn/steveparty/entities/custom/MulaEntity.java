@@ -109,6 +109,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
     protected static final RawAnimation BLINK_DOUBLE_ANIM = RawAnimation.begin().thenPlay("blink_double");
     /** A star space's host holding the item it sells, waiting (see StarHosts). */
     protected static final RawAnimation HOST_HOLD_ANIM = RawAnimation.begin().thenLoop("host_hold");
+    /** A star space's host without the star (its Spawn Bubble always visible): asleep on its bubble. */
+    protected static final RawAnimation HOST_SLEEP_ANIM = RawAnimation.begin().thenLoop("host_sleep");
     /**
      * The host's one-shots, triggered by the server (StarHosts): its entrance, its games with the item while the
      * player chooses, the joy and the gift of a purchase, the disappointment of a refusal, and its exits.
@@ -248,6 +250,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
     /** The star space it hosts (the clients then draw the star in its hands rather than over the space). */
     private static final TrackedData<Optional<BlockPos>> HOST_SPACE =
             DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
+    /** A star space's host asleep on its Spawn Bubble, the star elsewhere (see MarkerResidents). */
+    private static final TrackedData<Boolean> HOST_ASLEEP =
+            DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** The entity its item flies to when it gives it (the "give" instruction of its animation), -1 for none. */
     private static final TrackedData<Integer> GIFT_TARGET =
             DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
@@ -996,6 +1001,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
         builder.add(DANCE_FORGE, Optional.empty());
         builder.add(HELD_ITEM, ItemStack.EMPTY);
         builder.add(HOST_SPACE, Optional.empty());
+        builder.add(HOST_ASLEEP, false);
         builder.add(GIFT_TARGET, -1);
     }
 
@@ -1150,6 +1156,16 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
     /** Server: it hosts the star space at {@code space} (null: none). */
     public void setHostSpace(@Nullable BlockPos space) {
         this.dataTracker.set(HOST_SPACE, Optional.ofNullable(space == null ? null : space.toImmutable()));
+    }
+
+    /** Whether it sleeps on its Spawn Bubble (a star space's host, the star elsewhere). */
+    public boolean isHostAsleep() {
+        return this.dataTracker.get(HOST_ASLEEP);
+    }
+
+    /** Server: it falls asleep on its Spawn Bubble, or wakes up. */
+    public void setHostAsleep(boolean asleep) {
+        this.dataTracker.set(HOST_ASLEEP, asleep);
     }
 
     /** The entity its item flies to when its animation gives it, -1 for none. */
@@ -1686,6 +1702,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
         if (isToken()) return state.setAndContinue(IDLE_ANIM);
         // a star space's host holding its item: it presents it (its games with it are triggered on top)
         if (!getHeldItem().isEmpty()) return state.setAndContinue(HOST_HOLD_ANIM);
+        if (isHostAsleep()) return state.setAndContinue(HOST_SLEEP_ANIM);
         if (isDanceLocked()) {
             return state.setAndContinue(DANCE_ANIMS[MulaDances.STYLE[Math.max(0, currentDance())]]);
         }

@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerSettings;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.entities.ModEntities;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -24,6 +25,8 @@ public class SpawnMarkerScreen extends Screen {
 
     private final BlockPos pos;
     private boolean resident;
+    /** Linked to star spaces only: its Mula shows while the star is there, not on landing. */
+    private final boolean star;
     private int lift;
     private PartyButton onLanding, always;
     private int panelTop, panelHeight, whenY, liftY, liftLabelHeight;
@@ -33,6 +36,8 @@ public class SpawnMarkerScreen extends Screen {
         this.pos = pos.toImmutable();
         this.resident = marker.isResident();
         this.lift = marker.getLiftSteps();
+        this.star = !marker.getLinkedMobs().isEmpty()
+                && marker.getLinkedMobs().stream().allMatch(type -> type == ModEntities.MULA_ENTITY);
     }
 
     @Override
@@ -48,10 +53,11 @@ public class SpawnMarkerScreen extends Screen {
         int half = (inner - 4) / 2;
         whenY = panelTop + 18;
         int y = whenY + whenHeight + 2;
-        onLanding = addDrawableChild(new PartyButton(left, y, half, 20, Text.translatable(K + "on_landing"), b -> setResident(false)));
+        String whenShown = star ? "with_star" : "on_landing";
+        onLanding = addDrawableChild(new PartyButton(left, y, half, 20, Text.translatable(K + whenShown), b -> setResident(false)));
         always = addDrawableChild(new PartyButton(left + half + 4, y, half, 20, Text.translatable(K + "resident"), b -> setResident(true)));
-        onLanding.setTooltip(Tooltip.of(Text.translatable(K + "on_landing.hint")));
-        always.setTooltip(Tooltip.of(Text.translatable(K + "resident.hint")));
+        onLanding.setTooltip(Tooltip.of(Text.translatable(K + whenShown + ".hint")));
+        always.setTooltip(Tooltip.of(Text.translatable(K + (star ? "resident.star_hint" : "resident.hint"))));
         liftY = y + 20 + 6 + (liftRow - 20) / 2;
         addDrawableChild(new PartyButton(right - 70, liftY, 20, 20, Text.literal("-"), b -> step(-1)))
                 .setTooltip(Tooltip.of(Text.translatable(K + "lift.hint")));

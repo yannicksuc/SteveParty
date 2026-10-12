@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxColor;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
@@ -22,6 +23,8 @@ import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -67,7 +70,8 @@ public final class MarkerResidents {
     private static final Map<GlobalPos, UUID> SHOWS = ServerMemory.forgetOnStop(new HashMap<>());
     private static int age;
 
-    private record Resident(UUID sequence, MobEntity mob, Item kind) {
+    /** The mob living on a marker, with its BoardActors sequence and the kind of cartridge it lives for. */
+    public record Resident(UUID sequence, MobEntity mob, Item kind) {
     }
 
     static {
@@ -91,8 +95,15 @@ public final class MarkerResidents {
             if (one != null) one.setTank(TrichaudronEntity.TANK_MAX);
             return one;
         });
-        // the star space's host, empty-handed on its bubble (it holds the star when a token comes, see StarHosts)
-        register(StarCartridgeItem.class, ModEntities.MULA_ENTITY::create);
+        // the star space's host, asleep on its bubble while the star is elsewhere (it wakes up with it, see StarHosts)
+        register(StarCartridgeItem.class, world -> {
+            MulaEntity one = ModEntities.MULA_ENTITY.create(world);
+            if (one == null) return null;
+            one.setHostAsleep(true);
+            EntityAttributeInstance scale = one.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
+            if (scale != null) scale.setBaseValue(StarHosts.SCALE);
+            return one;
+        });
     }
 
     private MarkerResidents() {
@@ -228,9 +239,38 @@ public final class MarkerResidents {
      */
     public static void showStarts(ServerWorld world, BlockPos marker, UUID sequence) {
         GlobalPos key = key(world, marker);
-        if (!RESIDENTS.containsKey(key)) return;
         dismiss(key);
+        // (none there yet: none comes while the show runs either)
         SHOWS.put(key, sequence);
+    }
+
+    /**
+     * The mob living on the marker at {@code marker} steps out for a show and plays in it itself (the star's host: the
+     * Mula asleep there wakes up with the star): no longer its marker's until {@link #giveBack}; its sequence becomes
+     * the show's, its marker left empty while it runs. Null if none lives there.
+     */
+    public static @Nullable Resident take(ServerWorld world, BlockPos marker) {
+        GlobalPos key = key(world, marker);
+        Resident resident = RESIDENTS.get(key);
+        if (resident == null || resident.mob().isRemoved()) return null;
+        RESIDENTS.remove(key);
+        SHOWS.put(key, resident.sequence());
+        return resident;
+    }
+
+    /**
+     * {@code mob} (of the BoardActors sequence {@code sequence}), out of a show, lives on the marker at {@code marker}
+     * again, if that marker still wants a mob and has none. False otherwise (the caller removes it).
+     */
+    public static boolean giveBack(ServerWorld world, BlockPos marker, UUID sequence, MobEntity mob) {
+        GlobalPos key = key(world, marker);
+        if (mob.isRemoved() || !MARKERS.contains(key) || RESIDENTS.containsKey(key)) return false;
+        Item kind = wanted(world, marker);
+        if (kind == null) return false;
+        SHOWS.remove(key);
+        RESIDENTS.put(key, new Resident(sequence, mob, kind));
+        check(world, marker);
+        return true;
     }
 
     /** The marker at {@code pos} changed (mode, facing, link): its mob made again as it should be. */
