@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlock;
@@ -39,6 +40,8 @@ public class PartyLoopGameTests implements SteveGameTest {
         context.setBlockState(pos.down(), Blocks.STONE);
         context.setBlockState(pos, ModBlocks.PARTY_BELL.getDefaultState()
                 .with(PartyBellBlock.MOMENT, moment).with(PartyBellBlock.WAITING, waiting));
+        // A bell left behind would listen to the parties of the tests after it (the closest within 64 blocks)
+        TestCleanup.atEnd(context, () -> TestCleanup.removeIf(context, pos, ModBlocks.PARTY_BELL));
         return context.getBlockEntity(pos);
     }
 

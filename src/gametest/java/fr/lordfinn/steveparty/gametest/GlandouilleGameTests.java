@@ -770,9 +770,9 @@ public class GlandouilleGameTests implements SteveGameTest {
             lone.onHit(player, player);
             context.assertEquals(b.getMood(), Mood.FLYING, "b flies out alone");
             context.assertTrue(lone.getVelocity().x > 0.1, "a lone one is pushed as before: " + lone.getVelocity());
-            context.waitAndRun(40, () -> {
+            // as soon as c is back (b, holding a grudge, may come back later on)
+            when(context, () -> c.getVehicle() == a, 40, "c back on a", () -> {
                 context.assertTrue(b.getVehicle() == null && !GlandouilleTowers.hasRider(b), "b alone");
-                context.assertTrue(c.getVehicle() == a, "c back on a");
                 context.assertEquals(GlandouilleTowers.height(a), 2, "a tower of 2");
                 context.assertTrue(horizontal(a.getPos(), aStart) < 0.05, "a not pushed");
                 context.complete();
