@@ -17,28 +17,27 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 /**
  * What a Magpie Nest's block model cannot draw: its pile of coins ({@link MagpieNestPile}: one coin cube per thing
- * it holds, coin or not, as high as they go, the first ones where the model had them by hand) and its long twig
+ * it holds, coin or not, as high as they go, all placed by hand in Blockbench) and its long twig
  * across the top (turned on three axes in Blockbench, which a block model of this version cannot do). All turned the
  * nest's way.
  * <p>
  * The pile's cubes are worked out once for a nest's coin count and facing (corners and normals, kept by the nest,
  * {@link MagpieNestBlockEntity#renderCache}) and only sent each frame. Its item ({@link #ITEM}): the block model, the
- * twig and the coins placed by hand.
+ * twig and the first coins of the pile.
  */
 public class MagpieNestRenderer implements BlockEntityRenderer<MagpieNestBlockEntity> {
     private static final SpriteIdentifier TWIGS = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/magpie_nest"));
-    private static final SpriteIdentifier COIN = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/magpie_nest_coin"));
+    private static final SpriteIdentifier COIN = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/magpie_nest_coin_pixel"));
 
-    /** The coin texture (32 x 32, two texels a pixel): its face, its back, its rim; u0, v0, u1, v1 in the texture. */
-    private static final float[] COIN_FACE = {0, 0, 10 / 32F, 10 / 32F}, COIN_BACK = {10 / 32F, 0, 20 / 32F, 10 / 32F},
-            COIN_RIM = {0, 10 / 32F, 10 / 32F, 14 / 32F};
+    /** The coin texture (16 x 16, a texel a pixel like the nest): its face, its back, its rim; u0, v0, u1, v1 in the texture. */
+    private static final float[] COIN_FACE = {0, 0, 5 / 16F, 5 / 16F}, COIN_BACK = {5 / 16F, 0, 10 / 16F, 5 / 16F},
+            COIN_RIM = {0, 5 / 16F, 5 / 16F, 7 / 16F};
     /** The faces of a cube, in the order up, down, north, south, west, east: their corners (bits x, y, z), counter-clockwise from outside. */
     private static final int[][] FACES = {
             {0b010, 0b110, 0b111, 0b011}, // up: (x0,z0) (x0,z1) (x1,z1) (x1,z0)
@@ -58,7 +57,7 @@ public class MagpieNestRenderer implements BlockEntityRenderer<MagpieNestBlockEn
             {0, 10 / 16F, 1, 11 / 16F}, {4 / 16F, 10 / 16F, 5 / 16F, 11 / 16F}, {11 / 16F, 10 / 16F, 12 / 16F, 11 / 16F}};
     /** The twig's corners and normals for each facing (by horizontal id). */
     private static final Cubes[] TWIG = new Cubes[4];
-    /** The item's coins: the ones placed by hand. */
+    /** The item's coins: the first ones of the pile. */
     private static Cubes itemPile;
 
     static {
@@ -142,9 +141,9 @@ public class MagpieNestRenderer implements BlockEntityRenderer<MagpieNestBlockEn
         return new Matrix4f().translate(8, 0, 8).rotateY((float) Math.toRadians(-MagpieNestPile.yRotation(facing))).translate(-8, 0, -8);
     }
 
-    /** The cubes of the first {@code count} coins of the pile at {@code pos}, facing {@code facing}. */
-    static Cubes pile(BlockPos pos, int count, Direction facing) {
-        float[] layout = MagpieNestPile.layout(pos, count);
+    /** The cubes of the first {@code count} coins of the pile, facing {@code facing}. */
+    static Cubes pile(int count, Direction facing) {
+        float[] layout = MagpieNestPile.layout(count);
         int drawn = layout.length / MagpieNestPile.STRIDE;
         Cubes cubes = new Cubes(drawn);
         float half = MagpieNestPile.COIN_WIDTH / 2, halfHeight = MagpieNestPile.COIN_HEIGHT / 2;
@@ -152,9 +151,10 @@ public class MagpieNestRenderer implements BlockEntityRenderer<MagpieNestBlockEn
         Matrix4f base = facingMatrix(facing), m = new Matrix4f();
         for (int i = 0; i < drawn; i++) {
             int o = i * MagpieNestPile.STRIDE;
+            // Blockbench's rotation order: x first, then y, then z (Euler ZYX)
             m.set(base).translate(layout[o], layout[o + 1], layout[o + 2])
-                    .rotateX((float) Math.toRadians(layout[o + 4])).rotateZ((float) Math.toRadians(layout[o + 5]))
-                    .rotateY((float) Math.toRadians(layout[o + 3]));
+                    .rotateZ((float) Math.toRadians(layout[o + 5])).rotateY((float) Math.toRadians(layout[o + 4]))
+                    .rotateX((float) Math.toRadians(layout[o + 3]));
             cubes.put(i, m, from, to);
         }
         return cubes;
@@ -167,7 +167,7 @@ public class MagpieNestRenderer implements BlockEntityRenderer<MagpieNestBlockEn
         int count = MagpieNestPile.drawn(nest.getShownPile());
         Pile pile = nest.renderCache instanceof Pile cached && cached.count == count && cached.facing == facing ? cached : null;
         if (pile == null) {
-            pile = new Pile(count, facing, pile(nest.getPos(), count, facing));
+            pile = new Pile(count, facing, pile(count, facing));
             nest.renderCache = pile;
         }
         VertexConsumer buffer = vertexConsumers.getBuffer(TexturedRenderLayers.getEntityCutout());
@@ -182,13 +182,13 @@ public class MagpieNestRenderer implements BlockEntityRenderer<MagpieNestBlockEn
         return true;
     }
 
-    /** Its item: the block model, the long twig and the coins placed by hand. */
+    /** Its item: the block model, the long twig and the first coins of the pile. */
     public static final BuiltinItemRendererRegistry.DynamicItemRenderer ITEM = (stack, mode, matrices, vertexConsumers, light, overlay) -> {
         BlockState state = ModBlocks.MAGPIE_NEST.getDefaultState();
         BlockRenderManager blocks = MinecraftClient.getInstance().getBlockRenderManager();
         blocks.getModelRenderer().render(matrices.peek(), vertexConsumers.getBuffer(TexturedRenderLayers.getEntityCutout()), state,
                 blocks.getModel(state), 1, 1, 1, light, overlay);
-        if (itemPile == null) itemPile = pile(BlockPos.ORIGIN, MagpieNestPile.HAND_PLACED, Direction.NORTH);
+        if (itemPile == null) itemPile = pile(MagpieNestPile.ITEM_SHOWN, Direction.NORTH);
         VertexConsumer buffer = vertexConsumers.getBuffer(TexturedRenderLayers.getEntityCutout());
         TWIG[Direction.NORTH.getHorizontal()].draw(matrices.peek(), buffer, TWIGS.getSprite(), TWIG_UV, light, overlay);
         itemPile.draw(matrices.peek(), buffer, COIN.getSprite(), COIN_UV, light, overlay);
