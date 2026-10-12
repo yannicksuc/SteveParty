@@ -68,7 +68,9 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     /** How big the miniature mob is at most (blocks): well inside the cube. */
     private static final float MINIATURE = 5f / 16;
     /** How long the bubble takes to come out of its plate (ticks). */
-    private static final float INFLATE_TICKS = 12;
+    private static final float INFLATE_TICKS = 24;
+    /** How long a bubble first seen waits for its inflating event before being drawn whole (ticks). */
+    private static final long FIRST_TICKS = 3;
     /** How long each mob shows when several spaces link the bubble (ticks). */
     public static final int CYCLE = 40;
     /** Within this many blocks the mob shows in the bubble, farther away its arrow. */
@@ -129,6 +131,10 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         float lift = (float) marker.getLift();
         // Placed: out of the plate, growing (overshooting a little), rising to its height
         float grown = 1, risen = 1;
+        // Just placed, the block comes a tick or two before its inflating event: nothing drawn until then (else one
+        // frame of the whole bubble before it starts from nothing); one coming into view waits as long, unnoticed
+        if (marker.seenAt == Long.MIN_VALUE) marker.seenAt = world.getTime();
+        if (marker.inflatedAt == Long.MIN_VALUE && world.getTime() - marker.seenAt < FIRST_TICKS) return;
         if (marker.inflatedAt != Long.MIN_VALUE) {
             float t = MathHelper.clamp((time - marker.inflatedAt) / INFLATE_TICKS, 0, 1);
             float back = t - 1;

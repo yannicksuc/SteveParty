@@ -50,6 +50,8 @@ public class SpawnMarkerBlockEntity extends SyncedBlockEntity {
     private boolean party;
     /** Client: the world time its bubble started inflating ({@link Long#MIN_VALUE}: long ago, full size). */
     public long inflatedAt = Long.MIN_VALUE;
+    /** Client: when its renderer first saw it (its first ticks it waits for the inflating event, never drawn whole). */
+    public long seenAt = Long.MIN_VALUE;
 
     public SpawnMarkerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SPAWN_MARKER_ENTITY, pos, state);
