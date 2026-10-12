@@ -1935,6 +1935,7 @@
   "gui.steveparty.party_controller.settings.allowed_dice.switch.on": "Activé : seuls les dés listés peuvent être lancés",
   "gui.steveparty.party_controller.settings.allowed_dice.off": "Active d'abord « Restreindre les dés »",
   "message.steveparty.dice.not_allowed": "Ce dé n'est pas autorisé dans cette partie",
+  "message.steveparty.dice.already_rolled": "Tu as déjà lancé ton dé",
   "message.steveparty.powerup.limit": "Tu portes %s/%s bonus : pas plus pendant cette partie",
   "key.steveparty.minigame_ready": "Mini-jeu : prêt (manche d'essai)",
   "hud.steveparty.minigame.practice": "Essai — [%1$s] Prêt %2$s/%3$s",

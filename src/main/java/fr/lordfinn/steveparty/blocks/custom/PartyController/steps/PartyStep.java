@@ -101,6 +101,18 @@ public class PartyStep {
         return ActionResult.PASS;
     }
 
+    /**
+     * Whether {@code player} may not throw another die while this step is the current one: their roll of it is in, or
+     * on its way (see {@link fr.lordfinn.steveparty.dice.OneThrowPerRoll}). A step without a roll refuses nothing.
+     */
+    public boolean refusesThrow(UUID player, PartyControllerEntity controller) {
+        return false;
+    }
+
+    /** {@code player} threw a die while this step is the current one: {@code lead} is the first die of the throw. */
+    public void onDieThrown(UUID player, DiceEntity lead) {
+    }
+
     public void end(PartyControllerEntity partyControllerEntity) {
     }
 

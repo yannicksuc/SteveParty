@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DicePrompts;
+import fr.lordfinn.steveparty.dice.OneThrowPerRoll;
 import fr.lordfinn.steveparty.powerups.effects.PowerUpProtection;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -61,6 +62,8 @@ public class TokenTurnPartyStep extends PartyStep {
     private boolean replay;
     /** The die spent for this turn (a copy), given back with a replay. Not saved: lost across a restart. */
     private ItemStack spentDie = ItemStack.EMPTY;
+    /** The die thrown for this turn's roll (the first of the throw) while it rolls. Not saved. */
+    private @Nullable DiceEntity thrown;
     /** Total of the dice rolled for this turn by its player, 0 until they roll (shown by the party HUD). Not saved. */
     private int roll;
     /** What that roll does (coins, swap, a face 0...), {@link DiceOutcome#NONE} until they roll. Not saved. */
@@ -89,6 +92,7 @@ public class TokenTurnPartyStep extends PartyStep {
     public void start(PartyControllerEntity partyControllerEntity) {
         super.start(partyControllerEntity);
         absentDeadline = -1;
+        thrown = null;
         roll = 0;
         outcome = DiceOutcome.NONE;
         rollCoins = null;
@@ -201,6 +205,7 @@ public class TokenTurnPartyStep extends PartyStep {
     @Override
     public ActionResult onDiceRoll(DiceEntity dice, UUID ownerUUID, int rollValue, PartyControllerEntity partyControllerEntity) {
         if (status == Status.IN_PROGRESS && (owner == null || owner.equals(ownerUUID))) {
+            thrown = null;
             spentDie = spentDie(dice);
             roll = rollValue;
             DiceOutcome rolled = dice.getOutcome();
@@ -209,6 +214,21 @@ public class TokenTurnPartyStep extends PartyStep {
             swapWith = "";
         }
         return ActionResult.PASS;
+    }
+
+    /**
+     * One throw per roll: once this turn's player threw, another throw waits for that die's result, and a roll that
+     * plays closes the turn's roll (blank sides open it again). A replay is a turn of its own.
+     */
+    @Override
+    public boolean refusesThrow(UUID player, PartyControllerEntity controller) {
+        if (status != Status.IN_PROGRESS || (owner != null && !owner.equals(player))) return false;
+        return hasRolled() || OneThrowPerRoll.inFlight(thrown);
+    }
+
+    @Override
+    public void onDieThrown(UUID player, DiceEntity lead) {
+        if (status == Status.IN_PROGRESS && (owner == null || owner.equals(player)) && !hasRolled()) thrown = lead;
     }
 
     /** @return what the roll of this turn does, {@link DiceOutcome#NONE} while its player has not rolled */

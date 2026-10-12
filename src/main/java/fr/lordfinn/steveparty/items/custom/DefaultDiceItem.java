@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.AllowedDice;
+import fr.lordfinn.steveparty.dice.OneThrowPerRoll;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -63,12 +64,16 @@ public class DefaultDiceItem extends Item {
         // A party listing its allowed dice refuses the others
         if (isServerWorld(world) && AllowedDice.refusesThrow(player, player.getStackInHand(hand)))
             return TypedActionResult.fail(player.getStackInHand(hand));
+        // In a party, one throw per roll: the roll is in (or on its way)
+        if (isServerWorld(world) && OneThrowPerRoll.refusesThrow(player))
+            return TypedActionResult.fail(player.getStackInHand(hand));
         if (isServerWorld(world)) {
             Vec3d spawnPosition = calculateSpawnPosition(player);
             DiceEntity diceEntity = spawnDiceEntity(world, spawnPosition);
             if (diceEntity != null) {
                 configureDiceEntity(diceEntity, player, hand);
                 playSounds(world, diceEntity);
+                OneThrowPerRoll.onThrown(player, diceEntity);
                 PowerUpService.onDieThrown(player, player.getStackInHand(hand));
                 decrementDiceInHand(player, hand);
                 diceEntity.startRoll();
