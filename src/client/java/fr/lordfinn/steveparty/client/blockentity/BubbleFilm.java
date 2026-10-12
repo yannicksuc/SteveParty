@@ -27,10 +27,10 @@ public final class BubbleFilm {
     public static final boolean TIERS = true;
     /**
      * The film with more pixels, for the Bubbler's bubbles as they grow (spawn_bubble_iridescent_N.png, N pixels a
-     * face): the 10 x 10 one first, then 20, 40 and 64. Same design and cycle.
+     * face): 10, 20, 40 and 64. Same design and cycle, an L-shaped highlight.
      */
     private static final Tier[] FILM_TIERS = {
-            new Tier(FILM, 10, FACE_FROM, FACE_TO),
+            new Tier(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_iridescent_10")), 10, FACE_FROM, FACE_TO),
             new Tier(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_iridescent_20")), 20, 3, 13),
             new Tier(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_iridescent_40")), 40, 3, 13),
             new Tier(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, Steveparty.id("block/spawn_bubble_iridescent_64")), 64, 0, 16)};
