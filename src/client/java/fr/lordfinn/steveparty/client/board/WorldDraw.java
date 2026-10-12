@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.board.CartridgeLinks;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -17,9 +18,12 @@ import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
+import java.util.function.DoubleToIntFunction;
+
 /**
  * Drawing helpers for the Wrench overlays, in world coordinates (the camera offset is applied here): board paths made
- * of the mod's arrow particle sprite, and labels on plates cut like the mod's screens (see the art sources).
+ * of the mod's arrow particle sprite, dotted links (what nobody walks: a bank, a Spawn Bubble), and labels on plates
+ * cut like the mod's screens (see the art sources).
  */
 public final class WorldDraw {
     /** The chevron of the mod's arrow particle (textures/particle/arrow.png): the dots of the board paths. */
@@ -98,6 +102,58 @@ public final class WorldDraw {
             vertex(consumer, matrix, tailRx, tailRy, tailRz, color, 1, 1);
             vertex(consumer, matrix, tailLx, tailLy, tailLz, color, 0, 1);
         }
+    }
+
+    // ---------------------------------------------------------------- dotted links
+
+    /** The dots of a dotted link: half this big (blocks), this far apart, this far from its ends. */
+    static final double DOT = 0.05, DOT_GAP = 0.35, DOT_MARGIN = 0.3;
+    /** How fast the dots of a Spawn Bubble's link drift toward it (blocks per second): barely, a hint of the way. */
+    private static final double BUBBLE_DRIFT = 0.35;
+
+    /**
+     * A dotted link from {@code a} to {@code b}, still: small see-through cubes {@link #DOT_GAP} apart, the ends left
+     * clear (not a path, nobody walks it: the Party Controller's bank of a space...).
+     *
+     * @param color each dot's colour (rgb) from how far along it lies, 0 at {@code a} to 1 at {@code b}
+     */
+    static void dotted(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d a, Vec3d b, float alpha,
+                       DoubleToIntFunction color) {
+        dotted(matrices, consumers, camera, a, b, alpha, Double.NaN, color);
+    }
+
+    /**
+     * {@link #dotted(MatrixStack, VertexConsumerProvider, Camera, Vec3d, Vec3d, float, DoubleToIntFunction)} drifting:
+     * {@code phase} (blocks) moves the dots toward {@code b}, through their colours (a gradient stays in place), and
+     * they fade in and out at the ends. NaN: still.
+     */
+    static void dotted(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d a, Vec3d b, float alpha,
+                       double phase, DoubleToIntFunction color) {
+        double dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+        double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (length < 2 * DOT_MARGIN + 0.1) return;
+        boolean drifting = !Double.isNaN(phase);
+        double start = DOT_MARGIN + (drifting ? Math.floorMod((long) Math.floor(phase * 1000), (long) Math.floor(DOT_GAP * 1000)) / 1000.0 : 0);
+        Vec3d cam = camera.getPos();
+        double ox = a.x - cam.x, oy = a.y - cam.y, oz = a.z - cam.z;
+        for (double t = start; t < length - DOT_MARGIN; t += DOT_GAP) {
+            float fade = drifting ? (float) Math.clamp(Math.min(t - DOT_MARGIN, length - DOT_MARGIN - t) / DOT_GAP, 0, 1) : 1;
+            int rgb = color.applyAsInt(t / length);
+            double cx = ox + dx / length * t, cy = oy + dy / length * t, cz = oz + dz / length * t;
+            GlowingCuboidRenderer.drawBox(matrices, consumers, cx - DOT, cy - DOT, cz - DOT, cx + DOT, cy + DOT, cz + DOT,
+                    ((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, alpha * fade);
+        }
+    }
+
+    /**
+     * The link from a mob space to its Spawn Bubble: dotted, from the space's blue-turquoise to the bubble's pink (its
+     * iridescent colours, {@link CartridgeLinks#spawnGradient}), the dots drifting slowly toward the bubble.
+     *
+     * @param seconds the time (seconds) that drifts the dots
+     */
+    static void bubbleLink(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d space, Vec3d bubble,
+                           float alpha, double seconds) {
+        dotted(matrices, consumers, camera, space, bubble, alpha, seconds * BUBBLE_DRIFT, CartridgeLinks::spawnGradient);
     }
 
     // ---------------------------------------------------------------- teleport arcs

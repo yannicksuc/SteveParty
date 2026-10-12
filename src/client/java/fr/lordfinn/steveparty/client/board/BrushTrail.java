@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.board.BrushLinks;
 import fr.lordfinn.steveparty.board.CartridgeLinks;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -451,15 +452,27 @@ final class BrushTrail {
                 .normal(entry, (float) dab.normal.x, (float) dab.normal.y, (float) dab.normal.z);
     }
 
-    /** The live preview of the held stroke: arrows flowing along its links, and along those leaving the aimed tile. */
+    /**
+     * The live preview of the held stroke: arrows flowing along its links, and along those leaving the aimed tile; a
+     * link to a Spawn Bubble is dotted (in the bubble's colours when painted, see {@link WorldDraw#bubbleLink}).
+     */
     private static void arrows(WorldRenderContext context, MinecraftClient client, VertexConsumerProvider.Immediate consumers, float now) {
         ClientPlayerEntity player = client.player;
         if (player == null || client.world == null) return;
         MatrixStack matrices = context.matrixStack();
-        double phase = now / 20.0 * 2.5;
+        double seconds = now / 20.0, phase = seconds * 2.5;
         Vec3d up = new Vec3d(0, 0.12, 0);
         for (Mark mark : MARKS) {
             if (mark.stroke != current || mark.from.equals(mark.to)) continue;
+            if (mark.fromTile != null && CartridgeSpawnMarker.accepts(client.world, mark.toTile)) {
+                if (mark.outcome == LINKED) {
+                    WorldDraw.bubbleLink(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0.95f, seconds);
+                } else {
+                    int outcome = mark.outcome;
+                    WorldDraw.dotted(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0.95f, seconds * 0.35, t -> outcome);
+                }
+                continue;
+            }
             WorldDraw.path(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0xF0000000 | mark.outcome,
                     0.45, 0.45, phase, 0.3, 0);
         }
@@ -472,6 +485,11 @@ final class BrushTrail {
                 for (BlockPos to : kind.targets(client.world)) {
                     // The ghosts' links are drawn by BrushOverlay
                     if (inStroke(aimed, to) || (kind instanceof CartridgeLinks.BoardPaths && BoardLinks.container(client.world, to) == null)) continue;
+                    if (kind instanceof CartridgeLinks.SpawnPoint) {
+                        WorldDraw.bubbleLink(matrices, consumers, context.camera(), from,
+                                BoardSpaces.standPos(client.world, to).add(0, LIFT, 0).add(up), BrushOverlay.DOTS_ALPHA, seconds);
+                        continue;
+                    }
                     WorldDraw.path(matrices, consumers, context.camera(), from, BoardSpaces.standPos(client.world, to).add(0, LIFT, 0).add(up),
                             0xC0000000 | NOTHING, 0.4, 0.45, phase, 0.3, 0);
                 }
