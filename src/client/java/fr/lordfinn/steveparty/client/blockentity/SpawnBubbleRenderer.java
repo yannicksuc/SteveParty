@@ -160,7 +160,7 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         matrices.scale(1 - squash / 2, 1 + squash, 1 - squash / 2);
         cube(matrices.peek(), buffer, BUBBLE.getSprite(), 0, 0, 0, HALF * grown, FACE_FROM, FACE_TO, 1, 1, 1, 1, bubbleLight);
         matrices.pop();
-        if (Math.abs(lift) >= 0.25f && risen >= 1) trail(matrices, buffer, plateTop, height + bob, anim, pos.hashCode(), light);
+        if (Math.abs(lift) >= 0.25f && risen >= 1) trail(matrices, buffer, plateTop, height, bob, anim, pos.hashCode(), light);
     }
 
     /** The blue arrow at the bubble's centre, pointing its way. */
@@ -258,18 +258,23 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
      * faster as it rises, sways more and more, grows a little and pops (shrinks and fades) at the top. A few cubes per
      * bubble, no state kept.
      */
-    private static void trail(MatrixStack matrices, VertexConsumer buffer, float plateTop, float center, float time, int seed, int light) {
+    private static void trail(MatrixStack matrices, VertexConsumer buffer, float plateTop, float rest, float bob, float time, int seed,
+                              int light) {
+        float center = rest + bob;
         boolean up = center > plateTop;
         float low = up ? plateTop : center + HALF, high = up ? center - HALF : 0;
         float length = high - low;
         if (length <= TINY_HALF * 2) return;
-        int count = Math.max(2, Math.round(length / TRAIL_STEP));
+        // Their pace and number from the trail at rest: the floating must not change them (its length changing, each
+        // tiny bubble's place in its rise, time / its life, would jump back and forth hundreds of rises every frame)
+        float restLength = Math.max(up ? rest - HALF - plateTop : -rest - HALF, TINY_HALF * 2);
+        int count = Math.max(2, Math.round(restLength / TRAIL_STEP));
         Sprite sprite = TINY.getSprite();
         MatrixStack.Entry entry = matrices.peek();
         for (int i = 0; i < count; i++) {
             // Its own pace, the same all its lives (so lives follow each other without a jump)
             float pace = 0.7f + 0.6f * random(seed, i, -1);
-            float lifeTicks = length / (TRAIL_SPEED * pace);
+            float lifeTicks = restLength / (TRAIL_SPEED * pace);
             float age = time / lifeTicks + (i + 0.5f * random(seed, i, -2)) / count;
             int life = MathHelper.floor(age);
             float progress = age - life;
