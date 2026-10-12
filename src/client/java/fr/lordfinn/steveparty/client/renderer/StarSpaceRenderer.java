@@ -138,9 +138,12 @@ public final class StarSpaceRenderer {
             if (!world.isChunkLoaded(space)) continue;
             Vec3d at = BoardSpaces.standPos(world, space);
             double dx = (world.random.nextDouble() - 0.5) * 0.6, dz = (world.random.nextDouble() - 0.5) * 0.6;
-            world.addImportantParticle(ParticleTypes.END_ROD, true, at.x + dx, at.y + HEIGHT, at.z + dz, 0, 0.12, 0);
+            // Each spark its own start and push: they fade out all along the beam, never under one ceiling
+            double rise = 0.05 + world.random.nextDouble() * 0.22, from = world.random.nextDouble() * 0.8;
+            world.addImportantParticle(ParticleTypes.END_ROD, true, at.x + dx, at.y + HEIGHT + from, at.z + dz, 0, rise, 0);
             if (world.random.nextInt(3) == 0)
-                world.addImportantParticle(ParticleTypes.WAX_OFF, true, at.x + dx, at.y + HEIGHT + 0.3, at.z + dz, 0, 0.6, 0);
+                world.addImportantParticle(ParticleTypes.WAX_OFF, true, at.x + dx, at.y + HEIGHT + 0.3 + from, at.z + dz, 0,
+                        0.3 + world.random.nextDouble() * 0.6, 0);
         }
     }
 
