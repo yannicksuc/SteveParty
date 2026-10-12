@@ -4,7 +4,7 @@
   "group": "cartridge",
   "ingredients": [
     {
-      "item": "steveparty:board_space_behavior"
+      "item": "steveparty:inventory_cartridge"
     },
     {
       "item": "steveparty:bandana"

@@ -363,9 +363,14 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.REPLAY_CARTRIDGE, Items.REPEATER);
         // An ender pearl: the warp of the Teleport tile
         offerCartridge(ModItems.TELEPORT_CARTRIDGE, Items.ENDER_PEARL);
-        // A bandana, only ever taken from a Boxed Trader: the merchant the Shop space summons (bandana, then merchant,
-        // then the villager block he comes from)
-        offerCartridge(ModItems.SHOP_CARTRIDGE, ModItems.BANDANA);
+        // An Inventory Cartridge (the shop sells from its storage) and a bandana, only ever taken from a Boxed Trader:
+        // the merchant the Shop space summons (bandana, then merchant, then the villager block he comes from)
+        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.SHOP_CARTRIDGE)
+                .input(ModItems.INVENTORY_CARTRIDGE)
+                .input(ModItems.BANDANA)
+                .group("cartridge")
+                .criterion(hasItem(ModItems.INVENTORY_CARTRIDGE), conditionsFromItem(ModItems.INVENTORY_CARTRIDGE))
+                .offerTo(exporter);
         // A Party Star: the star the space sells
         offerCartridge(ModItems.STAR_CARTRIDGE, ModItems.PARTY_STAR);
         // An acorn: the Glandouilles that push the tokens on
