@@ -3,8 +3,10 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
+import fr.lordfinn.steveparty.client.board.SpawnMarkerView;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -35,8 +37,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * The bubble of a Spawn Bubble (its plate is its block model): a translucent cube of 10 pixels, its centre in the
- * middle of the block lifted as its menu says, slowly floating up and down ({@link #BOB_HEIGHT}, {@link #BOB_SPEED}),
+ * A Spawn Bubble, all of it (its block draws nothing): its plate (its block model), and its bubble, a translucent cube
+ * of 10 pixels, its centre in the middle of the block lifted as its menu says, slowly floating up and down ({@link #BOB_HEIGHT}, {@link #BOB_SPEED}),
  * its film wobbling and swaying like a soap bubble's ({@link #WOBBLE}, {@link #SWAY})
  * with what is inside. Its faces are a soap film (textures/block/spawn_bubble_iridescent.png, pixels 3 to 12, an
  * animated texture): an almost clear middle, an iridescent rim (cyan, lavender, pink, a touch of yellow-green) whose
@@ -44,8 +46,9 @@ import java.util.Optional;
  * 6 to 8, tinted blue to pink) rise between it and the plate, each its own size, pace and sway, faster as they go up,
  * popping at the end ({@link #trail}). Inside: a blue arrow (models/block/spawn_bubble_arrow.json) pointing its way while no
  * space links it; once linked, a miniature of the space's mob facing its way (several spaces: each mob in turn,
- * {@link #CYCLE} ticks each), only out of a party and from {@link #MOB_RANGE} blocks: farther away the arrow, during a
- * party nothing (the real mob is there). Placed, it comes out of the plate growing ({@link SpawnMarkerBlockEntity#INFLATE}).
+ * {@link #CYCLE} ticks each), from {@link #MOB_RANGE} blocks: farther away the arrow; nothing while its real mob lives
+ * on it (« always visible », a party running). During a party nothing of it shows, plate included, but to those who build the
+ * board (SpawnMarkerView#sees). Placed, it comes out of the plate growing ({@link SpawnMarkerBlockEntity#INFLATE}).
  * <p>
  * What is inside stays 2 pixels or more away from the faces (no z-fighting) and is drawn first; the cube comes last,
  * on a translucent layer that is not one of the buffers drawn apart at the end (requesting it draws the content's
@@ -114,6 +117,9 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         World world = marker.getWorld();
         if (world == null) return;
         MinecraftClient client = MinecraftClient.getInstance();
+        // During a party nothing of it shows (plate included), but to those who build the board
+        if (marker.isPartyRunning() && (client.player == null || !SpawnMarkerView.sees(client.player))) return;
+        plate(client, marker.getCachedState(), matrices, consumers, light, overlay);
         float time = world.getTime() + tickDelta;
         // Its floating, wobbling and trail run on the clock, in ticks (wrapped each hour: precise as a float), not on the
         // world's time: a long-lived world's time as a float loses its fractions, and a frozen one would stop them
@@ -138,11 +144,12 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         float centerY = plateTop + (height + bob - plateTop) * risen;
         int bubbleLight = lift == 0 ? light
                 : WorldRenderer.getLightmapCoordinates(world, BlockPos.ofFloored(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5));
-        // Inside: the arrow, or the mob (out of a party, close enough), or nothing during a party
+        // Inside: the arrow, or the mob (close enough), or nothing when its real mob lives on it (always visible, a party
+        // running); otherwise it only comes when a token lands, so the bubble keeps showing which mob it is
         List<EntityType<?>> mobs = marker.getLinkedMobs();
         boolean mobShown = false;
         if (!mobs.isEmpty()) {
-            if (marker.isPartyRunning()) mobShown = true; // the real mob is there: an empty bubble
+            if (marker.isPartyRunning() && marker.isResident()) mobShown = true; // the real mob is there: an empty bubble
             else if (client.player != null && client.player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5) <= MOB_RANGE * MOB_RANGE) {
                 EntityType<?> kind = mobs.get((int) ((world.getTime() / CYCLE) % mobs.size()));
                 mobShown = miniature(world, kind, pos, centerY, yaw, time, tickDelta, grown, matrices, consumers, bubbleLight);
@@ -161,6 +168,14 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         cube(matrices.peek(), buffer, BUBBLE.getSprite(), 0, 0, 0, HALF * grown, FACE_FROM, FACE_TO, 1, 1, 1, 1, bubbleLight);
         matrices.pop();
         if (Math.abs(lift) >= 0.25f && risen >= 1) trail(matrices, buffer, plateTop, height, bob, anim, pos.hashCode(), light);
+    }
+
+    /** Its plate: the block's own model (turned by its blockstate), drawn here so that it can be hidden. */
+    private static void plate(MinecraftClient client, BlockState state, MatrixStack matrices, VertexConsumerProvider consumers,
+                              int light, int overlay) {
+        BakedModel model = client.getBlockRenderManager().getModel(state);
+        client.getBlockRenderManager().getModelRenderer().render(matrices.peek(), consumers.getBuffer(ARROW_LAYER), state, model,
+                1, 1, 1, light, overlay);
     }
 
     /** The blue arrow at the bubble's centre, pointing its way. */

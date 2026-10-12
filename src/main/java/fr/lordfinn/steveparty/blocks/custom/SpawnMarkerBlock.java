@@ -120,9 +120,10 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return VoxelShapes.empty();
     }
 
+    /** Drawn by its block entity's renderer, plate included (SpawnBubbleRenderer): nothing of it shows during a party. */
     @Override
     protected BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
+        return BlockRenderType.INVISIBLE;
     }
 
     @Override
