@@ -13,14 +13,14 @@ import java.util.List;
 /**
  * The numbers of a Bubbler's bubbles ({@link BubbleEntity}), and how its riders steer one together.
  * <ul>
- *     <li><b>The launch</b> ({@link #launchHeight}): a bubble rises from its Bubbler as many blocks as the redstone
- *     signal the Bubbler gets (1 to 15), 15 with none; then it hovers there, bobbing.</li>
+ *     <li><b>The launch</b> ({@link #launchHeight}): a bubble rises from its Bubbler {@link #BLOCKS_PER_SIGNAL} blocks
+ *     a level of the redstone signal the Bubbler gets (2 to 30), 30 with none; then it hovers there, bobbing.</li>
  *     <li><b>Drifting</b> ({@link #drift}): the players inside steer it with their movement keys, slowly and with
  *     inertia: every rider's keys count, averaged over all its riders (opposite keys cancel, a mob inside is dead
  *     weight).</li>
  *     <li><b>The puff</b> ({@link #puff}): holding jump charges it, up to {@link #CHARGE_MAX} ticks (a horse's jump
- *     bar); on release a puff of air propels the bubble where the rider looks, divided by how many ride it (a big bubble
- *     is heavy). Again after {@link #PUFF_COOLDOWN} ticks. Puffs chained too fast strain the bubble, and a strained
+ *     bar); on release a puff of air propels the bubble where the rider looks (upward, it carries further:
+ *     {@link #PUFF_LIFT}), divided by how many ride it (a big bubble is heavy). Again after {@link #PUFF_COOLDOWN} ticks. Puffs chained too fast strain the bubble, and a strained
  *     puff may pop it ({@link #strainPopChance}).</li>
  *     <li><b>Its size</b> ({@link #side}): a cube around its largest rider, growing with the cube root of how many ride
  *     it (two bubbles touching merge, agar-like), {@link #MAX_RIDERS} at most.</li>
@@ -29,8 +29,8 @@ import java.util.List;
 public final class BubbleRiding {
     /** The most riders a bubble holds: bubbles that would hold more together don't merge. */
     public static final int MAX_RIDERS = 8;
-    /** How high a bubble rises over its Bubbler with no signal, and at most (blocks). */
-    public static final int DEFAULT_HEIGHT = 15, MAX_HEIGHT = 15;
+    /** How high a bubble rises over its Bubbler a level of redstone signal, with no signal, and at most (blocks). */
+    public static final int BLOCKS_PER_SIGNAL = 2, DEFAULT_HEIGHT = 30, MAX_HEIGHT = 30;
     /**
      * A bubble left still pops by itself: after this many ticks (15 s) in which it never got this far (blocks) from
      * where it was, its hovering bob not counting (it stays within {@link #BOB} of its height). Never while it travels.
@@ -52,7 +52,7 @@ public final class BubbleRiding {
     /** A bubble about to burst by itself shows it this many ticks before (3 s): see BubbleEntity#weaken. */
     public static final int WARNING_TICKS = 60;
     /** How high a bubble blown by the Bubbled effect rises from where its rider was (blocks). */
-    public static final double EFFECT_RISE = 3;
+    public static final double EFFECT_RISE = 6;
     /** Its largest rider and this much room around it (blocks): the side of a one-rider bubble. */
     public static final float MARGIN = 0.5f;
     /** The side of a bubble holding an item (blocks). */
@@ -60,7 +60,7 @@ public final class BubbleRiding {
     /** The biggest mob a Bubbler encloses (blocks): wider or taller, it walks over it. */
     public static final float MAX_WIDTH = 1.5f, MAX_HEIGHT_OF_RIDER = 2.6f;
     /** Rising to its height: at most this fast (blocks a tick), toward it by this share of the distance a tick, eased in by this share. */
-    public static final double RISE_MAX = 0.3, HOVER_SPRING = 0.12, HOVER_EASE = 0.3;
+    public static final double RISE_MAX = 0.4, HOVER_SPRING = 0.12, HOVER_EASE = 0.3;
     /** Its bob while it hovers: this many blocks up and down, this fast (radians a tick: about 4 s). */
     public static final double BOB = 0.12, BOB_SPEED = 0.08;
     /** Its speed kept a tick (the air holds it back), and how much of its speed a wall sends back. */
@@ -71,6 +71,8 @@ public final class BubbleRiding {
     public static final int CHARGE_MIN = 4, CHARGE_MAX = 24, PUFF_COOLDOWN = 10;
     /** Its push at the least and at a full charge (blocks a tick): about 6 to 17 blocks before the air stops it. */
     public static final double PUFF_MIN = 0.4, PUFF_MAX = 1.2;
+    /** How much more a puff pushes up (its upward part only): a full one straight up carries it about 26 blocks. */
+    public static final double PUFF_LIFT = 1.5;
     /**
      * Strain ({@link #strainPopChance}): what each puff adds to its bubble's strain (0..1), how much of it the bubble
      * loses a tick (all of it in 5 calm seconds), and the strain under which a puff is always safe. A puff every 2 s
@@ -89,9 +91,9 @@ public final class BubbleRiding {
     private BubbleRiding() {
     }
 
-    /** How high a bubble rises over its Bubbler for this redstone signal: as many blocks, {@link #DEFAULT_HEIGHT} with none. */
+    /** How high a bubble rises over its Bubbler for this redstone signal: {@link #BLOCKS_PER_SIGNAL} a level, {@link #DEFAULT_HEIGHT} with none. */
     public static int launchHeight(int power) {
-        return power <= 0 ? DEFAULT_HEIGHT : Math.min(power, MAX_HEIGHT);
+        return power <= 0 ? DEFAULT_HEIGHT : Math.min(power * BLOCKS_PER_SIGNAL, MAX_HEIGHT);
     }
 
     /** Whether a Bubbler encloses this entity: a living one small enough (no bubble for a ghast) or a dropped item. */
@@ -138,9 +140,10 @@ public final class BubbleRiding {
         return PUFF_MIN + (PUFF_MAX - PUFF_MIN) * t;
     }
 
-    /** The push of a puff of this charge along {@code look}, for a bubble of {@code riders}. */
+    /** The push of a puff of this charge along {@code look} (its upward part {@link #PUFF_LIFT} stronger), for a bubble of {@code riders}. */
     public static Vec3d puff(int charge, Vec3d look, int riders) {
-        return look.normalize().multiply(puffStrength(charge) / Math.max(1, riders));
+        Vec3d push = look.normalize().multiply(puffStrength(charge) / Math.max(1, riders));
+        return push.y > 0 ? new Vec3d(push.x, push.y * PUFF_LIFT, push.z) : push;
     }
 
     /**

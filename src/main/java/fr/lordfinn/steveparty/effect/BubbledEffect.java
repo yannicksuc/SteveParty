@@ -13,9 +13,10 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Bubbled: while it lasts, the entity floats in a soap bubble ({@link BubbleEntity#encloseByEffect}) that rises a few
- * blocks then hovers, like a Bubbler's (a player inside steers it: movement keys, charged puff). When the effect ends
- * the bubble pops and its rider falls slowly; a bubble popped sooner (a hit, a projectile from outside, a wall, a mob,
- * the rider punching out, a mini-game zone's border) ends the effect.
+ * blocks then hovers, like a Bubbler's (a player inside steers it: movement keys, charged puff). The effect lasts as
+ * long as the bubble: its pop (a hit, a projectile from outside, a wall, a mob, a puff too many, left still 15 s, the
+ * rider punching out, a mini-game zone's border) ends it, and its rider falls slowly. Given for a time (a command), its
+ * end pops the bubble too.
  * <p>
  * Given by a projectile shot from inside a bubble (see ProjectileEntityBubbleMixin), {@link #PROJECTILE_TICKS}. Never on
  * a boss ({@code c:bosses}: the ender dragon, the wither), a board actor, or a mob too big for a bubble
@@ -23,8 +24,8 @@ import org.jetbrains.annotations.Nullable;
  * {@link ModEffects#initialize}.
  */
 public class BubbledEffect extends StatusEffect {
-    /** How long a bubbled projectile's hit keeps its target in a bubble (ticks, 8 s). */
-    public static final int PROJECTILE_TICKS = 160;
+    /** How long a bubbled projectile's hit keeps its target in a bubble: until the bubble pops. */
+    public static final int PROJECTILE_TICKS = StatusEffectInstance.INFINITE;
     /** The film's pale iridescent blue (its particles' colour). */
     private static final int COLOR = 0xA8D8F0;
 

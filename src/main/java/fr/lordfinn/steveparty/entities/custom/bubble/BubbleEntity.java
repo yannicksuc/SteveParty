@@ -112,8 +112,8 @@ public class BubbleEntity extends Entity {
     private @Nullable BlockPos column;
     private double columnTop;
     /**
-     * Server: blown by the Bubbled effect ({@link #encloseByEffect}), not by a Bubbler: it lasts as long as its rider's
-     * effect, never merges, and its pop ends the effect.
+     * Server: blown by the Bubbled effect ({@link #encloseByEffect}), not by a Bubbler: it never merges, its pop ends
+     * the effect, and an effect given for a time pops it when it ends.
      */
     private boolean fromEffect;
     /**
@@ -165,8 +165,8 @@ public class BubbleEntity extends Entity {
 
     /**
      * Encloses {@code entity}, under the Bubbled effect, in a bubble rising {@link BubbleRiding#EFFECT_RISE} blocks from
-     * where it is (out of its vehicle, its passengers off), lasting as long as the effect. A player inside steers it
-     * like a Bubbler's.
+     * where it is (out of its vehicle, its passengers off). A player inside steers it like a Bubbler's; it pops like
+     * one (left still, a wall, a mob...), ending the effect.
      *
      * @return the bubble, or null if it can't be (too big, gone)
      */
@@ -192,7 +192,7 @@ public class BubbleEntity extends Entity {
                 0.9f + world.getRandom().nextFloat() * 0.3f);
     }
 
-    /** Whether it was blown by the Bubbled effect (it lasts as long as its rider's effect). */
+    /** Whether it was blown by the Bubbled effect (its pop ends the effect). */
     public boolean isFromEffect() {
         return fromEffect;
     }
@@ -302,11 +302,10 @@ public class BubbleEntity extends Entity {
 
     /**
      * After it moved this tick: still one tick more, or moving (far enough from where it was still) from here. Never
-     * still in its Bubbler's column, waiting there for its riders, nor when blown by the Bubbled effect (it lasts as
-     * long as the effect, its rider maybe a mob that can't move it).
+     * still in its Bubbler's column, waiting there for its riders.
      */
     private void trackStillness() {
-        if (stillAt == null || fromEffect || inColumn() || getPos().squaredDistanceTo(stillAt) > BubbleRiding.IDLE_MOVE * BubbleRiding.IDLE_MOVE) stir();
+        if (stillAt == null || inColumn() || getPos().squaredDistanceTo(stillAt) > BubbleRiding.IDLE_MOVE * BubbleRiding.IDLE_MOVE) stir();
         else stillTicks++;
     }
 
@@ -377,7 +376,7 @@ public class BubbleEntity extends Entity {
         weaken(world);
     }
 
-    /** The ticks its riders' Bubbled effect has left (the longest one's), an effect bubble's lifetime. */
+    /** The ticks its riders' Bubbled effect has left (the longest one's; endless from a projectile), an effect bubble's lifetime. */
     private int effectTicksLeft() {
         int left = 0;
         for (Entity rider : getPassengerList()) {
@@ -389,7 +388,7 @@ public class BubbleEntity extends Entity {
     }
 
     /**
-     * Its last {@link BubbleRiding#WARNING_TICKS} before it bursts by itself (left still, or its effect ending): its
+     * Its last {@link BubbleRiding#WARNING_TICKS} before it bursts by itself (left still, or a timed effect ending): its
      * clients learn how long it has left (they show it weakening: {@link #weakness}), droplets fall off it, its film
      * creaks now and then. Moving it again (still from scratch) ends the warning.
      */

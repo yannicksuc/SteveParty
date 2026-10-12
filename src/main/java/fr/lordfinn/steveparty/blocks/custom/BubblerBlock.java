@@ -27,8 +27,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The Bubbler: a low blue plate (the Spawn Bubble's) with a grille, forever breathing out tiny bubbles. A player, a
  * mob or a dropped item stepping onto it is enclosed in a bubble ({@link BubbleEntity#enclose}; a sneaking player walks
- * over it) that rises as many blocks as the redstone signal it gets ({@link #POWER}, 1 to 15; none: 15, see
- * {@link BubbleRiding#launchHeight}) and hovers there. Its tiny bubbles rise just as high: they show where a bubble
+ * over it) that rises two blocks a level of the redstone signal it gets ({@link #POWER}, 1 to 15: 2 to 30 blocks; none:
+ * 30, see {@link BubbleRiding#launchHeight}) and hovers there. Its tiny bubbles rise just as high: they show where a bubble
  * stops (its block entity only draws them, BubblerRenderer).
  */
 public class BubblerBlock extends BlockWithEntity {
