@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.payloads.custom.StarSpacesPayload;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -32,10 +33,12 @@ import java.util.List;
  * from it and a gold {@link HaloBeam} up to the build height, so that it is seen from afar. The spaces come from
  * {@link StarSpacesPayload}.
  * <p>
- * Drawn once the block entities are (in BEFORE_DEBUG_RENDER, not AFTER_ENTITIES, which comes before them): the beam
- * writes no depth, so the board tile under it, a block entity drawn later, painted its top face over the beam's foot,
- * the column looking cut by its own tile. Still before the translucent terrain (water, stained glass in front of it
- * blend over it, as over any beacon beam) and before the clouds (its beams remembered for {@link HaloBeam#maskClouds}).
+ * The star is drawn once the block entities are (in BEFORE_DEBUG_RENDER), opaque, its depth written: before the
+ * translucent terrain, so that the water or the glass in front of it blends over it, and in the depth the beam is
+ * tested against (the star shows inside its beam, its far side hidden behind it). The beam, which writes no depth, is
+ * drawn after the translucent terrain (in AFTER_TRANSLUCENT, see {@link HaloBeam}): over the board tile under it (a
+ * block entity: drawn before it, it painted its top face over the beam's foot) and over the water behind it (drawn
+ * before it, the water painted over it).
  */
 @Environment(EnvType.CLIENT)
 public final class StarSpaceRenderer {
@@ -65,50 +68,61 @@ public final class StarSpaceRenderer {
             heardAt = context.client().world == null ? 0 : context.client().world.getTime();
         });
         ClientTickEvents.END_CLIENT_TICK.register(StarSpaceRenderer::tick);
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(context -> {
-            if (stars.isEmpty() || context.matrixStack() == null) return;
-            MinecraftClient client = MinecraftClient.getInstance();
-            ClientWorld world = client.world;
-            if (world == null) return;
-            if (star.isEmpty()) star = new ItemStack(ModItems.PARTY_STAR);
-            MatrixStack matrices = context.matrixStack();
-            Vec3d camera = context.camera().getPos();
-            float tickDelta = context.tickCounter().getTickDelta(true);
-            float time = world.getTime() + tickDelta;
-            VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
-            // The stars first, opaque: the item layer is translucent, and its faces (unsorted, partly see-through on the
-            // texture's mipmaps from afar) showed the cubes behind them through the front ones. Drawn before the beams,
-            // which are see-through: the star shows inside its beam.
-            BakedModel model = client.getItemRenderer().getModel(star, world, null, 0);
-            VertexConsumerProvider opaque = layer -> consumers.getBuffer(
-                    layer == TexturedRenderLayers.getEntityTranslucentCull() ? TexturedRenderLayers.getEntityCutout() : layer);
-            for (BlockPos space : stars) {
-                Vec3d at = BoardSpaces.standPos(world, space);
-                if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
-                matrices.push();
-                matrices.translate(at.x - camera.x, at.y + HEIGHT + 0.12 * MathHelper.sin(time * 0.08F) - camera.y, at.z - camera.z);
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * SPIN));
-                matrices.scale(SCALE, SCALE, SCALE);
-                // No display transform (the item's "fixed" one shifts it off its centre): the model's box centred on
-                // the beam's axis, so that it turns on the spot
-                client.getItemRenderer().renderItem(star, ModelTransformationMode.NONE, false, matrices, opaque, LightmapTextureManager.MAX_LIGHT_COORDINATE,
-                        OverlayTexture.DEFAULT_UV, model);
-                matrices.pop();
-            }
-            consumers.draw();
-            // The beams: from each space's surface up to the build height, centred on its cell
-            for (BlockPos space : stars) {
-                Vec3d at = BoardSpaces.standPos(world, space);
-                if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
-                int bottom = MathHelper.floor(at.y);
-                matrices.push();
-                matrices.translate(at.x - camera.x, bottom - camera.y, at.z - camera.z);
-                HaloBeam.render(matrices, consumers, BEAM_COLOR, HaloBeam.DEFAULT_RADIUS, Math.max(1, world.getTopY() - bottom),
-                        1.0F, time);
-                matrices.pop();
-            }
-            consumers.draw();
-        });
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(StarSpaceRenderer::renderStars);
+        WorldRenderEvents.AFTER_TRANSLUCENT.register(StarSpaceRenderer::renderBeams);
+    }
+
+    /**
+     * The stars, opaque: the item layer is translucent, and its faces (unsorted, partly see-through on the texture's
+     * mipmaps from afar) showed the cubes behind them through the front ones.
+     */
+    private static void renderStars(WorldRenderContext context) {
+        ClientWorld world = MinecraftClient.getInstance().world;
+        if (stars.isEmpty() || context.matrixStack() == null || world == null) return;
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (star.isEmpty()) star = new ItemStack(ModItems.PARTY_STAR);
+        MatrixStack matrices = context.matrixStack();
+        Vec3d camera = context.camera().getPos();
+        float time = world.getTime() + context.tickCounter().getTickDelta(true);
+        VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
+        BakedModel model = client.getItemRenderer().getModel(star, world, null, 0);
+        VertexConsumerProvider opaque = layer -> consumers.getBuffer(
+                layer == TexturedRenderLayers.getEntityTranslucentCull() ? TexturedRenderLayers.getEntityCutout() : layer);
+        for (BlockPos space : stars) {
+            Vec3d at = BoardSpaces.standPos(world, space);
+            if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
+            matrices.push();
+            matrices.translate(at.x - camera.x, at.y + HEIGHT + 0.12 * MathHelper.sin(time * 0.08F) - camera.y, at.z - camera.z);
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * SPIN));
+            matrices.scale(SCALE, SCALE, SCALE);
+            // No display transform (the item's "fixed" one shifts it off its centre): the model's box centred on
+            // the beam's axis, so that it turns on the spot
+            client.getItemRenderer().renderItem(star, ModelTransformationMode.NONE, false, matrices, opaque, LightmapTextureManager.MAX_LIGHT_COORDINATE,
+                    OverlayTexture.DEFAULT_UV, model);
+            matrices.pop();
+        }
+        consumers.draw();
+    }
+
+    /** The beams: from each space's surface up to the build height, centred on its cell. */
+    private static void renderBeams(WorldRenderContext context) {
+        ClientWorld world = MinecraftClient.getInstance().world;
+        if (stars.isEmpty() || context.matrixStack() == null || world == null) return;
+        MatrixStack matrices = context.matrixStack();
+        Vec3d camera = context.camera().getPos();
+        float time = world.getTime() + context.tickCounter().getTickDelta(true);
+        VertexConsumerProvider.Immediate consumers = MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers();
+        for (BlockPos space : stars) {
+            Vec3d at = BoardSpaces.standPos(world, space);
+            if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
+            int bottom = MathHelper.floor(at.y);
+            matrices.push();
+            matrices.translate(at.x - camera.x, bottom - camera.y, at.z - camera.z);
+            HaloBeam.render(matrices, consumers, BEAM_COLOR, HaloBeam.DEFAULT_RADIUS, Math.max(1, world.getTopY() - bottom),
+                    1.0F, time);
+            matrices.pop();
+        }
+        consumers.draw();
     }
 
     /** A gold spark rising from each star now and then (always spawned, so that it is seen from afar). */

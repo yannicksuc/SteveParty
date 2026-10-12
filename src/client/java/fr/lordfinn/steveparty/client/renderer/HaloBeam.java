@@ -51,10 +51,15 @@ import java.util.function.Function;
  * there, and the beam shows through them, a landmark.
  * <p>
  * Use: translate the matrices to the centre of the beam's foot, then {@link #render}; drawn in whatever buffers are
- * given (a block entity renderer's, or the world's entity buffers once the block entities are drawn: BEFORE_DEBUG_RENDER,
- * not AFTER_ENTITIES, as it writes no depth: the block entities drawn after it would paint over it). A block entity
- * drawing one should be rendered outside its bounding box ({@code rendersOutsideBoundingBox}) and from afar
- * ({@code getRenderDistance}).
+ * given, best the world's entity buffers after the translucent terrain (AFTER_TRANSLUCENT, still before the clouds:
+ * remembered for {@link #maskClouds} in time). As it writes no depth, whatever is drawn after it paints over it: drawn
+ * earlier, the block entities (a board tile under it) or the water behind it covered it. There it is depth-tested
+ * against the depth that holds the water and the stained glass: over them when they are behind it, hidden behind them
+ * when they are in front of it. With the Fabulous graphics it goes into the translucent target (its depth is that one,
+ * with the water), composited like the water over the rest of the world. Drawn from a block entity renderer, the
+ * Fabulous translucent target is cleared after it (lost) and the tiles drawn later cover it: avoid. Something solid
+ * meant to show inside the beam (the Party Star of {@link StarSpaceRenderer}) is drawn before the translucent terrain,
+ * so that it is in that depth.
  */
 @Environment(EnvType.CLIENT)
 public final class HaloBeam {
@@ -302,7 +307,8 @@ public final class HaloBeam {
 
     /**
      * The beam's render layers: the beacon beam's shader (unlit, fogged), both sides drawn, no depth written (what is
-     * drawn later behind it still shows); the inner shell blended over what is behind it, the outer one added to it.
+     * drawn later behind it still shows), into the translucent target with the Fabulous graphics (the main one
+     * otherwise); the inner shell blended over what is behind it, the outer one added to it.
      */
     private static final class Layers extends RenderLayer {
         static final Function<Identifier, RenderLayer> INNER = Util.memoize(texture -> of(
@@ -323,6 +329,7 @@ public final class HaloBeam {
                             .transparency(transparency)
                             .cull(DISABLE_CULLING)
                             .writeMaskState(COLOR_MASK)
+                            .target(TRANSLUCENT_TARGET)
                             .build(false));
         }
 
