@@ -66,8 +66,8 @@ import static net.minecraft.server.command.CommandManager.literal;
  *     space, unless its Star Cartridge (still in the space) says to wait there; no active star space: it waits, hidden,
  *     for one to be switched on.</li>
  * </ul>
- * A Mula hosts the star when a token reaches it, holding it while its player chooses and showing the outcome
- * ({@link StarHosts}): a show only, the purchase is decided here.
+ * A Mula hosts the star, waiting with it on its space the whole party, presenting it to the tokens that reach it and
+ * showing the outcome ({@link StarHosts}): a show only, the purchase is decided here.
  * <p>
  * Where the star stands belongs to the party: saved with its controller ({@link PartyControllerEntity#getStarSpace}).
  * The choices in progress live in memory (a server stop forgets them, like the shop stops). The clients draw the stars
@@ -228,6 +228,7 @@ public final class PartyStars {
 
     /** Tells the players of {@code world} where the stars of its running parties stand. */
     public static void sync(ServerWorld world) {
+        StarHosts.update(world);
         StarSpacesPayload payload = new StarSpacesPayload(shownStarSpaces(world));
         for (ServerPlayerEntity player : world.getPlayers()) {
             if (ServerPlayNetworking.canSend(player, StarSpacesPayload.ID)) ServerPlayNetworking.send(player, payload);
@@ -396,7 +397,7 @@ public final class PartyStars {
         if (world.getEntity(offer.token()) instanceof MobEntity token) {
             StarHosts.decided(token, bought, offer.party().getStarSpace(), owner);
         } else {
-            StarHosts.cancel(offer.token());
+            StarHosts.forget(offer.token());
         }
         goOn(offer);
     }

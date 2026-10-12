@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
+import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -24,12 +25,14 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.service.BoardActors;
+import fr.lordfinn.steveparty.service.MarkerResidents;
 import fr.lordfinn.steveparty.service.PartyStars;
 import fr.lordfinn.steveparty.service.StarHosts;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.CowEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -47,11 +50,12 @@ import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.count;
 import java.util.function.BooleanSupplier;
 
 /**
- * The star space's host (StarHosts): a Mula comes with the star when a token reaches it, a hologram board actor
- * (invulnerable, never saved) holding the party's star item, on the space's Spawn Bubble when its cartridge is linked
- * to one, else floating beside the space; it presents the star while the player chooses, dances and gives it when it
- * is bought, is disappointed when it is not (or the player is short of coins), and is removed at the end of its show.
- * The purchase itself is unchanged (StarCartridgeGameTests).
+ * The star's host (StarHosts): a Mula waits with the star on the star space that has it the whole party, a hologram
+ * board actor (invulnerable, never saved) holding the party's star item, on the space's Spawn Bubble when its cartridge
+ * is linked to one, else floating beside the space; it presents the star to a token that reaches it, dances and gives
+ * it when it is bought (and a new host waits with the star on its new space), is disappointed when it is not (or the
+ * player is short of coins) and waits again. A bubble « always visible » has a Mula asleep on it where the star is not,
+ * which wakes up with the star. The purchase itself is unchanged (StarCartridgeGameTests).
  * <p>
  * Each test runs in a batch of its own and takes its star spaces away when it ends (the star spaces of a party are
  * those of its board).
@@ -60,7 +64,7 @@ public class StarHostGameTests implements SteveGameTest {
     private static final BlockPos START = new BlockPos(1, 1, 1), STAR = new BlockPos(3, 1, 1), END = new BlockPos(5, 1, 1);
     private static final BlockPos OTHER = new BlockPos(1, 1, 5);
     private static final BlockPos CONTROLLER = new BlockPos(8, 1, 8), BANK = new BlockPos(8, 1, 3);
-    private static final BlockPos MARKER = new BlockPos(3, 1, 4);
+    private static final BlockPos MARKER = new BlockPos(3, 1, 4), OTHER_MARKER = new BlockPos(3, 1, 7);
     private static final int PRICE = StarSettingsComponent.DEFAULT_PRICE;
     /** Its whole show at most, once the choice is made (dance, gift and exit; or disappointment and exit). */
     private static final int GOODBYE = 160;
@@ -144,7 +148,7 @@ public class StarHostGameTests implements SteveGameTest {
     /** Ends the test: no star space left for the next batches, no party, no player, the token a cow again. */
     private static void finish(TestContext context, Board board, ServerPlayerEntity player) {
         ((TokenizedEntityInterface) board.token()).steveparty$setTokenized(false);
-        for (BlockPos pos : List.of(STAR, OTHER)) context.setBlockState(pos, Blocks.AIR);
+        for (BlockPos pos : List.of(STAR, OTHER, MARKER, OTHER_MARKER)) context.setBlockState(pos, Blocks.AIR);
         context.setBlockState(CONTROLLER, Blocks.AIR);
         context.setBlockState(BANK, Blocks.AIR);
         TestPlayers.remove(context, player);
@@ -155,14 +159,45 @@ public class StarHostGameTests implements SteveGameTest {
     private static MulaEntity host(TestContext context, Board board) {
         MulaEntity host = StarHosts.hostOf(board.token().getUuid());
         context.assertTrue(host != null && !host.isRemoved(), "a Mula hosts the star");
+        checked(context, board, host, STAR);
+        return host;
+    }
+
+    /** The host waiting with the star on {@code space} (no token there), checked. */
+    private static MulaEntity waiting(TestContext context, Board board, BlockPos space) {
+        StarHosts.update(context.getWorld());
+        MulaEntity host = StarHosts.hostAt(context.getWorld(), context.getAbsolutePos(space));
+        context.assertTrue(host != null && !host.isRemoved(), "a Mula waits with the star");
+        checked(context, board, host, space);
+        return host;
+    }
+
+    private static void checked(TestContext context, Board board, MulaEntity host, BlockPos space) {
         context.assertTrue(host.isBoardActor() && BoardActors.isBoardActor(host) && BoardActors.isHologram(host),
                 "a hologram board actor");
         context.assertTrue(host.isInvulnerable() && host.isAiDisabled(), "invulnerable, no will of its own");
         context.assertFalse(host.shouldSave(), "never saved");
         context.assertTrue(ItemStack.areItemsAndComponentsEqual(host.getHeldItem(), board.party().getCurrency(PartyCurrency.STAR)),
                 "it holds the party's star");
-        context.assertEquals(host.hostSpace(), context.getAbsolutePos(STAR), "it hosts the star space");
-        return host;
+        context.assertEquals(host.hostSpace(), context.getAbsolutePos(space), "it hosts the star space");
+        context.assertFalse(host.isHostAsleep(), "awake");
+    }
+
+    /** A Spawn Bubble at {@code at} facing west, linked to the space {@code space}, « always visible » or not. */
+    private static BlockPos bubble(TestContext context, BoardSpaceBlockEntity space, BlockPos at, boolean resident) {
+        context.setBlockState(at.down(), Blocks.STONE);
+        context.setBlockState(at, ModBlocks.SPAWN_MARKER.getDefaultState()
+                .with(SpawnMarkerBlock.ROTATION, SpawnMarkerBlock.rotation(Direction.WEST)));
+        BlockPos marker = context.getAbsolutePos(at);
+        CartridgeSpawnMarker.set(space.getStack(0), context.getWorld(), marker);
+        CartridgeSpawnMarker.own(context.getWorld(), marker, space.getPos());
+        if (resident) ((SpawnMarkerBlockEntity) context.getWorld().getBlockEntity(marker)).setResident(true);
+        return marker;
+    }
+
+    private static boolean on(MulaEntity mula, BlockPos marker) {
+        Vec3d at = SpawnMarkerBlock.standPos(marker);
+        return Math.abs(mula.getX() - at.x) < 0.05 && Math.abs(mula.getZ() - at.z) < 0.05;
     }
 
     /** The token walks onto the star with {@code coins}; {@code then} once it reached it. */
@@ -175,46 +210,58 @@ public class StarHostGameTests implements SteveGameTest {
         });
     }
 
-    // ---------------------------------------------------------------- bought
+    // ---------------------------------------------------------------- waiting, bought
 
     /**
-     * Beside the space (no Spawn Bubble), facing the token, it presents the star; bought: it dances, gives it, and is
-     * removed; the purchase is as without it.
+     * Before any token, a Mula waits with the star beside its space (no Spawn Bubble), none on the other star space; a
+     * token reaches it: the same Mula presents it; bought: it dances, gives it, and goes, and a new Mula waits with the
+     * star on its new space. The purchase is as without it.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400, batchId = "star_host_bought")
-    public void boughtTheHostDancesAndGoes(TestContext context) {
+    public void boughtTheHostDancesAndANewOneWaitsWithTheStar(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner);
             ItemStack coin = board.party().getCurrency(PartyCurrency.COIN);
             ItemStack starItem = board.party().getCurrency(PartyCurrency.STAR);
-            reach(context, board, owner, PRICE + 5, true, () -> {
+            MulaEntity waiting = waiting(context, board, STAR);
+            context.assertTrue(StarHosts.hostAt(context.getWorld(), context.getAbsolutePos(OTHER)) == null, "none where the star is not");
+            Vec3d stand = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(STAR));
+            double side = Math.hypot(waiting.getX() - stand.x, waiting.getZ() - stand.z);
+            context.assertTrue(Math.abs(side - StarHosts.SIDE) < 0.1 && Math.abs(waiting.getY() - (stand.y + StarHosts.LIFT)) < 0.1,
+                    "beside the space, floating: " + side + " / " + (waiting.getY() - stand.y));
+            context.assertTrue(Math.abs(waiting.getZ() - stand.z) > 1, "off the path (the spaces along x)");
+            when(context, () -> StarHosts.phaseAt(context.getWorld(), context.getAbsolutePos(STAR)) == StarHosts.Phase.WAIT, 40,
+                    "it waits", () -> reach(context, board, owner, PRICE + 5, true, () -> {
                 MulaEntity host = host(context, board);
-                Vec3d stand = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(STAR));
-                double side = Math.hypot(host.getX() - stand.x, host.getZ() - stand.z);
-                context.assertTrue(Math.abs(side - StarHosts.SIDE) < 0.1 && Math.abs(host.getY() - (stand.y + StarHosts.LIFT)) < 0.1,
-                        "beside the space, floating: " + side + " / " + (host.getY() - stand.y));
+                context.assertTrue(host == waiting, "the Mula waiting presents it");
                 when(context, () -> StarHosts.phase(board.token().getUuid()) == StarHosts.Phase.PRESENT, 60, "it presents the star", () -> {
                     context.assertTrue(PartyStars.decide(owner, true), "bought");
                     context.assertEquals(count(owner, coin), 5, "the price paid");
                     context.assertEquals(count(owner, starItem), 1, "the star given (by the bank, not by the Mula)");
+                    context.assertEquals(board.party().getStarSpace(), context.getAbsolutePos(OTHER), "the star moved");
+                    MulaEntity next = StarHosts.hostAt(context.getWorld(), context.getAbsolutePos(OTHER));
+                    context.assertTrue(next != null && next != host, "a new Mula waits with the star on its new space");
+                    checked(context, board, next, OTHER);
                     later(context, () -> {
                         context.assertEquals(StarHosts.phase(board.token().getUuid()), StarHosts.Phase.DANCE, "it dances");
                         when(context, () -> host.isRemoved() && StarHosts.hostOf(board.token().getUuid()) == null, GOODBYE,
                                 "it is gone after its show", () -> {
                                     context.assertEquals(count(owner, starItem), 1, "nothing more given");
+                                    context.assertTrue(StarHosts.hostAt(context.getWorld(), context.getAbsolutePos(STAR)) == null, "none left there");
+                                    context.assertTrue(!next.isRemoved(), "the new one stays");
                                     finish(context, board, owner);
                                 });
                     });
                 });
-            });
+            }));
         });
     }
 
     // ---------------------------------------------------------------- not bought
 
-    /** Refused: it is disappointed, leaves empty-handed (the star stays over its space), and is removed. */
+    /** Refused: it is disappointed, then waits again with the star. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400, batchId = "star_host_refused")
-    public void refusedTheHostIsDisappointedAndGoes(TestContext context) {
+    public void refusedTheHostIsDisappointedAndWaitsAgain(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner);
             ItemStack coin = board.party().getCurrency(PartyCurrency.COIN);
@@ -222,21 +269,18 @@ public class StarHostGameTests implements SteveGameTest {
                 MulaEntity host = host(context, board);
                 context.assertTrue(PartyStars.decide(owner, false), "no thanks");
                 context.assertEquals(count(owner, coin), PRICE, "the coins kept");
-                when(context, () -> StarHosts.phase(board.token().getUuid()) == StarHosts.Phase.SAD, 30, "disappointed (once it has popped in)", () -> {
-                    when(context, () -> StarHosts.phase(board.token().getUuid()) == StarHosts.Phase.LEAVE, 80, "it leaves", () -> {
-                        context.assertTrue(host.getHeldItem().isEmpty() && host.hostSpace() == null, "empty-handed: the star is back over its space");
-                        when(context, () -> host.isRemoved() && StarHosts.hostOf(board.token().getUuid()) == null, GOODBYE,
-                                "it is gone", () -> {
-                                    context.assertEquals(context.getAbsolutePos(STAR), board.party().getStarSpace(), "the star stays");
-                                    finish(context, board, owner);
-                                });
-                    });
-                });
+                when(context, () -> StarHosts.phase(board.token().getUuid()) == StarHosts.Phase.SAD, 30, "disappointed (once it has popped in)", () ->
+                        when(context, () -> StarHosts.hostOf(board.token().getUuid()) == null, 80, "its visit over", () -> {
+                            context.assertEquals(StarHosts.phaseAt(context.getWorld(), context.getAbsolutePos(STAR)), StarHosts.Phase.WAIT, "it waits again");
+                            context.assertTrue(waiting(context, board, STAR) == host, "the same Mula, the star in its hands");
+                            context.assertEquals(context.getAbsolutePos(STAR), board.party().getStarSpace(), "the star stays");
+                            finish(context, board, owner);
+                        }));
             });
         });
     }
 
-    /** Too few coins: no choice, the token goes on; its host comes all the same, disappointed, and goes. */
+    /** Too few coins: no choice, the token goes on; its host is disappointed all the same, and waits again. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400, batchId = "star_host_too_poor")
     public void tooFewCoinsTheHostIsDisappointed(TestContext context) {
         withPlayer(context, owner -> {
@@ -245,25 +289,43 @@ public class StarHostGameTests implements SteveGameTest {
                 MulaEntity host = host(context, board);
                 context.assertFalse(PartyStars.isDeciding(board.token().getUuid()), "no choice");
                 when(context, () -> StarHosts.phase(board.token().getUuid()) == StarHosts.Phase.SAD, 40, "disappointed", () ->
-                        when(context, () -> host.isRemoved() && StarHosts.hostOf(board.token().getUuid()) == null, GOODBYE,
-                                "it is gone", () -> {
-                                    BoardSpaceBlockEntity on = BoardSpaces.boardSpaceOf(board.token());
-                                    context.assertTrue(on != null && on.getPos().equals(context.getAbsolutePos(END)), "the token went on");
-                                    finish(context, board, owner);
-                                }));
+                        when(context, () -> StarHosts.hostOf(board.token().getUuid()) == null, GOODBYE, "its visit over", () -> {
+                            context.assertTrue(!host.isRemoved() && waiting(context, board, STAR) == host, "it waits again");
+                            BoardSpaceBlockEntity on = BoardSpaces.boardSpaceOf(board.token());
+                            context.assertTrue(on != null && on.getPos().equals(context.getAbsolutePos(END)), "the token went on");
+                            finish(context, board, owner);
+                        }));
             });
         });
     }
 
-    /** The party stopped while its player chooses: the host goes at once. */
+    /** The party stopped: the host goes at once, and none comes back. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "star_host_cancelled")
-    public void aStoppedVisitRemovesTheHostAtOnce(TestContext context) {
+    public void aStoppedPartyRemovesTheHost(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner);
             reach(context, board, owner, PRICE, true, () -> {
                 MulaEntity host = host(context, board);
-                PartyStars.cancelOffer(board.token().getUuid());
+                board.party().stopParty(null);
                 context.assertTrue(host.isRemoved() && StarHosts.hostOf(board.token().getUuid()) == null, "gone at once");
+                StarHosts.update(context.getWorld());
+                context.assertTrue(StarHosts.hostAt(context.getWorld(), context.getAbsolutePos(STAR)) == null, "none comes back");
+                finish(context, board, owner);
+            });
+        });
+    }
+
+    /** Never saved: its Mula unloaded (a chunk, a restart), a new one waits with the star. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "star_host_reload")
+    public void anUnloadedHostIsMadeAgain(TestContext context) {
+        withPlayer(context, owner -> {
+            Board board = board(context, owner);
+            MulaEntity host = waiting(context, board, STAR);
+            context.assertFalse(host.shouldSave(), "never saved");
+            host.discard();
+            later(context, () -> {
+                MulaEntity again = waiting(context, board, STAR);
+                context.assertTrue(again != host, "made again");
                 finish(context, board, owner);
             });
         });
@@ -271,27 +333,66 @@ public class StarHostGameTests implements SteveGameTest {
 
     // ---------------------------------------------------------------- its Spawn Bubble
 
-    /** A Star Cartridge is a mob space's cartridge (a Mula): linked to a Spawn Bubble, its host appears there. */
+    /**
+     * A Star Cartridge is a mob space's cartridge (a Mula): linked to a Spawn Bubble (« with the star », the default),
+     * its host waits there with the star; nobody on the bubble of the star space without the star.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "star_host_bubble")
-    public void theHostAppearsOnItsSpawnBubble(TestContext context) {
+    public void theHostWaitsOnItsSpawnBubble(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner);
             ItemStack cartridge = board.star().getStack(0);
             context.assertTrue(CartridgeSpawnMarker.spawnsMobs(cartridge) && CartridgeSpawnMarker.mobOf(cartridge) == ModEntities.MULA_ENTITY,
                     "the Star Cartridge summons a Mula: the brush links it to a Spawn Bubble");
-            context.setBlockState(MARKER.down(), Blocks.STONE);
-            context.setBlockState(MARKER, ModBlocks.SPAWN_MARKER.getDefaultState()
-                    .with(SpawnMarkerBlock.ROTATION, SpawnMarkerBlock.rotation(Direction.WEST)));
-            BlockPos marker = context.getAbsolutePos(MARKER);
-            CartridgeSpawnMarker.set(cartridge, context.getWorld(), marker);
-            CartridgeSpawnMarker.own(context.getWorld(), marker, board.star().getPos());
+            BlockPos marker = bubble(context, board.star(), MARKER, false);
+            BoardSpaceBlockEntity other = context.getBlockEntity(OTHER);
+            BlockPos otherMarker = bubble(context, other, OTHER_MARKER, false);
+            MulaEntity waiting = waiting(context, board, STAR);
+            context.assertTrue(on(waiting, marker), "on its Spawn Bubble");
+            MarkerResidents.update(context.getWorld().getServer());
+            context.assertTrue(MarkerResidents.resident(context.getWorld(), otherMarker) == null, "nobody where the star is not");
             reach(context, board, owner, PRICE, true, () -> {
                 MulaEntity host = host(context, board);
-                Vec3d on = SpawnMarkerBlock.standPos(marker);
-                context.assertTrue(Math.abs(host.getX() - on.x) < 0.05 && Math.abs(host.getZ() - on.z) < 0.05, "on its Spawn Bubble");
+                context.assertTrue(host == waiting && on(host, marker), "the same, on its bubble");
                 context.assertTrue(PartyStars.decide(owner, false), "no thanks");
-                when(context, () -> host.isRemoved(), GOODBYE, "it is gone", () -> {
-                    context.setBlockState(MARKER, Blocks.AIR);
+                when(context, () -> StarHosts.hostOf(board.token().getUuid()) == null, GOODBYE, "its visit over", () -> {
+                    context.assertTrue(!host.isRemoved() && on(host, marker) && !host.getHeldItem().isEmpty(), "back to waiting on its bubble");
+                    finish(context, board, owner);
+                });
+            });
+        });
+    }
+
+    /**
+     * Bubbles « always visible »: a Mula asleep on the bubble of the star space without the star, the one with the star
+     * awake holding it; bought, the star moves: the sleeper wakes up with it, the other falls asleep, empty-handed.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400, batchId = "star_host_resident")
+    public void alwaysVisibleBubblesSleepWithoutTheStar(TestContext context) {
+        withPlayer(context, owner -> {
+            Board board = board(context, owner);
+            BlockPos marker = bubble(context, board.star(), MARKER, true);
+            BoardSpaceBlockEntity other = context.getBlockEntity(OTHER);
+            BlockPos otherMarker = bubble(context, other, OTHER_MARKER, true);
+            MarkerResidents.update(context.getWorld().getServer());
+            MulaEntity host = waiting(context, board, STAR);
+            MarkerResidents.update(context.getWorld().getServer());
+            context.assertTrue(on(host, marker) && MarkerResidents.resident(context.getWorld(), marker) == null,
+                    "awake with the star on its bubble, alone there");
+            MobEntity resident = MarkerResidents.resident(context.getWorld(), otherMarker);
+            context.assertTrue(resident instanceof MulaEntity mula && mula.isHostAsleep() && mula.getHeldItem().isEmpty()
+                    && on(mula, otherMarker), "asleep where the star is not");
+            MulaEntity sleeper = (MulaEntity) resident;
+            reach(context, board, owner, PRICE, true, () -> {
+                context.assertTrue(PartyStars.decide(owner, true), "bought");
+                MulaEntity woken = StarHosts.hostAt(context.getWorld(), context.getAbsolutePos(OTHER));
+                context.assertTrue(woken == sleeper, "the sleeper wakes up with the star");
+                checked(context, board, woken, OTHER);
+                context.assertTrue(MarkerResidents.resident(context.getWorld(), otherMarker) == null, "no second Mula there");
+                when(context, () -> StarHosts.hostOf(board.token().getUuid()) == null, GOODBYE, "its show over", () -> {
+                    context.assertTrue(!host.isRemoved() && MarkerResidents.resident(context.getWorld(), marker) == host
+                            && host.isHostAsleep() && host.getHeldItem().isEmpty() && host.hostSpace() == null,
+                            "the other falls asleep, empty-handed");
                     finish(context, board, owner);
                 });
             });
