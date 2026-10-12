@@ -77,6 +77,7 @@ import fr.lordfinn.steveparty.registry.LegacyIds;
 import fr.lordfinn.steveparty.registry.ModGameRules;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.service.BoardActors;
+import fr.lordfinn.steveparty.service.BoomcartLaunches;
 import fr.lordfinn.steveparty.service.FrousseuxThefts;
 import fr.lordfinn.steveparty.service.OutcomeRoulettes;
 import fr.lordfinn.steveparty.service.MistigriSentences;
@@ -124,6 +125,7 @@ public class Steveparty implements ModInitializer {
         TileFeedback.initialize();
         TileTeleport.initialize();
         GlandouilleTileBehavior.initialize();
+        BoomcartLaunches.initialize();
         BoardActors.initialize();
         PartyBank.initialize();
         MarkerResidents.initialize();

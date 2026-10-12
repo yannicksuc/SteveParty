@@ -3,12 +3,14 @@ package fr.lordfinn.steveparty.items.custom.cartridges;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.SneakScrollItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -24,9 +26,9 @@ import net.minecraft.util.math.MathHelper;
 /**
  * The Move Forward / Back cartridge: a token ending its move on its tile moves on {@link #steps} more spaces, forward
  * (1..6) or back (-1..-6). Its menu has the direction and the number; sneak + mouse wheel with it in the main hand
- * changes them too.
+ * changes them too. Its space's actor is a Boomcart (BoomcartLaunches), appearing on the Spawn Bubble it links, if any.
  */
-public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScrollItem {
+public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScrollItem, MobSpawnCartridge {
     public static final int MAX_STEPS = 6;
     public static final int DEFAULT_STEPS = 3;
     /** The tile's colours (face, sides, landing particles): green forward, pink-magenta back. */
@@ -54,6 +56,12 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
     @Override
     public BoardSpaceType getBoardSpaceType() {
         return BoardSpaceType.TILE_ADVANCE_BACK;
+    }
+
+    /** The Boomcart that blows the token forward, or charges it back. */
+    @Override
+    public EntityType<?> spawnedMob() {
+        return ModEntities.BOOMCART;
     }
 
     @Override

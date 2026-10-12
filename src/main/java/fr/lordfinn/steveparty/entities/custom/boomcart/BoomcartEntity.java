@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.boomcart;
 
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.block.BlockState;
@@ -69,9 +70,12 @@ import java.util.UUID;
  *     ({@link BoomcartGoals}).</li>
  *     <li><b>Never ridden</b>: nobody gets in, and it gets in nothing (a minecart, a boat).</li>
  *     <li><b>Its mouth</b>: wide open ({@link #isHungry()}, "feed me") while a player near it holds a load.</li>
+ *     <li><b>On the board</b> ({@link #isBoardActor()}): the Move Forward / Back space's actor (BoomcartLaunches), a
+ *     hologram: no will of its own, no real fuse, never a real blast (its show only {@link #stageFuse stages} a lit
+ *     fuse), never saved, nothing dropped.</li>
  * </ul>
  */
-public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
+public class BoomcartEntity extends PathAwareEntity implements GeoEntity, BoardActor {
     /** Its body: 16 pixels wide, as a vanilla minecart, 14 high with the TNT on top. */
     public static final float WIDTH = 0.98f, HEIGHT = 0.875f;
     public static final double MAX_HEALTH = 12.0;
@@ -112,6 +116,8 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     private @Nullable UUID target;
     private int roarCooldown;
     private boolean exploded;
+    /** Summoned by a board space (see BoardActors): a hologram, never saved, never blowing for real. */
+    private boolean boardActor;
     /** Its firework load's show, as it blew. */
     private @Nullable List<FireworkExplosionComponent> show;
     /** Its own push on the rails, unlit: how hard, up to what speed, how often it starts one (1 in so many ticks). */
@@ -231,6 +237,7 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     }
 
     private void tickServer(ServerWorld world) {
+        if (boardActor) return; // its show drives it: no fuse of its own, no mouth, no roar
         if (roarCooldown > 0) roarCooldown--;
         if (fuse.isLit()) {
             boolean blow = fuse.tick();
@@ -372,6 +379,10 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     public void explode(ServerWorld world) {
         if (exploded) return;
         exploded = true;
+        if (boardActor) {
+            discard(); // a hologram never blows for real (its show plays the blast)
+            return;
+        }
         Vec3d at = getPos().add(0, HEIGHT * 0.6, 0);
         playSound(ModSounds.BOOMCART_EXPLODE, 1.0f, 1.0f);
         if (carriesFirework()) {
@@ -457,7 +468,7 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
     @Override
     protected void dropEquipment(ServerWorld world, DamageSource source, boolean causedByPlayer) {
         super.dropEquipment(world, source, causedByPlayer);
-        if (!isLit()) dropStack(getLoad().copy()); // its load, unless it's burning
+        if (!isLit() && !boardActor) dropStack(getLoad().copy()); // its load, unless it's burning (or a hologram)
     }
 
     // ---------------------------------------------------------------- rails
@@ -469,7 +480,7 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     public void travel(Vec3d movementInput) {
-        if (!getWorld().isClient && isAlive() && rollOnRails()) return;
+        if (!getWorld().isClient && isAlive() && !boardActor && rollOnRails()) return;
         super.travel(movementInput);
     }
 
@@ -539,6 +550,42 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
         return false; // and nobody gets in
     }
 
+    // ---------------------------------------------------------------- on the board
+
+    @Override
+    public boolean isBoardActor() {
+        return boardActor;
+    }
+
+    @Override
+    public void setBoardActor() {
+        this.boardActor = true;
+    }
+
+    /** It rolls where its show puts it, along the board, floating over gaps. */
+    @Override
+    public void onBoardActor() {
+        setNoGravity(true);
+    }
+
+    /**
+     * Its show lights it: a fuse of {@code ticks} out of {@code total} (drawn burning, its panic face), or unlit for
+     * {@code ticks} &lt; 0. Board actors only: nothing ever blows when it burns down.
+     */
+    public void stageFuse(int ticks, int total) {
+        if (boardActor) setFuse(ticks, total);
+    }
+
+    @Override
+    public boolean shouldSave() {
+        return !boardActor && super.shouldSave();
+    }
+
+    @Override
+    protected boolean shouldDropLoot() {
+        return !boardActor && super.shouldDropLoot(); // a board actor killed by a command leaves nothing
+    }
+
     // ---------------------------------------------------------------- save
 
     @Override
@@ -566,7 +613,7 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     protected @Nullable SoundEvent getAmbientSound() {
-        return isLit() ? null : ModSounds.BOOMCART_AMBIENT;
+        return isLit() || boardActor ? null : ModSounds.BOOMCART_AMBIENT;
     }
 
     @Override

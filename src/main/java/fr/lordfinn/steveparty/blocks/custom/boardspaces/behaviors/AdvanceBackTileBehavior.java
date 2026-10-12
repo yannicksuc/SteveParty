@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Landing;
 import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
+import fr.lordfinn.steveparty.service.BoomcartLaunches;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
@@ -17,8 +18,9 @@ import net.minecraft.world.World;
 
 /**
  * Move Forward / Back tile: a token ending its move here moves on a few more spaces, forward or back (its cartridge's
- * setting, see {@link AdvanceBackCartridgeItem}); the rules are {@link AdvanceBackMoves}'. Its turn ends where it lands
- * then, with that space's own landing.
+ * setting, see {@link AdvanceBackCartridgeItem}); the rules are {@link AdvanceBackMoves}'. A Boomcart stages it
+ * ({@link BoomcartLaunches}): it blows up behind the token, which flies forward, or crashes into it from the front,
+ * knocking it back. Its turn ends where it lands then, with that space's own landing.
  */
 public class AdvanceBackTileBehavior extends ABoardSpaceBehavior {
 
@@ -35,7 +37,9 @@ public class AdvanceBackTileBehavior extends ABoardSpaceBehavior {
             return;
         }
         int steps = AdvanceBackCartridgeItem.steps(boardSpaceEntity.getActiveCartridgeItemStack());
-        int walked = AdvanceBackMoves.launch(serverWorld, token, pos, steps);
+        // The walk waits for the Boomcart's blast (forward) or crash (back), then the token flies (BoomcartLaunches)
+        int walked = AdvanceBackMoves.launch(serverWorld, token, pos, steps, true, BoomcartLaunches.LAUNCH_TICKS);
+        if (walked != 0) BoomcartLaunches.play(serverWorld, pos, token, steps);
         Landing landing = steps < 0 ? Landing.BACK : Landing.ADVANCE;
         if (walked == 0) {
             TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing, landing.noticeKey() + ".blocked");

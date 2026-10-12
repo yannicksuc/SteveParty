@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.EntityType;
@@ -59,6 +60,17 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     private Vec3d targetPosition;
     @Unique
     private double targetPositionSpeed;
+    /**
+     * Launched by a Boomcart ({@link AdvanceBackMoves#isFlying}): where its hop to {@link #targetPosition} started, and
+     * how high above its straight way it is now (0 when it walks). Server side only, not saved.
+     */
+    @Unique
+    private Vec3d steveparty$hopFrom;
+    @Unique
+    private double steveparty$hopLift;
+    /** Flying, it goes this fast at most (blocks per tick): slow enough for its arcs to be seen. */
+    @Unique
+    private static final double FLIGHT_SPEED = 0.3;
     /** Size chosen with the wand spell (biggest dimension, in blocks), 0 = never chosen. Server side only. */
     @Unique
     private float steveparty$tokenSize = 0;
@@ -330,12 +342,28 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     public void steveparty$setTargetPosition(Vector3d target, double speed) {
         this.targetPosition = new Vec3d(target.x(), target.y(), target.z());
         this.targetPositionSpeed = speed;
+        this.steveparty$hopFrom = this.getPos().subtract(0, this.steveparty$hopLift, 0);
         this.setVelocity(Vec3d.ZERO);
     }
 
     public void steveparty$stopMoving() {
         this.targetPosition = null;
+        this.steveparty$hopLift = 0;
         this.setVelocity(Vec3d.ZERO);
+    }
+
+    /**
+     * How high above its straight way a token flying from {@link #steveparty$hopFrom} to {@link #targetPosition} is at
+     * {@code at}: a parabola, higher for a longer hop; 0 when it does not fly.
+     */
+    @Unique
+    private double steveparty$hopLift(Vec3d at) {
+        if (this.steveparty$hopFrom == null || !AdvanceBackMoves.isFlying((MobEntity) (Object) this)) return 0;
+        double length = this.steveparty$hopFrom.distanceTo(this.targetPosition);
+        if (length < 1.0E-3) return 0;
+        double p = Math.clamp(this.steveparty$hopFrom.distanceTo(at) / length, 0, 1);
+        double height = Math.min(1.6, 0.35 + 0.4 * length);
+        return height * 4 * p * (1 - p);
     }
 
     public void steveparty$setNbSteps(int step) {
@@ -370,20 +398,29 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         }
         if (this.getWorld().isClient)  return;
         if (this.targetPosition != null) {
-            Vec3d currentPosition = this.getPos();
+            MobEntity self = (MobEntity) (Object) this;
+            // Its straight way (a hop lifts it above it)
+            Vec3d currentPosition = this.getPos().subtract(0, this.steveparty$hopLift, 0);
             double speed = this.targetPositionSpeed > 0 ? this.targetPositionSpeed : 0.5;
+            boolean flying = AdvanceBackMoves.isFlying(self);
+            if (flying) speed = Math.min(speed, FLIGHT_SPEED);
 
             // Check if the entity has reached the target (within one step).
             if (currentPosition.squaredDistanceTo(targetPosition) <= speed * speed) {
                 this.setPosition(targetPosition.x, targetPosition.y, targetPosition.z);
                 this.setVelocity(Vec3d.ZERO);
                 this.targetPosition = null;
-                TokenMovementService.onTokenArrived((MobEntity) (Object) this);
+                this.steveparty$hopLift = 0;
+                TokenMovementService.onTokenArrived(self);
             } else {
-                // Move the entity step by step toward the target.
+                // Move the entity step by step toward the target (launched by a Boomcart: hopping over the spaces)
                 Vec3d direction = targetPosition.subtract(currentPosition).normalize();
                 Vec3d newPosition = currentPosition.add(direction.multiply(speed));
-                this.setPosition(newPosition.x, newPosition.y, newPosition.z);
+                this.steveparty$hopLift = steveparty$hopLift(newPosition);
+                this.setPosition(newPosition.x, newPosition.y + this.steveparty$hopLift, newPosition.z);
+                // Knocked back: it keeps facing the Boomcart that hit it
+                Float facing = flying ? AdvanceBackMoves.flightFacing(self) : null;
+                if (facing != null) TokenMovementService.faceYaw(self, facing);
             }
         } else if (this.steveparty$isTokenized()) {
             // Retrieve current velocity
