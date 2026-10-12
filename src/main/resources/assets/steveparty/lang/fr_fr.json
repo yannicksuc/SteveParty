@@ -3237,7 +3237,6 @@
   "gui.steveparty.spawn_marker.resident.hint": "Toute la partie : il attend dans la bulle, joue sa séquence quand un Pion s'arrête, revient, et part à la fin de la partie",
   "gui.steveparty.spawn_marker.lift": "Hauteur de la bulle",
   "gui.steveparty.spawn_marker.lift.hint": "Un demi-bloc plus haut ou plus bas (Maj : un bloc ; la molette aussi). La bulle et le mob flottent là : la plaque peut se cacher sous le sol ou dans un mur",
-  "gui.steveparty.spawn_marker.preview": "Sa bulle montre le mob relié (de près, hors partie) tourné vers où il regardera ; sinon une flèche",
   "message.steveparty.board.check.unloaded_starts": "%s cases de départ dans des chunks non chargés (leurs pions ne sont pas vus) :",
   "message.steveparty.board.summary.unloaded_starts": "%s cases de départ non chargées",
   "tooltip.steveparty.token.waxed": "Ciré",

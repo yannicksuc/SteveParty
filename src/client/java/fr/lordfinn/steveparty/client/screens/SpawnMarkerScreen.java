@@ -26,7 +26,7 @@ public class SpawnMarkerScreen extends Screen {
     private boolean resident;
     private int lift;
     private PartyButton onLanding, always;
-    private int panelTop, panelHeight, whenY, liftY, liftLabelHeight, hintY;
+    private int panelTop, panelHeight, whenY, liftY, liftLabelHeight;
 
     public SpawnMarkerScreen(BlockPos pos, SpawnMarkerBlockEntity marker) {
         super(Text.translatable(K + "title"));
@@ -42,8 +42,7 @@ public class SpawnMarkerScreen extends Screen {
         int whenHeight = UiText.height(textRenderer, Text.translatable(K + "when"), inner);
         liftLabelHeight = UiText.height(textRenderer, Text.translatable(K + "lift"), liftLabelWidth());
         int liftRow = Math.max(20, liftLabelHeight);
-        int hintHeight = UiText.height(textRenderer, Text.translatable(K + "preview"), inner);
-        panelHeight = 18 + whenHeight + 2 + 20 + 6 + liftRow + 6 + hintHeight + PAD;
+        panelHeight = 18 + whenHeight + 2 + 20 + 6 + liftRow + PAD;
         panelTop = (height - panelHeight) / 2;
         int left = (width - PANEL_W) / 2 + PAD, right = (width + PANEL_W) / 2 - PAD;
         int half = (inner - 4) / 2;
@@ -54,7 +53,6 @@ public class SpawnMarkerScreen extends Screen {
         onLanding.setTooltip(Tooltip.of(Text.translatable(K + "on_landing.hint")));
         always.setTooltip(Tooltip.of(Text.translatable(K + "resident.hint")));
         liftY = y + 20 + 6 + (liftRow - 20) / 2;
-        hintY = y + 20 + 6 + liftRow + 6;
         addDrawableChild(new PartyButton(right - 70, liftY, 20, 20, Text.literal("-"), b -> step(-1)))
                 .setTooltip(Tooltip.of(Text.translatable(K + "lift.hint")));
         addDrawableChild(new PartyButton(right - 20, liftY, 20, 20, Text.literal("+"), b -> step(1)))
@@ -125,7 +123,6 @@ public class SpawnMarkerScreen extends Screen {
         int centre = (width + PANEL_W) / 2 - PAD - 35;
         PartyGui.inset(context, centre - 14, liftY, 28, 20, 0xFFFFFFFF, false, false);
         UiText.centered(context, textRenderer, value, centre - 13, liftY + 6, 26, PartyGui.TEXT_DARK, false);
-        UiText.wrapped(context, textRenderer, Text.translatable(K + "preview"), left + PAD, hintY, inner, PartyGui.TEXT_SOFT, false, true);
         for (var child : children()) {
             if (child instanceof PartyButton button) button.render(context, mouseX, mouseY, delta);
         }
