@@ -124,7 +124,7 @@ public class MistigriSpaceGameTests implements SteveGameTest {
             context.assertTrue(anchor != null, "the panel floats in the world");
             double panel = anchor.y - actor.getY();
             context.assertTrue(panel >= 2.4 && panel <= 3.0, "the panel just over him: " + panel);
-            double[] top = {0};
+            double[] top = {die.getY() + die.getHeight()};
             when(context, () -> {
                 top[0] = Math.max(top[0], die.getY() + die.getHeight());
                 return !die.isRolling();

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -96,13 +97,13 @@ public class GoldenPipeGameTests implements SteveGameTest {
         return party -> Optional.of(absolute);
     }
 
-    private static List<TileTeleport.Teleported> teleports(MobEntity token, List<Runnable> cleanups) {
+    private static List<TileTeleport.Teleported> teleports(TestContext context, MobEntity token) {
         List<TileTeleport.Teleported> list = new ArrayList<>();
         Consumer<TileTeleport.Teleported> listener = teleported -> {
             if (teleported.token().equals(token.getUuid())) list.add(teleported);
         };
         TileTeleport.LISTENERS.add(listener);
-        cleanups.add(() -> TileTeleport.LISTENERS.remove(listener));
+        TestCleanup.atEnd(context, () -> TileTeleport.LISTENERS.remove(listener));
         return list;
     }
 
@@ -152,8 +153,7 @@ public class GoldenPipeGameTests implements SteveGameTest {
     public void thePawnArrivesOnTheSpaceBeforeTheStar(TestContext context) {
         path(context);
         PigEntity pig = token(context, PATH.get(0));
-        List<Runnable> cleanups = new ArrayList<>();
-        List<TileTeleport.Teleported> teleports = teleports(pig, cleanups);
+        List<TileTeleport.Teleported> teleports = teleports(context, pig);
         GoldenPipeEffect effect = new GoldenPipeEffect(starOn(context, STAR));
         PartyControllerEntity party = party(context);
         boolean[] arrived = {false};
@@ -179,7 +179,6 @@ public class GoldenPipeGameTests implements SteveGameTest {
             GoldenPipeEffect.Result again = effect.use(party, pig, null, () -> {});
             context.assertEquals(again.outcome(), GoldenPipeEffect.Outcome.ALREADY_THERE, "already there");
             context.assertTrue(!again.consumed(), "not used up");
-            cleanups.forEach(Runnable::run);
             untokenize(pig);
             context.complete();
         });

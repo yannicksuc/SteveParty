@@ -44,6 +44,7 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -119,7 +120,10 @@ public class AdvanceBackGameTests implements SteveGameTest {
 
     private static List<Played> record(TestContext context) {
         List<Played> played = new ArrayList<>();
-        Consumer<Played> listener = played::add;
+        Box area = context.getTestBox().expand(1);
+        Consumer<Played> listener = event -> {
+            if (area.contains(Vec3d.ofCenter(event.tile()))) played.add(event);
+        };
         TileFeedback.LISTENERS.add(listener);
         atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return played;
@@ -139,10 +143,12 @@ public class AdvanceBackGameTests implements SteveGameTest {
         return () -> controller.getPartyData().getStepIndex() >= 2;
     }
 
-    /** Every Boomcart of a show, as it appears. */
-    private static List<BoomcartEntity> carts(TestContext context) {
+    /** Every Boomcart of a show for {@code token}, as it appears (not the ones of the tests running next to it). */
+    private static List<BoomcartEntity> carts(TestContext context, MobEntity token) {
         List<BoomcartEntity> carts = new ArrayList<>();
-        Consumer<BoomcartEntity> listener = carts::add;
+        BiConsumer<MobEntity, BoomcartEntity> listener = (landed, cart) -> {
+            if (landed == token) carts.add(cart);
+        };
         BoomcartLaunches.SPAWN_LISTENERS.add(listener);
         atEnd(context, () -> BoomcartLaunches.SPAWN_LISTENERS.remove(listener));
         return carts;
@@ -299,8 +305,8 @@ public class AdvanceBackGameTests implements SteveGameTest {
         path(context, 6, 2, AdvanceBackCartridgeItem.withSteps(2));
         BlockPos glass = new BlockPos(4, 1, 0);
         context.setBlockState(glass, Blocks.GLASS);
-        List<BoomcartEntity> carts = carts(context);
         PigEntity pig = token(context, PATH.get(0));
+        List<BoomcartEntity> carts = carts(context, pig);
         PartyControllerEntity controller = party(context, pig);
         float health = pig.getHealth();
         context.waitAndRun(2, () -> {
@@ -331,8 +337,8 @@ public class AdvanceBackGameTests implements SteveGameTest {
         path(context, 5, 3, AdvanceBackCartridgeItem.withSteps(-2));
         BlockPos glass = new BlockPos(6, 1, 0);
         context.setBlockState(glass, Blocks.GLASS);
-        List<BoomcartEntity> carts = carts(context);
         PigEntity pig = token(context, PATH.get(0));
+        List<BoomcartEntity> carts = carts(context, pig);
         PartyControllerEntity controller = party(context, pig);
         context.waitAndRun(2, () -> {
             TokenMovementService.moveEntityOnBoard(pig, 3);
@@ -371,8 +377,8 @@ public class AdvanceBackGameTests implements SteveGameTest {
         BoardSpaceBlockEntity tile = context.getBlockEntity(PATH.get(1));
         CartridgeSpawnMarker.set(tile.getStack(0), context.getWorld(), marker);
         CartridgeSpawnMarker.own(context.getWorld(), marker, tile.getPos());
-        List<BoomcartEntity> carts = carts(context);
         PigEntity pig = token(context, PATH.get(0));
+        List<BoomcartEntity> carts = carts(context, pig);
         PartyControllerEntity controller = party(context, pig);
         context.waitAndRun(2, () -> {
             TokenMovementService.moveEntityOnBoard(pig, 1);

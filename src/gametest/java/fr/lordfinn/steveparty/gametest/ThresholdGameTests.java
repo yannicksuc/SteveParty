@@ -37,6 +37,8 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,7 +109,10 @@ public class ThresholdGameTests implements SteveGameTest {
 
     private static List<Played> record(TestContext context) {
         List<Played> played = new ArrayList<>();
-        Consumer<Played> listener = played::add;
+        Box area = context.getTestBox().expand(1);
+        Consumer<Played> listener = event -> {
+            if (area.contains(Vec3d.ofCenter(event.tile()))) played.add(event);
+        };
         TileFeedback.LISTENERS.add(listener);
         atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return played;
@@ -314,12 +319,13 @@ public class ThresholdGameTests implements SteveGameTest {
     // ---------------------------------------------------------------- barriers
 
     /**
-     * A barrier >= 5: a roll of 3 is stopped there (a « Stop » landing); its next throw, 4, is a try that misses: it
-     * stays there and its turn ends; then a 5 clears it and it walks those 5 steps from the barrier.
+     * A barrier >= 4: a roll of 3 is stopped there (a « Stop » landing); its next throw, 3, is a try that misses: it
+     * stays there and its turn ends; then a 4 clears it and it walks those 4 steps from the barrier.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 900)
     public void aBarrierIsTriedAgainEachTurn(TestContext context) {
-        path(context, 1, barrier(Operator.AT_LEAST, 5, Opening.SHARED), false);
+        // 4 or more: the walk that clears it ends within the test's area (the last space is past it)
+        path(context, 1, barrier(Operator.AT_LEAST, 4, Opening.SHARED), false);
         List<Played> played = record(context);
         PigEntity pig = token(context, PATH.get(0));
         PartyControllerEntity controller = party(context, pig);
@@ -328,13 +334,13 @@ public class ThresholdGameTests implements SteveGameTest {
             when(context, () -> step(controller) >= 2, 200, "the first turn ends", () -> {
                 context.assertTrue(isOn(context, pig, PATH.get(1)), "stopped by the barrier");
                 context.assertTrue(landed(played, context, PATH.get(1), Landing.STOP), "a « Stop » landing");
-                roll(context, pig, 4);
+                roll(context, pig, 3);
                 when(context, () -> step(controller) >= 3, 200, "the missed try ends the turn", () -> {
                     context.assertTrue(isOn(context, pig, PATH.get(1)), "still blocked");
                     context.assertEquals(steps(pig), 0, "no step walked");
-                    roll(context, pig, 2, 3);
+                    roll(context, pig, 2, 2);
                     when(context, () -> step(controller) >= 4, 250, "the third turn ends", () -> {
-                        context.assertTrue(isOn(context, pig, PATH.get(6)), "cleared: it walked its 5 steps");
+                        context.assertTrue(isOn(context, pig, PATH.get(5)), "cleared: it walked its 4 steps");
                         context.complete();
                     });
                 });

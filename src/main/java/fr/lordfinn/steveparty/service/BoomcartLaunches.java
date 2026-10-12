@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 /**
  * The show of a Move Forward / Back space (see AdvanceBackTileBehavior): a Boomcart stages the extra move
@@ -50,8 +50,8 @@ public final class BoomcartLaunches {
 
     /** The running shows, by the token that landed. */
     private static final BoardSequences<Show> RUNNING = new BoardSequences<>();
-    /** For the GameTests: each show's Boomcart as it appears. */
-    public static final List<Consumer<BoomcartEntity>> SPAWN_LISTENERS = new CopyOnWriteArrayList<>();
+    /** For the GameTests: each show's Boomcart as it appears, with the token it comes for. */
+    public static final List<BiConsumer<MobEntity, BoomcartEntity>> SPAWN_LISTENERS = new CopyOnWriteArrayList<>();
 
     private BoomcartLaunches() {
     }
@@ -100,7 +100,7 @@ public final class BoomcartLaunches {
         cart.headYaw = yaw;
         world.spawnEntity(cart);
         show.cart = cart;
-        SPAWN_LISTENERS.forEach(listener -> listener.accept(cart));
+        SPAWN_LISTENERS.forEach(listener -> listener.accept(token, cart));
         world.spawnParticles(ParticleTypes.POOF, show.from.x, show.from.y + 0.4, show.from.z, 8, 0.3, 0.3, 0.3, 0.02);
         // Knocked back, the token keeps facing the Boomcart that hit it
         AdvanceBackMoves.flyWhenLaunched(token, back ? yawOf(way) : null);

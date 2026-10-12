@@ -262,8 +262,8 @@ public class DiceRollGameTests implements SteveGameTest {
         });
     }
 
-    /** Outside a party: the tokens nearby; without an answer, a random one. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH)
+    /** Outside a party: the tokens nearby (within 50 blocks: alone in its batch); without an answer, a random one. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH + "_swap_nearby")
     public void swapTimesOutToARandomTokenNearby(TestContext context) {
         path(context, 6, -1, null);
         ServerPlayerEntity player = player(context);

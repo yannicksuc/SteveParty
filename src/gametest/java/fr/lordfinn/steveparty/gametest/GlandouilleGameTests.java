@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Glandouille: it never hurts (it shoves), stomps flatten then finish it (the mossy one takes one more), towers
@@ -360,17 +361,19 @@ public class GlandouilleGameTests implements SteveGameTest {
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
         ServerPlayerEntity player = player(context, new BlockPos(3, 1, 3), -90f); // facing +x
         player.changeGameMode(GameMode.SURVIVAL);
+        TestPlayers.vulnerable(player);
         PigEntity pig = context.spawnMob(EntityType.PIG, new BlockPos(1, 1, 5));
         members.getFirst().setAiDisabled(true);
         context.assertTrue(GlandouilleTowers.pickUp(player, members.getFirst()), "carried");
         context.waitAndRun(2, () -> {
-            player.damage(context.getWorld().getDamageSources().mobAttack(pig), 1f);
+            context.assertTrue(player.damage(context.getWorld().getDamageSources().mobAttack(pig), 1f), "hit");
             context.assertTrue(GlandouilleTowers.carried(player) == null, "dropped");
             GlandouilleEntity bottom = members.getFirst();
             context.assertTrue(bottom.getVehicle() == null, "on its own feet");
             context.assertEquals(GlandouilleTowers.height(bottom), 2, "still stacked");
             context.waitAndRun(10, () -> {
-                context.assertTrue(bottom.isOnGround(), "on the ground");
+                // its AI off, it never reads as on the ground: put down at his feet' height
+                context.assertTrue(Math.abs(bottom.getY() - player.getY()) < 0.01, "on the ground: " + (bottom.getY() - player.getY()));
                 context.assertTrue(bottom.getX() - player.getX() > 0.3 && horizontal(bottom.getPos(), player.getPos()) < 1.2,
                         "in front of him: " + (bottom.getX() - player.getX()));
                 context.complete();
@@ -736,11 +739,15 @@ public class GlandouilleGameTests implements SteveGameTest {
         ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
         context.waitAndRun(2, () -> {
             Vec3d start = a.getPos();
-            double[] highest = {start.y};
+            double[] highest = {start.y}, farthest = {start.x};
             a.onHit(player, player);
-            TestWait.everyTick(context, () -> highest[0] = Math.max(highest[0], a.getY()));
+            // how far it went, not where it is: it charges back at the hitter afterwards (it holds a grudge)
+            TestWait.everyTick(context, () -> {
+                highest[0] = Math.max(highest[0], a.getY());
+                farthest[0] = Math.max(farthest[0], a.getX());
+            });
             context.waitAndRun(30, () -> {
-                context.assertTrue(a.getX() - start.x > 0.3, "pushed along: " + (a.getX() - start.x));
+                context.assertTrue(farthest[0] - start.x > 0.3, "pushed along: " + (farthest[0] - start.x));
                 context.assertTrue(highest[0] - start.y < 0.01, "not thrown up: " + (highest[0] - start.y));
                 context.assertEquals(GlandouilleTowers.height(a), 3, "still a tower of 3");
                 for (GlandouilleEntity one : members) context.assertTrue(one.getHealth() == one.getMaxHealth(), "nobody smothered");
@@ -1004,17 +1011,18 @@ public class GlandouilleGameTests implements SteveGameTest {
 
     /**
      * Waits for {@code player} to be dazed: its movement speed and jump strength at 0 for {@link DazedEffect#TICKS},
-     * not hurt, then free again.
+     * stopped where it was hit (not thrown), not hurt, then free again.
      */
     private static void assertDazed(TestContext context, ServerPlayerEntity player) {
         float health = player.getHealth();
-        context.waitAndRun(30, () -> {
+        TestPlayers.ticking(context, player); // its daze wears off
+        when(context, () -> player.hasStatusEffect(ModEffects.DAZED), 30, "the player is dazed", () -> {
             StatusEffectInstance dazed = player.getStatusEffect(ModEffects.DAZED);
-            context.assertTrue(dazed != null, "the player is dazed");
             context.assertTrue(dazed.getDuration() > 10 && dazed.getDuration() <= DazedEffect.TICKS, "for about 2 s: " + dazed.getDuration());
             context.assertTrue(player.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) < 1.0E-6, "cannot walk");
             context.assertTrue(player.getAttributeValue(EntityAttributes.GENERIC_JUMP_STRENGTH) < 1.0E-6, "cannot jump");
-            context.assertTrue(player.getVelocity().horizontalLengthSquared() < 1.0E-6, "rooted to the spot, not thrown");
+            // a shove would throw it at about 0.5 a tick; what is left is the mobs around brushing it since
+            context.assertTrue(player.getVelocity().horizontalLength() < 0.1, "stopped on the spot, not thrown: " + player.getVelocity());
             context.assertEquals(player.getHealth(), health, "not hurt");
             context.waitAndRun(DazedEffect.TICKS + 5, () -> {
                 context.assertFalse(player.hasStatusEffect(ModEffects.DAZED), "free again");
@@ -1344,17 +1352,21 @@ public class GlandouilleGameTests implements SteveGameTest {
         return stack;
     }
 
+    /** The Glandouilles spawned in this test from now on (not the ones of the tests running next to it). */
     private static List<GlandouilleEntity> spawned(TestContext context) {
         List<GlandouilleEntity> list = new ArrayList<>();
-        Consumer<GlandouilleEntity> listener = list::add;
+        Box area = context.getTestBox().expand(2);
+        Consumer<GlandouilleEntity> listener = one -> {
+            if (area.contains(one.getPos())) list.add(one);
+        };
         GlandouillePushes.SPAWN_LISTENERS.add(listener);
         atEnd(context, () -> GlandouillePushes.SPAWN_LISTENERS.remove(listener));
         return list;
     }
 
+    /** The Glandouilles in this test (and just around it, not in the tests next to it). */
     private static List<GlandouilleEntity> around(TestContext context) {
-        return context.getWorld().getEntitiesByClass(GlandouilleEntity.class,
-                new Box(context.getAbsolutePos(BlockPos.ORIGIN)).expand(10), e -> true);
+        return context.getWorld().getEntitiesByClass(GlandouilleEntity.class, context.getTestBox().expand(2), e -> true);
     }
 
     /** A cartridge without destination (0 spaces): nothing happens, no Glandouille. */

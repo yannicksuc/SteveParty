@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest.kit;
 
 import com.mojang.authlib.GameProfile;
+import fr.lordfinn.steveparty.gametest.mixin.ServerPlayerEntityTestAccessor;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.network.ClientConnection;
@@ -43,6 +44,23 @@ public final class TestPlayers {
     public static ServerPlayerEntity mock(TestContext context, GameMode mode) {
         ServerPlayerEntity player = mock(context);
         player.changeGameMode(mode);
+        return player;
+    }
+
+    /** {@code player} can be hurt at once, without the few seconds of grace a player who just joined has. */
+    public static ServerPlayerEntity vulnerable(ServerPlayerEntity player) {
+        ((ServerPlayerEntityTestAccessor) player).steveparty$setJoinInvulnerabilityTicks(0);
+        return player;
+    }
+
+    /**
+     * {@code player}'s own tick (its status effects wearing off...) run every tick until the test ends, as its
+     * connection does for a real player: a test player has none.
+     */
+    public static ServerPlayerEntity ticking(TestContext context, ServerPlayerEntity player) {
+        TestWait.everyTick(context, () -> {
+            if (!player.isRemoved()) player.playerTick();
+        });
         return player;
     }
 

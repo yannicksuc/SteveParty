@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
@@ -53,8 +54,8 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  */
 public class PowerUpWiringGameTests implements SteveGameTest {
     private static final String BATCH = "powerups_wiring";
-    /** The Star power-ups change the mod's Star ({@link PowerUpStar}): alone in their batch. */
-    private static final String STAR_BATCH = "powerups_wiring_star";
+    /** The Star power-ups change the mod's Star ({@link PowerUpStar}): each alone in its batch. */
+    private static final String STAR_BATCH = "powerups_wiring_star", PIPE_BATCH = "powerups_wiring_pipe";
 
     private static ServerPlayerEntity survivalPlayer(TestContext context) {
         ServerPlayerEntity player = player(context);
@@ -68,7 +69,14 @@ public class PowerUpWiringGameTests implements SteveGameTest {
         return player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND).getResult().isAccepted();
     }
 
-    private static int held(ServerPlayerEntity player) {
+    /** A player with a name of its own (mock players all have the same one), removed at the end. */
+    private static ServerPlayerEntity named(TestContext context, String name, GameMode mode) {
+        ServerPlayerEntity player = TestPlayers.joined(context, "w", name, mode, 0.5, 1, 0.5);
+        TestPlayers.removeAtEnd(context, player);
+        return player;
+    }
+
+        private static int held(ServerPlayerEntity player) {
         return player.getMainHandStack().getCount();
     }
 
@@ -124,8 +132,9 @@ public class PowerUpWiringGameTests implements SteveGameTest {
             context.assertEquals(chest.count(PowerUps.MUSHROOM.item()), 1, "taken from the chest");
             int slot = player.getInventory().getSlotWithStack(new ItemStack(PowerUps.MUSHROOM.item()));
             context.assertTrue(slot >= 0, "in the inventory");
-            player.setStackInHand(Hand.MAIN_HAND, player.getInventory().getStack(slot).copy());
-            player.getInventory().setStack(slot, ItemStack.EMPTY);
+            // taken out of its slot, then in hand (that slot may be the hand itself)
+            ItemStack given = player.getInventory().removeStack(slot);
+            player.setStackInHand(Hand.MAIN_HAND, given);
             context.assertTrue(use(context, player, PowerUps.MUSHROOM, 0), "used during its turn");
             context.assertEquals(held(player), 0, "consumed");
             context.assertEquals(turn(controller).getPowerUps().used(), PowerUps.MUSHROOM, "the turn has it");
@@ -196,7 +205,9 @@ public class PowerUpWiringGameTests implements SteveGameTest {
             TrapEffect.place(controller, space.getPos(), b.getUuid(), tokenB.getUuid());
             context.assertEquals(TrapEffect.onTokenStopped(controller, space, tokenB).outcome(), TrapEffect.Outcome.OWN, "its own trap");
             context.assertTrue(PowerUpProtection.isProtected(controller, tokenB.getUuid()), "its own trap uses no Padlock");
-            TrapEffect.place(controller, space.getPos(), a.getUuid(), tokens.get(0).getUuid());
+            // its own trap stays there: taken off, so that a's goes on that space
+            TrapEffect.clearAll(controller);
+            context.assertEquals(TrapEffect.place(controller, space.getPos(), a.getUuid(), tokens.get(0).getUuid()), TrapEffect.Placed.SET, "a's trap set");
             context.assertEquals(TrapEffect.onTokenStopped(controller, space, tokenB).outcome(), TrapEffect.Outcome.DISARMED, "a's trap is parried");
             context.assertTrue(!PowerUpProtection.isProtected(controller, tokenB.getUuid()), "the Padlock is used up");
             context.assertTrue(TrapEffect.trapAt(controller, space.getPos()) == null, "the trap is gone");
@@ -209,9 +220,11 @@ public class PowerUpWiringGameTests implements SteveGameTest {
     /** The thief picks a player: the theft, then the bell consumed; the roll waits for the pick. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = BATCH)
     public void thiefBellStealsFromThePickedPlayer(TestContext context) {
-        ServerPlayerEntity thief = survivalPlayer(context), poor = player(context), rich = player(context);
+        // named apart: the thief picks one by name
+        ServerPlayerEntity thief = named(context, "Thief", GameMode.SURVIVAL), poor = named(context, "Poor", GameMode.CREATIVE),
+                rich = named(context, "Rich", GameMode.CREATIVE);
         PartyControllerEntity controller = party(context, new ArrayList<>(), thief, poor, rich);
-        InventoryUtils.giveOrDrop(poor, new ItemStack(Items.GOLD_INGOT), 6);
+        InventoryUtils.giveOrDrop(poor, new ItemStack(Items.GOLD_INGOT), 5); // 5 to 15 stolen: all of them
         InventoryUtils.giveOrDrop(rich, new ItemStack(Items.GOLD_INGOT), 30);
         context.waitAndRun(2, () -> {
             context.assertTrue(use(context, thief, PowerUps.THIEF_BELL, 2), "the list is shown");
@@ -220,8 +233,8 @@ public class PowerUpWiringGameTests implements SteveGameTest {
             context.assertTrue(!use(context, thief, PowerUps.MUSHROOM, 1), "no other power-up while picking");
             thief.setStackInHand(Hand.MAIN_HAND, new ItemStack(PowerUps.THIEF_BELL.item(), 2));
             pick(context, thief, poor);
-            context.assertEquals(count(poor, Items.GOLD_INGOT), 0, "the picked player is robbed (5 to 15, at most 6)");
-            context.assertEquals(count(thief, Items.GOLD_INGOT), 6, "the thief gets them");
+            context.assertEquals(count(poor, Items.GOLD_INGOT), 0, "the picked player is robbed (5 to 15, at most what they have)");
+            context.assertEquals(count(thief, Items.GOLD_INGOT), 5, "the thief gets them");
             context.assertEquals(count(rich, Items.GOLD_INGOT), 30, "not the other one");
             context.assertEquals(held(thief), 1, "consumed");
             context.assertEquals(turn(controller).getPowerUps().used(), PowerUps.THIEF_BELL, "the turn remembers it");
@@ -327,7 +340,7 @@ public class PowerUpWiringGameTests implements SteveGameTest {
     }
 
     /** The pawn warps before the Star; the roll waits until it has arrived. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = STAR_BATCH)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = PIPE_BATCH)
     public void goldenPipeHoldsTheRollUntilThePawnArrives(TestContext context) {
         ServerPlayerEntity player = survivalPlayer(context);
         path(context, 3, -1, null);

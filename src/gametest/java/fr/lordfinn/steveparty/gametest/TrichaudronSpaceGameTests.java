@@ -322,8 +322,11 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         });
     }
 
-    /** Several prizes of the same item (coins, 5 and 10): winning one consumes that one only. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 3 * WHOLE, batchId = BATCH)
+    /**
+     * Several prizes of the same item (coins, 5 and 10): winning one consumes that one only. Alone in its batch: next
+     * to partyEndingRemovesIt, its show was cut short, nothing given, as that test ended its own party.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 3 * WHOLE, batchId = BATCH + "_same_item")
     public void prizesOfTheSameItemAreConsumedOneByOne(TestContext context) {
         Show show = show(context, cartridge(new ItemStack(Items.GOLD_NUGGET, 5), new ItemStack(Items.GOLD_NUGGET, 10),
                 new ItemStack(Items.GOLD_NUGGET, 5)), chest(new ItemStack(Items.GOLD_NUGGET, 64)), TrichaudronPrizes.Start.STARTED);
@@ -331,7 +334,8 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         context.assertEquals(TrichaudronPrizes.actor(token).getHeadCount(), 3, "three heads, all coins");
         when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, WHOLE, "the choice", () -> {
             TrichaudronPrizes.pick(token, TrichaudronPrizes.actor(token).shownHeads()[0]);
-            when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {
+            // the next landing once the first show is gone, not while it is being put away
+            when(context, () -> show.done()[0] && !TrichaudronPrizes.isRunning(token), WHOLE, "the show ends", () -> {
                 boolean[] again = {false};
                 context.assertTrue(show.again(context, again) == TrichaudronPrizes.Start.STARTED, "the other two still on offer");
                 context.assertEquals(TrichaudronPrizes.actor(token).getHeadCount(), 2, "one head less");

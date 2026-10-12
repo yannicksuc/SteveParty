@@ -37,6 +37,8 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,8 +71,9 @@ public class ReplayTileGameTests implements SteveGameTest {
 
     private static List<Played> record(TestContext context) {
         List<Played> played = new ArrayList<>();
+        Box area = context.getTestBox().expand(1);
         Consumer<Played> listener = event -> {
-            if (event.kind() == Kind.LAND) played.add(event);
+            if (event.kind() == Kind.LAND && area.contains(Vec3d.ofCenter(event.tile()))) played.add(event);
         };
         TileFeedback.LISTENERS.add(listener);
         TestCleanup.atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
