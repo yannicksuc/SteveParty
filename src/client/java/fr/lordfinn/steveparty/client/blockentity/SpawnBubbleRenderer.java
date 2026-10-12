@@ -1,11 +1,13 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.client.board.SpawnMarkerView;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -39,7 +41,7 @@ import java.util.Optional;
  * its film wobbling and swaying like a soap bubble's ({@link #WOBBLE}, {@link #SWAY})
  * with what is inside. Its faces are a soap film (textures/block/spawn_bubble_iridescent.png, pixels 3 to 12, an
  * animated texture): an almost clear middle, an iridescent rim (cyan, lavender, pink, a touch of yellow-green) whose
- * hues slowly turn, a glint sweeping across, a highlight at the top left; its item keeps the still spawn_bubble.png. Lifted, tiny bubbles (spawn_bubble_small.png, pixels
+ * hues slowly turn, a glint sweeping across, a highlight at the top left. Lifted, tiny bubbles (spawn_bubble_small.png, pixels
  * 6 to 8, tinted blue to pink) rise between it and the plate, each its own size, pace and sway, faster as they go up,
  * popping at the end ({@link #trail}). Inside: a blue arrow (models/block/spawn_bubble_arrow.json) pointing its way while no
  * space links it; once linked, a miniature of the space's mob facing its way (several spaces: each mob in turn,
@@ -49,8 +51,8 @@ import java.util.Optional;
  * <p>
  * What is inside stays 2 pixels or more away from the faces (no z-fighting) and is drawn first; the cube comes last,
  * on a translucent layer that is not one of the buffers drawn apart at the end (requesting it draws the content's
- * layer at once) and whose quads are sorted back to front: the content shows through every face. Its item is a plain
- * block model (models/item/spawn_marker.json: the plate, the arrow, the cube).
+ * layer at once) and whose quads are sorted back to front: the content shows through every face. Its item is the
+ * same bubble at rest ({@link #ITEM}).
  */
 public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlockEntity> {
     public static final Identifier ARROW_MODEL = Steveparty.id("block/spawn_bubble_arrow");
@@ -81,6 +83,8 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     /** How far it sways off upright (degrees), and how fast (radians per tick, two slightly different ways). */
     private static final float SWAY = 4f, SWAY_SPEED_X = 0.05f, SWAY_SPEED_Z = 0.037f;
     /** The miniatures, one per kind of mob (empty: it cannot be made on the client), made again in another world. */
+    /** Where its item's arrow points (as a placed one's yaw): toward the left of its icon. */
+    private static final float ITEM_YAW = 135;
     private static final Map<EntityType<?>, Optional<Entity>> MINIATURES = new HashMap<>();
     private static World miniaturesWorld;
 
@@ -241,6 +245,28 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         float restLength = up ? rest - HALF - plateTop : -rest - HALF;
         BubbleFilm.trail(matrices.peek(), buffer, 0.5f, 0.5f, low, high, restLength, TRAIL_STEP, SCATTER, time, seed, light);
     }
+
+    /**
+     * Its item: the placed bubble at rest (its plate, its arrow, its soap film wobbling and swaying), unlifted, its
+     * centre in the middle of the block.
+     */
+    public static final BuiltinItemRendererRegistry.DynamicItemRenderer ITEM = (stack, mode, matrices, consumers, light, overlay) -> {
+        MinecraftClient client = MinecraftClient.getInstance();
+        BlockState state = ModBlocks.SPAWN_MARKER.getDefaultState();
+        float centerY = (float) SpawnMarkerBlock.BUBBLE_HEIGHT;
+        plate(client, state, matrices, consumers, light, overlay);
+        arrow(client, matrices, consumers, centerY, ITEM_YAW, 1, light, overlay);
+        float anim = (Util.getMeasuringTimeMs() % 3_600_000L) / 50f;
+        float squash = WOBBLE * MathHelper.sin(anim * WOBBLE_SPEED);
+        matrices.push();
+        matrices.translate(0.5f, centerY, 0.5f);
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_X)));
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_Z)));
+        matrices.scale(1 - squash / 2, 1 + squash, 1 - squash / 2);
+        BubbleFilm.cube(matrices.peek(), consumers.getBuffer(BUBBLE_LAYER), BubbleFilm.FILM.getSprite(), 0, 0, 0, HALF,
+                BubbleFilm.FACE_FROM, BubbleFilm.FACE_TO, 1, 1, 1, 1, light);
+        matrices.pop();
+    };
 
     @Override
     public boolean rendersOutsideBoundingBox(SpawnMarkerBlockEntity marker) {
