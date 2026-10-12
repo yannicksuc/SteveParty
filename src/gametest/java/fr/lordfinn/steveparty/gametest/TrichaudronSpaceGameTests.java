@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TrichaudronTileBehavior;
@@ -10,6 +12,7 @@ import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronPartEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.service.TileInfos;
 import fr.lordfinn.steveparty.service.TrichaudronPrizes;
@@ -31,6 +34,7 @@ import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Hand;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
@@ -58,6 +62,12 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 public class TrichaudronSpaceGameTests implements FabricGameTest {
     private static final String BATCH = "trichaudron_space";
     private static final BlockPos TILE = new BlockPos(3, 1, 3), CHEST = new BlockPos(5, 1, 3);
+    /**
+     * Where the Trichaudron rises, in the template: without a Spawn Marker it rises 11 blocks to the token's side, in
+     * the template of a test beside it, whose end (passed) removes every entity in it, the Trichaudron in the middle of
+     * its show.
+     */
+    private static final BlockPos MARKER = new BlockPos(5, 1, 6);
     private static final int WHOLE = TrichaudronPrizes.WHOLE + 20;
     /** Until its heads are held out (rise, dive, emerge), with some margin. */
     private static final int TO_CHOICE = TrichaudronPrizes.RISE_TICKS + TrichaudronPrizes.DIVE_TICKS + TrichaudronPrizes.EMERGE_TICKS + 20;
@@ -105,6 +115,12 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
             CartridgeContainers.set(cartridge, List.of(GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(CHEST))));
         }
         BoardSpaceBlockEntity tile = tile(context, TILE, cartridge);
+        context.setBlockState(MARKER.down(), Blocks.STONE);
+        context.setBlockState(MARKER, ModBlocks.SPAWN_MARKER.getDefaultState()
+                .with(SpawnMarkerBlock.ROTATION, SpawnMarkerBlock.rotation(Direction.NORTH)));
+        BlockPos marker = context.getAbsolutePos(MARKER);
+        CartridgeSpawnMarker.set(tile.getStack(0), context.getWorld(), marker);
+        CartridgeSpawnMarker.own(context.getWorld(), marker, tile.getPos());
         MobEntity token = token(context, TILE, player.getUuid());
         PartyControllerEntity party = DiceTestKit.party(context, player.getUuid(), token);
         boolean[] done = {false};
