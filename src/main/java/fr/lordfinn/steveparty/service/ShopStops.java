@@ -100,6 +100,8 @@ public final class ShopStops {
         @Nullable ShopStopScreenHandler handler;
         /** Purchases made in the screens closed so far (the open one counts from there). */
         int purchases;
+        /** The stop's whole time (game rule when it started). */
+        int seconds;
 
         Stop(UUID token, UUID owner, ServerWorld world, BlockPos space, UUID trader, UUID sequence, int limit, long deadline,
              @Nullable PartyControllerEntity party, Text tokenName) {
@@ -148,6 +150,12 @@ public final class ShopStops {
     public static int secondsLeft(ShopStopScreenHandler handler) {
         Stop stop = stopOf(handler);
         return stop == null ? 0 : (int) Math.max(0, (stop.deadline - stop.world.getTime() + 19) / 20);
+    }
+
+    /** The whole time of the stop of this screen, in seconds (0 if it is not a current stop's). */
+    public static int totalSeconds(ShopStopScreenHandler handler) {
+        Stop stop = stopOf(handler);
+        return stop == null ? 0 : stop.seconds;
     }
 
     /** The Shop Cartridge giving {@code space} its role, or null. */
@@ -233,6 +241,7 @@ public final class ShopStops {
         Text tokenName = mob.getDisplayName();
         Stop stop = new Stop(mob.getUuid(), ownerUuid, world, space.getPos().toImmutable(), trader.getUuid(), sequence, limit,
                 world.getTime() + 20L * seconds, party, tokenName);
+        stop.seconds = seconds;
         STOPS.put(mob.getUuid(), stop);
         // No screen pops up: the owner clicks the merchant (or his stall, or the chat's link)
         BoardActors.setTouchable(trader, true);

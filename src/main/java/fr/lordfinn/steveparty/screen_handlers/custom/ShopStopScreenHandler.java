@@ -22,8 +22,9 @@ public class ShopStopScreenHandler extends CustomizableMerchantScreenHandler {
     public static final int BUY_NOTHING_BUTTON_ID = 0;
     /** Index of the result slot of the merchant screen. */
     private static final int OUTPUT_SLOT = 2;
-    /** Synced: seconds left before the stop ends by itself, purchases made, purchases allowed. */
-    private static final int PROPERTY_SECONDS_LEFT = 0, PROPERTY_PURCHASES = 1, PROPERTY_LIMIT = 2, PROPERTY_COUNT = 3;
+    /** Synced: seconds left before the stop ends by itself, purchases made, purchases allowed, the stop's whole time. */
+    private static final int PROPERTY_SECONDS_LEFT = 0, PROPERTY_PURCHASES = 1, PROPERTY_LIMIT = 2, PROPERTY_TOTAL_SECONDS = 3,
+            PROPERTY_COUNT = 4;
 
     private final PropertyDelegate properties;
     private int purchases;
@@ -48,6 +49,7 @@ public class ShopStopScreenHandler extends CustomizableMerchantScreenHandler {
                     case PROPERTY_SECONDS_LEFT -> ShopStops.secondsLeft(ShopStopScreenHandler.this);
                     case PROPERTY_PURCHASES -> ShopStopScreenHandler.this.purchases;
                     case PROPERTY_LIMIT -> ShopStopScreenHandler.this.limit;
+                    case PROPERTY_TOTAL_SECONDS -> ShopStops.totalSeconds(ShopStopScreenHandler.this);
                     default -> 0;
                 };
             }
@@ -72,6 +74,11 @@ public class ShopStopScreenHandler extends CustomizableMerchantScreenHandler {
 
     public int getSecondsLeft() {
         return properties.get(PROPERTY_SECONDS_LEFT);
+    }
+
+    /** The stop's whole time, in seconds (synced to the client: its countdown's full bar). */
+    public int getTotalSeconds() {
+        return properties.get(PROPERTY_TOTAL_SECONDS);
     }
 
     /** Purchases made in this screen (synced to the client). */

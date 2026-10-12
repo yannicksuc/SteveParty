@@ -1401,7 +1401,6 @@
   "gui.steveparty.shop_stop.buy_nothing": "Ne rien acheter",
   "gui.steveparty.shop_stop.buy_nothing.hint": "Quitter la boutique : ton pion repart",
   "gui.steveparty.shop_stop.done": "J'ai fini",
-  "gui.steveparty.shop_stop.status": "%s  ·  %s",
   "gui.steveparty.shop_stop.purchases": "Achats %s / %s",
   "gui.steveparty.shop_stop.time_left": "ferme dans %s s",
   "message.steveparty.shop_stop.welcome": "%s s'arrête à la boutique : jusqu'à %s achat(s), clique sur le marchand (%s s).",
