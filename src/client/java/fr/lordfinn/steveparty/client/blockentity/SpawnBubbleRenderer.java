@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.client.board.SpawnMarkerView;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
 import net.minecraft.block.BlockState;
@@ -145,6 +146,10 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
             }
         }
         if (!mobShown) arrow(client, matrices, consumers, centerY, yaw, grown, bubbleLight, overlay);
+        // What is inside drawn now, all of it, before the film: the film writes its depth, so whatever of the mob a
+        // buffer kept for later (a see-through part: the Frousseux's flame, its wax; an item it holds) would end up
+        // hidden inside the film, showing only where it pokes out, or drawn over it
+        else if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw();
         // The cube last, over what is inside
         VertexConsumer buffer = consumers.getBuffer(BUBBLE_LAYER);
         // A soap bubble, not a glass cube: its film wobbles (taller and thinner, then squatter) and it sways a little
@@ -196,6 +201,8 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
                 Entity created = type.create(world);
                 // Never ticked: the Shop's merchant would stay closed in his box
                 if (created instanceof BoxedTraderEntity trader) trader.comeOut();
+                // nor the Mula: its drawn size (MulaMotion#visualScaleRatio) stays nothing until a tick; a still pawn's
+                if (created instanceof MulaEntity mula) mula.getMotion().tickPawn(mula.getScaleFactor(), 0);
                 return Optional.ofNullable(created);
             } catch (RuntimeException e) {
                 Steveparty.LOGGER.warn("No miniature of {} for the spawn bubbles", EntityType.getId(type), e);
