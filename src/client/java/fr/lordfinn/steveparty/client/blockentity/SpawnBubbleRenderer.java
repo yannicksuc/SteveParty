@@ -69,7 +69,9 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     /** Within this many blocks the mob shows in the bubble, farther away its arrow. */
     public static final double MOB_RANGE = 8;
     /** About one tiny bubble of the trail for this many blocks of it. */
-    private static final float TRAIL_STEP = 4 / 16f;
+    private static final float TRAIL_STEP = 3 / 16f;
+    /** How far from the middle a tiny bubble starts at most (blocks): anywhere under the bubble. */
+    private static final float SCATTER = 4.5f / 16;
     /** How fast a tiny bubble rises on average (blocks per tick). */
     private static final float TRAIL_SPEED = 0.022f;
     /** How high the bubble floats over its rest height at most (blocks): never down into its plate. */
@@ -234,7 +236,8 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     /**
      * Tiny bubbles rising between the plate and the lifted bubble (from the plate up to it, or from it up to the plate's
      * underside when it hangs below). Each one lives one rise: its size, pace, sway and tint drawn at random for that
-     * life (from {@code seed}, the life's number and its index), its start staggered; it swells out of nothing, goes
+     * life (from {@code seed}, the life's number and its index), its start staggered and its spot anywhere under the
+     * bubble ({@link #SCATTER}); it swells out of nothing, goes
      * faster as it rises, sways more and more, grows a little and pops (shrinks and fades) at the top. A few cubes per
      * bubble, no state kept.
      */
@@ -267,8 +270,12 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
             float half = TINY_HALF * size * (0.85f + 0.3f * progress) * swell * (0.4f + 0.6f * pop);
             if (half <= 0.002f) continue;
             float alpha = 0.35f + 0.65f * pop;
-            float x = 0.5f + MathHelper.sin(time * swaySpeed + swayAt) * sway;
-            float z = 0.5f + MathHelper.cos(time * swaySpeed * 0.8f + swayAt * 1.3f) * sway * 0.7f;
+            // Its own spot over the plate for this life (evenly over a disc under the bubble), drawn a little toward
+            // the middle as it rises
+            float spotAngle = random(seed ^ life, i, 5) * MathHelper.TAU;
+            float spotRadius = SCATTER * MathHelper.sqrt(random(seed ^ life, i, 6)) * (1 - 0.3f * progress);
+            float x = 0.5f + MathHelper.cos(spotAngle) * spotRadius + MathHelper.sin(time * swaySpeed + swayAt) * sway;
+            float z = 0.5f + MathHelper.sin(spotAngle) * spotRadius + MathHelper.cos(time * swaySpeed * 0.8f + swayAt * 1.3f) * sway * 0.7f;
             float y = Math.min(low + along, high - half);
             cube(entry, buffer, sprite, x, y, z, half, TINY_FROM, TINY_TO, MathHelper.lerp(pink, TINT_BLUE[0], TINT_PINK[0]),
                     MathHelper.lerp(pink, TINT_BLUE[1], TINT_PINK[1]), MathHelper.lerp(pink, TINT_BLUE[2], TINT_PINK[2]), alpha, light);
