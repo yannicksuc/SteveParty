@@ -36,6 +36,11 @@ public final class ToolHudPanel {
     public static final int BOX = 22;
     /** Where a box's 16 pixel icon starts inside it. */
     public static final int INSET = (BOX - 16) / 2;
+    /**
+     * Size of a roomy box: its icons (and their counts) sit wholly inside the plate's 4 pixel frame, clear of it (a chip
+     * of several icons, where the frame cutting them would show), and where they start inside it.
+     */
+    public static final int ROOMY = 28, ROOMY_INSET = (ROOMY - 16) / 2;
     /** Height of a state plate. */
     public static final int STATE = 16;
     /** Between two elements of a row, and between two rows of the same kind. */
@@ -57,7 +62,7 @@ public final class ToolHudPanel {
         void describe(ToolHudPanel panel, ItemStack held, MinecraftClient client);
     }
 
-    private record Box(ToolHud.Plate frame, int width, Icon icon) {
+    private record Box(ToolHud.Plate frame, int width, int height, Icon icon) {
     }
 
     private record State(Text text, ToolHud.Plate plate) {
@@ -104,7 +109,16 @@ public final class ToolHudPanel {
      * inside (several icons, an arrow between them...).
      */
     public ToolHudPanel box(ToolHud.Plate frame, int width, Icon icon) {
-        boxes.add(new Box(frame, width, icon));
+        boxes.add(new Box(frame, width, BOX, icon));
+        return this;
+    }
+
+    /**
+     * A {@link #ROOMY} high box {@code width} pixels wide framed by {@code frame}: {@code icon} draws its content from
+     * {@link #ROOMY_INSET} inside its top left corner. On a row with other boxes, all stand on the same line.
+     */
+    public ToolHudPanel roomyBox(ToolHud.Plate frame, int width, Icon icon) {
+        boxes.add(new Box(frame, width, ROOMY, icon));
         return this;
     }
 
@@ -151,18 +165,19 @@ public final class ToolHudPanel {
 
         // Boxes, the first row the lowest
         List<List<Box>> boxRows = wrap(boxes, Box::width, available);
-        for (int i = 0; i < boxRows.size(); i++) {
-            List<Box> row = boxRows.get(i);
-            int y = bottom - BOX - i * (BOX + GAP);
+        for (List<Box> row : boxRows) {
+            int rowBottom = bottom;
             int x = centerX - rowWidth(row, Box::width) / 2;
             for (Box box : row) {
-                ToolHud.plate(context, x, y, box.width(), BOX, box.frame());
-                int ix = x + INSET, iy = y + INSET;
+                int y = rowBottom - box.height(), inset = (box.height() - 16) / 2;
+                ToolHud.plate(context, x, y, box.width(), box.height(), box.frame());
+                int ix = x + inset, iy = y + inset;
                 HudDepth.item(context, () -> box.icon().draw(context, ix, iy));
                 x += box.width() + GAP;
             }
+            bottom -= row.stream().mapToInt(Box::height).max().orElse(BOX) + GAP;
         }
-        if (!boxRows.isEmpty()) bottom -= boxRows.size() * (BOX + GAP) - GAP + PART_GAP;
+        if (!boxRows.isEmpty()) bottom += GAP - PART_GAP;
 
         // State plates
         List<List<State>> stateRows = wrap(states, state -> stateWidth(textRenderer, state.text(), available), available);
