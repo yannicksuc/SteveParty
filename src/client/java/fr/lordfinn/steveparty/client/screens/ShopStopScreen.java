@@ -3,55 +3,62 @@ package fr.lordfinn.steveparty.client.screens;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
-import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 
+import java.util.Map;
+
 /**
- * The merchant's screen at a shop stop ({@link CardboardTradeScreen}): on the counter, the purchases allowed as shopping
- * bags (filled as they are bought) and the time left as a shrinking bar; under the offers, « Buy nothing » (« Done »,
- * green, once something was bought). Closing the screen ends nothing: it opens again.
+ * The merchant's screen at a shop stop ({@link CardboardTradeScreen}). Over the counter, as wide as the inventory, the
+ * time left: a clock, a shrinking bar and its seconds. Under the payment row, centred like it, a shopping bag per purchase
+ * allowed, filled as they are bought. Under the offers, level with the hotbar and as wide as their column, « Buy
+ * nothing » (« Done », green, once something was bought). Closing the screen ends nothing: it opens again.
  */
 public class ShopStopScreen extends CardboardTradeScreen {
-    /** Offers shown: one row less than a merchant's, for the button under them. */
+    /** Offers shown: one row less than a merchant's, for the button under them (the last card ends with the inventory's rows). */
     private static final int CARDS = 6;
-    private static final int BUTTON_X = 5, BUTTON_Y = 18 + CARDS * 20 + 3, BUTTON_W = 95, BUTTON_H = 18;
-    /** The counter's row over the payment slots: bags on the left, the clock on the right. */
-    private static final int ROW_Y = 20, ROW_LEFT = 108, ROW_RIGHT = 270;
-    private static final int BAG_H = 12, BAG_STEP = 13, MAX_BAGS = 8;
-    private static final int GOLD = 0xFFFFC52E, BAR_BACK = 0xFF6B3F1C, BAG_EMPTY = 0xFFF3E4C4;
-    private static final int LIME = 0xFF000000 | ShopCartridgeItem.COLOR;
+    /** The button: the offers' column wide, level with the hotbar's slots (their top edge included). */
+    private static final int BUTTON_Y = 141, BUTTON_H = 17;
+    /** The time row: from the inventory's left edge to its right one, at the top of the content. */
+    private static final int CLOCK_W = 9, BAR_H = 7;
+    /** The bags' row: centred under the payment row, in the gap above the inventory. */
+    private static final int BAGS_Y = 64, BAG_W = 12, BAG_H = 13, BAG_GAP = 3, MAX_BAGS = 8;
+    private static final int GOLD = 0xFFFFC52E, BAR_BACK = 0xFF6B3F1C, TIME_LOW = 0xFFE0303E, TIME_LOW_TEXT = 0xFFB3202A;
+    private static final int CLOCK_FACE = 0xFFFFF2D6;
+    /** An empty bag: pressed into the cardboard. */
+    private static final int BAG_EMPTY_LINE = 0xFFA8692F, BAG_EMPTY_BODY = 0xFFE6B270, BAG_EMPTY_LIGHT = 0xFFEFC27E;
     private static final String[] BAG = {
-            "...#####...",
-            "..#.....#..",
-            "..#.....#..",
-            "###########",
-            "#.........#",
-            "#.........#",
-            "#.........#",
-            "#.........#",
-            "#.........#",
-            "#.........#",
-            "#.........#",
-            "###########"};
+            "...######...",
+            "..#......#..",
+            "..#......#..",
+            "############",
+            "#hhhhhhhhhh#",
+            "#hbbbbbbbbs#",
+            "#hbbbbbbbbs#",
+            "#hbbbbbbbbs#",
+            "#hbbbbbbbbs#",
+            "#hbbbbbbbbs#",
+            "#hbbbbbbbbs#",
+            "#ssssssssss#",
+            "############"};
     private static final String[] CLOCK = {
             "..#####..",
-            ".#.....#.",
-            "#...#...#",
-            "#...#...#",
-            "#...##..#",
-            "#.......#",
-            "#.......#",
-            ".#.....#.",
+            ".#fffff#.",
+            "#ffff#ff#",
+            "#ffff#ff#",
+            "#ffff##f#",
+            "#fffffff#",
+            "#fffffff#",
+            ".#fffff#.",
             "..#####.."};
 
     private final ShopStopScreenHandler shopHandler;
     private PartyButton doneButton;
-    /** Where the counter's row was drawn: the bags' width, the clock's left edge (their tooltips). */
-    private int bagsW, timerX;
+    /** Where the bags and the time were drawn (their tooltips). */
+    private int bagsX, bagsW;
 
     public ShopStopScreen(ShopStopScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title, CARDS);
@@ -61,7 +68,7 @@ public class ShopStopScreen extends CardboardTradeScreen {
     @Override
     protected void init() {
         super.init();
-        doneButton = new PartyButton(this.x + BUTTON_X, this.y + BUTTON_Y, BUTTON_W, BUTTON_H, label(), button -> buyNothing());
+        doneButton = new PartyButton(this.x + LEFT, this.y + BUTTON_Y, COLUMN_END - LEFT, BUTTON_H, label(), button -> buyNothing());
         doneButton.setTooltip(Tooltip.of(Text.translatable("gui.steveparty.shop_stop.buy_nothing.hint")));
         addDrawableChild(doneButton);
     }
@@ -92,74 +99,75 @@ public class ShopStopScreen extends CardboardTradeScreen {
         }
         super.render(context, mouseX, mouseY, delta);
         if (!handler.getCursorStack().isEmpty()) return;
-        int rowY = this.y + ROW_Y;
-        if (mouseY >= rowY && mouseY < rowY + BAG_H && mouseX >= this.x + ROW_LEFT && mouseX < this.x + ROW_LEFT + bagsW) {
+        int bagsY = this.y + BAGS_Y, timeY = this.y + TOP;
+        if (mouseY >= bagsY && mouseY < bagsY + BAG_H && mouseX >= bagsX && mouseX < bagsX + bagsW) {
             context.drawTooltip(textRenderer, Text.translatable("gui.steveparty.shop_stop.purchases",
                     shopHandler.getPurchases(), limit()), mouseX, mouseY);
-        } else if (mouseY >= rowY && mouseY < rowY + BAG_H && mouseX >= timerX && mouseX < this.x + ROW_RIGHT) {
+        } else if (mouseY >= timeY && mouseY < timeY + CLOCK_W && mouseX >= this.x + COUNTER_X && mouseX < this.x + COUNTER_END) {
             context.drawTooltip(textRenderer, Text.translatable("gui.steveparty.shop_stop.time_left",
                     shopHandler.getSecondsLeft()), mouseX, mouseY);
         }
     }
 
-    /** The counter's row, under the slots and the tooltips. */
+    /** The time and the bags, under the slots and the tooltips. */
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         super.drawBackground(context, delta, mouseX, mouseY);
-        bagsW = drawBags(context);
-        timerX = drawTimer(context);
+        drawTime(context);
+        drawBags(context);
     }
 
     private int limit() {
         return Math.max(1, shopHandler.getLimit());
     }
 
-    /** A bag per purchase allowed, filled once bought (past {@link #MAX_BAGS}: one bag and « 3/12 »). @return the width taken */
-    private int drawBags(DrawContext context) {
-        int x = this.x + ROW_LEFT, y = this.y + ROW_Y;
-        int bought = shopHandler.getPurchases(), limit = limit();
-        if (limit > MAX_BAGS) {
-            drawIcon(context, BAG, x, y, bought >= limit ? LIME : BAG_EMPTY);
-            String text = bought + "/" + limit;
-            UiText.line(context, textRenderer, text, x + BAG_STEP + 1, y + 1, textRenderer.getWidth(text), INK, false);
-            return BAG_STEP + 1 + textRenderer.getWidth(text);
-        }
-        for (int i = 0; i < limit; i++) drawIcon(context, BAG, x + i * BAG_STEP, y, i < bought ? LIME : BAG_EMPTY);
-        return limit * BAG_STEP;
-    }
-
-    /** The clock, the bar of the time left and its seconds, right-aligned on the counter. @return its left edge */
-    private int drawTimer(DrawContext context) {
+    /** The clock, the bar of the time left and its seconds, from the inventory's left edge to its right one. */
+    private void drawTime(DrawContext context) {
         int seconds = shopHandler.getSecondsLeft(), total = Math.max(1, shopHandler.getTotalSeconds());
-        int color = seconds <= 10 ? 0xFFE0303E : seconds <= 20 ? GOLD : LIME;
+        int left = this.x + COUNTER_X, right = this.x + COUNTER_END, y = this.y + TOP;
+        drawIcon(context, CLOCK, left, y, Map.of('#', INK, 'f', CLOCK_FACE));
+        // The seconds right-aligned in the room of the longest ones (the whole time): the bar never moves as they go down
         String text = seconds + " s";
-        int right = this.x + ROW_RIGHT, y = this.y + ROW_Y;
-        int textX = right - textRenderer.getWidth(text);
-        UiText.line(context, textRenderer, text, textX, y + 1, textRenderer.getWidth(text), seconds <= 10 ? 0xFFB3202A : INK, false);
-        int barW = 60, barX = textX - 4 - barW;
-        bar(context, barX, y + 2, barW, 6, Math.min(1f, seconds / (float) total), color);
-        int clockX = barX - 12;
-        drawIcon(context, CLOCK, clockX, y, 0xFFFFF2D6);
-        return clockX;
+        int textRoom = Math.max(textRenderer.getWidth(total + " s"), textRenderer.getWidth(text));
+        UiText.line(context, textRenderer, text, right - textRenderer.getWidth(text), y + 1, textRenderer.getWidth(text),
+                seconds <= 10 ? TIME_LOW_TEXT : INK, false);
+        int barX = left + CLOCK_W + 4, barW = right - textRoom - 4 - barX;
+        int color = seconds <= 10 ? TIME_LOW : seconds <= 20 ? GOLD : LIME;
+        bar(context, barX, y + 1, barW, BAR_H, Math.min(1f, seconds / (float) total), color);
     }
 
-    /** A pixel icon: '#' in ink, '.' inside it in {@code fill}. */
-    private static void drawIcon(DrawContext context, String[] rows, int x, int y, int fill) {
+    /** A bag per purchase allowed, filled once bought (past {@link #MAX_BAGS}: one bag and « 3/12 »), centred under the payment row. */
+    private void drawBags(DrawContext context) {
+        int bought = shopHandler.getPurchases(), limit = limit();
+        int y = this.y + BAGS_Y, centre = this.x + (COUNTER_X + COUNTER_END) / 2;
+        if (limit > MAX_BAGS) {
+            String text = bought + "/" + limit;
+            bagsW = BAG_W + BAG_GAP + textRenderer.getWidth(text);
+            bagsX = centre - bagsW / 2;
+            drawBag(context, bagsX, y, bought >= limit);
+            UiText.line(context, textRenderer, text, bagsX + BAG_W + BAG_GAP, y + 4, textRenderer.getWidth(text), INK, false);
+            return;
+        }
+        bagsW = limit * BAG_W + (limit - 1) * BAG_GAP;
+        bagsX = centre - bagsW / 2;
+        for (int i = 0; i < limit; i++) drawBag(context, bagsX + i * (BAG_W + BAG_GAP), y, i < bought);
+    }
+
+    /** A shopping bag: lime once bought, else only pressed into the cardboard. */
+    private static void drawBag(DrawContext context, int x, int y, boolean bought) {
+        drawIcon(context, BAG, x, y, bought
+                ? Map.of('#', INK, 'h', LIME_LIGHT, 'b', LIME, 's', LIME_DARK)
+                : Map.of('#', BAG_EMPTY_LINE, 'h', BAG_EMPTY_BODY, 'b', BAG_EMPTY_BODY, 's', BAG_EMPTY_LIGHT));
+    }
+
+    /** A pixel icon from rows of characters, each one a colour of {@code colours} (others: nothing). */
+    private static void drawIcon(DrawContext context, String[] rows, int x, int y, Map<Character, Integer> colours) {
         for (int row = 0; row < rows.length; row++) {
-            String line = rows[row];
-            int first = line.indexOf('#'), last = line.lastIndexOf('#');
-            for (int col = 0; col < line.length(); col++) {
-                char c = line.charAt(col);
-                if (c == '#') PartyGui.pixel(context, x + col, y + row, INK);
-                else if (c == '.' && col > first && col < last && row >= bodyTop(rows)) PartyGui.pixel(context, x + col, y + row, fill);
+            for (int col = 0; col < rows[row].length(); col++) {
+                Integer colour = colours.get(rows[row].charAt(col));
+                if (colour != null) PartyGui.pixel(context, x + col, y + row, colour);
             }
         }
-    }
-
-    /** The first row inside an icon's body: under its first full row (a bag's handle stays hollow), else its second row. */
-    private static int bodyTop(String[] rows) {
-        for (int row = 0; row < rows.length; row++) if (rows[row].indexOf('.') < 0) return row + 1;
-        return 1;
     }
 
     /** The time bar: a dark groove, filled from the left, its top pixel row lighter. */

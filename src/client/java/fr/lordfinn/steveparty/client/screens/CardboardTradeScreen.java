@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
-import fr.lordfinn.steveparty.client.gui.paint.PixelArt;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -17,6 +17,7 @@ import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
@@ -38,12 +39,20 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
     protected static final int WIDTH = 276, HEIGHT = 166;
     /** The sign's part above the box. */
     protected static final int SIGN_OVER = 8;
-    /** The offers' column: cards of {@link #CARD_W} × {@link #CARD_STEP}, the scrollbar on their right. */
-    private static final int LIST_X = 5, LIST_Y = 18, CARD_W = 88, CARD_STEP = 20, CARD_H = 19;
-    private static final int BAR_X = 94, BAR_W = 6, THUMB_H = 15;
-    /** The merchant screen handler's slots (vanilla positions). */
-    private static final int PAY1_X = 136, PAY2_X = 162, PAY_Y = 37, RESULT_X = 220, RESULT_Y = 37;
-    private static final int INVENTORY_X = 107, INVENTORY_Y = 84, HOTBAR_Y = 142;
+    /**
+     * The grid: an 8 px margin on the left, the right and the bottom (the inventory's slots, set by the merchant screen
+     * handler, end 8 px from the right and the bottom edges); the content starts under the awning, at {@link #TOP}. The
+     * offers' column (cards, then the scrollbar) runs from {@link #LEFT} to {@link #COLUMN_END}, 8 px before the
+     * counter's column, which starts with the inventory at {@link #COUNTER_X}.
+     */
+    protected static final int LEFT = 8, TOP = 17, COLUMN_END = 100, COUNTER_X = 108, COUNTER_END = 268;
+    /** The offers' cards ({@link #CARD_W} × {@link #CARD_H}, one every {@link #CARD_STEP}) and the scrollbar on their right. */
+    protected static final int CARD_W = 84, CARD_STEP = 20, CARD_H = 19;
+    private static final int BAR_X = 94, BAR_W = COLUMN_END - BAR_X, THUMB_H = 15;
+    /** The merchant screen handler's slots (vanilla positions): payments and result. */
+    protected static final int PAY_Y = 37, RESULT_X = 220, RESULT_Y = 37;
+    /** The bottom of the payment row (the result's frame). */
+    protected static final int COUNTER_ROW_END = RESULT_Y + 21;
 
     // Cardboard (the Boxed Trader's box), its darker shelf, the awning in the Shop's lime
     protected static final PartyGui.Theme CARDBOARD = new PartyGui.Theme(0xFF3C241D, 0xFFF2C988, 0xFFD9A15C, 0xFFA8692F);
@@ -52,11 +61,14 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
     private static final PartyGui.Theme CARD_PICKED = new PartyGui.Theme(0xFF1E3A08, 0xFFE2FFB0,
             0xFF000000 | ShopCartridgeItem.COLOR, 0xFF5E8F17);
     private static final PartyGui.Theme CARD_SOLD_OUT = new PartyGui.Theme(0xFF4A3A33, 0xFFC9BBA8, 0xFFAD9F8C, 0xFF7E715F);
-    private static final int SHELF = 0xFFB27537, SHELF_EDGE = 0xFF6B3F1C, SHELF_LOW = 0xFFE6B676;
-    private static final int LIME = 0xFF000000 | ShopCartridgeItem.COLOR, LIME_DARK = 0xFF5E8F17, LIME_LIGHT = 0xFFD4F58E;
-    private static final int STRIPE_WHITE = 0xFFF7F4EC, STRIPE_WHITE_DARK = 0xFFC9C2B0, AWNING_FOLD = 0xFF4A7A12;
+    private static final int GROOVE = 0xFFA8692F, GROOVE_EDGE = 0xFF6B3F1C;
+    protected static final int LIME = 0xFF000000 | ShopCartridgeItem.COLOR, LIME_DARK = 0xFF5E8F17, LIME_LIGHT = 0xFFD4F58E;
     protected static final int INK = 0xFF3C241D, RED = 0xFFD8323F, RED_DARK = 0xFF5E0A12, PRICE_MISSING = 0xFFC0182A;
-    private static final int SLOT = 0xFF8B8B8B, SLOT_EDGE = 0xFF373737, SLOT_LOW = 0xFFFFFFFF;
+    /** The mod's slot (inventory_panel.png): grey, its corners rounded, a dark edge on top. */
+    private static final int SLOT = 0xFF8C8C8C, SLOT_TOP = 0xFF484D55;
+    /** The awning's stripes ({@code shop_awning.png}: a lime one, then a white one, {@link #STRIPE} × {@link #AWNING_H}). */
+    private static final Identifier AWNING = Steveparty.id("textures/gui/shop_awning.png");
+    private static final int STRIPE = 10, AWNING_H = 11;
 
     private final int visibleCards;
     private final OfferCard[] cards;
@@ -83,7 +95,7 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
         // The sign over the box stays on screen when there is room for it
         this.y = Math.max(this.y, Math.min(SIGN_OVER, Math.max(0, this.height - HEIGHT)));
         for (int i = 0; i < visibleCards; i++) {
-            cards[i] = addDrawableChild(new OfferCard(i, this.x + LIST_X, this.y + LIST_Y + i * CARD_STEP));
+            cards[i] = addDrawableChild(new OfferCard(i, this.x + LEFT, this.y + TOP + i * CARD_STEP));
         }
     }
 
@@ -134,46 +146,23 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
         int x = this.x, y = this.y;
         PartyGui.panel(context, x, y, WIDTH, HEIGHT, CARDBOARD);
         drawAwning(context, x + 3, y + 3, WIDTH - 6);
-        // The box's fold between the offers and the counter
-        context.fill(x + 103, y + 17, x + 104, y + HEIGHT - 4, CARDBOARD.shadow());
-        context.fill(x + 104, y + 17, x + 105, y + HEIGHT - 4, CARDBOARD.highlight());
-        // The offers' shelf and the scrollbar's groove
-        PixelArt.inset(context, x + LIST_X - 2, y + LIST_Y - 2, BAR_X + BAR_W - LIST_X + 3, visibleCards * CARD_STEP + 2,
-                SHELF, SHELF_EDGE, SHELF_LOW);
-        drawScrollbar(context, x + BAR_X, y + LIST_Y, visibleCards * CARD_STEP - 1);
+        drawScrollbar(context, x + BAR_X, y + TOP, visibleCards * CARD_STEP - 1);
         drawCounter(context, x, y);
-        // The player's inventory, on the mod's grey panel
-        PartyGui.panel(context, x + INVENTORY_X - 5, y + INVENTORY_Y - 6, 18 * 9 + 10, HEIGHT - INVENTORY_Y + 3, PartyGui.PANEL);
-        for (int row = 0; row < 3; row++)
-            for (int col = 0; col < 9; col++) slot(context, x + INVENTORY_X + col * 18, y + INVENTORY_Y + row * 18);
-        for (int col = 0; col < 9; col++) slot(context, x + INVENTORY_X + col * 18, y + HOTBAR_Y);
+        // Every slot of the screen but the result (in its frame) in the mod's style, straight on the cardboard
+        for (Slot slot : handler.slots) if (slot.id != 2) slot(context, x + slot.x, y + slot.y);
         drawSign(context, x + WIDTH / 2, y - SIGN_OVER);
     }
 
-    /** Lime and white stripes, each ending in a rounded flap that casts its shade on the box. */
+    /**
+     * The awning: lime and white stripes ({@link #AWNING}, the Trading Stall's scalloped awning in the Shop's lime), as
+     * many as fit whole, lime at both ends, centred on {@code w}.
+     */
     private static void drawAwning(DrawContext context, int x, int y, int w) {
-        int stripe = 12, h = 7;
-        // Its fold over the box's top
-        context.fill(x, y, x + w, y + 2, AWNING_FOLD);
-        for (int sx = 0; sx < w; sx += stripe) {
-            int sw = Math.min(stripe, w - sx);
-            boolean lime = (sx / stripe) % 2 == 0;
-            int body = lime ? LIME : STRIPE_WHITE, dark = lime ? LIME_DARK : STRIPE_WHITE_DARK;
-            int left = x + sx, right = left + sw, top = y + 2;
-            context.fill(left, top, right, top + h, body);
-            context.fill(left, top, right, top + 1, lime ? LIME_LIGHT : 0xFFFFFFFF);
-            // The flap: rounded by two narrower rows, its edge darker
-            context.fill(left + 1, top + h, right - 1, top + h + 1, body);
-            context.fill(left + 2, top + h + 1, right - 2, top + h + 2, body);
-            context.fill(left, top + h - 1, left + 1, top + h, dark);
-            context.fill(right - 1, top + h - 1, right, top + h, dark);
-            context.fill(left + 1, top + h, left + 2, top + h + 1, dark);
-            context.fill(right - 2, top + h, right - 1, top + h + 1, dark);
-            context.fill(left + 2, top + h + 1, left + 3, top + h + 2, dark);
-            context.fill(right - 3, top + h + 1, right - 2, top + h + 2, dark);
-            context.fill(left + 3, top + h + 2, right - 3, top + h + 3, dark);
-            // Its shade on the cardboard
-            context.fill(left + 3, top + h + 3, right - 3, top + h + 4, CARDBOARD.shadow());
+        int count = w / STRIPE;
+        if (count % 2 == 0) count--;
+        int left = x + (w - count * STRIPE) / 2;
+        for (int i = 0; i < count; i++) {
+            context.drawTexture(AWNING, left + i * STRIPE, y, (i % 2) * STRIPE, 0, STRIPE, AWNING_H, 2 * STRIPE, AWNING_H);
         }
     }
 
@@ -188,8 +177,11 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
         UiText.centered(context, textRenderer, this.title, left + 8, top + 4, textW, 0xFFFFF2D6, true);
     }
 
+    /** The scrollbar: a groove in the cardboard (rounded, its top edge dark like the slots), its cream thumb. */
     private void drawScrollbar(DrawContext context, int x, int y, int h) {
-        context.fill(x, y, x + BAR_W, y + h, SHELF_EDGE);
+        context.fill(x + 1, y, x + BAR_W - 1, y + h, GROOVE);
+        context.fill(x, y + 1, x + BAR_W, y + h - 1, GROOVE);
+        context.fill(x + 1, y, x + BAR_W - 1, y + 1, GROOVE_EDGE);
         int max = maxScroll();
         int thumbY = max == 0 ? y : y + Math.round((h - THUMB_H) * (scroll / (float) max));
         PartyGui.button(context, x, thumbY, BAR_W, THUMB_H, max == 0 ? CARD_SOLD_OUT : CARD, false);
@@ -197,10 +189,8 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
             context.fill(x + 2, thumbY + 5 + i * 2, x + BAR_W - 2, thumbY + 6 + i * 2, CARD.shadow());
     }
 
-    /** The payment slots, « + » between them, the arrow and the result in its frame. */
+    /** « + » between the payment slots, the arrow and the result in its frame. */
     private void drawCounter(DrawContext context, int x, int y) {
-        slot(context, x + PAY1_X, y + PAY_Y);
-        slot(context, x + PAY2_X, y + PAY_Y);
         // « + »
         int px = x + 155, py = y + PAY_Y + 5;
         context.fill(px + 2, py, px + 3, py + 5, INK);
@@ -209,12 +199,12 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
         boolean ready = !handler.getSlot(2).getStack().isEmpty();
         int fx = x + RESULT_X - 5, fy = y + RESULT_Y - 5;
         PartyGui.panel(context, fx, fy, 26, 26, ready ? CARD_PICKED : CARD);
-        context.fill(fx + 4, fy + 4, fx + 22, fy + 22, SLOT_EDGE);
-        context.fill(fx + 5, fy + 5, fx + 22, fy + 22, SLOT);
+        slot(context, x + RESULT_X, y + RESULT_Y);
+        // The arrow, centred between the second payment slot and the frame
         TradeOffer offer = pickedOffer();
         boolean blocked = offer != null && (offer.isDisabled() || !canBuyMore());
-        drawArrow(context, x + 184, y + PAY_Y + 4, 28, blocked ? RED : ready ? LIME_DARK : INK);
-        if (blocked) drawCross(context, x + 194, y + PAY_Y + 3);
+        drawArrow(context, x + 182, y + PAY_Y + 4, 28, blocked ? RED : ready ? LIME_DARK : INK);
+        if (blocked) drawCross(context, x + 191, y + PAY_Y + 3);
     }
 
     /** A right arrow, its shaft {@code w} long, 9 px tall, from ({@code x}, {@code y}). */
@@ -232,11 +222,14 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
         }
     }
 
+    /** The mod's slot under the item drawn at ({@code itemX}, {@code itemY}): rounded, its dark top edge above it. */
     private static void slot(DrawContext context, int itemX, int itemY) {
-        int x = itemX - 1, y = itemY - 1;
-        context.fill(x, y, x + 18, y + 18, SLOT_EDGE);
-        context.fill(x + 1, y + 1, x + 18, y + 18, SLOT_LOW);
-        context.fill(x + 1, y + 1, x + 17, y + 17, SLOT);
+        context.fill(itemX + 1, itemY - 1, itemX + 15, itemY, SLOT_TOP);
+        PartyGui.pixel(context, itemX, itemY, SLOT_TOP);
+        PartyGui.pixel(context, itemX + 15, itemY, SLOT_TOP);
+        context.fill(itemX + 1, itemY, itemX + 15, itemY + 1, SLOT);
+        context.fill(itemX, itemY + 1, itemX + 16, itemY + 15, SLOT);
+        context.fill(itemX + 1, itemY + 15, itemX + 15, itemY + 16, SLOT);
     }
 
     protected @Nullable TradeOffer pickedOffer() {
@@ -286,7 +279,8 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
             TradeOffer offer = card.offer();
             if (offer == null) return;
             int dx = mouseX - card.getX();
-            ItemStack stack = dx < 20 ? offer.getDisplayedFirstBuyItem() : dx < 38 ? offer.getDisplayedSecondBuyItem()
+            ItemStack stack = dx < OfferCard.PRICE2_X ? offer.getDisplayedFirstBuyItem()
+                    : dx < OfferCard.ARROW_X - 1 ? offer.getDisplayedSecondBuyItem()
                     : dx >= OfferCard.SOLD_X - 1 && dx < OfferCard.SOLD_X + 17 ? offer.getSellItem() : ItemStack.EMPTY;
             if (stack.isEmpty()) return;
             List<Text> lines = new ArrayList<>(Screen.getTooltipFromItem(MinecraftClient.getInstance(), stack));
@@ -309,7 +303,7 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int barX = this.x + BAR_X, barY = this.y + LIST_Y;
+        int barX = this.x + BAR_X, barY = this.y + TOP;
         if (button == 0 && maxScroll() > 0 && mouseX >= barX && mouseX < barX + BAR_W
                 && mouseY >= barY && mouseY < barY + visibleCards * CARD_STEP) {
             draggingBar = true;
@@ -336,7 +330,7 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
 
     private void dragBar(double mouseY) {
         float track = visibleCards * CARD_STEP - 1 - THUMB_H;
-        float at = (float) (mouseY - (this.y + LIST_Y) - THUMB_H / 2f) / track;
+        float at = (float) (mouseY - (this.y + TOP) - THUMB_H / 2f) / track;
         scroll = MathHelper.clamp(Math.round(at * maxScroll()), 0, maxScroll());
     }
 
@@ -344,7 +338,8 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
 
     /** One offer of the column (the {@code row}-th shown): pick it with a click or Enter. */
     private class OfferCard extends PressableWidget {
-        static final int SOLD_X = 62;
+        /** The card's content, 4 px from its edges: the prices, the arrow, the item sold. */
+        static final int PRICE1_X = 4, PRICE2_X = 21, ARROW_X = 41, SOLD_X = 64;
         private final int row;
 
         OfferCard(int row, int x, int y) {
@@ -382,11 +377,11 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
             if (lit) context.drawBorder(x, y, width, height, 0xFFFFFFFF);
             int dy = y + 1 + (isPicked ? 1 : 0);
             int priceColor = canPay(offer) ? INK : PRICE_MISSING;
-            item(context, offer.getDisplayedFirstBuyItem(), x + 3, dy, priceColor, soldOut);
-            item(context, offer.getDisplayedSecondBuyItem(), x + 21, dy, priceColor, soldOut);
-            drawArrow(context, x + 41, dy + 4, 15, soldOut ? 0xFF7E715F : isPicked ? 0xFF1E3A08 : INK);
+            item(context, offer.getDisplayedFirstBuyItem(), x + PRICE1_X, dy, priceColor, soldOut);
+            item(context, offer.getDisplayedSecondBuyItem(), x + PRICE2_X, dy, priceColor, soldOut);
+            drawArrow(context, x + ARROW_X, dy + 4, 18, soldOut ? 0xFF7E715F : isPicked ? 0xFF1E3A08 : INK);
             item(context, offer.getSellItem(), x + SOLD_X, dy, INK, soldOut);
-            if (soldOut) drawCross(context, x + 44, dy + 3);
+            if (soldOut) drawCross(context, x + ARROW_X + 4, dy + 3);
         }
 
         /** An item of the card with its count ({@code color}), faded when sold out. */
