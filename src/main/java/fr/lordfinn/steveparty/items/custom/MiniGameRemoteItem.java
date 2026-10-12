@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import net.minecraft.block.entity.BlockEntity;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -52,13 +53,18 @@ public class MiniGameRemoteItem extends Item {
         super(settings);
     }
 
+    /** Whether the remote links to the block holding {@code blockEntity} (sneak + click): a Mini-game Controller. */
+    public static boolean linkable(@Nullable BlockEntity blockEntity) {
+        return blockEntity instanceof MiniGameControllerBlockEntity;
+    }
+
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         PlayerEntity player = context.getPlayer();
         if (player == null) return ActionResult.PASS;
         World world = context.getWorld();
         BlockPos pos = context.getBlockPos();
-        if (player.isSneaking() && world.getBlockEntity(pos) instanceof MiniGameControllerBlockEntity) {
+        if (player.isSneaking() && linkable(world.getBlockEntity(pos))) {
             if (!world.isClient) link(context.getStack(), player, GlobalPos.create(world.getRegistryKey(), pos.toImmutable()));
             return ActionResult.success(world.isClient);
         }

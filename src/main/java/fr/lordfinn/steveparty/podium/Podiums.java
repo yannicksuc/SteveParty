@@ -1,5 +1,9 @@
 package fr.lordfinn.steveparty.podium;
 
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Block;
+import fr.lordfinn.steveparty.blocks.custom.StepControllerBlock;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
@@ -482,6 +486,12 @@ public final class Podiums {
     }
 
     // ------------------------------------------------------------------ links to a mini-game page
+
+    /** Whether a page links the block in {@code state} by a click ({@link #clickLink}): a podium, a goal pole base, a step controller. */
+    public static boolean linkable(BlockState state) {
+        Block block = state.getBlock();
+        return block instanceof PodiumBlock || block instanceof GoalPoleBaseBlock || block instanceof StepControllerBlock;
+    }
 
     /**
      * A click on a podium, a goal pole base or a step controller with the page held in {@code hand}: it is linked to

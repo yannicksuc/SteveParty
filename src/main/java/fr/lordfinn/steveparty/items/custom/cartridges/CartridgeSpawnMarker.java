@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockE
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.service.MarkerMobs;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
@@ -35,7 +36,12 @@ public final class CartridgeSpawnMarker {
 
     /** Whether the block at {@code pos} is a Spawn Marker. */
     public static boolean accepts(World world, BlockPos pos) {
-        return world.getBlockState(pos).getBlock() instanceof SpawnMarkerBlock;
+        return accepts(world.getBlockState(pos));
+    }
+
+    /** Whether a block in {@code state} is a Spawn Marker a cartridge can be linked to. */
+    public static boolean accepts(BlockState state) {
+        return state.getBlock() instanceof SpawnMarkerBlock;
     }
 
     /** Its marker's position in {@code world}'s dimension, linked (whatever stands there now), null for none. */

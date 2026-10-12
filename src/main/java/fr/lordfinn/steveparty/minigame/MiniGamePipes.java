@@ -123,6 +123,14 @@ public final class MiniGamePipes {
     }
 
     /**
+     * Whether a page links the pipe in {@code state} by a click ({@link #click}, from {@link PipeBlock}): every pipe
+     * but a mini-game pipe, which a page programs instead (it keeps the page).
+     */
+    public static boolean linkable(BlockState state) {
+        return state.getBlock() instanceof PipeBlock && !(state.getBlock() instanceof MiniGamePipeBlock);
+    }
+
+    /**
      * A click on the pipe at {@code pos} with the page held in {@code hand}: the mouth is linked to the page with the
      * role of the pipe's colour, or unlinked if it was linked. The player is told what happened.
      *

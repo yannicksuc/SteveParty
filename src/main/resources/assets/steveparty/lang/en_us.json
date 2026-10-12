@@ -3261,5 +3261,6 @@
   "command.steveparty.links.click.4": "Page in hand, right-click a Podium, Goal Pole Base or Step Controller: the ranking, or the end of the mini-game",
   "command.steveparty.links.click.5": "Click again to unlink · the links show in the cartridge's menu (right-click in the air) or the page's",
   "gui.steveparty.links.hint": "Linking: /steveparty links",
-  "tooltip.steveparty.tag.linkable": "Linkable"
+  "tooltip.steveparty.tag.linkable": "Linkable",
+  "tooltip.steveparty.tag.linker": "Linker"
 }

@@ -33,6 +33,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -175,7 +176,7 @@ final class BrushOverlay {
         holderLinks(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));
         bankLinks(matrices, consumers, camera);
         BlockPos aimed = BrushAim.aimed(player, world, context.tickCounter().getTickDelta(true), ghosts(), targets(world, brush));
-        numbers(matrices, consumers, camera, world, brush, aimed);
+        StorageMarkers.render(matrices, consumers, camera, numbers(matrices, consumers, camera, world, brush, aimed));
         if (aimed != null) {
             BlockPos last = BrushTrail.lastTile();
             int color = last == null || last.equals(aimed) ? WHITE : 0xFF000000 | BrushTrail.outcome(world, brush, last, aimed);
@@ -235,15 +236,19 @@ final class BrushOverlay {
     /**
      * The containers of the space aimed at (or the last one painted), numbered in their order as the cartridge in hand
      * shows them; none of its own: the Party Controller's bank named on its controller.
+     *
+     * @return the containers numbered (their storage mark is left out)
      */
-    private static void numbers(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, Camera camera, ClientWorld world,
+    private static Set<BlockPos> numbers(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, Camera camera, ClientWorld world,
                                 ItemStack brush, @Nullable BlockPos aimed) {
         BlockPos focus = aimed != null && BrushLinks.isHolder(world, aimed) ? aimed : BrushTrail.lastTile();
-        if (focus == null) return;
+        if (focus == null) return Set.of();
+        Set<BlockPos> numbered = new HashSet<>();
         consumers.draw();
         for (BrushLinkable kind : BrushLinks.of(world, focus, TileLinkerBrush.level(brush))) {
             if (!(kind instanceof CartridgeLinks.Containers)) continue;
             List<BlockPos> targets = kind.targets(world);
+            numbered.addAll(targets);
             for (int i = 0; i < targets.size(); i++) {
                 WorldDraw.plateLabel(matrices, consumers, camera, Vec3d.ofCenter(targets.get(i)).add(0, 0.95, 0),
                         Text.literal(Integer.toString(i + 1)), WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, LABEL_SCALE);
@@ -256,6 +261,7 @@ final class BrushOverlay {
                 }
             }
         }
+        return numbered;
     }
 
     /** The 8 horizontal edges of the box (min, max), in dashes. */

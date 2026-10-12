@@ -1,9 +1,11 @@
 package fr.lordfinn.steveparty.items.tooltip;
 
+import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
@@ -88,16 +90,50 @@ public final class Tooltips {
      */
     public enum Tag {
         POWER_UP(0xFF77FF), NEGATIVE(0xFF5555), CONFIGURABLE(0xFCB017), STAMPED(0xFF77FF), SWITCHABLE(0x55FFFF),
-        LINKED_COPY(0x55FFFF), GLOWING(0x7FFFD4), LINKABLE(0x7CE06A);
+        LINKED_COPY(0x55FFFF), GLOWING(0x7FFFD4),
+        /** Makes links by clicking (a chain): see LinkTags. */
+        LINKER(0x7CE06A, Icons.LINKER),
+        /** Can be linked to (a target): see LinkTags. */
+        LINKABLE(0xB4EBA8, Icons.LINKABLE);
 
         public final int color;
+        /** The little icon before its word, 0 for none. */
+        public final char icon;
 
         Tag(int color) {
+            this(color, (char) 0);
+        }
+
+        Tag(int color, char icon) {
             this.color = color;
+            this.icon = icon;
         }
 
         public Text label() {
-            return Text.translatable(KEY + "tag." + name().toLowerCase(java.util.Locale.ROOT));
+            MutableText word = Text.translatable(KEY + "tag." + name().toLowerCase(java.util.Locale.ROOT));
+            return icon == 0 ? word : Text.empty().append(Icons.of(icon)).append(" ").append(word);
+        }
+    }
+
+    /**
+     * The mod's tiny pixel icons, glyphs of its font {@code steveparty:icons} (textures/font/icons.png, 8×8 white
+     * pixels each, tinted by the text's colour): in a tooltip tag, or on a label floating in the world.
+     */
+    public static final class Icons {
+        public static final Identifier FONT = Steveparty.id("icons");
+        /** A chain: makes links. */
+        public static final char LINKER = '';
+        /** A ring around a dot, a target: can be linked to. */
+        public static final char LINKABLE = '';
+        /** A chest: a storage. */
+        public static final char STORAGE = '';
+
+        private Icons() {
+        }
+
+        /** The icon {@code glyph}, as text (its colour, that of the text around it). */
+        public static MutableText of(char glyph) {
+            return Text.literal(String.valueOf(glyph)).styled(s -> s.withFont(FONT));
         }
     }
 

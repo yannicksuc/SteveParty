@@ -24,8 +24,11 @@ import net.minecraft.world.chunk.WorldChunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 /**
  * Everything the Tile Linker Brush links: the blocks holding a cartridge (board spaces of every role, routers, Hop
@@ -181,6 +184,41 @@ public final class BrushLinks {
             }
         }
         return kinds;
+    }
+
+    /**
+     * The storages linked by the holders of the loaded chunks within {@code radius} of {@code center}, whatever their
+     * slot (every cartridge taking containers, the Party Controllers' banks), each with its number in the first list
+     * found that has it (1 for the first container): the brush marks them.
+     */
+    public static Map<BlockPos, Integer> linkedStorages(World world, Vec3d center, double radius) {
+        Map<BlockPos, Integer> numbers = new HashMap<>();
+        int minX = MathHelper.floor(center.x - radius), maxX = MathHelper.floor(center.x + radius);
+        int minZ = MathHelper.floor(center.z - radius), maxZ = MathHelper.floor(center.z + radius);
+        double radius2 = radius * radius;
+        for (int chunkX = ChunkSectionPos.getSectionCoord(minX); chunkX <= ChunkSectionPos.getSectionCoord(maxX); chunkX++) {
+            for (int chunkZ = ChunkSectionPos.getSectionCoord(minZ); chunkZ <= ChunkSectionPos.getSectionCoord(maxZ); chunkZ++) {
+                WorldChunk chunk = world.getChunkManager().getWorldChunk(chunkX, chunkZ);
+                if (chunk == null) continue;
+                for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
+                    if (Vec3d.ofCenter(blockEntity.getPos()).squaredDistanceTo(center) > radius2) continue;
+                    for (int slot : storageSlots(blockEntity)) {
+                        Held held = held(world, blockEntity.getPos(), slot);
+                        if (held == null || !isInventoryCartridge(held.cartridge())) continue;
+                        List<BlockPos> containers = CartridgeContainers.in(held.cartridge(), world);
+                        for (int i = 0; i < containers.size(); i++) numbers.putIfAbsent(containers.get(i), i + 1);
+                    }
+                }
+            }
+        }
+        return numbers;
+    }
+
+    /** The slots of {@code holder} whose cartridge may take containers: a Party Controller's bank, every slot of the others using them. */
+    private static int[] storageSlots(BlockEntity holder) {
+        if (holder instanceof PartyControllerEntity) return new int[]{BANK};
+        if (holder instanceof CartridgeContainerBlockEntity container && usesContainers(container)) return IntStream.range(0, container.size()).toArray();
+        return new int[0];
     }
 
     // ---------------------------------------------------------------- what the built-in kinds need
