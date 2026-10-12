@@ -164,13 +164,13 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.4F, 1.26F, 6),
                 new Layer(SoundEvents.ITEM_FIRECHARGE_USE, 0.25F, 1.6F, 8))),
         /** A Mistigri space: a sour minor fall on the bass and a low, heavy cat's hiss (see MistigriTileBehavior). */
-        MISTIGRI("mistigri", 0x8A2A6E, List.of(
+        MISTIGRI("mistigri", 0x23202A, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.943F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.794F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.63F, 8),
                 new Layer(SoundEvents.ENTITY_CAT_HISS, 0.35F, 0.7F, 10))),
         /** A Trichaudron space: a deep bubbling rise on the bass and a pop of lava (see TrichaudronTileBehavior). */
-        TRICHAUDRON("trichaudron", 0x64200C, List.of(
+        TRICHAUDRON("trichaudron", 0xEA600C, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.63F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.84F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 1.0F, 8),
