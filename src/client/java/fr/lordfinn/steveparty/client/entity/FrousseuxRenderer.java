@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.blockentity.SpawnBubbleRenderer;
 import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.utils.Argb;
@@ -229,6 +230,16 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             drawNow(heartLayer, consumer -> getRenderer().reRender(bakedModel, poseStack, any -> consumer, frousseux, heartLayer, consumer,
                     partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
                     withAlpha(shade(frousseux.getColor().flameHeart, brightness), frousseux.flameAlpha(partialTick))));
+
+            // Inside a Spawn Bubble: then its depth, for the film's near faces drawn after it (SpawnBubbleRenderer), which
+            // otherwise would be painted over the part of it poking out of the film
+            if (SpawnBubbleRenderer.isDrawingMiniature()) {
+                AnimatableTexture.setAndUpdate(FLAME);
+                RenderLayer depth = FrousseuxGhostLayers.depth(FLAME);
+                drawNow(depth, consumer -> getRenderer().reRender(bakedModel, poseStack, any -> consumer, frousseux, depth, consumer,
+                        partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
+                        withAlpha(0xFFFFFFFF, frousseux.flameAlpha(partialTick))));
+            }
 
             flame.setHidden(true);
             body.setHidden(bodyHidden);

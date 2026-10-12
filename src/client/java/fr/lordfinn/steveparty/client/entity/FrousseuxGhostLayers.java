@@ -38,6 +38,26 @@ final class FrousseuxGhostLayers extends RenderLayer {
                         .build(true));
     }
 
+    private static final Function<Identifier, RenderLayer> DEPTH = Util.memoize(texture -> RenderLayer.of(
+            "steveparty_frousseux_flame_depth", VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL,
+            VertexFormat.DrawMode.QUADS, 1536, false, false, MultiPhaseParameters.builder()
+                    .program(ENTITY_TRANSLUCENT_EMISSIVE_PROGRAM)
+                    .texture(new Texture(texture, false, false))
+                    .transparency(TRANSLUCENT_TRANSPARENCY)
+                    .cull(DISABLE_CULLING)
+                    .overlay(ENABLE_OVERLAY_COLOR)
+                    .writeMaskState(DEPTH_MASK)
+                    .build(false)));
+
+    /**
+     * The depth alone of what is drawn with {@code texture}, where it shows (the entity shader discards its nearly
+     * transparent texels): drawn after the flame, so that the see-through film around it, drawn later, passes in front of
+     * it only where it really is in front.
+     */
+    static RenderLayer depth(Identifier texture) {
+        return DEPTH.apply(texture);
+    }
+
     /** One-sided ({@link RenderLayer#getEntityTranslucentCull}), faded: no depth written. */
     static RenderLayer cull(Identifier texture) {
         return CULL.apply(texture);

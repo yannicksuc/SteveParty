@@ -53,10 +53,10 @@ import java.util.Optional;
  * on it (« always visible », a party running). During a party nothing of it shows, plate included, but to those who build the
  * board (SpawnMarkerView#sees). Placed, it comes out of the plate growing ({@link SpawnMarkerBlockEntity#INFLATE}).
  * <p>
- * What is inside stays 2 pixels or more away from the faces (no z-fighting) and is drawn first, through buffers of
- * its own drawn at once ({@link #insideBuffers}); the cube comes last, on a translucent layer whose quads are sorted
- * back to front: the content shows through every face. Its item is the
- * same bubble at rest ({@link #ITEM}).
+ * What is inside stays 2 pixels or more away from the faces (no z-fighting). All of it is drawn through buffers of its
+ * own drawn at once ({@link #insideBuffers}): the cube's far faces, then what is inside, then its near faces, on a
+ * translucent layer whose quads are sorted back to front: the content shows through every face, even what of it writes
+ * no depth (the Frousseux's flame). Its item is the same bubble at rest ({@link #ITEM}).
  */
 public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlockEntity> {
     public static final Identifier ARROW_MODEL = Steveparty.id("block/spawn_bubble_arrow");
@@ -91,6 +91,7 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     private static final float ITEM_YAW = 135;
     private static final Map<EntityType<?>, Optional<Entity>> MINIATURES = new HashMap<>();
     private static VertexConsumerProvider.Immediate insideBuffers;
+    private static boolean drawingMiniature;
     private static World miniaturesWorld;
 
     public SpawnBubbleRenderer(BlockEntityRendererFactory.Context context) {
@@ -139,36 +140,56 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         int bubbleLight = lift == 0 ? light
                 : WorldRenderer.getLightmapCoordinates(world, BlockPos.ofFloored(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5));
         // Inside: the arrow, or the mob (close enough), or nothing when its real mob lives on it (always visible, a party
-        // running); otherwise it only comes when a token lands, so the bubble keeps showing which mob it is
-        // What is inside goes into buffers of its own, drawn right after, all of it, before the film: the film writes
-        // its depth, so whatever of the mob or the arrow the world's buffers kept for later (a see-through part: the
-        // Frousseux's flame, its wax; an item it holds) would end up hidden inside the film, showing only where it pokes
-        // out. The world's buffers are not to be trusted with that: a mod may wrap them and flush them its own way
+        // running); otherwise it only comes when a token lands, so the bubble keeps showing which mob it is.
+        // Drawn now, in this order, through buffers of its own (a mod may wrap the world's and flush them its own way):
+        // the film's far faces, what is inside, the film's near faces. The film writes its depth; what is inside may
+        // not (the Frousseux's flame): drawn at once after it, the far faces would fail no depth test where it stands
+        // and be painted over it, and it would look behind the bubble
         VertexConsumerProvider.Immediate inside = insideBuffers();
+        float squash = WOBBLE * MathHelper.sin(anim * WOBBLE_SPEED + phase);
+        film(matrices, inside, centerY, anim, phase, squash, grown, bubbleLight, false);
+        inside.draw();
         List<EntityType<?>> mobs = marker.getLinkedMobs();
         boolean mobShown = false;
         if (!mobs.isEmpty()) {
             if (marker.isPartyRunning() && marker.isResident()) mobShown = true; // the real mob is there: an empty bubble
             else if (client.player != null && client.player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5) <= MOB_RANGE * MOB_RANGE) {
                 EntityType<?> kind = mobs.get((int) ((world.getTime() / CYCLE) % mobs.size()));
-                mobShown = miniature(world, kind, pos, centerY, yaw, time, tickDelta, grown, matrices, inside, bubbleLight);
+                drawingMiniature = true;
+                try {
+                    mobShown = miniature(world, kind, pos, centerY, yaw, time, tickDelta, grown, matrices, inside, bubbleLight);
+                } finally {
+                    drawingMiniature = false;
+                }
             }
         }
         if (!mobShown) arrow(client, matrices, inside, centerY, yaw, grown, bubbleLight, overlay);
         inside.draw();
-        // The cube last, over what is inside
-        VertexConsumer buffer = consumers.getBuffer(BUBBLE_LAYER);
-        // A soap bubble, not a glass cube: its film wobbles (taller and thinner, then squatter) and it sways a little
-        float squash = WOBBLE * MathHelper.sin(anim * WOBBLE_SPEED + phase);
+        film(matrices, inside, centerY, anim, phase, squash, grown, bubbleLight, true);
+        inside.draw();
+        if (Math.abs(lift) >= 0.25f && risen >= 1)
+            trail(matrices, consumers.getBuffer(BUBBLE_LAYER), plateTop, height, bob, anim, pos.hashCode(), light);
+    }
+
+    /**
+     * Its film, a soap bubble's, not a glass cube's: it wobbles (taller and thinner, then squatter) and sways a little.
+     * Only its faces toward the camera ({@code near} true), or only the others (false).
+     */
+    private static void film(MatrixStack matrices, VertexConsumerProvider buffers, float centerY, float anim, float phase,
+                             float squash, float grown, int light, boolean near) {
         matrices.push();
         matrices.translate(0.5f, centerY, 0.5f);
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_X + phase)));
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_Z + phase * 1.7f)));
         matrices.scale(1 - squash / 2, 1 + squash, 1 - squash / 2);
-        BubbleFilm.cube(matrices.peek(), buffer, BubbleFilm.FILM.getSprite(), 0, 0, 0, HALF * grown, BubbleFilm.FACE_FROM, BubbleFilm.FACE_TO,
-                1, 1, 1, 1, bubbleLight);
+        BubbleFilm.cube(matrices.peek(), buffers.getBuffer(BUBBLE_LAYER), BubbleFilm.FILM.getSprite(), 0, 0, 0, HALF * grown,
+                BubbleFilm.FACE_FROM, BubbleFilm.FACE_TO, 1, 1, 1, 1, light, near);
         matrices.pop();
-        if (Math.abs(lift) >= 0.25f && risen >= 1) trail(matrices, buffer, plateTop, height, bob, anim, pos.hashCode(), light);
+    }
+
+    /** Whether a bubble is drawing its miniature now (a renderer can then draw for the film around it). */
+    public static boolean isDrawingMiniature() {
+        return drawingMiniature;
     }
 
     /**
