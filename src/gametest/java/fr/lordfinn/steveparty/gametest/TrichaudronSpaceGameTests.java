@@ -330,8 +330,12 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
         MobEntity token = show.token();
         context.assertEquals(TrichaudronPrizes.actor(token).getHeadCount(), 3, "three heads, all coins");
         when(context, () -> TrichaudronPrizes.phase(token) == TrichaudronPrizes.Phase.CHOOSE, WHOLE, "the choice", () -> {
-            TrichaudronPrizes.pick(token, TrichaudronPrizes.actor(token).shownHeads()[0]);
+            int head = TrichaudronPrizes.actor(token).shownHeads()[0];
+            ItemStack prize = TrichaudronPrizes.heads(token).get(head);
+            TrichaudronPrizes.pick(token, head);
             when(context, () -> show.done()[0], WHOLE, "the show ends", () -> {
+                context.assertEquals(count(show.player(), Items.GOLD_NUGGET), prize.getCount(), "the coins of the head picked");
+                context.assertEquals(show.inChest(Items.GOLD_NUGGET), 64 - prize.getCount(), "taken out of the chest");
                 boolean[] again = {false};
                 context.assertTrue(show.again(context, again) == TrichaudronPrizes.Start.STARTED, "the other two still on offer");
                 context.assertEquals(TrichaudronPrizes.actor(token).getHeadCount(), 2, "one head less");
@@ -489,7 +493,8 @@ public class TrichaudronSpaceGameTests implements FabricGameTest {
     public void aBlowOnAHeadOrANeckHurtsItsBody(TestContext context) {
         ServerPlayerEntity player = player(context);
         TrichaudronEntity byHead = context.spawnEntity(ModEntities.TRICHAUDRON, new BlockPos(2, 1, 2));
-        TrichaudronEntity byNeck = context.spawnEntity(ModEntities.TRICHAUDRON, new BlockPos(2, 1, 12));
+        // within the 8-block template, whose chunks alone are sure to tick (out of it, no hit boxes ever spawn)
+        TrichaudronEntity byNeck = context.spawnEntity(ModEntities.TRICHAUDRON, new BlockPos(6, 1, 2));
         byHead.setAiDisabled(true);
         byNeck.setAiDisabled(true);
         context.waitAndRun(3, () -> {
