@@ -28,7 +28,8 @@ public final class ChoiceModule extends CartridgeModule {
         }
     }
 
-    public static final int BUTTON_H = 16;
+    /** Odd: a text centred in it has as much room above as below its capitals. */
+    public static final int BUTTON_H = 15;
     public static final int SWATCH_H = 18;
 
     private final List<Option> options;

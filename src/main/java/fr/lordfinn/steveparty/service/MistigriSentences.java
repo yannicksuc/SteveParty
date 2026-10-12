@@ -140,8 +140,8 @@ public final class MistigriSentences {
     }
 
     /** A sentence's line on the roulette: its icon, text, tone and chance (-1: unsaid). */
-    static OutcomeRoulettePayload.Line line(Outcome outcome, int chance, PartyControllerEntity party) {
-        return new OutcomeRoulettePayload.Line(outcome.kind().icon(party.getCurrency(PartyCurrency.COIN), party.getCurrency(PartyCurrency.STAR)), outcome.text(),
+    static OutcomeRoulettePayload.Line line(Outcome outcome, int chance, PartyControllerEntity party, @Nullable Text lander) {
+        return new OutcomeRoulettePayload.Line(outcome.kind().icon(party.getCurrency(PartyCurrency.COIN), party.getCurrency(PartyCurrency.STAR)), outcome.text(lander),
                 switch (outcome.kind().tone()) {
                     case 1 -> OutcomeRoulettePayload.Tone.GOOD;
                     case 0 -> OutcomeRoulettePayload.Tone.NEUTRAL;
@@ -176,11 +176,11 @@ public final class MistigriSentences {
         for (int row : picked) {
             Outcome each = outcomes.get(row);
             if (row == drawn || (forced != null && result < 0 && each.equals(forced))) result = lines.size();
-            lines.add(line(each, outcomes.chanceAmong(picked, row), party));
+            lines.add(line(each, outcomes.chanceAmong(picked, row), party, player.getName()));
         }
         if (result < 0) {
             result = lines.size();
-            lines.add(line(forced, -1, party));
+            lines.add(line(forced, -1, party, player.getName()));
         }
         Outcome outcome = forced != null ? forced : outcomes.get(drawn);
         Show show = new Show(world, tile.toImmutable(), token, player.getUuid(), party, outcome, onDone);
@@ -509,7 +509,7 @@ public final class MistigriSentences {
         /** The sentence: applied to the players it aims at, told to everyone, his reaction. */
         void pass() {
             ServerPlayerEntity player = player();
-            Text name = outcome.text();
+            Text name = outcome.text(player == null ? null : player.getName());
             boolean harsh = outcome.kind().tone() < 0 || (outcome.kind().tone() == 0 && outcome.target() == Target.LANDED);
             if (harsh) actor.setAngry(SENTENCE_TICKS);
             else actor.act(Action.YAWN);

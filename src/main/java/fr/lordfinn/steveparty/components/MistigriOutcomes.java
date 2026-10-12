@@ -104,28 +104,34 @@ public record MistigriOutcomes(List<Outcome> outcomes, int draws) {
     /** Who a sentence falls on. Ranks, coins and stars are the ones held when it falls; a tie aims at all the tied. */
     public enum Target implements StringIdentifiable {
         /** The player whose pawn landed on the space. */
-        LANDED("landed"),
+        LANDED("landed", 0x8E3FC8),
         /** The first place: the most stars, then the most coins. */
-        FIRST("first"),
+        FIRST("first", 0xB8860B),
         /** The last place: the fewest stars, then the fewest coins. */
-        LAST("last"),
+        LAST("last", 0x7D8C1C),
         /** Every player of the party. */
-        ALL("all"),
+        ALL("all", 0xD2691E),
         /** Every player of the party but the one who landed. */
-        OTHERS("others"),
+        OTHERS("others", 0xC0407A),
         /** The most coins. */
-        RICHEST("richest"),
+        RICHEST("richest", 0x1E8C7E),
         /** The fewest coins. */
-        POOREST("poorest"),
+        POOREST("poorest", 0x8B5A2B),
         /** One player of the party, at random. */
-        RANDOM("random");
+        RANDOM("random", 0x2A7BD4);
 
         public static final Codec<Target> CODEC = StringIdentifiable.createCodec(Target::values);
 
         public final String id;
+        /**
+         * Its colour (opaque RGB), the same wherever it is named: the roulette's lines (panel and card), the chat, the
+         * menu's pictograms and tooltips. Mid-tones, readable on the light rows of the roulette and on the dark menu.
+         */
+        public final int color;
 
-        Target(String id) {
+        Target(String id, int color) {
             this.id = id;
+            this.color = color;
         }
 
         @Override
@@ -198,17 +204,23 @@ public record MistigriOutcomes(List<Outcome> outcomes, int draws) {
             return amount == 1 ? Text.translatable(key + ".one") : Text.translatable(key, amount);
         }
 
-        /** Who it falls on, as a line starts: « First place », « Everyone »... */
+        /** Who it falls on, short and in its target's colour: « 1st place », « Everyone »... */
         public MutableText who() {
-            return Text.translatable("hud.steveparty.mistigri.who." + target.id);
+            return Text.translatable("hud.steveparty.mistigri.who." + target.id).styled(style -> style.withColor(target.color));
+        }
+
+        /** Who then what, the target in its colour: « 1st place: −10 coins », « Who landed: Back 3 spaces ». */
+        public MutableText text() {
+            return text(null);
         }
 
         /**
-         * The sentence as the roulette lists it: its effect alone when it falls on the player who landed (the roulette is
-         * about them), else who then the effect: « First place: −10 coins ».
+         * The same, the player who landed named by {@code lander} (the roulette: « LordFinn: −10 coins »), in the
+         * colour of their target.
          */
-        public MutableText text() {
-            return target == Target.LANDED ? effect() : Text.translatable("hud.steveparty.mistigri.line", who(), effect());
+        public MutableText text(@org.jetbrains.annotations.Nullable Text lander) {
+            Text who = target == Target.LANDED && lander != null ? lander.copy().styled(style -> style.withColor(target.color)) : who();
+            return Text.translatable("hud.steveparty.mistigri.line", who, effect());
         }
     }
 

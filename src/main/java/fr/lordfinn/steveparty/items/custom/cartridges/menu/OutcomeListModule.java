@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class OutcomeListModule extends CartridgeModule {
     /** A row closed; the box's height (rows shown); the line under it (add, draws). */
-    public static final int ROW_H = 18, VISIBLE_ROWS = 7, LIST_H = VISIBLE_ROWS * ROW_H + 2, FOOTER_GAP = 3, FOOTER_H = 16;
+    public static final int ROW_H = 17, VISIBLE_ROWS = 7, LIST_H = VISIBLE_ROWS * ROW_H + 2, FOOTER_GAP = 3, FOOTER_H = 15;
     /** Its height under its title. */
     public static final int BODY_H = LIST_H + FOOTER_GAP + FOOTER_H;
     /** The actions. */
