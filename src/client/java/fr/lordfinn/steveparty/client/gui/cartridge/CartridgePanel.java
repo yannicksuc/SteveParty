@@ -70,8 +70,7 @@ import java.util.function.Supplier;
  * « Current »: copper traces run from the contacts to each module. When the menu opens, a pulse runs from the contacts
  * along every trace and lights them up, each module's number flashing as it arrives; a change sends a spark along its
  * module's trace; a module that can't be changed now gets no current (dim trace). Everything is drawn with fills from
- * precomputed paths (no allocation per frame), and nothing moves when the animation is off (the lightning button of
- * the label, or the game's « Hide Lightning Flashes »).
+ * precomputed paths (no allocation per frame), and nothing moves under the game's « Hide Lightning Flashes ».
  */
 public final class CartridgePanel {
     // The cartridge shell (colours of cartridge.png)
@@ -86,7 +85,6 @@ public final class CartridgePanel {
     private static final float OPEN_SPEED = 0.32F, SPARK_SPEED = 0.45F;
     private static final long FLASH_MS = 260;
     private static final int NO_PENDING = Integer.MIN_VALUE, PENDING_TICKS = 40, INFO_REFRESH_TICKS = 10;
-    private static final int TOGGLE = 9;
     private static final int SCROLL_STEP = 14;
 
     private final MinecraftClient client;
@@ -109,7 +107,9 @@ public final class CartridgePanel {
     private int columnW = CartridgeLayout.COLUMN_W;
     private int shellHeight;
     private int scroll, scrollMax;
-    private @Nullable Text slotLabel;
+    /** The redstone power selecting the cartridge shown (a tile holding several), -1 for none. */
+    private int slotPower = -1;
+    private static final ItemStack REDSTONE = new ItemStack(net.minecraft.item.Items.REDSTONE);
 
     // State per module (sized when the cartridge changes)
     private int[] heights = new int[0];
@@ -190,9 +190,9 @@ public final class CartridgePanel {
         this.stock = stock;
     }
 
-    /** A note in the label (e.g. the slot of an Advanced Tile). */
-    public void setSlotLabel(@Nullable Text slotLabel) {
-        this.slotLabel = slotLabel;
+    /** The redstone power selecting the cartridge shown, in the label (a tile holding several); -1 for none. */
+    public void setSlotPower(int slotPower) {
+        this.slotPower = slotPower;
     }
 
     public int width() {
@@ -545,32 +545,18 @@ public final class CartridgePanel {
             context.drawItem(current, sx + 3, sy + 3);
             textX = sx + 22;
         }
-        // The lightning button and the slot's number keep their place; the name takes what is left
-        int toggleX = sx + sw - TOGGLE - 4, toggleY = sy + 6;
-        int right = toggleX - 4;
-        if (slotLabel != null) {
-            // Leaves the name at least 10 pixels
-            int slotWidth = Math.max(0, Math.min(textRenderer.getWidth(slotLabel), right - textX - 14));
-            UiText.line(context, textRenderer, slotLabel, right - slotWidth, sy + 7, slotWidth, dark ? 0xFF4A4A4A : 0xFFE8E8E8, false);
-            right -= slotWidth + 4;
+        int right = sx + sw - 4;
+        if (slotPower >= 0) {
+            // The redstone power that selects this cartridge: the number, then a redstone dust
+            String power = Integer.toString(slotPower);
+            right -= 16;
+            context.drawItem(REDSTONE, right, sy + 2);
+            right -= textRenderer.getWidth(power);
+            context.drawText(textRenderer, power, right, sy + 7, textColor, !dark);
+            right -= 4;
         }
         int room = Math.max(10, right - textX);
         UiText.line(context, textRenderer, labelName(current, cartridge, room), textX, sy + 7, room, textColor, !dark);
-        drawToggle(context, toggleX, toggleY, CartridgeGuiConfig.currentAnimation(), HitArea.contains(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2));
-    }
-
-    /** The lightning button: the current animation on (yellow) or off (grey). */
-    private static final String[] BOLT = {"....##.", "...##..", "..##...", ".#####.", "...##..", "..##...", ".##....", ".#.....", "......."};
-
-    private static void drawToggle(DrawContext context, int x, int y, boolean on, boolean hovered) {
-        context.fill(x - 1, y - 1, x + TOGGLE + 1, y + TOGGLE + 1, hovered ? 0xFFFFFFFF : OUTLINE);
-        context.fill(x, y, x + TOGGLE, y + TOGGLE, 0xFF2B2B2B);
-        for (int row = 0; row < BOLT.length; row++) {
-            String line = BOLT[row];
-            for (int col = 0; col < line.length(); col++) {
-                if (line.charAt(col) == '#') PartyGui.pixel(context, x + 1 + col, y + row, on ? 0xFFFFD34A : 0xFF6A6A6A);
-            }
-        }
     }
 
     private void drawModule(DrawContext context, ItemStack current, int i, int mx, int my, int mouseX, int mouseY, float flash) {
@@ -1074,13 +1060,6 @@ public final class CartridgePanel {
     }
 
     private boolean drawTooltip(DrawContext context, int mouseX, int mouseY) {
-        int sx = x + 6, sw = width() - 12;
-        int toggleX = sx + sw - TOGGLE - 4, toggleY = y + 11;
-        if (HitArea.contains(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2)) {
-            context.drawTooltip(textRenderer, Text.translatable(CartridgeItem.MENU_KEY
-                    + (CartridgeGuiConfig.currentAnimation() ? "animation.on" : "animation.off")), mouseX, mouseY);
-            return true;
-        }
         if (!inContent(mouseY)) return false;
         ItemStack current = stack.get();
         for (int i = 0; i < modules.size(); i++) {
@@ -1185,13 +1164,6 @@ public final class CartridgePanel {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 1) return rightClicked(mouseX, mouseY);
         if (button != 0) return false;
-        int sx = x + 6, sw = width() - 12;
-        int toggleX = sx + sw - TOGGLE - 4, toggleY = y + 11;
-        if (HitArea.contains(mouseX, mouseY, toggleX - 1, toggleY - 1, TOGGLE + 2, TOGGLE + 2)) {
-            CartridgeGuiConfig.setCurrentAnimation(!CartridgeGuiConfig.currentAnimation());
-            click();
-            return true;
-        }
         if (!inContent(mouseY)) return false;
         ItemStack current = stack.get();
         // The containers' hint, for anyone who sees it: how to link, in the chat

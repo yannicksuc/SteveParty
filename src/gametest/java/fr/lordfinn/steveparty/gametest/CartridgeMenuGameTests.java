@@ -213,10 +213,10 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                 Set<String> ids = new HashSet<>();
                 for (CartridgeModule module : modules) context.assertTrue(ids.add(module.id()), name + ": unique id " + module.id());
 
-                // The label: icon (22) + name + lightning button (17), in a one-column shell
-                int labelRoom = CartridgeLayout.width(1, columnW) - 12 - 22 - 21;
+                // The label: icon (22) + name, in a one-column shell
+                int labelRoom = CartridgeLayout.width(1, columnW) - 12 - 22 - 4;
                 String shortName = translate(lang, CartridgeItem.MENU_KEY + "name." + id, context);
-                context.assertTrue(width(shortName) <= labelRoom - width("n°16") - 4, name + ": short name « " + shortName + " » fits beside a slot number");
+                context.assertTrue(width(shortName) <= labelRoom - width("15") - 16 - 4, name + ": short name « " + shortName + " » fits beside a redstone power");
 
                 // The states its texts depend on
                 List<ItemStack> states = new ArrayList<>(List.of(new ItemStack(item)));
