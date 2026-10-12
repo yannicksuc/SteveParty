@@ -28,6 +28,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
@@ -52,9 +54,10 @@ import java.util.UUID;
  * ({@link BoardShop}). A real Trading Stall right in front of him shows his offers while he is there; without one, his
  * own stall is drawn with him (not a block). He goes when the stop ends.
  * <p>
- * The token's owner gets the shop's trade screen wherever they are, with « Buy nothing » and a countdown; the merchant
- * glows meanwhile. The stop ends when the purchases allowed by the cartridge are made, on « Buy nothing » or when the
- * screen is closed, when the time runs out (game rule {@code stevepartyShopStopSeconds}, {@value ModGameRules#DEFAULT_SHOP_STOP_SECONDS} s
+ * Nothing pops up: the token's owner opens the shop's trade screen by right-clicking the merchant or the real stall in
+ * front of him, or with the « [Open the shop] » link of the chat ({@link #open}); the screen has « Buy nothing » and a
+ * countdown, the merchant glows meanwhile. Closing the screen ends nothing (it can be opened again, the purchases made
+ * still count). The stop ends when the purchases allowed by the cartridge are made, on « Buy nothing », when the time runs out (game rule {@code stevepartyShopStopSeconds}, {@value ModGameRules#DEFAULT_SHOP_STOP_SECONDS} s
  * by default) or when the owner leaves: a paused token walks its remaining steps, a landing ends the turn.
  * <p>
  * No offer set, a token without owner or whose owner is offline: nothing happens, the token goes on. Only the owner
@@ -70,9 +73,9 @@ public final class ShopStops {
 
     /** How a stop ended. */
     public enum End {
-        /** The purchases allowed were made, or the screen was closed after buying. */
+        /** The purchases allowed were made, « Done », or the time ran out after buying. */
         BOUGHT,
-        /** « Buy nothing », or closed without buying. */
+        /** « Buy nothing ». */
         NOTHING,
         /** The time ran out. */
         TIMEOUT,
@@ -93,7 +96,12 @@ public final class ShopStops {
         /** The party whose turn waits for the stop (a landing during a party), else null. */
         final @Nullable PartyControllerEntity party;
         final Text tokenName;
+        /** The screen open now, null while closed. */
         @Nullable ShopStopScreenHandler handler;
+        /** Purchases made in the screens closed so far (the open one counts from there). */
+        int purchases;
+        /** The stop's whole time (game rule when it started). */
+        int seconds;
 
         Stop(UUID token, UUID owner, ServerWorld world, BlockPos space, UUID trader, UUID sequence, int limit, long deadline,
              @Nullable PartyControllerEntity party, Text tokenName) {
@@ -128,10 +136,26 @@ public final class ShopStops {
         return STOPS.containsKey(token);
     }
 
+    /** Purchases made during the stop of {@code token} so far, -1 without a stop (for the GameTests). */
+    public static int purchasesOf(UUID token) {
+        Stop stop = STOPS.get(token);
+        return stop == null ? -1 : purchases(stop);
+    }
+
+    private static int purchases(Stop stop) {
+        return stop.handler != null ? stop.handler.getPurchases() : stop.purchases;
+    }
+
     /** Seconds before the stop of this screen ends by itself (0 if it is not a current stop's). */
     public static int secondsLeft(ShopStopScreenHandler handler) {
         Stop stop = stopOf(handler);
         return stop == null ? 0 : (int) Math.max(0, (stop.deadline - stop.world.getTime() + 19) / 20);
+    }
+
+    /** The whole time of the stop of this screen, in seconds (0 if it is not a current stop's). */
+    public static int totalSeconds(ShopStopScreenHandler handler) {
+        Stop stop = stopOf(handler);
+        return stop == null ? 0 : stop.seconds;
     }
 
     /** The Shop Cartridge giving {@code space} its role, or null. */
@@ -217,16 +241,10 @@ public final class ShopStops {
         Text tokenName = mob.getDisplayName();
         Stop stop = new Stop(mob.getUuid(), ownerUuid, world, space.getPos().toImmutable(), trader.getUuid(), sequence, limit,
                 world.getTime() + 20L * seconds, party, tokenName);
-        STOPS.put(mob.getUuid(), stop); // before opening: the screen reads its time left
-        ShopStopScreenHandler handler = trader.openShopStop(owner, limit);
-        if (handler == null) {
-            STOPS.remove(mob.getUuid());
-            BoardActors.end(sequence);
-            MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.closed").formatted(Formatting.GRAY),
-                    MessageUtils.MessageType.ACTION_BAR);
-            return false;
-        }
-        stop.handler = handler;
+        stop.seconds = seconds;
+        STOPS.put(mob.getUuid(), stop);
+        // No screen pops up: the owner clicks the merchant (or his stall, or the chat's link)
+        BoardActors.setTouchable(trader, true);
         // A shop check point holds the token: its Router tells a comparator (a shop tile did when the token landed)
         if (!ABoardSpaceBlock.countsAsStep(space.getCachedState().getBlock()))
             BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, space);
@@ -237,7 +255,7 @@ public final class ShopStops {
         world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.BLOCKS, 0.8F, 1.2F);
         world.playSound(null, trader.getX(), trader.getY(), trader.getZ(), SoundEvents.ENTITY_VILLAGER_TRADE, SoundCategory.NEUTRAL, 0.8F, 1.0F);
         MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.welcome", tokenName, limit, seconds)
-                .formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
+                .formatted(Formatting.GOLD).append(" ").append(openButton(mob.getUuid())), MessageUtils.MessageType.CHAT);
         for (ServerPlayerEntity player : audience(stop)) {
             MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.shop_stop.stopped", owner.getDisplayName(), tokenName)
                     .formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
@@ -271,16 +289,93 @@ public final class ShopStops {
 
     // ---------------------------------------------------------------- the screen
 
+    /** The chat's « [Open the shop] »: {@code /steveparty shop_open <token>}, for its owner while the stop lasts. */
+    private static Text openButton(UUID token) {
+        return Text.translatable("message.steveparty.shop_stop.open_button").styled(style -> style
+                .withColor(Formatting.GREEN).withBold(true)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/steveparty shop_open " + token))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("message.steveparty.shop_stop.open_hover"))));
+    }
+
+    /**
+     * {@code player} asks for the shop of the stop of {@code token} (the chat's link): opened if it is theirs and still
+     * waiting, else they are told it is over.
+     *
+     * @return true if the screen is open
+     */
+    public static boolean open(ServerPlayerEntity player, UUID token) {
+        Stop stop = STOPS.get(token);
+        if (stop == null || !stop.owner.equals(player.getUuid())) {
+            MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.shop_stop.not_pending").formatted(Formatting.GRAY),
+                    MessageUtils.MessageType.ACTION_BAR);
+            return false;
+        }
+        return open(stop, player);
+    }
+
+    /**
+     * {@code player} right-clicked {@code trader}: the merchant of a stop opens its shop for its owner, tells the others
+     * whose it is.
+     *
+     * @return true if {@code trader} is a stop's merchant (the click is his)
+     */
+    public static boolean onMerchantUsed(ServerPlayerEntity player, BoxedTraderEntity trader) {
+        for (Stop stop : STOPS.values()) {
+            if (stop.trader.equals(trader.getUuid())) return use(stop, player);
+        }
+        return false;
+    }
+
+    /** {@code player} right-clicked the Trading Stall at {@code pos}: the one in front of a stop's merchant opens his shop. */
+    public static boolean onStallUsed(ServerPlayerEntity player, BlockPos pos) {
+        for (Stop stop : STOPS.values()) {
+            if (stop.world == player.getWorld() && stop.world.getEntity(stop.trader) instanceof BoxedTraderEntity trader
+                    && pos.equals(trader.getShopStall())) return use(stop, player);
+        }
+        return false;
+    }
+
+    private static boolean use(Stop stop, ServerPlayerEntity player) {
+        if (stop.owner.equals(player.getUuid())) {
+            open(stop, player);
+            return true;
+        }
+        ServerPlayerEntity owner = stop.world.getServer().getPlayerManager().getPlayer(stop.owner);
+        MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.shop_stop.not_yours",
+                owner != null ? owner.getDisplayName() : stop.tokenName).formatted(Formatting.GRAY), MessageUtils.MessageType.ACTION_BAR);
+        return true;
+    }
+
+    /** Opens the stop's screen for its owner (nothing new if it is open), the purchases made so far counted in. */
+    private static boolean open(Stop stop, ServerPlayerEntity owner) {
+        if (stop.handler != null && owner.currentScreenHandler == stop.handler) return true;
+        if (!(stop.world.getEntity(stop.trader) instanceof BoxedTraderEntity trader) || !trader.isAlive()) return false;
+        ShopStopScreenHandler handler = trader.openShopStop(owner, stop.limit, stop.purchases);
+        if (handler == null) {
+            MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.closed").formatted(Formatting.GRAY),
+                    MessageUtils.MessageType.ACTION_BAR);
+            return false;
+        }
+        stop.handler = handler;
+        return true;
+    }
+
     /** « Buy nothing » (or « Done ») pressed. */
     public static void buyNothing(ShopStopScreenHandler handler) {
         Stop stop = stopOf(handler);
         if (stop != null) end(stop, handler.getPurchases() > 0 ? End.BOUGHT : End.NOTHING);
     }
 
-    /** The shop screen was closed (by its player, or the server). */
+    /** The shop screen was closed (by its player, or the server): the stop waits on, its purchases kept. */
     public static void onScreenClosed(ShopStopScreenHandler handler) {
         Stop stop = stopOf(handler);
-        if (stop != null) end(stop, handler.getPurchases() > 0 ? End.BOUGHT : End.NOTHING);
+        if (stop != null) detach(stop);
+    }
+
+    private static void detach(Stop stop) {
+        if (stop.handler == null) return;
+        stop.purchases = stop.handler.getPurchases();
+        stop.handler = null;
     }
 
     private static @Nullable Stop stopOf(ShopStopScreenHandler handler) {
@@ -303,20 +398,21 @@ public final class ShopStops {
                 end(stop, End.LEFT);
                 continue;
             }
-            ShopStopScreenHandler handler = stop.handler;
-            if (handler == null || owner.currentScreenHandler != handler) {
-                end(stop, handler != null && handler.getPurchases() > 0 ? End.BOUGHT : End.NOTHING);
-                continue;
-            }
-            if (handler.getPurchases() >= stop.limit) {
+            if (stop.handler != null && owner.currentScreenHandler != stop.handler) detach(stop);
+            if (purchases(stop) >= stop.limit) {
                 // Ended a tick after the last purchase: never under the trade being made
                 end(stop, End.BOUGHT);
                 continue;
             }
             long left = stop.deadline - world.getTime();
             if (left <= 0) {
-                end(stop, End.TIMEOUT);
+                end(stop, purchases(stop) > 0 ? End.BOUGHT : End.TIMEOUT);
                 continue;
+            }
+            // Screen closed: the owner sees the time left and what to click
+            if (stop.handler == null && left % 20 == 0) {
+                MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.waiting_you", (left + 19) / 20)
+                        .formatted(Formatting.GOLD), MessageUtils.MessageType.ACTION_BAR);
             }
             if (left % SPARKLE_INTERVAL == 0) sparkle(world, stop, trader);
             if (left % NOTICE_INTERVAL == 0) {
@@ -358,7 +454,7 @@ public final class ShopStops {
         }
         dismiss(stop);
         Text who = owner != null ? owner.getDisplayName() : stop.tokenName;
-        int purchases = stop.handler == null ? 0 : stop.handler.getPurchases();
+        int purchases = purchases(stop);
         Text message = switch (how) {
             case BOUGHT -> Text.translatable("message.steveparty.shop_stop.bought", who, purchases).formatted(Formatting.GREEN);
             case NOTHING -> Text.translatable("message.steveparty.shop_stop.nothing", who).formatted(Formatting.GRAY);
