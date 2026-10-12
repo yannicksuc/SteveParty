@@ -145,8 +145,8 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
         // The player's inventory, on the mod's grey panel
         PartyGui.panel(context, x + INVENTORY_X - 5, y + INVENTORY_Y - 6, 18 * 9 + 10, HEIGHT - INVENTORY_Y + 3, PartyGui.PANEL);
         for (int row = 0; row < 3; row++)
-            for (int col = 0; col < 9; col++) slot(context, x + INVENTORY_X + col * 18, y + INVENTORY_Y + row * 18);
-        for (int col = 0; col < 9; col++) slot(context, x + INVENTORY_X + col * 18, y + HOTBAR_Y);
+            for (int col = 0; col < 9; col++) PartyGui.slot(context, x + INVENTORY_X + col * 18, y + INVENTORY_Y + row * 18);
+        for (int col = 0; col < 9; col++) PartyGui.slot(context, x + INVENTORY_X + col * 18, y + HOTBAR_Y);
         drawSign(context, x + WIDTH / 2, y - SIGN_OVER);
     }
 

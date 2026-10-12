@@ -79,17 +79,9 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
     static void drawInventoryPanel(DrawContext context, int px, int py) {
         PartyGui.panel(context, px, py, CartridgeLayout.INVENTORY_W, CartridgeLayout.INVENTORY_H, PartyGui.PANEL);
         for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) slot(context, px + 7 + col * 18, py + 16 + row * 18);
+            for (int col = 0; col < 9; col++) PartyGui.slot(context, px + 8 + col * 18, py + 17 + row * 18);
         }
-        for (int col = 0; col < 9; col++) slot(context, px + 7 + col * 18, py + 74);
-    }
-
-    static void slot(DrawContext context, int sx, int sy) {
-        context.fill(sx, sy, sx + 18, sy + 18, 0xFF8B8B8B);
-        context.fill(sx, sy, sx + 17, sy + 1, 0xFF373737);
-        context.fill(sx, sy, sx + 1, sy + 17, 0xFF373737);
-        context.fill(sx + 1, sy + 17, sx + 18, sy + 18, 0xFFFFFFFF);
-        context.fill(sx + 17, sy + 1, sx + 18, sy + 18, 0xFFFFFFFF);
+        for (int col = 0; col < 9; col++) PartyGui.slot(context, px + 8 + col * 18, py + 75);
     }
 
     @Override
