@@ -2,20 +2,30 @@ package fr.lordfinn.steveparty.items.custom.cartridges;
 
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
+import fr.lordfinn.steveparty.service.MarkerResidents;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.SneakScrollItem;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.BlockSlotModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeEdit;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ContainersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -42,7 +52,8 @@ import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
  * price under it), ghost copies with their quantities set with the mouse wheel. Each sale is taken from its linked
  * containers ({@link ContainerCartridge}), or without any from the bank of the party running on its board; the payment
  * goes to that bank (or to its containers outside a party). The cartridge also sets how many items may be bought per
- * stop ({@link #purchases}): its menu, or sneak + mouse wheel with it in the main hand.
+ * stop ({@link #purchases}): its menu, or sneak + mouse wheel with it in the main hand. Its menu also sets the merchant's
+ * disguise ({@link #disguise}), in a slot beside its small stall: the block his box looks like, a gold block by default.
  */
 public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem, ContainerCartridge, MobSpawnCartridge {
     public static final int DEFAULT_PURCHASES = 1;
@@ -55,12 +66,17 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
     public static final int ROW_SOLD = 0, ROW_PRICE = 1, ROW_SECOND_PRICE = 2;
     /** Its slots, in a Trading Stall's order ({@link TradingStallBlockEntity#SIZE}): the prices, the second prices, the items sold. */
     public static final int SLOTS = TradingStallBlockEntity.SIZE;
+    /** The merchant's box when no disguise is set: his own default, a gold block. */
+    public static final BlockState DEFAULT_DISGUISE = Blocks.GOLD_BLOCK.getDefaultState();
     /** The slots of a cartridge made before it had a stall's 9 offers: 3 columns of 3 (row by row: sold, price, 2nd price). */
     private static final int OLD_SLOTS = 9, OLD_COLUMNS = 3;
 
     private static final String K = MENU_KEY + "shop.";
     private static final List<CartridgeModule> MODULES = List.of(
             new StallOffersModule("offers", K + "offers"),
+            // Beside the small stall: the block the merchant hides in (the menu fits beside a tile without one more row)
+            new BlockSlotModule("disguise", K + "disguise", ShopCartridgeItem::storedDisguise, ShopCartridgeItem::setDisguise,
+                    BoxedTraderEntity::isValidBoxBlock, DEFAULT_DISGUISE, K + "disguise.hint", true),
             new NumberModule("purchases", K + "purchases", 1, MAX_PURCHASES, ShopCartridgeItem::purchases,
                     (edit, value) -> setPurchases(edit.stack(), value), stack -> COLOR),
             // No title: its hint row says what it is
@@ -105,6 +121,55 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
         purchases = Math.clamp(purchases, 1, MAX_PURCHASES);
         if (purchases == DEFAULT_PURCHASES) stack.remove(ModComponents.SHOP_PURCHASES);
         else stack.set(ModComponents.SHOP_PURCHASES, purchases);
+    }
+
+    /** The block set as the merchant's disguise, null if none (or one that can't be a box). */
+    public static @Nullable BlockState storedDisguise(ItemStack stack) {
+        BlockState state = stack.get(ModComponents.BOX_BLOCK);
+        return BoxedTraderEntity.isValidBoxBlock(state) ? state : null;
+    }
+
+    /** The block the merchant's box looks like: the one set, else {@link #DEFAULT_DISGUISE}. */
+    public static BlockState disguise(ItemStack stack) {
+        BlockState state = storedDisguise(stack);
+        return state == null ? DEFAULT_DISGUISE : state;
+    }
+
+    /**
+     * Sets the merchant's disguise: {@code block}'s default state, or none (null: the default box). A block that can't
+     * be a box ({@link BoxedTraderEntity#isValidBoxBlock}) is refused.
+     *
+     * @return true if written
+     */
+    public static boolean setDisguise(ItemStack stack, @Nullable Block block) {
+        if (block == null) {
+            stack.remove(ModComponents.BOX_BLOCK);
+            return true;
+        }
+        BlockState state = block.getDefaultState();
+        if (!BoxedTraderEntity.isValidBoxBlock(state)) return false;
+        stack.set(ModComponents.BOX_BLOCK, state);
+        return true;
+    }
+
+    /**
+     * From its menu: the disguise written, and the merchant living on its Spawn Bubble (« always visible ») dressed at
+     * once if the cartridge is the active one of its space.
+     */
+    private static void setDisguise(CartridgeEdit edit, @Nullable BlockState state) {
+        setDisguise(edit.stack(), state == null ? null : state.getBlock());
+        if (edit.isActiveOnBoardSpace() && edit.holder().getWorld() instanceof ServerWorld world) {
+            BlockPos marker = CartridgeSpawnMarker.linked(edit.stack(), world);
+            if (marker != null) MarkerResidents.check(world, marker);
+        }
+    }
+
+    /** Its merchant wears its disguise (his box looks like {@link #disguise}). */
+    @Override
+    public void dress(MobEntity mob, ItemStack cartridge) {
+        if (!(mob instanceof BoxedTraderEntity trader)) return;
+        BlockState state = disguise(cartridge);
+        if (trader.getBlockState() != state) trader.setBlockState(state);
     }
 
     /**
@@ -218,6 +283,8 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
         if (offers == 0) tips.warn(Text.translatable("tooltip.steveparty.shop_cartridge.no_offer"));
         else tips.state("tooltip.steveparty.shop_cartridge.offers", Tooltips.value(offers));
         tips.state("tooltip.steveparty.shop_cartridge.purchases", Tooltips.value(purchases(stack)));
+        BlockState disguise = storedDisguise(stack);
+        if (disguise != null) tips.state("tooltip.steveparty.shop_cartridge.disguise", Tooltips.value(disguise.getBlock().getName()));
     }
 
     @Override

@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopStock;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.BlockSlotModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenuHost;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
@@ -28,7 +29,8 @@ import java.util.List;
 /**
  * A cartridge's menu on its own (the cartridge in hand, or in a block's slot, see
  * {@link fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus}): its shell with its modules and, only
- * when a module needs it (the Inventory Cartridge's ghost slots), the player's inventory under it.
+ * when a module needs it (the Inventory Cartridge's ghost slots, a block slot such as the Shop Cartridge's disguise:
+ * items picked from it), the player's inventory under it.
  * <p>
  * With the inventory the shell has a fixed size and the ghost slots are its first module, so the slots never depend on
  * the texts (measured by the client only); without it there are no slots, and the screen takes the shell's size.
@@ -57,7 +59,7 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
         this.holderItem = holder.getItem();
         this.modules = CartridgeMenus.modules(holder);
         int ghost = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
-        this.withInventory = ghost >= 0;
+        this.withInventory = ghost >= 0 || CartridgeLayout.indexOf(modules, BlockSlotModule.class) >= 0;
         // With the inventory: a shell of a fixed size (the slots can't move when the texts take more lines)
         this.backgroundWidth = withInventory ? CartridgeLayout.SHELL_W_WITH_INVENTORY : 0;
         this.backgroundHeight = withInventory ? CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP + CartridgeLayout.INVENTORY_H : 0;
@@ -65,7 +67,7 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
         addProperty(storage);
         updateStorage();
 
-        if (withInventory) {
+        if (ghost >= 0) {
             if (ghost != 0) throw new IllegalStateException("the ghost slots must be a cartridge's first module");
             GhostSlotsModule module = (GhostSlotsModule) modules.get(ghost);
             Inventory ghosts = player.getWorld().isClient ? new SimpleInventory(GhostSlotsModule.COUNT)
@@ -76,6 +78,8 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
                 addSlot(new GhostSlot(ghosts, i, shellX + CartridgeLayout.PAD_X + module.slotX(i), CartridgeLayout.TOP + module.slotY(i), () -> shown,
                         module::signed));
             }
+        }
+        if (withInventory) {
             int invX = (backgroundWidth - CartridgeLayout.INVENTORY_W) / 2;
             int invY = CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP;
             PlayerSlots.add(this::addSlot, playerInventory, invX + 8, invY + 17);

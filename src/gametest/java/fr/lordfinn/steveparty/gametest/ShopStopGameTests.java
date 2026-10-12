@@ -282,6 +282,7 @@ public class ShopStopGameTests implements SteveGameTest {
                 context.assertTrue(facing.x * toSpace.x + facing.z * toSpace.z > 0.95, "facing the space");
                 context.assertTrue(trader.getShopStall() == null && trader.bringsOwnStall(), "his own stall: none in front");
                 context.assertEquals(trader.getShopItems().size(), 1, "his stall shows what he sells");
+                context.assertTrue(trader.getBlockState() == Blocks.GOLD_BLOCK.getDefaultState(), "no disguise set: his gold block");
                 later(context, 20, () -> {
                     context.assertTrue(ShopStops.isShopping(board.token().getUuid()), "still waiting: nothing chosen");
                     handler.onButtonClick(owner, ShopStopScreenHandler.BUY_NOTHING_BUTTON_ID);
@@ -348,9 +349,11 @@ public class ShopStopGameTests implements SteveGameTest {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
             ShopCartridgeItem.scroll(owner, board.cartridge(), 1);
             context.assertEquals(ShopCartridgeItem.purchases(board.cartridge()), 2, "sneak + wheel: one more");
+            ShopCartridgeItem.setDisguise(board.cartridge(), Blocks.HAY_BLOCK);
             walk(context, board, 2, () -> {
                 ShopStopScreenHandler handler = assertShopping(context, board, owner, 2);
                 BoxedTraderEntity trader = board.trader();
+                context.assertTrue(trader.getBlockState() == Blocks.HAY_BLOCK.getDefaultState(), "he wears the cartridge's disguise");
                 context.assertEquals(handler.getLimit(), 2, "two purchases allowed");
                 context.assertTrue(buyOnce(handler, owner), "first purchase");
                 later(context, 2, () -> {

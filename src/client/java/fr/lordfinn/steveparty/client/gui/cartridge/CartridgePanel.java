@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.client.gui.LinksHelp;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.BlockSlotModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
@@ -26,6 +27,7 @@ import fr.lordfinn.steveparty.payloads.custom.CartridgeSettingPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GhostSlot;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -116,6 +118,8 @@ public final class CartridgePanel {
     private long[] sparkStart = new long[0];
     private long[] flashStart = new long[0];
     private String[] labels = new String[0];
+    /** The number of each module's chip (« 01 »...): the inline modules have none, the next ones follow on. */
+    private int[] numbers = new int[0];
     private String[][] optionTexts = new String[0][];
     private List<List<OrderedText>> infoLines = new ArrayList<>();
     private int[][] infoColors = new int[0][];
@@ -260,6 +264,7 @@ public final class CartridgePanel {
         int n = modules.size();
         heights = new int[n];
         labels = new String[n];
+        numbers = new int[n];
         optionTexts = new String[n][];
         infoLines = new ArrayList<>(n);
         infoColors = new int[n][];
@@ -277,6 +282,13 @@ public final class CartridgePanel {
                 }
                 case NumberModule number -> NumberModule.ROW_H;
                 case StallOffersModule stall -> StallOffersModule.PREVIEW_H;
+                case BlockSlotModule slot -> {
+                    if (slot.inline()) yield 0;
+                    // Beside the slot: the block's name (drawn each frame), then the hint, wrapped
+                    List<OrderedText> hint = textRenderer.wrapLines(Text.translatable(slot.hintKey()), blockTextW());
+                    infoLines.set(i, hint);
+                    yield Math.max(BlockSlotModule.SLOT, (1 + hint.size()) * InfoModule.LINE_H);
+                }
                 case ContainersModule containers -> containersHeight(current);
                 case ColorModule color -> {
                     int rows = (ColorModule.DEFAULT + colorsPerRow()) / colorsPerRow();
@@ -315,7 +327,9 @@ public final class CartridgePanel {
                 }
                 default -> module.height();
             };
-            heights[i] = (module.labelKey() == null ? 0 : CartridgeModule.LABEL_H) + body;
+            // An inline module sits in the previous one's box: no height, no number of its own
+            heights[i] = module.inline() ? 0 : (module.labelKey() == null ? 0 : CartridgeModule.LABEL_H) + body;
+            numbers[i] = (i == 0 ? 0 : numbers[i - 1]) + (module.inline() ? 0 : 1);
         }
         emptyLines = n == 0 ? textRenderer.wrapLines(Text.translatable(CartridgeItem.MENU_KEY + "empty.hint"), columnW) : List.of();
 
@@ -563,13 +577,25 @@ public final class CartridgePanel {
         CartridgeModule module = modules.get(i);
         boolean enabled = module.enabled(current);
         int top = my;
+        if (module.inline()) {
+            // Its title on the right of the previous one's line, its widget under it
+            if (labels[i] != null) {
+                int w = inlineTitleW(i);
+                UiText.line(context, textRenderer, labels[i], mx + columnW - w, my + 1, w, enabled ? LABEL : LABEL_OFF, false);
+            }
+            if (module instanceof BlockSlotModule slot) drawBlockSlot(context, current, i, slot, mx, my + CartridgeModule.LABEL_H, mouseX, mouseY, canEdit.getAsBoolean());
+            return;
+        }
         if (labels[i] != null) {
-            String number = (i + 1 < 10 ? "0" : "") + (i + 1);
+            int shown = numbers[i];
+            String number = (shown < 10 ? "0" : "") + shown;
             int chipColor = flash > 0 ? Argb.lerp(CHIP, 0xFFFFC52E, flash) : CHIP;
             int numberWidth = textRenderer.getWidth(number);
             context.fill(mx - 1, my, mx + numberWidth + 2, my + 9, chipColor);
             UiText.line(context, textRenderer, number, mx + 1, my + 1, numberWidth, flash > 0.5F ? 0xFF3B2600 : (enabled ? CHIP_TEXT : LABEL_OFF), false);
             int lx = mx + numberWidth + 5, room = columnW - (lx - mx);
+            // An inline module next: its title takes the right of the line
+            if (i + 1 < modules.size() && modules.get(i + 1).inline() && labels[i + 1] != null) room -= inlineTitleW(i + 1) + 6;
             // A choice of colours: its title names the one chosen (« Réseau : violet »)
             String chosen = null;
             int chosenColor = 0;
@@ -600,6 +626,7 @@ public final class CartridgePanel {
             case ColorModule color -> drawColors(context, current, i, color, mx, top, mouseX, mouseY, editable);
             case GhostSlotsModule ghosts -> drawGhostSlots(context, ghosts, mx, my);
             case StallOffersModule stall -> drawStall(context, current, mx, top, mouseX, mouseY, editable);
+            case BlockSlotModule slot -> drawBlockSlot(context, current, i, slot, mx, top, mouseX, mouseY, editable);
             case InfoModule info -> drawInfo(context, current, i, info, mx, top);
             case ContainersModule containers -> drawContainers(context, current, mx, top, mouseX, mouseY, editable);
             default -> {
@@ -745,9 +772,16 @@ public final class CartridgePanel {
 
     // ------------------------------------------------------------------ the Shop Cartridge's small stall
 
+    /** The width the small stall may take: the column, less an inline module on its right (the Shop's disguise). */
+    private int stallRoom() {
+        int i = CartridgeLayout.indexOf(modules, StallOffersModule.class);
+        boolean beside = i >= 0 && i + 1 < modules.size() && modules.get(i + 1).inline();
+        return beside ? columnW - BlockSlotModule.SLOT - 4 : columnW;
+    }
+
     /** The scale of the small stall: as large as the column allows, up to {@link StallOffersModule#SCALE}. */
     private float stallScale() {
-        return Math.min(StallOffersModule.SCALE, (float) columnW / StallOffersModule.STALL_W);
+        return Math.min(StallOffersModule.SCALE, (float) stallRoom() / StallOffersModule.STALL_W);
     }
 
     private int stallW() {
@@ -758,9 +792,9 @@ public final class CartridgePanel {
         return Math.round(StallOffersModule.STALL_H * stallScale());
     }
 
-    /** Its left edge: centred in the column. */
+    /** Its left edge: centred in its room. */
     private int stallX(int mx) {
-        return mx + (columnW - stallW()) / 2;
+        return mx + (stallRoom() - stallW()) / 2;
     }
 
     /** The offers of {@code current}, read again when they changed. */
@@ -800,6 +834,80 @@ public final class CartridgePanel {
 
     /** Whether the mouse is over a small stall this frame (the hand cursor). */
     private boolean stallHovered;
+
+    // ------------------------------------------------------------------ a block slot (the Shop Cartridge's disguise)
+
+    private static final int BLOCK_TEXT_X = BlockSlotModule.SLOT + 5;
+
+    /** The width of an inline module's title: its text, at most half the column. */
+    private int inlineTitleW(int i) {
+        return Math.min(textRenderer.getWidth(labels[i]), columnW / 2);
+    }
+
+    /** The left edge of a block slot: the column's start, or its end when inline (beside the small stall). */
+    private int blockSlotX(BlockSlotModule slot, int mx) {
+        return slot.inline() ? mx + columnW - BlockSlotModule.SLOT : mx;
+    }
+
+    /** The top of a block slot, {@code top} being its module's top under its title. */
+    private static int blockSlotY(BlockSlotModule slot, int top) {
+        return slot.inline() ? top + 1 : top;
+    }
+
+    /** The width of the texts beside a block slot. */
+    private int blockTextW() {
+        return Math.max(40, columnW - BLOCK_TEXT_X);
+    }
+
+    /** What the player holds on the cursor in this screen (an item picked from the inventory), empty if nothing. */
+    private ItemStack cursor() {
+        return client.player == null ? ItemStack.EMPTY : client.player.currentScreenHandler.getCursorStack();
+    }
+
+    /** The block shown in the slot (the pending one while the server writes it), null for none: the default. */
+    private @Nullable BlockState shownBlock(ItemStack current, int i, BlockSlotModule slot) {
+        int value = value(current, i);
+        return value == BlockSlotModule.EMPTY ? null : slot.blockOf(Registries.ITEM.get(value));
+    }
+
+    /** The name shown for the slot's block: its own, or « Default: Gold Block ». */
+    private static Text blockName(@Nullable BlockState block, BlockSlotModule slot) {
+        return block == null ? Text.translatable(CartridgeItem.MENU_KEY + "block_slot.default", slot.defaultBlock().getBlock().getName())
+                : block.getBlock().getName();
+    }
+
+    /**
+     * The slot (as the ghost slots), its block in it or the default one faded; beside it the block's name and the hint.
+     * Under the mouse with an item on the cursor: outlined green if that block can go there, red if not.
+     */
+    private void drawBlockSlot(DrawContext context, ItemStack current, int i, BlockSlotModule slot, int moduleX, int moduleTop,
+                               int mouseX, int mouseY, boolean editable) {
+        int size = BlockSlotModule.SLOT;
+        int mx = blockSlotX(slot, moduleX), top = blockSlotY(slot, moduleTop);
+        context.fill(mx, top, mx + size, top + size, 0xFF2B2B2B);
+        context.fill(mx + 1, top + 1, mx + size, top + size, 0xFF5A5A5A);
+        context.fill(mx + 1, top + 1, mx + size - 1, top + size - 1, 0xFF3A3A3A);
+        BlockState block = shownBlock(current, i, slot);
+        context.drawItem(new ItemStack((block == null ? slot.defaultBlock() : block).getBlock()), mx + 1, top + 1);
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 200);
+        // The default: faded, it is not set
+        if (block == null) context.fill(mx + 1, top + 1, mx + size - 1, top + size - 1, 0xA03A3A3A);
+        if (editable && HitArea.contains(mouseX, mouseY, mx, top, size, size)) {
+            ItemStack cursor = cursor();
+            if (cursor.isEmpty()) context.fill(mx + 1, top + 1, mx + size - 1, top + size - 1, 0x80FFFFFF);
+            else context.drawBorder(mx, top, size, size, slot.blockOf(cursor.getItem()) != null ? 0xFF7CE06A : 0xFFFF5050);
+        }
+        context.getMatrices().pop();
+        // Inline: the slot alone (its name and hint in its tooltip)
+        if (slot.inline()) return;
+        int tx = mx + BLOCK_TEXT_X, w = blockTextW();
+        UiText.line(context, textRenderer, blockName(block, slot), tx, top + 1, w, block == null ? TONE_SOFT : TONE_NORMAL, false);
+        List<OrderedText> hint = infoLines.get(i);
+        for (int l = 0; l < hint.size(); l++) {
+            UiText.line(context, textRenderer, hint.get(l), tx, top + 1 + (l + 1) * InfoModule.LINE_H, w, TONE_SOFT, false);
+        }
+    }
 
     private void drawInfo(DrawContext context, ItemStack current, int i, InfoModule info, int mx, int top) {
         int tx = mx;
@@ -1022,6 +1130,28 @@ public final class CartridgePanel {
                     context.drawTooltip(textRenderer, lines, mouseX, mouseY);
                     return true;
                 }
+            } else if (module instanceof BlockSlotModule slot) {
+                if (HitArea.contains(mouseX, mouseY, blockSlotX(slot, mx), blockSlotY(slot, top), BlockSlotModule.SLOT, BlockSlotModule.SLOT)) {
+                    BlockState block = shownBlock(current, i, slot);
+                    List<Text> lines = new ArrayList<>();
+                    // Inline, no text beside it: its title and what it does first
+                    if (slot.inline()) {
+                        lines.add(Text.translatable(slot.labelKey()).formatted(Formatting.GOLD));
+                        lines.add(Text.translatable(slot.hintKey()).formatted(Formatting.GRAY));
+                    }
+                    lines.add(blockName(block, slot));
+                    ItemStack cursor = cursor();
+                    if (canEdit.getAsBoolean()) {
+                        if (!cursor.isEmpty() && slot.blockOf(cursor.getItem()) == null) {
+                            lines.add(Text.translatable(CartridgeItem.MENU_KEY + "block_slot.refused", cursor.getName()).formatted(Formatting.RED));
+                        } else {
+                            lines.add(Text.translatable(CartridgeItem.MENU_KEY + "block_slot.set").formatted(Formatting.YELLOW));
+                            if (block != null) lines.add(Text.translatable(CartridgeItem.MENU_KEY + "block_slot.clear").formatted(Formatting.YELLOW));
+                        }
+                    }
+                    context.drawTooltip(textRenderer, wrap(lines), mouseX, mouseY);
+                    return true;
+                }
             } else if (module instanceof ColorModule) {
                 for (int v = 0; v <= ColorModule.DEFAULT; v++) {
                     if (!HitArea.contains(mouseX, mouseY, colorX(mx, v), colorY(top, v), ColorModule.SWATCH, ColorModule.SWATCH)) continue;
@@ -1063,6 +1193,7 @@ public final class CartridgePanel {
     // ------------------------------------------------------------------ input
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 1) return rightClicked(mouseX, mouseY);
         if (button != 0) return false;
         int sx = x + 6, sw = width() - 12;
         int toggleX = sx + sw - TOGGLE - 4, toggleY = y + 11;
@@ -1121,6 +1252,17 @@ public final class CartridgePanel {
                         return true;
                     }
                 }
+                case BlockSlotModule slot -> {
+                    if (HitArea.contains(mouseX, mouseY, blockSlotX(slot, mx), blockSlotY(slot, top), BlockSlotModule.SLOT, BlockSlotModule.SLOT)) {
+                        int chosen = BlockSlotModule.valueOf(cursor());
+                        // Not a block that can go there: refused at once, the slot unchanged
+                        if (!slot.accepts(current, chosen)) {
+                            client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_VILLAGER_NO, 1.0F));
+                            return true;
+                        }
+                        return change(i, chosen, value);
+                    }
+                }
                 case ContainersModule containers -> {
                     int count = rows(current).size();
                     for (int r = 0; r < count; r++) {
@@ -1135,6 +1277,20 @@ public final class CartridgePanel {
                 }
                 default -> {
                 }
+            }
+        }
+        return false;
+    }
+
+    /** A right click on a block slot empties it (the default again). */
+    private boolean rightClicked(double mouseX, double mouseY) {
+        if (!canEdit.getAsBoolean() || !inContent(mouseY)) return false;
+        ItemStack current = stack.get();
+        for (int i = 0; i < modules.size(); i++) {
+            if (!(modules.get(i) instanceof BlockSlotModule slot) || !slot.enabled(current)) continue;
+            int mx = x + layout.x(i), top = moduleY(i) + (slot.labelKey() != null ? CartridgeModule.LABEL_H : 0);
+            if (HitArea.contains(mouseX, mouseY, blockSlotX(slot, mx), blockSlotY(slot, top), BlockSlotModule.SLOT, BlockSlotModule.SLOT)) {
+                return change(i, BlockSlotModule.EMPTY, value(current, i));
             }
         }
         return false;

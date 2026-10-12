@@ -38,6 +38,14 @@ public abstract class CartridgeModule {
     /** Its height in the menu, label included (the same on both sides: the layout places slots with it). */
     public abstract int height();
 
+    /**
+     * Whether it is drawn inside the previous module's box, on its right (the Shop's disguise beside its small stall):
+     * it takes no height nor number of its own, its title goes on the right of the previous module's title line.
+     */
+    public boolean inline() {
+        return false;
+    }
+
     /** Whether it holds a value the player can change. */
     public boolean editable() {
         return false;

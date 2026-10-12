@@ -72,6 +72,7 @@
       "fr.lordfinn.steveparty.gametest.ShopGameTests",
       "fr.lordfinn.steveparty.gametest.ShopStopGameTests",
       "fr.lordfinn.steveparty.gametest.ShopCartridgeStallGameTests",
+      "fr.lordfinn.steveparty.gametest.ShopDisguiseGameTests",
       "fr.lordfinn.steveparty.gametest.StarCartridgeGameTests",
       "fr.lordfinn.steveparty.gametest.LootAndBrewingGameTests",
       "fr.lordfinn.steveparty.gametest.DecisionsGameTests",
