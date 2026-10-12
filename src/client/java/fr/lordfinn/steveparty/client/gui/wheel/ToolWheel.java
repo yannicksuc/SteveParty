@@ -44,6 +44,9 @@ public final class ToolWheel {
     /** A sector's explanation under its name wraps at this width (pixels). */
     private static final int HINT_WIDTH = 200;
 
+    /** The colour of the items' drop shadows (multiplying theirs). */
+    private static final float SHADOW_R = 0.16f, SHADOW_G = 0.06f, SHADOW_B = 0.08f;
+
     /** Held longer than this (ms), the button picks on release; shorter, the wheel stays open. */
     private static final long LONG_PRESS_MS = 220;
     /** Half the gap between two sectors (pixels): the gap is as wide everywhere. */
@@ -437,13 +440,19 @@ public final class ToolWheel {
      */
     public static Icon item(ItemStack stack, float scale) {
         return (context, x, y) -> {
+            // The shadow's shift (one of the item's pixels) rounded to whole screen pixels: shifted by half a screen
+            // pixel (scale 1.5 at GUI scale 3), its edge falls on the centres of a column of screen pixels, which then
+            // show the texture next to the item's in the atlas, darkened (a thin dark bar beside the item)
+            double gui = MinecraftClient.getInstance().getWindow().getScaleFactor();
+            float shift = (float) (Math.max(1, Math.round(scale * gui)) / gui);
+            context.getMatrices().push();
+            context.getMatrices().translate(x + shift, y + shift, -50);
+            context.getMatrices().scale(scale, scale, 1);
+            GuiItems.tinted(context, stack, -8, -8, SHADOW_R, SHADOW_G, SHADOW_B, 1f);
+            context.getMatrices().pop();
             context.getMatrices().push();
             context.getMatrices().translate(x, y, 0);
             context.getMatrices().scale(scale, scale, 1);
-            context.getMatrices().push();
-            context.getMatrices().translate(0, 0, -50);
-            drawItemShadow(context, stack, -8, -8);
-            context.getMatrices().pop();
             context.drawItem(stack, -8, -8);
             context.getMatrices().pop();
         };
@@ -454,7 +463,7 @@ public final class ToolWheel {
      * its pixels down right. Drawn before the item, so the item covers it.
      */
     public static void drawItemShadow(DrawContext context, ItemStack stack, int x, int y) {
-        GuiItems.tinted(context, stack, x + 1, y + 1, 0.16f, 0.06f, 0.08f, 1f);
+        GuiItems.tinted(context, stack, x + 1, y + 1, SHADOW_R, SHADOW_G, SHADOW_B, 1f);
     }
 
     /** Where the middle of {@code sector} is drawn (from the centre), or null. */
