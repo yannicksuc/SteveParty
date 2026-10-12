@@ -36,6 +36,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.DoubleFunction;
+import java.util.function.DoubleToIntFunction;
 
 /**
  * Reading and writing the links between board spaces. The save format does not change: the links of a board space
@@ -310,13 +312,26 @@ public final class BoardLinks {
 
     /** A trail of particles from {@code from} to {@code to} (seen by everyone around: useful when building together). */
     public static void trail(ServerWorld world, BlockPos from, BlockPos to, int color) {
+        DustParticleEffect dust = new DustParticleEffect(Vec3d.unpackRgb(color).toVector3f(), 1.1F);
+        dustTrail(world, from, to, t -> dust);
+    }
+
+    /**
+     * {@link #trail(ServerWorld, BlockPos, BlockPos, int)} in a gradient: {@code color} gives the colour (rgb) of each
+     * particle from how far along it is, from {@code from} (0) to {@code to} (1).
+     */
+    public static void trail(ServerWorld world, BlockPos from, BlockPos to, DoubleToIntFunction color) {
+        dustTrail(world, from, to, t -> new DustParticleEffect(Vec3d.unpackRgb(color.applyAsInt(t)).toVector3f(), 1.1F));
+    }
+
+    private static void dustTrail(ServerWorld world, BlockPos from, BlockPos to, DoubleFunction<DustParticleEffect> dust) {
         Vec3d a = BoardSpaces.standPos(world, from).add(0, 0.25, 0), b = BoardSpaces.standPos(world, to).add(0, 0.25, 0);
         Vec3d step = b.subtract(a);
         int count = Math.max(2, (int) Math.ceil(step.length() / 0.35));
-        DustParticleEffect dust = new DustParticleEffect(Vec3d.unpackRgb(color).toVector3f(), 1.1F);
         for (int i = 0; i <= count; i++) {
-            Vec3d p = a.add(step.multiply(i / (double) count));
-            world.spawnParticles(dust, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+            double t = i / (double) count;
+            Vec3d p = a.add(step.multiply(t));
+            world.spawnParticles(dust.apply(t), p.x, p.y, p.z, 1, 0, 0, 0, 0);
         }
     }
 }

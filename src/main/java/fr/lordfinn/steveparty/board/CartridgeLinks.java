@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.service.MarkerResidents;
+import fr.lordfinn.steveparty.utils.Argb;
 import org.jetbrains.annotations.Nullable;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.item.ItemStack;
@@ -50,8 +51,20 @@ public final class CartridgeLinks {
     public static final int ROUTER_COLOR = 0xE03030;
     /** Colour of a Hop Switch's links to the blocks it switches. */
     public static final int SWITCH_COLOR = 0xE070FF;
-    /** Colour of the link to a Spawn Marker. */
+    /** Colour of the link to a Spawn Marker (its frame in the helmet's view; the link itself is {@link #spawnGradient}). */
     public static final int SPAWN_COLOR = 0x40E0D0;
+    /**
+     * The link to a Spawn Bubble is dotted in the bubble's iridescent colours (its texture's): blue-turquoise at the
+     * space, lavender halfway, pink at the bubble.
+     */
+    public static final int SPAWN_NEAR = 0x4FC8F5, SPAWN_MIDDLE = 0xC3AEFF, SPAWN_FAR = 0xFF91D9;
+
+    /** The colour (rgb) of the link to a Spawn Bubble {@code t} of the way from its space (0) to its bubble (1). */
+    public static int spawnGradient(double t) {
+        float at = (float) Math.clamp(t, 0, 1);
+        int rgb = at < 0.5f ? Argb.lerp(SPAWN_NEAR, SPAWN_MIDDLE, at * 2) : Argb.lerp(SPAWN_MIDDLE, SPAWN_FAR, at * 2 - 1);
+        return rgb & 0xFFFFFF;
+    }
 
     private CartridgeLinks() {
     }
@@ -258,7 +271,7 @@ public final class CartridgeLinks {
             set(player, world, target);
             WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.spawn_marker", BoardText.pos(holder()), BoardText.pos(target)));
             world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.PLAYERS, 0.45f, 1.4f);
-            BoardLinks.trail(world, holder(), target, SPAWN_COLOR);
+            BoardLinks.trail(world, holder(), target, CartridgeLinks::spawnGradient);
             return true;
         }
 
