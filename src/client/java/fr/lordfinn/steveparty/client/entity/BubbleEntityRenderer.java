@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRenderer;
@@ -30,10 +31,12 @@ import java.util.List;
  * A Bubbler's bubble: a cube of the Spawn Bubble's soap film (see {@link BubbleFilm}) wobbling and swaying, its riders
  * drawn by their own renderers inside it (they ride it), or its item turning slowly in its middle.
  * <p>
- * The film is drawn once every entity is ({@link #drawFilms}, after the entities, from the farthest to the nearest), in
- * a layer that never writes depth ({@link BubbleLayers}): its riders, whatever order the world draws them in, show
- * through it, tinted by it. A first-person player doesn't see his own bubble from inside: an iridescent vignette at
- * his screen's edges instead (BubbleRiderClient).
+ * The film is drawn last of the world's see-through things ({@link #drawFilms}, after the translucent terrain, from the
+ * farthest to the nearest, {@link BubbleLayers}), once every entity is drawn and flushed: whatever lies inside it (its
+ * riders' skin, armour, cape and held items, an item, other passengers) is already in the depth, so its faces in front
+ * of them tint them and its faces behind them stay hidden, whatever order the world (or a batching mod) draws the
+ * entities in. A first-person player doesn't see his own bubble from inside: an iridescent vignette at his screen's
+ * edges instead (BubbleRiderClient).
  */
 public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
     /** Its film's wobble: how much it squashes and stretches (share of its size), how fast (radians per tick). */
@@ -57,9 +60,9 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
         this.shadowRadius = 0;
     }
 
-    /** Draws the films once every entity is drawn. */
+    /** Draws the films after the translucent terrain, every entity drawn. */
     public static void initialize() {
-        WorldRenderEvents.AFTER_ENTITIES.register(BubbleEntityRenderer::drawFilms);
+        WorldRenderEvents.AFTER_TRANSLUCENT.register(BubbleEntityRenderer::drawFilms);
     }
 
     @Override
@@ -86,7 +89,11 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
         super.render(bubble, yaw, tickDelta, matrices, consumers, light);
     }
 
-    /** The films of this frame, from the farthest to the nearest, wobbling and swaying like soap bubbles. */
+    /**
+     * The films of this frame, from the farthest to the nearest, wobbling and swaying like soap bubbles. The entity
+     * buffers still pending are drawn first (a batching mod such as ImmediatelyFast holds the riders' bodies until the
+     * end of the frame): drawn after the film, they would cover it.
+     */
     private static void drawFilms(WorldRenderContext context) {
         if (FILMS.isEmpty()) return;
         MatrixStack matrices = context.matrixStack();
@@ -98,7 +105,9 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
         Vec3d eye = camera.getPos();
         FILMS.sort(Comparator.comparingDouble((Film film) -> film.center().squaredDistanceTo(eye)).reversed());
         VertexConsumerProvider.Immediate consumers = MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers();
-        VertexConsumer buffer = consumers.getBuffer(BubbleLayers.FILM);
+        consumers.draw();
+        RenderLayer layer = BubbleLayers.film();
+        VertexConsumer buffer = consumers.getBuffer(layer);
         float time = clock();
         for (Film film : FILMS) {
             float phase = film.phase() * 0.1f;
@@ -113,7 +122,7 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
                     1, 1, 1, 1, film.light());
             matrices.pop();
         }
-        consumers.draw(BubbleLayers.FILM);
+        consumers.draw(layer);
         FILMS.clear();
     }
 
