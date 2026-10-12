@@ -78,6 +78,12 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
         return frousseux.isFaded() ? FrousseuxGhostLayers.noCull(texture) : RenderLayer.getEntityTranslucent(texture);
     }
 
+    /** Draws what these layers hold now, when the buffers can (vanilla's): their place in the order is now. */
+    static void flush(VertexConsumerProvider bufferSource, @Nullable RenderLayer... layers) {
+        if (!(bufferSource instanceof VertexConsumerProvider.Immediate immediate)) return;
+        for (RenderLayer layer : layers) if (layer != null) immediate.draw(layer);
+    }
+
     /** {@code rgb} opaque, each channel times {@code brightness} (0 to 1): a flame's colour at its stage. */
     public static int shade(int rgb, float brightness) {
         return Argb.opaque(Argb.scale(rgb, brightness));
@@ -182,16 +188,24 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             for (int i = 0; i < STAGE_BONES.length; i++) GeoBones.hide(bakedModel, STAGE_BONES[i], i != stage);
 
             float brightness = frousseux.getFlame().brightness;
+            // Drawn in this order, now: its wax (writing its depth), its flame, its heart over it. Both see-through
+            // layers write no depth, so only their order puts them right; left to the buffers (a renderer or a mod
+            // grouping layers its own way) the flame went out before the wax, which covered it, and the heart under
+            // the flame (a blue flame without its white heart). Same as the candle holder (FrousseuxCandleHolderRenderer)
+            flush(bufferSource, getRenderer().getRenderType(frousseux, getTextureResource(frousseux), bufferSource, partialTick),
+                    shell(frousseux, getTextureResource(frousseux)), shell(frousseux, WAX));
             AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta): GeckoLib animates it
             RenderLayer layer = RenderLayer.getBeaconBeam(FLAME, true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
                     withAlpha(shade(frousseux.getColor().flameEdge, brightness), frousseux.flameAlpha(partialTick)));
+            flush(bufferSource, layer);
             AnimatableTexture.setAndUpdate(CORE);
             RenderLayer heartLayer = RenderLayer.getBeaconBeam(CORE, true);
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, heartLayer, bufferSource.getBuffer(heartLayer),
                     partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
                     withAlpha(shade(frousseux.getColor().flameHeart, brightness), frousseux.flameAlpha(partialTick)));
+            flush(bufferSource, heartLayer);
 
             flame.setHidden(true);
             body.setHidden(bodyHidden);
