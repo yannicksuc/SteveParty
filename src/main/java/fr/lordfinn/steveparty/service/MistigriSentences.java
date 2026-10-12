@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.service;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
@@ -11,23 +10,25 @@ import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity.Action;
 import fr.lordfinn.steveparty.hud.OutcomeRoulette;
-import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.components.MistigriOutcomes;
+import fr.lordfinn.steveparty.components.MistigriOutcomes.Kind;
+import fr.lordfinn.steveparty.components.MistigriOutcomes.Outcome;
+import fr.lordfinn.steveparty.components.MistigriOutcomes.Target;
 import fr.lordfinn.steveparty.payloads.custom.OutcomeRoulettePayload;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.text.Texts;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -36,68 +37,32 @@ import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
 
 /**
  * What a Mistigri space does (see MistigriTileBehavior): the Mistigri leaps onto the space beside the token, rolls onto
- * his back juggling his loaded die between his fore paws, and the die passes a sentence on the token's player, drawn by
- * the cartridge's weights ({@link Sentence}). The sentence is drawn first, then the whole party watches it come: every
- * sentence that may fall is listed on an {@link OutcomeRoulettes outcome roulette}, with its chance, floating just over
- * him; the light runs down the list slower and slower while he juggles, and stops on the drawn one as he tosses the die
- * and it lands in front of him. Only then does it happen. He reacts (a hiss, or a yawn for the lenient one) and leaps
- * away in a puff of smoke.
+ * his back juggling his loaded die between his fore paws, and the die passes one of the cartridge's sentences
+ * ({@link MistigriOutcomes}: some picked for this landing, the one that falls drawn among them by their weights). It is
+ * drawn first, then the whole party watches it come: the sentences picked are listed on an
+ * {@link OutcomeRoulettes outcome roulette}, with their chances, floating just over him; the light runs down the list
+ * slower and slower while he juggles, and stops on the drawn one as he tosses the die and it lands in front of him.
+ * Only then does it happen ({@link #apply}). He reacts (a hiss, or a yawn for a kind one) and leaps away in a puff of
+ * smoke.
  * <p>
  * A move back is walked once he is gone (the token's turn goes on until it lands: AdvanceBackMoves); every other
- * sentence ends the turn. What he takes (coins, a star) goes into the party's bank: nothing is lost. He and his die are board actors: invulnerable, never saved, always removed at the end
- * ({@link BoardActors}), whatever ends it (party over, server stopping). Server thread only.
+ * sentence ends the turn. Coins and stars are only moved, never made: what he takes goes into the party's bank, what he
+ * gives comes out of it, the common pot passes them from player to player. He and his die are board actors:
+ * invulnerable, never saved, always removed at the end ({@link BoardActors}), whatever ends it (party over, server
+ * stopping). Server thread only.
  */
 public final class MistigriSentences {
-    /** The sentences, with their default weight. */
-    public enum Sentence {
-        /** Loses the small fine (10 coins by default). */
-        COINS_SMALL("coins_small", 4, true),
-        /** Loses the big fine (20 coins by default). */
-        COINS_BIG("coins_big", 2, true),
-        /** Loses half their coins (rounded down). */
-        COINS_HALF("coins_half", 1, true),
-        /** Loses a star: rare. */
-        STAR("star", 1, true),
-        /** Every player of the party pays (5 coins by default). */
-        EVERYONE("everyone", 2, true),
-        /** Moves back (3 spaces by default). */
-        BACK("back", 3, true),
-        /** Their next roll is cursed: 1 to 3 only (CursedRolls). */
-        CURSED("cursed", 2, true),
-        /** The lenient one: he only takes one coin, out of pity. */
-        JOKE("joke", 2, false);
-
-        public final String id;
-        public final int defaultWeight;
-        /** A harsh one: he puffs up and hisses; the lenient one: a yawn. */
-        public final boolean harsh;
-
-        Sentence(String id, int defaultWeight, boolean harsh) {
-            this.id = id;
-            this.defaultWeight = defaultWeight;
-            this.harsh = harsh;
-        }
-
-        /** Its number as set on {@code cartridge} (coins, spaces), for the texts. */
-        public int amount(ItemStack cartridge) {
-            return switch (this) {
-                case COINS_SMALL -> MistigriCartridgeItem.amount(cartridge, MistigriCartridgeItem.COINS_SMALL);
-                case COINS_BIG -> MistigriCartridgeItem.amount(cartridge, MistigriCartridgeItem.COINS_BIG);
-                case EVERYONE -> MistigriCartridgeItem.amount(cartridge, MistigriCartridgeItem.EVERYONE);
-                case BACK -> MistigriCartridgeItem.amount(cartridge, MistigriCartridgeItem.BACK);
-                case CURSED -> 3;
-                default -> 1;
-            };
-        }
-    }
-
     /**
      * His leap in; the roulette of the sentences while he juggles his die ({@link OutcomeRoulette}); the sentence;
      * his leaving.
@@ -162,9 +127,10 @@ public final class MistigriSentences {
         return show == null ? null : show.die;
     }
 
-    public static @Nullable Sentence sentence(MobEntity token) {
+    /** The sentence drawn for {@code token}'s show. */
+    public static @Nullable Outcome outcome(MobEntity token) {
         Show show = RUNNING.get(token);
-        return show == null ? null : show.sentence;
+        return show == null ? null : show.outcome;
     }
 
     /** The roulette of {@code token}'s show, null before it starts (or without a show). */
@@ -173,72 +139,187 @@ public final class MistigriSentences {
         return show == null ? null : show.roulette;
     }
 
-    /** The sentences listed on the roulette: every one that may be drawn from {@code cartridge}, and {@code forced}. */
-    public static List<Sentence> listed(ItemStack cartridge, @Nullable Sentence forced) {
-        List<Sentence> listed = new ArrayList<>();
-        for (Sentence sentence : Sentence.values()) {
-            if (sentence == forced || MistigriCartridgeItem.weight(cartridge, sentence) > 0) listed.add(sentence);
-        }
-        return listed;
-    }
-
-    /** A sentence's line on the roulette: its icon, short text, tone and chance. */
-    static OutcomeRoulettePayload.Line line(Sentence sentence, ItemStack cartridge, PartyControllerEntity party) {
-        ItemStack icon = switch (sentence) {
-            case COINS_SMALL, COINS_BIG, COINS_HALF -> party.getCurrency(PartyCurrency.COIN);
-            case STAR -> party.getCurrency(PartyCurrency.STAR);
-            case EVERYONE -> new ItemStack(Items.PLAYER_HEAD);
-            case BACK -> new ItemStack(Items.ARROW);
-            case CURSED -> new ItemStack(Registries.ITEM.get(Steveparty.id("cursed_dice_face_3")));
-            case JOKE -> new ItemStack(Items.COD);
-        };
-        return new OutcomeRoulettePayload.Line(icon.copyWithCount(1),
-                Text.translatable("hud.steveparty.mistigri_space.line." + sentence.id, sentence.amount(cartridge)),
-                sentence.harsh ? OutcomeRoulettePayload.Tone.BAD : OutcomeRoulettePayload.Tone.GOOD,
-                MistigriCartridgeItem.chance(cartridge, sentence));
-    }
-
-    /** A sentence drawn by the weights of {@code cartridge}; null if every weight is 0. */
-    public static @Nullable Sentence draw(ItemStack cartridge, Random random) {
-        int total = 0;
-        for (Sentence sentence : Sentence.values()) total += MistigriCartridgeItem.weight(cartridge, sentence);
-        if (total <= 0) return null;
-        int roll = random.nextInt(total);
-        for (Sentence sentence : Sentence.values()) {
-            roll -= MistigriCartridgeItem.weight(cartridge, sentence);
-            if (roll < 0) return sentence;
-        }
-        return null;
+    /** A sentence's line on the roulette: its icon, text, tone and chance (-1: unsaid). */
+    static OutcomeRoulettePayload.Line line(Outcome outcome, int chance, PartyControllerEntity party) {
+        return new OutcomeRoulettePayload.Line(outcome.kind().icon(party.getCurrency(PartyCurrency.COIN), party.getCurrency(PartyCurrency.STAR)), outcome.text(),
+                switch (outcome.kind().tone()) {
+                    case 1 -> OutcomeRoulettePayload.Tone.GOOD;
+                    case 0 -> OutcomeRoulettePayload.Tone.NEUTRAL;
+                    default -> OutcomeRoulettePayload.Tone.BAD;
+                }, chance);
     }
 
     /**
-     * {@code token} stopped on the Mistigri space {@code tile} of {@code party}: the show starts, the sentence drawn from
-     * {@code cartridge} ({@code forced} instead, for the tests). {@code onDone} runs when it is over, unless the token
-     * then moves back (its landing goes on with the turn). Nothing happens without the token's player online, or when
-     * no sentence may be drawn: {@code onDone} is not called then.
+     * {@code token} stopped on the Mistigri space {@code tile} of {@code party}: the show starts. The roulette lists the
+     * sentences of {@code cartridge} picked for this landing, and the one that falls is drawn among them by their weights
+     * ({@code forced} instead, for the tests: listed too if it was not picked). {@code onDone} runs when it is over,
+     * unless the token then moves back (its landing goes on with the turn). Nothing happens without the token's player
+     * online, or when no sentence may fall: {@code onDone} is not called then.
      */
     public static Start start(ServerWorld world, BlockPos tile, MobEntity token, PartyControllerEntity party,
-                              ItemStack cartridge, @Nullable Sentence forced, Runnable onDone) {
+                              ItemStack cartridge, @Nullable Outcome forced, Runnable onDone) {
         if (RUNNING.isRunning(token)) return Start.STARTED;
         ServerPlayerEntity player = BoardSequences.tokenPlayer(world, token);
         if (player == null) {
             tell(party, null, Text.translatable("message.steveparty.mistigri_space.no_player").formatted(Formatting.GRAY));
             return Start.NO_PLAYER;
         }
-        Sentence sentence = forced != null ? forced : draw(cartridge, world.getRandom());
-        if (sentence == null) {
+        MistigriOutcomes outcomes = MistigriOutcomes.of(cartridge);
+        List<Integer> picked = outcomes.pick(world.getRandom());
+        int drawn = forced != null ? -1 : outcomes.draw(picked, world.getRandom());
+        if (forced == null && drawn < 0) {
             tell(party, player, Text.translatable("message.steveparty.mistigri_space.no_sentence").formatted(Formatting.GRAY));
             return Start.NO_SENTENCE;
         }
-        List<Sentence> listed = listed(cartridge, sentence);
         List<OutcomeRoulettePayload.Line> lines = new ArrayList<>();
-        for (Sentence each : listed) lines.add(line(each, cartridge, party));
-        Show show = new Show(world, tile.toImmutable(), token, player.getUuid(), party, sentence, sentence.amount(cartridge), onDone);
+        int result = -1;
+        for (int row : picked) {
+            Outcome each = outcomes.get(row);
+            if (row == drawn || (forced != null && result < 0 && each.equals(forced))) result = lines.size();
+            lines.add(line(each, outcomes.chanceAmong(picked, row), party));
+        }
+        if (result < 0) {
+            result = lines.size();
+            lines.add(line(forced, -1, party));
+        }
+        Outcome outcome = forced != null ? forced : outcomes.get(drawn);
+        Show show = new Show(world, tile.toImmutable(), token, player.getUuid(), party, outcome, onDone);
         show.lines = lines;
-        show.result = listed.indexOf(sentence);
+        show.result = result;
         if (!show.spawn()) return Start.NO_SENTENCE;
         RUNNING.run(show, show::tick);
         return Start.STARTED;
+    }
+
+    // ------------------------------------------------------------------ who it falls on, what it does
+
+    /** The party's players online, in play order. */
+    public static List<ServerPlayerEntity> players(ServerWorld world, PartyControllerEntity party) {
+        List<ServerPlayerEntity> players = new ArrayList<>();
+        for (UUID id : party.getPlayersInOrder()) {
+            ServerPlayerEntity each = world.getServer().getPlayerManager().getPlayer(id);
+            if (each != null && !each.isDisconnected()) players.add(each);
+        }
+        return players;
+    }
+
+    /**
+     * The players {@code target} aims at now, among the party's players online ({@code landed}: the one who landed,
+     * null if gone): ranks, coins and stars as they hold them now, every tied one for a rank or a most.
+     */
+    public static List<ServerPlayerEntity> targets(ServerWorld world, PartyControllerEntity party,
+                                                   @Nullable ServerPlayerEntity landed, Target target, Random random) {
+        List<ServerPlayerEntity> players = players(world, party);
+        if (landed != null && !players.contains(landed)) players.addFirst(landed);
+        ItemStack coin = party.getCurrency(PartyCurrency.COIN), star = party.getCurrency(PartyCurrency.STAR);
+        Comparator<ServerPlayerEntity> coins = Comparator.comparingInt(p -> InventoryUtils.count(p.getInventory(), coin));
+        Comparator<ServerPlayerEntity> rank = Comparator.<ServerPlayerEntity>comparingInt(p -> InventoryUtils.count(p.getInventory(), star))
+                .thenComparing(coins);
+        return switch (target) {
+            case LANDED -> landed == null ? List.of() : List.of(landed);
+            case ALL -> players;
+            case OTHERS -> players.stream().filter(p -> p != landed).toList();
+            case FIRST -> extremes(players, rank, true);
+            case LAST -> extremes(players, rank, false);
+            case RICHEST -> extremes(players, coins, true);
+            case POOREST -> extremes(players, coins, false);
+            case RANDOM -> players.isEmpty() ? List.of() : List.of(players.get(random.nextInt(players.size())));
+        };
+    }
+
+    /** Every one of {@code players} at the top ({@code most}) or at the bottom of {@code order}. */
+    private static List<ServerPlayerEntity> extremes(List<ServerPlayerEntity> players, Comparator<ServerPlayerEntity> order, boolean most) {
+        if (players.isEmpty()) return List.of();
+        ServerPlayerEntity edge = most ? Collections.max(players, order) : Collections.min(players, order);
+        return players.stream().filter(p -> order.compare(p, edge) == 0).toList();
+    }
+
+    /** What a sentence moves: who, which currency, how many (taken: below 0). */
+    public interface Moves {
+        Moves NONE = (player, template, count) -> {
+        };
+
+        void moved(ServerPlayerEntity player, ItemStack template, int count);
+    }
+
+    /**
+     * Passes {@code outcome} now on the players it aims at (a move back is the show's: not here). Coins and stars are
+     * only ever moved: taken into the party's bank, given out of it (as many as it holds), or passed from player to
+     * player through the common pot; never made from nothing, never more than a player holds.
+     *
+     * @return what it did, for the chat (null: nothing to add)
+     */
+    public static @Nullable MutableText apply(ServerWorld world, PartyControllerEntity party, @Nullable ServerPlayerEntity landed,
+                                              Outcome outcome, Random random, Moves moves) {
+        if (outcome.kind() == Kind.MOVE_BACK) return null;
+        List<ServerPlayerEntity> aimed = targets(world, party, landed, outcome.target(), random);
+        ItemStack coin = party.getCurrency(PartyCurrency.COIN);
+        ItemStack currency = switch (outcome.kind()) {
+            case LOSE_STARS, SHARE_STARS -> party.getCurrency(PartyCurrency.STAR);
+            default -> coin;
+        };
+        Map<ServerPlayerEntity, Integer> deltas = new LinkedHashMap<>();
+        switch (outcome.kind()) {
+            case LOSE_COINS, LOSE_STARS -> {
+                for (ServerPlayerEntity each : aimed) {
+                    int held = InventoryUtils.count(each.getInventory(), currency);
+                    int taken = InventoryUtils.take(each.getInventory(), currency, outcome.count(held));
+                    PartyResources.deposit(party, currency.copyWithCount(taken)); // into the party's bank, never lost
+                    deltas.merge(each, -taken, Integer::sum);
+                }
+            }
+            case SHARE_COINS, SHARE_STARS -> {
+                int pot = 0;
+                for (ServerPlayerEntity each : aimed) {
+                    int held = InventoryUtils.count(each.getInventory(), currency);
+                    int taken = InventoryUtils.take(each.getInventory(), currency, outcome.count(held));
+                    pot += taken;
+                    deltas.merge(each, -taken, Integer::sum);
+                }
+                // Dealt out to those who put nothing in (everyone when all did), the poorest first, as evenly as it goes
+                List<ServerPlayerEntity> takers = new ArrayList<>(players(world, party));
+                takers.removeAll(aimed);
+                if (takers.isEmpty()) takers.addAll(aimed);
+                takers.sort(Comparator.comparingInt(p -> InventoryUtils.count(p.getInventory(), currency)));
+                for (int k = 0; k < takers.size() && pot > 0; k++) {
+                    int left = takers.size() - k;
+                    int share = pot / left + (pot % left > 0 ? 1 : 0);
+                    InventoryUtils.giveOrDrop(takers.get(k), currency, share);
+                    deltas.merge(takers.get(k), share, Integer::sum);
+                    pot -= share;
+                }
+            }
+            case PITY -> {
+                for (ServerPlayerEntity each : aimed) {
+                    int given = PartyResources.of(party).take(coin, outcome.amount()); // out of the bank: never made up
+                    InventoryUtils.giveOrDrop(each, coin, given);
+                    deltas.merge(each, given, Integer::sum);
+                }
+            }
+            case CURSED_DIE -> {
+                List<Text> names = new ArrayList<>();
+                for (ServerPlayerEntity each : aimed) {
+                    CursedRolls.curse(each);
+                    names.add(each.getDisplayName());
+                }
+                // On the one who landed: the sentence says it all
+                if (names.isEmpty() || (aimed.size() == 1 && aimed.getFirst() == landed)) return null;
+                return Text.translatable("message.steveparty.mistigri_space.cursed", Texts.join(names, Text.literal(", ")));
+            }
+            default -> {
+            }
+        }
+        List<Text> parts = new ArrayList<>();
+        for (Map.Entry<ServerPlayerEntity, Integer> delta : deltas.entrySet()) {
+            int count = delta.getValue();
+            if (count == 0) continue;
+            moves.moved(delta.getKey(), currency, count);
+            parts.add(Text.translatable("message.steveparty.mistigri_space.delta", delta.getKey().getDisplayName(),
+                    (count > 0 ? "+" : "−") + Math.abs(count), currency.getName()));
+        }
+        if (!parts.isEmpty()) return Text.translatable("message.steveparty.mistigri_space.moved", Texts.join(parts, Text.literal(", ")));
+        if (aimed.isEmpty()) return Text.translatable("message.steveparty.mistigri_space.nobody");
+        return Text.translatable(outcome.kind() == Kind.PITY ? "message.steveparty.mistigri_space.bank_empty" : "message.steveparty.mistigri_space.nothing");
     }
 
     private static void tell(PartyControllerEntity party, @Nullable ServerPlayerEntity player, Text message) {
@@ -250,11 +331,10 @@ public final class MistigriSentences {
         final BlockPos tile;
         final UUID playerId;
         final PartyControllerEntity party;
-        final Sentence sentence;
-        final int amount;
+        final Outcome outcome;
         MistigriEntity actor;
         @Nullable MistigriDieEntity die;
-        /** The roulette's lines (every sentence that may be drawn) and the one drawn; the roulette once started. */
+        /** The roulette's lines (the sentences picked for this landing) and the one drawn; the roulette once started. */
         List<OutcomeRoulettePayload.Line> lines = List.of();
         int result;
         @Nullable OutcomeRoulettes.Roulette roulette;
@@ -264,13 +344,12 @@ public final class MistigriSentences {
         float yaw;
 
         Show(ServerWorld world, BlockPos tile, MobEntity token, UUID playerId, PartyControllerEntity party,
-             Sentence sentence, int amount, Runnable onDone) {
+             Outcome outcome, Runnable onDone) {
             super(world, token, onDone);
             this.tile = tile;
             this.playerId = playerId;
             this.party = party;
-            this.sentence = sentence;
-            this.amount = amount;
+            this.outcome = outcome;
         }
 
         @Nullable ServerPlayerEntity player() {
@@ -427,74 +506,31 @@ public final class MistigriSentences {
             if (phaseTick >= ROLL_TICKS) go(Phase.SENTENCE);
         }
 
-        /** The sentence: applied to the token's player, told to everyone, his reaction. */
+        /** The sentence: applied to the players it aims at, told to everyone, his reaction. */
         void pass() {
             ServerPlayerEntity player = player();
-            Text name = Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, amount);
-            if (sentence.harsh) actor.setAngry(SENTENCE_TICKS);
+            Text name = outcome.text();
+            boolean harsh = outcome.kind().tone() < 0 || (outcome.kind().tone() == 0 && outcome.target() == Target.LANDED);
+            if (harsh) actor.setAngry(SENTENCE_TICKS);
             else actor.act(Action.YAWN);
-            world.playSound(null, actor.getX(), actor.getY(), actor.getZ(), sentence.harsh ? ModSounds.MISTIGRI_HISS : ModSounds.MISTIGRI_PURR,
+            world.playSound(null, actor.getX(), actor.getY(), actor.getZ(), harsh ? ModSounds.MISTIGRI_HISS : ModSounds.MISTIGRI_PURR,
                     SoundCategory.NEUTRAL, 1.0f, 1.0f);
             // The roulette announced it to everyone: no title over it, the action bar reminds the player
             if (player != null) MessageUtils.sendToPlayer(player, name.copy().formatted(Formatting.LIGHT_PURPLE), MessageUtils.MessageType.ACTION_BAR);
-            MutableText result = apply(player);
+            MutableText result = apply(world, party, player, outcome, world.getRandom(), this::crumbs);
             tell(party, player, Text.translatable("message.steveparty.mistigri_space.passed",
                     player == null ? Text.literal("?") : player.getDisplayName(), name).formatted(Formatting.DARK_PURPLE)
                     .append(result == null ? Text.empty() : Text.literal(" ").append(result.formatted(Formatting.GRAY))));
         }
 
-        /** Applies the sentence (a move back waits for his leaving); what it did, for the chat. */
-        @Nullable MutableText apply(@Nullable ServerPlayerEntity player) {
-            ItemStack coin = party.getCurrency(PartyCurrency.COIN);
-            switch (sentence) {
-                case COINS_SMALL, COINS_BIG, JOKE -> {
-                    return take(player, coin, amount);
-                }
-                case COINS_HALF -> {
-                    int held = player == null ? 0 : InventoryUtils.count(player.getInventory(), coin);
-                    return take(player, coin, held / 2);
-                }
-                case STAR -> {
-                    return take(player, party.getCurrency(PartyCurrency.STAR), 1);
-                }
-                case EVERYONE -> {
-                    int total = 0;
-                    for (UUID id : party.getPlayersInOrder()) {
-                        ServerPlayerEntity each = world.getServer().getPlayerManager().getPlayer(id);
-                        if (each == null) continue;
-                        int taken = InventoryUtils.take(each.getInventory(), coin, amount);
-                        PartyResources.deposit(party, coin.copyWithCount(taken)); // into the party's bank, never lost
-                        total += taken;
-                        crumbs(each, coin);
-                    }
-                    return Text.translatable("message.steveparty.mistigri_space.taken", total, coin.getName());
-                }
-                case CURSED -> {
-                    if (player != null) CursedRolls.curse(player);
-                    return null;
-                }
-                case BACK -> {
-                    return null; // walked once he has gone
-                }
-            }
-            return null;
-        }
-
-        MutableText take(@Nullable ServerPlayerEntity player, ItemStack template, int count) {
-            int taken = player == null || count <= 0 ? 0 : InventoryUtils.take(player.getInventory(), template, count);
-            PartyResources.deposit(party, template.copyWithCount(taken)); // into the party's bank, never lost
-            if (player != null && taken > 0) crumbs(player, template);
-            return taken > 0 ? Text.translatable("message.steveparty.mistigri_space.taken", taken, template.getName())
-                    : Text.translatable("message.steveparty.mistigri_space.nothing", template.getName());
-        }
-
-        /** What he takes flies from {@code player} to him, as item crumbs. */
-        void crumbs(ServerPlayerEntity player, ItemStack template) {
-            Vec3d them = player.getPos().add(0, player.getHeight() * 0.6, 0);
-            Vec3d way = actor.getPos().add(0, 0.8, 0).subtract(them);
+        /** What he takes flies from {@code player} to him as item crumbs ({@code count} below 0); what he gives, from him to them. */
+        void crumbs(ServerPlayerEntity player, ItemStack template, int count) {
+            Vec3d them = player.getPos().add(0, player.getHeight() * 0.6, 0), him = actor.getPos().add(0, 0.8, 0);
+            Vec3d from = count < 0 ? them : him;
+            Vec3d way = (count < 0 ? him : them).subtract(from);
             ItemStackParticleEffect crumb = new ItemStackParticleEffect(ParticleTypes.ITEM, template.copyWithCount(1));
             for (int i = 0; i < 8; i++) {
-                world.spawnParticles(crumb, them.x, them.y, them.z, 0, way.x, way.y + 0.6, way.z, 0.18 + world.getRandom().nextDouble() * 0.06);
+                world.spawnParticles(crumb, from.x, from.y, from.z, 0, way.x, way.y + 0.6, way.z, 0.18 + world.getRandom().nextDouble() * 0.06);
             }
             world.playSound(null, them.x, them.y, them.z, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 0.7f, 0.6f);
         }
@@ -533,8 +569,8 @@ public final class MistigriSentences {
                 world.spawnParticles(ParticleTypes.WITCH, at.x, at.y + 0.6, at.z, 10, 0.4, 0.4, 0.4, 0.05);
             }
             dismissActors();
-            if (completed && sentence == Sentence.BACK && !token.isRemoved()
-                    && AdvanceBackMoves.launch(world, token, tile, -amount) > 0) {
+            if (completed && outcome.kind() == Kind.MOVE_BACK && !token.isRemoved()
+                    && AdvanceBackMoves.launch(world, token, tile, -outcome.amount()) > 0) {
                 return; // its landing over there goes on with the turn
             }
             onDone.run();

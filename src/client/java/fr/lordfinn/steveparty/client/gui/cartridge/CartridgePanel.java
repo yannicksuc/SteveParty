@@ -16,6 +16,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.OutcomeListModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopStock;
@@ -141,6 +142,8 @@ public final class CartridgePanel {
     private int[] pathLength = new int[0];
     private long openedAt;
     private int pointX, pointY;
+    /** The Mistigri's sentences (its own state: the rows open, the scroll), null without such a module. */
+    private @Nullable OutcomeListWidget outcomeList;
 
     /**
      * @param maxContent the content height before another column (see {@link CartridgeLayout})
@@ -219,6 +222,17 @@ public final class CartridgePanel {
         scroll = 0;
         infoTicks = INFO_REFRESH_TICKS;
         openedAt = Util.getMeasuringTimeMs();
+        outcomeList = null;
+        int list = CartridgeLayout.indexOf(modules, OutcomeListModule.class);
+        if (list >= 0) {
+            outcomeList = new OutcomeListWidget(textRenderer, action -> {
+                // An action, not a value: sent as is (the widget shows it at once)
+                sparkStart[list] = Util.getMeasuringTimeMs();
+                ClientPlayNetworking.send(new CartridgeSettingPayload(syncId.getAsInt(), modules.get(list).id(), action));
+                click();
+            });
+            outcomeList.onClick(this::click);
+        }
         relayout(current);
         return true;
     }
@@ -282,6 +296,7 @@ public final class CartridgePanel {
                 }
                 case NumberModule number -> NumberModule.ROW_H;
                 case StallOffersModule stall -> StallOffersModule.PREVIEW_H;
+                case OutcomeListModule list -> OutcomeListModule.BODY_H;
                 case BlockSlotModule slot -> {
                     if (slot.inline()) yield 0;
                     // Beside the slot: the block's name (drawn each frame), then the hint, wrapped
@@ -638,6 +653,9 @@ public final class CartridgePanel {
             case BlockSlotModule slot -> drawBlockSlot(context, current, i, slot, mx, top, mouseX, mouseY, editable);
             case InfoModule info -> drawInfo(context, current, i, info, mx, top);
             case ContainersModule containers -> drawContainers(context, current, mx, top, mouseX, mouseY, editable);
+            case OutcomeListModule list -> {
+                if (outcomeList != null) outcomeList.render(context, current, mx, top, layout.w(i), mouseX, mouseY, editable);
+            }
             default -> {
             }
         }
@@ -1170,6 +1188,12 @@ public final class CartridgePanel {
                         return true;
                     }
                 }
+            } else if (module instanceof OutcomeListModule && outcomeList != null) {
+                List<Text> lines = outcomeList.tooltip(mouseX, mouseY);
+                if (lines != null) {
+                    context.drawTooltip(textRenderer, wrap(lines), mouseX, mouseY);
+                    return true;
+                }
             } else if (module instanceof StallOffersModule) {
                 if (HitArea.contains(mouseX, mouseY, stallX(mx), top + 1, stallW(), stallH())) {
                     int offers = ShopCartridgeItem.offers(current).size();
@@ -1296,6 +1320,9 @@ public final class CartridgePanel {
                         return change(i, chosen, value);
                     }
                 }
+                case OutcomeListModule list -> {
+                    if (outcomeList != null && outcomeList.mouseClicked(mouseX, mouseY)) return true;
+                }
                 case ContainersModule containers -> {
                     int count = rows(current).size();
                     for (int r = 0; r < count; r++) {
@@ -1338,6 +1365,8 @@ public final class CartridgePanel {
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (amount == 0 || !HitArea.contains(mouseX, mouseY, x, y, width(), shellHeight)) return false;
         ItemStack current = stack.get();
+        // The sentences' box: its figures, its rows (for anyone: reading them too)
+        if (outcomeList != null && inContent(mouseY) && outcomeList.mouseScrolled(mouseX, mouseY, amount)) return true;
         if (canEdit.getAsBoolean() && inContent(mouseY)) {
             for (int i = 0; i < modules.size(); i++) {
                 if (!(modules.get(i) instanceof NumberModule number) || !number.enabled(current)) continue;

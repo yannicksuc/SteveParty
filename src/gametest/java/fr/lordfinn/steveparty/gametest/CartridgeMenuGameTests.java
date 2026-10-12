@@ -25,6 +25,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.ColorModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.OutcomeListModule;
 import fr.lordfinn.steveparty.payloads.custom.CartridgeSettingPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeContainerScreenHandler;
@@ -178,6 +179,7 @@ public class CartridgeMenuGameTests implements SteveGameTest {
             case ChoiceModule choice -> choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
             case NumberModule number -> NumberModule.ROW_H;
             case StallOffersModule stall -> StallOffersModule.PREVIEW_H;
+            case OutcomeListModule list -> OutcomeListModule.BODY_H;
             // Inline: in the previous module's box; else its name and hint beside the slot
             case BlockSlotModule slot -> slot.inline() ? -label
                     : Math.max(BlockSlotModule.SLOT, 10 * (1 + lines(lang.get(slot.hintKey()).getAsString(), columnW - BlockSlotModule.SLOT - 5)));
@@ -264,6 +266,16 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                                     String text = translate(lang, option.key(), context);
                                     context.assertTrue(width(text) <= room, name + ": button « " + text + " » fits (" + width(text) + " > " + room + ")");
                                 }
+                            }
+                            if (module instanceof OutcomeListModule) {
+                                // In the box (less its scroll bar): « Delete? » and its two buttons on one line
+                                String k = CartridgeItem.MENU_KEY + "mistigri.";
+                                int confirm = 4 + width(translate(lang, k + "delete.confirm", context)) + 6
+                                        + width(translate(lang, k + "yes", context)) + 8 + 2 + width(translate(lang, k + "no", context)) + 8 + 3;
+                                context.assertTrue(confirm <= moduleW - 2 - 4, name + ": « Delete? Yes No » on one line (" + confirm + ")");
+                                // Under the box, beside the draws: « + Add » with its word
+                                int add = width(translate(lang, k + "add", context)) + 16;
+                                context.assertTrue(add <= moduleW - 60, name + ": « + " + translate(lang, k + "add", context) + " » fits (" + add + ")");
                             }
                         }
                         // The ghost slots or a block slot: the player's inventory under the shell, to pick the items
