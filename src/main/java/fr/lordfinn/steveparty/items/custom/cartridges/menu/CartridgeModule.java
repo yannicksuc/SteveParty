@@ -22,6 +22,7 @@ public abstract class CartridgeModule {
     private final String id;
     private final @Nullable String labelKey;
     private boolean half;
+    private int panelSize;
     private List<String> tooltipKeys = List.of();
 
     protected CartridgeModule(String id, @Nullable String labelKey) {
@@ -61,6 +62,20 @@ public abstract class CartridgeModule {
 
     public boolean isHalf() {
         return half;
+    }
+
+    /**
+     * A row of tabs (a choice): the {@code modules} declared after it are the panel of the tab chosen, drawn inside a
+     * frame joined to that tab, without numbers of their own. For a choice whose value picks what they edit.
+     */
+    public CartridgeModule tabs(int modules) {
+        panelSize = modules;
+        return this;
+    }
+
+    /** How many modules after it make its panel (0: no tab row). */
+    public int panelSize() {
+        return panelSize;
     }
 
     /** Its label shows a tooltip under the mouse: its label key + {@code .tooltip}. */
