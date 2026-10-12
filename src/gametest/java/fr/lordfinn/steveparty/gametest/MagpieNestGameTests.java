@@ -178,6 +178,112 @@ public class MagpieNestGameTests implements SteveGameTest {
         context.complete();
     }
 
+    // ---------------------------------------------------------------- its slots
+
+    /** A gold nugget named {@code name}: a kind of its own. */
+    private static ItemStack named(String name, int count) {
+        ItemStack stack = new ItemStack(Items.GOLD_NUGGET, count);
+        stack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, net.minecraft.text.Text.literal(name));
+        return stack;
+    }
+
+    /**
+     * 27 slots of 256: a kind onto its slot, its overflow and new kinds into the next free slots, in the order they
+     * came; 27 kinds in, a 28th refused, a known kind still topping its slot up; saved and loaded, counts over 99 kept.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itHoldsManyKindsUpTo256ASlot(TestContext context) {
+        MagpieNestBlockEntity nest = placeNest(context, new BlockPos(1, 1, 1), Direction.NORTH);
+        context.assertEquals(nest.size(), MagpieNestBlockEntity.SLOTS, "27 slots");
+        context.assertTrue(nest.insert(new ItemStack(ModItems.COIN, 300)).isEmpty(), "300 coins in");
+        context.assertTrue(nest.insert(new ItemStack(Items.EMERALD, 5)).isEmpty(), "emeralds in");
+        context.assertTrue(nest.insert(new ItemStack(ModItems.COIN, 10)).isEmpty(), "10 more coins");
+        context.assertTrue(nest.insert(new ItemStack(Items.EMERALD, 70)).isEmpty(), "70 more emeralds");
+        context.assertEquals(nest.getStack(0).getCount(), 256, "the first slot full of coins");
+        context.assertTrue(nest.getStack(1).isOf(ModItems.COIN) && nest.getStack(1).getCount() == 54, "their overflow next");
+        context.assertTrue(nest.getStack(2).isOf(Items.EMERALD) && nest.getStack(2).getCount() == 75, "the emeralds merged, past 64");
+        for (int i = 3; i < MagpieNestBlockEntity.SLOTS; i++) {
+            context.assertTrue(nest.insert(named("n" + i, 1)).isEmpty(), "a kind more: " + i);
+        }
+        context.assertTrue(nest.getStack(26).getName().getString().equals("n26"), "the last slot, the last kind");
+        context.assertTrue(!nest.accepts(named("too many", 1)), "a 28th kind: no room");
+        context.assertEquals(nest.insert(named("too many", 3)).getCount(), 3, "it stays out");
+        context.assertTrue(nest.insert(new ItemStack(Items.EMERALD, 200)).getCount() == 19 && nest.getStack(2).getCount() == 256,
+                "a known kind fills its slot up to 256, the rest stays out");
+        context.assertEquals(nest.getPileCount(), 310 + 256 + 24, "the pile counts them all");
+        NbtCompound nbt = nest.createNbtWithIdentifyingData(context.getWorld().getRegistryManager());
+        MagpieNestBlockEntity again = (MagpieNestBlockEntity) BlockEntity.createFromNbt(nest.getPos(), nest.getCachedState(), nbt,
+                context.getWorld().getRegistryManager());
+        context.assertTrue(again.getStack(0).getCount() == 256 && again.getStack(2).isOf(Items.EMERALD) && again.getStack(2).getCount() == 256,
+                "saved and loaded, 256 a slot");
+        context.assertTrue(again.getStack(26).getName().getString().equals("n26"), "each kind in its slot");
+        context.assertEquals(again.getContents().size(), 27, "27 kinds shown");
+        context.complete();
+    }
+
+    /** Broken, it drops everything in stacks of their usual size. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void brokenItDropsUsualStacks(TestContext context) {
+        MagpieNestBlockEntity nest = placeNest(context, new BlockPos(1, 1, 1), Direction.NORTH);
+        nest.insert(new ItemStack(Items.GOLD_NUGGET, 200));
+        nest.insert(new ItemStack(Items.DIAMOND, 70));
+        BlockPos at = nest.getPos();
+        context.getWorld().breakBlock(at, true);
+        java.util.List<ItemEntity> drops = context.getWorld().getEntitiesByClass(ItemEntity.class, new net.minecraft.util.math.Box(at).expand(2), e -> true);
+        context.assertTrue(drops.stream().allMatch(e -> e.getStack().getCount() <= e.getStack().getMaxCount()), "no stack above its size");
+        context.assertEquals(drops.stream().filter(e -> e.getStack().isOf(Items.GOLD_NUGGET)).mapToInt(e -> e.getStack().getCount()).sum(), 200, "200 nuggets");
+        context.assertEquals(drops.stream().filter(e -> e.getStack().isOf(Items.DIAMOND)).mapToInt(e -> e.getStack().getCount()).sum(), 70, "70 diamonds");
+        drops.forEach(ItemEntity::discard);
+        context.complete();
+    }
+
+    /** A hopper over it tops its kind's slot up past 64 (no second slot of a kind); a hopper under it empties it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void hoppersFillItAndEmptyIt(TestContext context) {
+        BlockPos at = new BlockPos(2, 2, 2);
+        MagpieNestBlockEntity nest = placeNest(context, at, Direction.NORTH);
+        context.setBlockState(at.down(), Blocks.HOPPER.getDefaultState().with(HopperBlock.FACING, Direction.EAST));
+        context.setBlockState(at.down().east(), Blocks.STONE);
+        HopperBlockEntity under = (HopperBlockEntity) context.getBlockEntity(at.down());
+        // locked under: it does not pull yet
+        context.setBlockState(at.down().west(), Blocks.REDSTONE_BLOCK);
+        nest.insert(new ItemStack(Items.GOLD_NUGGET, 100));
+        context.setBlockState(at.up(), Blocks.HOPPER.getDefaultState().with(HopperBlock.FACING, Direction.DOWN));
+        ((HopperBlockEntity) context.getBlockEntity(at.up())).setStack(0, new ItemStack(Items.GOLD_NUGGET, 3));
+        when(context, () -> nest.getStack(0).getCount() == 103, 100, () -> "the hopper tops its slot up: " + nest.getStack(0) + ", " + nest.getStack(1), () -> {
+            context.assertTrue(nest.getStack(1).isEmpty(), "no second slot of nuggets");
+            context.setBlockState(at.down().west(), Blocks.AIR);
+            when(context, () -> under.count(Items.GOLD_NUGGET) >= 2, 60, () -> "the hopper under takes them: " + under.count(Items.GOLD_NUGGET), () -> {
+                context.assertEquals(nest.getStack(0).getCount() + under.count(Items.GOLD_NUGGET), 103, "nothing made, nothing lost");
+                context.complete();
+            });
+        });
+    }
+
+    /** A nest saved before its slots (coins as a number, nine stacks) gets them in its slots, coins first. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void anOldNestMovesIntoItsSlots(TestContext context) {
+        MagpieNestBlockEntity nest = placeNest(context, new BlockPos(1, 1, 1), Direction.NORTH);
+        var registries = context.getWorld().getRegistryManager();
+        NbtCompound nbt = nest.createNbtWithIdentifyingData(registries);
+        nbt.remove("Nest");
+        nbt.putInt("Coins", 300);
+        net.minecraft.util.collection.DefaultedList<ItemStack> old = net.minecraft.util.collection.DefaultedList.ofSize(9, ItemStack.EMPTY);
+        old.set(0, new ItemStack(Items.EMERALD, 64));
+        old.set(1, new ItemStack(Items.EMERALD, 10));
+        old.set(4, new ItemStack(Items.GOLD_NUGGET, 3));
+        net.minecraft.inventory.Inventories.writeNbt(nbt, old, registries);
+        MagpieNestBlockEntity moved = (MagpieNestBlockEntity) BlockEntity.createFromNbt(nest.getPos(), nest.getCachedState(), nbt, registries);
+        context.assertTrue(moved.getStack(0).isOf(ModItems.COIN) && moved.getStack(0).getCount() == 256, "its coins first");
+        context.assertEquals(moved.getStack(1).getCount(), 44, "their rest");
+        context.assertTrue(moved.getStack(2).isOf(Items.EMERALD) && moved.getStack(2).getCount() == 74, "its emeralds in one slot");
+        context.assertTrue(moved.getStack(3).isOf(Items.GOLD_NUGGET) && moved.getStack(3).getCount() == 3, "then its nuggets");
+        context.assertEquals(moved.getCoins(), 300, "300 coins");
+        NbtCompound saved = moved.createNbtWithIdentifyingData(registries);
+        context.assertTrue(saved.contains("Nest") && !saved.contains("Coins"), "saved the new way");
+        context.complete();
+    }
+
     // ---------------------------------------------------------------- wild Pies
 
     /**

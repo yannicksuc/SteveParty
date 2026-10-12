@@ -38,8 +38,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The Pie's nest, woven twigs, turned to face whoever places it. It holds coins and shiny things
  * ({@link MagpieNestBlockEntity}): a click with coins or a shiny thing puts the stack in (sneaking: one), an empty
- * hand takes back (on its own) the last shiny thing, then its coins; hoppers fill it too. Each thing in it is one more
- * coin on its pile
+ * hand takes back (on its own) the last shiny thing, then its coins; hoppers fill it and empty it too (27 slots of up
+ * to 256 things each). Each thing in it is one more coin on its pile
  * ({@link MagpieNestPile}, drawn by its block entity renderer, as high as they go: the block stays a nest).
  * <p>
  * Set near a Common pot space (within {@link fr.lordfinn.steveparty.service.CommonPots#NEST_RADIUS} blocks), it
