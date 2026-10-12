@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.board.WrenchActions;
@@ -52,6 +53,10 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         if (context.getHand() != Hand.MAIN_HAND || context.getPlayer() == null) return ActionResult.PASS;
+        // A Spawn Bubble, sneaking (the block itself gets the plain click): turned, the Wrench being its tool
+        BlockState clicked = context.getWorld().getBlockState(context.getBlockPos());
+        if (clicked.getBlock() instanceof SpawnMarkerBlock)
+            return SpawnMarkerBlock.wrench(clicked, context.getWorld(), context.getBlockPos(), context.getPlayer());
         if (context.getWorld().isClient) return ActionResult.SUCCESS;
         return WrenchActions.useOnBlock((ServerPlayerEntity) context.getPlayer(), context.getStack(),
                 (ServerWorld) context.getWorld(), context.getBlockPos());

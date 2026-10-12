@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.service.MarkerResidents;
@@ -52,10 +53,10 @@ import java.util.function.Consumer;
  * {@link #SPAWN_UNDER_BUBBLE} under its centre ({@link #spawnPos}: on the ground by default). It has no collision and
  * cannot be aimed at: only its plate can.
  * <p>
- * An empty hand opens its menu (client side, {@link #openMenu}): when its mob shows ({@link SpawnMarkerBlockEntity#isResident}:
+ * The Wrench is its tool: it opens its menu (client side, {@link #openMenu}): when its mob shows ({@link SpawnMarkerBlockEntity#isResident}:
  * only when a token lands, or all the party long, see {@link MarkerResidents}) and how high above it the mob appears
- * ({@link SpawnMarkerBlockEntity#getLift}); sneaking, it turns a sixteenth of a turn (22.5°) clockwise. Any item in hand acts as that item (the
- * brush links it, a block is placed against it).
+ * ({@link SpawnMarkerBlockEntity#getLift}); sneaking, it turns a sixteenth of a turn (22.5°) clockwise. An empty hand does nothing; any other item in hand acts
+ * as that item (the brush links it, a block is placed against it).
  */
 public class SpawnMarkerBlock extends BlockWithEntity {
     public static final MapCodec<SpawnMarkerBlock> CODEC = createCodec(SpawnMarkerBlock::new);
@@ -165,16 +166,25 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return COMPASS[(rotation + 8) & 15];
     }
 
-    /** Any item in hand: that item's use (the brush links it, a block is placed against it...). */
+    /** The Wrench: its menu, or turned (see {@link #wrench}); any other item: that item's use (the brush links it...). */
     @Override
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player,
                                              Hand hand, BlockHitResult hit) {
-        return stack.isEmpty() ? ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION : ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        if (stack.getItem() instanceof WrenchItem) {
+            ActionResult result = wrench(state, world, pos, player);
+            return result == ActionResult.PASS ? ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION : ItemActionResult.success(world.isClient);
+        }
+        return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 
-    /** An empty hand: its menu; sneaking, turned a sixteenth of a turn clockwise (22.5°). */
+    /** An empty hand: nothing (the Wrench is its tool). */
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        return ActionResult.PASS;
+    }
+
+    /** With the Wrench: its menu; sneaking, turned a sixteenth of a turn clockwise (22.5°). */
+    public static ActionResult wrench(BlockState state, World world, BlockPos pos, PlayerEntity player) {
         if (!(world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity)) return ActionResult.PASS;
         if (world.isClient) {
             if (!player.isSneaking()) openMenu.accept(pos);
