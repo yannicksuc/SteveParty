@@ -18,6 +18,9 @@ import fr.lordfinn.steveparty.client.entity.DeferredGlows;
 import fr.lordfinn.steveparty.client.entity.FrousseuxRenderer;
 import fr.lordfinn.steveparty.client.entity.TrichaudronRenderer;
 import fr.lordfinn.steveparty.client.entity.TrichaudronRiderClient;
+import fr.lordfinn.steveparty.client.entity.BubbleRiderClient;
+import fr.lordfinn.steveparty.client.entity.BubbleEntityRenderer;
+import fr.lordfinn.steveparty.client.blockentity.BubblerRenderer;
 import fr.lordfinn.steveparty.client.entity.SixSevenClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleRenderer;
@@ -242,6 +245,7 @@ public class StevepartyClient implements ClientModInitializer {
         // item (a plain block model: the plate, the arrow and the bubble's cube) is drawn on a translucent layer too
         SpawnBubbleRenderer.registerModels();
         BlockEntityRendererFactories.register(ModBlockEntities.SPAWN_MARKER_ENTITY, SpawnBubbleRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.BUBBLER_ENTITY, BubblerRenderer::new);
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.SPAWN_MARKER, RenderLayer.getTranslucent());
         MiniGamePipeNotchRenderer.registerHint();
         // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
@@ -261,6 +265,8 @@ public class StevepartyClient implements ClientModInitializer {
         ToolWheel.initialize();
         GlandouilleCarryClient.initialize();
         TrichaudronRiderClient.initialize();
+        BubbleRiderClient.initialize();
+        BubbleEntityRenderer.initialize();
         SixSevenClient.initialize();
         BrushClient.initialize();
         TileInfoClient.initialize();
@@ -452,6 +458,7 @@ public class StevepartyClient implements ClientModInitializer {
 
     private static void initEntitiesRenderers() {
         EntityRendererRegistry.register(ModEntities.DICE_ENTITY, DiceEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.BUBBLE, BubbleEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayRenderer::new);
         EntityRendererRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);

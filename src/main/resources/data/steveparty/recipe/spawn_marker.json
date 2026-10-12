@@ -3,10 +3,10 @@
   "category": "misc",
   "ingredients": [
     {
-      "item": "minecraft:stick"
+      "item": "steveparty:bubbler"
     },
     {
-      "item": "minecraft:paper"
+      "item": "minecraft:glass"
     }
   ],
   "result": {

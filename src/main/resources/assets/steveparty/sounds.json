@@ -1330,5 +1330,72 @@
         "pitch": 0.7
       }
     ]
+  },
+  "bubble.blow": {
+    "subtitle": "subtitles.steveparty.bubble.blow",
+    "sounds": [
+      {
+        "name": "minecraft:block.bubble_column.upwards_inside",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.4
+      }
+    ]
+  },
+  "bubble.pop": {
+    "subtitle": "subtitles.steveparty.bubble.pop",
+    "sounds": [
+      {
+        "name": "minecraft:block.bubble_column.bubble_pop",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 1.0
+      }
+    ]
+  },
+  "bubble.whoosh": {
+    "subtitle": "subtitles.steveparty.bubble.whoosh",
+    "sounds": [
+      {
+        "name": "minecraft:entity.breeze.shoot",
+        "type": "event",
+        "volume": 0.35,
+        "pitch": 1.4
+      },
+      {
+        "name": "minecraft:entity.wind_charge.wind_burst",
+        "type": "event",
+        "volume": 0.2,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "bubble.merge": {
+    "subtitle": "subtitles.steveparty.bubble.merge",
+    "sounds": [
+      {
+        "name": "minecraft:block.bubble_column.whirlpool_inside",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.6
+      }
+    ]
+  },
+  "bubbler.bubbling": {
+    "subtitle": "subtitles.steveparty.bubbler.bubbling",
+    "sounds": [
+      {
+        "name": "minecraft:block.bubble_column.upwards_ambient",
+        "type": "event",
+        "volume": 0.4,
+        "pitch": 1.2
+      },
+      {
+        "name": "minecraft:block.bubble_column.upwards_ambient",
+        "type": "event",
+        "volume": 0.4,
+        "pitch": 1.4
+      }
+    ]
   }
 }

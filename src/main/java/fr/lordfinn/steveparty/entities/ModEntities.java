@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.entities;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.entities.custom.bubble.BubbleEntity;
+import fr.lordfinn.steveparty.entities.custom.bubble.BubbleRiding;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
@@ -245,6 +247,18 @@ public class ModEntities {
                     .maxTrackingRange(8)
                     .trackingTickInterval(2)
                     .build(WILD_MAGPIE_KEY.getValue().toString())
+    );
+
+    /** A Bubbler's bubble, ridden by what stepped in, or holding a dropped item (see BubbleEntity). */
+    public static final RegistryKey<EntityType<?>> BUBBLE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("bubble"));
+    public static final EntityType<BubbleEntity> BUBBLE = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("bubble"),
+            EntityType.Builder
+                    .<BubbleEntity>create(BubbleEntity::new, SpawnGroup.MISC)
+                    .dimensions(BubbleRiding.side(1.8f, 1), BubbleRiding.side(1.8f, 1)) // a player's: it follows its riders
+                    .maxTrackingRange(10)
+                    .trackingTickInterval(1) // ridden, it moves server side: every tick keeps the riders smooth
+                    .build(BUBBLE_KEY.getValue().toString())
     );
 
     public static void initialize() {

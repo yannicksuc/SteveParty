@@ -493,6 +493,16 @@ public class ModBlocks {
                     .pistonBehavior(PistonBehavior.DESTROY),
             "spawn_marker", true);
 
+    /** The Bubbler: a low plate breathing out bubbles that carry what steps onto it up (BubblerBlock). */
+    public static final Block BUBBLER = register(BubblerBlock::new,
+            Block.Settings.create()
+                    .mapColor(MapColor.BLUE)
+                    .strength(0.8f)
+                    .nonOpaque()
+                    .sounds(BlockSoundGroup.METAL)
+                    .pistonBehavior(PistonBehavior.DESTROY),
+            "bubbler", true);
+
     /** The Pie's nest, woven twigs: a Common pot's nest when set near its space (MagpieNestBlock). */
     public static final Block MAGPIE_NEST = register(MagpieNestBlock::new,
             Block.Settings.create()
