@@ -44,9 +44,9 @@ public final class BoomcartLaunches {
     /** Back: it roars this long before it charges. */
     private static final int ROAR_TICKS = 8;
     /** Forward: how far behind the token it stops; without a Spawn Bubble, how far further it rolls in from. */
-    private static final double BEHIND = 1.0, ROLL_IN = 3.0;
+    private static final double BEHIND = 1.35, ROLL_IN = 3.0;
     /** Back: how far ahead of the token it charges from; where it hits it. */
-    private static final double CHARGE_FROM = 4.0, HIT_AT = 0.7;
+    private static final double CHARGE_FROM = 4.0, HIT_AT = 0.85;
 
     /** The running shows, by the token that landed. */
     private static final BoardSequences<Show> RUNNING = new BoardSequences<>();
