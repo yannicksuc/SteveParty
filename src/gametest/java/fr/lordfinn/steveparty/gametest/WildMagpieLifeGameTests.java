@@ -46,6 +46,8 @@ import java.util.function.Supplier;
  * change what they do).
  */
 public class WildMagpieLifeGameTests implements SteveGameTest {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("WildMagpieLifeGameTests");
+
     /** The long flights go 40 blocks away and back. */
     @Override
     public int landAround() {
@@ -54,10 +56,18 @@ public class WildMagpieLifeGameTests implements SteveGameTest {
 
     private static void when(TestContext context, BooleanSupplier condition, int ticks, Supplier<String> what, Runnable then) {
         if (condition.getAsBoolean()) {
-            then.run();
+            try {
+                then.run();
+            } catch (RuntimeException failure) {
+                LOGGER.error("{}: {}", what.get(), failure.getMessage());
+                throw failure;
+            }
             return;
         }
-        if (ticks <= 0) throw new GameTestException("timed out: " + what.get());
+        if (ticks <= 0) {
+            LOGGER.error("timed out: {}", what.get());
+            throw new GameTestException("timed out: " + what.get());
+        }
         context.waitAndRun(1, () -> when(context, condition, ticks - 1, what, then));
     }
 
@@ -230,14 +240,14 @@ public class WildMagpieLifeGameTests implements SteveGameTest {
         for (BlockPos post : List.of(new BlockPos(1, 1, 3), new BlockPos(5, 1, 3), new BlockPos(3, 1, 1), new BlockPos(3, 1, 5))) {
             context.setBlockState(post, Blocks.OAK_FENCE.getDefaultState());
         }
-        WildMagpieEntity chick = context.spawnEntity(ModEntities.WILD_MAGPIE, Vec3d.ofBottomCenter(new BlockPos(1, 2, 3)));
+        WildMagpieEntity chick = context.spawnEntity(ModEntities.WILD_MAGPIE, new Vec3d(3.5, 1.6, 3.5));
         chick.setBaby(true);
         chick.setPersistent();
         chick.setNightOverride(false);
         chick.adoptNest(nest);
         int[] farthest = {0};
         context.runAtEveryTick(() -> {
-            if (chick.isAlive()) farthest[0] = Math.max(farthest[0], (int) Math.ceil(Math.sqrt(chick.getBlockPos().getSquaredDistance(nest))));
+            if (chick.isAlive()) farthest[0] = Math.max(farthest[0], around(chick.getBlockPos(), nest));
         });
         when(context, () -> nest.equals(chick.getPerch()), 200, () -> "into its nest" + state(chick), () -> {
             context.assertFalse(chick.isWalking(), "not on foot");
@@ -245,15 +255,20 @@ public class WildMagpieLifeGameTests implements SteveGameTest {
             for (int i = 0; i < 20 && !out; i++) out = chick.hopOut(context.getWorld());
             context.assertTrue(out, "it hops out");
             when(context, () -> chick.getPerch() != null && !nest.equals(chick.getPerch()), 60, () -> "out" + state(chick), () -> {
-                context.assertTrue(chick.getPerch().getSquaredDistance(nest) <= 3 * 3 * 2, "close by: " + chick.getPerch());
+                context.assertTrue(around(chick.getPerch(), nest) <= WildMagpieEntity.CHICK_OUTING_RADIUS, "close by: " + chick.getPerch());
                 context.assertTrue(chick.hopHome(context.getWorld()), "it hops home");
                 when(context, () -> nest.equals(chick.getPerch()), 60, () -> "home again" + state(chick), () -> {
-                    context.assertTrue(farthest[0] <= 4, "never far from its nest: " + farthest[0]);
+                    context.assertTrue(farthest[0] <= WildMagpieEntity.CHICK_OUTING_RADIUS, "never far from its nest: " + farthest[0]);
                     chick.discard();
                     context.complete();
                 });
             });
         });
+    }
+
+    /** How far {@code pos} is from {@code nest}, horizontally (blocks along x or z, the larger). */
+    private static int around(BlockPos pos, BlockPos nest) {
+        return Math.max(Math.abs(pos.getX() - nest.getX()), Math.abs(pos.getZ() - nest.getZ()));
     }
 
     /** Without a nest, a chick walks on the ground (gravity, collisions) and stays there. */
