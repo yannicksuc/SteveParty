@@ -11,7 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.ExplorerHelmet;
-import fr.lordfinn.steveparty.client.gui.ToolHud;
+import fr.lordfinn.steveparty.client.gui.FloatingInfo;
 import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer;
 import fr.lordfinn.steveparty.payloads.custom.TileInfoPayloads;
@@ -52,7 +52,7 @@ import java.util.Map;
  * shows them), its items circling the space ({@link ItemRing}).
  * <ul>
  *     <li>the space looked at (a token on it counts), up to {@link #PANEL_DISTANCE} blocks; farther (up to the brush's
- *     reach), the same panel under the crosshair (HUD);</li>
+ *     reach) or out of sight, its card on the screen instead ({@link FloatingInfo});</li>
  *     <li>where the player's own token is heading during its move, each way's end at a fork (a gold plate);</li>
  *     <li>with the Explorer's Helmet lamp lit: every space around too, reduced to its title and first line.</li>
  * </ul>
@@ -60,7 +60,7 @@ import java.util.Map;
  * when changed. The aim and the heights are worked out once per tick; a frame only draws.
  */
 public final class TileInfoClient {
-    /** The panel is drawn in the world up to this distance; farther, under the crosshair. */
+    /** The panel is drawn in the world up to this distance (and in sight); farther, its card on the screen. */
     private static final double PANEL_DISTANCE = 16;
     /** The infos shown are asked again this often (ticks), to follow their changes. */
     private static final int REFRESH_TICKS = 10;
@@ -71,6 +71,10 @@ public final class TileInfoClient {
     private static final int NEARBY_MAX = 10;
     /** Text pixel size near by (block); it grows with the distance, up to {@link #MAX_GROW} times. */
     private static final float SCALE = 1f / 48f, MAX_GROW = 2.5f;
+
+    /** The card of the space looked at ({@link FloatingInfo}). */
+    private record CardKey(BlockPos pos) {
+    }
 
     private enum Kind {
         HOVER(true, WorldDraw.Plate.TEAL), FOCUS(true, WorldDraw.Plate.GOLD), NEARBY(false, WorldDraw.Plate.TEAL);
@@ -106,7 +110,8 @@ public final class TileInfoClient {
     private static final Map<BlockPos, TilePanel.Layout> LAYOUTS = new HashMap<>();
     private static List<Shown> shown = List.of();
     private static List<BlockPos> focus = List.of();
-    private static @Nullable BlockPos far;
+    /** The space looked at, null when none: its panel, or its card when the panel is out of sight. */
+    private static @Nullable BlockPos hoveredPos;
     private static @Nullable ClientWorld knownWorld;
     /** How the space looked at and the destinations are shown: with the helmet's details, a building tool's. */
     private static TilePanel.View view = TilePanel.View.PLAY;
@@ -131,7 +136,7 @@ public final class TileInfoClient {
         LAYOUTS.clear();
         focus = List.of();
         shown = List.of();
-        far = null;
+        hoveredPos = null;
         knownWorld = null;
         fresh = true;
     }
@@ -149,22 +154,18 @@ public final class TileInfoClient {
         Entity viewer = client.getCameraEntity();
         if (world == null || client.player == null || viewer == null) {
             shown = List.of();
-            far = null;
+            hoveredPos = null;
             return;
         }
         Vec3d eye = viewer.getCameraPosVec(1f);
         view = TilePanel.View.of(ExplorerHelmet.view(client.player).details(), building(client.player));
         List<Shown> next = new ArrayList<>();
         List<BlockPos> asked = new ArrayList<>();
-        far = null;
         BlockPos hovered = hovered(world, viewer, eye);
+        hoveredPos = hovered;
         if (hovered != null) {
             asked.add(hovered);
-            if (BoardSpaces.standPos(world, hovered).squaredDistanceTo(eye) <= PANEL_DISTANCE * PANEL_DISTANCE) {
-                next.add(shown(world, viewer, hovered, Kind.HOVER));
-            } else {
-                far = hovered;
-            }
+            next.add(shown(world, viewer, hovered, Kind.HOVER));
         }
         for (BlockPos pos : focus) {
             if (asked.contains(pos) || !world.isChunkLoaded(pos)) continue;
@@ -277,6 +278,12 @@ public final class TileInfoClient {
             double distance = Math.sqrt(space.anchor.squaredDistanceTo(eye));
             float scale = SCALE * (float) Math.clamp(distance / 7.0, 1.0, MAX_GROW);
             double bottom = Math.max(space.bottom, space.anchor.y + HelmetView.heightAbove(space.anchor, distance) + 0.1);
+            if (space.kind == Kind.HOVER) {
+                // Too far or out of sight: its card on the screen instead
+                Vec3d middle = new Vec3d(space.anchor.x, bottom + layout.height(shownAs) * scale / 2, space.anchor.z);
+                if (!FloatingInfo.inSight(camera, middle, PANEL_DISTANCE)) continue;
+                FloatingInfo.drawnInWorld(new CardKey(space.pos));
+            }
             TilePanel.draw(matrices, consumers, camera, client.world, space.anchor.x, bottom, space.anchor.z, layout,
                     shownAs, space.kind.plate, scale);
             if (space.kind.full && !layout.info.ring().isEmpty()) {
@@ -287,13 +294,14 @@ public final class TileInfoClient {
         }
     }
 
-    /** The space looked at from afar: its panel under the crosshair. */
+    /** The space looked at, its panel out of sight (too far...): its card on the screen ({@link FloatingInfo}). */
     private static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
-        BlockPos pos = far;
+        BlockPos pos = hoveredPos;
         if (pos == null || client.options.hudHidden || client.currentScreen != null) return;
         TilePanel.Layout layout = LAYOUTS.get(pos);
-        if (layout == null || !layout.hasContent(view)) return;
-        TilePanel.drawHud(context, layout, view, context.getScaledWindowWidth() / 2, context.getScaledWindowHeight() / 2 + 14);
+        CardKey key = new CardKey(pos);
+        if (layout == null || !layout.hasContent(view) || !FloatingInfo.needsCard(key)) return;
+        TilePanel.drawCard(context, key, layout, view);
     }
 }
