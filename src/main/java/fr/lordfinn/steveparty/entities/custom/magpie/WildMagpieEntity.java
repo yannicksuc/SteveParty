@@ -96,6 +96,12 @@ import java.util.function.Predicate;
  * a few blocks away, no pathfinding) and only rarely hops up with a flap. It grows up in the usual time (seeds make it
  * grow faster) into an adult keeping its nest.
  * <p>
+ * Seeds tempt it, as wheat a cow: within {@link #TEMPT_RANGE} blocks of a player holding one (in either hand), it looks
+ * at him and comes to him, by low hops to a free perch {@link #TEMPT_DISTANCE} blocks or so from him (a chick in a nest
+ * hops out to him the same way, {@link #CHICK_HOP} blocks a hop; a chick on foot waddles to him), and follows him as he
+ * goes, never scared off; the seed put away or the player too far, it goes about its life again. Checked every
+ * {@link #TEMPT_CHECK_INTERVAL} ticks, the way to him over loaded land only, like any flight.
+ * <p>
  * Not the Common pot's Pie ({@link MagpieEntity}, bound to its nest, scripted, never an animal: it never breeds): a
  * separate kind sharing its model.
  */
@@ -148,6 +154,9 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
     /** Two in love this close meet; this close they are together, and after {@link #COURTSHIP_TICKS} a chick is born. */
     public static final double LOVE_RANGE = 8, MATE_RANGE = 3;
     private static final int LOVE_CHECK_INTERVAL = 10, COURTSHIP_TICKS = 60;
+    /** A player holding seeds this close tempts it (blocks); it comes to about this far from him, again past {@link #TEMPT_FOLLOW}. */
+    public static final double TEMPT_RANGE = 10, TEMPT_DISTANCE = 1.75, TEMPT_FOLLOW = 2.6;
+    public static final int TEMPT_CHECK_INTERVAL = 5;
     /** A chick hops out of its nest onto a block this close to it (blocks), once in this many rests. */
     public static final int CHICK_OUTING_RADIUS = 3, CHICK_OUTING_ODDS = 3;
     /** A chick without a nest adopts a free one this close; it hops home by hops this long at most. */
@@ -178,6 +187,8 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
     private @Nullable Vec3d walkTarget;
     private int walkTicks;
     private double walkSpeed = 1.0;
+    /** The player holding seeds it follows (null: none), looked for every {@link #TEMPT_CHECK_INTERVAL} ticks. */
+    private @Nullable PlayerEntity tempter;
 
     /** How high a flight curves up: an ordinary flight, a chick's low hop, a long flight. */
     enum Climb {
@@ -420,6 +431,7 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
             PlayerEntity threat = closeThreat(world);
             if (threat != null && takeOff(world, threat.getPos())) return;
         }
+        if (getFlightState() != ASLEEP && tickTempted(world)) return;
         boolean onNest = MagpieNestBlockEntity.at(world, perch) != null;
         if (isNight(world)) {
             if (onNest) {
@@ -471,6 +483,83 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
         } else {
             turn(getYaw() + (random.nextFloat() - 0.5f) * 80);
         }
+    }
+
+    // ---------------------------------------------------------------- tempted by seeds
+
+    /** A player holding seeds within {@link #TEMPT_RANGE}, on land that ticks (null: none). */
+    private @Nullable PlayerEntity findTempter(ServerWorld world) {
+        return world.getClosestPlayer(getX(), getY(), getZ(), TEMPT_RANGE, entity -> entity instanceof PlayerEntity player
+                && !player.isSpectator() && holdsFood(player) && world.shouldTickEntity(player.getBlockPos()));
+    }
+
+    private boolean holdsFood(PlayerEntity player) {
+        return isBreedingItem(player.getMainHandStack()) || isBreedingItem(player.getOffHandStack());
+    }
+
+    /** The player holding seeds it follows (null: none): tests. */
+    public @Nullable PlayerEntity getTempter() {
+        return tempter;
+    }
+
+    /**
+     * Perched (moved by hand): tempted, it looks at the player holding seeds and, farther than {@link #TEMPT_FOLLOW},
+     * hops to a free perch near him; nothing else meanwhile (no flight away, no rest flight). False if not tempted.
+     */
+    private boolean tickTempted(ServerWorld world) {
+        boolean check = (age + getId()) % TEMPT_CHECK_INTERVAL == 0;
+        if (check) tempter = findTempter(world);
+        PlayerEntity player = tempter;
+        if (player == null) return false;
+        if (!player.isAlive() || player.isRemoved()) {
+            tempter = null;
+            return false;
+        }
+        Vec3d to = player.getPos().subtract(getPos());
+        turn((float) (MathHelper.atan2(to.z, to.x) * (180 / Math.PI)) - 90);
+        if (getFlightState() != PERCHED) setFlightState(PERCHED);
+        restTicks = Math.max(restTicks, 40);
+        if (check && to.horizontalLengthSquared() > TEMPT_FOLLOW * TEMPT_FOLLOW) hopTo(world, player);
+        return true;
+    }
+
+    /**
+     * A low hop to a free perch about {@link #TEMPT_DISTANCE} blocks from {@code player} (none another Pie stands on or
+     * flies to, never a nest); a chick at most {@link #CHICK_HOP} blocks a hop (farther: a hop towards him). False if none.
+     */
+    private boolean hopTo(ServerWorld world, PlayerEntity player) {
+        Vec3d him = player.getPos();
+        if (isBaby() && him.squaredDistanceTo(getPos()) > (CHICK_HOP + TEMPT_DISTANCE) * (CHICK_HOP + TEMPT_DISTANCE)) {
+            Vec3d toward = him.subtract(getPos()).multiply(1, 0, 1);
+            Vec3d step = getPos().add(toward.normalize().multiply(CHICK_HOP - 1));
+            return hopAround(world, step, 2, nest != null ? nest : BlockPos.ORIGIN);
+        }
+        List<Candidate> candidates = new ArrayList<>();
+        BlockPos feet = player.getBlockPos();
+        for (BlockPos pos : BlockPos.iterate(feet.add(-2, -2, -2), feet.add(2, 1, 2))) {
+            if (pos.equals(perch) || MagpieNestBlockEntity.at(world, pos) != null || !world.shouldTickEntity(pos)) continue;
+            Vec3d at = freeSpotOn(world, pos);
+            if (at == null) continue;
+            double horizontal = Math.sqrt(at.subtract(him).horizontalLengthSquared());
+            if (horizontal < 1.0 || horizontal > TEMPT_FOLLOW - 0.2 || Math.abs(at.y - him.y) > 1.5) continue;
+            if (isTaken(world, pos)) continue;
+            candidates.add(new Candidate(pos.toImmutable(), at, Math.abs(horizontal - TEMPT_DISTANCE) + at.distanceTo(getPos()) * 0.05));
+        }
+        candidates.sort((a, b) -> Double.compare(a.weight, b.weight));
+        for (int i = 0; i < Math.min(4, candidates.size()); i++) {
+            Flight way = wayTo(world, candidates.get(i), Climb.LOW);
+            if (way != null) {
+                startFlight(way);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Another Pie stands on {@code pos} or flies to it. */
+    private boolean isTaken(ServerWorld world, BlockPos pos) {
+        return !world.getEntitiesByClass(WildMagpieEntity.class, new Box(pos).expand(SEARCH_RADIUS), other -> other != this
+                && (pos.equals(other.perch) || other.flight != null && pos.equals(other.flight.target))).isEmpty();
     }
 
     private @Nullable PlayerEntity closeThreat(ServerWorld world) {
@@ -618,6 +707,7 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
     private void tickChick(ServerWorld world) {
         if (age % PERCH_CHECK_INTERVAL == 0 && !checkPerch(world)) return;
         if ((age + getId()) % NEST_CHECK_INTERVAL == 0 && chickHome(world) == null) return; // its nest gone: on foot
+        if (getFlightState() != ASLEEP && tickTempted(world)) return;
         boolean inNest = perch.equals(nest);
         if (isNight(world)) {
             if (inNest) {
@@ -721,6 +811,21 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
             if (threat != null) {
                 Vec3d away = getPos().subtract(threat.getPos()).multiply(1, 0, 1);
                 if (away.lengthSquared() > 1.0E-4) walkTo(getPos().add(away.normalize().multiply(WANDER_RADIUS)), 1.6);
+            }
+        }
+        if ((age + getId()) % TEMPT_CHECK_INTERVAL == 0 && !airborne) tempter = findTempter(world);
+        if (tempter != null && !airborne) {
+            if (!tempter.isAlive() || tempter.isRemoved()) tempter = null;
+            else {
+                getLookControl().lookAt(tempter, 30, 30);
+                Vec3d to = getPos().subtract(tempter.getPos()).multiply(1, 0, 1);
+                double distance = to.length();
+                if (distance > TEMPT_FOLLOW - 0.6 && (age + getId()) % TEMPT_CHECK_INTERVAL == 0) {
+                    walkTo(tempter.getPos().add(to.multiply(TEMPT_DISTANCE / distance)), 1.2);
+                } else if (distance <= TEMPT_DISTANCE) {
+                    walkTarget = null;
+                }
+                restTicks = Math.max(restTicks, 40);
             }
         }
         if (walkTarget != null) {
