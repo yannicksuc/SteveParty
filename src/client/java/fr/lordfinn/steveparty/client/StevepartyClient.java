@@ -245,6 +245,7 @@ public class StevepartyClient implements ClientModInitializer {
         // item (a plain block model: the plate, the arrow and the bubble's cube) is drawn on a translucent layer too
         SpawnBubbleRenderer.registerModels();
         BlockEntityRendererFactories.register(ModBlockEntities.SPAWN_MARKER_ENTITY, SpawnBubbleRenderer::new);
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.SPAWN_MARKER, SpawnBubbleRenderer.ITEM);
         BlockEntityRendererFactories.register(ModBlockEntities.BUBBLER_ENTITY, BubblerRenderer::new);
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.SPAWN_MARKER, RenderLayer.getTranslucent());
         MiniGamePipeNotchRenderer.registerHint();
