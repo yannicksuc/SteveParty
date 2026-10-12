@@ -115,12 +115,16 @@ public final class MagpieNestPile {
         };
     }
 
+    /** How deep a Pie sits in an empty nest, under its rim (pixels). */
+    public static final int EMPTY_SINK = 3;
+
     /**
-     * Where a Pie stands on the nest at {@code pos} facing {@code facing}: in the middle of an empty nest (on the rim's
-     * height, {@link MagpieNestBlock#HEIGHT}); with coins (the pile in the middle), on the free corner of the rim.
+     * Where a Pie stands on the nest at {@code pos} facing {@code facing}: in the middle of an empty nest, sunk in it
+     * ({@link #EMPTY_SINK} under the rim's height, {@link MagpieNestBlock#HEIGHT}); with coins (the pile in the middle),
+     * on the free corner of the rim.
      */
     public static Vec3d perch(BlockPos pos, Direction facing, int coins) {
-        if (coins <= 0) return new Vec3d(pos.getX() + 0.5, pos.getY() + MagpieNestBlock.HEIGHT / 16.0, pos.getZ() + 0.5);
+        if (coins <= 0) return new Vec3d(pos.getX() + 0.5, pos.getY() + (MagpieNestBlock.HEIGHT - EMPTY_SINK) / 16.0, pos.getZ() + 0.5);
         float[] at = rotate(CORNER, CORNER, facing);
         return new Vec3d(pos.getX() + at[0] / 16.0, pos.getY() + RIM / 16.0, pos.getZ() + at[1] / 16.0);
     }

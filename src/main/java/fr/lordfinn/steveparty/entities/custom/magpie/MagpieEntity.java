@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.magpie;
 
+import net.minecraft.util.math.Direction;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestPile;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -109,7 +111,7 @@ public class MagpieEntity extends Entity implements GeoEntity {
     public static Vec3d perchOf(World world, BlockPos nest) {
         MagpieNestBlockEntity entity = MagpieNestBlockEntity.at(world, nest);
         return entity != null ? entity.perch()
-                : new Vec3d(nest.getX() + 0.5, nest.getY() + MagpieNestBlock.HEIGHT / 16.0, nest.getZ() + 0.5);
+                : MagpieNestPile.perch(nest, Direction.NORTH, 0);
     }
 
     // ---------------------------------------------------------------- flights
