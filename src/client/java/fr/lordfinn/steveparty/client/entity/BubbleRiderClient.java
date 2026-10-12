@@ -30,7 +30,7 @@ public final class BubbleRiderClient {
     private static final Identifier JUMP_PROGRESS = Identifier.ofVanilla("hud/jump_bar_progress");
     private static final Identifier VIGNETTE = Steveparty.id("textures/misc/bubble_vignette.png");
     /** How strong the vignette shows (alpha), breathing by this much. */
-    private static final float VIGNETTE_ALPHA = 0.75f, VIGNETTE_BREATH = 0.15f;
+    private static final float VIGNETTE_ALPHA = 0.55f, VIGNETTE_BREATH = 0.1f;
 
     /** The puff charged (ticks), and the tick it may charge again from; a puff released this tick, for the prediction. */
     private static int charge, rested;
