@@ -552,7 +552,7 @@ public final class CartridgePanel {
             right -= 16;
             context.drawItem(REDSTONE, right, sy + 2);
             right -= textRenderer.getWidth(power);
-            context.drawText(textRenderer, power, right, sy + 7, textColor, !dark);
+            UiText.line(context, textRenderer, power, right, sy + 7, textRenderer.getWidth(power), textColor, !dark);
             right -= 4;
         }
         int room = Math.max(10, right - textX);
