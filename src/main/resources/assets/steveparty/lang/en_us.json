@@ -3237,7 +3237,6 @@
   "gui.steveparty.spawn_marker.resident.hint": "All the party long: it waits in the bubble, plays its show when a token lands, comes back, and goes when the party ends",
   "gui.steveparty.spawn_marker.lift": "Height of the bubble",
   "gui.steveparty.spawn_marker.lift.hint": "Half a block up or down (Shift: a block; the wheel too). The bubble and the mob float there: the plate can hide under the floor or in a wall",
-  "gui.steveparty.spawn_marker.preview": "Its bubble shows the linked mob (up close, out of a party) facing the way it will look; else an arrow",
   "message.steveparty.board.check.unloaded_starts": "%s start tiles in unloaded chunks (their tokens can't be seen):",
   "message.steveparty.board.summary.unloaded_starts": "%s start tiles not loaded",
   "tooltip.steveparty.token.waxed": "Waxed",
