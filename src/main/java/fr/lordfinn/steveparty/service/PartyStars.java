@@ -66,6 +66,9 @@ import static net.minecraft.server.command.CommandManager.literal;
  *     space, unless its Star Cartridge (still in the space) says to wait there; no active star space: it waits, hidden,
  *     for one to be switched on.</li>
  * </ul>
+ * A Mula hosts the star when a token reaches it, holding it while its player chooses and showing the outcome
+ * ({@link StarHosts}): a show only, the purchase is decided here.
+ * <p>
  * Where the star stands belongs to the party: saved with its controller ({@link PartyControllerEntity#getStarSpace}).
  * The choices in progress live in memory (a server stop forgets them, like the shop stops). The clients draw the stars
  * from {@link StarSpacesPayload}.
@@ -108,6 +111,7 @@ public final class PartyStars {
     /** The party of the token was stopped: its choice is dropped (nothing is bought, nothing goes on). */
     public static void cancelOffer(UUID token) {
         OFFERS.remove(token);
+        StarHosts.cancel(token);
     }
 
     /** True if {@code pos} is a star space that is on (its active cartridge is a Star Cartridge); false if not loaded. */
@@ -290,6 +294,8 @@ public final class PartyStars {
         if (coins < price) {
             MessageUtils.sendToPlayers(party.getPartyAudience(), Text.translatable("message.steveparty.star.too_poor",
                     owner.getDisplayName(), price, coins).formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
+            // its host comes with the star all the same, and is disappointed (the token goes on meanwhile)
+            if (bankStars(party, world) > 0) StarHosts.arrive(world, mob, space.getPos(), party, false);
             return false;
         }
         // The star given comes from the party's bank: none left there, nothing to sell (the token goes on)
@@ -301,6 +307,7 @@ public final class PartyStars {
         Offer offer = new Offer(mob.getUuid(), ownerUuid, world, space.getPos().toImmutable(), party, price, passing,
                 world.getTime() + 20L * DECISION_SECONDS, tokenName);
         OFFERS.put(mob.getUuid(), offer);
+        StarHosts.arrive(world, mob, space.getPos(), party, true);
         // A star check point holds the token: its Router tells a comparator (a star tile did when the token landed)
         if (!ABoardSpaceBlock.countsAsStep(space.getCachedState().getBlock())) BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, space);
         Vec3d at = BoardSpaces.standPos(world, space.getPos());
@@ -378,11 +385,18 @@ public final class PartyStars {
         if (OFFERS.remove(offer.token()) == null) return;
         ServerWorld world = offer.world();
         ServerPlayerEntity owner = world.getServer().getPlayerManager().getPlayer(offer.owner());
+        boolean bought = false;
         if (buy && owner != null) {
-            buy(offer.party(), world, owner, offer.space(), offer.price());
+            bought = buy(offer.party(), world, owner, offer.space(), offer.price());
         } else if (owner != null) {
             MessageUtils.sendToPlayers(offer.party().getPartyAudience(), Text.translatable("message.steveparty.star.passed",
                     owner.getDisplayName()).formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
+        }
+        // Its host shows it (it never holds the token: its goodbye plays while the party goes on)
+        if (world.getEntity(offer.token()) instanceof MobEntity token) {
+            StarHosts.decided(token, bought, offer.party().getStarSpace(), owner);
+        } else {
+            StarHosts.cancel(offer.token());
         }
         goOn(offer);
     }

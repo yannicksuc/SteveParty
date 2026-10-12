@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.renderer;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
+import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.StarSpacesPayload;
 import net.fabricmc.api.EnvType;
@@ -91,6 +92,8 @@ public final class StarSpaceRenderer {
         for (BlockPos space : stars) {
             Vec3d at = BoardSpaces.standPos(world, space);
             if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
+            // its host holds it (StarHosts): the star is in the Mula's hands, its beam stays
+            if (MulaEntity.isHostedOnClient(world, space)) continue;
             matrices.push();
             matrices.translate(at.x - camera.x, at.y + HEIGHT + 0.12 * MathHelper.sin(time * 0.08F) - camera.y, at.z - camera.z);
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * SPIN));

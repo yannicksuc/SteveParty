@@ -8,6 +8,8 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeEdit;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import fr.lordfinn.steveparty.entities.ModEntities;
+import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
@@ -21,8 +23,11 @@ import java.util.List;
  * reaches it may buy it for its price in coins, and it then goes to another star space (see
  * {@link fr.lordfinn.steveparty.service.PartyStars}). Its menu: the price, whether passing tokens may buy it, and
  * whether the star leaves a space that is switched off.
+ * <p>
+ * Its space's host is a Mula (see {@link fr.lordfinn.steveparty.service.StarHosts}): it may be linked to a Spawn
+ * Bubble, where the Mula appears holding the star.
  */
-public class StarCartridgeItem extends CartridgeItem {
+public class StarCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** The star's yellow: the cartridge, its tile and its check point (no other role is yellow). */
     public static final int COLOR = 0xFFD83D;
 
@@ -57,6 +62,12 @@ public class StarCartridgeItem extends CartridgeItem {
 
     public static StarSettingsComponent settings(ItemStack stack) {
         return stack.getOrDefault(ModComponents.STAR_SETTINGS, StarSettingsComponent.DEFAULT);
+    }
+
+    /** The Mula hosting the star space (StarHosts). */
+    @Override
+    public EntityType<?> spawnedMob() {
+        return ModEntities.MULA_ENTITY;
     }
 
     @Override

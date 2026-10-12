@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
+import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenBase;
@@ -73,7 +74,12 @@ import software.bernie.geckolib.animation.AnimationState;
 
 import java.util.*;
 
-public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwnerAnywhere {
+/**
+ * The Mula, a little star creature. A star space's host ({@link #isBoardActor}, see StarHosts) has none of its wild
+ * life: a hologram holding the item its space sells ({@link #getHeldItem}), playing the host animations the server
+ * triggers ({@link #HOST_ANIMATIONS}), never saved.
+ */
+public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwnerAnywhere, BoardActor {
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
 
@@ -101,6 +107,14 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
     protected static final RawAnimation NO_ANIM = RawAnimation.begin().thenPlay("no");
     protected static final RawAnimation BLINK_ANIM = RawAnimation.begin().thenPlay("blink");
     protected static final RawAnimation BLINK_DOUBLE_ANIM = RawAnimation.begin().thenPlay("blink_double");
+    /** A star space's host holding the item it sells, waiting (see StarHosts). */
+    protected static final RawAnimation HOST_HOLD_ANIM = RawAnimation.begin().thenLoop("host_hold");
+    /**
+     * The host's one-shots, triggered by the server (StarHosts): its entrance, its games with the item while the
+     * player chooses, the joy and the gift of a purchase, the disappointment of a refusal, and its exits.
+     */
+    public static final List<String> HOST_ANIMATIONS = List.of("host_appear", "host_toss", "host_spin", "host_juggle",
+            "host_polish", "host_peek", "host_dance", "host_give", "host_point", "host_vanish", "host_sad", "host_leave");
 
     /** Length of the triggered animations, in ticks (json length + the blend in). */
     private static final int EXPLODE_TICKS = 84 + MAIN_TRANSITION_TICKS, CELEBRATE_TICKS = 36 + MAIN_TRANSITION_TICKS,
@@ -227,6 +241,20 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
             DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** Server: ticks left of the tremble after a meal. */
     private int shakeTicks = 0;
+
+    /** What a star space's host holds and plays with (the item its space sells); EMPTY for none. */
+    private static final TrackedData<ItemStack> HELD_ITEM =
+            DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
+    /** The star space it hosts (the clients then draw the star in its hands rather than over the space). */
+    private static final TrackedData<Optional<BlockPos>> HOST_SPACE =
+            DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
+    /** The entity its item flies to when it gives it (the "give" instruction of its animation), -1 for none. */
+    private static final TrackedData<Integer> GIFT_TARGET =
+            DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** Client: the star spaces hosted by a Mula of the world shown, with the Mula's entity id. */
+    private static final Map<BlockPos, Integer> HOSTED_ON_CLIENT = new HashMap<>();
+    /** Server: a board space's actor (see {@link BoardActor}): a hologram, none of its wild life, never saved. */
+    private boolean boardActor;
 
     private int eatCooldown = 0;
     /** Carrying its lead holder up into the night sky (MulaLift): it twinkles, happy. */
@@ -414,6 +442,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
                 tickClientAnimation();
             }
             return;
+        }
+        if (boardActor) {
+            if (freshTicks > 0 && --freshTicks == 0) this.dataTracker.set(FRESH, false);
+            return; // a hologram: only what its space scripts (StarHosts)
         }
         tickFollow(isTamed());
         if (spawnSite != 0 && spawnSiteEpoch != MulaSpawnSites.epoch()) {
@@ -962,6 +994,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
         builder.add(DANCE, -1);
         builder.add(CARRYING, false);
         builder.add(DANCE_FORGE, Optional.empty());
+        builder.add(HELD_ITEM, ItemStack.EMPTY);
+        builder.add(HOST_SPACE, Optional.empty());
+        builder.add(GIFT_TARGET, -1);
     }
 
     @Override
@@ -1066,6 +1101,93 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
         return false;
     }
 
+    // ------------------------------------------------------------------------------------------ board actor (StarHosts)
+
+    @Override
+    public boolean isBoardActor() {
+        return boardActor;
+    }
+
+    @Override
+    public void setBoardActor() {
+        this.boardActor = true;
+    }
+
+    /** A hologram floats where its space puts it, and pops in from nothing on the clients. */
+    @Override
+    public void onBoardActor() {
+        this.setNoGravity(true);
+        this.dataTracker.set(FRESH, true);
+        this.freshTicks = FRESH_TICKS;
+    }
+
+    /** A board space's actor is never kept. */
+    @Override
+    public boolean shouldSave() {
+        return !boardActor && super.shouldSave();
+    }
+
+    @Override
+    protected boolean shouldDropLoot() {
+        return !boardActor && super.shouldDropLoot();
+    }
+
+    /** What it holds and plays with (a star space's host: the item its space sells), EMPTY for nothing. */
+    public ItemStack getHeldItem() {
+        return this.dataTracker.get(HELD_ITEM);
+    }
+
+    /** Server: gives it a copy of one of {@code stack} to hold, or takes its item away (EMPTY). */
+    public void setHeldItem(ItemStack stack) {
+        this.dataTracker.set(HELD_ITEM, stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
+    }
+
+    /** The star space it hosts, null for none. */
+    public @Nullable BlockPos hostSpace() {
+        return this.dataTracker.get(HOST_SPACE).orElse(null);
+    }
+
+    /** Server: it hosts the star space at {@code space} (null: none). */
+    public void setHostSpace(@Nullable BlockPos space) {
+        this.dataTracker.set(HOST_SPACE, Optional.ofNullable(space == null ? null : space.toImmutable()));
+    }
+
+    /** The entity its item flies to when its animation gives it, -1 for none. */
+    public int giftTarget() {
+        return this.dataTracker.get(GIFT_TARGET);
+    }
+
+    /** Server: its item flies to {@code target} when its animation gives it (null: nobody). */
+    public void setGiftTarget(@Nullable Entity target) {
+        this.dataTracker.set(GIFT_TARGET, target == null ? -1 : target.getId());
+    }
+
+    /** Server: plays one of its host animations ({@link #HOST_ANIMATIONS}). */
+    public void playHost(String animName) {
+        triggerAnim(MAIN_CONTROLLER, animName);
+    }
+
+    /**
+     * Client: whether a Mula of the world shown hosts the star space at {@code space} (it holds the star there: the
+     * star is not drawn over the space, its light beam is).
+     */
+    public static boolean isHostedOnClient(World world, BlockPos space) {
+        Integer id = HOSTED_ON_CLIENT.get(space);
+        if (id == null) return false;
+        Entity entity = world.getEntityById(id);
+        if (!(entity instanceof MulaEntity host) || host.isRemoved()) {
+            HOSTED_ON_CLIENT.remove(space);
+            return false;
+        }
+        return space.equals(host.hostSpace()) && !host.getHeldItem().isEmpty();
+    }
+
+    @Override
+    public void onRemoved() {
+        super.onRemoved();
+        if (this.getWorld().isClient) HOSTED_ON_CLIENT.values().removeIf(id -> id == this.getId());
+    }
+
     /** Just spawned (the first 2 seconds): it pops in on the clients. */
     public boolean isFresh() {
         return this.dataTracker.get(FRESH);
@@ -1076,8 +1198,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
     // -------------------
     @Override
     public ActionResult interactMob(PlayerEntity player, Hand hand) {
-        // A board token is a static pawn: not fed, tamed nor sat down (the items acting on entities still work)
-        if (isToken()) return ActionResult.PASS;
+        // A board token is a static pawn: not fed, tamed nor sat down (the items acting on entities still work); a
+        // board space's actor is a hologram
+        if (isToken() || boardActor) return ActionResult.PASS;
         ItemStack stack = player.getStackInHand(hand);
 
         // Tools acting on entities (tokenizer wand, token, name tag, lead) keep working on a Mula
@@ -1338,6 +1461,11 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
             lastSeenDance = now;
         }
         super.onTrackedDataSet(data);
+        if (HOST_SPACE.equals(data) && this.getWorld() != null && this.getWorld().isClient) {
+            HOSTED_ON_CLIENT.values().removeIf(id -> id == this.getId());
+            BlockPos space = hostSpace();
+            if (space != null) HOSTED_ON_CLIENT.put(space, this.getId());
+        }
         // its size follows its hunger (getScaleFactor): refresh the hitbox at once, it only did on a pose change
         if (HUNGER.equals(data)) {
             this.calculateDimensions();
@@ -1538,6 +1666,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
         for (String feature : FEATURE_ANIMS) {
             main.triggerableAnim(feature, RawAnimation.begin().thenPlay(feature));
         }
+        for (String host : HOST_ANIMATIONS) {
+            main.triggerableAnim(host, RawAnimation.begin().thenPlay(host));
+        }
         // Blends ease in and out (GeckoLib blends linearly: a visible jolt at both ends). Only while blending: the
         // keyframes themselves are already smooth curves.
         main.setOverrideEasingTypeFunction(mula -> main.getAnimationState() == AnimationController.State.TRANSITIONING
@@ -1553,6 +1684,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
     private PlayState animationPredicate(AnimationState<MulaEntity> state) {
         // a board token: its idle, gently floating in place (stopped, the model fell back to its bind pose)
         if (isToken()) return state.setAndContinue(IDLE_ANIM);
+        // a star space's host holding its item: it presents it (its games with it are triggered on top)
+        if (!getHeldItem().isEmpty()) return state.setAndContinue(HOST_HOLD_ANIM);
         if (isDanceLocked()) {
             return state.setAndContinue(DANCE_ANIMS[MulaDances.STYLE[Math.max(0, currentDance())]]);
         }
