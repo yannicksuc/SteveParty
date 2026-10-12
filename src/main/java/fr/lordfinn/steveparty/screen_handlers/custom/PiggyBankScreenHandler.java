@@ -21,10 +21,10 @@ import org.jetbrains.annotations.Nullable;
 public class PiggyBankScreenHandler extends CartridgeContainerScreenHandler {
     /**
      * Where the cartridge slot and the first target button are, from the menu's corner; the buttons' size and step. On
-     * the pink tab (flat from 41 to 154, from 3 to the inventory's tab at 39): 6 px left of the slot, between the slot and
-     * the buttons and right of them; 9 px above and below.
+     * the pink tab (centred over the inventory: outline from 28 to 147, flat from 31 to 144, from 3 to the inventory's
+     * tab at 39): 6 px left of the slot, between the slot and the buttons and right of them; 9 px above and below.
      */
-    public static final int SLOT_X = 48, SLOT_Y = 13, BUTTONS_X = 71, BUTTONS_Y = 12, BUTTON = 18, BUTTON_STEP = 20;
+    public static final int SLOT_X = 38, SLOT_Y = 13, BUTTONS_X = 61, BUTTONS_Y = 12, BUTTON = 18, BUTTON_STEP = 20;
 
     private final PropertyDelegate properties;
 
