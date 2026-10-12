@@ -431,7 +431,8 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
             PlayerEntity threat = closeThreat(world);
             if (threat != null && takeOff(world, threat.getPos())) return;
         }
-        if (getFlightState() != ASLEEP && tickTempted(world)) return;
+        // In love, it looks for its mate, not for the seeds (as the animals: mating before being tempted)
+        if (getFlightState() != ASLEEP && !isInLove() && tickTempted(world)) return;
         boolean onNest = MagpieNestBlockEntity.at(world, perch) != null;
         if (isNight(world)) {
             if (onNest) {

@@ -215,6 +215,23 @@ public class WildMagpieLifeGameTests implements SteveGameTest {
         });
     }
 
+    /** In love, two Pies apart still meet and breed while the player keeps the seeds in hand (no longer tempted). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 500, batchId = "wild_magpie_love")
+    public void inLoveTheyMeetEvenWithSeedsInHand(TestContext context) {
+        WildMagpieEntity first = perchedPie(context, new BlockPos(1, 1, 1));
+        WildMagpieEntity second = perchedPie(context, new BlockPos(7, 1, 1));
+        ServerPlayerEntity player = survivalPlayer(context, new Vec3d(4.5, 1, 6.5));
+        when(context, () -> first.getPerch() != null && second.getPerch() != null, 20, () -> "perched" + state(first) + state(second), () -> {
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WHEAT_SEEDS, 5));
+            player.interact(first, Hand.MAIN_HAND);
+            player.interact(second, Hand.MAIN_HAND);
+            context.assertTrue(first.isInLove() && second.isInLove(), "both in love");
+            Box around = new Box(context.getAbsolutePos(BlockPos.ORIGIN)).expand(12);
+            when(context, () -> !context.getWorld().getEntitiesByType(ModEntities.WILD_MAGPIE, around, WildMagpieEntity::isBaby).isEmpty(),
+                    440, () -> "a chick, seeds still in hand" + state(first) + state(second), context::complete);
+        });
+    }
+
     /** The Common pot's Pie is no animal: seeds do nothing to it, it never breeds. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "wild_magpie_love")
     public void thePotsPieNeverBreeds(TestContext context) {
