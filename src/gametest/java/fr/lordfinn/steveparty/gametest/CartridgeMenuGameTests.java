@@ -27,6 +27,10 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import fr.lordfinn.steveparty.payloads.custom.CartridgeSettingPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeContainerScreenHandler;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.GhostSlot;
 import com.google.gson.JsonObject;
@@ -70,7 +74,7 @@ import java.util.stream.IntStream;
 /**
  * The cartridge menus: every cartridge declares modules that fit the shell, a change is checked (who, where, which
  * module, which value) then written, each cartridge's settings go and come back through its modules, and the Inventory
- * Cartridge's ghost slots work in hand and in a tile.
+ * Cartridge's ghost slots work in hand, in a tile, a Piggy Bank and a Looting Box.
  */
 public class CartridgeMenuGameTests implements SteveGameTest {
     private static final BlockPos TILE = new BlockPos(2, 1, 2);
@@ -507,6 +511,74 @@ public class CartridgeMenuGameTests implements SteveGameTest {
             context.assertTrue(inTile.get(ModComponents.INVENTORY_COMPONENT).getStack(5).isEmpty(), "adventure: no change");
             player.currentScreenHandler = player.playerScreenHandler;
         } finally {
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
+    /**
+     * The Piggy Bank and the Looting Box show their Inventory Cartridge's menu like a tile: its settings and ghost slots
+     * change the cartridge in the block's slot (on the server), the client gets the block's position to open it; the
+     * Router and the Hop Switch, whose cartridge only holds links, have none.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void cartridgeMenusInPiggyBankAndLootingBox(TestContext context) {
+        BlockPos at = TILE;
+        ServerPlayerEntity player = playerNear(context, context.getAbsolutePos(at));
+        try {
+            for (Block block : List.of(ModBlocks.PIGGY_BANK, ModBlocks.LOOTING_BOX)) {
+                context.setBlockState(at.down(), Blocks.STONE);
+                context.setBlockState(at, block);
+                CartridgeContainerBlockEntity holder = context.getBlockEntity(at);
+                ItemStack cartridge = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
+                holder.setStack(0, cartridge);
+                String name = block.getTranslationKey();
+                context.assertEquals(((ExtendedScreenHandlerFactory<?>) holder).getScreenOpeningData(player),
+                        new BlockPosPayload(holder.getPos()), name + ": the client gets the block's position");
+
+                CartridgeContainerScreenHandler handler = (CartridgeContainerScreenHandler) holder.createMenu(9, player.getInventory(), player);
+                context.assertTrue(handler != null && handler.hasCartridgeMenu(), name + ": a cartridge menu");
+                player.currentScreenHandler = handler;
+                context.assertEquals(handler.editedCartridge(player), CartridgeRef.slot(holder.getPos(), 0), name + ": its slot edited");
+                new CartridgeSettingPayload(9, "mode", InventoryCartridgeItem.CYCLE).handle(player);
+                context.assertEquals(InventoryCartridgeItem.getSelectionState(holder.getStack(0)), InventoryCartridgeItem.CYCLE,
+                        name + ": the setting written in the block's cartridge");
+
+                int firstGhost = -1;
+                for (Slot slot : handler.slots) if (slot instanceof GhostSlot && firstGhost < 0) firstGhost = slot.id;
+                context.assertTrue(firstGhost == 1 + 36, name + ": ghost slots after the player's");
+                context.assertTrue(handler.slots.get(firstGhost).isEnabled(), name + ": the Inventory Cartridge's ghost slots");
+                handler.setCursorStack(new ItemStack(Items.EMERALD, 3));
+                handler.onSlotClick(firstGhost + 2, 0, SlotActionType.PICKUP, player);
+                context.assertEquals(handler.getCursorStack().getCount(), 3, name + ": the real emeralds stay on the cursor");
+                handler.setCursorStack(ItemStack.EMPTY);
+                context.assertTrue(holder.getStack(0).get(ModComponents.INVENTORY_COMPONENT).getStack(2).isOf(Items.EMERALD),
+                        name + ": the item to give written in the block's cartridge");
+
+                // A shift-click on the cartridge goes to the player's inventory, never to a ghost slot
+                player.getInventory().clear();
+                handler.quickMove(player, 0);
+                context.assertTrue(player.getInventory().count(ModItems.INVENTORY_CARTRIDGE) == 1 && holder.getStack(0).isEmpty(),
+                        name + ": the cartridge taken back");
+                context.assertTrue(handler.editedCartridge(player) == null && !handler.slots.get(firstGhost).isEnabled(),
+                        name + ": no cartridge, no menu");
+                player.getInventory().clear();
+                player.currentScreenHandler = player.playerScreenHandler;
+                context.setBlockState(at, Blocks.AIR);
+            }
+
+            for (Block block : List.of(ModBlocks.BOARD_SPACE_REDSTONE_ROUTER, ModBlocks.HOP_SWITCH)) {
+                context.setBlockState(at, block);
+                CartridgeContainerBlockEntity holder = context.getBlockEntity(at);
+                CartridgeContainerScreenHandler handler = (CartridgeContainerScreenHandler) holder.createMenu(10, player.getInventory(), player);
+                context.assertTrue(handler != null && !handler.hasCartridgeMenu() && handler.editedCartridge(player) == null,
+                        block.getTranslationKey() + ": links only, no cartridge menu");
+                context.setBlockState(at, Blocks.AIR);
+            }
+        } finally {
+            player.currentScreenHandler = player.playerScreenHandler;
+            context.setBlockState(at, Blocks.AIR);
+            context.setBlockState(at.down(), Blocks.AIR);
             TestPlayers.remove(context, player);
         }
         context.complete();

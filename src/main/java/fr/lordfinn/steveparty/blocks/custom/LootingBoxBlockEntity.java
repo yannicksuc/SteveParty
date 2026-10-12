@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
@@ -17,7 +19,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -41,7 +42,7 @@ import static fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock.ACTIVATED;
 import static fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock.TRIGGERED;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
-public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity implements NamedScreenHandlerFactory, GeoBlockEntity, TickableBlockEntity {
+public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload>, GeoBlockEntity, TickableBlockEntity {
 
     // -------------------------
     // Constants
@@ -151,6 +152,12 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
 
         return new LootingBoxScreenHandler(syncId, playerInventory, this);
+    }
+
+    /** The block's position: its cartridge's menu edits the cartridge here. */
+    @Override
+    public BlockPosPayload getScreenOpeningData(ServerPlayerEntity player) {
+        return new BlockPosPayload(pos);
     }
 
     @Override

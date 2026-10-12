@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeContainerScreenHandler;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.component.DataComponentTypes;
@@ -97,7 +96,6 @@ public final class Pipette {
 
     /** Whether slot {@code index} of {@code handler} holds a real item (not a ghost slot). */
     public static boolean isItemSlot(CartridgeContainerScreenHandler handler, int index) {
-        if (handler instanceof BoardSpaceScreenHandler boardSpace) return boardSpace.isItemSlot(index);
-        return index >= 0 && index < handler.slots.size();
+        return handler.isItemSlot(index);
     }
 }

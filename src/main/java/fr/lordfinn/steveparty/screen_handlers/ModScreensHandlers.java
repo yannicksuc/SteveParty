@@ -87,10 +87,11 @@ public class ModScreensHandlers {
     public static final ExtendedScreenHandlerType<MiniGameControllerScreenHandler, BlockPosPayload> MINI_GAME_CONTROLLER_SCREEN_HANDLER =
             register("mini_game_controller_screen_handler", MiniGameControllerScreenHandler::new, BlockPosPayload.PACKET_CODEC);
 
-    public static final ScreenHandlerType<LootingBoxScreenHandler> LOOTING_BOX_SCREEN_HANDLER =
-            register("looting_box_screen_handler", LootingBoxScreenHandler::new);
-    public static final ScreenHandlerType<PiggyBankScreenHandler> PIGGY_BANK_SCREEN_HANDLER =
-            register("piggy_bank_screen_handler", PiggyBankScreenHandler::new);
+    /** The Looting Box's and the Piggy Bank's screens (opening data: the block's position, for its cartridge's menu). */
+    public static final ExtendedScreenHandlerType<LootingBoxScreenHandler, BlockPosPayload> LOOTING_BOX_SCREEN_HANDLER =
+            register("looting_box_screen_handler", LootingBoxScreenHandler::new, BlockPosPayload.PACKET_CODEC);
+    public static final ExtendedScreenHandlerType<PiggyBankScreenHandler, BlockPosPayload> PIGGY_BANK_SCREEN_HANDLER =
+            register("piggy_bank_screen_handler", PiggyBankScreenHandler::new, BlockPosPayload.PACKET_CODEC);
     public static final ScreenHandlerType<DiceForgeScreenHandler> DICE_FORGE_SCREEN_HANDLER = register("dice_forge_screen_handler", DiceForgeScreenHandler::new);
 
     /** Opening data: the player inventory slot holding the gun. */

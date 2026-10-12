@@ -9,6 +9,8 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.PiggyBankScreenHandler;
 import fr.lordfinn.steveparty.utils.FloatingTextParticleHelper;
@@ -51,7 +53,7 @@ import java.util.UUID;
  * Its target and cartridge go to the clients (the panel over it when looked at); a payout bursts its items out of the
  * slot and over each player paid, with what each one got or paid floating there.
  */
-public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity {
+public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
     /** Radius in which the "nearest player" target (and the free play fallbacks) look for players. */
     public static final int NEAREST_PLAYER_RANGE = 8;
     /** A ringing party bell this close tells which turn a pulse is about (see {@link #turnToken}). */
@@ -314,6 +316,12 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity {
     @Override
     public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
         return new PiggyBankScreenHandler(syncId, playerInventory, this, properties);
+    }
+
+    /** The block's position: its cartridge's menu edits the cartridge here. */
+    @Override
+    public BlockPosPayload getScreenOpeningData(ServerPlayerEntity player) {
+        return new BlockPosPayload(pos);
     }
 
     @Override

@@ -18,7 +18,7 @@ import static fr.lordfinn.steveparty.screen_handlers.custom.PiggyBankScreenHandl
 /**
  * The Piggy Bank's menu: on its pink tab, the Inventory Cartridge slot and a button per target, each its icon (the
  * dice: the player of the turn, the gold podium: the winners, the party: everyone, the compass: the nearest); the one
- * chosen is gold and pushed in. Its name on hover only.
+ * chosen is gold and pushed in. Its name on hover only. On the right, the cartridge's menu (what is given or taken).
  */
 public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHandler> {
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/piggy_bank.png");
@@ -31,6 +31,12 @@ public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHan
     @Override
     public Identifier getTexture() {
         return TEXTURE;
+    }
+
+    /** The pink tab's right edge (its outline is at 157). */
+    @Override
+    protected int wireFromX() {
+        return 158;
     }
 
     private int buttonX(int index) {
@@ -48,7 +54,7 @@ public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHan
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         UiText.line(context, textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY,
-                backgroundWidth - 8 - playerInventoryTitleX, TITLE_COLOR, false);
+                titlesWidth() - 8 - playerInventoryTitleX, TITLE_COLOR, false);
     }
 
     @Override
@@ -66,7 +72,7 @@ public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHan
             context.drawItem(target.getIcon(), bx + 1 + push, by + 1 + push);
         }
         if (hover >= 0) context.drawTooltip(textRenderer, Target.byId(hover).getText(), mouseX, mouseY);
-        else drawMouseoverTooltip(context, mouseX, mouseY);
+        else drawTooltips(context, mouseX, mouseY);
     }
 
     @Override
