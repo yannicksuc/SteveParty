@@ -61,6 +61,7 @@ import fr.lordfinn.steveparty.client.renderer.HaloBeam;
 import fr.lordfinn.steveparty.client.renderer.PawnBeamRenderer;
 import fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer;
 import fr.lordfinn.steveparty.client.board.TileInfoClient;
+import fr.lordfinn.steveparty.client.board.NestInfoClient;
 import fr.lordfinn.steveparty.client.screens.CartridgeScreen;
 import fr.lordfinn.steveparty.client.screens.TrichaudronScreen;
 import fr.lordfinn.steveparty.client.screens.MiniGameControllerScreen;
@@ -263,6 +264,7 @@ public class StevepartyClient implements ClientModInitializer {
         SixSevenClient.initialize();
         BrushClient.initialize();
         TileInfoClient.initialize();
+        NestInfoClient.initialize();
         TileOutline.initialize();
         DevClientCommands.initialize();
         StencilHammerStrikes.initialize();
