@@ -53,7 +53,7 @@ import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
  * containers ({@link ContainerCartridge}), or without any from the bank of the party running on its board; the payment
  * goes to that bank (or to its containers outside a party). The cartridge also sets how many items may be bought per
  * stop ({@link #purchases}): its menu, or sneak + mouse wheel with it in the main hand. Its menu also sets the merchant's
- * disguise ({@link #disguise}), in a slot beside its small stall: the block his box looks like, a gold block by default.
+ * disguise ({@link #disguise}), in a slot beside its small stall: the block his box looks like, a beehive by default.
  */
 public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem, ContainerCartridge, MobSpawnCartridge {
     public static final int DEFAULT_PURCHASES = 1;
@@ -66,8 +66,8 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
     public static final int ROW_SOLD = 0, ROW_PRICE = 1, ROW_SECOND_PRICE = 2;
     /** Its slots, in a Trading Stall's order ({@link TradingStallBlockEntity#SIZE}): the prices, the second prices, the items sold. */
     public static final int SLOTS = TradingStallBlockEntity.SIZE;
-    /** The merchant's box when no disguise is set: his own default, a gold block. */
-    public static final BlockState DEFAULT_DISGUISE = Blocks.GOLD_BLOCK.getDefaultState();
+    /** The merchant's box when no disguise is set: a beehive. */
+    public static final BlockState DEFAULT_DISGUISE = Blocks.BEEHIVE.getDefaultState();
     /** The slots of a cartridge made before it had a stall's 9 offers: 3 columns of 3 (row by row: sold, price, 2nd price). */
     private static final int OLD_SLOTS = 9, OLD_COLUMNS = 3;
 

@@ -44,7 +44,7 @@ import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 /**
  * The Shop Cartridge's disguise: the block its merchant hides in, set in its menu (a block slot beside the small
  * stall, nothing taken), refused for an item that is no block or a block that can't be a box, mentioned in its
- * tooltip; the merchant its space summons wears it (his gold block without one), and so does the merchant living on its
+ * tooltip; the merchant its space summons wears it (a beehive without one), and so does the merchant living on its
  * « always visible » Spawn Bubble, at once when it changes.
  */
 public class ShopDisguiseGameTests implements SteveGameTest {
@@ -98,7 +98,7 @@ public class ShopDisguiseGameTests implements SteveGameTest {
         context.assertTrue(module != null && module.inline() && module.editable(), "a block slot, beside the small stall");
         context.assertEquals(CartridgeLayout.indexOf(CartridgeMenus.modules(stored), BlockSlotModule.class), 1, "right after the offers");
         context.assertEquals(module.get(stored), BlockSlotModule.EMPTY, "empty: the default box");
-        context.assertTrue(ShopCartridgeItem.disguise(stored) == Blocks.GOLD_BLOCK.getDefaultState(), "the default box: a gold block");
+        context.assertTrue(ShopCartridgeItem.disguise(stored) == ShopCartridgeItem.DEFAULT_DISGUISE, "the default box: a beehive");
         String key = "tooltip.steveparty.shop_cartridge.disguise";
         context.assertFalse(tooltipMentions(stored, key), "no disguise: not in the tooltip");
 
@@ -119,18 +119,18 @@ public class ShopDisguiseGameTests implements SteveGameTest {
 
         context.assertTrue(CartridgeMenus.apply(player, ref, "disguise", BlockSlotModule.EMPTY), "emptied");
         context.assertFalse(stored.contains(ModComponents.BOX_BLOCK), "the default is not stored");
-        context.assertTrue(ShopCartridgeItem.disguise(stored) == Blocks.GOLD_BLOCK.getDefaultState(), "the gold block again");
+        context.assertTrue(ShopCartridgeItem.disguise(stored) == ShopCartridgeItem.DEFAULT_DISGUISE, "the beehive again");
         context.complete();
     }
 
-    /** The merchant a shop space summons wears its cartridge's disguise, his gold block without one. */
+    /** The merchant a shop space summons wears its cartridge's disguise, a beehive without one. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theSummonedMerchantWearsTheDisguise(TestContext context) {
         ItemStack cartridge = new ItemStack(ModItems.SHOP_CARTRIDGE);
         ShopCartridgeItem item = (ShopCartridgeItem) cartridge.getItem();
         BoxedTraderEntity plain = ModEntities.BOXED_TRADER_ENTITY.create(context.getWorld());
         item.dress(plain, cartridge);
-        context.assertTrue(plain.getBlockState() == Blocks.GOLD_BLOCK.getDefaultState(), "no disguise: his gold block");
+        context.assertTrue(plain.getBlockState() == ShopCartridgeItem.DEFAULT_DISGUISE, "no disguise: a beehive");
         ShopCartridgeItem.setDisguise(cartridge, Blocks.BOOKSHELF);
         BoxedTraderEntity dressed = ModEntities.BOXED_TRADER_ENTITY.create(context.getWorld());
         item.dress(dressed, cartridge);
@@ -171,7 +171,7 @@ public class ShopDisguiseGameTests implements SteveGameTest {
         context.assertTrue(MarkerResidents.resident(context.getWorld(), marker) == merchant, "the same merchant");
         context.assertTrue(merchant.getBlockState() == Blocks.PUMPKIN.getDefaultState(), "his box changed at once");
         context.assertTrue(CartridgeMenus.apply(editor, ref, "disguise", BlockSlotModule.EMPTY), "emptied");
-        context.assertTrue(merchant.getBlockState() == Blocks.GOLD_BLOCK.getDefaultState(), "his gold block again");
+        context.assertTrue(merchant.getBlockState() == ShopCartridgeItem.DEFAULT_DISGUISE, "his beehive again");
         context.complete();
     }
 }

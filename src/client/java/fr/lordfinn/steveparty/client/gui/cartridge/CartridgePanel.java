@@ -1132,22 +1132,12 @@ public final class CartridgePanel {
                 }
             } else if (module instanceof BlockSlotModule slot) {
                 if (HitArea.contains(mouseX, mouseY, blockSlotX(slot, mx), blockSlotY(slot, top), BlockSlotModule.SLOT, BlockSlotModule.SLOT)) {
-                    BlockState block = shownBlock(current, i, slot);
+                    // A slot reads as one: only what it is for, and why a block in hand doesn't go there
                     List<Text> lines = new ArrayList<>();
-                    // Inline, no text beside it: its title and what it does first
-                    if (slot.inline()) {
-                        lines.add(Text.translatable(slot.labelKey()).formatted(Formatting.GOLD));
-                        lines.add(Text.translatable(slot.hintKey()).formatted(Formatting.GRAY));
-                    }
-                    lines.add(blockName(block, slot));
+                    lines.add(Text.translatable(slot.hintKey()));
                     ItemStack cursor = cursor();
-                    if (canEdit.getAsBoolean()) {
-                        if (!cursor.isEmpty() && slot.blockOf(cursor.getItem()) == null) {
-                            lines.add(Text.translatable(CartridgeItem.MENU_KEY + "block_slot.refused", cursor.getName()).formatted(Formatting.RED));
-                        } else {
-                            lines.add(Text.translatable(CartridgeItem.MENU_KEY + "block_slot.set").formatted(Formatting.YELLOW));
-                            if (block != null) lines.add(Text.translatable(CartridgeItem.MENU_KEY + "block_slot.clear").formatted(Formatting.YELLOW));
-                        }
+                    if (canEdit.getAsBoolean() && !cursor.isEmpty() && slot.blockOf(cursor.getItem()) == null) {
+                        lines.add(Text.translatable(CartridgeItem.MENU_KEY + "block_slot.refused", cursor.getName()).formatted(Formatting.RED));
                     }
                     context.drawTooltip(textRenderer, wrap(lines), mouseX, mouseY);
                     return true;

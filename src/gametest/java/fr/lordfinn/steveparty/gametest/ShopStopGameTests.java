@@ -282,7 +282,7 @@ public class ShopStopGameTests implements SteveGameTest {
                 context.assertTrue(facing.x * toSpace.x + facing.z * toSpace.z > 0.95, "facing the space");
                 context.assertTrue(trader.getShopStall() == null && trader.bringsOwnStall(), "his own stall: none in front");
                 context.assertEquals(trader.getShopItems().size(), 1, "his stall shows what he sells");
-                context.assertTrue(trader.getBlockState() == Blocks.GOLD_BLOCK.getDefaultState(), "no disguise set: his gold block");
+                context.assertTrue(trader.getBlockState() == ShopCartridgeItem.DEFAULT_DISGUISE, "no disguise set: a beehive");
                 later(context, 20, () -> {
                     context.assertTrue(ShopStops.isShopping(board.token().getUuid()), "still waiting: nothing chosen");
                     handler.onButtonClick(owner, ShopStopScreenHandler.BUY_NOTHING_BUTTON_ID);
