@@ -271,11 +271,11 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                                 // In the box (less its scroll bar): « Delete? » and its two buttons on one line
                                 String k = CartridgeItem.MENU_KEY + "mistigri.";
                                 int confirm = 4 + width(translate(lang, k + "delete.confirm", context)) + 6
-                                        + width(translate(lang, k + "yes", context)) + 8 + 2 + width(translate(lang, k + "no", context)) + 8 + 3;
+                                        + width(translate(lang, k + "yes", context)) + 9 + 2 + width(translate(lang, k + "no", context)) + 9 + 3;
                                 context.assertTrue(confirm <= moduleW - 2 - 4, name + ": « Delete? Yes No » on one line (" + confirm + ")");
                                 // Under the box, beside the draws: « + Add » with its word
-                                int add = width(translate(lang, k + "add", context)) + 16;
-                                context.assertTrue(add <= moduleW - 60, name + ": « + " + translate(lang, k + "add", context) + " » fits (" + add + ")");
+                                int add = width(translate(lang, k + "add", context)) + 17;
+                                context.assertTrue(add <= moduleW - 63, name + ": « + " + translate(lang, k + "add", context) + " » fits (" + add + ")");
                             }
                         }
                         // The ghost slots or a block slot: the player's inventory under the shell, to pick the items

@@ -678,18 +678,18 @@ public final class CartridgePanel {
             int bx = choiceX(choice, i, mx, o), bw = choiceW(choice, i);
             boolean selected = o == value;
             boolean hovered = active && HitArea.contains(mouseX, mouseY, bx, top, bw, bh);
-            // The chosen tab stands taller and opens into the panel (its bottom edge is the panel's top, gone)
-            int tabTop = selected ? top : top + 3;
+            // The chosen tab stands taller and opens into the panel (its bottom edge is the panel's top, gone); what is
+            // on a tab stays at the same place whether chosen or not
+            int tabTop = selected ? top : top + 2;
             context.fill(bx, tabTop, bx + bw, top + bh, OUTLINE);
             context.fill(bx + 1, tabTop + 1, bx + bw - 1, top + bh + (selected ? 1 : -1), selected ? PANEL_BG : hovered ? 0xFF3A3A3A : TAB_OFF);
             ChoiceModule.Option option = choice.options().get(o);
             if (option.color() >= 0) {
                 int c = Argb.opaque(option.color());
                 int sw = selected ? c : Argb.darken(c, hovered ? 0.25F : 0.5F);
-                context.fill(bx + 3, tabTop + 3, bx + bw - 3, top + bh - 3, sw);
+                context.fill(bx + 3, top + 5, bx + bw - 3, top + bh - 3, sw);
             } else {
-                UiText.centered(context, textRenderer, optionTexts[i][o], bx + 2, tabTop + 4, bw - 4,
-                        selected ? LABEL : TONE_SOFT, false);
+                buttonText(context, optionTexts[i][o], bx, top + 2, bw, bh - 2, selected ? LABEL : TONE_SOFT);
             }
         }
     }
@@ -711,19 +711,26 @@ public final class CartridgePanel {
             PartyGui.Theme theme = !choice.enabled(current) ? PartyGui.BUTTON_DISABLED : selected ? PartyGui.BUTTON_SELECTED : PartyGui.BUTTON;
             if (hovered && !selected) theme = theme.brighter();
             PartyGui.button(context, bx, top, bw, bh, theme, selected);
-            int push = selected ? 1 : 0;
             ChoiceModule.Option option = choice.options().get(o);
             if (swatches) {
                 int c = Argb.opaque(option.color());
-                PartyGui.button(context, bx + 4 + push, top + 4 + push, bw - 8, bh - 8,
+                PartyGui.button(context, bx + 4, top + 4, bw - 8, bh - 8,
                         new PartyGui.Theme(Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), false);
             } else {
                 String text = optionTexts[i][o];
                 int color = !choice.enabled(current) ? 0xFF7A7A7A : selected ? 0xFF3B2600 : PartyGui.TEXT_DARK;
-                // Inside the button, 3 pixels from each side
-                UiText.centered(context, textRenderer, text, bx + 3 + push, top + 4 + push, bw - 6, color, false);
+                buttonText(context, text, bx, top, bw, bh, color);
             }
         }
+    }
+
+    /**
+     * A text in a button, centred on its ink, as much room above as below its capitals (see {@link ButtonGlyphs}); too
+     * wide for it, it scrolls, 3 pixels from each side.
+     */
+    private void buttonText(DrawContext context, String text, int x, int y, int w, int h, int color) {
+        if (textRenderer.getWidth(text) - 1 <= w - 6) ButtonGlyphs.text(context, textRenderer, text, x, y, w, h, color);
+        else UiText.centered(context, textRenderer, text, x + 3, y + (h - ButtonGlyphs.CAP_H) / 2, w - 6, color, false);
     }
 
     private int choiceW(ChoiceModule choice, int i) {
@@ -784,7 +791,9 @@ public final class CartridgePanel {
     private void stepButton(DrawContext context, int bx, int top, String sign, boolean active, boolean hovered) {
         PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
         PartyGui.button(context, bx, top, STEP_W, NumberModule.ROW_H, theme, false);
-        UiText.centered(context, textRenderer, sign, bx, top + 5, STEP_W, active ? PartyGui.TEXT_DARK : 0xFF7A7A7A, false);
+        int color = active ? PartyGui.TEXT_DARK : 0xFF7A7A7A;
+        if (sign.equals("+")) ButtonGlyphs.plus(context, bx, top, STEP_W, NumberModule.ROW_H, color);
+        else ButtonGlyphs.minus(context, bx, top, STEP_W, NumberModule.ROW_H, color);
     }
 
     private int colorX(int mx, int value) {
@@ -1112,7 +1121,9 @@ public final class CartridgePanel {
         boolean hovered = active && HitArea.contains(mouseX, mouseY, bx, ry, ROW_BUTTON, ROW_BUTTON);
         PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
         PartyGui.button(context, bx, ry, ROW_BUTTON, ROW_BUTTON, theme, false);
-        UiText.centered(context, textRenderer, sign, bx + 1, ry + 1, ROW_BUTTON, active ? PartyGui.TEXT_DARK : 0xFF7A7A7A, false);
+        int color = active ? PartyGui.TEXT_DARK : 0xFF7A7A7A;
+        if (sign.equals("×")) ButtonGlyphs.cross(context, bx, ry, ROW_BUTTON, ROW_BUTTON, color);
+        else ButtonGlyphs.left(context, bx, ry, ROW_BUTTON, ROW_BUTTON, color);
     }
 
     /** The give / take marks of the ghost slots (a green or red frame), over their items. */

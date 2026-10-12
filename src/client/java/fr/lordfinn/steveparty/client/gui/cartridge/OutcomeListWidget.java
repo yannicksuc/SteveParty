@@ -42,8 +42,8 @@ import java.util.function.IntConsumer;
  */
 final class OutcomeListWidget {
     private static final int ROW_H = OutcomeListModule.ROW_H;
-    private static final int KIND_B = 18, KIND_GAP = 0, TARGET_B = 15, GAP = 1, NUM_H = 14, STEP_W = 10, VALUE_W = 24, MODE_W = 11;
-    private static final int DELETE_W = 10, SCROLLBAR = 4, SCROLL_STEP = 9;
+    private static final int KIND_B = 18, KIND_GAP = 0, TARGET_B = 15, GAP = 1, NUM_H = 13, STEP_W = 11, VALUE_W = 25, MODE_W = 11, WEIGHT_W = 15, DRAWS_W = 27;
+    private static final int DELETE_W = 11, SCROLLBAR = 4, SCROLL_STEP = 9;
     private static final long SETTLE_MS = 1500;
     // Colours: the shell's
     private static final int OUTLINE = 0xFF0E0E0E, BOX = 0xFF2C2C2C, ROW_A = 0xFF363636, ROW_B = 0xFF323232,
@@ -146,7 +146,7 @@ final class OutcomeListWidget {
         return 2 * STEP_W + VALUE_W + (outcome.kind().percent ? 3 + 2 * MODE_W : 0);
     }
 
-    private static final int WEIGHT_GROUP_W = 9 + 2 * STEP_W + 14;
+    private static final int WEIGHT_GROUP_W = 9 + 2 * STEP_W + WEIGHT_W;
 
     private static boolean figuresWrap(Outcome outcome, int room) {
         int amount = amountGroupW(outcome);
@@ -158,12 +158,18 @@ final class OutcomeListWidget {
         return 4 + font.getWidth(Text.translatable(K + "delete.confirm")) + 6 + buttonW(K + "yes") + 2 + buttonW(K + "no") + 3 > w;
     }
 
+    /** A text button: its ink and 5 pixels each side (the same room left and right). */
     private int buttonW(String key) {
-        return font.getWidth(Text.translatable(key)) + 8;
+        return font.getWidth(Text.translatable(key)) - 1 + 10;
+    }
+
+    /** The add button with its word: the sign, a space, the word, 5 pixels each side. */
+    private int addWords() {
+        return 5 + 3 + font.getWidth(Text.translatable(K + "add")) - 1 + 10;
     }
 
     private int blockH(MistigriOutcomes outcomes, int row, int w) {
-        if (row == confirm) return confirmWraps(w) ? 2 * ROW_H - 2 : ROW_H;
+        if (row == confirm) return confirmWraps(w) ? ROW_H + NUM_H : ROW_H;
         return ROW_H + (row == open ? editorH(outcomes.get(row), w) : 0);
     }
 
@@ -201,11 +207,11 @@ final class OutcomeListWidget {
             blocks.add(new Block(row, y, h));
             if (row == confirm) {
                 int yes = buttonW(K + "yes"), no = buttonW(K + "no");
-                int line = confirmWraps(iw) ? y + ROW_H - 3 : y + 2;
+                int line = confirmWraps(iw) ? y + ROW_H - 2 : y + (ROW_H - NUM_H) / 2;
                 hits.add(new Hit(x0 + iw - 3 - no, line, no, NUM_H, Part.NO, row, 0, editable));
                 hits.add(new Hit(x0 + iw - 3 - no - 2 - yes, line, yes, NUM_H, Part.YES, row, 0, editable));
             } else {
-                hits.add(new Hit(x0 + iw - 2 - DELETE_W, y + 4, DELETE_W, DELETE_W, Part.DELETE, row, 0, editable));
+                hits.add(new Hit(x0 + iw - 2 - DELETE_W, y + (ROW_H - DELETE_W) / 2, DELETE_W, DELETE_W, Part.DELETE, row, 0, editable));
                 hits.add(new Hit(x0, y, iw, ROW_H, Part.ROW, row, 0, editable));
             }
             if (row == open && row != confirm) layoutEditor(outcome, row, x0 + 2, y + ROW_H + 3, iw - 4);
@@ -217,11 +223,11 @@ final class OutcomeListWidget {
         int m = outcomes.eligible().size(), k = outcomes.drawCount();
         int dx = bx + bw - STEP_W;
         hits.add(new Hit(dx, fy + 1, STEP_W, NUM_H, Part.DRAWS_UP, -1, 0, editable && k < m));
-        dx -= 26;
-        hits.add(new Hit(dx, fy + 1, 26, NUM_H, Part.DRAWS, -1, 0, editable && m > 0));
+        dx -= DRAWS_W;
+        hits.add(new Hit(dx, fy + 1, DRAWS_W, NUM_H, Part.DRAWS, -1, 0, editable && m > 0));
         dx -= STEP_W;
         hits.add(new Hit(dx, fy + 1, STEP_W, NUM_H, Part.DRAWS_DOWN, -1, 0, editable && k > 1));
-        int addW = Math.min(buttonW(K + "add") + 8, dx - 14 - bx);
+        int addW = Math.min(addWords(), dx - 14 - bx);
         hits.add(new Hit(bx, fy, Math.max(16, addW), OutcomeListModule.FOOTER_H, Part.ADD, -1, 0,
                 editable && outcomes.size() < MistigriOutcomes.MAX));
     }
@@ -256,8 +262,8 @@ final class OutcomeListWidget {
         int wy = figuresWrap(outcome, w) ? y + NUM_H + 2 : y;
         int wx = x + w - WEIGHT_GROUP_W + 9;
         hits.add(new Hit(wx, wy, STEP_W, NUM_H, Part.WEIGHT_DOWN, row, 0, editable && outcome.weight() > 0));
-        hits.add(new Hit(wx + STEP_W, wy, 14, NUM_H, Part.WEIGHT, row, 0, editable));
-        hits.add(new Hit(wx + STEP_W + 14, wy, STEP_W, NUM_H, Part.WEIGHT_UP, row, 0, editable && outcome.weight() < MistigriOutcomes.MAX_WEIGHT));
+        hits.add(new Hit(wx + STEP_W, wy, WEIGHT_W, NUM_H, Part.WEIGHT, row, 0, editable));
+        hits.add(new Hit(wx + STEP_W + WEIGHT_W, wy, STEP_W, NUM_H, Part.WEIGHT_UP, row, 0, editable && outcome.weight() < MistigriOutcomes.MAX_WEIGHT));
     }
 
     // ------------------------------------------------------------------ drawing
@@ -301,7 +307,7 @@ final class OutcomeListWidget {
             context.fill(x0, y, x0 + iw, y + block.h, CONFIRM);
             context.fill(x0, y, x0 + 2, y + block.h, 0xFFD9283B);
             Text question = Text.translatable(K + "delete.confirm");
-            UiText.line(context, font, question, x0 + 5, y + 5, iw - 8, 0xFFFFD0D0, false);
+            UiText.line(context, font, question, x0 + 5, y + (ROW_H - ButtonGlyphs.CAP_H) / 2, iw - 8, 0xFFFFD0D0, false);
             return;
         }
         boolean hovered = editable && HitArea.contains(mouseX, mouseY, x0, y, iw, ROW_H);
@@ -313,20 +319,20 @@ final class OutcomeListWidget {
         }
         boolean off = outcome.weight() == 0;
         // Its kind, who, how much
-        context.drawItem(icon(outcome.kind()), x0 + 3, y + 1);
+        context.drawItem(icon(outcome.kind()), x0 + 3, y);
         context.getMatrices().push();
         context.getMatrices().translate(0, 0, 200);
-        MistigriIcons.badge(context, outcome.kind(), x0 + 3, y + 1);
-        if (off) context.fill(x0 + 3, y + 1, x0 + 19, y + 17, 0x9A2C2C2C);
+        MistigriIcons.badge(context, outcome.kind(), x0 + 3, y);
+        if (off) context.fill(x0 + 3, y, x0 + 19, y + 16, 0x9A2C2C2C);
         context.getMatrices().pop();
-        MistigriIcons.target(context, outcome.target(), x0 + 21, y + 4, off);
+        MistigriIcons.target(context, outcome.target(), x0 + 21, y + (ROW_H - MistigriIcons.SIZE) / 2, off);
         int chanceW = font.getWidth("100%");
         int textX = x0 + 21 + MistigriIcons.SIZE + 4, room = iw - (textX - x0) - DELETE_W - 4 - chanceW - 4;
-        UiText.line(context, font, amount(outcome), textX, y + 5, room, off ? OFF : amountColor(outcome.kind()), false);
+        UiText.line(context, font, amount(outcome), textX, y + (ROW_H - ButtonGlyphs.CAP_H) / 2, room, off ? OFF : amountColor(outcome.kind()), false);
         // Its chance at a landing
         String chance = off ? "–" : Math.round(100 * (row < chances.length ? chances[row] : 0)) + "%";
         int cx = x0 + iw - 2 - DELETE_W - 4 - font.getWidth(chance);
-        UiText.line(context, font, chance, cx, y + 5, font.getWidth(chance), off ? OFF : SOFT, false);
+        UiText.line(context, font, chance, cx, y + (ROW_H - ButtonGlyphs.CAP_H) / 2, font.getWidth(chance), off ? OFF : SOFT, false);
     }
 
     /** A row's amount, short: « −10 », « −50% », « +2 », « 1-3 »... */
@@ -357,7 +363,7 @@ final class OutcomeListWidget {
             case DELETE -> {
                 if (!editable) return;
                 PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, hot ? PartyGui.FLAG_RED : DARK, false);
-                UiText.centered(context, font, "×", hit.x + 1, hit.y + 1, hit.w, hot ? 0xFFFFFFFF : SOFT, false);
+                ButtonGlyphs.cross(context, hit.x, hit.y, hit.w, hit.h, hot ? 0xFFFFFFFF : SOFT);
             }
             case YES -> textButton(context, hit, K + "yes", hot ? PartyGui.FLAG_RED.brighter() : PartyGui.FLAG_RED, 0xFFFFFFFF);
             case NO -> textButton(context, hit, K + "no", hot ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON, PartyGui.TEXT_DARK);
@@ -365,11 +371,10 @@ final class OutcomeListWidget {
                 Kind kind = Kind.values()[hit.value];
                 boolean chosen = outcome != null && outcome.kind() == kind;
                 PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, chosen ? PartyGui.BUTTON_SELECTED : hot ? DARK.brighter() : DARK, chosen);
-                int push = chosen ? 1 : 0;
-                context.drawItem(icon(kind), hit.x + 1 + push, hit.y + 1 + push);
+                context.drawItem(icon(kind), hit.x + 1, hit.y + 1);
                 context.getMatrices().push();
                 context.getMatrices().translate(0, 0, 200);
-                MistigriIcons.badge(context, kind, hit.x + 1 + push, hit.y + 1 + push);
+                MistigriIcons.badge(context, kind, hit.x + 1, hit.y + 1);
                 context.getMatrices().pop();
             }
             case TARGET -> {
@@ -377,36 +382,40 @@ final class OutcomeListWidget {
                 boolean chosen = outcome != null && outcome.target() == target;
                 PartyGui.Theme theme = chosen ? PartyGui.BUTTON_SELECTED : !hit.active ? DIM : hot ? DARK.brighter() : DARK;
                 PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, theme, chosen);
-                int push = chosen ? 1 : 0;
                 if (chosen) context.fill(hit.x + 2, hit.y + 2, hit.x + hit.w - 2, hit.y + hit.h - 2, 0xFF5A4410);
-                MistigriIcons.target(context, target, hit.x + 2 + push, hit.y + 2 + push, !hit.active && !chosen);
+                MistigriIcons.target(context, target, hit.x + (hit.w - MistigriIcons.SIZE) / 2, hit.y + (hit.h - MistigriIcons.SIZE) / 2, !hit.active && !chosen);
             }
             case AMOUNT_DOWN, WEIGHT_DOWN, DRAWS_DOWN -> step(context, hit, "-", hot);
             case AMOUNT_UP, WEIGHT_UP, DRAWS_UP -> step(context, hit, "+", hot);
             case AMOUNT -> figure(context, hit, outcome == null ? "" : outcome.amount() + (outcome.percent() ? "%" : ""),
                     outcome == null ? TEXT : amountColor(outcome.kind()), hot);
             case WEIGHT -> {
-                MistigriIcons.weight(context, hit.x - STEP_W - 9, hit.y + 4, outcome != null && outcome.weight() > 0 ? 0xFFB9B9B9 : OFF);
+                MistigriIcons.weight(context, hit.x - STEP_W - 9, hit.y + (hit.h - 7) / 2, outcome == null || outcome.weight() == 0);
                 figure(context, hit, outcome == null ? "" : Integer.toString(outcome.weight()), outcome != null && outcome.weight() > 0 ? TEXT : OFF, hot);
             }
             case NUMBER, PERCENT -> {
                 boolean chosen = outcome != null && outcome.percent() == (hit.part == Part.PERCENT);
                 PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, chosen ? PartyGui.BUTTON_SELECTED : hot ? DARK.brighter() : DARK, chosen);
-                UiText.centered(context, font, hit.part == Part.PERCENT ? "%" : "#", hit.x + 1 + (chosen ? 1 : 0), hit.y + 3 + (chosen ? 1 : 0), hit.w - 1,
-                        chosen ? 0xFF3B2600 : TEXT, false);
+                ButtonGlyphs.text(context, font, hit.part == Part.PERCENT ? "%" : "#", hit.x, hit.y, hit.w, hit.h, chosen ? 0xFF3B2600 : TEXT);
             }
             case ADD -> {
                 PartyGui.Theme theme = !hit.active ? PartyGui.BUTTON_DISABLED : hot ? PartyGui.BUTTON_PRIMARY.brighter() : PartyGui.BUTTON_PRIMARY;
                 if (!editable) return;
                 PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, theme, false);
                 Text label = Text.translatable(K + "add");
-                boolean words = hit.w >= buttonW(K + "add") + 8;
-                UiText.centered(context, font, words ? Text.literal("+ ").append(label) : Text.literal("+"), hit.x + 1, hit.y + 4, hit.w - 2,
-                        hit.active ? 0xFFFFFFFF : 0xFF7A7A7A, hit.active);
+                int color = hit.active ? 0xFFFFFFFF : 0xFF7A7A7A;
+                if (hit.w >= addWords()) {
+                    // The + sign (5 pixels), a space, the word: centred as one
+                    int ink = 5 + 3 + font.getWidth(label) - 1, tx = hit.x + (hit.w - ink) / 2;
+                    ButtonGlyphs.plus(context, tx, hit.y, 5, hit.h, color);
+                    UiText.line(context, font, label, tx + 8, hit.y + (hit.h - ButtonGlyphs.CAP_H) / 2, font.getWidth(label), color, false);
+                } else {
+                    ButtonGlyphs.plus(context, hit.x, hit.y, hit.w, hit.h, color);
+                }
             }
             case DRAWS -> {
                 int m = outcomes.eligible().size();
-                MistigriIcons.cards(context, hit.x - STEP_W - 12, hit.y + 2);
+                MistigriIcons.cards(context, hit.x - STEP_W - 12, hit.y + (hit.h - 10) / 2);
                 figure(context, hit, outcomes.drawCount() + "/" + m, outcomes.drawCount() < m ? GOLD : TEXT, hot);
             }
             default -> {
@@ -426,20 +435,22 @@ final class OutcomeListWidget {
 
     private void textButton(DrawContext context, Hit hit, String key, PartyGui.Theme theme, int color) {
         PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, theme, false);
-        UiText.centered(context, font, Text.translatable(key), hit.x + 1, hit.y + 3, hit.w - 2, color, false);
+        ButtonGlyphs.text(context, font, Text.translatable(key), hit.x, hit.y, hit.w, hit.h, color, false);
     }
 
     private void step(DrawContext context, Hit hit, String sign, boolean hot) {
         if (!editable) return;
         PartyGui.Theme theme = hit.active ? (hot ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
         PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, theme, false);
-        UiText.centered(context, font, sign, hit.x, hit.y + 3, hit.w, hit.active ? PartyGui.TEXT_DARK : 0xFF7A7A7A, false);
+        int color = hit.active ? PartyGui.TEXT_DARK : 0xFF7A7A7A;
+        if (sign.equals("+")) ButtonGlyphs.plus(context, hit.x, hit.y, hit.w, hit.h, color);
+        else ButtonGlyphs.minus(context, hit.x, hit.y, hit.w, hit.h, color);
     }
 
     private void figure(DrawContext context, Hit hit, String text, int color, boolean hot) {
         context.fill(hit.x, hit.y, hit.x + hit.w, hit.y + hit.h, hot ? 0xFF6A5418 : OUTLINE);
         context.fill(hit.x + 1, hit.y + 1, hit.x + hit.w - 1, hit.y + hit.h - 1, 0xFF161A14);
-        UiText.centered(context, font, text, hit.x + 1, hit.y + 3, hit.w - 2, Argb.lighten(color, 0.15F), false);
+        ButtonGlyphs.text(context, font, text, hit.x, hit.y, hit.w, hit.h, Argb.lighten(color, 0.15F));
     }
 
     // ------------------------------------------------------------------ tooltips
@@ -457,6 +468,7 @@ final class OutcomeListWidget {
                 lines.add(outcome.text());
                 if (outcome.weight() == 0) lines.add(Text.translatable(K + "never").formatted(Formatting.GRAY));
                 else lines.add(Text.translatable(K + "chance", Math.round(100 * chances[hit.row])).formatted(Formatting.GRAY));
+                if (editable) lines.add(Text.translatable(open == hit.row ? K + "row.close" : K + "row.open").formatted(Formatting.YELLOW));
             }
             case DELETE -> lines.add(Text.translatable(K + "delete"));
             case KIND -> {
@@ -466,10 +478,16 @@ final class OutcomeListWidget {
             }
             case TARGET -> {
                 String id = Target.values()[hit.value].id;
-                lines.add(Text.translatable(K + "target." + id));
+                lines.add(Text.translatable(K + "target." + id).styled(style -> style.withColor(Target.values()[hit.value].color)));
                 lines.add(Text.translatable(K + "target." + id + ".tooltip").formatted(Formatting.GRAY));
                 if (!hit.active && editable) lines.add(Text.translatable(K + "only_landed").formatted(Formatting.DARK_GRAY));
             }
+            case AMOUNT, AMOUNT_DOWN, AMOUNT_UP -> {
+                if (outcome == null) return null;
+                lines.add(Text.translatable(K + "amount"));
+                lines.add(outcome.text().formatted(Formatting.GRAY));
+            }
+            case YES -> lines.add(Text.translatable(K + "delete"));
             case NUMBER -> lines.add(Text.translatable(K + "number"));
             case PERCENT -> lines.add(Text.translatable(K + "percent"));
             case WEIGHT, WEIGHT_DOWN, WEIGHT_UP -> {
