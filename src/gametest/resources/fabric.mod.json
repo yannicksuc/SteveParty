@@ -58,6 +58,7 @@
       "fr.lordfinn.steveparty.gametest.OutcomeRouletteGameTests",
       "fr.lordfinn.steveparty.gametest.TrichaudronSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.PawnBeamGameTests",
+      "fr.lordfinn.steveparty.gametest.ForkChoiceGameTests",
       "fr.lordfinn.steveparty.gametest.MistigriGameTests",
       "fr.lordfinn.steveparty.gametest.JumpShoesGameTests",
       "fr.lordfinn.steveparty.gametest.ThresholdGameTests",

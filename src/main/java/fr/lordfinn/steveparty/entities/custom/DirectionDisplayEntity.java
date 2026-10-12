@@ -10,6 +10,9 @@ import fr.lordfinn.steveparty.service.TokenMovementService;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -27,6 +30,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.awt.*;
+import java.util.Optional;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.entities.ModEntities.DIRECTION_DISPLAY_ENTITY;
@@ -34,6 +38,8 @@ import static fr.lordfinn.steveparty.utils.QuaternionsUtils.dirToYAngle;
 import static net.minecraft.entity.attribute.EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE;
 
 public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
+    /** Its owner, known by the clients too: their click on it is the choice, whatever is in hand. */
+    private static final TrackedData<Optional<UUID>> OWNER = DataTracker.registerData(DirectionDisplayEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     private Vec3d encodedVelocity;
     private Vec3d start;
     /** The player allowed to choose this direction (null = anyone). Kept as UUID so it survives reconnections/reloads. */
@@ -56,7 +62,7 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
 
     public DirectionDisplayEntity(World world, BoardSpaceDestination destination, BlockPos origin, ServerPlayerEntity owner, @Nullable UUID token) {
         super(DIRECTION_DISPLAY_ENTITY, world);
-        this.ownerUuid = owner == null ? null : owner.getUuid();
+        setOwnerUuid(owner == null ? null : owner.getUuid());
         this.tokenUuid = token;
         this.tileOrigin = origin;
         this.tileDestination = destination;
@@ -106,6 +112,23 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         return new Vec3d(nbt.getDouble("x"), nbt.getDouble("y"), nbt.getDouble("z"));
     }
 
+    @Override
+    protected void initDataTracker(DataTracker.Builder builder) {
+        super.initDataTracker(builder);
+        builder.add(OWNER, Optional.empty());
+    }
+
+    private void setOwnerUuid(@Nullable UUID owner) {
+        this.ownerUuid = owner;
+        this.dataTracker.set(OWNER, Optional.ofNullable(owner));
+    }
+
+    /** Whether {@code player} may choose this direction (both sides): its owner, anyone if it has none. */
+    public boolean canChoose(PlayerEntity player) {
+        Optional<UUID> owner = getWorld().isClient ? this.dataTracker.get(OWNER) : Optional.ofNullable(ownerUuid);
+        return owner.isEmpty() || owner.get().equals(player.getUuid());
+    }
+
     private boolean isPlayerLookingAt(ServerPlayerEntity player, DirectionDisplayEntity entity) {
         if (!player.getActiveItem().isEmpty()) return false;
         double maxDistance = player.getAttributeValue(PLAYER_ENTITY_INTERACTION_RANGE); // Distance maximale pour le raycast
@@ -148,7 +171,7 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         if (nbt.containsUuid("Owner")) {
-            ownerUuid = nbt.getUuid("Owner");
+            setOwnerUuid(nbt.getUuid("Owner"));
         }
         if (nbt.containsUuid("Token")) {
             tokenUuid = nbt.getUuid("Token");
@@ -190,16 +213,19 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         }
     }
 
+    /**
+     * Its player's click picks this way, whatever is in hand (a die given back after the roll sits in the hand): the
+     * click is taken on both sides, so the item in hand is not used as well (a die thrown again). Anyone else's click
+     * goes on as if it were not there.
+     */
     @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
-        if (!getWorld().isClient && hand.equals(Hand.MAIN_HAND) && player.getMainHandStack().isEmpty()) {
-            // Only the player the direction was displayed for can choose it (anyone if unknown)
-            if (ownerUuid != null && !ownerUuid.equals(player.getUuid())) return ActionResult.PASS;
-            TokenMovementService.moveEntityOnTileToDestination((ServerWorld) this.getWorld(), tileOrigin, tileDestination, tokenUuid);
+        if (hand != Hand.MAIN_HAND || player.isSpectator() || !canChoose(player)) return ActionResult.PASS;
+        if (getWorld() instanceof ServerWorld world) {
+            TokenMovementService.moveEntityOnTileToDestination(world, tileOrigin, tileDestination, tokenUuid);
             this.discard();
-            return ActionResult.SUCCESS; // Indicate the interaction was successful
         }
-        return super.interact(player, hand); // Default interaction handling
+        return ActionResult.success(getWorld().isClient);
     }
 
     @Override
