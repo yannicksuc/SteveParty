@@ -9,7 +9,7 @@ import net.minecraft.util.Identifier;
 
 /** The Looting Box's menu: its Inventory Cartridge slot on the tab and, on the right, the cartridge's menu. */
 public class LootingBoxScreen extends CartridgeContainerScreen<LootingBoxScreenHandler> {
-    private static final Identifier TEXTURE = Steveparty.id("textures/gui/router.png");
+    private static final Identifier TEXTURE = Steveparty.id("textures/gui/looting_box.png");
     public LootingBoxScreen(LootingBoxScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title, 136);
     }
