@@ -20,6 +20,7 @@ import fr.lordfinn.steveparty.client.entity.TrichaudronRenderer;
 import fr.lordfinn.steveparty.client.entity.TrichaudronRiderClient;
 import fr.lordfinn.steveparty.client.entity.BubbleRiderClient;
 import fr.lordfinn.steveparty.client.entity.BubbleEntityRenderer;
+import fr.lordfinn.steveparty.client.entity.BubbleFilmDepth;
 import fr.lordfinn.steveparty.client.blockentity.BubblerRenderer;
 import fr.lordfinn.steveparty.client.entity.SixSevenClient;
 import fr.lordfinn.steveparty.client.entity.GlandouilleCarryClient;
@@ -268,6 +269,7 @@ public class StevepartyClient implements ClientModInitializer {
         TrichaudronRiderClient.initialize();
         BubbleRiderClient.initialize();
         BubbleEntityRenderer.initialize();
+        BubbleFilmDepth.initialize();
         SixSevenClient.initialize();
         BrushClient.initialize();
         TileInfoClient.initialize();

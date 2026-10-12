@@ -1,7 +1,5 @@
 package fr.lordfinn.steveparty.client.entity;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleEntity;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleEvents;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleRiding;
@@ -15,22 +13,22 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 /**
  * A player in a Bubbler's bubble: his attack key punches his way out of it ({@link BubbleEvents.RiderPunch}: it
- * pops); his jump key charges a puff, shown in a horse's jump bar over the experience bar; in first person, an
- * iridescent vignette at his screen's edges shows he is inside a bubble. His own keys and puff move his bubble at once
- * on his screen ({@link BubbleEntity#clientSteer}), before the server's word.
+ * pops); his jump key charges a puff, shown in a horse's jump bar over the experience bar (in first person, he sees
+ * his bubble's film around him: BubbleEntityRenderer). His own keys and puff move his bubble at once on his screen
+ * ({@link BubbleEntity#clientSteer}), before the server's word.
  */
 public final class BubbleRiderClient {
     private static final Identifier JUMP_BACKGROUND = Identifier.ofVanilla("hud/jump_bar_background");
     private static final Identifier JUMP_PROGRESS = Identifier.ofVanilla("hud/jump_bar_progress");
-    private static final Identifier VIGNETTE = Steveparty.id("textures/misc/bubble_vignette.png");
-    /** How strong the vignette shows (alpha), breathing by this much. */
-    private static final float VIGNETTE_ALPHA = 0.55f, VIGNETTE_BREATH = 0.1f;
+    /** The strain's red zone in the jump bar: a warning pink-red (RGB), at most this opaque (deeper as it grows). */
+    private static final int STRAIN_ZONE_COLOR = 0xE8405A;
+    private static final float STRAIN_ZONE_ALPHA = 0.85f;
+
 
     /** The puff charged (ticks), and the tick it may charge again from; a puff released this tick, for the prediction. */
     private static int charge, rested;
@@ -92,25 +90,34 @@ public final class BubbleRiderClient {
         return push;
     }
 
-    /** The vignette (first person), the puff's charge in a horse's jump bar. */
+    /**
+     * The puff's charge in a horse's jump bar, and its bubble's strain in the same bar: a red zone eating it from its
+     * right end as the strain grows (gone once the bubble is calm again); while a puff would be risky (strained past
+     * {@link BubbleRiding#STRAIN_SAFE}) the charge itself blushes and throbs. No text: the bar heats up.
+     */
     private static void drawHud(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.options.hudHidden || bubbleOf(client.player) == null) return;
+        BubbleEntity bubble = bubbleOf(client.player);
+        if (client.options.hudHidden || bubble == null) return;
         int width = context.getScaledWindowWidth(), height = context.getScaledWindowHeight();
-        if (client.options.getPerspective().isFirstPerson()) {
-            float breath = MathHelper.sin((Util.getMeasuringTimeMs() % 3_600_000L) / 50f * 0.06f);
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-            RenderSystem.depthMask(false);
-            context.setShaderColor(1, 1, 1, VIGNETTE_ALPHA + VIGNETTE_BREATH * breath);
-            context.drawTexture(VIGNETTE, 0, 0, 0, 0, width, height, width, height);
-            context.setShaderColor(1, 1, 1, 1);
-            RenderSystem.depthMask(true);
-            RenderSystem.disableBlend();
-        }
         int x = width / 2 - 91, y = height - 29;
+        float strain = bubble.strain();
         context.drawGuiTexture(JUMP_BACKGROUND, x, y, 182, 5);
+        int red = Math.round(182 * strain);
+        if (red > 0) {
+            // inside the bar's frame (its top and bottom pixel rows and its ends stay as they are)
+            int alpha = Math.round(255 * (STRAIN_ZONE_ALPHA * (0.5f + 0.5f * strain)));
+            context.fill(x + 182 - red, y + 1, x + 181, y + 4, alpha << 24 | STRAIN_ZONE_COLOR);
+        }
         int filled = Math.round(182 * charge / (float) BubbleRiding.CHARGE_MAX);
-        if (filled > 0) context.drawGuiTexture(JUMP_PROGRESS, 182, 5, 0, 0, x, y, filled, 5);
+        if (filled > 0) {
+            float risk = BubbleRiding.strainPopChance(strain);
+            if (risk > 0) {
+                float throb = 0.75f + 0.25f * MathHelper.sin(ticks * 0.9f);
+                context.setShaderColor(1, 1 - 0.6f * risk * throb, 1 - 0.6f * risk * throb, 1);
+            }
+            context.drawGuiTexture(JUMP_PROGRESS, 182, 5, 0, 0, x, y, filled, 5);
+            context.setShaderColor(1, 1, 1, 1);
+        }
     }
 }
