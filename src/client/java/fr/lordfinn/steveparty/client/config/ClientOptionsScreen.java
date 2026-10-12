@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.client.config;
 
 import fr.lordfinn.steveparty.board.DestinationSwap;
 import fr.lordfinn.steveparty.client.gui.UiText;
-import fr.lordfinn.steveparty.client.gui.cartridge.CartridgeGuiConfig;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.Tooltip;
@@ -17,7 +16,7 @@ import java.util.Locale;
 
 /**
  * The mod's client options (opened from Mod Menu): what a cartridge clicked on another one does with their
- * destinations, and the electric animation of the cartridge menus.
+ * destinations.
  */
 public class ClientOptionsScreen extends Screen {
     private final @Nullable Screen parent;
@@ -37,10 +36,6 @@ public class ClientOptionsScreen extends Screen {
                 .tooltip(value -> Tooltip.of(Text.translatable("options.steveparty.destination_swap.tooltip")))
                 .build(x, y, 310, 20, Text.translatable("options.steveparty.destination_swap"), (button, value) ->
                         ClientOptions.setDestinationSwap(value == DestinationSwap.Preference.UNSET ? null : value == DestinationSwap.Preference.ON)));
-        addDrawableChild(CyclingButtonWidget.onOffBuilder(CartridgeGuiConfig.currentAnimation())
-                .tooltip(value -> Tooltip.of(Text.translatable("options.steveparty.cartridge_animation.tooltip")))
-                .build(x, y + 24, 310, 20, Text.translatable("options.steveparty.cartridge_animation"),
-                        (button, value) -> CartridgeGuiConfig.setCurrentAnimation(value)));
         addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> close()).dimensions(width / 2 - 100, height - 27, 200, 20).build());
     }
 

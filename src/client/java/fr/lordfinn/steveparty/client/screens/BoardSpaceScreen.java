@@ -80,7 +80,7 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
     @Override
     protected void handledScreenTick() {
         super.handledScreenTick();
-        panel.setSlotLabel(isSingle ? null : Text.translatable(CartridgeItem.MENU_KEY + "slot", handler.getSelectedSlot() + 1));
+        panel.setSlotPower(isSingle ? -1 : handler.getSelectedSlot());
         // Another cartridge, or texts on more lines: the shell's size may change
         if (panel.tick() && client != null) init(client, this.width, this.height);
     }
