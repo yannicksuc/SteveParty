@@ -8,6 +8,8 @@ import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3f;
 
 /**
  * What the soap bubbles of the mod are drawn with (the Spawn Bubble, the Bubbler and its bubbles): the iridescent film
@@ -78,11 +80,24 @@ public final class BubbleFilm {
      */
     public static void cube(MatrixStack.Entry entry, VertexConsumer buffer, Sprite sprite, float x, float y, float z, float half,
                             float from, float to, float r, float g, float b, float a, int light) {
+        cube(entry, buffer, sprite, x, y, z, half, from, to, r, g, b, a, light, null);
+    }
+
+    /**
+     * {@link #cube}, only the faces whose outside faces the camera ({@code towardCamera} true: the near faces) or only the
+     * others (false: the far faces, seen from inside), all of them if null. The camera is at the origin of the entry's
+     * space (world rendering: camera-relative matrices). A see-through volume holding something that writes no depth
+     * draws its far faces before it and its near faces after it: drawn at once after it, the far faces, failing no
+     * depth test where it stands, would be painted over it (it would look behind the volume).
+     */
+    public static void cube(MatrixStack.Entry entry, VertexConsumer buffer, Sprite sprite, float x, float y, float z, float half,
+                            float from, float to, float r, float g, float b, float a, int light, @Nullable Boolean towardCamera) {
         float u0 = sprite.getFrameU(from / 16), u1 = sprite.getFrameU(to / 16);
         float v0 = sprite.getFrameV(from / 16), v1 = sprite.getFrameV(to / 16);
         float[] us = {u0, u0, u1, u1}, vs = {v0, v1, v1, v0};
         for (int face = 0; face < FACES.length; face++) {
             float[] n = NORMALS[face];
+            if (towardCamera != null && facesCamera(entry, x + n[0] * half, y + n[1] * half, z + n[2] * half, n) != towardCamera) continue;
             for (int corner = 0; corner < 4; corner++) {
                 int bits = FACES[face][corner];
                 buffer.vertex(entry, (bits & 0b001) != 0 ? x + half : x - half, (bits & 0b010) != 0 ? y + half : y - half,
@@ -91,6 +106,13 @@ public final class BubbleFilm {
                         .normal(entry, n[0], n[1], n[2]);
             }
         }
+    }
+
+    /** Whether the face around {@code (x, y, z)} with normal {@code n} has its outside toward the camera (the origin). */
+    private static boolean facesCamera(MatrixStack.Entry entry, float x, float y, float z, float[] n) {
+        Vector3f center = entry.getPositionMatrix().transformPosition(x, y, z, new Vector3f());
+        Vector3f normal = entry.getNormalMatrix().transform(n[0], n[1], n[2], new Vector3f());
+        return normal.dot(center) < 0;
     }
 
     /**
