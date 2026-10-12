@@ -32,6 +32,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationPropertyHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -40,14 +41,15 @@ import java.util.function.Consumer;
 
 /**
  * The Spawn Bubble (its code names stay « spawn marker », so that the worlds keep theirs): a thin blue plate (its
- * outline and its collision, {@link #SHAPE}) under a floating bubble (a translucent 10-pixel cube), where the mob of a board space appears,
+ * outline, {@link #SHAPE}; nothing to stand on, a mark on the ground) under a floating bubble (a translucent 10-pixel
+ * cube), where the mob of a board space appears,
  * facing its way ({@link #ROTATION}: one of 16, like a sign, toward whoever placed it; the plate marks the nearest of 8,
  * the mob in the bubble the exact one). Linked to a mob space with the Tile Linker Brush (from the space to the bubble,
  * see CartridgeLinks.SpawnPoint); a space without one summons its mob beside it, as always. Broken by hand; broken, its
  * bubble pops and the spaces linking it forget it.
  * <p>
  * Its bubble ({@link #bubbleCenter}) floats in the middle of the block, lifted as set; the mob appears
- * {@link #SPAWN_UNDER_BUBBLE} under its centre ({@link #spawnPos}: on the plate by default). It has no collision and
+ * {@link #SPAWN_UNDER_BUBBLE} under its centre ({@link #spawnPos}: on the ground by default). It has no collision and
  * cannot be aimed at: only its plate can.
  * <p>
  * An empty hand opens its menu (client side, {@link #openMenu}): when its mob shows ({@link SpawnMarkerBlockEntity#isResident}:
@@ -70,8 +72,8 @@ public class SpawnMarkerBlock extends BlockWithEntity {
     public static final double PLATE_HEIGHT = 2 / 16.0;
     /** How high the centre of the bubble is above the bottom of the block, unlifted (blocks): the block's centre. */
     public static final double BUBBLE_HEIGHT = 8 / 16.0;
-    /** How far under the bubble's centre its mob appears (blocks): on the plate when unlifted. */
-    public static final double SPAWN_UNDER_BUBBLE = 6 / 16.0;
+    /** How far under the bubble's centre its mob appears (blocks): on the ground when unlifted (the plate is only a mark). */
+    public static final double SPAWN_UNDER_BUBBLE = BUBBLE_HEIGHT;
     /** Opens the menu of the marker at a position: set by the client. */
     public static Consumer<BlockPos> openMenu = pos -> {
     };
@@ -112,10 +114,10 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return SHAPE;
     }
 
-    /** Its plate only: the bubble floats free (a mob appears standing on the plate). */
+    /** Nothing: the plate is only a mark on the ground (its mob stands on the ground, through it). */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return SHAPE;
+        return VoxelShapes.empty();
     }
 
     @Override
@@ -133,7 +135,7 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return Vec3d.ofBottomCenter(pos).add(0, BUBBLE_HEIGHT + lift, 0);
     }
 
-    /** Where its mob appears unlifted: {@link #SPAWN_UNDER_BUBBLE} under its bubble's centre, standing on the plate. */
+    /** Where its mob appears unlifted: {@link #SPAWN_UNDER_BUBBLE} under its bubble's centre, standing on the ground. */
     public static Vec3d standPos(BlockPos pos) {
         return bubbleCenter(pos, 0).subtract(0, SPAWN_UNDER_BUBBLE, 0);
     }
