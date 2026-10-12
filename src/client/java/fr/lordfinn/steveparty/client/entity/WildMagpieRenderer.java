@@ -17,24 +17,30 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 /**
  * A wild Pie: the Common pot Pie's model and animations, its colour's texture (MagpieVariant); in its beak what it
  * carries (WildMagpieEntity#getCarried): the model's own coin for one of the mod's coins, any other shiny thing drawn
- * small at the coin's place.
+ * small at the coin's place. A chick: its own fluffy model (geo/entity/magpie_baby.geo.json, the adult's animations and a
+ * waddle) and its colour's chick texture, a smaller shadow.
  */
 public class WildMagpieRenderer extends GeoEntityRenderer<WildMagpieEntity> {
+    private static final Identifier MODEL = Steveparty.id("geo/entity/magpie.geo.json");
+    private static final Identifier ANIMATIONS = Steveparty.id("animations/entity/magpie.animation.json");
+    private static final Identifier BABY_MODEL = Steveparty.id("geo/entity/magpie_baby.geo.json");
+    private static final Identifier BABY_ANIMATIONS = Steveparty.id("animations/entity/magpie_baby.animation.json");
+
     public WildMagpieRenderer(EntityRendererFactory.Context context) {
         super(context, new GeoModel<>() {
             @Override
             public Identifier getModelResource(WildMagpieEntity magpie) {
-                return Steveparty.id("geo/entity/magpie.geo.json");
+                return magpie.isBaby() ? BABY_MODEL : MODEL;
             }
 
             @Override
             public Identifier getTextureResource(WildMagpieEntity magpie) {
-                return magpie.getVariant().texture;
+                return magpie.isBaby() ? magpie.getVariant().babyTexture : magpie.getVariant().texture;
             }
 
             @Override
             public Identifier getAnimationResource(WildMagpieEntity magpie) {
-                return Steveparty.id("animations/entity/magpie.animation.json");
+                return magpie.isBaby() ? BABY_ANIMATIONS : ANIMATIONS;
             }
 
             @Override
@@ -57,5 +63,10 @@ public class WildMagpieRenderer extends GeoEntityRenderer<WildMagpieEntity> {
                 super.renderStackForBone(poseStack, bone, stack, animatable, bufferSource, partialTick, packedLight, packedOverlay);
             }
         });
+    }
+
+    @Override
+    protected float getShadowRadius(WildMagpieEntity magpie) {
+        return magpie.isBaby() ? 0.12f : shadowRadius;
     }
 }
