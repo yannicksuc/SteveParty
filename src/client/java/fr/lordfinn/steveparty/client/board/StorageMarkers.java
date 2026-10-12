@@ -34,8 +34,8 @@ import java.util.Set;
  */
 public final class StorageMarkers {
     private static final int REFRESH = 10;
-    /** The dim mark of a storage linked to nothing: light grey, half see-through. */
-    private static final int UNLINKED = 0x90D0D0D0;
+    /** The dim mark of a storage linked to nothing: the plates' dark grey, a little see-through (seen on the sky and the ground). */
+    private static final int UNLINKED = 0xB8404040;
     private static final float SCALE = 1f / 40f;
     /** Above the block's centre: where the numbers of a cartridge's chests stand (see BrushOverlay). */
     private static final double HEIGHT = 0.95;
