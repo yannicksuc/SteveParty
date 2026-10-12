@@ -18,6 +18,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior;
 import fr.lordfinn.steveparty.gametest.addon.TestAddon;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.dice.DiceModule;
@@ -139,7 +140,7 @@ public class ApiGameTests implements SteveGameTest {
         controller.setPartyData(data);
         EVENTS.clear();
         watched = controller;
-        context.addFinalTask(() -> watched = null);
+        TestCleanup.atEnd(context, () -> watched = null);
         controller.nextStep();
         controller.nextStep(); // the probe step ends right away: the end comes
         context.assertEquals(EVENTS, List.of("start default 0", "end default", "start probe_step 1", "end probe_step",

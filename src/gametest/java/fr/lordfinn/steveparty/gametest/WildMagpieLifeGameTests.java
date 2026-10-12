@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -83,7 +84,7 @@ public class WildMagpieLifeGameTests implements SteveGameTest {
         player.getInventory().clear();
         Vec3d abs = context.getAbsolute(at);
         player.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
-        ThresholdGameTests.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
+        TestCleanup.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
         return player;
     }
 
@@ -431,7 +432,7 @@ public class WildMagpieLifeGameTests implements SteveGameTest {
         Runnable clean = () -> {
             for (BlockPos p : placed) world.setBlockState(p, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
         };
-        ThresholdGameTests.atEnd(context, clean);
+        TestCleanup.atEnd(context, clean);
         BlockPos base = context.getAbsolutePos(new BlockPos(0, roof, 0));
         BlockState fence = Blocks.OAK_FENCE.getDefaultState();
         for (int x = -2; x <= 2; x++) for (int z = -2; z <= 2; z++) place(world, base.add(x, 0, z), fence, placed);
@@ -445,7 +446,7 @@ public class WildMagpieLifeGameTests implements SteveGameTest {
         magpie.setNightOverride(false);
         magpie.adoptNest(nest);
         world.spawnEntity(magpie);
-        ThresholdGameTests.atEnd(context, magpie::discard);
+        TestCleanup.atEnd(context, magpie::discard);
         Vec3d start = Vec3d.ofBottomCenter(base);
         double[] highest = {0};
         boolean[] outside = {false};

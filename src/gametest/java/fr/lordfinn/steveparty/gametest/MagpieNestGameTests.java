@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
@@ -81,7 +82,7 @@ public class MagpieNestGameTests implements SteveGameTest {
         player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
         player.getAbilities().creativeMode = false;
         player.getInventory().clear();
-        ThresholdGameTests.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
+        TestCleanup.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
         return player;
     }
 
@@ -386,7 +387,7 @@ public class MagpieNestGameTests implements SteveGameTest {
         player.refreshPositionAndAngles(playerAt.x, playerAt.y, playerAt.z, 0, 0);
         player.getInventory().clear();
         player.getInventory().insertStack(new ItemStack(Items.DIAMOND, 3));
-        ThresholdGameTests.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
+        TestCleanup.atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
         when(context, () -> nest.getTreasures().stream().anyMatch(stack -> stack.isOf(Items.GOLD_NUGGET)), 450, () -> "the nugget in the nest" + state(magpie), () -> {
             context.assertEquals(nest.getPileCount(), 1, "one nugget in the beak, one in the nest");
             context.assertEquals(nugget.isAlive() ? nugget.getStack().getCount() : 0, 1, "the other one still lying there");
@@ -427,8 +428,7 @@ public class MagpieNestGameTests implements SteveGameTest {
     }
 
     /**
-     * Something in its beak, it brings it home first, seeds or not: a player holding seeds tempts it afterwards. (Its
-     * player is removed by hand, not by a final task: {@code addFinalTask} ends the test on its first tick.)
+     * Something in its beak, it brings it home first, seeds or not: a player holding seeds tempts it afterwards.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400, batchId = "magpie_nest_carry_seeds")
     public void itBringsItsLootHomeBeforeComingToTheSeeds(TestContext context) {
@@ -441,10 +441,9 @@ public class MagpieNestGameTests implements SteveGameTest {
         @SuppressWarnings("removal") ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
         player.getInventory().clear();
-        Runnable removePlayer = () -> {
+        TestCleanup.atEnd(context, () -> {
             if (!player.isRemoved()) context.getWorld().getServer().getPlayerManager().remove(player);
-        };
-        context.waitAndRun(395, removePlayer); // failed: gone before the time limit
+        });
         Vec3d playerAt = context.getAbsolute(new Vec3d(8.5, 1, 3.5));
         player.refreshPositionAndAngles(playerAt.x, playerAt.y, playerAt.z, 0, 0);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WHEAT_SEEDS, 8));
@@ -452,10 +451,7 @@ public class MagpieNestGameTests implements SteveGameTest {
         when(context, () -> nest.getTreasures().stream().anyMatch(stack -> stack.isOf(Items.GOLD_NUGGET)), 300,
                 () -> "the nugget in the nest" + state(magpie), () -> {
                     context.assertTrue(magpie.getCarried().isEmpty(), "its beak empty again");
-                    when(context, () -> magpie.getTempter() == player, 40, () -> "then tempted" + state(magpie), () -> {
-                        removePlayer.run();
-                        context.complete();
-                    });
+                    when(context, () -> magpie.getTempter() == player, 40, () -> "then tempted" + state(magpie), context::complete);
                 });
     }
 

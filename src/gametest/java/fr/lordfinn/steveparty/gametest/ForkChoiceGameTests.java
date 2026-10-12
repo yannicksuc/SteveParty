@@ -37,14 +37,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * A fork in a party, played as a player plays it: the roll walks the pawn to the fork, its arrows show, the player
  * looks at one (the crosshair as the client finds it: blocks, then what can be aimed at) and right clicks it, whatever
  * is in hand (the packets the client sends, through the server's checks): the pawn takes that way.
- * <p>
- * Cleaned up by hand when each test ends: TestCleanup's final task completes a test on its first tick.
  */
 public class ForkChoiceGameTests implements SteveGameTest {
     private static final String BATCH = "fork_choice";
@@ -96,12 +95,12 @@ public class ForkChoiceGameTests implements SteveGameTest {
         PartyControllerEntity party = party(context, player, pawn);
         List<ServerPlayerEntity> players = new ArrayList<>(List.of(player));
         if (stranger != null) players.add(stranger);
-        Runnable cleanUp = () -> {
+        atEnd(context, () -> {
             party.stopParty(null);
             context.removeBlock(CONTROLLER);
             token.steveparty$setTokenized(false);
             TestPlayers.removeIfOnline(context, players.toArray(ServerPlayerEntity[]::new));
-        };
+        });
         Box around = new Box(context.getAbsolutePos(FORK)).expand(4);
         context.waitAndRun(2, () -> {
             roll(context, player, 3);
@@ -123,7 +122,6 @@ public class ForkChoiceGameTests implements SteveGameTest {
                                 "what is in hand stays there: " + player.getMainHandStack());
                         when(context, () -> token.steveparty$getNbSteps() == 0, 200, "the move ends", () -> {
                             assertNear(context, pawn, SOUTH, "the way picked");
-                            cleanUp.run();
                             context.complete();
                         });
                     });

@@ -40,12 +40,12 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 
 /**
  * The Threshold obstacle Cartridge: every condition, a token stopped (its steps lost, a landing) or getting over, the
@@ -103,20 +103,6 @@ public class ThresholdGameTests implements SteveGameTest {
         // A party left running would go on looking for star spaces around it (other tests' boards)
         atEnd(context, () -> context.removeBlock(CONTROLLER));
         return controller;
-    }
-
-    /** What to undo when the test ends (a test has one final task: they are run together). */
-    private static final Map<TestContext, List<Runnable>> AT_END = new WeakHashMap<>();
-
-    static void atEnd(TestContext context, Runnable task) {
-        List<Runnable> tasks = AT_END.get(context);
-        if (tasks == null) {
-            List<Runnable> created = new ArrayList<>();
-            AT_END.put(context, created);
-            context.addFinalTask(() -> created.forEach(Runnable::run));
-            tasks = created;
-        }
-        tasks.add(task);
     }
 
     private static List<Played> record(TestContext context) {
