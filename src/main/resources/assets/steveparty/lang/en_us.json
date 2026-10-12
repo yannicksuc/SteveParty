@@ -1613,8 +1613,6 @@
   "gui.steveparty.cartridge_menu.shop.disguise": "Disguise",
   "gui.steveparty.cartridge_menu.shop.disguise.hint": "The block the merchant hides in",
   "gui.steveparty.cartridge_menu.block_slot.default": "Default: %s",
-  "gui.steveparty.cartridge_menu.block_slot.set": "Click with a block: choose it (nothing is taken)",
-  "gui.steveparty.cartridge_menu.block_slot.clear": "Right click: back to the default",
   "gui.steveparty.cartridge_menu.block_slot.refused": "%s can't go here: a plain block only",
   "gui.steveparty.shop_stall.back": "Back to the menu",
   "gui.steveparty.shop_stall.models": "A model, no item used: each sale takes it from the shop's storage.",
