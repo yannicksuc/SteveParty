@@ -64,10 +64,12 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
      */
     private static final double WISPS_RANGE = 24;
 
+    private final HeldItemLayer heldItem = new HeldItemLayer(this);
+
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new MulaModel());
         addRenderLayer(new HalloLayer(this, HALLO_TEXTURE)); // add the custom billboard
-        addRenderLayer(new HeldItemLayer(this));
+        addRenderLayer(heldItem);
     }
 
     /** Its gift flying to the buyer is drawn even when the Mula itself is off screen. */
@@ -127,6 +129,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             renderGift(poseStack, animatable, bufferSource, partialTick);
         }
         super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer, isReRender, partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, packedOverlay, renderColor);
+        if (!isReRender) heldItem.draw(poseStack, animatable, bufferSource, partialTick);
     }
 
     /**
@@ -232,22 +235,47 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         /** The bone of the held item (mula_animations.py). */
         static final String BONE = "held_item";
         /** Its size (a flat item, then a block). */
-        private static final float ITEM_SCALE = 0.75f, BLOCK_SCALE = 1.25f;
+        private static final float ITEM_SCALE = 0.9f, BLOCK_SCALE = 1.15f;
+        /** The bone, posed this frame, null when it was not (or holds nothing). */
+        private @Nullable GeoBone posed;
 
         HeldItemLayer(GeoRenderer<MulaEntity> renderer) {
             super(renderer);
         }
 
+        /**
+         * Only notes the bone: drawn from here, in the middle of the model's own vertices, the item never showed. It is
+         * drawn after the model ({@link #draw}).
+         */
         @Override
         public void renderForBone(MatrixStack poseStack, MulaEntity mula, GeoBone bone, @Nullable RenderLayer renderType,
                                   VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
                                   int packedLight, int packedOverlay) {
             if (!BONE.equals(bone.getName())) return;
+            if (!mula.getHeldItem().isEmpty() && bone.getScaleY() >= 0.01f) posed = bone;
+        }
+
+        /**
+         * Draws the item on its bone (posed this frame), after the model. The pose stack is at the Mula's feet, scaled by
+         * its drawn size: the model's frame is made again as GeckoLib makes it (the body's turn, the entity's scale),
+         * then each bone's animated transform from the root down, up to the item bone's pivot. (GeckoLib's own matrices
+         * for the bone were not usable here: drawn with them, the item was out of place or not drawn at all.)
+         */
+        void draw(MatrixStack poseStack, MulaEntity mula, VertexConsumerProvider bufferSource, float partialTick) {
+            GeoBone bone = posed;
+            posed = null;
             ItemStack stack = mula.getHeldItem();
-            if (stack.isEmpty() || bone.getScaleY() < 0.01f || ShaderPacks.renderingShadows()) return;
+            if (bone == null || stack.isEmpty() || ShaderPacks.renderingShadows()) return;
             var client = MinecraftClient.getInstance();
             poseStack.push();
-            // the pose stack is at the bone (its animated place, turn and size): its pivot is the item's centre
+            // the model's frame, as GeckoLib poses it: turned with the body, at the entity's own scale...
+            poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f - MathHelper.lerpAngleDegrees(partialTick, mula.prevBodyYaw, mula.bodyYaw)));
+            float own = mula.getScale();
+            poseStack.scale(own, own, own);
+            // ...then each bone from the root down to the item's (place, turn, size as animated), and its pivot
+            java.util.ArrayDeque<GeoBone> chain = new java.util.ArrayDeque<>();
+            for (GeoBone b = bone; b != null; b = b.getParent()) chain.push(b);
+            for (GeoBone b : chain) RenderUtil.prepMatrixForBone(poseStack, b);
             RenderUtil.translateToPivotPoint(poseStack, bone);
             boolean block = client.getItemRenderer().getModel(stack, mula.getWorld(), null, 0).hasDepth();
             float scale = block ? BLOCK_SCALE : ITEM_SCALE;
@@ -257,8 +285,6 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             client.getItemRenderer().renderItem(stack, ModelTransformationMode.GROUND, LightmapTextureManager.MAX_LIGHT_COORDINATE,
                     OverlayTexture.DEFAULT_UV, poseStack, bufferSource, mula.getWorld(), mula.getId() + 3);
             poseStack.pop();
-            // Give GeckoLib its buffer back (see GeoRenderLayer#renderForBone)
-            if (renderType != null) bufferSource.getBuffer(renderType);
         }
     }
 

@@ -44,7 +44,7 @@ public final class StarHosts {
     /** Without a Spawn Bubble, the host floats this far on the token's right, this high above the space's surface. */
     public static final double SIDE = 1.6, LIFT = 0.7;
     /** The host is drawn this much bigger than a wild Mula (it is seen from the whole board). */
-    public static final double SCALE = 1.35;
+    public static final double SCALE = 1.6;
     /** Beyond this distance from the host, its gift flies to the token rather than to the buyer. */
     private static final double GIFT_REACH = 16;
     /** How fast it turns (degrees per tick), and drifts away when it leaves (blocks per tick). */
@@ -128,9 +128,13 @@ public final class StarHosts {
      * the player chooses now (the host waits for {@link #decided}); false: too few coins (it is disappointed at once).
      */
     public static void arrive(ServerWorld world, MobEntity token, BlockPos space, PartyControllerEntity party, boolean offered) {
+        arrive(world, token, space, party.getCurrency(PartyCurrency.STAR), offered);
+    }
+
+    /** {@code token} reached the star on {@code space}, the item {@code star}: its host comes holding it. */
+    public static void arrive(ServerWorld world, MobEntity token, BlockPos space, ItemStack star, boolean offered) {
         Host previous = RUNNING.get(token);
         if (previous != null) previous.finish();
-        ItemStack star = party.getCurrency(PartyCurrency.STAR);
         Host host = new Host(world, token, space.toImmutable(), offered);
         if (!host.spawn(star)) return;
         RUNNING.run(host, host::tick);

@@ -563,6 +563,8 @@ public final class MulaEffects {
     /** The gift flies this long (ticks), arcing this high above the straight line (blocks, more for a long throw). */
     private static final int GIFT_TICKS = 16;
     private static final double GIFT_ARC = 0.9, GIFT_ARC_PER_BLOCK = 0.12, GIFT_ARC_MAX = 3.0;
+    /** Where on its target it lands (a fraction of its height): a player's chest, under the eyes. */
+    private static final double GIFT_AIM = 0.45;
     /** The item a host gives, flying (age -1: none), where it left from, and who it flies to. */
     private ItemStack giftStack = ItemStack.EMPTY;
     private int giftAge = -1;
@@ -603,7 +605,7 @@ public final class MulaEffects {
         if (giftAge < 0 || target == null) return null;
         double u = MathHelper.clamp((giftAge + partialTick) / GIFT_TICKS, 0, 1);
         double e = u * u * (3 - 2 * u);
-        Vec3d to = target.getLerpedPos(partialTick).add(0, target.getHeight() * 0.6, 0);
+        Vec3d to = target.getLerpedPos(partialTick).add(0, target.getHeight() * GIFT_AIM, 0);
         double dx = to.x - giftFromX, dy = to.y - giftFromY, dz = to.z - giftFromZ;
         double arc = Math.min(GIFT_ARC_MAX, GIFT_ARC + GIFT_ARC_PER_BLOCK * Math.sqrt(dx * dx + dz * dz));
         return new Vec3d(giftFromX + dx * e, giftFromY + dy * e + arc * Math.sin(Math.PI * u), giftFromZ + dz * e);
@@ -612,7 +614,7 @@ public final class MulaEffects {
     /** Its gift's size (times the ground model): a little bigger mid-flight, shrinking as it arrives. */
     public float giftScale(float partialTick) {
         float u = MathHelper.clamp((giftAge + partialTick) / GIFT_TICKS, 0f, 1f);
-        return 0.9f * (1f + 0.25f * MathHelper.sin(u * MathHelper.PI)) * (u > 0.8f ? 1f - (u - 0.8f) / 0.2f * 0.7f : 1f);
+        return 0.9f * (1f + 0.25f * MathHelper.sin(u * MathHelper.PI)) * (u > 0.6f ? 1f - (u - 0.6f) / 0.4f * 0.85f : 1f);
     }
 
     /** It spins as it flies (degrees). */
@@ -636,11 +638,15 @@ public final class MulaEffects {
         giftAge = -1;
         Entity target = giftEntity();
         if (target == null) return;
-        double x = target.getX(), y = target.getY() + target.getHeight() * 0.6, z = target.getZ();
-        for (int i = 0; i < 14; i++) {
-            double a = MathHelper.TAU * i / 14;
-            world.addParticle(i % 2 == 0 ? WHITE_TWINKLE : RAINBOW_BITS[i % RAINBOW_BITS.length], x + Math.cos(a) * 0.3, y,
-                    z + Math.sin(a) * 0.3, Math.cos(a) * 0.12, 0.05, Math.sin(a) * 0.12);
+        double x = target.getX(), y = target.getY() + target.getHeight() * GIFT_AIM, z = target.getZ();
+        // on the player of this game, seen from their own eyes: a smaller ring, lower and wider (not in their face)
+        boolean self = target instanceof PlayerEntity player && player.isMainPlayer();
+        int count = self ? 8 : 14;
+        double radius = self ? 0.6 : 0.3, ringY = self ? target.getY() + 0.2 : y;
+        for (int i = 0; i < count; i++) {
+            double a = MathHelper.TAU * i / count;
+            world.addParticle(i % 2 == 0 ? WHITE_TWINKLE : RAINBOW_BITS[i % RAINBOW_BITS.length], x + Math.cos(a) * radius, ringY,
+                    z + Math.sin(a) * radius, Math.cos(a) * 0.12, 0.05, Math.sin(a) * 0.12);
         }
         world.playSound(x, y, z, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.NEUTRAL, 0.6f, 1.2f, false);
         world.playSound(x, y, z, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.NEUTRAL, 0.7f, 1.9f, false);
