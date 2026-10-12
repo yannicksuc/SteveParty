@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -98,6 +99,19 @@ public final class CartridgeMenus {
         if (module == null || !module.editable() || !module.enabled(stack) || !module.accepts(stack, value)) return false;
         module.set(new CartridgeEdit(stack, ref.holder(player.getWorld()), ref.index()), value);
         ref.commit(player.getWorld());
+        if (ref.inHand()) sendHand(player, ref);
         return true;
+    }
+
+    /**
+     * The cartridge in hand, sent to its player at once: their inventory is not synced while the menu's screen is open
+     * (a menu without the inventory's slots), so the menu would keep showing the cartridge as it was.
+     */
+    private static void sendHand(ServerPlayerEntity player, CartridgeRef ref) {
+        Hand hand = ref.hand();
+        if (hand == null) return;
+        int slot = hand == Hand.MAIN_HAND ? player.getInventory().selectedSlot : PlayerInventory.OFF_HAND_SLOT;
+        player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(ScreenHandlerSlotUpdateS2CPacket.UPDATE_PLAYER_INVENTORY_SYNC_ID,
+                0, slot, player.getStackInHand(hand).copy()));
     }
 }
