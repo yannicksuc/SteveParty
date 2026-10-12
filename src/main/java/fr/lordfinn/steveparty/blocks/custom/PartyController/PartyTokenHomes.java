@@ -25,7 +25,6 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -124,15 +123,6 @@ public final class PartyTokenHomes {
         }
     }
 
-    /** Back into the game (a party leaving its end): its tokens are in game again. */
-    void restoreInGame(ServerWorld serverWorld, Collection<UUID> tokens) {
-        for (UUID tokenUUID : tokens) {
-            tokensToRelease.remove(tokenUUID);
-            if (serverWorld.getEntity(tokenUUID) instanceof TokenizedEntityInterface token)
-                token.steveparty$setStatus(TokenStatus.setStatus(token.steveparty$getStatus(), TokenStatus.IN_GAME));
-        }
-    }
-
     /**
      * A token of a party that is over (ended or stopped): sent back to {@code home} now if it and its start tile are
      * loaded, else as soon as they are. It stays where it is if its start tile is gone by then.
@@ -206,7 +196,7 @@ public final class PartyTokenHomes {
      * destinations it was choosing from forgotten. Its riders come along. A puff of smoke and a pop where it leaves
      * and where it lands, when it really moves.
      */
-    static void place(ServerWorld serverWorld, MobEntity mob, @Nullable BlockPos tile) {
+    private static void place(ServerWorld serverWorld, MobEntity mob, @Nullable BlockPos tile) {
         if (mob.hasVehicle()) mob.stopRiding();
         TileTeleport.cancel(mob);
         BoardSpaceBlockEntity space = BoardSpaces.boardSpaceOf(mob);

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.minigame;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -510,9 +511,18 @@ public final class MiniGameTest implements MiniGameSession {
     }
 
     @Override
-    public void step(int stepMode) {
-        if (stepMode == 0) finish();
-        else stop();
+    public boolean step(StepPulse.Mode mode) {
+        if (phase != Phase.PLAYING || closed) return false;
+        if (mode == StepPulse.Mode.NEXT) finish();
+        else replay();
+        return true;
+    }
+
+    /** The round starts again: what everyone owns and the zone given back, then everyone out of the pipes again. */
+    private void replay() {
+        phase = Phase.COUNTDOWN;
+        arena.end();
+        depart();
     }
 
     /**

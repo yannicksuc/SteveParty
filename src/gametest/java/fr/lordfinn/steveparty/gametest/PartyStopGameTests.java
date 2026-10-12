@@ -210,7 +210,7 @@ public class PartyStopGameTests implements SteveGameTest {
         context.complete();
     }
 
-    /** The party reaches its end: the pawns go home, out of the game; brought back from its end, they go back where they stood. */
+    /** The party reaches its end: the pawns go home, out of the game. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void endSendsThePawnsHome(TestContext context) {
         Board board = startedParty(context);
@@ -222,13 +222,6 @@ public class PartyStopGameTests implements SteveGameTest {
         context.waitAndRun(10, () -> {
             // b's walk was dropped: it stays home
             assertOn(context, board.b(), START_B, "b stays on its start tile");
-            controller.previousStep();
-            context.assertTrue(controller.getPartyData().isStarted(), "the party is back");
-            assertOn(context, board.a(), SPACE_A, "a back where it stood");
-            assertOn(context, board.b(), START_B, "b had not left its start tile yet");
-            context.assertTrue(inGame(board.a()) && inGame(board.b()), "the pawns are in game again");
-            controller.stopParty(Text.literal("Tester"));
-            assertSentHome(context, board);
             cleanUp(context, board);
             context.complete();
         });

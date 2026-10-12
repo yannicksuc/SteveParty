@@ -7,31 +7,24 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 /**
- * The end of a party: its tokens are taken out of the game and go back onto their start tiles. A step controller can
- * still bring the party back to its previous step: the tokens then go back where they stood.
+ * The end of a party: its tokens are taken out of the game and go back onto their start tiles.
  */
 public class EndPartyStep extends PartyStep {
     // No initializer: it would run after super(nbt) and wipe what fromNbt just read
     List<UUID> tokens;
-    /** The board space each token stood on when the party ended, before it went back to its start tile. */
-    Map<UUID, BlockPos> leftFrom;
 
     public EndPartyStep(List<UUID> tokens) {
         if (tokens == null)
             tokens = new ArrayList<>();
         this.tokens = tokens;
-        this.leftFrom = new LinkedHashMap<>();
         setType(PartyStepType.END);
     }
 
@@ -39,8 +32,6 @@ public class EndPartyStep extends PartyStep {
         super(nbt);
         if (this.tokens == null)
             this.tokens = new ArrayList<>();
-        if (this.leftFrom == null)
-            this.leftFrom = new LinkedHashMap<>();
     }
 
     @Override
@@ -55,8 +46,8 @@ public class EndPartyStep extends PartyStep {
         for (UUID tokenUUID : allTokens) {
             partyControllerEntity.releaseToken(serverWorld, tokenUUID);
         }
-        // Each token back onto its start tile (a start resumed after a load keeps where they stood before the end)
-        partyControllerEntity.sendTokensHome(serverWorld, allTokens).forEach(leftFrom::putIfAbsent);
+        // Each token back onto its start tile
+        partyControllerEntity.sendTokensHome(serverWorld, allTokens);
 
         MessageUtils.sendToNearby(
                 serverWorld,
@@ -67,17 +58,9 @@ public class EndPartyStep extends PartyStep {
         fr.lordfinn.steveparty.api.event.PartyEvents.ENDED.invoker().onPartyEnded(partyControllerEntity);
     }
 
-    /** The party is brought back from its end: its tokens go back where they stood when it ended. */
-    public void sendTokensBack(PartyControllerEntity partyControllerEntity) {
-        if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)
-            partyControllerEntity.sendTokensBack(serverWorld, leftFrom);
-        leftFrom.clear();
-    }
-
     @Override
     public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
         tokens.remove(tokenUUID);
-        leftFrom.remove(tokenUUID);
     }
 
     @Override
@@ -92,15 +75,6 @@ public class EndPartyStep extends PartyStep {
                 this.tokens.add(uuid);
             });
         }
-        if (leftFrom == null)
-            leftFrom = new LinkedHashMap<>();
-        NbtCompound leftNbt = nbt.getCompound("LeftFrom");
-        for (String key : leftNbt.getKeys()) {
-            try {
-                leftFrom.put(UUID.fromString(key), BlockPos.fromLong(leftNbt.getLong(key)));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
     }
 
     @Override
@@ -112,11 +86,6 @@ public class EndPartyStep extends PartyStep {
         }
         if (!tokens.isEmpty())
             nbtCompound.put("Tokens", tokensNbtList);
-        if (!leftFrom.isEmpty()) {
-            NbtCompound leftNbt = new NbtCompound();
-            leftFrom.forEach((token, space) -> leftNbt.putLong(token.toString(), space.asLong()));
-            nbtCompound.put("LeftFrom", leftNbt);
-        }
         return nbtCompound;
     }
 }

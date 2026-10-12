@@ -373,13 +373,45 @@ public class MiniGamePartyStep extends PartyStep {
         screens.showPractice(controller);
     }
 
-    /** The practice round starts again (after its results, or a step controller): the votes are kept. */
-    public void restartPractice(PartyControllerEntity controller) {
+    /** The practice round starts again after its results: the votes are kept. */
+    private void restartPractice(PartyControllerEntity controller) {
         if (!isPractice()) return;
         cancelFlow();
         practiceOver = false;
         departure.sendOut(controller, Phase.PRACTICE);
         screens.showPractice(controller);
+    }
+
+    /**
+     * A Step Controller passes: the practice round stops and the real round starts (as if everyone were ready); the
+     * real round ends with the places on its podiums as they stand.
+     *
+     * @return false in the other phases (the draw, the countdown, the results: they go on by themselves)
+     */
+    public boolean pass(PartyControllerEntity controller) {
+        if (!isStillActive(controller)) return false;
+        if (phase == Phase.PRACTICE) {
+            depart(controller);
+            return true;
+        }
+        if (phase != Phase.PLAYING) return false;
+        controller.nextStep();
+        return true;
+    }
+
+    /**
+     * A Step Controller replays: the round being played (practice or real) starts again, everyone back out of the
+     * pipes, its podiums emptied.
+     *
+     * @return false in the other phases
+     */
+    public boolean replayRound(PartyControllerEntity controller) {
+        if (!isStillActive(controller) || (phase != Phase.PRACTICE && phase != Phase.PLAYING)) return false;
+        cancelFlow();
+        practiceOver = false;
+        departure.sendOut(controller, phase);
+        if (phase == Phase.PRACTICE) screens.showPractice(controller);
+        return true;
     }
 
     /** The practice round is over: its results are shown, nothing is paid, and it starts again a few seconds later. */

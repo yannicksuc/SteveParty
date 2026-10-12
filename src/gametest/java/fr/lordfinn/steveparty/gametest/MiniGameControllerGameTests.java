@@ -8,12 +8,14 @@ import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
+import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
@@ -471,8 +473,8 @@ public class MiniGameControllerGameTests implements SteveGameTest {
     }
 
     /**
-     * A player who left the server no longer holds the vote back; a linked step controller shows the practice's
-     * results (next) or starts it again, without moving the party.
+     * A player who left the server no longer holds the vote back; a Step Controller acting on the page in « replay »
+     * starts the practice again, without moving the party.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_vote")
     public void aPlayerWhoLeftDoesNotBlockTheVote(TestContext context) {
@@ -489,14 +491,10 @@ public class MiniGameControllerGameTests implements SteveGameTest {
             step.leaveForMiniGame(controller);
             context.assertTrue(step.isPractice(), "the practice round");
 
-            // A step controller linked to the page, during the practice
+            // A Step Controller acting on the page, during the practice
             MiniGameSession session = MiniGameSession.playing(List.of(id));
-            session.step(0);
-            context.assertTrue(step.isPractice() && step.getLastResults() != null && step.getLastResults().kind() == MiniGameResults.Kind.PRACTICE,
-                    "next: the practice's results, the party stays on its mini-game");
-            context.assertTrue(controller.getPartyData().getCurrentStep() == step, "the party did not move");
-            session.step(1);
-            context.assertTrue(step.isPractice() && controller.getPartyData().getCurrentStep() == step, "restart: the practice starts again");
+            context.assertTrue(session.step(StepPulse.Mode.REPLAY), "replay");
+            context.assertTrue(step.isPractice() && controller.getPartyData().getCurrentStep() == step, "replay: the practice starts again");
 
             // p1 is ready, p2 is not: no real round; p2 leaves the server: it starts
             context.assertTrue(MiniGamePartyStep.toggleReady(p1) && step.isPractice(), "1/2");
@@ -507,6 +505,54 @@ public class MiniGameControllerGameTests implements SteveGameTest {
             context.assertTrue(step.isPlaying(), "the real round started");
         } finally {
             cleanUp(context, id, p1, p2);
+        }
+        context.complete();
+    }
+
+    /**
+     * A Step Controller linked with the Tile Linker Brush to the Mini-game Controller drives the mini-game of its page:
+     * nothing before it is played; next ends the practice (the real round starts), replay starts the round again, next
+     * ends the real round and the party goes on.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_step")
+    public void aStepControllerLinkedToTheMiniGameControllerDrivesItsMiniGame(TestContext context) {
+        BlockPos green = pipe(context, GREEN, 1, 1), stepPos = new BlockPos(3, 1, 6);
+        ServerPlayerEntity p1 = player(context, "s", 6.5, 1, 1.5);
+        UUID id = page(context, green);
+        try {
+            alone(context, p1);
+            podium(context, id, 4, 3, 2);
+            home(context, HOME, id);
+            PartyControllerEntity controller = party(context, id, MiniGamePartyStep.Phase.COUNTDOWN, p1);
+            MiniGamePartyStep step = step(controller);
+            context.setBlockState(stepPos.down(), Blocks.STONE);
+            context.setBlockState(stepPos, ModBlocks.STEP_CONTROLLER);
+            StepControllerBlockEntity stepController = context.getBlockEntity(stepPos);
+
+            // Painted from the Step Controller to the Mini-game Controller
+            ServerPlayerEntity linker = TestPlayers.mock(context, GameMode.CREATIVE);
+            try {
+                ItemStack brush = BoardLinkingGameTests.brush(linker);
+                BoardLinkingGameTests.paint(linker, brush, context, context.getAbsolutePos(stepPos), context.getAbsolutePos(HOME));
+            } finally {
+                TestPlayers.remove(context, linker);
+            }
+            context.assertEquals(stepController.getLink(), global(context, HOME), "linked to the Mini-game Controller");
+            context.assertTrue(!stepController.trigger() && step.getPhase() == MiniGamePartyStep.Phase.COUNTDOWN, "not played yet: nothing");
+
+            step.leaveForMiniGame(controller);
+            context.assertTrue(step.isPractice(), "the practice round");
+            context.assertTrue(stepController.trigger() && step.isPlaying(), "next: the real round starts");
+            stepController.cycleMode();
+            context.assertTrue(stepController.trigger() && step.isPlaying(), "replay: the round starts again");
+            context.assertTrue(controller.getPartyData().getCurrentStep() == step, "the party did not move");
+            stepController.cycleMode();
+            context.assertTrue(stepController.trigger(), "next");
+            context.assertEquals(step.getPhase(), MiniGamePartyStep.Phase.FINISHED, "next: the mini-game ends");
+            context.assertTrue(controller.getPartyData().isAtEnd(), "the party went on");
+        } finally {
+            TestCleanup.removeIf(context, stepPos, ModBlocks.STEP_CONTROLLER);
+            cleanUp(context, id, p1);
         }
         context.complete();
     }

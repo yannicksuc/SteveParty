@@ -400,8 +400,8 @@ public class MiniGameTestGameTests implements SteveGameTest {
     }
 
     /**
-     * A step controller linked to the page ends its test (next: with results, the places as they stand; restart or
-     * previous: stopped). A party playing the page: no test; a party about to play a page under test stops the test.
+     * A step controller linked to the page ends its test (next: with results, the places as they stand; replay: the
+     * round starts again). A party playing the page: no test; a party about to play a page under test stops the test.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_test_step", tickLimit = 100)
     public void aLinkedStepControllerEndsATest(TestContext context) {
@@ -433,12 +433,15 @@ public class MiniGameTestGameTests implements SteveGameTest {
             MiniGameTest.stop(id);
             context.assertTrue(at(p1, start), "back");
 
-            // Restart (or previous): stopped at once, without results
+            // Replay: the round starts again, no results; not before it is played
             context.assertEquals(MiniGameTest.start(server, id, null, 0), Status.READY, "another test");
             test = MiniGameTest.of(id);
-            stepController.mode = 1;
-            stepController.trigger();
-            context.assertTrue(MiniGameTest.of(id) == null && test.results() == null && at(p1, start), "stopped, everyone back");
+            stepController.cycleMode();
+            context.assertTrue(stepController.trigger(), "replayed");
+            context.assertTrue(MiniGameTest.of(id) == test && test.results() == null, "the same test goes on, without results");
+            context.assertTrue(test.phase() == MiniGameTest.Phase.PLAYING, "played again");
+            MiniGameTest.stop(id);
+            context.assertTrue(at(p1, start), "stopped, everyone back");
 
             // A party about to play the page: the test gives way
             context.assertEquals(MiniGameTest.start(server, id, null, 0), Status.READY, "a third test");

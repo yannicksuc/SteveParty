@@ -283,6 +283,12 @@ public final class TileLinkerBrush {
     private static void link(ServerPlayerEntity player, ItemStack brush, ServerWorld world, BlockPos from, BlockPos to) {
         List<BrushLinkable> kinds = BrushLinks.of(world, from, level(brush));
         BrushLinkable kind = BrushLinks.kindFor(kinds, world, to);
+        // A Step Controller reached from the element it is to drive: its link, painted the other way round
+        BrushLinkable back = kind == null ? StepControllerLinks.reverse(world, from, to) : null;
+        if (back != null) {
+            toggle(player, world, to, back, from);
+            return;
+        }
         if (kind == null) {
             // A holder linked to nothing of the kind: a router, a Hop Switch...
             boolean board = kinds.stream().anyMatch(k -> k instanceof CartridgeLinks.BoardPaths);

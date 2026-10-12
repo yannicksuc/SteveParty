@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.minigame;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
@@ -35,19 +36,7 @@ public record PartyMiniGameSession(PartyControllerEntity controller, MiniGamePar
     }
 
     @Override
-    public void step(int mode) {
-        // The practice round: « next » shows its results, the others start it again; the party does not move
-        if (miniGame.isPractice()) {
-            if (mode == 0) miniGame.practiceResults(controller);
-            else miniGame.restartPractice(controller);
-            return;
-        }
-        switch (mode) {
-            case 0 -> controller.nextStep();
-            case 1 -> controller.restartStep();
-            case 2 -> controller.previousStep();
-            default -> {
-            }
-        }
+    public boolean step(StepPulse.Mode mode) {
+        return StepPulse.apply(controller, mode);
     }
 }
