@@ -4,6 +4,9 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.utils.Argb;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.BuiltBuffer;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -12,6 +15,7 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
+import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
@@ -25,6 +29,8 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 import software.bernie.geckolib.util.Color;
+
+import java.util.function.Consumer;
 
 /**
  * Draws a Frousseux: its candle wax, a little see-through (FrousseuxModel), then over the same model the pool on its
@@ -41,6 +47,9 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     public static final Identifier CORE = Steveparty.id("textures/entity/frousseux_flame_core.png");
     /** Its flame's bones, one a stage (FrousseuxEntity.Flame order): each its own size, pixel for pixel. */
     private static final String[] STAGE_BONES = {"flame_full", "flame_high", "flame_low", "flame_ember"};
+
+    /** How tall it is drawn (blocks): its body (8 pixels) and its full flame over it (10), taller than its hitbox. */
+    public static final float DRAWN_HEIGHT = 18 / 16f;
 
     private final ItemRenderer itemRenderer;
 
@@ -82,6 +91,22 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     static void flush(VertexConsumerProvider bufferSource, @Nullable RenderLayer... layers) {
         if (!(bufferSource instanceof VertexConsumerProvider.Immediate immediate)) return;
         for (RenderLayer layer : layers) if (layer != null) immediate.draw(layer);
+    }
+
+    private static BufferAllocator ownAllocator;
+
+    /**
+     * Draws {@code layer} at once, filled by {@code fill} in a buffer of its own: no buffer source (vanilla's, or one a
+     * mod wraps and flushes its own way) holds it for later.
+     */
+    static void drawNow(RenderLayer layer, Consumer<VertexConsumer> fill) {
+        if (ownAllocator == null) ownAllocator = new BufferAllocator(RenderLayer.DEFAULT_BUFFER_SIZE);
+        BufferBuilder builder = new BufferBuilder(ownAllocator, layer.getDrawMode(), layer.getVertexFormat());
+        fill.accept(builder);
+        BuiltBuffer built = builder.endNullable();
+        if (built == null) return;
+        if (layer.isTranslucent()) built.sortQuads(ownAllocator, RenderSystem.getVertexSorting());
+        layer.draw(built);
     }
 
     /** {@code rgb} opaque, each channel times {@code brightness} (0 to 1): a flame's colour at its stage. */
@@ -196,16 +221,14 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                     shell(frousseux, getTextureResource(frousseux)), shell(frousseux, WAX));
             AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta): GeckoLib animates it
             RenderLayer layer = RenderLayer.getBeaconBeam(FLAME, true);
-            getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
+            drawNow(layer, consumer -> getRenderer().reRender(bakedModel, poseStack, any -> consumer, frousseux, layer, consumer,
                     partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
-                    withAlpha(shade(frousseux.getColor().flameEdge, brightness), frousseux.flameAlpha(partialTick)));
-            flush(bufferSource, layer);
+                    withAlpha(shade(frousseux.getColor().flameEdge, brightness), frousseux.flameAlpha(partialTick))));
             AnimatableTexture.setAndUpdate(CORE);
             RenderLayer heartLayer = RenderLayer.getBeaconBeam(CORE, true);
-            getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, heartLayer, bufferSource.getBuffer(heartLayer),
+            drawNow(heartLayer, consumer -> getRenderer().reRender(bakedModel, poseStack, any -> consumer, frousseux, heartLayer, consumer,
                     partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
-                    withAlpha(shade(frousseux.getColor().flameHeart, brightness), frousseux.flameAlpha(partialTick)));
-            flush(bufferSource, heartLayer);
+                    withAlpha(shade(frousseux.getColor().flameHeart, brightness), frousseux.flameAlpha(partialTick))));
 
             flame.setHidden(true);
             body.setHidden(bodyHidden);

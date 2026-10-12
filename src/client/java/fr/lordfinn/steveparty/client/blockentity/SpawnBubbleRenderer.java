@@ -5,8 +5,10 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.client.board.SpawnMarkerView;
+import fr.lordfinn.steveparty.client.entity.FrousseuxRenderer;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
 import net.minecraft.block.BlockState;
@@ -20,6 +22,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -50,9 +53,9 @@ import java.util.Optional;
  * on it (« always visible », a party running). During a party nothing of it shows, plate included, but to those who build the
  * board (SpawnMarkerView#sees). Placed, it comes out of the plate growing ({@link SpawnMarkerBlockEntity#INFLATE}).
  * <p>
- * What is inside stays 2 pixels or more away from the faces (no z-fighting) and is drawn first; the cube comes last,
- * on a translucent layer that is not one of the buffers drawn apart at the end (requesting it draws the content's
- * layer at once) and whose quads are sorted back to front: the content shows through every face. Its item is the
+ * What is inside stays 2 pixels or more away from the faces (no z-fighting) and is drawn first, through buffers of
+ * its own drawn at once ({@link #insideBuffers}); the cube comes last, on a translucent layer whose quads are sorted
+ * back to front: the content shows through every face. Its item is the
  * same bubble at rest ({@link #ITEM}).
  */
 public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlockEntity> {
@@ -87,6 +90,7 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     /** Where its item's arrow points (as a placed one's yaw): toward the left of its icon. */
     private static final float ITEM_YAW = 135;
     private static final Map<EntityType<?>, Optional<Entity>> MINIATURES = new HashMap<>();
+    private static VertexConsumerProvider.Immediate insideBuffers;
     private static World miniaturesWorld;
 
     public SpawnBubbleRenderer(BlockEntityRendererFactory.Context context) {
@@ -136,20 +140,22 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
                 : WorldRenderer.getLightmapCoordinates(world, BlockPos.ofFloored(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5));
         // Inside: the arrow, or the mob (close enough), or nothing when its real mob lives on it (always visible, a party
         // running); otherwise it only comes when a token lands, so the bubble keeps showing which mob it is
+        // What is inside goes into buffers of its own, drawn right after, all of it, before the film: the film writes
+        // its depth, so whatever of the mob or the arrow the world's buffers kept for later (a see-through part: the
+        // Frousseux's flame, its wax; an item it holds) would end up hidden inside the film, showing only where it pokes
+        // out. The world's buffers are not to be trusted with that: a mod may wrap them and flush them its own way
+        VertexConsumerProvider.Immediate inside = insideBuffers();
         List<EntityType<?>> mobs = marker.getLinkedMobs();
         boolean mobShown = false;
         if (!mobs.isEmpty()) {
             if (marker.isPartyRunning() && marker.isResident()) mobShown = true; // the real mob is there: an empty bubble
             else if (client.player != null && client.player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5) <= MOB_RANGE * MOB_RANGE) {
                 EntityType<?> kind = mobs.get((int) ((world.getTime() / CYCLE) % mobs.size()));
-                mobShown = miniature(world, kind, pos, centerY, yaw, time, tickDelta, grown, matrices, consumers, bubbleLight);
+                mobShown = miniature(world, kind, pos, centerY, yaw, time, tickDelta, grown, matrices, inside, bubbleLight);
             }
         }
-        if (!mobShown) arrow(client, matrices, consumers, centerY, yaw, grown, bubbleLight, overlay);
-        // What is inside drawn now, all of it, before the film: the film writes its depth, so whatever of the mob a
-        // buffer kept for later (a see-through part: the Frousseux's flame, its wax; an item it holds) would end up
-        // hidden inside the film, showing only where it pokes out, or drawn over it
-        else if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw();
+        if (!mobShown) arrow(client, matrices, inside, centerY, yaw, grown, bubbleLight, overlay);
+        inside.draw();
         // The cube last, over what is inside
         VertexConsumer buffer = consumers.getBuffer(BUBBLE_LAYER);
         // A soap bubble, not a glass cube: its film wobbles (taller and thinner, then squatter) and it sways a little
@@ -163,6 +169,15 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
                 1, 1, 1, 1, bubbleLight);
         matrices.pop();
         if (Math.abs(lift) >= 0.25f && risen >= 1) trail(matrices, buffer, plateTop, height, bob, anim, pos.hashCode(), light);
+    }
+
+    /**
+     * The buffers for what is inside a bubble: one allocator for every layer (as vanilla's for the layers it does not
+     * keep apart), so each layer is drawn as soon as another one is asked for, in the order they were filled.
+     */
+    private static VertexConsumerProvider.Immediate insideBuffers() {
+        if (insideBuffers == null) insideBuffers = VertexConsumerProvider.immediate(new BufferAllocator(RenderLayer.DEFAULT_BUFFER_SIZE));
+        return insideBuffers;
     }
 
     /** Its plate: the block's own model (turned by its blockstate), drawn here so that it can be hidden. */
@@ -213,7 +228,7 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         MinecraftClient client = MinecraftClient.getInstance();
         EntityRenderer<? super Entity> renderer = client.getEntityRenderDispatcher().getRenderer(mob);
         if (renderer == null) return false;
-        float size = Math.max(mob.getWidth(), mob.getHeight());
+        float height = drawnHeight(mob), size = Math.max(mob.getWidth(), height);
         float scale = (size <= 0 ? 1 : MINIATURE / size) * grown;
         mob.setPos(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5);
         mob.age = (int) time;
@@ -225,7 +240,7 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
             living.headYaw = living.prevHeadYaw = yaw;
         }
         matrices.push();
-        matrices.translate(0.5, centerY - mob.getHeight() * scale / 2, 0.5);
+        matrices.translate(0.5, centerY - height * scale / 2, 0.5);
         matrices.scale(scale, scale, scale);
         try {
             renderer.render(mob, yaw, tickDelta, matrices, consumers, light);
@@ -238,6 +253,15 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         }
         matrices.pop();
         return true;
+    }
+
+    /**
+     * How tall {@code mob} is drawn (blocks): its hitbox, but for a mob drawn taller than it. Sized by its hitbox alone,
+     * the Frousseux's flame (10 pixels over its 8-pixel body) rose through the top of the film, the part inside washed
+     * out by the film's rim: a flame seen only where it pokes out, at the top and toward the back.
+     */
+    private static float drawnHeight(Entity mob) {
+        return mob instanceof FrousseuxEntity ? FrousseuxRenderer.DRAWN_HEIGHT : mob.getHeight();
     }
 
     /**
