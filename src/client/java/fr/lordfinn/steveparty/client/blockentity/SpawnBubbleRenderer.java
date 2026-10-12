@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
@@ -157,7 +158,10 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         }
         Entity mob = MINIATURES.computeIfAbsent(kind, type -> {
             try {
-                return Optional.ofNullable(type.create(world));
+                Entity created = type.create(world);
+                // Never ticked: the Shop's merchant would stay closed in his box
+                if (created instanceof BoxedTraderEntity trader) trader.comeOut();
+                return Optional.ofNullable(created);
             } catch (RuntimeException e) {
                 Steveparty.LOGGER.warn("No miniature of {} for the spawn bubbles", EntityType.getId(type), e);
                 return Optional.empty();

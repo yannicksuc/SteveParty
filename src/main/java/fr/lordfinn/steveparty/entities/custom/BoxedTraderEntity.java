@@ -1234,6 +1234,15 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity, Boar
         return hidden;
     }
 
+    /**
+     * Out of his box for a merchant that never ticks (a miniature drawn on the client, as in a Spawn Bubble): he is
+     * closed until his first tick otherwise, and would stay a plain box. A merchant in the world opens or closes again
+     * on his next tick.
+     */
+    public void comeOut() {
+        hidden = false;
+    }
+
     /** Still closed after a theft (the window starts once the shocked animation has played). */
     public boolean isTheftHidden() {
         long start = this.dataTracker.get(HIDE_START);
