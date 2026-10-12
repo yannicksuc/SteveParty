@@ -114,6 +114,9 @@ public class ForkChoiceGameTests implements SteveGameTest {
                             click(context, stranger, south);
                             context.assertTrue(!south.isRemoved(), "someone else's click: the arrow stays");
                             context.assertTrue(token.steveparty$getNbSteps() > 0, "the pawn still waits");
+                            // He steps back: its player clicks from the same spot, his eyes would be inside him (the
+                            // crosshair on him or on the arrow as the entities happen to be listed)
+                            TestPlayers.place(context, stranger, 0.5, 1, 6.5);
                         }
                         player.setStackInHand(Hand.MAIN_HAND, inHand.copy());
                         click(context, player, south);
