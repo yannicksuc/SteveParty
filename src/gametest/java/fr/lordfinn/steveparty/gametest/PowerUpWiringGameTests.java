@@ -22,6 +22,8 @@ import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
@@ -53,8 +55,11 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
  */
 public class PowerUpWiringGameTests implements SteveGameTest {
     private static final String BATCH = "powerups_wiring";
-    /** The Star power-ups change the mod's Star ({@link PowerUpStar}): alone in their batch. */
-    private static final String STAR_BATCH = "powerups_wiring_star";
+    /**
+     * The Star power-ups plug their own Star into the mod ({@link PowerUpStar}, one for the whole server): each test
+     * alone in its batch, or one would use the other's Star, and put back the wrong one when it ends.
+     */
+    private static final String WHISTLE_BATCH = "powerups_wiring_star_whistle", PIPE_BATCH = "powerups_wiring_star_pipe";
 
     private static ServerPlayerEntity survivalPlayer(TestContext context) {
         ServerPlayerEntity player = player(context);
@@ -86,13 +91,18 @@ public class PowerUpWiringGameTests implements SteveGameTest {
         return controller;
     }
 
-    /** The thief answers their pending prompt with {@code target}. */
+    /**
+     * The thief answers their pending prompt with {@code target}, told by its head: the mock players all have the same
+     * name.
+     */
     private static void pick(TestContext context, ServerPlayerEntity thief, ServerPlayerEntity target) {
         DicePrompts.Prompt prompt = DicePrompts.pending(thief);
         context.assertTrue(prompt != null, "the thief is asked whom to rob");
         int index = -1;
-        for (int i = 0; i < prompt.options().size(); i++)
-            if (prompt.options().get(i).label().getString().contains(target.getName().getString())) index = i;
+        for (int i = 0; i < prompt.options().size(); i++) {
+            ProfileComponent head = prompt.options().get(i).icon().get(DataComponentTypes.PROFILE);
+            if (head != null && head.id().filter(target.getUuid()::equals).isPresent()) index = i;
+        }
         context.assertTrue(index >= 0, "the target is in the list");
         context.assertTrue(DicePrompts.answer(thief, prompt.id(), index), "answered");
     }
@@ -124,8 +134,10 @@ public class PowerUpWiringGameTests implements SteveGameTest {
             context.assertEquals(chest.count(PowerUps.MUSHROOM.item()), 1, "taken from the chest");
             int slot = player.getInventory().getSlotWithStack(new ItemStack(PowerUps.MUSHROOM.item()));
             context.assertTrue(slot >= 0, "in the inventory");
-            player.setStackInHand(Hand.MAIN_HAND, player.getInventory().getStack(slot).copy());
+            // Taken out of its slot before it goes in the hand: given to an empty inventory, that slot is the hand's
+            ItemStack given = player.getInventory().getStack(slot).copy();
             player.getInventory().setStack(slot, ItemStack.EMPTY);
+            player.setStackInHand(Hand.MAIN_HAND, given);
             context.assertTrue(use(context, player, PowerUps.MUSHROOM, 0), "used during its turn");
             context.assertEquals(held(player), 0, "consumed");
             context.assertEquals(turn(controller).getPowerUps().used(), PowerUps.MUSHROOM, "the turn has it");
@@ -196,10 +208,12 @@ public class PowerUpWiringGameTests implements SteveGameTest {
             TrapEffect.place(controller, space.getPos(), b.getUuid(), tokenB.getUuid());
             context.assertEquals(TrapEffect.onTokenStopped(controller, space, tokenB).outcome(), TrapEffect.Outcome.OWN, "its own trap");
             context.assertTrue(PowerUpProtection.isProtected(controller, tokenB.getUuid()), "its own trap uses no Padlock");
-            TrapEffect.place(controller, space.getPos(), a.getUuid(), tokens.get(0).getUuid());
-            context.assertEquals(TrapEffect.onTokenStopped(controller, space, tokenB).outcome(), TrapEffect.Outcome.DISARMED, "a's trap is parried");
+            // Its own trap stays, one trap per space: a's goes on the other space
+            BoardSpaceBlockEntity other = context.getBlockEntity(PATH.get(0));
+            context.assertEquals(TrapEffect.place(controller, other.getPos(), a.getUuid(), tokens.get(0).getUuid()), TrapEffect.Placed.SET, "a's trap set");
+            context.assertEquals(TrapEffect.onTokenStopped(controller, other, tokenB).outcome(), TrapEffect.Outcome.DISARMED, "a's trap is parried");
             context.assertTrue(!PowerUpProtection.isProtected(controller, tokenB.getUuid()), "the Padlock is used up");
-            context.assertTrue(TrapEffect.trapAt(controller, space.getPos()) == null, "the trap is gone");
+            context.assertTrue(TrapEffect.trapAt(controller, other.getPos()) == null, "the trap is gone");
             context.complete();
         });
     }
@@ -312,7 +326,7 @@ public class PowerUpWiringGameTests implements SteveGameTest {
         return star;
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = STAR_BATCH)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = WHISTLE_BATCH)
     public void starWhistleMovesTheStarAndIsConsumed(TestContext context) {
         ServerPlayerEntity player = survivalPlayer(context);
         PartyControllerEntity controller = party(context, new ArrayList<>(), player);
@@ -327,7 +341,7 @@ public class PowerUpWiringGameTests implements SteveGameTest {
     }
 
     /** The pawn warps before the Star; the roll waits until it has arrived. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = STAR_BATCH)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = PIPE_BATCH)
     public void goldenPipeHoldsTheRollUntilThePawnArrives(TestContext context) {
         ServerPlayerEntity player = survivalPlayer(context);
         path(context, 3, -1, null);
