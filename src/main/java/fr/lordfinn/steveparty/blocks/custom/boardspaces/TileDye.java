@@ -117,7 +117,10 @@ public final class TileDye {
         if (cartridge.isEmpty()) return;
         Integer base = baseColor(cartridge);
         if (base != null) ABoardSpaceBehavior.setColor(space, base);
-        else cartridge.remove(ModComponents.COLOR);
+        else {
+            cartridge.remove(ModComponents.COLOR);
+            syncState(space); // a check point shows its own blue again
+        }
         space.update(); // saves, sends the cartridge (the clients redraw the space) and follows with the check point's state
     }
 

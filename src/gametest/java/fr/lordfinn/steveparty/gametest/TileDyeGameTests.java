@@ -8,6 +8,13 @@ import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.ColorModule;
+import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlockEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -59,6 +66,51 @@ public class TileDyeGameTests implements SteveGameTest {
 
     private static Integer color(BoardSpaceBlockEntity space) {
         return space.getActiveCartridgeItemStack().get(ModComponents.COLOR);
+    }
+
+    /**
+     * The base swatch of a plain cartridge's menu means its host's base colour: no colour stored, so that a check point
+     * stays blue (not white) and a tile white; in a hand, the neutral white.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theBaseSwatchKeepsTheHostsColour(TestContext context) {
+        BoardSpaceBlockEntity checkPoint = space(context, ModBlocks.CHECK_POINT);
+        checkPoint.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
+        BlockPos abs = context.getAbsolutePos(SPACE);
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        Vec3d near = abs.toCenterPos().add(1.5, 0.5, 0);
+        player.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
+        CartridgeRef onCheckPoint = CartridgeRef.slot(abs, 0);
+        ColorModule module = (ColorModule) CartridgeMenus.module(checkPoint.getStack(0), "color");
+        context.assertTrue(module != null, "a colour module");
+        context.assertEquals(module.get(checkPoint.getStack(0)), ColorModule.DEFAULT, "a new cartridge: the base colour");
+        context.assertEquals(module.baseColor(checkPoint.getStack(0), checkPoint), CheckPointBlockEntity.BASE_COLOR, "blue in a check point");
+
+        context.assertTrue(CartridgeMenus.apply(player, onCheckPoint, "color", DyeColor.RED.getId()), "red");
+        context.assertEquals(color(checkPoint), RED, "its cartridge is red");
+        context.expectBlockProperty(SPACE, DYED, true);
+        context.assertTrue(CartridgeMenus.apply(player, onCheckPoint, "color", ColorModule.DEFAULT), "base colour");
+        context.assertTrue(color(checkPoint) == null, "no colour stored: the host's own");
+        context.expectBlockProperty(SPACE, DYED, false);
+        context.assertEquals(module.get(checkPoint.getStack(0)), ColorModule.DEFAULT, "the base swatch selected");
+
+        // In a hand: the neutral colour, the dye taken off the same way
+        ItemStack inHand = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+        inHand.set(ModComponents.COLOR, RED);
+        player.setStackInHand(Hand.MAIN_HAND, inHand);
+        context.assertEquals(module.baseColor(inHand, null), CartridgeItem.PLAIN_COLOR, "white in a hand");
+        context.assertTrue(CartridgeMenus.apply(player, CartridgeRef.hand(Hand.MAIN_HAND), "color", ColorModule.DEFAULT), "base colour in hand");
+        context.assertTrue(!inHand.contains(ModComponents.COLOR), "no colour stored in hand");
+
+        // On a tile: white; a Stop cartridge keeps its own anthracite
+        BlockPos tilePos = SPACE.east(2);
+        context.setBlockState(tilePos.down(), Blocks.STONE);
+        context.setBlockState(tilePos, ModBlocks.TILE);
+        BoardSpaceBlockEntity tile = context.getBlockEntity(tilePos);
+        context.assertEquals(module.baseColor(new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), tile), CartridgeItem.PLAIN_COLOR, "white on a tile");
+        ItemStack stop = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP);
+        context.assertEquals(module.baseColor(stop, checkPoint), StopCartridgeItem.COLOR, "a Stop cartridge's own colour");
+        context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)

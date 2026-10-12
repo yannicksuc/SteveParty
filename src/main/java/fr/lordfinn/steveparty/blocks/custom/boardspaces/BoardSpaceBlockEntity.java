@@ -192,6 +192,14 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         applyActiveCartridge();
     }
 
+    /**
+     * Its colour while its cartridge has none of its own and no dye ({@code 0xRRGGBB}): the plain white of a tile. The
+     * "base colour" swatch of a cartridge's menu shows it (see ColorModule).
+     */
+    public int baseColor() {
+        return CartridgeItem.PLAIN_COLOR;
+    }
+
     public ItemStack getActiveCartridgeItemStack() {
         if (this.world == null) return ItemStack.EMPTY;
         return this.getStack(getActiveSlot());

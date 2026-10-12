@@ -734,15 +734,18 @@ public final class CartridgePanel {
     private void drawColors(DrawContext context, ItemStack current, int i, ColorModule module, int mx, int top,
                             int mouseX, int mouseY, boolean active) {
         int value = value(current, i);
+        // The base swatch shows its host's base colour (a check point's blue), the neutral one in a hand
+        BlockPos at = pos.get();
+        int base = module.baseColor(current, client.world == null || at == null ? null : client.world.getBlockEntity(at));
         for (int v = 0; v <= ColorModule.DEFAULT; v++) {
             int sx = colorX(mx, v), sy = colorY(top, v);
-            int c = Argb.opaque(module.colorOf(v));
+            int c = Argb.opaque(v == ColorModule.DEFAULT ? base : module.colorOf(v));
             boolean hovered = active && HitArea.contains(mouseX, mouseY, sx, sy, ColorModule.SWATCH, ColorModule.SWATCH);
             if (v == value) context.fill(sx - 1, sy - 1, sx + ColorModule.SWATCH + 1, sy + ColorModule.SWATCH + 1, 0xFFFFC52E);
             PartyGui.button(context, sx, sy, ColorModule.SWATCH, ColorModule.SWATCH,
                     new PartyGui.Theme(hovered ? 0xFFFFFFFF : Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), v == value);
             if (v == ColorModule.DEFAULT) {
-                // The cartridge's own colour: a small cartridge mark
+                // The base colour: a small cartridge mark
                 int mark = Argb.luminance(c) > 140 ? 0xFF2A2A2A : 0xFFFFFFFF;
                 context.fill(sx + 4, sy + 3, sx + 9, sy + 10, mark);
                 context.fill(sx + 5, sy + 4, sx + 8, sy + 6, STRIP);
