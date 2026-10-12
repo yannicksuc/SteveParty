@@ -187,6 +187,13 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(SpawnMarkerBlockEntity::new, ModBlocks.SPAWN_MARKER).build(null)
     );
 
+    /** A Bubbler's: for its tiny bubbles to be drawn. */
+    public static final BlockEntityType<BubblerBlockEntity> BUBBLER_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "bubbler"),
+            FabricBlockEntityTypeBuilder.create(BubblerBlockEntity::new, ModBlocks.BUBBLER).build(null)
+    );
+
     /** What a Magpie Nest holds: coins (its pot's when linked) and shiny things. */
     public static final BlockEntityType<MagpieNestBlockEntity> MAGPIE_NEST_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,

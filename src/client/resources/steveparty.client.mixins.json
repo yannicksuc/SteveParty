@@ -13,6 +13,7 @@
     "EntityLookToolWheelMixin",
     "EntityLookTelescopeMixin",
     "BipedEntityModelPipeSwimMixin",
+    "BipedEntityModelBubbleRiderMixin",
     "BossBarHudAccessor",
     "CapeFeatureRendererBoxCostumeMixin",
     "InGameHudAccessor",

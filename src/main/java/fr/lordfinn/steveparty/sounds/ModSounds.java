@@ -190,6 +190,18 @@ public class ModSounds {
     /** Its tank spilling as it dies. */
     public static final SoundEvent TRICHAUDRON_SPILL = register("trichaudron.spill");
     @SuppressWarnings("EmptyMethod")
+    // The Bubbler and its bubbles: soft vanilla sounds re-pitched (assets/steveparty/sounds.json)
+    /** A bubble blown around what stepped into the Bubbler: a soft bloop. */
+    public static final SoundEvent BUBBLE_BLOW = register("bubble.blow");
+    /** A bubble popping: a soft pop. */
+    public static final SoundEvent BUBBLE_POP = register("bubble.pop");
+    /** A rider's puff: a whoosh of air. */
+    public static final SoundEvent BUBBLE_WHOOSH = register("bubble.whoosh");
+    /** Two bubbles merging: a low bloop. */
+    public static final SoundEvent BUBBLE_MERGE = register("bubble.merge");
+    /** The Bubbler at rest: a gentle bubbling, now and then. */
+    public static final SoundEvent BUBBLER_BUBBLING = register("bubbler.bubbling");
+
     public static void initialize() {
     }
 
