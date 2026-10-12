@@ -61,16 +61,17 @@ public final class BoardRuleOverlays {
         }
         BlockState state = entity.getCachedState();
         if (!state.contains(ABoardSpaceBlock.TILE_TYPE)) return;
-        // Painted with glow ink (TileGlow): not baked in the chunk, the whole check point drawn here at full light
-        // (the jaws of a Trap, on the floor, stay as lit as the world)
+        ItemStack cartridge = BoardSpaceClientUtils.getDisplayedCartridge(entity);
+        // Painted with glow ink (TileGlow): not baked in the chunk, the whole check point drawn here at full light, in
+        // its dye if dyed (TileDye; the jaws of a Trap, on the floor, stay as lit as the world)
         if (state.contains(TileGlow.GLOWING) && state.get(TileGlow.GLOWING)) {
             light = LightmapTextureManager.MAX_LIGHT_COORDINATE;
-            TileBlockEntityRenderer.renderModel(state, matrices, consumers, light, overlay, TileColors.WHITE);
+            int color = cartridge.isEmpty() ? TileColors.WHITE : cartridge.getOrDefault(ModComponents.COLOR, TileColors.WHITE);
+            TileBlockEntityRenderer.renderModel(state, matrices, consumers, light, overlay, color);
         }
         BoardSpaceType type = state.get(ABoardSpaceBlock.TILE_TYPE);
         if (type == BoardSpaceType.DEFAULT || type == BoardSpaceType.TILE_START) return;
-        render(entity, type, BoardSpaceClientUtils.getDisplayedCartridge(entity),
-                0.5, 0.5, tickDelta, matrices, consumers, light);
+        render(entity, type, cartridge, 0.5, 0.5, tickDelta, matrices, consumers, light);
     }
 
     // ---------------------------------------------------------------- the Key gate's holograms

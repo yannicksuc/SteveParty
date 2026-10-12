@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileDye;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -83,11 +84,20 @@ public abstract class ABoardSpaceBehavior {
         if (stack == null || !(stack.getItem() instanceof DyeItem dye)) return PASS;
         final int newColor = dye.getColor().getEntityColor();
         BoardSpaceBlockEntity tileEntity = getTileEntity(world, pos);
-        setColor(tileEntity, newColor);
-        if (!player.getAbilities().creativeMode) {
+        // Used up only when the colour changes (no cartridge, or already that colour: nothing used)
+        if (setColor(tileEntity, newColor) && !player.isCreative()) {
             stack.decrement(1);
         }
         return SUCCESS;
+    }
+
+    /**
+     * Whether a dye stays on the cartridges of this role (see TileDye): true by default. A role whose colour is worked
+     * out from its settings (a shop, a star space, a teleport tile...) returns false: a sponge or a brush finds no dye
+     * to take off, and a check point keeps its own look.
+     */
+    public boolean keepsDye() {
+        return true;
     }
 
     public boolean needToStop(World world, BlockPos pos) {
@@ -155,18 +165,24 @@ public abstract class ABoardSpaceBehavior {
         return BoardSpaceRedstoneRouterBlockEntity.landingSignal(landing(boardSpaceEntity, stack));
     }
 
-    public static void setColor(BoardSpaceBlockEntity tileEntity, int color) {
+    /**
+     * Colours the active cartridge of {@code tileEntity} (sent to the clients; a check point's dyed look follows).
+     * @return whether the colour changed (false without a cartridge, or when it already has that colour)
+     */
+    public static boolean setColor(BoardSpaceBlockEntity tileEntity, int color) {
         ItemStack behaviorItemstack = getActiveCartdridgeItemstack(tileEntity);
         // Never write components on an empty stack (it may be the shared ItemStack.EMPTY instance)
-        if (behaviorItemstack == null || behaviorItemstack.isEmpty()) return;
+        if (behaviorItemstack == null || behaviorItemstack.isEmpty()) return false;
         Integer previousColor = behaviorItemstack.get(ModComponents.COLOR);
-        if (previousColor != null && previousColor == color) return; // nothing changed, nothing to send
+        if (previousColor != null && previousColor == color) return false; // nothing changed, nothing to send
         behaviorItemstack.set(ModComponents.COLOR, color);
         World world = tileEntity.getWorld();
-        if (!(world instanceof ServerWorld serverWorld)) return;
+        if (!(world instanceof ServerWorld serverWorld)) return true;
         for (ServerPlayerEntity player : PlayerLookup.tracking(serverWorld, tileEntity.getPos())) {
             ServerPlayNetworking.send(player, new UpdateColoredTilePayload(tileEntity.getPos(), color));
         }
+        TileDye.syncState(tileEntity);
+        return true;
     }
 
     /**

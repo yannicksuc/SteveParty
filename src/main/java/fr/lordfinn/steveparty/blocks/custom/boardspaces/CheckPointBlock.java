@@ -27,7 +27,7 @@ public class CheckPointBlock extends ABoardSpaceBlock {
     public static final MapCodec<CheckPointBlock> CODEC = Block.createCodec(CheckPointBlock::new);
     public CheckPointBlock(Settings settings) {
         super(settings.sounds(BlockSoundGroup.GLASS).nonOpaque().luminance(state -> 7), 16);
-        setDefaultState(getDefaultState().with(GLOWING, false));
+        setDefaultState(getDefaultState().with(GLOWING, false).with(TileDye.DYED, false));
     }
 
     @Override
@@ -35,11 +35,14 @@ public class CheckPointBlock extends ABoardSpaceBlock {
         return CODEC;
     }
 
-    /** Takes glow ink, as a tile does (see TileGlow). */
+    /**
+     * Takes glow ink, as a tile does (see TileGlow); shows its cartridge's dye with a tinted model (see TileDye: the
+     * dye stays on the cartridge).
+     */
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
-        builder.add(GLOWING);
+        builder.add(GLOWING, TileDye.DYED);
     }
 
     /** Placed from an item painted with glow ink (see {@link #getDroppedStacks}): glowing again. */

@@ -50,6 +50,12 @@ public class ShopBoardSpaceBehavior extends ABoardSpaceBehavior {
         return TileFeedback.Landing.SHOP;
     }
 
+    /** Its colour is worked out from its settings: no dye stays on it (see TileDye). */
+    @Override
+    public boolean keepsDye() {
+        return false;
+    }
+
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
         setColor(boardSpaceBlockEntity, ShopCartridgeItem.COLOR);

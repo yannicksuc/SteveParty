@@ -443,6 +443,8 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.GOAL_POLE_BASE_ENTITY, GoalPoleBaseRenderer::new);
 
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE, ADVANCED_TILE);
+        // A dyed check point (TileDye): its grey crystal in its cartridge's colour, as a tile's sides
+        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, CHECK_POINT);
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTradingStallColor, TRADING_STALL);
     }
 

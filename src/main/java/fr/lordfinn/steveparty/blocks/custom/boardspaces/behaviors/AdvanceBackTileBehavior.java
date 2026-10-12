@@ -51,6 +51,12 @@ public class AdvanceBackTileBehavior extends ABoardSpaceBehavior {
         return AdvanceBackMoves.isWaiting(token);
     }
 
+    /** Its colour is worked out from its settings: no dye stays on it (see TileDye). */
+    @Override
+    public boolean keepsDye() {
+        return false;
+    }
+
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
         setColor(boardSpaceBlockEntity, AdvanceBackCartridgeItem.color(AdvanceBackCartridgeItem.steps(stack)));

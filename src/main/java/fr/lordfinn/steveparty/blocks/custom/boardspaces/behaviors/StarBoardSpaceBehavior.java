@@ -42,6 +42,12 @@ public class StarBoardSpaceBehavior extends ABoardSpaceBehavior {
         return TileFeedback.Landing.STAR;
     }
 
+    /** Its colour is worked out from its settings: no dye stays on it (see TileDye). */
+    @Override
+    public boolean keepsDye() {
+        return false;
+    }
+
     /** Always the star's yellow: no other role is yellow. */
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {

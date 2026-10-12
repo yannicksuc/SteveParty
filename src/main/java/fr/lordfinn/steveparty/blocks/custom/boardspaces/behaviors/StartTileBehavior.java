@@ -244,8 +244,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         if (entity != null)
             handleDyeInteraction(player.getAbilities().creativeMode, dye, entity, stack);
         else {
-            setColor(tileEntity, newColor);
-            if (!player.getAbilities().creativeMode) {
+            if (setColor(tileEntity, newColor) && !player.isCreative()) {
                 stack.decrement(1);
             }
         }

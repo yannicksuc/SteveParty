@@ -48,10 +48,9 @@ public final class TileGlow {
         world.playSound(null, pos, glow ? SoundEvents.ITEM_GLOW_INK_SAC_USE : SoundEvents.ITEM_INK_SAC_USE,
                 SoundCategory.BLOCKS, 1.0F, 1.0F);
         if (world instanceof ServerWorld serverWorld) {
-            // On the tile as it is seen (lowered, sloped, a large tile's middle), around a check point's floating cube
+            // On the tile as it is seen, around a check point's floating cube
             boolean tile = state.getBlock() instanceof ATileBlock;
-            Vec3d centre = tile ? BoardSpaces.standPos(serverWorld, pos).add(0, 0.1, 0)
-                    : state.getOutlineShape(serverWorld, pos).getBoundingBox().getCenter().add(Vec3d.of(pos));
+            Vec3d centre = BoardSpaces.effectsPos(serverWorld, state, pos);
             double spread = tile ? 0.3 : 0.15;
             serverWorld.spawnParticles(glow ? ParticleTypes.GLOW : ParticleTypes.SQUID_INK,
                     centre.x, centre.y, centre.z, glow ? 10 : 6, spread, tile ? 0.05 : spread, spread, 0.02);

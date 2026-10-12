@@ -273,6 +273,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             serverWorld.setBlockState(pos, state.with(TILE_TYPE, type));
         }
         updateBoardSpaceColor();
+        // A check point's dyed look follows its new cartridge (see TileDye)
+        TileDye.syncState(this);
         syncToClients();
         getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
         // A star space switched on or off: the party stars follow
@@ -302,8 +304,11 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     @Override
     public void markDirty() {
         super.markDirty();
-        // The active cartridge may have been edited in place (colour, destinations...)
-        if (world instanceof ServerWorld) updateBoardSpaceColor();
+        // The active cartridge may have been edited in place (colour, destinations...), or taken out
+        if (world instanceof ServerWorld) {
+            updateBoardSpaceColor();
+            TileDye.syncState(this);
+        }
     }
 
     public static void displayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder, List<BoardSpaceDestination> destinations) {
@@ -485,6 +490,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
+        // Client side, the colour of the space is baked in the chunk (its colour provider): redrawn when it changes
+        Integer shownColor = world != null && world.isClient ? getActiveCartridgeItemStack().get(ModComponents.COLOR) : null;
         super.readNbt(nbt, wrapper);
         activeSlot = nbt.getInt(ACTIVE_SLOT_KEY);
         stamp = nbt.contains(STAMP_KEY)
@@ -503,6 +510,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             } catch (NumberFormatException ignored) {
             }
         }
+        if (world != null && world.isClient && !Objects.equals(shownColor, getActiveCartridgeItemStack().get(ModComponents.COLOR)))
+            world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_LISTENERS);
     }
 
     public static List<BoardSpaceDestination> getDestinationsStatus(List<BlockPos> blockPosList, World world) {

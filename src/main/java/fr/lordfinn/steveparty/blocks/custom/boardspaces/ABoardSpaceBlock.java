@@ -58,6 +58,9 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         // Glow ink (or ink, to put it out) on a tile, as on a sign
         ActionResult inked = TileGlow.onUseWithItem(stack, state, world, pos, player, hand);
         if (inked != null) return ItemResults.of(inked);
+        // A sponge or a brush takes the dye off (after a tile's stamped look, above)
+        ActionResult washed = TileDye.onUseWithItem(stack, state, world, pos, player, hand);
+        if (washed != null) return ItemResults.of(washed);
         // Client prediction: every behavior only handles dyes (and returns PASS otherwise)
         if (world.isClient) return ItemResults.of(stack != null && stack.getItem() instanceof DyeItem ? SUCCESS : PASS);
         return ItemResults.of(fr.lordfinn.steveparty.api.board.BoardSpaceRoles.behaviorAt(world, pos, state).onUseWithItem(stack, state, world, pos, player, hit));
