@@ -24,6 +24,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.world.World;
@@ -114,6 +115,9 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         if (world == null) return;
         MinecraftClient client = MinecraftClient.getInstance();
         float time = world.getTime() + tickDelta;
+        // Its floating, wobbling and trail run on the clock, in ticks (wrapped each hour: precise as a float), not on the
+        // world's time: a long-lived world's time as a float loses its fractions, and a frozen one would stop them
+        float anim = (Util.getMeasuringTimeMs() % 3_600_000L) / 50f;
         BlockPos pos = marker.getPos();
         float yaw = SpawnMarkerBlock.yaw(marker.getCachedState());
         float lift = (float) marker.getLift();
@@ -130,7 +134,7 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         float height = (float) SpawnMarkerBlock.BUBBLE_HEIGHT + lift;
         float phase = (pos.hashCode() & 63) * 0.1f;
         // Floating: the cube and what is inside (arrow or mob) bob together, from its rest height up
-        float bob = (1 - MathHelper.cos(time * BOB_SPEED + phase)) / 2 * BOB_HEIGHT;
+        float bob = (1 - MathHelper.cos(anim * BOB_SPEED + phase)) / 2 * BOB_HEIGHT;
         float centerY = plateTop + (height + bob - plateTop) * risen;
         int bubbleLight = lift == 0 ? light
                 : WorldRenderer.getLightmapCoordinates(world, BlockPos.ofFloored(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5));
@@ -148,15 +152,15 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         // The cube last, over what is inside
         VertexConsumer buffer = consumers.getBuffer(BUBBLE_LAYER);
         // A soap bubble, not a glass cube: its film wobbles (taller and thinner, then squatter) and it sways a little
-        float squash = WOBBLE * MathHelper.sin(time * WOBBLE_SPEED + phase);
+        float squash = WOBBLE * MathHelper.sin(anim * WOBBLE_SPEED + phase);
         matrices.push();
         matrices.translate(0.5f, centerY, 0.5f);
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(SWAY * MathHelper.sin(time * SWAY_SPEED_X + phase)));
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(SWAY * MathHelper.sin(time * SWAY_SPEED_Z + phase * 1.7f)));
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_X + phase)));
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_Z + phase * 1.7f)));
         matrices.scale(1 - squash / 2, 1 + squash, 1 - squash / 2);
         cube(matrices.peek(), buffer, BUBBLE.getSprite(), 0, 0, 0, HALF * grown, FACE_FROM, FACE_TO, 1, 1, 1, 1, bubbleLight);
         matrices.pop();
-        if (Math.abs(lift) >= 0.25f && risen >= 1) trail(matrices, buffer, plateTop, height + bob, time, pos.hashCode(), light);
+        if (Math.abs(lift) >= 0.25f && risen >= 1) trail(matrices, buffer, plateTop, height + bob, anim, pos.hashCode(), light);
     }
 
     /** The blue arrow at the bubble's centre, pointing its way. */
