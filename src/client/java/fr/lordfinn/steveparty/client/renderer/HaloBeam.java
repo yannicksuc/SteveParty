@@ -66,6 +66,8 @@ public final class HaloBeam {
     private static final float TOP_ALPHA = 0.45F;
     /** Texture heights per block; how fast it rises (per tick); degrees per tick each shell turns (opposite ways). */
     private static final float V_PER_BLOCK = 0.4F, RISE = 0.03F, TURN = 0.6F;
+    /** How fast the outer shell's texture rises, as a share of the inner one's. */
+    private static final float OUTER_RISE = 0.7F;
     /** The slow breathing of its light: per tick, and how much of it fades at the low point. */
     private static final float PULSE_SPEED = 0.1F, PULSE_DEPTH = 0.2F;
     /** The colour ramp: how dark its darkest grey gets (TileColors darkness), how light its lightest. */
@@ -119,6 +121,8 @@ public final class HaloBeam {
         Identifier texture = texture(argb & 0xFFFFFF);
         float pulse = alpha * (1 - PULSE_DEPTH * (0.5F + 0.5F * MathHelper.sin(time * PULSE_SPEED)));
         float v0 = -MathHelper.fractionalPart(time * RISE);
+        // The outer shell rises slower: its own wrap (a share of the inner one's would jump when that one wraps)
+        float outerV0 = -MathHelper.fractionalPart(time * RISE * OUTER_RISE) + 0.5F;
         // Wrapped below 360°, so that the angle keeps its precision on a long-running world
         float turn = (time * TURN) % 360F;
         remember(matrices.peek(), radius, height, 45F - turn);
@@ -131,7 +135,7 @@ public final class HaloBeam {
 
         matrices.push();
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(45F - turn));
-        shell(consumers.getBuffer(Layers.OUTER.apply(texture)), matrices.peek(), radius, height, v0 * 0.7F + 0.5F,
+        shell(consumers.getBuffer(Layers.OUTER.apply(texture)), matrices.peek(), radius, height, outerV0,
                 OUTER_ALPHA * pulse);
         matrices.pop();
     }
