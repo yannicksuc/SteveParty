@@ -74,8 +74,8 @@ public class PotTileBehavior extends ABoardSpaceBehavior {
     }
 
     /**
-     * In game: what stopping wins, what passing costs (when it costs). Building: the pot's start, its cap, the Pie's
-     * theft, the winner paying too (only when set).
+     * In game: what stopping wins, what passing costs (when it costs). Building: the pot's start, its cap, the winner
+     * paying too (only when set).
      */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
@@ -86,7 +86,6 @@ public class PotTileBehavior extends ABoardSpaceBehavior {
         for (ItemStack item : PotCartridgeItem.items(stack)) info.item(item);
         if (PotCartridgeItem.start(stack) > 0) info.build(coin, TileInfo.line("pot.start", TileInfo.value(PotCartridgeItem.start(stack))));
         if (PotCartridgeItem.cap(stack) > 0) info.build(coin, TileInfo.line("pot.cap", TileInfo.value(PotCartridgeItem.cap(stack))));
-        if (PotCartridgeItem.thief(stack) > 0) info.build(TileInfo.line("pot.thief", TileInfo.value(PotCartridgeItem.thief(stack))));
         if (PotCartridgeItem.landerPays(stack)) info.build(TileInfo.line("pot.lander_pays"));
     }
 }

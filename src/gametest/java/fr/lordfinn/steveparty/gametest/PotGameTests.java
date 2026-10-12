@@ -42,7 +42,7 @@ import java.util.function.BooleanSupplier;
 
 /**
  * The Common pot Cartridge and its Pie: stakes of the passing tokens (what the player has, the cap), the token stopping
- * on it winning the pot (in a party, outside a party, paying first if asked), the thieving Pie, the pot saved with its
+ * on it winning the pot (in a party, outside a party, paying first if asked), the pot saved with its
  * tile, the nest showing it and the Pie coming and going with its cartridge. Each test has its own batch (a mock
  * player and their coins).
  */
@@ -222,31 +222,7 @@ public class PotGameTests implements SteveGameTest {
         });
     }
 
-    // ---------------------------------------------------------------- the thieving Pie, saving
-
-    /** The thieving Pie (100 %) steals one item (never the coins) into the pot; the winner gets it. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "pot_thief")
-    public void theThievingPieStealsAnItemForThePot(TestContext context) {
-        ItemStack pot = pot(1);
-        BoardRuleCartridgeItem.putSetting(pot, PotCartridgeItem.THIEF, 100);
-        Board board = board(context, pot);
-        give(board, 3);
-        board.player().getInventory().insertStack(new ItemStack(Items.DIAMOND));
-        context.waitAndRun(2, () -> {
-            roll(board.token(), 3);
-            when(context, () -> isOn(context, board.token(), PATH.get(3)), 200, "the move ends", () -> {
-                List<ItemStack> items = PotCartridgeItem.items(board.cartridge());
-                context.assertTrue(items.size() == 1 && items.getFirst().isOf(Items.DIAMOND), "the diamond is in the pot");
-                context.assertEquals(board.player().getInventory().count(Items.DIAMOND), 0, "taken from the player");
-                context.assertEquals(board.coins(), 2, "the coins only for the stake");
-                CommonPots.Win win = CommonPots.win(context.getWorld(), board.pot(), board.token());
-                context.assertTrue(win.items().size() == 1, "the winner gets the diamond");
-                context.assertEquals(board.player().getInventory().count(Items.DIAMOND), 1, "back in an inventory");
-                context.assertTrue(PotCartridgeItem.items(board.cartridge()).isEmpty(), "the pot is emptied");
-                context.complete();
-            });
-        });
-    }
+    // ---------------------------------------------------------------- saving
 
     /** The pot (coins and items) is saved with its tile. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "pot_save")
@@ -268,7 +244,7 @@ public class PotGameTests implements SteveGameTest {
         context.assertEquals(PotCartridgeItem.coins(back), 12, "the coins");
         context.assertEquals(PotCartridgeItem.stake(back), 3, "its settings");
         List<ItemStack> items = PotCartridgeItem.items(back);
-        context.assertTrue(items.size() == 1 && items.getFirst().isOf(Items.EMERALD) && items.getFirst().getCount() == 2, "the stolen items");
+        context.assertTrue(items.size() == 1 && items.getFirst().isOf(Items.EMERALD) && items.getFirst().getCount() == 2, "the items");
         context.complete();
     }
 

@@ -49,7 +49,7 @@ import java.util.Set;
  * <p>
  * Linked to a Common pot space ({@link CommonPots#nestOf}, the link saved here as {@link #getPot}), its whole content
  * <em>is</em> the pot: its coins are the pot's coins and its other things the pot's items ({@link PotCartridgeItem#coins},
- * {@link PotCartridgeItem#items}, with what the thieving Pie stole), kept in the pot cartridge only, so a pot saved
+ * {@link PotCartridgeItem#items}), kept in the pot cartridge only, so a pot saved
  * before nests held anything keeps its amount. What goes into the nest goes into the pot (coins up to its cap); the
  * winner of the pot takes it all and empties the nest. What a nest held on its own goes into the pot when it gets
  * linked. Nothing comes out of a pot's nest but by winning the pot (its slots look empty to a hopper).
@@ -69,7 +69,7 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
     public static final int SLOTS = 27;
     /** How many things of a kind a slot holds, whatever their stack size. */
     public static final int SLOT_LIMIT = 256;
-    /** How many stacks of things a pot holds at most (what the thieving Pie steals aside). */
+    /** How many stacks of things a pot holds at most. */
     public static final int POT_ITEM_STACKS = 27;
     /** How many kinds the clients get at most (a pot's things can be more kinds than a nest's slots). */
     public static final int SHOWN_KINDS = 64;

@@ -33,7 +33,6 @@ import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +40,8 @@ import java.util.UUID;
 
 /**
  * The Common pots ({@link PotCartridgeItem}): a token passing over a pot space puts its stake in (all its player has
- * if less, no debt; up to the pot's cap), the token stopping exactly on it wins the pot (its coins, and the items the
- * thieving Pie stole) and the pot starts again. Coins only: the party's coin (the mod's coin outside a party). Its base
+ * if less, no debt; up to the pot's cap), the token stopping exactly on it wins the pot (its coins, and the things put in
+ * its nest) and the pot starts again. Coins only: the party's coin (the mod's coin outside a party). Its base
  * ({@link PotCartridgeItem#START}) is never made from nothing: it is taken from the party's bank ({@link PartyResources})
  * when a pot never filled is first used in a party and right after each win (a bank short of coins gives what it has;
  * outside a party, nothing). Several pots are independent: each cartridge holds its own (saved with its tile).
@@ -60,8 +59,8 @@ public final class CommonPots {
     private static final int FLIGHT_TICKS = 18;
 
     /** What a token passing gave the pot. */
-    public record Stake(int coins, ItemStack stolen) {
-        public static final Stake NONE = new Stake(0, ItemStack.EMPTY);
+    public record Stake(int coins) {
+        public static final Stake NONE = new Stake(0);
     }
 
     /** What a winner took: the coins and the items. */
@@ -93,11 +92,6 @@ public final class CommonPots {
                 .orElseGet(() -> new ItemStack(ModItems.COIN));
     }
 
-    private static @Nullable ItemStack starOf(MobEntity token) {
-        return PartyControllerEntity.getRunningPartyOf(token.getUuid())
-                .map(party -> party.getCurrency(PartyCurrency.STAR)).orElse(null);
-    }
-
     /** The player of the token, if connected. */
     public static @Nullable ServerPlayerEntity playerOf(ServerWorld world, MobEntity token) {
         UUID owner = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getTokenOwner() : null;
@@ -106,14 +100,14 @@ public final class CommonPots {
 
     /**
      * {@code token} passes over the pot space: its player puts the stake in (what they have, no debt, as much as the
-     * cap lets in), and the thieving Pie may steal one of their items.
+     * cap lets in).
      */
     public static Stake pass(ServerWorld world, BoardSpaceBlockEntity space, MobEntity token) {
         ItemStack pot = potOf(space);
         ServerPlayerEntity player = playerOf(world, token);
         if (pot == null || player == null) return Stake.NONE;
         fillBase(pot, token);
-        Stake stake = collect(world, space, pot, token, player, true);
+        Stake stake = collect(world, space, pot, token, player);
         space.update();
         Text name = token.getDisplayName();
         Text message = stake.coins() > 0
@@ -121,12 +115,7 @@ public final class CommonPots {
                 : Text.translatable("message.steveparty.pot.no_stake", name, PotCartridgeItem.coins(pot));
         MessageUtils.sendToNearby(world, BoardSpaces.standPos(world, space.getPos()), 100, message.copy().formatted(Formatting.GOLD),
                 MessageUtils.MessageType.ACTION_BAR);
-        if (!stake.stolen().isEmpty()) {
-            MessageUtils.sendToNearby(world, BoardSpaces.standPos(world, space.getPos()), 100,
-                    Text.translatable("message.steveparty.pot.stolen", player.getDisplayName(), stake.stolen().toHoverableText())
-                            .formatted(Formatting.DARK_AQUA), MessageUtils.MessageType.CHAT);
-        }
-        if (stake.coins() > 0 || !stake.stolen().isEmpty()) fetch(world, space, token, stake.stolen().isEmpty() ? coinOf(token) : stake.stolen());
+        if (stake.coins() > 0) fetch(world, space, token, coinOf(token));
         return stake;
     }
 
@@ -152,53 +141,16 @@ public final class CommonPots {
         return taken;
     }
 
-    /** Takes the stake (and maybe an item) from {@code player} into {@code pot}. */
+    /** Takes the stake from {@code player} into {@code pot}. */
     private static Stake collect(ServerWorld world, BoardSpaceBlockEntity space, ItemStack pot, MobEntity token,
-                                 ServerPlayerEntity player, boolean thief) {
+                                 ServerPlayerEntity player) {
         int coins = PotCartridgeItem.coins(pot);
         int cap = PotCartridgeItem.cap(pot);
         int room = cap > 0 ? Math.max(0, cap - coins) : Integer.MAX_VALUE;
         int taken = InventoryUtils.take(player.getInventory(), coinOf(token), Math.min(PotCartridgeItem.stake(pot), room));
         PotCartridgeItem.setCoins(pot, coins + taken);
-        ItemStack stolen = ItemStack.EMPTY;
-        int chance = PotCartridgeItem.thief(pot);
-        if (thief && chance > 0 && world.random.nextInt(100) < chance) {
-            stolen = steal(world, player, token);
-            if (!stolen.isEmpty()) {
-                List<ItemStack> items = PotCartridgeItem.items(pot);
-                merge(items, stolen);
-                PotCartridgeItem.setItems(pot, items);
-            }
-        }
         updateNest(world, space, pot);
-        return new Stake(taken, stolen);
-    }
-
-    /** One item (not the party's coins or stars) taken from the player's inventory, empty if none. */
-    private static ItemStack steal(ServerWorld world, ServerPlayerEntity player, MobEntity token) {
-        ItemStack coin = coinOf(token), star = starOf(token);
-        List<Integer> slots = new ArrayList<>();
-        for (int slot = 0; slot < player.getInventory().main.size(); slot++) {
-            ItemStack stack = player.getInventory().main.get(slot);
-            if (stack.isEmpty() || ItemStack.areItemsAndComponentsEqual(stack, coin)
-                    || star != null && ItemStack.areItemsAndComponentsEqual(stack, star)) continue;
-            slots.add(slot);
-        }
-        if (slots.isEmpty()) return ItemStack.EMPTY;
-        int slot = slots.get(world.random.nextInt(slots.size()));
-        ItemStack taken = player.getInventory().main.get(slot).split(1);
-        player.getInventory().markDirty();
-        return taken;
-    }
-
-    private static void merge(List<ItemStack> items, ItemStack added) {
-        for (ItemStack item : items) {
-            if (ItemStack.areItemsAndComponentsEqual(item, added) && item.getCount() < item.getMaxCount()) {
-                item.increment(added.getCount());
-                return;
-            }
-        }
-        items.add(added.copy());
+        return new Stake(taken);
     }
 
     /**
@@ -210,7 +162,7 @@ public final class CommonPots {
         ServerPlayerEntity player = playerOf(world, token);
         if (pot == null || player == null) return Win.NONE;
         fillBase(pot, token);
-        if (PotCartridgeItem.landerPays(pot)) collect(world, space, pot, token, player, false);
+        if (PotCartridgeItem.landerPays(pot)) collect(world, space, pot, token, player);
         int coins = PotCartridgeItem.coins(pot);
         List<ItemStack> items = PotCartridgeItem.items(pot);
         Win win = new Win(coins, items);
@@ -229,9 +181,9 @@ public final class CommonPots {
                     .formatted(Formatting.GRAY), MessageUtils.MessageType.ACTION_BAR);
             return win;
         }
-        int stolen = items.stream().mapToInt(ItemStack::getCount).sum();
-        Text message = stolen > 0
-                ? Text.translatable("message.steveparty.pot.won_items", player.getDisplayName(), coins, stolen)
+        int things = items.stream().mapToInt(ItemStack::getCount).sum();
+        Text message = things > 0
+                ? Text.translatable("message.steveparty.pot.won_items", player.getDisplayName(), coins, things)
                 : Text.translatable("message.steveparty.pot.won", player.getDisplayName(), coins);
         MessageUtils.sendToNearby(world, at, 100, message.copy().formatted(Formatting.GOLD, Formatting.BOLD), MessageUtils.MessageType.CHAT);
         fanfare(world, at);

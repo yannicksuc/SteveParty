@@ -107,7 +107,7 @@ public class TileInfoGameTests implements SteveGameTest {
         context.complete();
     }
 
-    /** The Common pot tells its coins and its stake, and circles the items stolen into it; it follows the pot. */
+    /** The Common pot tells its coins and its stake, and circles the items in it; it follows the pot. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void thePotTellsWhatItHolds(TestContext context) {
         BoardSpaceBlockEntity space = tile(context, new ItemStack(ModItems.POT_CARTRIDGE));
@@ -116,7 +116,7 @@ public class TileInfoGameTests implements SteveGameTest {
         TileInfo before = TileInfos.of(space);
         context.assertEquals(arg(before, "pot", 0), "7", "7 coins in the pot");
         context.assertTrue(line(before, "pot.stake") != null, "its stake");
-        context.assertTrue(before.ring().isEmpty(), "nothing stolen yet");
+        context.assertTrue(before.ring().isEmpty(), "no item yet");
         PotCartridgeItem.setCoins(pot, 12);
         PotCartridgeItem.setItems(pot, List.of(new ItemStack(Items.DIAMOND, 2)));
         TileInfo after = TileInfos.of(space);

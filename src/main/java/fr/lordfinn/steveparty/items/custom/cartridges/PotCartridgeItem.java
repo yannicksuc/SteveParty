@@ -17,40 +17,38 @@ import java.util.List;
 /**
  * The Common pot Cartridge: every token passing over its space puts a stake of coins into the pot, the token stopping
  * exactly on it wins the whole pot (see CommonPots). The pot is kept in the cartridge, so in the tile holding it (saved
- * with it), with the items the Pie stole. A nest set near the space shows it and the Pie fetches the stakes.
+ * with it), with the things put in its nest. A nest set near the space shows it and the Pie fetches the stakes.
  * <p>
  * Settings ({@link ModComponents#BOARD_CARTRIDGE_SETTINGS}): {@link #STAKE} (coins put in by a passing token, 1 by
  * default, 0 to 100), {@link #LANDER_PAYS} (the winner pays a stake too before taking the pot), {@link #START} (the base:
  * the pot is filled up to it from the party's bank, never made from nothing, when new and after each win; 0 by
- * default), {@link #CAP} (the most it holds, 0 for no cap), {@link #THIEF} (the thieving Pie: the chance, in
- * percent, that it also steals an item from a passing token's player, 0: never). Remembered
+ * default), {@link #CAP} (the most it holds, 0 for no cap). Remembered
  * ({@link ModComponents#BOARD_CARTRIDGE_STATE}): {@link #COINS}, the coins in the pot; {@link #BASE_DUE}, its base still
- * to be taken from a party's bank (a pot never filled yet: due); the stolen items in
+ * to be taken from a party's bank (a pot never filled yet: due); the things put in its nest in
  * {@link ModComponents#POT_ITEMS}.
  */
 public class PotCartridgeItem extends BoardRuleCartridgeItem {
     /** Its tile's straw (the nest's). */
     public static final int COLOR = 0xC0A060;
-    public static final String STAKE = "stake", LANDER_PAYS = "lander_pays", START = "start", CAP = "cap", THIEF = "thief",
+    public static final String STAKE = "stake", LANDER_PAYS = "lander_pays", START = "start", CAP = "cap",
             COINS = "coins", BASE_DUE = "base_due";
-    /** Every number of the menu goes from 0 to 100 (a stake of 0: the pot only grows by what the Pie steals). */
+    /** Every number of the menu goes from 0 to 100 (a stake of 0: the pot only grows by what its nest is given). */
     public static final int MAX = 100;
 
     private static final String K = MENU_KEY + "pot.";
-    /** The numbers of the menu, edited one at a time (picked in a row of buttons): stake, start, cap, thief. */
-    private static final String[] NUMBERS = {STAKE, START, CAP, THIEF};
+    /** The numbers of the menu, edited one at a time (picked in a row of buttons): stake, start, cap. */
+    private static final String[] NUMBERS = {STAKE, START, CAP};
     private static final Setting STAKE_SETTING = new Setting(STAKE, 1, 0, MAX), START_SETTING = new Setting(START, 0, 0, MAX),
-            CAP_SETTING = new Setting(CAP, 0, 0, MAX), THIEF_SETTING = new Setting(THIEF, 0, 0, MAX),
+            CAP_SETTING = new Setting(CAP, 0, 0, MAX),
             LANDER_PAYS_SETTING = new Setting(LANDER_PAYS, 0, 0, 1);
     /** The numbers of the menu, in the order of its buttons. */
-    private static final List<Setting> NUMBER_SETTINGS = List.of(STAKE_SETTING, START_SETTING, CAP_SETTING, THIEF_SETTING);
+    private static final List<Setting> NUMBER_SETTINGS = List.of(STAKE_SETTING, START_SETTING, CAP_SETTING);
     /** The number being edited in the menu. */
     private static final Setting EDITED = new Setting("edited", 0, 0, NUMBERS.length - 1);
     private static final List<CartridgeModule> MODULES = List.of(
             description("pot_cartridge", 2),
             EDITED.choice("number", K + "number", List.of(ChoiceModule.Option.tipped(K + "stake"),
-                    ChoiceModule.Option.tipped(K + "start"), ChoiceModule.Option.tipped(K + "cap"),
-                    ChoiceModule.Option.tipped(K + "thief"))),
+                    ChoiceModule.Option.tipped(K + "start"), ChoiceModule.Option.tipped(K + "cap"))),
             new NumberModule("amount", K + "amount", 0, MAX, stack -> NUMBER_SETTINGS.get(EDITED.get(stack)).get(stack),
                     (edit, value) -> NUMBER_SETTINGS.get(EDITED.get(edit.stack())).put(edit.stack(), Math.clamp(value, 0, MAX)),
                     stack -> COLOR),
@@ -92,11 +90,6 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
         return CAP_SETTING.get(stack);
     }
 
-    /** The thieving Pie's chance to steal an item from a passing token's player, in percent (0: never). */
-    public static int thief(ItemStack stack) {
-        return THIEF_SETTING.get(stack);
-    }
-
     /** The coins in the pot now (none until something is put in: its base comes from a party's bank). */
     public static int coins(ItemStack stack) {
         return Math.max(0, state(stack, COINS, 0));
@@ -117,7 +110,7 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
         putState(stack, COINS, Math.max(0, coins));
     }
 
-    /** The items the Pie stole for the pot (copies). */
+    /** The things put in the pot's nest (copies). */
     public static List<ItemStack> items(ItemStack stack) {
         List<ItemStack> items = new ArrayList<>();
         List<ItemStack> stored = stack.getOrDefault(ModComponents.POT_ITEMS, List.<ItemStack>of());
@@ -134,8 +127,8 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
     @Override
     protected void appendState(ItemStack stack, Tooltips tips) {
         tips.state(Text.translatable("tooltip.steveparty.pot_cartridge.pot", Tooltips.coins(coins(stack)), Tooltips.coins(stake(stack))));
-        int stolen = items(stack).stream().mapToInt(ItemStack::getCount).sum();
-        if (stolen > 0) tips.state(Text.translatable("tooltip.steveparty.pot_cartridge.items", Tooltips.value(stolen)));
+        int things = items(stack).stream().mapToInt(ItemStack::getCount).sum();
+        if (things > 0) tips.state(Text.translatable("tooltip.steveparty.pot_cartridge.items", Tooltips.value(things)));
     }
 
     @Override
