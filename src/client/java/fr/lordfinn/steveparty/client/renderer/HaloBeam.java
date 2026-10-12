@@ -51,8 +51,10 @@ import java.util.function.Function;
  * there, and the beam shows through them, a landmark.
  * <p>
  * Use: translate the matrices to the centre of the beam's foot, then {@link #render}; drawn in whatever buffers are
- * given (a block entity renderer's, or the world's entity buffers after the entities). A block entity drawing one
- * should be rendered outside its bounding box ({@code rendersOutsideBoundingBox}) and from afar ({@code getRenderDistance}).
+ * given (a block entity renderer's, or the world's entity buffers once the block entities are drawn: BEFORE_DEBUG_RENDER,
+ * not AFTER_ENTITIES, as it writes no depth: the block entities drawn after it would paint over it). A block entity
+ * drawing one should be rendered outside its bounding box ({@code rendersOutsideBoundingBox}) and from afar
+ * ({@code getRenderDistance}).
  */
 @Environment(EnvType.CLIENT)
 public final class HaloBeam {

@@ -31,6 +31,11 @@ import java.util.List;
  * star space holding one, drawn at any distance (no entity, nothing ticks on the server), with a few gold sparks rising
  * from it and a gold {@link HaloBeam} up to the build height, so that it is seen from afar. The spaces come from
  * {@link StarSpacesPayload}.
+ * <p>
+ * Drawn once the block entities are (in BEFORE_DEBUG_RENDER, not AFTER_ENTITIES, which comes before them): the beam
+ * writes no depth, so the board tile under it, a block entity drawn later, painted its top face over the beam's foot,
+ * the column looking cut by its own tile. Still before the translucent terrain (water, stained glass in front of it
+ * blend over it, as over any beacon beam) and before the clouds (its beams remembered for {@link HaloBeam#maskClouds}).
  */
 @Environment(EnvType.CLIENT)
 public final class StarSpaceRenderer {
@@ -60,7 +65,7 @@ public final class StarSpaceRenderer {
             heardAt = context.client().world == null ? 0 : context.client().world.getTime();
         });
         ClientTickEvents.END_CLIENT_TICK.register(StarSpaceRenderer::tick);
-        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(context -> {
             if (stars.isEmpty() || context.matrixStack() == null) return;
             MinecraftClient client = MinecraftClient.getInstance();
             ClientWorld world = client.world;
