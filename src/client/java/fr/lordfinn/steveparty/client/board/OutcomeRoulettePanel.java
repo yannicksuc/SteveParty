@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.client.gui.FloatingInfo;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.party.OutcomeRouletteHud;
 import fr.lordfinn.steveparty.hud.OutcomeRoulette;
@@ -42,14 +43,14 @@ import java.util.List;
  * on the result, which flashes while the others fade. Each layer a little in front of the one under it (nothing
  * fights), high over the board (the terrain rarely hides it), its scale growing with the distance (up to a cap) to stay
  * readable.
- * Too far, behind the player or off the screen: the HUD's strip stands in for it.
+ * Too far, behind the player or off the screen: its card on the screen stands in for it ({@link FloatingInfo}).
  */
 public final class OutcomeRoulettePanel {
     /** Text pixels: the panel's width bounds, its margin, a line's height, the extra height of a wrapped line. */
     private static final int MIN_WIDTH = 170, MAX_WIDTH = 260, PAD = 7, ICON = 10, LINE_H = 13, LINE_GAP = 3, WRAP_EXTRA = 9;
     /** Blocks per text pixel: near, growing with the distance, at most. */
     private static final float SCALE_NEAR = 0.026f, SCALE_PER_BLOCK = 0.003f, SCALE_MAX = 0.06f;
-    /** Beyond this many blocks the HUD's strip takes over. */
+    /** Beyond this many blocks the screen's card takes over. */
     private static final double FAR = 24;
     private static final float POP_TICKS = 6, LINE_STAGGER = 3;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
@@ -80,14 +81,13 @@ public final class OutcomeRoulettePanel {
         Camera camera = context.camera();
         Vec3d anchor = roulette.anchor().get();
         double distance = camera.getPos().distanceTo(anchor);
-        if (distance > FAR) return;
         float scale = MathHelper.clamp((float) distance * SCALE_PER_BLOCK, SCALE_NEAR, SCALE_MAX);
 
         TextRenderer font = client.textRenderer;
         Layout layout = layout(font, roulette);
         Vec3d middle = anchor.add(0, layout.height * scale / 2, 0);
-        if (!onScreen(client, camera, middle)) return;
-        OutcomeRouletteHud.panelSeen();
+        if (!FloatingInfo.inSight(camera, middle, FAR)) return;
+        FloatingInfo.drawnInWorld(OutcomeRouletteHud.CARD);
 
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
         consumers.draw(); // what was batched before stays under it
@@ -103,20 +103,6 @@ public final class OutcomeRoulettePanel {
         consumers.draw();
     }
 
-    /** The middle of the panel is in front of the camera, within its field of view. */
-    private static boolean onScreen(MinecraftClient client, Camera camera, Vec3d middle) {
-        Vec3d to = middle.subtract(camera.getPos());
-        Vec3d look = Vec3d.fromPolar(camera.getPitch(), camera.getYaw());
-        double ahead = to.dotProduct(look);
-        if (ahead <= 0.5) return false;
-        Vec3d right = look.crossProduct(new Vec3d(0, 1, 0));
-        if (right.lengthSquared() < 1.0E-6) return true; // looking straight up or down at it
-        right = right.normalize();
-        Vec3d up = right.crossProduct(look).normalize();
-        double vertical = Math.tan(Math.toRadians(client.options.getFov().getValue() / 2.0));
-        double aspect = client.getWindow().getFramebufferWidth() / (double) Math.max(1, client.getWindow().getFramebufferHeight());
-        return Math.abs(to.dotProduct(right)) / ahead < vertical * aspect && Math.abs(to.dotProduct(up)) / ahead < vertical;
-    }
 
     /** The panel's size and each line's rows of text (text pixels). */
     private record Layout(int width, int height, int head, List<List<OrderedText>> texts) {

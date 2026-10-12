@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
+import fr.lordfinn.steveparty.client.gui.FloatingInfo;
 import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
@@ -27,8 +28,8 @@ import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
  * The outcome roulette shown ({@link OutcomeRoulette}, sent by {@link OutcomeRoulettePayload}): its clock and sounds,
  * for every player of the party, and its HUD strip. The roulette itself is a panel floating in the world over what
  * triggered it ({@code OutcomeRoulettePanel}), so that the show under it stays in sight; only when that panel is out of
- * a player's sight (behind them, off the screen, too far) does a compact strip on the left of the screen stand in for
- * it: who triggered it, then the line the light is on, then the result.
+ * a player's sight (behind them, off the screen, too far) does its card on the left of the screen ({@link FloatingInfo})
+ * stand in for it: who triggered it, then the line the light is on, then the result.
  * <p>
  * The lines are read first (a low « dun-dun » when it opens); then the light runs down them, a tick at each step,
  * higher while fast, lower as it slows down; it stops on the result with a bell (and a sting for a loss, a jingle for a
@@ -40,12 +41,12 @@ public final class OutcomeRouletteHud {
     public static final double LINGER_TICKS = 30, OUT_TICKS = 10;
     /** The result flashes this long when the light stops on it. */
     public static final double FLASH_TICKS = 14;
-    /** How the strip stands in for the panel: its width at most, its line's height. */
-    private static final int STRIP_WIDTH = 210, STRIP_PAD = 6, LINE_H = 13, ICON = 10;
+    /** How the strip stands in for the panel (card pixels, see {@link FloatingInfo}): its width, its line's height. */
+    private static final int STRIP_WIDTH = 170, STRIP_PAD = 6, LINE_H = 13, ICON = 10;
     private static final float IN_TICKS = 6;
     private static final Ramp FLASH = new Ramp(HudPaint.GOLD.outline(), 0xFFFFFFFF, 0xFFFFFFFF, HudPaint.GOLD.hi());
-    /** The panel was drawn on screen this recently (nanoseconds): no strip. */
-    private static final long PANEL_SEEN_NANOS = 150_000_000L;
+    /** The roulette's card ({@link FloatingInfo}). */
+    public static final Object CARD = new Object();
 
     private static @Nullable OutcomeRoulettePayload shown;
     /** When it started, on the HUD's clock ({@link PartyHud#now}), and its step times. */
@@ -54,7 +55,6 @@ public final class OutcomeRouletteHud {
     /** The steps already ticked (-1: the second note of the reveal heard), and whether the stop was heard. */
     private static int heardSteps;
     private static boolean heardStop;
-    private static long panelSeenAt;
     /** When the strip appeared (it slides in), -1 while it is not shown. */
     private static double stripAt = -1;
 
@@ -118,11 +118,6 @@ public final class OutcomeRouletteHud {
         return Math.min(in, out);
     }
 
-    /** The panel was drawn on screen this frame: the strip stays away. */
-    public static void panelSeen() {
-        panelSeenAt = System.nanoTime();
-    }
-
     /** It is the player's own roulette. */
     public static boolean mine(OutcomeRoulettePayload roulette) {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -171,7 +166,7 @@ public final class OutcomeRouletteHud {
         double age = age();
         listen(roulette, age);
         MinecraftClient client = MinecraftClient.getInstance();
-        boolean panel = roulette.anchor().isPresent() && System.nanoTime() - panelSeenAt < PANEL_SEEN_NANOS;
+        boolean panel = roulette.anchor().isPresent() && !FloatingInfo.needsCard(CARD);
         if (client.options.hudHidden || panel) {
             stripAt = -1;
             return;
@@ -181,34 +176,29 @@ public final class OutcomeRouletteHud {
         float in = Easing.easeOutCubic(Easing.clamp01((float) ((now - stripAt) / IN_TICKS)));
         float alpha = Math.min(alpha(), in);
         if (alpha < 0.05f) return;
-        drawStrip(context, roulette, age, alpha, (1 - in) * -12);
+        drawStrip(context, roulette, age, alpha, (1 - in) * 12f);
     }
 
     /**
-     * On the left of the screen, half way down: who triggered it, then the line the light is on (gold), « ? » while
-     * the lines are read, the result once it stopped (it flashes).
+     * Its card ({@link FloatingInfo}): who triggered it, then the line the light is on (gold), « ? » while the lines are read,
+     * the result once it stopped (it flashes).
      */
     private static void drawStrip(DrawContext context, OutcomeRoulettePayload roulette, double age, float alpha, float slide) {
         TextRenderer font = HudDraw.font();
-        int width = Math.min(STRIP_WIDTH, context.getScaledWindowWidth() / 2 - 8);
-        int inner = width - 2 * STRIP_PAD;
+        int width = STRIP_WIDTH, inner = width - 2 * STRIP_PAD;
         int height = STRIP_PAD + 11 + LINE_H + STRIP_PAD;
-        int x = 6, y = context.getScaledWindowHeight() / 2 - height / 2;
-        MatrixStack matrices = context.getMatrices();
-        matrices.push();
-        matrices.translate(slide, 0, 0);
-        HudDraw.plate(context, Plate.TEAL, x, y, width, height, alpha);
-        HudDraw.text(context, roulette.title(), x + STRIP_PAD, y + STRIP_PAD, inner, mine(roulette) ? 0xFF9A6200 : HudDraw.TEXT, alpha);
         int lit = OutcomeRoulette.litLine(roulette.lines().size(), times, age);
         double stoppedFor = age - (OutcomeRoulette.REVEAL_TICKS + OutcomeRoulette.SPIN_TICKS);
-        int lineY = y + STRIP_PAD + 11;
-        if (lit < 0) {
-            drawLine(context, font, null, roulette.caption(), x + STRIP_PAD, lineY, inner, false, -1, alpha);
-        } else {
-            Line line = roulette.lines().get(lit);
-            drawLine(context, font, line, line.text(), x + STRIP_PAD, lineY, inner, true, stoppedFor, alpha);
-        }
-        matrices.pop();
+        FloatingInfo.card(context, CARD, width, height, Plate.TEAL, alpha, slide, card -> {
+            HudDraw.text(card, roulette.title(), STRIP_PAD, STRIP_PAD, inner, mine(roulette) ? 0xFF9A6200 : HudDraw.TEXT, alpha);
+            int lineY = STRIP_PAD + 11;
+            if (lit < 0) {
+                drawLine(card, font, null, roulette.caption(), STRIP_PAD, lineY, inner, false, -1, alpha);
+            } else {
+                Line line = roulette.lines().get(lit);
+                drawLine(card, font, line, line.text(), STRIP_PAD, lineY, inner, true, stoppedFor, alpha);
+            }
+        });
     }
 
     private static void drawLine(DrawContext context, TextRenderer font, @Nullable Line line, Text text, int x, int y, int width,

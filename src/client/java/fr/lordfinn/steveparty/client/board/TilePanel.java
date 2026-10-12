@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.client.gui.UiText;
+import fr.lordfinn.steveparty.client.gui.FloatingInfo;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
@@ -28,12 +29,15 @@ import java.util.List;
  * The panel of a board space ({@link TileInfo}), on a plate cut like the mod's screens (as the board view's), facing
  * the camera: the role's name centred and bigger in its colour, a thin rule, then one line per info (an icon, the
  * value). What a building tool adds comes last, under a second rule. Which lines are drawn is the {@link View}'s;
- * everything is measured once when the info arrives ({@link Layout}), a frame only draws.
+ * everything is measured once when the info arrives ({@link Layout}), a frame only draws. Looked at from afar, it falls
+ * back on a card on the screen ({@link FloatingInfo}): the title and the lines only, without coordinates.
  */
 public final class TilePanel {
     /** Text pixels: the padding all around, a line, an icon, the title's size, the space around a rule. */
     static final int PAD = 7, ROW = 12, ICON = 9, ICON_GAP = 3, RULE_GAP = 4;
     static final float TITLE_SCALE = 1.5f;
+    /** On the screen's card: a line's height, its lines at most. */
+    private static final int CARD_ROW = 11, CARD_LINES = 4;
     private static final int TITLE_HEIGHT = Math.round(8 * TITLE_SCALE);
     /** The rules: the plate's dark text, faint. */
     private static final int RULE = 0x553F3F3F;
@@ -86,6 +90,9 @@ public final class TilePanel {
         final TileInfo.Glyph[] glyphs;
         final TileInfo.Layer[] layers;
         final int[] widths;
+        /** The lines on the screen's card: without coordinates (see {@link FloatingInfo#withoutPlaces}). */
+        final OrderedText[] cardLines;
+        final int[] cardWidths;
         final List<OrderedText> ringLabels;
 
         Layout(TileInfo info) {
@@ -100,6 +107,8 @@ public final class TilePanel {
             glyphs = new TileInfo.Glyph[count];
             layers = new TileInfo.Layer[count];
             widths = new int[count];
+            cardLines = new OrderedText[count];
+            cardWidths = new int[count];
             for (int i = 0; i < count; i++) {
                 TileInfo.Line line = info.lines().get(i);
                 lines[i] = line.text().asOrderedText();
@@ -108,6 +117,9 @@ public final class TilePanel {
                 layers[i] = line.layer();
                 boolean iconed = !line.icon().isEmpty() || line.glyph() != TileInfo.Glyph.NONE;
                 widths[i] = font.getWidth(line.text()) + (iconed ? ICON + ICON_GAP : 0);
+                Text card = FloatingInfo.withoutPlaces(line.text());
+                cardLines[i] = card.asOrderedText();
+                cardWidths[i] = font.getWidth(card) + (iconed ? ICON + ICON_GAP : 0);
             }
             List<OrderedText> labels = new ArrayList<>(info.ring().size());
             for (ItemStack stack : info.ring()) {
@@ -230,50 +242,48 @@ public final class TilePanel {
         matrices.pop();
     }
 
-    // ---------------------------------------------------------------- on the HUD
+    // ---------------------------------------------------------------- on the screen
 
-    /** The same panel on the HUD, its top edge's middle at (centreX, top). */
-    static void drawHud(DrawContext context, Layout layout, View view, int centreX, int top) {
+    /**
+     * The panel's stand-in on the screen ({@link FloatingInfo}): its title in the role's colour, then its lines (no more
+     * than {@link #CARD_LINES}) with their icons, no rules, no coordinates.
+     */
+    static void drawCard(DrawContext context, Object key, Layout layout, View view) {
         TextRenderer font = MinecraftClient.getInstance().textRenderer;
-        int width = layout.width(view), height = layout.height(view);
-        int left = centreX - width / 2;
-        ToolHud.plate(context, left, top, width, height, ToolHud.Plate.TEAL);
-        context.getMatrices().push();
-        context.getMatrices().translate(centreX - layout.titleWidth / 2f, top + PAD, 0);
-        context.getMatrices().scale(TITLE_SCALE, TITLE_SCALE, 1);
-        // The panel is as wide as its title (scaled): its slot is the title's width
-        HudDepth.onTop(context, () -> UiText.line(context, font, layout.title, 0, 0, font.getWidth(layout.title), layout.titleColor, false));
-        context.getMatrices().pop();
-        int y = top + PAD + TITLE_HEIGHT + PAD / 2;
-        for (int part = 0; part < 2; part++) {
-            boolean build = part == 1;
-            if ((build ? layout.buildRows(view) : layout.bodyRows(view)) == 0) continue;
-            int rule = y;
-            HudDepth.onTop(context, () -> context.fill(left + PAD, rule, left + width - PAD, rule + 1, RULE));
-            y += RULE_GAP + 1;
-            for (int i = 0; i < layout.lines.length; i++) {
-                if (!layout.shown(i, view) || (layout.layers[i] == TileInfo.Layer.BUILD) != build) continue;
-                int textX = left + PAD;
+        List<Integer> rows = new ArrayList<>();
+        int widest = font.getWidth(layout.title);
+        for (int i = 0; i < layout.cardLines.length && rows.size() < CARD_LINES; i++) {
+            if (!layout.shown(i, view)) continue;
+            rows.add(i);
+            widest = Math.max(widest, layout.cardWidths[i]);
+        }
+        int width = Math.min(widest + 2 * FloatingInfo.PAD, FloatingInfo.MAX_WIDTH), inner = width - 2 * FloatingInfo.PAD;
+        int height = FloatingInfo.PAD + 8 + (rows.isEmpty() ? 0 : 3 + rows.size() * CARD_ROW - 2) + FloatingInfo.PAD;
+        FloatingInfo.card(context, key, width, height, ToolHud.Plate.TEAL, 1f, 0, card -> {
+            int x = FloatingInfo.PAD, y = FloatingInfo.PAD;
+            HudDepth.onTop(card, () -> UiText.line(card, font, layout.title, x, y, inner, layout.titleColor, false));
+            int lineY = y + 8 + 3;
+            for (int i : rows) {
+                int textX = x, ly = lineY;
                 ItemStack icon = layout.icons[i];
                 if (!icon.isEmpty()) {
-                    context.getMatrices().push();
-                    context.getMatrices().translate(textX, y - 1, 0);
-                    context.getMatrices().scale(ICON / 16f, ICON / 16f, 1);
-                    HudDepth.item(context, () -> context.drawItem(icon, 0, 0));
-                    context.getMatrices().pop();
+                    card.getMatrices().push();
+                    card.getMatrices().translate(textX, ly - 1, 0);
+                    card.getMatrices().scale(ICON / 16f, ICON / 16f, 1);
+                    HudDepth.item(card, () -> card.drawItem(icon, 0, 0));
+                    card.getMatrices().pop();
                     textX += ICON + ICON_GAP;
                 } else if (layout.glyphs[i] != TileInfo.Glyph.NONE) {
                     TileInfo.Glyph glyph = layout.glyphs[i];
-                    int gx = textX, gy = y;
-                    HudDepth.onTop(context, () -> TileGlyphs.drawHud(context, glyph, gx, gy));
+                    int gx = textX;
+                    HudDepth.onTop(card, () -> TileGlyphs.drawHud(card, glyph, gx, ly));
                     textX += ICON + ICON_GAP;
                 }
-                OrderedText line = layout.lines[i];
-                int lx = textX, ly = y;
-                HudDepth.onTop(context, () -> UiText.line(context, font, line, lx, ly, left + width - PAD - lx, ToolHud.TEXT, false));
-                y += ROW;
+                OrderedText line = layout.cardLines[i];
+                int lx = textX;
+                HudDepth.onTop(card, () -> UiText.line(card, font, line, lx, ly, x + inner - lx, ToolHud.TEXT, false));
+                lineY += CARD_ROW;
             }
-            y += RULE_GAP - 1;
-        }
+        });
     }
 }

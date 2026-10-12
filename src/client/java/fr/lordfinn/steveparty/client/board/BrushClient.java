@@ -71,7 +71,7 @@ public final class BrushClient {
 
     /**
      * The Tile Linker Brush HUD, only what the next stroke does: in replacement mode (a kind of Cartridge picked on the
-     * wheel) an orange chip "tile -> that cartridge" and its plate, turning red over a tile whose role it would wipe;
+     * wheel) an orange chip "tile -> that cartridge", turning red over a tile whose role it would wipe;
      * otherwise the cartridge an empty aimed tile will get. The level only when one is set, the controls only for a few
      * seconds after the brush comes in hand.
      */
@@ -106,8 +106,8 @@ public final class BrushClient {
     }
 
     /**
-     * Replacement mode: "[the aimed tile's cartridge, or a Tile] -> [the new cartridge]" in an orange chip with
-     * "Replaces with: X"; red, with "Will replace: Y", when the aimed tile's cartridge has a role it would lose.
+     * Replacement mode: "[the aimed tile's cartridge, or a Tile] -> [the new cartridge]" in an orange chip, nothing
+     * more: it says it all. Red when the aimed tile's cartridge has a role it would lose, or none is left.
      */
     private static void replacement(ToolHudPanel panel, ItemStack brush, MinecraftClient client) {
         ItemStack source = BoardLinks.cartridgeSource(client.player);
@@ -124,7 +124,7 @@ public final class BrushClient {
         int arrow = font.getWidth(ARROW);
         int toOffset = 16 + 3 + arrow + 3;
         ToolHud.Plate frame = source.isEmpty() || losesRole ? ToolHud.Plate.RED : ToolHud.Plate.ORANGE;
-        panel.box(frame, ToolHudPanel.INSET * 2 + toOffset + 16, (context, x, y) -> {
+        panel.roomyBox(frame, ToolHudPanel.ROOMY_INSET * 2 + toOffset + 16, (context, x, y) -> {
             context.drawItem(from, x, y);
             UiText.line(context, font, ARROW, x + 19, y + 4, arrow, ToolHud.TEXT, false);
             if (source.isEmpty()) {
@@ -135,10 +135,6 @@ public final class BrushClient {
             }
         });
         if (source.isEmpty()) noneLeft(panel);
-        else panel.state(Text.translatable("hud.steveparty.tile_linker_brush.replace", to.getName()), ToolHud.Plate.ORANGE);
-        if (losesRole) {
-            panel.state(Text.translatable("hud.steveparty.tile_linker_brush.will_replace", replaced.getName()), ToolHud.Plate.RED);
-        }
     }
 
     /** A cartridge none of which is left: greyed. */
