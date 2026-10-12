@@ -248,6 +248,26 @@ public final class WorldDraw {
     }
 
     /**
+     * A camera-facing text without plate, centred on {@code pos} (depth tested), in {@code argb} (its alpha kept: a dim
+     * mark), drawn right away.
+     *
+     * @param scale block per text pixel
+     */
+    public static void floatingText(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d pos, Text text,
+                                    int argb, float scale) {
+        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
+        Vec3d cam = camera.getPos();
+        matrices.push();
+        matrices.translate(pos.x - cam.x, pos.y - cam.y, pos.z - cam.z);
+        matrices.multiply(camera.getRotation());
+        matrices.scale(scale, -scale, scale);
+        textRenderer.draw(text, -textRenderer.getWidth(text) / 2f + 0.5f, -3.5f, argb, false, matrices.peek().getPositionMatrix(), consumers,
+                TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
+        if (consumers instanceof VertexConsumerProvider.Immediate immediate) immediate.draw();
+        matrices.pop();
+    }
+
+    /**
      * {@code plate} stretched over (x0, y0)-(x1, y1) in label space (the current matrices: text pixels, y down, facing
      * the camera), drawn right away so that what is drawn on it next is never covered.
      */

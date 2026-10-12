@@ -135,6 +135,15 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
         return ActionResult.SUCCESS;
     }
 
+    /**
+     * Whether the block holding {@code blockEntity} has a role of its own in a trader's shop once the key links it: a
+     * trading stall or a cash register (a container is its stock: any storage, see CartridgeContainers#accepts).
+     */
+    public static boolean linkable(@Nullable BlockEntity blockEntity) {
+        ShopRole role = ShopRole.of(blockEntity);
+        return role == ShopRole.STALL || role == ShopRole.REGISTER;
+    }
+
     /** What a linked block does in a shop. */
     enum ShopRole {
         STALL("stall"), STOCK("stock"), REGISTER("register"), NONE("none");

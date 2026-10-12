@@ -41,6 +41,7 @@ public final class BrushClient {
         ClientTickEvents.END_CLIENT_TICK.register(BrushClient::strokeTrail);
         ClientTickEvents.END_CLIENT_TICK.register(BrushClient::trackHeld);
         BrushOverlay.initialize();
+        StorageMarkers.initialize();
         BrushTrail.initialize();
         BoardView.initialize();
         HelmetView.initialize();

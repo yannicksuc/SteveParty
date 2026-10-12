@@ -3258,5 +3258,6 @@
   "command.steveparty.links.click.4": "Page en main, clic droit sur un Podium, un Socle de mât d'arrivée ou un Contrôleur de pas : le classement, ou la fin du mini-jeu",
   "command.steveparty.links.click.5": "Un second clic délie · les liens se voient dans le menu de la cartouche (clic droit en l'air) ou de la page",
   "gui.steveparty.links.hint": "Lier : /steveparty links",
-  "tooltip.steveparty.tag.linkable": "Liable"
+  "tooltip.steveparty.tag.linkable": "Liable",
+  "tooltip.steveparty.tag.linker": "Lieur"
 }

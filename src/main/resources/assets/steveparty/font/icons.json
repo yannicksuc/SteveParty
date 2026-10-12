@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "steveparty:font/icons.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [""]
+    }
+  ]
+}

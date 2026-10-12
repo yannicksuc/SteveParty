@@ -129,10 +129,14 @@ public final class CartridgeContainers {
      * controllers, dice forge, shop blocks, pipes) whose items are their own.
      */
     public static boolean accepts(World world, BlockPos pos) {
-        BlockEntity blockEntity = world.getBlockEntity(pos);
+        return accepts(world.getBlockState(pos), world.getBlockEntity(pos));
+    }
+
+    /** {@link #accepts(World, BlockPos)} for a block in {@code state} with {@code blockEntity} (a placed one or a sample). */
+    public static boolean accepts(BlockState state, @Nullable BlockEntity blockEntity) {
         if (!(blockEntity instanceof Inventory)) return false;
         if (blockEntity instanceof CartridgeContainerBlockEntity || blockEntity instanceof PipeBlockEntity) return false;
-        return !world.getBlockState(pos).isIn(BOARD);
+        return !state.isIn(BOARD);
     }
 
     // ------------------------------------------------------------------ using them

@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.items;
 
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
+import fr.lordfinn.steveparty.client.board.StorageMarkers;
 import fr.lordfinn.steveparty.client.board.WorldDraw;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.client.minigame.PageZoneClient;
@@ -24,11 +26,14 @@ import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The Inventory Cartridge on the client, in either hand: each of its containers is outlined in the world with its
- * number in the list (gold; red when it is no container any more; a double chest whole), and the tools' HUD above the
+ * number in the list (gold; red when it is no container any more; a double chest whole), the other storages around
+ * marked ({@link StorageMarkers}), and the tools' HUD above the
  * hotbar says how many it has and how a click is read. Its destinations are shown as every cartridge's
  * (DestinationsRenderer).
  */
@@ -56,8 +61,14 @@ public final class InventoryCartridgeClient {
         MatrixStack matrices = context.matrixStack();
         if (cartridge == null || client.world == null || matrices == null) return;
         List<GlobalPos> containers = CartridgeContainers.of(cartridge, client.world.getRegistryKey());
-        if (containers.isEmpty()) return;
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
+        // The other storages around, marked (the brush in the main hand marks them itself)
+        if (!TileLinkerBrush.isBrush(client.player.getMainHandStack())) {
+            Set<BlockPos> own = new HashSet<>();
+            for (GlobalPos target : containers) if (target.dimension().equals(client.world.getRegistryKey())) own.add(target.pos());
+            StorageMarkers.render(matrices, consumers, context.camera(), own);
+        }
+        if (containers.isEmpty()) return;
         for (int i = 0; i < containers.size(); i++) {
             GlobalPos target = containers.get(i);
             if (!target.dimension().equals(client.world.getRegistryKey())) continue;
