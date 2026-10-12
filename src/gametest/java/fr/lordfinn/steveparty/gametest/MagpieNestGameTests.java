@@ -164,17 +164,18 @@ public class MagpieNestGameTests implements SteveGameTest {
         when(context, () -> nest.getPileCount() == 2, 50, "the hopper fills it", context::complete);
     }
 
-    /** The pile: the coins placed by hand first, then a pile stable for a nest, never above the cap drawn. */
+    /** The pile: the 64 coins placed by hand, in their order, the first N for N coins, never above the cap drawn. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void thePileStartsWithTheHandPlacedCoins(TestContext context) {
-        BlockPos pos = context.getAbsolutePos(new BlockPos(1, 1, 1));
-        float[] pile = MagpieNestPile.layout(pos, 30);
+    public void thePileIsTheHandPlacedCoins(TestContext context) {
+        float[] pile = MagpieNestPile.layout(30);
         context.assertEquals(pile.length, 30 * MagpieNestPile.STRIDE, "30 coins");
-        context.assertTrue(pile[0] == 8 && pile[1] == 2 && pile[2] == 8 && pile[3] == 0, "the first hand-placed coin");
-        context.assertTrue(pile[4 * MagpieNestPile.STRIDE + 1] == 10 && pile[4 * MagpieNestPile.STRIDE + 3] == -72, "the fifth");
-        float[] again = MagpieNestPile.layout(pos, 30);
-        context.assertTrue(java.util.Arrays.equals(pile, again), "the same pile every time");
-        context.assertEquals(MagpieNestPile.layout(pos, 500).length, MagpieNestPile.MAX_DRAWN * MagpieNestPile.STRIDE, "at most 64 drawn");
+        context.assertTrue(pile[0] == 8 && pile[1] == 2 && pile[2] == 8 && pile[3] == 0 && pile[4] == 0 && pile[5] == 0, "coin_01");
+        int fifth = 4 * MagpieNestPile.STRIDE;
+        context.assertTrue(pile[fifth + 1] == 10 && pile[fifth + 4] == -72, "coin_05: turned -72 about y");
+        float[] all = MagpieNestPile.layout(64);
+        context.assertEquals(MagpieNestPile.MAX_DRAWN, 64, "64 coins placed");
+        context.assertTrue(java.util.Arrays.equals(pile, java.util.Arrays.copyOf(all, pile.length)), "30 coins: the first 30 of the pile");
+        context.assertEquals(MagpieNestPile.layout(500).length, MagpieNestPile.MAX_DRAWN * MagpieNestPile.STRIDE, "at most 64 drawn");
         context.complete();
     }
 
