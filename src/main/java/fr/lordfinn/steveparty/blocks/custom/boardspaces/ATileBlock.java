@@ -53,8 +53,8 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
     public static final IntProperty ROTATION_8 = IntProperty.of("rotation_8", 0, 7);
     public static final EnumProperty<TileSupport> SUPPORT = EnumProperty.of("support", TileSupport.class);
     public static final EnumProperty<TileLayout> SIZE = EnumProperty.of("size", TileLayout.class);
-    /** Painted with glow ink (see TileGlow): drawn at full light by its renderer, not baked in the chunk. */
-    public static final BooleanProperty GLOWING = BooleanProperty.of("glowing");
+    /** Painted with glow ink: drawn at full light by its renderer, not baked in the chunk (see TileGlow). */
+    public static final BooleanProperty GLOWING = TileGlow.GLOWING;
 
     protected ATileBlock(Settings settings, int numberOfCartridges) {
         super(settings.nonOpaque(), numberOfCartridges);

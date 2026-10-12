@@ -232,12 +232,20 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
      */
     private static void renderLevelModel(BlockState state, MatrixStack matrices, VertexConsumerProvider vertexConsumers,
                                          int light, int overlay, int color) {
-        BlockState level = ATileBlock.levelState(state);
-        BakedModel bakedModel = MinecraftClient.getInstance().getBlockRenderManager().getModel(level);
-        VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayers.getBlockLayer(level));
+        renderModel(ATileBlock.levelState(state), matrices, vertexConsumers, light, overlay, color);
+    }
+
+    /**
+     * The block model of {@code state} in its render layer, lit with {@code light}, its tinted quads in {@code color}:
+     * a board space not baked in the chunk (a glowing check point: see TileGlow).
+     */
+    public static void renderModel(BlockState state, MatrixStack matrices, VertexConsumerProvider vertexConsumers,
+                                   int light, int overlay, int color) {
+        BakedModel bakedModel = MinecraftClient.getInstance().getBlockRenderManager().getModel(state);
+        VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayers.getBlockLayer(state));
         MatrixStack.Entry entry = matrices.peek();
-        for (Direction face : Direction.values()) renderQuads(entry, consumer, bakedModel.getQuads(level, face, RANDOM), color, light, overlay);
-        renderQuads(entry, consumer, bakedModel.getQuads(level, null, RANDOM), color, light, overlay);
+        for (Direction face : Direction.values()) renderQuads(entry, consumer, bakedModel.getQuads(state, face, RANDOM), color, light, overlay);
+        renderQuads(entry, consumer, bakedModel.getQuads(state, null, RANDOM), color, light, overlay);
     }
 
     private static void renderQuads(MatrixStack.Entry entry, VertexConsumer consumer, List<BakedQuad> quads, int color, int light, int overlay) {

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.items.tooltip;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.jumpshoes.JumpShoes;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -131,7 +132,11 @@ public final class ItemTips {
                         .note(KEY + "spawn_marker.link")
                         .note(KEY + "spawn_marker.default")));
         map.put(item("stencil_maker"), simple("stencil_maker"));
-        map.put(item("check_point"), (stack, tips) -> tips.summary(KEY + "check_point.summary"));
+        // Painted with glow ink (see TileGlow): badged as a tile is
+        map.put(item("check_point"), (stack, tips) -> {
+            if (stack.contains(ModComponents.GLOWING_TILE)) tips.tags(Tooltips.Tag.GLOWING);
+            tips.summary(KEY + "check_point.summary");
+        });
         return map;
     }
 }

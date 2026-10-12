@@ -405,9 +405,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         if (!isEmpty()) builder.add(DataComponentTypes.CONTAINER,
                 ContainerComponent.fromStacks(getHeldStacks()));
         if (stamp != null) builder.add(ModComponents.TILE_STAMP, stamp);
-        // Its glow ink (the block state's: see TileGlow), back with the tile placed again (ATileBlock#getPlacementState)
+        // Its glow ink (the block state's: see TileGlow), back with the space placed again (its block's getPlacementState)
         BlockState state = getCachedState();
-        if (state.contains(ATileBlock.GLOWING) && state.get(ATileBlock.GLOWING)) builder.add(ModComponents.GLOWING_TILE, Unit.INSTANCE);
+        if (state.contains(TileGlow.GLOWING) && state.get(TileGlow.GLOWING)) builder.add(ModComponents.GLOWING_TILE, Unit.INSTANCE);
     }
 
     /** Placed from an item carrying them: its cartridges and its look back (the role is applied by {@link #onPlaced}). */

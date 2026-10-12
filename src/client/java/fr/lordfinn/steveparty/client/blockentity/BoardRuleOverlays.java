@@ -3,7 +3,9 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileGlow;
 import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
+import fr.lordfinn.steveparty.client.utils.TileColors;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.BoardRuleCartridgeItem;
@@ -44,7 +46,10 @@ public final class BoardRuleOverlays {
         }
     }
 
-    /** The renderer of the check points: what their role shows over them (they have no face to draw). */
+    /**
+     * The renderer of the check points: what their role shows over them (they have no face to draw), and the whole
+     * check point when painted with glow ink.
+     */
     public static void renderCheckPoint(BoardSpaceBlockEntity entity, float tickDelta, MatrixStack matrices,
                                         VertexConsumerProvider consumers, int light, int overlay) {
         // A Trap set here: small jaws on the floor around the check point, its badge above
@@ -56,6 +61,12 @@ public final class BoardRuleOverlays {
         }
         BlockState state = entity.getCachedState();
         if (!state.contains(ABoardSpaceBlock.TILE_TYPE)) return;
+        // Painted with glow ink (TileGlow): not baked in the chunk, the whole check point drawn here at full light
+        // (the jaws of a Trap, on the floor, stay as lit as the world)
+        if (state.contains(TileGlow.GLOWING) && state.get(TileGlow.GLOWING)) {
+            light = LightmapTextureManager.MAX_LIGHT_COORDINATE;
+            TileBlockEntityRenderer.renderModel(state, matrices, consumers, light, overlay, TileColors.WHITE);
+        }
         BoardSpaceType type = state.get(ABoardSpaceBlock.TILE_TYPE);
         if (type == BoardSpaceType.DEFAULT || type == BoardSpaceType.TILE_START) return;
         render(entity, type, BoardSpaceClientUtils.getDisplayedCartridge(entity),
