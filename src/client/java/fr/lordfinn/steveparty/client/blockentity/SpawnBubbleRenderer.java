@@ -35,7 +35,8 @@ import java.util.Optional;
 
 /**
  * The bubble of a Spawn Bubble (its plate is its block model): a translucent cube of 10 pixels, its centre in the
- * middle of the block lifted as its menu says, slowly floating up and down ({@link #BOB_HEIGHT}, {@link #BOB_SPEED})
+ * middle of the block lifted as its menu says, slowly floating up and down ({@link #BOB_HEIGHT}, {@link #BOB_SPEED}),
+ * its film wobbling and swaying like a soap bubble's ({@link #WOBBLE}, {@link #SWAY})
  * with what is inside. Its faces are a soap film (textures/block/spawn_bubble_iridescent.png, pixels 3 to 12, an
  * animated texture): an almost clear middle, an iridescent rim (cyan, lavender, pink, a touch of yellow-green) whose
  * hues slowly turn, a glint sweeping across, a highlight at the top left; its item keeps the still spawn_bubble.png. Lifted, tiny bubbles (spawn_bubble_small.png, pixels
@@ -75,9 +76,13 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     /** How fast a tiny bubble rises on average (blocks per tick). */
     private static final float TRAIL_SPEED = 0.022f;
     /** How high the bubble floats over its rest height at most (blocks): never down into its plate. */
-    private static final float BOB_HEIGHT = 1.5f / 16;
-    /** How fast it floats up and down (radians per tick: about 5 s up and down). */
-    private static final float BOB_SPEED = 0.06f;
+    private static final float BOB_HEIGHT = 3f / 16;
+    /** How fast it floats up and down (radians per tick: about 4 s up and down). */
+    private static final float BOB_SPEED = 0.08f;
+    /** Its soap film's wobble: how much it squashes and stretches (share of its size), how fast (radians per tick). */
+    private static final float WOBBLE = 0.05f, WOBBLE_SPEED = 0.17f;
+    /** How far it sways off upright (degrees), and how fast (radians per tick, two slightly different ways). */
+    private static final float SWAY = 4f, SWAY_SPEED_X = 0.05f, SWAY_SPEED_Z = 0.037f;
     /** The tints of the tiny bubbles, from blue to pink (RGB, 0..1). */
     private static final float[] TINT_BLUE = {0.70f, 0.85f, 1f}, TINT_PINK = {1f, 0.75f, 0.92f};
     /** The faces of a cube: their corners (bit 0: x, bit 1: y, bit 2: z), the first one at the top left of the texture, and normals. */
@@ -142,7 +147,15 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         if (!mobShown) arrow(client, matrices, consumers, centerY, yaw, grown, bubbleLight, overlay);
         // The cube last, over what is inside
         VertexConsumer buffer = consumers.getBuffer(BUBBLE_LAYER);
-        cube(matrices.peek(), buffer, BUBBLE.getSprite(), 0.5f, centerY, 0.5f, HALF * grown, FACE_FROM, FACE_TO, 1, 1, 1, 1, bubbleLight);
+        // A soap bubble, not a glass cube: its film wobbles (taller and thinner, then squatter) and it sways a little
+        float squash = WOBBLE * MathHelper.sin(time * WOBBLE_SPEED + phase);
+        matrices.push();
+        matrices.translate(0.5f, centerY, 0.5f);
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(SWAY * MathHelper.sin(time * SWAY_SPEED_X + phase)));
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(SWAY * MathHelper.sin(time * SWAY_SPEED_Z + phase * 1.7f)));
+        matrices.scale(1 - squash / 2, 1 + squash, 1 - squash / 2);
+        cube(matrices.peek(), buffer, BUBBLE.getSprite(), 0, 0, 0, HALF * grown, FACE_FROM, FACE_TO, 1, 1, 1, 1, bubbleLight);
+        matrices.pop();
         if (Math.abs(lift) >= 0.25f && risen >= 1) trail(matrices, buffer, plateTop, height + bob, time, pos.hashCode(), light);
     }
 
