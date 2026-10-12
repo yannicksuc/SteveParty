@@ -400,6 +400,65 @@ public class MagpieNestGameTests implements SteveGameTest {
         });
     }
 
+    /**
+     * A nest with a pile among the leaves of a crown (leaves all round it): it still gets there, onto the rim, and drops
+     * what it carries in.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400, batchId = "magpie_nest_carry_leaves")
+    public void itBringsItsLootToANestAmongTheLeaves(TestContext context) {
+        BlockPos nestPos = new BlockPos(2, 2, 2);
+        context.setBlockState(nestPos.down(), Blocks.STONE);
+        MagpieNestBlockEntity nest = placeNest(context, nestPos, Direction.NORTH);
+        nest.insert(new ItemStack(ModItems.COIN));
+        BlockState leaves = Blocks.OAK_LEAVES.getDefaultState().with(net.minecraft.block.LeavesBlock.PERSISTENT, true);
+        for (Direction side : Direction.Type.HORIZONTAL) {
+            context.setBlockState(nestPos.offset(side), leaves);
+            context.setBlockState(nestPos.offset(side).offset(side.rotateYClockwise()), leaves);
+        }
+        WildMagpieEntity magpie = perchedPie(context, new BlockPos(6, 1, 6));
+        magpie.setNightOverride(false);
+        magpie.adoptNest(context.getAbsolutePos(nestPos));
+        magpie.setCarried(new ItemStack(Items.GOLD_NUGGET));
+        when(context, () -> nest.getTreasures().stream().anyMatch(stack -> stack.isOf(Items.GOLD_NUGGET)), 380,
+                () -> "the nugget in the nest" + state(magpie), () -> {
+                    context.assertTrue(magpie.getCarried().isEmpty(), "its beak empty again");
+                    context.complete();
+                });
+    }
+
+    /**
+     * Something in its beak, it brings it home first, seeds or not: a player holding seeds tempts it afterwards. (Its
+     * player is removed by hand, not by a final task: {@code addFinalTask} ends the test on its first tick.)
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400, batchId = "magpie_nest_carry_seeds")
+    public void itBringsItsLootHomeBeforeComingToTheSeeds(TestContext context) {
+        BlockPos nestPos = new BlockPos(1, 1, 1);
+        MagpieNestBlockEntity nest = placeNest(context, nestPos, Direction.NORTH);
+        WildMagpieEntity magpie = perchedPie(context, new BlockPos(6, 1, 6));
+        magpie.setNightOverride(false);
+        magpie.adoptNest(context.getAbsolutePos(nestPos));
+        magpie.setCarried(new ItemStack(Items.GOLD_NUGGET));
+        @SuppressWarnings("removal") ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+        player.getInventory().clear();
+        Runnable removePlayer = () -> {
+            if (!player.isRemoved()) context.getWorld().getServer().getPlayerManager().remove(player);
+        };
+        context.waitAndRun(395, removePlayer); // failed: gone before the time limit
+        Vec3d playerAt = context.getAbsolute(new Vec3d(8.5, 1, 3.5));
+        player.refreshPositionAndAngles(playerAt.x, playerAt.y, playerAt.z, 0, 0);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WHEAT_SEEDS, 8));
+        context.setBlockState(new BlockPos(8, 0, 3), Blocks.STONE);
+        when(context, () -> nest.getTreasures().stream().anyMatch(stack -> stack.isOf(Items.GOLD_NUGGET)), 300,
+                () -> "the nugget in the nest" + state(magpie), () -> {
+                    context.assertTrue(magpie.getCarried().isEmpty(), "its beak empty again");
+                    when(context, () -> magpie.getTempter() == player, 40, () -> "then tempted" + state(magpie), () -> {
+                        removePlayer.run();
+                        context.complete();
+                    });
+                });
+    }
+
     // ---------------------------------------------------------------- nests in the trees
 
     /** The nests in the trees are a feature of the woods of the wild Pies, not of the plains or the desert. */

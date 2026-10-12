@@ -73,9 +73,17 @@ public final class MagpiePerches {
         return at != null && hasRoom(world, pos, at) ? at : null;
     }
 
-    /** Nothing but air (or what has no collision and no fluid) in the bird's box standing at {@code at} on {@code perch}. */
+    /**
+     * Nothing but air (or what has no collision and no fluid) in the bird's box standing at {@code at} on {@code perch}.
+     * On a nest's rim (its corner, beside a pile) only over the nest itself: leaves or a log beside it, in the crown of
+     * a tree, leave it room.
+     */
     public static boolean hasRoom(BlockView world, BlockPos perch, Vec3d at) {
         Box body = new Box(at.x - WIDTH / 2, at.y + 1.0E-3, at.z - WIDTH / 2, at.x + WIDTH / 2, at.y + HEIGHT, at.z + WIDTH / 2);
+        if (world.getBlockEntity(perch) instanceof MagpieNestBlockEntity) {
+            body = new Box(Math.max(body.minX, perch.getX() + 1.0E-3), body.minY, Math.max(body.minZ, perch.getZ() + 1.0E-3),
+                    Math.min(body.maxX, perch.getX() + 1 - 1.0E-3), body.maxY, Math.min(body.maxZ, perch.getZ() + 1 - 1.0E-3));
+        }
         for (BlockPos p : BlockPos.iterate(BlockPos.ofFloored(body.minX, body.minY, body.minZ),
                 BlockPos.ofFloored(body.maxX, body.maxY, body.maxZ))) {
             if (p.equals(perch)) continue;

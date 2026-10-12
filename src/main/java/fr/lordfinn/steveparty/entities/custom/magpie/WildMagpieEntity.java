@@ -431,8 +431,10 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
             PlayerEntity threat = closeThreat(world);
             if (threat != null && takeOff(world, threat.getPos())) return;
         }
-        // In love, it looks for its mate, not for the seeds (as the animals: mating before being tempted)
-        if (getFlightState() != ASLEEP && !isInLove() && tickTempted(world)) return;
+        // In love, it looks for its mate, not for the seeds (as the animals: mating before being tempted); something in
+        // its beak, it brings it home first
+        if (getFlightState() != ASLEEP && !isInLove() && getCarried().isEmpty() && tickTempted(world)) return;
+        if (!getCarried().isEmpty()) tempter = null;
         boolean onNest = MagpieNestBlockEntity.at(world, perch) != null;
         if (isNight(world)) {
             if (onNest) {
@@ -903,13 +905,33 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
         return flyToNest(world, bed);
     }
 
+    /** To the nest at {@code to}: a hop, or down into it from above (among the leaves of a crown). False if no way. */
     private boolean flyToNest(ServerWorld world, BlockPos to) {
         Vec3d at = freeSpotOn(world, to);
         if (at == null) return false;
         Flight way = wayTo(world, new Candidate(to, at, 1), Climb.HOP);
+        if (way == null) way = dropInto(world, to, at);
         if (way == null) return false;
         startFlight(way);
         return true;
+    }
+
+    /**
+     * A curve ending straight down onto {@code at} (its control right above it): up over what stands around the nest
+     * (leaves and logs of its tree's crown beside it) and down into it. Null if all three heights hit something.
+     */
+    private @Nullable Flight dropInto(ServerWorld world, BlockPos nest, Vec3d at) {
+        Vec3d from = getPos();
+        if (!routeTicks(from, at, world::shouldTickEntity)) return null;
+        double horizontal = Math.sqrt(at.subtract(from).horizontalLengthSquared());
+        double ceiling = world.getTopY() - 2;
+        for (double extra : new double[]{3, 6, 10}) {
+            double y = Math.min(ceiling, Math.max(from.y, at.y) + horizontal * Climb.HOP.perBlock + extra);
+            Vec3d control = new Vec3d(at.x, y, at.z);
+            Flight way = new Flight(from, control, at, nest, ticksFor(from.distanceTo(control) + control.distanceTo(at), Climb.HOP), false);
+            if (isClear(world, way)) return way;
+        }
+        return null;
     }
 
     /**
@@ -991,9 +1013,11 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
         if (home == null || home.equals(perch) || !world.shouldTickEntity(home)) return false;
         if (isFarFromHome()) {
             Flight back = homeward(world);
-            if (back == null) return false;
-            startFlight(back);
-            return true;
+            if (back != null) {
+                startFlight(back);
+                return true;
+            }
+            // no long flight (the loaded land too short that way): straight there
         }
         return flyToNest(world, home);
     }
