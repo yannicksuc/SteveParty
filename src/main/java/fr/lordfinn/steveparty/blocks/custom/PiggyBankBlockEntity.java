@@ -173,10 +173,11 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity {
         if (!(this.world instanceof ServerWorld serverWorld)) return false;
         boolean succeeded = false;
         for (ServerPlayerEntity player : findTargets(serverWorld)) {
-            List<ItemStack> moved = new ArrayList<>();
+            List<Moved> moved = new ArrayList<>();
             boolean paid = CartridgeTransfers.apply(serverWorld, getStack(0), this.pos, player, () -> cycleIndex,
-                    index -> cycleIndex = index, (pattern, count) -> moved.add(pattern.copyWithCount(count)));
-            if (paid) payoutEffects(serverWorld, player, moved);
+                    index -> cycleIndex = index, (pattern, count) -> moved.add(new Moved(pattern, count)));
+            // The amounts float over the pig once (the player paid sees them there), and over each player paid
+            if (paid) payoutEffects(serverWorld, player, moved, !succeeded);
             succeeded |= paid;
         }
         lastSucceeded = succeeded;
@@ -194,27 +195,34 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity {
     }
 
     /**
-     * Each kind moved bursts out of the slot (given) or into it (taken), and over the player, who sees what they got
-     * (« +5 », green) or paid (« -20 », red) float above their head.
+     * Each kind moved bursts out of the slot (given) or into it (taken), and around the player; what they got
+     * (« +5 », green) or paid (« -20 », red) floats over their head and, {@code overPig}, over the pig.
      */
-    private void payoutEffects(ServerWorld world, ServerPlayerEntity player, List<ItemStack> moved) {
+    private void payoutEffects(ServerWorld world, ServerPlayerEntity player, List<Moved> moved, boolean overPig) {
         Vec3d slot = slot();
-        Vec3d head = player.getEyePos().add(0, 0.6, 0);
+        Vec3d body = player.getPos().add(0, player.getHeight() * 0.6, 0);
+        Vec3d head = player.getPos().add(0, player.getHeight() + 0.5, 0);
         boolean given = false;
         for (int i = 0; i < moved.size(); i++) {
-            ItemStack stack = moved.get(i);
-            int count = stack.getCount();
-            ItemStackParticleEffect effect = new ItemStackParticleEffect(ParticleTypes.ITEM, stack.copyWithCount(1));
+            int count = moved.get(i).count();
+            ItemStackParticleEffect effect = new ItemStackParticleEffect(ParticleTypes.ITEM, moved.get(i).pattern());
             world.spawnParticles(effect, slot.x, slot.y, slot.z, count > 0 ? 12 : 6, 0.08, 0.15, 0.08, count > 0 ? 0.12 : 0.04);
-            world.spawnParticles(effect, head.x, head.y, head.z, count > 0 ? 10 : 6, 0.25, 0.15, 0.25, 0.08);
-            Vector3f at = new Vector3f((float) head.x, (float) head.y + 0.35f * i, (float) head.z);
-            FloatingTextParticleHelper.spawnFloatingText(world, (count > 0 ? "+" : "") + count, at,
-                    count > 0 ? GIVE_COLOR : TAKE_COLOR, 32, 0.03f);
+            world.spawnParticles(effect, body.x, body.y, body.z, count > 0 ? 10 : 6, 0.3, 0.3, 0.3, 0.06);
+            String amount = (count > 0 ? "+" : "") + count;
+            int color = count > 0 ? GIVE_COLOR : TAKE_COLOR;
+            FloatingTextParticleHelper.spawnFloatingText(world, amount,
+                    new Vector3f((float) head.x, (float) head.y + 0.35f * i, (float) head.z), color, 32, 0.03f);
+            if (overPig) FloatingTextParticleHelper.spawnFloatingText(world, amount,
+                    new Vector3f((float) slot.x, (float) slot.y + 0.4f + 0.35f * i, (float) slot.z), color, 32, 0.025f);
             given |= count > 0;
         }
         world.playSound(null, player.getX(), player.getY(), player.getZ(),
                 given ? SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP : SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 0.7f,
                 given ? 1.2f : 0.7f);
+    }
+
+    /** {@code count} items like {@code pattern} given (positive) or taken (negative). */
+    private record Moved(ItemStack pattern, int count) {
     }
 
     /** The coin slot on the pig's back. */

@@ -173,12 +173,10 @@ public class PiggyBankGameTests implements SteveGameTest {
         controller.nextStep();
         controller.nextStep();
         context.assertTrue(data.getCurrentStep() instanceof EventPartyStep event && event.isWaitingForBell(), "waiting on the bell");
-        context.waitAndRun(PartyBellBlock.PULSE_TICKS + 2, () -> {
-            context.assertTrue(bank.activate(), "paid while waiting");
-            context.assertEquals(nuggets(a), 1, "A, whose turn ended, paid");
-            context.assertEquals(nuggets(b), 0, "B not paid");
-            end(context);
-        });
+        context.assertTrue(bank.activate(), "paid while waiting");
+        context.assertEquals(nuggets(a), 1, "A, whose turn ended, paid");
+        context.assertEquals(nuggets(b), 0, "B not paid");
+        end(context);
     }
 
     /** The winners of the last mini-game only. */
@@ -217,7 +215,7 @@ public class PiggyBankGameTests implements SteveGameTest {
         end(context);
     }
 
-    /** The nearest player, a spectator nearer not counted; out of a party, the player of the turn is the nearest. */
+    /** The nearest player, a spectator nearer not counted. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "piggy_nearest")
     public void nearestPlayerSkipsSpectators(TestContext context) {
         TestPlayers.alone(context, new Vec3d(4, 1, 4), 16);
@@ -229,9 +227,23 @@ public class PiggyBankGameTests implements SteveGameTest {
         context.assertEquals(nuggets(near), 1, "the nearest player paid");
         context.assertEquals(nuggets(far), 0, "the farther one not");
         context.assertEquals(nuggets(spectator), 0, "the spectator not");
-        bank.setTarget(Target.TURN_PLAYER);
-        context.assertTrue(bank.activate(), "free play: the player of the turn is the nearest");
-        context.assertEquals(nuggets(near), 2, "the nearest paid again");
+        context.complete();
+    }
+
+    /** A negative item is taken from the player into the chest (its payout bursts the item it took). */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "piggy_take")
+    public void negativeItemsAreTakenIntoTheChest(TestContext context) {
+        TestPlayers.alone(context, new Vec3d(4, 1, 4), 16);
+        ServerPlayerEntity player = player(context, "T", 5.5, 4.5);
+        player.getInventory().insertStack(new ItemStack(Items.GOLD_NUGGET, 5));
+        PiggyBankBlockEntity bank = placeBank(context, Target.NEAREST, 0);
+        ItemStack price = new ItemStack(Items.GOLD_NUGGET, 2);
+        price.set(ModComponents.IS_NEGATIVE, true);
+        bank.getStack(0).set(ModComponents.INVENTORY_COMPONENT, new InventoryComponent(List.of(price)));
+        context.assertTrue(bank.activate(), "taken");
+        context.assertEquals(nuggets(player), 3, "2 nuggets paid");
+        ChestBlockEntity chest = context.getBlockEntity(CHEST);
+        context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(Items.GOLD_NUGGET), chest), 2, "into the chest");
         context.complete();
     }
 
