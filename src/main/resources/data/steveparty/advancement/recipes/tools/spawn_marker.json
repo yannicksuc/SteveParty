@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_paper": {
+    "has_bubbler": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "minecraft:paper"
+            "items": "steveparty:bubbler"
           }
         ]
       }
@@ -30,7 +30,7 @@
   },
   "requirements": [
     [
-      "has_paper",
+      "has_bubbler",
       "has_tile_linker_brush",
       "has_the_recipe"
     ]
