@@ -261,12 +261,10 @@ public class PotGameTests implements SteveGameTest {
         });
     }
 
-    /** In a party the landing wins it; with « the winner stakes too », the stake goes in first. */
+    /** In a party the landing wins the whole pot, paying no stake. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "pot_win_party")
-    public void inAPartyTheLandingWinsAndMayPayFirst(TestContext context) {
-        ItemStack pot = pot(1);
-        BoardRuleCartridgeItem.putSetting(pot, PotCartridgeItem.LANDER_PAYS, 1);
-        Board board = board(context, pot);
+    public void inAPartyTheLandingWinsThePot(TestContext context) {
+        Board board = board(context, pot(1));
         PartyControllerEntity controller = party(context, board);
         ItemStack coin = controller.getCurrency(PartyCurrency.COIN);
         board.nest().addCoins(coin, 4);
@@ -274,7 +272,7 @@ public class PotGameTests implements SteveGameTest {
         context.waitAndRun(2, () -> {
             roll(board.token(), 2);
             when(context, () -> controller.getPartyData().getStepIndex() >= 2, 200, "the turn ends", () -> {
-                context.assertEquals(InventoryUtils.count(board.player().getInventory(), coin), 3 - 1 + 5, "paid 1, won 5");
+                context.assertEquals(InventoryUtils.count(board.player().getInventory(), coin), 3 + 4, "paid nothing, won 4");
                 context.assertEquals(board.nest().count(coin), 0, "the nest is empty again");
                 context.complete();
             });
