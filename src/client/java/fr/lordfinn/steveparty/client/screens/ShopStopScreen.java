@@ -12,7 +12,7 @@ import net.minecraft.util.Formatting;
 
 /**
  * The merchant's screen at a shop stop: the merchant screen, the time left and the purchases allowed above it and,
- * under it, « Buy nothing » (« Done » once something was bought). Closing the screen does the same.
+ * under it, « Buy nothing » (« Done » once something was bought). Closing the screen ends nothing: it opens again.
  */
 public class ShopStopScreen extends MerchantScreen {
     private static final int BUTTON_WIDTH = 140, BUTTON_HEIGHT = 20, GAP = 4;

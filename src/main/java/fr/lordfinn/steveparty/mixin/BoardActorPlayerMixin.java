@@ -1,8 +1,11 @@
 package fr.lordfinn.steveparty.mixin;
 
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.service.BoardActors;
+import fr.lordfinn.steveparty.service.ShopStops;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import org.spongepowered.asm.mixin.Mixin;
@@ -12,12 +15,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * The board actors are holograms (see {@link BoardActors}): nothing a player does with a use on them does anything
- * (no taming, riding, bucket, screen, lead, name tag, shears, saddle...), whatever is in hand.
+ * (no taming, riding, bucket, screen, lead, name tag, shears, saddle...), whatever is in hand. One exception: the
+ * merchant of a shop stop, touchable while it lasts, opens its shop for its shopper ({@link ShopStops#onMerchantUsed}).
  */
 @Mixin(PlayerEntity.class)
 public abstract class BoardActorPlayerMixin {
     @Inject(method = "interact", at = @At("HEAD"), cancellable = true)
     private void steveparty$hologramUse(Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
-        if (BoardActors.isHologram(entity)) cir.setReturnValue(ActionResult.PASS);
+        if (!BoardActors.isHologram(entity)) return;
+        if (entity instanceof BoxedTraderEntity trader && BoardActors.isTouchable(trader)) {
+            if ((Object) this instanceof ServerPlayerEntity player) ShopStops.onMerchantUsed(player, trader);
+            cir.setReturnValue(ActionResult.SUCCESS);
+            return;
+        }
+        cir.setReturnValue(ActionResult.PASS);
     }
 }

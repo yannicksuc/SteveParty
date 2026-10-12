@@ -22,6 +22,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
+import fr.lordfinn.steveparty.service.ShopStops;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
@@ -116,6 +117,8 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
         if (!world.isClient) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
 
+            // The stall in front of a shop stop's merchant: his shop, for its shopper
+            if (player instanceof ServerPlayerEntity shopper && ShopStops.onStallUsed(shopper, pos)) return ActionResult.SUCCESS;
             if (blockEntity instanceof TradingStallBlockEntity) {
                 // Reserved to the shopkeeper (linked key), creative players and operators
                 if (!ShopkeeperKeyItem.canOpenShopBlock(player, world, pos)) return ActionResult.SUCCESS;

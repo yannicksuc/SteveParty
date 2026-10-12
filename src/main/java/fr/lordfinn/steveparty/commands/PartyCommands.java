@@ -6,6 +6,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
+import fr.lordfinn.steveparty.service.ShopStops;
 import fr.lordfinn.steveparty.service.TrichaudronPrizes;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -76,6 +77,11 @@ public class PartyCommands {
                         .then(argument("token", UuidArgumentType.uuid())
                                 .executes(context -> TrichaudronPrizes.pickAtRandom(UuidArgumentType.getUuid(context, "token"),
                                         context.getSource().getPlayerOrThrow()) ? 1 : 0)))
+                // The chat's « [Open the shop] » of a shop stop, for its shopper
+                .then(literal("shop_open")
+                        .then(argument("token", UuidArgumentType.uuid())
+                                .executes(context -> ShopStops.open(context.getSource().getPlayerOrThrow(),
+                                        UuidArgumentType.getUuid(context, "token")) ? 1 : 0)))
                 .then(literal("party").requires(source -> source.hasPermissionLevel(OP_LEVEL))
                         .then(literal("stop")
                                 .executes(context -> stop(context.getSource(), null))

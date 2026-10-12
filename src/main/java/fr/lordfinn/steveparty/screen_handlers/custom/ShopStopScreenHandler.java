@@ -14,7 +14,8 @@ import net.minecraft.village.Merchant;
 /**
  * The trade screen of a shop stop (see {@link ShopStops}): the merchant's screen, plus a « Buy nothing » button (« Done »
  * once something was bought), the time left and the purchases allowed. Its player can buy at most {@link #getLimit}
- * items; the stop ends when they are bought, on the button, or when the screen is closed.
+ * items, those bought in the stop's earlier screens included; the stop ends when they are bought or on the button (closing
+ * the screen ends nothing: it can be opened again).
  */
 public class ShopStopScreenHandler extends CustomizableMerchantScreenHandler {
     /** Button id of « Buy nothing » (see {@link #onButtonClick}). */
@@ -35,16 +36,17 @@ public class ShopStopScreenHandler extends CustomizableMerchantScreenHandler {
         addProperties(properties);
     }
 
-    /** Server side: at most {@code limit} purchases. */
-    public ShopStopScreenHandler(int syncId, PlayerInventory playerInventory, Merchant merchant, int limit) {
+    /** Server side: at most {@code limit} purchases, {@code purchases} of them already made (in a screen closed before). */
+    public ShopStopScreenHandler(int syncId, PlayerInventory playerInventory, Merchant merchant, int limit, int purchases) {
         super(syncId, playerInventory, merchant);
         this.limit = limit;
+        this.purchases = purchases;
         this.properties = new PropertyDelegate() {
             @Override
             public int get(int index) {
                 return switch (index) {
                     case PROPERTY_SECONDS_LEFT -> ShopStops.secondsLeft(ShopStopScreenHandler.this);
-                    case PROPERTY_PURCHASES -> purchases;
+                    case PROPERTY_PURCHASES -> ShopStopScreenHandler.this.purchases;
                     case PROPERTY_LIMIT -> ShopStopScreenHandler.this.limit;
                     default -> 0;
                 };
