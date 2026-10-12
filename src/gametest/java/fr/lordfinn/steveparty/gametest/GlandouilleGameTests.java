@@ -22,6 +22,7 @@ import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.gametest.kit.TestWait;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
 import fr.lordfinn.steveparty.service.GlandouillePushes;
@@ -677,7 +678,7 @@ public class GlandouilleGameTests implements SteveGameTest {
             context.assertFalse(GlandouilleTowers.hasRider(a), "nobody on a for now");
             double[] highest = {c.getY()};
             double[] drift = {0};
-            context.runAtEveryTick(() -> {
+            TestWait.everyTick(context, () -> {
                 highest[0] = Math.max(highest[0], c.getY());
                 drift[0] = Math.max(drift[0], horizontal(c.getPos(), cStart));
             });
@@ -709,7 +710,7 @@ public class GlandouilleGameTests implements SteveGameTest {
             double[] highest = {start.y};
             a.onHit(player, player);
             context.assertTrue(b.getVehicle() == a && c.getVehicle() == b, "still stacked when hit");
-            context.runAtEveryTick(() -> {
+            TestWait.everyTick(context, () -> {
                 highest[0] = Math.max(highest[0], a.getY());
                 context.assertTrue(b.getVehicle() == a && c.getVehicle() == b, "still stacked on the way");
                 context.assertTrue(horizontal(c.getPos(), a.getPos()) < 0.05, "the top one right above the bottom one");
@@ -737,7 +738,7 @@ public class GlandouilleGameTests implements SteveGameTest {
             Vec3d start = a.getPos();
             double[] highest = {start.y};
             a.onHit(player, player);
-            context.runAtEveryTick(() -> highest[0] = Math.max(highest[0], a.getY()));
+            TestWait.everyTick(context, () -> highest[0] = Math.max(highest[0], a.getY()));
             context.waitAndRun(30, () -> {
                 context.assertTrue(a.getX() - start.x > 0.3, "pushed along: " + (a.getX() - start.x));
                 context.assertTrue(highest[0] - start.y < 0.01, "not thrown up: " + (highest[0] - start.y));
@@ -1083,7 +1084,7 @@ public class GlandouilleGameTests implements SteveGameTest {
         throwFrosty(context, 25f, frosty -> {
             double[] landedX = {Double.NaN};
             double[] speed = {0};
-            context.runAtEveryTick(() -> {
+            TestWait.everyTick(context, () -> {
                 if (Double.isNaN(landedX[0]) && frosty.iceLanding()) {
                     landedX[0] = frosty.getX();
                     speed[0] = frosty.slideVelocity().horizontalLength();
@@ -1105,7 +1106,7 @@ public class GlandouilleGameTests implements SteveGameTest {
         TestBoards.floor(context, 8);
         throwFrosty(context, 75f, frosty -> {
             boolean[] slid = {false};
-            context.runAtEveryTick(() -> slid[0] |= frosty.getMood() == Mood.SLIDING);
+            TestWait.everyTick(context, () -> slid[0] |= frosty.getMood() == Mood.SLIDING);
             context.waitAndRun(12, () -> {
                 context.assertFalse(slid[0], "never slid");
                 context.assertEquals(frosty.getMood(), Mood.STUNNED, "dizzy where it landed");
@@ -1125,7 +1126,7 @@ public class GlandouilleGameTests implements SteveGameTest {
         for (int z = 0; z < 8; z++) for (int y = 1; y < 3; y++) context.setBlockState(new BlockPos(6, y, z), Blocks.STONE);
         throwFrosty(context, 25f, frosty -> {
             boolean[] slid = {false};
-            context.runAtEveryTick(() -> slid[0] |= frosty.iceLanding());
+            TestWait.everyTick(context, () -> slid[0] |= frosty.iceLanding());
             context.waitAndRun(30, () -> {
                 context.assertTrue(slid[0], "it slid first");
                 context.assertEquals(frosty.getMood(), Mood.STUNNED, "dizzy against the wall");

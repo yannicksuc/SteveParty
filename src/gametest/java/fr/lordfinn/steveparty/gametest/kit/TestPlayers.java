@@ -113,12 +113,25 @@ public final class TestPlayers {
     public static void place(TestContext context, ServerPlayerEntity player, Vec3d relative, float yaw, float pitch) {
         Vec3d abs = context.getAbsolute(relative);
         player.refreshPositionAndAngles(abs.x, abs.y, abs.z, yaw, pitch);
+        turnHead(player, yaw);
     }
 
     /** Moves the player to the bottom centre of the relative block {@code at}, looking {@code yaw} and level. */
     public static void placeOn(TestContext context, ServerPlayerEntity player, BlockPos at, float yaw) {
         BlockPos abs = context.getAbsolutePos(at);
         player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, yaw, 0);
+        turnHead(player, yaw);
+    }
+
+    /**
+     * Head and body turned to {@code yaw} too, as a client keeps them: where a player looks (its rotation vector, its
+     * crosshair) follows its head, left where it spawned else.
+     */
+    public static void turnHead(ServerPlayerEntity player, float yaw) {
+        player.setHeadYaw(yaw);
+        player.setBodyYaw(yaw);
+        player.prevHeadYaw = yaw;
+        player.prevBodyYaw = yaw;
     }
 
     // ---------------------------------------------------------------- removal
