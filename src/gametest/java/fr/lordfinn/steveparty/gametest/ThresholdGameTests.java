@@ -53,9 +53,13 @@ import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
  */
 public class ThresholdGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(0, 1, 7);
-    /** Board spaces 2 blocks apart along x. */
+    /**
+     * Board spaces 2 blocks apart: along x on z = 1, then back along x on z = 3. All within the test's 8 x 8 template:
+     * a space beyond it stands between the tests or in the next test's template (blanked when that one is set up), in
+     * a chunk that may not tick entities.
+     */
     private static final List<BlockPos> PATH = List.of(new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1),
-            new BlockPos(7, 1, 1), new BlockPos(9, 1, 1), new BlockPos(11, 1, 1), new BlockPos(13, 1, 1));
+            new BlockPos(7, 1, 1), new BlockPos(7, 1, 3), new BlockPos(5, 1, 3), new BlockPos(3, 1, 3));
 
     private static void space(TestContext context, BlockPos pos, Block block, ItemStack cartridge, BlockPos... to) {
         context.setBlockState(pos.down(), Blocks.STONE);

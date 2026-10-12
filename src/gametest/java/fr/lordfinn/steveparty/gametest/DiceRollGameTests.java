@@ -254,7 +254,8 @@ public class DiceRollGameTests implements SteveGameTest {
                 assertOn(context, b, PATH.get(2), "b did not move");
                 context.assertTrue(!PartyLiveData.capture(controller, context.getWorld()).effect().swapWith().isEmpty(), "the HUD: who it swapped with");
                 when(context, turnEnded(controller), 100, "the turn ends", () -> {
-                    context.assertTrue(played.stream().noneMatch(event -> event.kind() == Kind.LAND), "no landing");
+                    // On its own tiles: the tests of the batch running beside it land on theirs
+                    context.assertTrue(PATH.subList(0, 6).stream().noneMatch(tile -> played(played, context, Kind.LAND, tile)), "no landing");
                     context.assertEquals(controller.getPartyData().getStepIndex(), 2, "the next turn");
                     context.complete();
                 });
