@@ -68,6 +68,7 @@
       "fr.lordfinn.steveparty.gametest.TileInfoGameTests",
       "fr.lordfinn.steveparty.gametest.BoardActorsGameTests",
       "fr.lordfinn.steveparty.gametest.SpawnMarkerGameTests",
+      "fr.lordfinn.steveparty.gametest.SpawnBubbleResidentGameTests",
       "fr.lordfinn.steveparty.gametest.DiceModulesGameTests",
       "fr.lordfinn.steveparty.gametest.DiceRecipeGameTests",
       "fr.lordfinn.steveparty.gametest.DiceForgeModulesGameTests",

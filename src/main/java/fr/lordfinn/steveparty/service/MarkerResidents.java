@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
+import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -68,6 +69,10 @@ public final class MarkerResidents {
     private static final Map<GlobalPos, Resident> RESIDENTS = ServerMemory.forgetOnStop(new HashMap<>());
     /** The markers whose mob is out for a show (the show's BoardActors sequence). */
     private static final Map<GlobalPos, UUID> SHOWS = ServerMemory.forgetOnStop(new HashMap<>());
+    /** The markers whose show has no actor left, with the server tick it was first seen so (see {@link #showRuns}). */
+    private static final Map<GlobalPos, Integer> EMPTY_SHOWS = ServerMemory.forgetOnStop(new HashMap<>());
+    /** How long a show with no actor left still keeps its marker's mob away (ticks). */
+    private static final int EMPTY_SHOW_GRACE = 2 * CHECK_INTERVAL;
     private static int age;
 
     /** The mob living on a marker, with its BoardActors sequence and the kind of cartridge it lives for. */
@@ -150,20 +155,23 @@ public final class MarkerResidents {
     /** The marker at {@code pos}: its mob made, kept in place, or removed, as it should be now. */
     public static void check(ServerWorld world, BlockPos pos) {
         GlobalPos key = key(world, pos);
-        Item kind = wanted(world, pos);
+        ItemStack cartridge = wanted(world, pos);
+        Item kind = cartridge == null ? null : cartridge.getItem();
         Resident resident = RESIDENTS.get(key);
         if (kind == null) {
             SHOWS.remove(key);
+            EMPTY_SHOWS.remove(key);
             dismiss(key);
             return;
         }
         UUID show = SHOWS.get(key);
         if (show != null) {
-            if (BoardActors.isRunning(show)) {
+            if (showRuns(world, key, show)) {
                 dismiss(key);
                 return;
             }
             SHOWS.remove(key);
+            EMPTY_SHOWS.remove(key);
         }
         if (resident != null && (resident.mob().isRemoved() || resident.kind() != kind)) {
             dismiss(key);
@@ -175,37 +183,57 @@ public final class MarkerResidents {
         if (resident == null) {
             spawn(world, key, kind, at, yaw);
             resident = RESIDENTS.get(key);
-            if (resident != null) dress(world, pos, resident.mob());
+            if (resident != null) dress(resident.mob(), cartridge);
             return;
         }
         // Kept on its marker, facing its way (nothing moves it, but a turned marker...), dressed as its cartridge says
         MobEntity mob = resident.mob();
         if (mob.squaredDistanceTo(at) > 0.01 || Math.abs(mob.getYaw() - yaw) > 1) place(mob, at, yaw);
-        dress(world, pos, mob);
+        dress(mob, cartridge);
     }
 
-    /** The mob on the marker at {@code pos} as its space's cartridge dresses it (the Shop's merchant: his disguise). */
-    private static void dress(ServerWorld world, BlockPos pos, MobEntity mob) {
-        if (!(world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity marker) || marker.getOwner() == null) return;
-        BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, marker.getOwner());
-        if (space == null) return;
-        ItemStack cartridge = space.getActiveCartridgeItemStack();
+    /** The mob on its marker as the cartridge of its space dresses it (the Shop's merchant: his disguise). */
+    private static void dress(MobEntity mob, ItemStack cartridge) {
         if (cartridge.getItem() instanceof MobSpawnCartridge kind) kind.dress(mob, cartridge);
     }
 
-    /** The kind of cartridge whose mob should live on the marker at {@code pos} now, null for none. */
-    private static @Nullable Item wanted(ServerWorld world, BlockPos pos) {
-        if (!(world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity marker) || !marker.isResident()) return null;
-        BlockPos owner = marker.getOwner();
-        if (owner == null) return null;
-        BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, owner);
-        if (space == null) return null;
-        ItemStack cartridge = space.getActiveCartridgeItemStack();
-        if (!pos.equals(CartridgeSpawnMarker.linked(cartridge, world)) || !MOBS.containsKey(cartridge.getItem().getClass())) return null;
-        // Only while a party runs on its board
-        if (PartyControllerEntity.getPartyOfBoardSpace(world, owner, PartyControllerEntity.BOARD_NEARBY_RADIUS, false).isEmpty())
+    /**
+     * Whether the show {@code sequence} out on the marker {@code key} still runs: its sequence running with an actor
+     * still there. One whose actors are all gone (removed without its sequence ended: a crash, a command, an unloaded
+     * chunk) for {@link #EMPTY_SHOW_GRACE} ticks is over: its marker's mob is not kept away for good.
+     */
+    private static boolean showRuns(ServerWorld world, GlobalPos key, UUID sequence) {
+        if (!BoardActors.isRunning(sequence)) return false;
+        if (BoardActors.alive(sequence) > 0) {
+            EMPTY_SHOWS.remove(key);
+            return true;
+        }
+        int now = world.getServer().getTicks();
+        return now - EMPTY_SHOWS.computeIfAbsent(key, k -> now) < EMPTY_SHOW_GRACE;
+    }
+
+    /**
+     * The active cartridge of a space linked to the marker at {@code pos} whose mob should live on it now (a party
+     * running on its board), null for none. Every space known to link it is looked at (its last linker first): not
+     * only the one whose link was made with the brush last, a linked cartridge may come in a space by other ways (the
+     * menu, a hopper, moved from another space, a cartridge replaced keeping its links). Unloaded spaces are not.
+     */
+    @SuppressWarnings("deprecation") // isChunkLoaded(BlockPos): an unloaded space is not loaded for this
+    private static @Nullable ItemStack wanted(ServerWorld world, BlockPos pos) {
+        if (!world.isChunkLoaded(pos) || !(world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity marker) || !marker.isResident())
             return null;
-        return cartridge.getItem();
+        Set<BlockPos> linkers = new LinkedHashSet<>();
+        if (marker.getOwner() != null) linkers.add(marker.getOwner());
+        linkers.addAll(marker.getLinkers());
+        for (BlockPos tile : linkers) {
+            if (!world.isChunkLoaded(tile) || !(BoardLinks.container(world, tile) instanceof BoardSpaceBlockEntity space)) continue;
+            ItemStack cartridge = space.getActiveCartridgeItemStack();
+            if (!pos.equals(CartridgeSpawnMarker.linked(cartridge, world)) || !MOBS.containsKey(cartridge.getItem().getClass())) continue;
+            // Only while a party runs on its board
+            if (PartyControllerEntity.getPartyOfBoardSpace(world, space.getPos(), PartyControllerEntity.BOARD_NEARBY_RADIUS, false).isPresent())
+                return cartridge;
+        }
+        return null;
     }
 
     private static void spawn(ServerWorld world, GlobalPos key, Item kind, Vec3d at, float yaw) {
@@ -242,6 +270,7 @@ public final class MarkerResidents {
         dismiss(key);
         // (none there yet: none comes while the show runs either)
         SHOWS.put(key, sequence);
+        EMPTY_SHOWS.remove(key);
     }
 
     /**
@@ -255,6 +284,7 @@ public final class MarkerResidents {
         if (resident == null || resident.mob().isRemoved()) return null;
         RESIDENTS.remove(key);
         SHOWS.put(key, resident.sequence());
+        EMPTY_SHOWS.remove(key);
         return resident;
     }
 
@@ -265,10 +295,11 @@ public final class MarkerResidents {
     public static boolean giveBack(ServerWorld world, BlockPos marker, UUID sequence, MobEntity mob) {
         GlobalPos key = key(world, marker);
         if (mob.isRemoved() || !MARKERS.contains(key) || RESIDENTS.containsKey(key)) return false;
-        Item kind = wanted(world, marker);
-        if (kind == null) return false;
+        ItemStack cartridge = wanted(world, marker);
+        if (cartridge == null) return false;
         SHOWS.remove(key);
-        RESIDENTS.put(key, new Resident(sequence, mob, kind));
+        EMPTY_SHOWS.remove(key);
+        RESIDENTS.put(key, new Resident(sequence, mob, cartridge.getItem()));
         check(world, marker);
         return true;
     }
@@ -286,6 +317,7 @@ public final class MarkerResidents {
         GlobalPos key = key(world, pos);
         MARKERS.remove(key);
         SHOWS.remove(key);
+        EMPTY_SHOWS.remove(key);
         dismiss(key);
     }
 
