@@ -2,10 +2,13 @@ package fr.lordfinn.steveparty.entities.custom.bubble;
 
 import fr.lordfinn.steveparty.blocks.custom.BubblerBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
+import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.mixin.LivingEntityJumpingAccessor;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
@@ -20,6 +23,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.thrown.SnowballEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -27,10 +31,12 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,10 +58,13 @@ import java.util.function.Function;
  *     ({@link BubbleRiding}); every rider's keys count.</li>
  *     <li><b>Merging</b>: two bubbles with riders touching become one bigger bubble with all of them
  *     ({@link #absorb}), the one with more riders (else the older) taking the other in.</li>
- *     <li><b>Popping</b> ({@link #pop}): a rider's punch (any rider leaving), an arrow or any projectile but a snowball
- *     (a snowball pushes it its way), a hit by luck ({@link BubbleRiding#HIT_POP_CHANCE}; never with a Silk Touch
- *     tool, a hit only pushes it then), anything else that hurts, its time up ({@link BubbleRiding#LIFETIME}), or
- *     crossing the border of a mini-game zone. Its riders fall slowly then ({@link #fallSlowly}); its item drops.</li>
+ *     <li><b>Popping</b> ({@link #pop}): a rider's punch (any rider leaving), bumping into a block (a wall, the floor, a
+ *     ceiling) or touching a mob, a player, a boat... ({@link #popsOnTouch}; not in its first moments, rising from its
+ *     Bubbler), an arrow or any projectile from outside but a snowball (a snowball pushes it its way; what its riders
+ *     shoot from inside flies out through it, {@link #letsOut}), a hit by luck ({@link BubbleRiding#HIT_POP_CHANCE}; never with a Silk Touch
+ *     tool, a hit only pushes it then), anything else that hurts, left still too long ({@link #getStillTicks}: 15 s
+ *     without moving, never while it travels), crossing the border of a mini-game zone, or nothing left in it. Its
+ *     riders fall slowly then ({@link #fallSlowly}); its item drops.</li>
  * </ul>
  * The server moves it; a client moves it the same way between the server's updates, its own rider's keys at once,
  * and eases it toward the server's position ({@link #clientTick}).
@@ -67,6 +76,8 @@ public class BubbleEntity extends Entity {
     private static final TrackedData<Float> HOVER_Y = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.FLOAT);
     /** The item floating in it (empty: riders). */
     private static final TrackedData<ItemStack> ITEM = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
+    /** The ticks before it bursts by itself, in its last {@link BubbleRiding#WARNING_TICKS} (-1 before: see {@link #weaken}). */
+    private static final TrackedData<Integer> FADING = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.INTEGER);
     /** How much of the gap to the server's position a client closes a tick, and from how far it jumps there at once. */
     private static final double CORRECTION = 0.3, SNAP = 4;
 
@@ -81,6 +92,20 @@ public class BubbleEntity extends Entity {
     private @Nullable BlockPos origin;
     private final Map<UUID, Integer> charges = new HashMap<>();
     private final Map<UUID, Integer> rested = new HashMap<>();
+    /** Server: where it was when it last moved, and the ticks it has stayed near there since ({@link #trackStillness}). */
+    private @Nullable Vec3d stillAt;
+    private int stillTicks;
+    /**
+     * Server: the Bubbler it rose from and the top of its column (the height it hovers at and a little more), null for
+     * a bubble blown otherwise. In that column it is unbreakable by touch and never left still ({@link #inColumn}).
+     */
+    private @Nullable BlockPos column;
+    private double columnTop;
+    /**
+     * Server: blown by the Bubbled effect ({@link #encloseByEffect}), not by a Bubbler: it lasts as long as its rider's
+     * effect, never merges, and its pop ends the effect.
+     */
+    private boolean fromEffect;
     /** Server: its riders going over to a bigger bubble (they don't pop it), it popping, one of its riders gone. */
     private boolean transferring, popping, popPending;
     /** Client: the server's last position, and the ticks since. */
@@ -101,6 +126,8 @@ public class BubbleEntity extends Entity {
         if (!canEnclose(entity)) return null;
         BubbleEntity bubble = new BubbleEntity(ModEntities.BUBBLE, world);
         bubble.origin = bubbler.toImmutable();
+        bubble.column = bubble.origin;
+        bubble.columnTop = bubbler.getY() + 1 + height + BubbleRiding.BOB + BubbleRiding.COLUMN_MARGIN;
         bubble.setHoverY(bubbler.getY() + 1 + height);
         double bottom = Math.max(entity.getY(), bubbler.getY() + BubblerBlock.TOP);
         if (entity instanceof ItemEntity item) {
@@ -115,9 +142,54 @@ public class BubbleEntity extends Entity {
             world.spawnEntity(bubble);
             entity.startRiding(bubble, true);
         }
+        blown(world, bubble);
+        return bubble;
+    }
+
+    /**
+     * Encloses {@code entity}, under the Bubbled effect, in a bubble rising {@link BubbleRiding#EFFECT_RISE} blocks from
+     * where it is (out of its vehicle, its passengers off), lasting as long as the effect. A player inside steers it
+     * like a Bubbler's.
+     *
+     * @return the bubble, or null if it can't be (too big, gone)
+     */
+    public static @Nullable BubbleEntity encloseByEffect(ServerWorld world, LivingEntity entity) {
+        if (!entity.isAlive() || entity.isSpectator() || !BubbleRiding.fits(entity)) return null;
+        if (entity.hasVehicle()) entity.stopRiding();
+        if (entity.hasPassengers()) entity.removeAllPassengers();
+        BubbleEntity bubble = new BubbleEntity(ModEntities.BUBBLE, world);
+        bubble.fromEffect = true;
+        bubble.origin = entity.getBlockPos();
+        bubble.setHoverY(entity.getY() + BubbleRiding.EFFECT_RISE);
+        bubble.setSide(BubbleRiding.side(Math.max(entity.getWidth(), entity.getHeight()), 1));
+        bubble.refreshPositionAndAngles(entity.getX(), entity.getY(), entity.getZ(), 0, 0);
+        world.spawnEntity(bubble);
+        entity.startRiding(bubble, true);
+        blown(world, bubble);
+        return bubble;
+    }
+
+    /** The soft sound of a bubble blown. */
+    private static void blown(ServerWorld world, BubbleEntity bubble) {
         world.playSound(null, bubble.getX(), bubble.getY(), bubble.getZ(), ModSounds.BUBBLE_BLOW, SoundCategory.BLOCKS, 0.6f,
                 0.9f + world.getRandom().nextFloat() * 0.3f);
-        return bubble;
+    }
+
+    /** Whether it was blown by the Bubbled effect (it lasts as long as its rider's effect). */
+    public boolean isFromEffect() {
+        return fromEffect;
+    }
+
+    /**
+     * Whether it is still in its Bubbler's column (server): its centre within {@link BubbleRiding#COLUMN_RADIUS} of the
+     * column's axis, its bottom from the Bubbler up to a little over the height it hovers at. There it waits for its
+     * riders, rising through a shaft or among a crowd: touching blocks and mobs never pops it, it is never left still.
+     */
+    public boolean inColumn() {
+        if (column == null) return false;
+        double dx = getX() - (column.getX() + 0.5), dz = getZ() - (column.getZ() + 0.5);
+        return dx * dx + dz * dz <= BubbleRiding.COLUMN_RADIUS * BubbleRiding.COLUMN_RADIUS
+                && getY() >= column.getY() - BubbleRiding.COLUMN_MARGIN && getY() <= columnTop;
     }
 
     /** Whether a Bubbler encloses it: a small living thing or an item, not in a vehicle, carrying none, not sneaking. */
@@ -132,6 +204,7 @@ public class BubbleEntity extends Entity {
         builder.add(SIDE, BubbleRiding.side(1.8f, 1));
         builder.add(HOVER_Y, Float.NaN);
         builder.add(ITEM, ItemStack.EMPTY);
+        builder.add(FADING, -1);
     }
 
     @Override
@@ -186,6 +259,34 @@ public class BubbleEntity extends Entity {
         this.life = life;
     }
 
+    /**
+     * Ticks it has stayed still (server): within {@link BubbleRiding#IDLE_MOVE} blocks of where it last moved, nothing
+     * propelling it. At {@link BubbleRiding#IDLE_TICKS} it pops.
+     */
+    public int getStillTicks() {
+        return stillTicks;
+    }
+
+    public void setStillTicks(int ticks) {
+        stillTicks = ticks;
+    }
+
+    /** It moves (a push, a puff, its riders' keys): still no more, from where it is. */
+    private void stir() {
+        stillAt = getPos();
+        stillTicks = 0;
+    }
+
+    /**
+     * After it moved this tick: still one tick more, or moving (far enough from where it was still) from here. Never
+     * still in its Bubbler's column, waiting there for its riders, nor when blown by the Bubbled effect (it lasts as
+     * long as the effect, its rider maybe a mob that can't move it).
+     */
+    private void trackStillness() {
+        if (stillAt == null || fromEffect || inColumn() || getPos().squaredDistanceTo(stillAt) > BubbleRiding.IDLE_MOVE * BubbleRiding.IDLE_MOVE) stir();
+        else stillTicks++;
+    }
+
     /** How heavy it is: its riders (an item bubble weighs one). */
     public int mass() {
         return Math.max(1, getPassengerList().size());
@@ -228,17 +329,114 @@ public class BubbleEntity extends Entity {
         life++;
         if (origin == null) origin = getBlockPos(); // not blown by a Bubbler (summoned): its zone is where it began
         boolean empty = !hasPassengers() && getItem().isEmpty();
-        if (popPending || empty || life >= BubbleRiding.LIFETIME || ZoneBubbles.separated(world, origin, getBlockPos())) {
+        boolean worn = fromEffect && effectTicksLeft() <= 0;
+        if (popPending || empty || worn || stillTicks >= BubbleRiding.IDLE_TICKS || ZoneBubbles.separated(world, origin, getBlockPos())) {
             pop();
             return;
         }
-        if (hasPassengers()) {
+        if (hasPassengers() && !fromEffect) {
             mergeAround(world);
             if (isRemoved()) return;
         }
-        Vec3d speed = getVelocity().add(BubbleRiding.drift(getPassengerList())).add(puffs(world));
+        Vec3d drift = BubbleRiding.drift(getPassengerList());
+        if (drift.lengthSquared() > 1.0E-8) stir();
+        Vec3d speed = getVelocity().add(drift).add(puffs(world));
         setVelocity(floatAlong(speed));
-        moveAndBounce();
+        boolean bumped = moveAndBounce();
+        if (life > BubbleRiding.LAUNCH_GRACE && !inColumn() && ((bumped && touchesBlock(world)) || touchesEntity(world))) {
+            pop();
+            return;
+        }
+        trackStillness();
+        weaken(world);
+    }
+
+    /** The ticks its riders' Bubbled effect has left (the longest one's), an effect bubble's lifetime. */
+    private int effectTicksLeft() {
+        int left = 0;
+        for (Entity rider : getPassengerList()) {
+            if (!(rider instanceof LivingEntity living)) continue;
+            StatusEffectInstance effect = living.getStatusEffect(ModEffects.BUBBLED);
+            if (effect != null) left = Math.max(left, effect.isInfinite() ? Integer.MAX_VALUE : effect.getDuration());
+        }
+        return left;
+    }
+
+    /**
+     * Its last {@link BubbleRiding#WARNING_TICKS} before it bursts by itself (left still, or its effect ending): its
+     * clients learn how long it has left (they show it weakening: {@link #weakness}), droplets fall off it, its film
+     * creaks now and then. Moving it again (still from scratch) ends the warning.
+     */
+    private void weaken(ServerWorld world) {
+        int left = BubbleRiding.IDLE_TICKS - stillTicks;
+        if (fromEffect) left = Math.min(left, effectTicksLeft());
+        int fading = left <= BubbleRiding.WARNING_TICKS ? left : -1;
+        if (dataTracker.get(FADING) != fading) dataTracker.set(FADING, fading);
+        if (fading < 0) return;
+        Vec3d center = center();
+        double spread = getSide() / 3;
+        if (fading % 6 == 0) {
+            world.spawnParticles(ParticleTypes.FALLING_WATER, center.x, center.y - getSide() / 2, center.z, 2, spread, 0.05, spread, 0);
+            world.spawnParticles(ParticleTypes.BUBBLE_POP, center.x, center.y, center.z, 2, spread, spread, spread, 0.01);
+        }
+        if (fading % 15 == 0) {
+            world.playSound(null, center.x, center.y, center.z, SoundEvents.BLOCK_HONEY_BLOCK_SLIDE, SoundCategory.NEUTRAL, 0.35f,
+                    1.4f + 0.4f * (1 - fading / (float) BubbleRiding.WARNING_TICKS));
+        }
+    }
+
+    /**
+     * How weak it shows (client and server): 0 in its prime, rising to 1 over its last {@link BubbleRiding#WARNING_TICKS}
+     * before it bursts by itself.
+     */
+    public float weakness() {
+        int fading = dataTracker.get(FADING);
+        return fading < 0 ? 0 : MathHelper.clamp(1 - fading / (float) BubbleRiding.WARNING_TICKS, 0, 1);
+    }
+
+    /**
+     * Whether it touches a block's collision shape (a wall, the floor, a ceiling), but its Bubbler's (it rises from
+     * it): fluids, grass, flowers have none.
+     */
+    private boolean touchesBlock(ServerWorld world) {
+        Box box = getBoundingBox().expand(BubbleRiding.TOUCH);
+        for (BlockPos pos : BlockPos.iterate(MathHelper.floor(box.minX), MathHelper.floor(box.minY), MathHelper.floor(box.minZ),
+                MathHelper.floor(box.maxX), MathHelper.floor(box.maxY), MathHelper.floor(box.maxZ))) {
+            BlockState state = world.getBlockState(pos);
+            if (state.isAir() || state.getBlock() instanceof BubblerBlock) continue;
+            VoxelShape shape = state.getCollisionShape(world, pos, ShapeContext.of(this));
+            if (shape.isEmpty()) continue;
+            for (Box part : shape.getBoundingBoxes()) {
+                if (part.offset(pos).intersects(box)) return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether it touches an entity that pops it ({@link #popsOnTouch}). */
+    private boolean touchesEntity(ServerWorld world) {
+        return !world.getOtherEntities(this, getBoundingBox(), this::popsOnTouch).isEmpty();
+    }
+
+    /**
+     * Whether touching {@code entity} pops it: a living thing (a mob, a player, an armour stand) or something solid
+     * (a boat, a minecart), not in a bubble (its own riders, another bubble's: that one merges or stays apart). Not
+     * a projectile (see {@link #letsOut}, {@link #damage}), a dropped item or an experience orb.
+     */
+    private boolean popsOnTouch(Entity entity) {
+        if (!entity.isAlive() || entity.isSpectator() || entity instanceof BubbleEntity || entity instanceof ProjectileEntity) return false;
+        if (entity.getRootVehicle() instanceof BubbleEntity) return false;
+        return entity instanceof LivingEntity || entity.isCollidable();
+    }
+
+    /**
+     * Whether {@code projectile} passes through it, harmless: shot from inside it, by one of its riders or from within
+     * its walls. Only what comes from outside pops (or pushes) it.
+     */
+    public boolean letsOut(ProjectileEntity projectile) {
+        Entity owner = projectile.getOwner();
+        if (owner != null && owner.getRootVehicle() == this) return true;
+        return getBoundingBox().contains(projectile.getPos());
     }
 
     /**
@@ -272,10 +470,14 @@ public class BubbleEntity extends Entity {
         return new Vec3d(speed.x * BubbleRiding.DRAG, vy, speed.z * BubbleRiding.DRAG);
     }
 
-    /** Moves by its speed; a wall, a floor or a ceiling sends it back a little. */
-    private void moveAndBounce() {
+    /**
+     * Moves by its speed; a wall, a floor or a ceiling sends it back a little (on a client, until the server pops it).
+     *
+     * @return whether it bumped into something
+     */
+    private boolean moveAndBounce() {
         Vec3d speed = getVelocity();
-        if (speed.lengthSquared() < 1.0E-8) return;
+        if (speed.lengthSquared() < 1.0E-8) return false;
         Vec3d before = getPos();
         move(MovementType.SELF, speed);
         Vec3d moved = getPos().subtract(before);
@@ -283,6 +485,7 @@ public class BubbleEntity extends Entity {
         double y = Math.abs(moved.y - speed.y) > 1.0E-4 ? -speed.y * BubbleRiding.BOUNCE : speed.y;
         double z = Math.abs(moved.z - speed.z) > 1.0E-4 ? -speed.z * BubbleRiding.BOUNCE : speed.z;
         setVelocity(x, y, z);
+        return x != speed.x || y != speed.y || z != speed.z;
     }
 
     /**
@@ -313,6 +516,7 @@ public class BubbleEntity extends Entity {
         }
         if (push != Vec3d.ZERO) {
             release();
+            stir();
             velocityModified = true;
         }
         return push;
@@ -322,6 +526,7 @@ public class BubbleEntity extends Entity {
     public void push(Vec3d push) {
         setVelocity(getVelocity().add(push.multiply(1.0 / mass())));
         release();
+        stir();
         velocityModified = true;
     }
 
@@ -336,7 +541,7 @@ public class BubbleEntity extends Entity {
     private void mergeAround(ServerWorld world) {
         Box box = getBoundingBox();
         for (BubbleEntity other : world.getEntitiesByClass(BubbleEntity.class, box, other -> other != this && other.hasPassengers())) {
-            if (other.isRemoved() || !takesIn(other)) continue;
+            if (other.isRemoved() || other.fromEffect || !takesIn(other)) continue;
             if (getPassengerList().size() + other.getPassengerList().size() > BubbleRiding.MAX_RIDERS) continue;
             absorb(other);
         }
@@ -394,6 +599,7 @@ public class BubbleEntity extends Entity {
     protected void removePassenger(Entity passenger) {
         super.removePassenger(passenger);
         if (getWorld().isClient || transferring) return;
+        if (fromEffect && passenger instanceof LivingEntity living) living.removeStatusEffect(ModEffects.BUBBLED);
         fallSlowly(passenger);
         if (!popping) popPending = true;
     }
@@ -433,6 +639,7 @@ public class BubbleEntity extends Entity {
             pop(); // a rider's own punch
             return true;
         }
+        if (direct instanceof ProjectileEntity projectile && letsOut(projectile)) return false;
         if (direct instanceof SnowballEntity snowball) {
             Vec3d way = snowball.getVelocity().lengthSquared() > 1.0E-6 ? snowball.getVelocity().normalize() : center().subtract(snowball.getPos()).normalize();
             push(way.multiply(BubbleRiding.SNOWBALL_PUSH));
@@ -507,7 +714,7 @@ public class BubbleEntity extends Entity {
         return false;
     }
 
-    /** Walking into it nudges it. */
+    /** Walking into it nudges it (and pops it once it has left its Bubbler: {@link #popsOnTouch}). */
     @Override
     public boolean isPushable() {
         return true;
@@ -516,6 +723,11 @@ public class BubbleEntity extends Entity {
     @Override
     protected void readCustomDataFromNbt(NbtCompound nbt) {
         life = nbt.getInt("Life");
+        stillTicks = nbt.getInt("StillTicks");
+        stillAt = getPos(); // still from where it was saved
+        fromEffect = nbt.getBoolean("FromEffect");
+        column = nbt.contains("Column") ? BlockPos.fromLong(nbt.getLong("Column")) : null;
+        columnTop = nbt.getDouble("ColumnTop");
         origin = nbt.contains("Origin") ? BlockPos.fromLong(nbt.getLong("Origin")) : null;
         setHoverY(nbt.contains("HoverY") ? nbt.getDouble("HoverY") : Double.NaN);
         setItem(nbt.contains("Item") ? ItemStack.fromNbt(getRegistryManager(), nbt.get("Item")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY);
@@ -526,6 +738,12 @@ public class BubbleEntity extends Entity {
     @Override
     protected void writeCustomDataToNbt(NbtCompound nbt) {
         nbt.putInt("Life", life);
+        nbt.putInt("StillTicks", stillTicks);
+        if (fromEffect) nbt.putBoolean("FromEffect", true);
+        if (column != null) {
+            nbt.putLong("Column", column.asLong());
+            nbt.putDouble("ColumnTop", columnTop);
+        }
         if (origin != null) nbt.putLong("Origin", origin.asLong());
         if (isHovering()) nbt.putDouble("HoverY", getHoverY());
         if (!getItem().isEmpty()) nbt.put("Item", getItem().encode(getRegistryManager()));

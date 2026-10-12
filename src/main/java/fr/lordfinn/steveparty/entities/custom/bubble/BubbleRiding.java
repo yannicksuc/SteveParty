@@ -29,8 +29,28 @@ public final class BubbleRiding {
     public static final int MAX_RIDERS = 8;
     /** How high a bubble rises over its Bubbler with no signal, and at most (blocks). */
     public static final int DEFAULT_HEIGHT = 15, MAX_HEIGHT = 15;
-    /** A bubble pops by itself after this many ticks (30 s). */
-    public static final int LIFETIME = 600;
+    /**
+     * A bubble left still pops by itself: after this many ticks (15 s) in which it never got this far (blocks) from
+     * where it was, its hovering bob not counting (it stays within {@link #BOB} of its height). Never while it travels.
+     */
+    public static final int IDLE_TICKS = 300;
+    public static final double IDLE_MOVE = 0.5;
+    /**
+     * A bubble bumping into a block's collision shape or touching a mob, a player, a boat... pops, but in its first
+     * ticks (this many: it grows around its rider and rises from its Bubbler, maybe among other mobs). How near a block
+     * counts as touching it (blocks).
+     */
+    public static final int LAUNCH_GRACE = 10;
+    public static final double TOUCH = 0.01;
+    /**
+     * A Bubbler's column (see BubbleEntity#inColumn): how far its bubble's centre may stray from its axis (blocks), and
+     * how far under the Bubbler and over the height it hovers at the column goes (blocks).
+     */
+    public static final double COLUMN_RADIUS = 1.0, COLUMN_MARGIN = 1.0;
+    /** A bubble about to burst by itself shows it this many ticks before (3 s): see BubbleEntity#weaken. */
+    public static final int WARNING_TICKS = 60;
+    /** How high a bubble blown by the Bubbled effect rises from where its rider was (blocks). */
+    public static final double EFFECT_RISE = 3;
     /** Its largest rider and this much room around it (blocks): the side of a one-rider bubble. */
     public static final float MARGIN = 0.5f;
     /** The side of a bubble holding an item (blocks). */

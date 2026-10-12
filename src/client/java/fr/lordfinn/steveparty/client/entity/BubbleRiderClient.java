@@ -1,7 +1,5 @@
 package fr.lordfinn.steveparty.client.entity;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleEntity;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleEvents;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleRiding;
@@ -15,22 +13,18 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Util;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 /**
  * A player in a Bubbler's bubble: his attack key punches his way out of it ({@link BubbleEvents.RiderPunch}: it
- * pops); his jump key charges a puff, shown in a horse's jump bar over the experience bar; in first person, an
- * iridescent vignette at his screen's edges shows he is inside a bubble. His own keys and puff move his bubble at once
- * on his screen ({@link BubbleEntity#clientSteer}), before the server's word.
+ * pops); his jump key charges a puff, shown in a horse's jump bar over the experience bar (in first person, he sees
+ * his bubble's film around him: BubbleEntityRenderer). His own keys and puff move his bubble at once on his screen
+ * ({@link BubbleEntity#clientSteer}), before the server's word.
  */
 public final class BubbleRiderClient {
     private static final Identifier JUMP_BACKGROUND = Identifier.ofVanilla("hud/jump_bar_background");
     private static final Identifier JUMP_PROGRESS = Identifier.ofVanilla("hud/jump_bar_progress");
-    private static final Identifier VIGNETTE = Steveparty.id("textures/misc/bubble_vignette.png");
-    /** How strong the vignette shows (alpha), breathing by this much. */
-    private static final float VIGNETTE_ALPHA = 0.55f, VIGNETTE_BREATH = 0.1f;
+
 
     /** The puff charged (ticks), and the tick it may charge again from; a puff released this tick, for the prediction. */
     private static int charge, rested;
@@ -92,22 +86,11 @@ public final class BubbleRiderClient {
         return push;
     }
 
-    /** The vignette (first person), the puff's charge in a horse's jump bar. */
+    /** The puff's charge in a horse's jump bar. */
     private static void drawHud(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.options.hudHidden || bubbleOf(client.player) == null) return;
         int width = context.getScaledWindowWidth(), height = context.getScaledWindowHeight();
-        if (client.options.getPerspective().isFirstPerson()) {
-            float breath = MathHelper.sin((Util.getMeasuringTimeMs() % 3_600_000L) / 50f * 0.06f);
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-            RenderSystem.depthMask(false);
-            context.setShaderColor(1, 1, 1, VIGNETTE_ALPHA + VIGNETTE_BREATH * breath);
-            context.drawTexture(VIGNETTE, 0, 0, 0, 0, width, height, width, height);
-            context.setShaderColor(1, 1, 1, 1);
-            RenderSystem.depthMask(true);
-            RenderSystem.disableBlend();
-        }
         int x = width / 2 - 91, y = height - 29;
         context.drawGuiTexture(JUMP_BACKGROUND, x, y, 182, 5);
         int filled = Math.round(182 * charge / (float) BubbleRiding.CHARGE_MAX);
