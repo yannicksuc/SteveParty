@@ -84,6 +84,7 @@
       "fr.lordfinn.steveparty.gametest.LootAndBrewingGameTests",
       "fr.lordfinn.steveparty.gametest.DecisionsGameTests",
       "fr.lordfinn.steveparty.gametest.PartyLoopGameTests",
+      "fr.lordfinn.steveparty.gametest.PiggyBankGameTests",
       "fr.lordfinn.steveparty.gametest.PartyStopGameTests",
       "fr.lordfinn.steveparty.gametest.PartyControllerSaveGameTests",
       "fr.lordfinn.steveparty.gametest.PodiumGameTests",

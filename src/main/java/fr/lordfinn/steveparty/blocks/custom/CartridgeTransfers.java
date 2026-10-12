@@ -59,7 +59,23 @@ public final class CartridgeTransfers {
      * @return true if the transfer happened (something moved; for "all items", everything)
      */
     public static boolean apply(World world, ItemStack cartridge, PlayerEntity player, IntSupplier cycleIndex, IntConsumer setCycleIndex) {
-        PartyResources linked = source(world, cartridge, null);
+        return apply(world, cartridge, null, player, cycleIndex, setCycleIndex, null);
+    }
+
+    /** What a transfer moved: {@code count} items like {@code pattern}, given to the player (positive) or taken (negative). */
+    @FunctionalInterface
+    public interface Moves {
+        void moved(ItemStack pattern, int count);
+    }
+
+    /**
+     * {@link #apply(World, ItemStack, PlayerEntity, IntSupplier, IntConsumer)} for the cartridge held at {@code holder}
+     * (null: its own containers only): none linked, it uses the bank of the party around it, as a board space does
+     * (see {@link #source}). {@code moves}, if any, hears each kind moved.
+     */
+    public static boolean apply(World world, ItemStack cartridge, @Nullable BlockPos holder, PlayerEntity player, IntSupplier cycleIndex,
+                                IntConsumer setCycleIndex, @Nullable Moves moves) {
+        PartyResources linked = source(world, cartridge, holder);
         InventoryComponent content = cartridge.getOrDefault(INVENTORY_COMPONENT, null);
         if (linked.isNone() || content == null) return false;
         List<ItemStack> items = content.getItems().stream().filter(stack -> !stack.isEmpty()).toList();
@@ -71,19 +87,25 @@ public final class CartridgeTransfers {
                     if (held < stack.getCount()) yield false;
                 }
                 boolean moved = false;
-                for (ItemStack stack : items) moved |= transfer(stack, linked, player) > 0;
+                for (ItemStack stack : items) moved |= transfer(stack, linked, player, moves) > 0;
                 yield moved;
             }
             case 2 -> {
                 int index = Math.floorMod(cycleIndex.getAsInt(), items.size());
                 setCycleIndex.accept((index + 1) % items.size());
-                yield transfer(items.get(index), linked, player) > 0;
+                yield transfer(items.get(index), linked, player, moves) > 0;
             }
-            default -> transfer(items.get(world.getRandom().nextInt(items.size())), linked, player) > 0;
+            default -> transfer(items.get(world.getRandom().nextInt(items.size())), linked, player, moves) > 0;
         };
     }
 
-    private static boolean isNegative(ItemStack stack) {
+    private static int transfer(ItemStack stack, PartyResources linked, PlayerEntity player, @Nullable Moves moves) {
+        int moved = transfer(stack, linked, player);
+        if (moved > 0 && moves != null) moves.moved(pattern(stack), isNegative(stack) ? -moved : moved);
+        return moved;
+    }
+
+    public static boolean isNegative(ItemStack stack) {
         return Boolean.TRUE.equals(stack.get(IS_NEGATIVE));
     }
 

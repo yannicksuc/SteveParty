@@ -700,6 +700,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         flow.endCurrentStep();
         flow.started();
         clearInterestedPlayers();
+        // The winners of a previous party win nothing in this one (Piggy Banks, bells)
+        lastWinners.clear();
         getTokenFromStartTiles(serverWorld);
         setTokensStatus(serverWorld);
         // A warning for everyone around if the board has problems (the party still starts)

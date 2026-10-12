@@ -312,7 +312,7 @@
   "book.steveparty.guide.party.name": "Running a Party",
   "book.steveparty.guide.party.piggy_bank.description": "Give and take on a pulse",
   "book.steveparty.guide.party.piggy_bank.name": "Piggy Bank",
-  "book.steveparty.guide.party.piggy_bank.page0.text": "A ceramic pig with a coin slot. On each redstone pulse, it applies its Inventory Cartridge: it gives items from the linked chest and takes the negative ones. Right-click to pick the target: current player, last winners, all players, or the nearest.\n\nIn *all* mode it's all or nothing: sell a star for coins!",
+  "book.steveparty.guide.party.piggy_bank.page0.text": "A ceramic pig with a coin slot. On each redstone pulse, it applies its Inventory Cartridge: it gives items from the linked chest (none linked: the party's bank) and takes the negative ones. Right-click: its menu, to pick who it pays: player of the turn (at a turn end, the one who just played), last winners, all players, or the nearest. Look at it to see who and what.\n\nIn *all* mode it's all or nothing: sell a star for coins!",
   "book.steveparty.guide.party.piggy_bank.page0.title": "Piggy Bank",
   "book.steveparty.guide.party.powerups.description": "A boost for your turn",
   "book.steveparty.guide.party.powerups.name": "Power-ups",

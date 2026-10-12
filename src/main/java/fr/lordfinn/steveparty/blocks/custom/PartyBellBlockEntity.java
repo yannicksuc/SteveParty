@@ -13,6 +13,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
 
+import org.jetbrains.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,6 +132,24 @@ public class PartyBellBlockEntity extends BlockEntity {
             waiting |= bell.isWaiting();
         }
         return waiting;
+    }
+
+    /**
+     * The moment of the bell of {@code controller} ringing right now (its pulse on) nearest to {@code pos}, within
+     * {@code radius} blocks: what a redstone pulse arriving there most likely comes from (a Piggy Bank paying the
+     * player whose turn just ended, rather than the one starting). Null for none.
+     */
+    public static @Nullable PartyMoment ringingNear(ServerWorld world, BlockPos pos, PartyControllerEntity controller, int radius) {
+        PartyBellBlockEntity nearest = null;
+        double best = (double) radius * radius;
+        for (PartyBellBlockEntity bell : bells()) {
+            if (bell.isRemoved() || bell.world != world || !bell.getCachedState().get(PartyBellBlock.POWERED)) continue;
+            double distance = bell.pos.getSquaredDistance(pos);
+            if (distance > best || !bell.listensTo(controller)) continue;
+            best = distance;
+            nearest = bell;
+        }
+        return nearest == null ? null : nearest.getMoment();
     }
 
     /** @return true if a bell of the controller waits at {@code moment}. */
