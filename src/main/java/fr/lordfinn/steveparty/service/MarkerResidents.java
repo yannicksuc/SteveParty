@@ -15,6 +15,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.MobSpawnCartridge;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.TrichaudronCartridgeItem;
 import fr.lordfinn.steveparty.utils.ServerMemory;
@@ -159,11 +160,23 @@ public final class MarkerResidents {
         float yaw = spot.yaw();
         if (resident == null) {
             spawn(world, key, kind, at, yaw);
+            resident = RESIDENTS.get(key);
+            if (resident != null) dress(world, pos, resident.mob());
             return;
         }
-        // Kept on its marker, facing its way (nothing moves it, but a turned marker...)
+        // Kept on its marker, facing its way (nothing moves it, but a turned marker...), dressed as its cartridge says
         MobEntity mob = resident.mob();
         if (mob.squaredDistanceTo(at) > 0.01 || Math.abs(mob.getYaw() - yaw) > 1) place(mob, at, yaw);
+        dress(world, pos, mob);
+    }
+
+    /** The mob on the marker at {@code pos} as its space's cartridge dresses it (the Shop's merchant: his disguise). */
+    private static void dress(ServerWorld world, BlockPos pos, MobEntity mob) {
+        if (!(world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity marker) || marker.getOwner() == null) return;
+        BoardSpaceBlockEntity space = ABoardSpaceBlock.getBoardSpaceEntity(world, marker.getOwner());
+        if (space == null) return;
+        ItemStack cartridge = space.getActiveCartridgeItemStack();
+        if (cartridge.getItem() instanceof MobSpawnCartridge kind) kind.dress(mob, cartridge);
     }
 
     /** The kind of cartridge whose mob should live on the marker at {@code pos} now, null for none. */

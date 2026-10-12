@@ -59,6 +59,12 @@ public final class CartridgeLayout {
         int[] xs = new int[n], ys = new int[n];
         int column = 0, y = 0, tallest = 0;
         for (int i = 0; i < n; i++) {
+            // Inside the previous module's box: its place, no height of its own
+            if (i > 0 && modules.get(i).inline()) {
+                xs[i] = xs[i - 1];
+                ys[i] = ys[i - 1];
+                continue;
+            }
             int h = heights[i];
             if (y > 0 && y + h > maxContentHeight && column + 1 < maxColumns) {
                 column++;

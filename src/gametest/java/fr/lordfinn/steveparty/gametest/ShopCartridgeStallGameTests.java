@@ -219,7 +219,7 @@ public class ShopCartridgeStallGameTests implements SteveGameTest {
             CartridgeRef hand = CartridgeRef.hand(Hand.MAIN_HAND);
             context.assertTrue(((ShopCartridgeItem) ModItems.SHOP_CARTRIDGE).modules().getFirst() instanceof StallOffersModule, "its offers: a small stall");
             context.assertTrue(CartridgeMenus.open(player, hand), "its menu opens");
-            context.assertTrue(player.currentScreenHandler instanceof CartridgeScreenHandler menu && !menu.withInventory(), "its menu, without the inventory");
+            context.assertTrue(player.currentScreenHandler instanceof CartridgeScreenHandler menu && menu.withInventory(), "its menu, with the inventory (to pick its disguise)");
             new CartridgeSettingPayload(player.currentScreenHandler.syncId, "offers", StallOffersModule.OPEN).handle(player);
             context.assertTrue(player.currentScreenHandler instanceof ShopStallScreenHandler, "the stall opens");
             context.assertTrue(player.currentScreenHandler.onButtonClick(player, ShopStallScreenHandler.BACK), "back");

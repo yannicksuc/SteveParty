@@ -210,7 +210,7 @@ public final class ShopStops {
             return false;
         }
         UUID sequence = UUID.randomUUID();
-        BoxedTraderEntity trader = summon(world, space.getPos(), mob, sequence);
+        BoxedTraderEntity trader = summon(world, space.getPos(), cartridge, mob, sequence);
         if (trader == null) return false;
         int seconds = world.getGameRules().getInt(ModGameRules.SHOP_STOP_SECONDS);
         int limit = ShopCartridgeItem.purchases(cartridge);
@@ -247,13 +247,14 @@ public final class ShopStops {
 
     /**
      * The merchant of the space at {@code space} appears for {@code mob}'s stop (one of {@code sequence}'s actors): on
-     * its spot, selling its cartridge's offers, shown on the real stall in front of him or on his own. Null if he could
-     * not be made.
+     * its spot, in the disguise of its {@code cartridge} ({@link ShopCartridgeItem#disguise}), selling its offers,
+     * shown on the real stall in front of him or on his own. Null if he could not be made.
      */
-    private static @Nullable BoxedTraderEntity summon(ServerWorld world, BlockPos space, MobEntity mob, UUID sequence) {
+    private static @Nullable BoxedTraderEntity summon(ServerWorld world, BlockPos space, ItemStack cartridge, MobEntity mob, UUID sequence) {
         BoxedTraderEntity trader = ModEntities.BOXED_TRADER_ENTITY.create(world);
         if (trader == null) return null;
         trader.makeBoardActor();
+        ((ShopCartridgeItem) cartridge.getItem()).dress(trader, cartridge);
         BoardActors.join(sequence, trader);
         BoardMobSpots.Spot spot = merchantSpot(world, space, mob);
         BoardMobSpots.showStarts(world, spot, sequence);

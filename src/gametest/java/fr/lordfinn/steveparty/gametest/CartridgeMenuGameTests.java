@@ -15,6 +15,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.BlockSlotModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
@@ -173,6 +174,9 @@ public class CartridgeMenuGameTests implements SteveGameTest {
             case ChoiceModule choice -> choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
             case NumberModule number -> NumberModule.ROW_H;
             case StallOffersModule stall -> StallOffersModule.PREVIEW_H;
+            // Inline: in the previous module's box; else its name and hint beside the slot
+            case BlockSlotModule slot -> slot.inline() ? -label
+                    : Math.max(BlockSlotModule.SLOT, 10 * (1 + lines(lang.get(slot.hintKey()).getAsString(), columnW - BlockSlotModule.SLOT - 5)));
             case ColorModule color -> {
                 int perRow = (columnW + ColorModule.GAP) / (ColorModule.SWATCH + ColorModule.GAP);
                 int rows = (ColorModule.DEFAULT + perRow) / perRow;
@@ -237,6 +241,11 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                                         context.assertTrue(width(title + ": " + translate(lang, option.key(), context)) <= titleRoom,
                                                 name + ": title « " + title + " » with its choice fits");
                                     }
+                                } else if (module.inline()) {
+                                    // On the right of the previous title's line
+                                    String before = translate(lang, modules.get(i - 1).labelKey(), context);
+                                    context.assertTrue(width(before) + 6 + width(title) <= titleRoom,
+                                            name + ": title « " + title + " » fits beside « " + before + " »");
                                 } else {
                                     context.assertTrue(width(title) <= titleRoom, name + ": title « " + title + " » fits (" + width(title) + " > " + titleRoom + ")");
                                 }
@@ -250,7 +259,9 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                                 }
                             }
                         }
-                        boolean ghosts = CartridgeLayout.indexOf(modules, GhostSlotsModule.class) >= 0;
+                        // The ghost slots or a block slot: the player's inventory under the shell, to pick the items
+                        boolean ghosts = CartridgeLayout.indexOf(modules, GhostSlotsModule.class) >= 0
+                                || CartridgeLayout.indexOf(modules, BlockSlotModule.class) >= 0;
                         // Beside a tile: one column, within the height under the tile's top (240 high: 28 above)
                         CartridgeLayout beside = CartridgeLayout.of(modules, CartridgeLayout.MAX_CONTENT_BESIDE_TILE, heights, 1, columnW);
                         context.assertTrue(beside.height() <= 240 - 28 - 4, name + ": fits beside the tile without scrolling (" + beside.height() + ")");
@@ -349,7 +360,8 @@ public class CartridgeMenuGameTests implements SteveGameTest {
             new CartridgeSettingPayload(42, "purchases", 99).handle(player);
             context.assertEquals(ShopCartridgeItem.purchases(shop), 4, "invalid value: ignored");
             context.assertTrue(menu.canUse(player), "the menu stays open while the cartridge is in hand");
-            context.assertTrue(!menu.withInventory() && menu.slots.isEmpty(), "its offers: a small stall opening the stall, no slots here");
+            context.assertTrue(menu.withInventory() && menu.slots.size() == 36,
+                    "its offers: a small stall opening the stall; its disguise: the inventory to pick a block, no ghost slot");
             player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
             context.assertTrue(!menu.canUse(player), "the cartridge gone: the menu closes");
             player.currentScreenHandler = player.playerScreenHandler;
