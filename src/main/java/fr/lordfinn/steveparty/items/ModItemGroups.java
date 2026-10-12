@@ -104,7 +104,7 @@ public final class ModItemGroups {
     /** The party, the board spaces and their cartridges, the pawns, the shop, coins and stars, the dice, power-ups. */
     private static void board(ItemGroup.DisplayContext context, ItemGroup.Entries entries) {
         addAll(entries, PARTY_CONTROLLER, PARTY_CARD_TURNS, PARTY_CARD_MINIGAME, PARTY_CARD_EVENT,
-                PARTY_CARD_SEQUENCE_START, PARTY_CARD_REPEAT, PARTY_BELL, PIGGY_BANK);
+                PARTY_CARD_SEQUENCE_START, PARTY_CARD_REPEAT, PARTY_BELL, STEP_CONTROLLER, PIGGY_BANK);
         // The tiles: plain, one per cartridge, then their other sizes (same order as in REI)
         entries.addAll(CartridgeApplications.tileEntries());
         addAll(entries, CHECK_POINT, BOARD_SPACE_REDSTONE_ROUTER, WRENCH, TILE_LINKER_BRUSH, ModItems.SPAWN_MARKER, EXPLORER_HELMET);
@@ -138,7 +138,7 @@ public final class ModItemGroups {
 
     /** The mini-games: their controller and pages, the pipes, what ends them (goal poles, podiums), their gadgets. */
     private static void miniGames(ItemGroup.DisplayContext context, ItemGroup.Entries entries) {
-        addAll(entries, MINI_GAME_CONTROLLER, MINI_GAME_REMOTE, MINI_GAMES_CATALOGUE, MINI_GAME_PAGE, STEP_CONTROLLER);
+        addAll(entries, MINI_GAME_CONTROLLER, MINI_GAME_REMOTE, MINI_GAMES_CATALOGUE, MINI_GAME_PAGE);
         for (Block[] pipes : ModBlocks.PIPES) {
             for (Block pipe : pipes) entries.add(pipe);
         }

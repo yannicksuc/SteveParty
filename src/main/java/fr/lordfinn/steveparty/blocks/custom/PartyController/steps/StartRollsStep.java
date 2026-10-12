@@ -118,6 +118,28 @@ public class StartRollsStep extends PartyStep {
         });
     }
 
+    /**
+     * A Step Controller passes: the turn order is made with the rolls already in (who has not rolled plays last), and
+     * the party goes on.
+     */
+    public boolean pass(PartyControllerEntity partyControllerEntity) {
+        if (!isStillActive(partyControllerEntity)) return false;
+        sortTokensByRoll(partyControllerEntity);
+        partyControllerEntity.nextStep();
+        return true;
+    }
+
+    /** A Step Controller replays: the rolls are forgotten, everyone rolls again. */
+    public boolean rollAgain(PartyControllerEntity partyControllerEntity) {
+        if (!isStillActive(partyControllerEntity) || !(partyControllerEntity.getWorld() instanceof ServerWorld world)) return false;
+        rolls.clear();
+        partyControllerEntity.markDirty();
+        MessageUtils.sendToPlayers(partyControllerEntity.getPartyData().getOwners(world).stream().map(e -> (ServerPlayerEntity) e).toList(),
+                Text.translatable("message.steveparty.start_rolls"), MessageUtils.MessageType.CHAT);
+        partyControllerEntity.sendPacketToInterestedPlayers();
+        return true;
+    }
+
     private static boolean isOwnerValid(UUID ownerUUID, TokenizedEntityInterface token, Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners) {
         return ownerUUID.equals(tokensWithOwners.get(token).getUuid());
     }

@@ -133,14 +133,16 @@ public class LinksCommandGameTests implements SteveGameTest {
     /**
      * The blocks the link code takes as a target are tagged « [Linkable] »: storages (vanilla ones too), board spaces,
      * the Spawn Bubble, pipes, podiums, goal pole bases, step controllers, the trading stall, the cash register, the
-     * Mini-game Controller; not a mini-game pipe (a page programs it), not the holders that only link out, not plain blocks.
+     * Mini-game Controller, the Party Controller and the board's holders (a Step Controller drives their party); not a
+     * mini-game pipe (a page programs it), not plain blocks.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void targetsAreTaggedLinkable(TestContext context) {
         List<Item> linkable = List.of(Items.CHEST, Items.TRAPPED_CHEST, Items.BARREL, Items.SHULKER_BOX, Items.HOPPER, Items.FURNACE,
                 ModBlocks.TILE.asItem(), ModBlocks.SPAWN_MARKER.asItem(), ModBlocks.PIPES[0][0].asItem(), ModBlocks.PODIUM.asItem(),
                 ModBlocks.GOAL_POLE_BASE.asItem(), ModBlocks.STEP_CONTROLLER.asItem(), ModBlocks.TRADING_STALL.asItem(),
-                ModBlocks.CASH_REGISTER.asItem(), ModBlocks.MINI_GAME_CONTROLLER.asItem());
+                ModBlocks.CASH_REGISTER.asItem(), ModBlocks.MINI_GAME_CONTROLLER.asItem(), ModBlocks.PARTY_CONTROLLER.asItem(),
+                ModBlocks.HOP_SWITCH.asItem(), ModBlocks.LOOTING_BOX.asItem(), ModBlocks.PIGGY_BANK.asItem());
         for (Item item : linkable) {
             ItemStack stack = new ItemStack(item);
             List<Text> lines = new ArrayList<>(List.of(stack.getName()));
@@ -148,8 +150,7 @@ public class LinksCommandGameTests implements SteveGameTest {
             context.assertTrue(lines.size() == 2 && lines.get(1).getString().contains(Tooltips.Tag.LINKABLE.label().getString()),
                     "tagged Linkable: " + item);
         }
-        List<Item> not = new ArrayList<>(List.of(Items.DIRT, Items.STONE_BUTTON, ModBlocks.PARTY_CONTROLLER.asItem(),
-                ModBlocks.HOP_SWITCH.asItem(), ModBlocks.LOOTING_BOX.asItem(), ModBlocks.PIGGY_BANK.asItem()));
+        List<Item> not = new ArrayList<>(List.of(Items.DIRT, Items.STONE_BUTTON));
         for (PipeKind kind : PipeKind.values()) {
             if (kind.isMiniGame()) for (Block block : ModBlocks.PIPES[kind.ordinal()]) not.add(block.asItem());
         }

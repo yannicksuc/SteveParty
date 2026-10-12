@@ -10,7 +10,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGener
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
-import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.commands.PartyCommands;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.entities.TokenStatus;
@@ -293,36 +292,5 @@ public class CoreGameTests implements SteveGameTest {
                 "turn of the unloaded token");
         context.removeBlock(pos);
         context.complete();
-    }
-
-    /** A step controller in "previous" mode brings a party back from its END step, tokens in game again. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void stepControllerGoesBackFromEnd(TestContext context) {
-        BlockPos pos = new BlockPos(2, 1, 2);
-        PartyControllerEntity controller = placeController(context, pos);
-        TokenizedEntityInterface token = spawnToken(context, new BlockPos(4, 1, 4), null);
-        PartyData data = new PartyData();
-        data.addToken(uuid(token));
-        data.addStep(new PartyStep());
-        data.addStep(new EndPartyStep(new ArrayList<>(List.of(uuid(token)))));
-        controller.setPartyData(data);
-        controller.nextStep();
-        controller.nextStep();
-        context.assertTrue(!data.isStarted() && data.isAtEnd(), "party over");
-        context.assertTrue(!TokenStatus.isInGame(token.steveparty$getStatus()), "token released");
-
-        BlockPos stepControllerPos = pos.east(2);
-        context.setBlockState(stepControllerPos.down(), Blocks.STONE);
-        context.setBlockState(stepControllerPos, ModBlocks.STEP_CONTROLLER);
-        StepControllerBlockEntity stepController = context.getBlockEntity(stepControllerPos);
-        stepController.mode = 2; // previous
-        context.setBlockState(stepControllerPos.south(), Blocks.REDSTONE_BLOCK);
-        context.waitAndRun(5, () -> {
-            context.assertEquals(data.getStepIndex(), 0, "back to the previous step");
-            context.assertTrue(data.isStarted(), "party running again");
-            context.assertTrue(TokenStatus.isInGame(token.steveparty$getStatus()), "token in game again");
-            context.removeBlock(pos);
-            context.complete();
-        });
     }
 }

@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.podium.Podiums;
@@ -45,7 +47,7 @@ public class StepControllerBlock extends BlockWithEntity {
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        if (world.getBlockEntity(pos) instanceof StepControllerBlockEntity blockEntity && blockEntity.mode == 1) {
+        if (world.getBlockEntity(pos) instanceof StepControllerBlockEntity blockEntity && blockEntity.getMode() == StepPulse.Mode.REPLAY) {
             return SHAPE_SIDE;
         }
         return SHAPE_STRAIGHT;
@@ -67,8 +69,21 @@ public class StepControllerBlock extends BlockWithEntity {
         return BlockRenderType.INVISIBLE;
     }
 
+    /** A comparator reads the phase of the party it drives (see {@link StepControllerBlockEntity}). */
+    @Override
+    protected boolean hasComparatorOutput(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+        return world.getBlockEntity(pos) instanceof StepControllerBlockEntity blockEntity ? blockEntity.getComparatorOutput() : 0;
+    }
+
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        // The Tile Linker Brush paints its link (see StepControllerLinks): the use goes on to the brush
+        if (TileLinkerBrush.isBrush(player.getMainHandStack())) return ActionResult.PASS;
         // A mini-game page: the controller is linked to it (or unlinked), like a podium
         boolean page = player.getMainHandStack().getItem() instanceof MiniGamePageItem;
         if (world.isClient) return page ? ActionResult.SUCCESS : ActionResult.PASS;

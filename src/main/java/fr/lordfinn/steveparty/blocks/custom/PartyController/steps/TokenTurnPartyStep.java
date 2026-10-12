@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.powerups.effects.PowerUpProtection;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -32,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class TokenTurnPartyStep extends PartyStep {
@@ -323,6 +325,47 @@ public class TokenTurnPartyStep extends PartyStep {
                     MessageUtils.MessageType.CHAT);
         }
         partyControllerEntity.nextStep();
+        return true;
+    }
+
+    /**
+     * A Step Controller passes this turn: only while it waits for its player (the roll, or its absent token), nothing
+     * under way (no die resolving, no picker open, the pawn still). A turn that has rolled ends by itself.
+     *
+     * @return false if the turn can't be passed now (nothing done)
+     */
+    public boolean pass(PartyControllerEntity partyControllerEntity) {
+        if (!isStillActive(partyControllerEntity) || tokenUUID == null) return false;
+        if (isWaitingForAbsentToken()) return skipAbsentTurn(partyControllerEntity);
+        if (!waitsForChoiceOf(tokenUUID) || Steveparty.SCHEDULER.isScheduled(tokenUUID) || DiceRollEffects.isResolving(tokenUUID)
+                || (owner != null && DicePrompts.isAsking(owner))) return false;
+        if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
+            MessageUtils.sendToPlayers(partyControllerEntity.getPartyAudience(),
+                    Text.translatable("message.steveparty.absent_turn.skipped", getTokenDisplayName(serverWorld)).formatted(Formatting.GRAY),
+                    MessageUtils.MessageType.CHAT);
+        }
+        partyControllerEntity.nextStep();
+        return true;
+    }
+
+    /**
+     * A Step Controller replays this turn: its player plays once more right after it, as on a Replay tile
+     * ({@link #grantReplay}).
+     *
+     * @return false if this turn gives no extra one (it is already one, or one follows it already)
+     */
+    public boolean replay(PartyControllerEntity partyControllerEntity) {
+        List<PartyStep> steps = partyControllerEntity.getPartyData().getSteps();
+        int next = partyControllerEntity.getPartyData().getStepIndex() + 1;
+        if (next < steps.size() && steps.get(next) instanceof TokenTurnPartyStep extra && extra.replay
+                && Objects.equals(extra.tokenUUID, tokenUUID)) return false;
+        if (grantReplay(partyControllerEntity) == null) return false;
+        if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
+            MessageUtils.sendToPlayers(partyControllerEntity.getPartyAudience(),
+                    Text.translatable("message.steveparty.tile_landed.replay", getTokenDisplayName(serverWorld)).formatted(Formatting.GOLD),
+                    MessageUtils.MessageType.CHAT);
+            partyControllerEntity.sendPacketToInterestedPlayers();
+        }
         return true;
     }
 
