@@ -29,8 +29,11 @@ import java.util.concurrent.locks.LockSupport;
 public final class TestArea {
     /** Tickets by how long they hold (a test's tick limit and a little more): they expire on their own. */
     private static final Map<Integer, ChunkTicketType<ChunkPos>> TICKETS = new HashMap<>();
-    /** The longest wait for the land to be ready. */
-    private static final long WAIT_NANOS = 30_000_000_000L;
+    /**
+     * The longest wait for the land to be ready: only against a hang (a machine busy with other games and builds took
+     * more than 30 seconds for a test's land).
+     */
+    private static final long WAIT_NANOS = 120_000_000_000L;
 
     private TestArea() {
     }
