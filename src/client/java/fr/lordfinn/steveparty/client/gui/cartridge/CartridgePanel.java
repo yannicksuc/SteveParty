@@ -826,20 +826,8 @@ public final class CartridgePanel {
         }
     }
 
-    /** The mod's inventory slot (as in its screens' textures): 16 by 16, rounded corners, its shadow along the top. */
-    static void drawSlotCell(DrawContext context, int x, int y) {
-        context.fill(x + 1, y, x + 15, y + 1, SLOT_SHADOW);
-        context.fill(x, y + 1, x + 1, y + 2, SLOT_SHADOW);
-        context.fill(x + 15, y + 1, x + 16, y + 2, SLOT_SHADOW);
-        context.fill(x + 1, y + 1, x + 15, y + 2, SLOT_FILL);
-        context.fill(x, y + 2, x + 16, y + 15, SLOT_FILL);
-        context.fill(x + 1, y + 15, x + 15, y + 16, SLOT_FILL);
-    }
-
-    private static final int SLOT_FILL = 0xFF8D8D8D, SLOT_SHADOW = 0xFF444C55;
-
     private void drawGhostSlots(DrawContext context, GhostSlotsModule ghosts, int mx, int my) {
-        for (int s = 0; s < ghosts.count(); s++) drawSlotCell(context, mx + ghosts.slotX(s), my + ghosts.slotY(s));
+        for (int s = 0; s < ghosts.count(); s++) PartyGui.slot(context, mx + ghosts.slotX(s), my + ghosts.slotY(s));
         // On the right of the slots: green gives, red takes, then how to set the quantity
         int tx = mx + ghostHelpX(), ty = my + CartridgeModule.LABEL_H + 2, room = columnW - ghostHelpX() - 8;
         if (!ghosts.signed()) {
