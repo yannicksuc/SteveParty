@@ -329,7 +329,7 @@ public final class CartridgePanel {
             };
             // An inline module sits in the previous one's box: no height, no number of its own
             heights[i] = module.inline() ? 0 : (module.labelKey() == null ? 0 : CartridgeModule.LABEL_H) + body;
-            numbers[i] = (i == 0 ? 0 : numbers[i - 1]) + (module.inline() ? 0 : 1);
+            numbers[i] = (i == 0 ? 0 : numbers[i - 1]) + (module.inline() || inPanel(i) ? 0 : 1);
         }
         emptyLines = n == 0 ? textRenderer.wrapLines(Text.translatable(CartridgeItem.MENU_KEY + "empty.hint"), columnW) : List.of();
 
@@ -343,6 +343,12 @@ public final class CartridgePanel {
         scrollMax = canScroll ? Math.max(0, needed - shellHeight) : 0;
         scroll = Math.clamp(scroll, 0, scrollMax);
         buildPaths();
+    }
+
+    /** Whether module {@code i} is in the panel of a tab row before it (no number of its own). */
+    private boolean inPanel(int i) {
+        for (int k = 0; k < i; k++) if (k + modules.get(k).panelSize() >= i) return true;
+        return false;
     }
 
     private int value(ItemStack current, int i) {
@@ -377,9 +383,19 @@ public final class CartridgePanel {
         for (int i = 0; i < n; i++) {
             int gutter = x + layout.x(i) - 5, end = x + layout.x(i) - 2;
             int target = Math.clamp(moduleY(i) + 4, contentTop() + 2, Math.max(contentTop() + 2, contentBottom() - 4));
-            paths[i] = new int[]{cx, bottom, cx, bus, gutter, bus, gutter, target, end, target};
+            if (layout.owner(i) >= 0) {
+                // In a tab's panel: the current goes to its tab row
+                paths[i] = paths[layout.owner(i)];
+            } else if (layout.right(i)) {
+                // The right half of a row: up the column's gutter to the gap above the row, along it, down beside the module
+                int column = x + layout.x(i - 1) - 5, above = Math.clamp(moduleY(i) - 3, contentTop() + 1, Math.max(contentTop() + 1, contentBottom() - 4));
+                int side = x + layout.x(i) - 4;
+                paths[i] = new int[]{cx, bottom, cx, bus, column, bus, column, above, side, above, side, target, end, target};
+            } else {
+                paths[i] = new int[]{cx, bottom, cx, bus, gutter, bus, gutter, target, end, target};
+            }
             int length = 0;
-            for (int p = 0; p < 8; p += 2) length += Math.abs(paths[i][p + 2] - paths[i][p]) + Math.abs(paths[i][p + 3] - paths[i][p + 1]);
+            for (int p = 0; p < paths[i].length - 2; p += 2) length += Math.abs(paths[i][p + 2] - paths[i][p]) + Math.abs(paths[i][p + 3] - paths[i][p + 1]);
             pathLength[i] = length;
         }
     }
@@ -388,7 +404,7 @@ public final class CartridgePanel {
     private void pointAt(int i, int distance) {
         int[] path = paths[i];
         int left = Math.max(0, distance);
-        for (int p = 0; p < 8; p += 2) {
+        for (int p = 0; p < path.length - 2; p += 2) {
             int dx = path[p + 2] - path[p], dy = path[p + 3] - path[p + 1];
             int length = Math.abs(dx) + Math.abs(dy);
             if (left <= length) {
@@ -398,15 +414,15 @@ public final class CartridgePanel {
             }
             left -= length;
         }
-        pointX = path[8];
-        pointY = path[9];
+        pointX = path[path.length - 2];
+        pointY = path[path.length - 1];
     }
 
     /** Draws path {@code i}: lit from the contacts up to {@code lit} pixels, dim after. */
     private void drawTrace(DrawContext context, int i, int lit) {
         int[] path = paths[i];
         int walked = 0;
-        for (int p = 0; p < 8; p += 2) {
+        for (int p = 0; p < path.length - 2; p += 2) {
             int x1 = path[p], y1 = path[p + 1], x2 = path[p + 2], y2 = path[p + 3];
             int length = Math.abs(x2 - x1) + Math.abs(y2 - y1);
             if (length == 0) continue;
@@ -478,6 +494,9 @@ public final class CartridgePanel {
         if (clipped) context.enableScissor(x + 4, contentTop(), x + w - 4, contentBottom());
         boolean mouseInContent = inContent(mouseY);
         stallHovered = false;
+        for (int i = 0; i < modules.size(); i++) {
+            if (modules.get(i).panelSize() > 0) drawPanel(context, i);
+        }
         for (int i = 0; i < modules.size(); i++) {
             int my = moduleY(i);
             if (clipped && (my + heights[i] < contentTop() || my > contentBottom())) continue;
@@ -572,14 +591,18 @@ public final class CartridgePanel {
             if (module instanceof BlockSlotModule slot) drawBlockSlot(context, current, i, slot, mx, my + CartridgeModule.LABEL_H, mouseX, mouseY, canEdit.getAsBoolean());
             return;
         }
-        if (labels[i] != null) {
+        if (labels[i] != null && layout.owner(i) >= 0) {
+            // In a tab's panel: its title alone, the tab row has the number
+            UiText.line(context, textRenderer, labels[i], mx, my + 1, layout.w(i), enabled ? LABEL : LABEL_OFF, false);
+            top += CartridgeModule.LABEL_H;
+        } else if (labels[i] != null) {
             int shown = numbers[i];
             String number = (shown < 10 ? "0" : "") + shown;
             int chipColor = flash > 0 ? Argb.lerp(CHIP, 0xFFFFC52E, flash) : CHIP;
             int numberWidth = textRenderer.getWidth(number);
             context.fill(mx - 1, my, mx + numberWidth + 2, my + 9, chipColor);
             UiText.line(context, textRenderer, number, mx + 1, my + 1, numberWidth, flash > 0.5F ? 0xFF3B2600 : (enabled ? CHIP_TEXT : LABEL_OFF), false);
-            int lx = mx + numberWidth + 5, room = columnW - (lx - mx);
+            int lx = mx + numberWidth + 5, room = layout.w(i) - (lx - mx);
             // An inline module next: its title takes the right of the line
             if (i + 1 < modules.size() && modules.get(i + 1).inline() && labels[i + 1] != null) room -= inlineTitleW(i + 1) + 6;
             // A choice of colours: its title names the one chosen (« Réseau : violet »)
@@ -620,13 +643,50 @@ public final class CartridgePanel {
         }
     }
 
+    // Tab rows: the panel of the chosen tab, the tabs on it (the chosen one open into it)
+    private static final int PANEL_BG = 0xFF363636, TAB_OFF = 0xFF2A2A2A;
+    private void drawPanel(DrawContext context, int i) {
+        int px = x + layout.x(i), pw = layout.w(i);
+        int top = moduleY(i) + heights[i] - 1, bottom = y + layout.panelBottom(i) - scroll;
+        context.fill(px, top, px + pw, bottom, OUTLINE);
+        context.fill(px + 1, top + 1, px + pw - 1, bottom - 1, PANEL_BG);
+    }
+
+    private void drawTabs(DrawContext context, ItemStack current, int i, ChoiceModule choice, int mx, int top,
+                          int mouseX, int mouseY, boolean active) {
+        int value = value(current, i);
+        int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
+        for (int o = 0; o < choice.options().size(); o++) {
+            int bx = choiceX(choice, i, mx, o), bw = choiceW(choice, i);
+            boolean selected = o == value;
+            boolean hovered = active && HitArea.contains(mouseX, mouseY, bx, top, bw, bh);
+            // The chosen tab stands taller and opens into the panel (its bottom edge is the panel's top, gone)
+            int tabTop = selected ? top : top + 3;
+            context.fill(bx, tabTop, bx + bw, top + bh, OUTLINE);
+            context.fill(bx + 1, tabTop + 1, bx + bw - 1, top + bh + (selected ? 1 : -1), selected ? PANEL_BG : hovered ? 0xFF3A3A3A : TAB_OFF);
+            ChoiceModule.Option option = choice.options().get(o);
+            if (option.color() >= 0) {
+                int c = Argb.opaque(option.color());
+                int sw = selected ? c : Argb.darken(c, hovered ? 0.25F : 0.5F);
+                context.fill(bx + 3, tabTop + 3, bx + bw - 3, top + bh - 3, sw);
+            } else {
+                UiText.centered(context, textRenderer, optionTexts[i][o], bx + 2, tabTop + 4, bw - 4,
+                        selected ? LABEL : TONE_SOFT, false);
+            }
+        }
+    }
+
     private void drawChoice(DrawContext context, ItemStack current, int i, ChoiceModule choice, int mx, int top,
                             int mouseX, int mouseY, boolean active) {
+        if (choice.panelSize() > 0) {
+            drawTabs(context, current, i, choice, mx, top, mouseX, mouseY, active);
+            return;
+        }
         int n = choice.options().size();
         int value = value(current, i);
         boolean swatches = choice.swatches();
         for (int o = 0; o < n; o++) {
-            int bx = choiceX(choice, mx, o), bw = choiceW(choice), bh = swatches ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
+            int bx = choiceX(choice, i, mx, o), bw = choiceW(choice, i), bh = swatches ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
             boolean selected = o == value && choice.enabled(current);
             boolean over = HitArea.contains(mouseX, mouseY, bx, top, bw, bh);
             boolean hovered = active && over;
@@ -648,26 +708,26 @@ public final class CartridgePanel {
         }
     }
 
-    private int choiceW(ChoiceModule choice) {
+    private int choiceW(ChoiceModule choice, int i) {
         int n = choice.options().size();
-        int w = (columnW - (n - 1) * 3) / n;
+        int w = (layout.w(i) - (n - 1) * 3) / n;
         return choice.swatches() ? Math.min(34, w) : w;
     }
 
-    private int choiceX(ChoiceModule choice, int mx, int option) {
-        return mx + option * (choiceW(choice) + 3);
+    private int choiceX(ChoiceModule choice, int i, int mx, int option) {
+        return mx + option * (choiceW(choice, i) + 3);
     }
 
     // Number: [-] figure [+] lamps
     private static final int MINUS_X = 0, FIGURE_X = 18, FIGURE_W = 26, PLUS_X = 46, LAMPS_X = 66, STEP_W = 16;
 
-    private int lampWidth(NumberModule number) {
+    private int lampWidth(NumberModule number, int i) {
         int count = number.max() - number.min() + 1;
-        return Math.min(12, (columnW - LAMPS_X) / count - 2);
+        return Math.min(12, (layout.w(i) - LAMPS_X) / count - 2);
     }
 
-    private boolean showsLamps(NumberModule number) {
-        return number.max() - number.min() + 1 <= 9 && lampWidth(number) >= 3;
+    private boolean showsLamps(NumberModule number, int i) {
+        return number.max() - number.min() + 1 <= 9 && lampWidth(number, i) >= 3;
     }
 
     private void drawNumber(DrawContext context, ItemStack current, int i, NumberModule number, int mx, int top,
@@ -688,8 +748,8 @@ public final class CartridgePanel {
         context.getMatrices().scale(scale, scale, 1);
         UiText.line(context, textRenderer, figure, 0, 0, (FIGURE_W - 2) / scale, Argb.lighten(color, 0.3F), false);
         context.getMatrices().pop();
-        if (!showsLamps(number)) return;
-        int lw = lampWidth(number);
+        if (!showsLamps(number, i)) return;
+        int lw = lampWidth(number, i);
         for (int v = number.min(); v <= number.max(); v++) {
             int lx = mx + LAMPS_X + (v - number.min()) * (lw + 2);
             boolean on = v <= value;
@@ -1068,10 +1128,18 @@ public final class CartridgePanel {
         for (int i = 0; i < modules.size(); i++) {
             CartridgeModule module = modules.get(i);
             int mx = x + layout.x(i), top = moduleY(i) + (module.labelKey() != null ? CartridgeModule.LABEL_H : 0);
+            if (!module.tooltipKeys().isEmpty() && module.labelKey() != null
+                    && HitArea.contains(mouseX, mouseY, mx, moduleY(i), layout.w(i), CartridgeModule.LABEL_H)) {
+                List<Text> lines = new ArrayList<>();
+                lines.add(Text.translatable(module.labelKey()));
+                for (String key : module.tooltipKeys()) lines.add(Text.translatable(key).formatted(Formatting.GRAY));
+                context.drawTooltip(textRenderer, wrap(lines), mouseX, mouseY);
+                return true;
+            }
             if (module instanceof ChoiceModule choice) {
                 int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                 for (int o = 0; o < choice.options().size(); o++) {
-                    if (!HitArea.contains(mouseX, mouseY, choiceX(choice, mx, o), top, choiceW(choice), bh)) continue;
+                    if (!HitArea.contains(mouseX, mouseY, choiceX(choice, i, mx, o), top, choiceW(choice, i), bh)) continue;
                     ChoiceModule.Option option = choice.options().get(o);
                     List<Text> lines = new ArrayList<>();
                     lines.add(Text.translatable(option.key()));
@@ -1190,14 +1258,14 @@ public final class CartridgePanel {
                 case ChoiceModule choice -> {
                     int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                     for (int o = 0; o < choice.options().size(); o++) {
-                        if (HitArea.contains(mouseX, mouseY, choiceX(choice, mx, o), top, choiceW(choice), bh)) return change(i, o, value);
+                        if (HitArea.contains(mouseX, mouseY, choiceX(choice, i, mx, o), top, choiceW(choice, i), bh)) return change(i, o, value);
                     }
                 }
                 case NumberModule number -> {
                     if (HitArea.contains(mouseX, mouseY, mx + MINUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.max(number.min(), value - step(number)), value);
                     if (HitArea.contains(mouseX, mouseY, mx + PLUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.min(number.max(), value + step(number)), value);
-                    if (showsLamps(number)) {
-                        int lw = lampWidth(number);
+                    if (showsLamps(number, i)) {
+                        int lw = lampWidth(number, i);
                         for (int v = number.min(); v <= number.max(); v++) {
                             if (HitArea.contains(mouseX, mouseY, mx + LAMPS_X + (v - number.min()) * (lw + 2), top + 3, lw, 12)) return change(i, v, value);
                         }
@@ -1273,7 +1341,7 @@ public final class CartridgePanel {
         if (canEdit.getAsBoolean() && inContent(mouseY)) {
             for (int i = 0; i < modules.size(); i++) {
                 if (!(modules.get(i) instanceof NumberModule number) || !number.enabled(current)) continue;
-                if (!HitArea.contains(mouseX, mouseY, x + layout.x(i), moduleY(i), columnW, heights[i])) continue;
+                if (!HitArea.contains(mouseX, mouseY, x + layout.x(i), moduleY(i), layout.w(i), heights[i])) continue;
                 int value = value(current, i);
                 return change(i, Math.clamp(value + (amount > 0 ? step(number) : -step(number)), number.min(), number.max()), value);
             }

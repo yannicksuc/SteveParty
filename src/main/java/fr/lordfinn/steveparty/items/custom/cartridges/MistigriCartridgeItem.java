@@ -39,37 +39,43 @@ public class MistigriCartridgeItem extends CartridgeItem implements MobSpawnCart
     private static final List<CartridgeModule> MODULES = modules0();
 
     /**
-     * One column beside a tile: the sentence picked in a row of swatches, then its weight, its amount (greyed out for
-     * the sentences without one) and how often it is drawn.
+     * One column beside a tile: a tab per sentence (its swatch), and in the chosen tab's panel its weight, its amount
+     * beside it (greyed out for the sentences without one) and how often it is drawn.
      */
     private static List<CartridgeModule> modules0() {
         List<ChoiceModule.Option> options = new ArrayList<>();
         for (Sentence sentence : Sentence.values()) {
             options.add(new ChoiceModule.Option(K + "sentence." + sentence.id, SWATCHES[sentence.ordinal()],
-                    "message.steveparty.mistigri_space.sentence." + sentence.id));
+                    K + "sentence." + sentence.id + ".tooltip"));
         }
         return List.of(
                 description("mistigri_cartridge", 3),
                 new ChoiceModule("sentence", K + "sentence", options, stack -> selected(stack).ordinal(),
-                        (edit, value) -> put(edit.stack(), EDITED, value)),
+                        (edit, value) -> put(edit.stack(), EDITED, value)).tabs(3),
                 new NumberModule("weight", K + "weight", 0, MAX_WEIGHT, stack -> weight(stack, selected(stack)),
-                        (edit, value) -> put(edit.stack(), "w_" + selected(edit.stack()).id, value), stack -> COLOR),
+                        (edit, value) -> put(edit.stack(), "w_" + selected(edit.stack()).id, value),
+                        stack -> SWATCHES[selected(stack).ordinal()]).half().tipped(),
                 new NumberModule("amount", K + "amount", 1, MAX_COINS, stack -> amountOf(stack, selected(stack)),
                         (edit, value) -> {
                             String key = amountKey(selected(edit.stack()));
                             if (key != null) put(edit.stack(), key, value);
-                        }, stack -> COLOR, stack -> amountKey(selected(stack)) != null),
+                        }, stack -> SWATCHES[selected(stack).ordinal()], stack -> amountKey(selected(stack)) != null).half(),
                 new InfoModule("chance", null, 1, context -> List.of(new InfoModule.Line(
                         Text.translatable(K + "chance", chance(context.stack(), selected(context.stack()))), InfoModule.Tone.SOFT))));
     }
 
-    /** The settings key of the sentence being edited in the menu. */
+    /** The settings key of the sentence being edited in the menu (its tab). */
     private static final String EDITED = "edited";
 
     /** The sentence the menu edits now. */
     public static Sentence selected(ItemStack stack) {
         int index = settings(stack).getOrDefault(EDITED, 0);
         return Sentence.values()[Math.clamp(index, 0, Sentence.values().length - 1)];
+    }
+
+    private static int amountOf(ItemStack stack, Sentence sentence) {
+        String key = amountKey(sentence);
+        return key == null ? sentence.amount(stack) : amount(stack, key);
     }
 
     /** The amount setting of {@code sentence}, null if it has none. */
@@ -81,11 +87,6 @@ public class MistigriCartridgeItem extends CartridgeItem implements MobSpawnCart
             case BACK -> BACK;
             default -> null;
         };
-    }
-
-    private static int amountOf(ItemStack stack, Sentence sentence) {
-        String key = amountKey(sentence);
-        return key == null ? sentence.amount(stack) : amount(stack, key);
     }
 
     /** How often {@code sentence} is drawn, in percent. */

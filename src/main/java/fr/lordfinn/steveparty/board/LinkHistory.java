@@ -41,7 +41,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, BlockChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -107,6 +107,22 @@ public final class LinkHistory {
             // Both bubbles show their mobs again
             for (GlobalPos marker : new GlobalPos[]{before, after})
                 if (marker != null && marker.dimension().equals(world.getRegistryKey())) MarkerMobs.touch(world, marker.pos());
+            return true;
+        }
+    }
+
+    /** The Magpie Nest of a Common pot cartridge, {@code before} → {@code after} (null: none). */
+    public record NestChange(BlockPos pos, int slot, @Nullable GlobalPos before, @Nullable GlobalPos after) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            BrushLinks.Held held = BrushLinks.held(world, pos, slot);
+            if (held == null) return false;
+            ItemStack cartridge = held.cartridge();
+            if (cartridge.isEmpty() || !Objects.equals(cartridge.get(ModComponents.POT_NEST), undo ? after : before)) return false;
+            GlobalPos value = undo ? before : after;
+            if (value == null) cartridge.remove(ModComponents.POT_NEST);
+            else cartridge.set(ModComponents.POT_NEST, value);
+            held.sync().run();
             return true;
         }
     }

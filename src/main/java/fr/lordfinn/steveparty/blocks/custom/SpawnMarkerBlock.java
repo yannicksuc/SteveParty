@@ -174,6 +174,14 @@ public class SpawnMarkerBlock extends BlockWithEntity {
             ActionResult result = wrench(state, world, pos, player);
             return result == ActionResult.PASS ? ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION : ItemActionResult.success(world.isClient);
         }
+        // A Common pot's Pie lives on a Magpie Nest, never in a bubble
+        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem) {
+            if (!world.isClient) {
+                fr.lordfinn.steveparty.sounds.ModSounds.playCancel(world, pos);
+                player.sendMessage(Text.translatable("message.steveparty.pot_cartridge.needs_nest"), true);
+            }
+            return ItemActionResult.success(world.isClient);
+        }
         return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 

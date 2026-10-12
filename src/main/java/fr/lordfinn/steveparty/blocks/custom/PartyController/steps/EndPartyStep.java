@@ -63,6 +63,8 @@ public class EndPartyStep extends PartyStep {
                 partyControllerEntity.getPos().toCenterPos(), 100,
                 Text.translatableWithFallback("message.steveparty.game_ended", "The party is over !"),
                 MessageUtils.MessageType.CHAT);
+        // The pots' coins go back to their storage: nothing vanishes with the party
+        fr.lordfinn.steveparty.service.CommonPots.partyEnded(serverWorld, partyControllerEntity);
         partyControllerEntity.markDirty();
         fr.lordfinn.steveparty.api.event.PartyEvents.ENDED.invoker().onPartyEnded(partyControllerEntity);
     }

@@ -153,9 +153,9 @@ public class ModComponents {
     /** A signed Trap power-up: what it does once sprung and who signed it (an unsigned one steals coins). */
     public static final ComponentType<TrapSetupComponent> TRAP_SETUP =
             registerComponent("trap-setup", TrapSetupComponent.CODEC);
-    /** The items the Pie stole into a Common pot (kept in its cartridge, given to the pot's winner). */
-    public static final ComponentType<List<ItemStack>> POT_ITEMS =
-            registerComponent("pot-items", ItemStack.CODEC.listOf());
+    /** The Magpie Nest a Common pot cartridge is linked to: the pot is the coins in it. */
+    public static final ComponentType<GlobalPos> POT_NEST =
+            registerComponent("pot-nest", GlobalPos.CODEC);
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =

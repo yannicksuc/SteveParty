@@ -233,9 +233,12 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                         for (int i = 0; i < heights.length; i++) {
                             CartridgeModule module = modules.get(i);
                             heights[i] = measuredHeight(module, stack, info, lang, columnW);
+                            // Its width as laid out (half a column, inside a tab's panel...); a panel's module has no number
+                            CartridgeLayout widths = CartridgeLayout.of(modules, 100_000);
+                            int moduleW = widths.w(i);
                             if (module.labelKey() != null) {
                                 String title = translate(lang, module.labelKey(), context);
-                                int titleRoom = columnW - 19;
+                                int titleRoom = moduleW - (widths.owner(i) >= 0 ? 0 : 19);
                                 if (module instanceof ChoiceModule choice && choice.swatches()) {
                                     for (ChoiceModule.Option option : choice.options()) {
                                         context.assertTrue(width(title + ": " + translate(lang, option.key(), context)) <= titleRoom,
@@ -252,7 +255,7 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                             }
                             if (module instanceof ChoiceModule choice && !choice.swatches()) {
                                 int n = choice.options().size();
-                                int room = (columnW - (n - 1) * 3) / n - 6;
+                                int room = (moduleW - (n - 1) * 3) / n - 6;
                                 for (ChoiceModule.Option option : choice.options()) {
                                     String text = translate(lang, option.key(), context);
                                     context.assertTrue(width(text) <= room, name + ": button « " + text + " » fits (" + width(text) + " > " + room + ")");

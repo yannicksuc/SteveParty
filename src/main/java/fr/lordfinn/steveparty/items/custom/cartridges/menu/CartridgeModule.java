@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.items.custom.cartridges.menu;
 import net.minecraft.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * One setting (or piece of information) of a cartridge, shown as one block of its menu, the « cartridge shell » (see
  * {@link fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem#modules()}). A cartridge declares the list of its
@@ -19,6 +21,9 @@ public abstract class CartridgeModule {
 
     private final String id;
     private final @Nullable String labelKey;
+    private boolean half;
+    private int panelSize;
+    private List<String> tooltipKeys = List.of();
 
     protected CartridgeModule(String id, @Nullable String labelKey) {
         this.id = id;
@@ -44,6 +49,49 @@ public abstract class CartridgeModule {
      */
     public boolean inline() {
         return false;
+    }
+
+    /**
+     * Half a column wide: two half modules in a row sit side by side, each with its own number and label (a column too
+     * narrow for two puts them one under the other). For number and button modules.
+     */
+    public CartridgeModule half() {
+        half = true;
+        return this;
+    }
+
+    public boolean isHalf() {
+        return half;
+    }
+
+    /**
+     * A row of tabs (a choice): the {@code modules} declared after it are the panel of the tab chosen, drawn inside a
+     * frame joined to that tab, without numbers of their own. For a choice whose value picks what they edit.
+     */
+    public CartridgeModule tabs(int modules) {
+        panelSize = modules;
+        return this;
+    }
+
+    /** How many modules after it make its panel (0: no tab row). */
+    public int panelSize() {
+        return panelSize;
+    }
+
+    /** Its label shows a tooltip under the mouse: its label key + {@code .tooltip}. */
+    public CartridgeModule tipped() {
+        return labelKey == null ? this : tipped(labelKey + ".tooltip");
+    }
+
+    /** Its label shows a tooltip under the mouse: these lines (translation keys). */
+    public CartridgeModule tipped(String... keys) {
+        tooltipKeys = List.of(keys);
+        return this;
+    }
+
+    /** The translation keys of its label's tooltip lines (none: no tooltip). */
+    public List<String> tooltipKeys() {
+        return tooltipKeys;
     }
 
     /** Whether it holds a value the player can change. */

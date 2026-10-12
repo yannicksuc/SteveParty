@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.board;
 
 import fr.lordfinn.steveparty.blocks.custom.HopSwitchBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
@@ -9,6 +10,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
+import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
 import fr.lordfinn.steveparty.service.MarkerResidents;
 import fr.lordfinn.steveparty.utils.Argb;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +35,8 @@ import java.util.List;
  *     <li>{@link Switches}: the destinations of a Hop Switch's cartridge, to the blocks it switches;</li>
  *     <li>{@link Containers}: the containers of an Inventory, Trichaudron or Shop Cartridge (board spaces, Looting Box,
  *     Piggy Bank, the Party Controller's bank), at most {@link CartridgeContainers#MAX};</li>
- *     <li>{@link SpawnPoint}: the Spawn Marker of a mob space's cartridge, where its mob appears (one at most).</li>
+ *     <li>{@link SpawnPoint}: the Spawn Marker of a mob space's cartridge, where its mob appears (one at most);</li>
+ *     <li>{@link PotNest}: the Magpie Nest of a Common pot cartridge, the pot itself (one at most).</li>
  * </ul>
  * The target decides: a board space is a destination, a container a container, a Spawn Marker the spawn point; a
  * target the cartridge takes nothing of is refused with a word (see TileLinkerBrush). The containers and the spawn
@@ -75,6 +78,11 @@ public final class CartridgeLinks {
             },
             (world, holder, held, out) -> {
                 if (holder instanceof HopSwitchBlockEntity && BrushLinks.isCartridge(held.cartridge())) out.add(new Switches(held));
+            },
+            (world, holder, held, out) -> {
+                if (!(holder instanceof BoardSpaceBlockEntity)) return;
+                BrushLinks.Held pot = BrushLinks.withRole(world, holder, held, BrushLinks::isPotCartridge);
+                if (pot != null) out.add(new PotNest(pot));
             },
             (world, holder, held, out) -> {
                 if (!BrushLinks.usesContainers(holder)) return;
@@ -292,6 +300,62 @@ public final class CartridgeLinks {
             held.sync().run();
             LinkHistory.record(player, new LinkHistory.SpawnChange(held.pos(), held.slot(), before, cartridge.get(ModComponents.SPAWN_MARKER)));
             MarkerResidents.refresh(world, before == null ? marker : before.pos());
+        }
+    }
+
+    // ---------------------------------------------------------------- Common pot's nest
+
+    /** The Magpie Nest of a Common pot cartridge: one at most, a new one replaces it. */
+    public record PotNest(BrushLinks.Held held) implements BrushLinkable {
+        /** Colour of the link to a pot's nest: its straw. */
+        public static final int COLOR = PotCartridgeItem.COLOR;
+
+        @Override
+        public BlockPos holder() {
+            return held.pos();
+        }
+
+        @Override
+        public int color() {
+            return COLOR;
+        }
+
+        @Override
+        public boolean accepts(World world, BlockPos target) {
+            return world.getBlockState(target).getBlock() instanceof MagpieNestBlock;
+        }
+
+        @Override
+        public List<BlockPos> targets(World world) {
+            BlockPos nest = PotCartridgeItem.linkedNest(held.cartridge(), world);
+            return nest == null ? List.of() : List.of(nest);
+        }
+
+        @Override
+        public boolean link(ServerPlayerEntity player, ServerWorld world, BlockPos target) {
+            if (linked(world, target)) return false;
+            set(player, world, target);
+            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.pot_nest", BoardText.pos(holder()), BoardText.pos(target)));
+            world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.PLAYERS, 0.45f, 1.4f);
+            BoardLinks.trail(world, holder(), target, COLOR);
+            return true;
+        }
+
+        @Override
+        public boolean unlink(ServerPlayerEntity player, ServerWorld world, BlockPos target) {
+            if (!linked(world, target)) return false;
+            set(player, world, null);
+            TileLinkerBrush.erased(player, world, holder(), target);
+            BoardLinks.trail(world, holder(), target, BoardLinks.CUT_COLOR);
+            return true;
+        }
+
+        private void set(ServerPlayerEntity player, ServerWorld world, @Nullable BlockPos nest) {
+            ItemStack cartridge = held.cartridge();
+            GlobalPos before = cartridge.get(ModComponents.POT_NEST);
+            PotCartridgeItem.setNest(cartridge, world, nest);
+            held.sync().run();
+            LinkHistory.record(player, new LinkHistory.NestChange(held.pos(), held.slot(), before, cartridge.get(ModComponents.POT_NEST)));
         }
     }
 }

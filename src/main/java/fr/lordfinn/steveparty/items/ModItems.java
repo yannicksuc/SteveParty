@@ -125,7 +125,7 @@ public class ModItems {
     public static final Item BUBBLER = ModBlocks.BUBBLER.asItem();
     /** The Spawn Bubble (ModBlocks.SPAWN_MARKER): where a mob space's mob appears. */
     public static final Item SPAWN_MARKER = ModBlocks.SPAWN_MARKER.asItem();
-    /** The Magpie's nest (ModBlocks.MAGPIE_NEST): a decorative block, a Common pot's nest when set near its space. */
+    /** The Magpie's nest (ModBlocks.MAGPIE_NEST): wild Magpies' home, a Common pot once its cartridge links it. */
     public static final Item MAGPIE_NEST = ModBlocks.MAGPIE_NEST.asItem();
     /** Its tile's face and its gates are teal until dyed; a token leaving it by a locked exit needs a Gate Key. */
     public static final Item KEY_GATE_CARTRIDGE = register("key_gate_cartridge", KeyGateCartridgeItem::new,

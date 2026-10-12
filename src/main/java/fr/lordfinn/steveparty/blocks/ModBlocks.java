@@ -503,7 +503,7 @@ public class ModBlocks {
                     .pistonBehavior(PistonBehavior.DESTROY),
             "bubbler", true);
 
-    /** The Pie's nest, woven twigs: a Common pot's nest when set near its space (MagpieNestBlock). */
+    /** The Pie's nest, woven twigs: a Common pot's nest once its cartridge links it (MagpieNestBlock). */
     public static final Block MAGPIE_NEST = register(MagpieNestBlock::new,
             Block.Settings.create()
                     .strength(0.5f) // as light as hay: an axe or a hoe, a hand slower
