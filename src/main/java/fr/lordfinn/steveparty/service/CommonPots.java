@@ -200,7 +200,6 @@ public final class CommonPots {
         }
         PartyControllerEntity party = PartyControllerEntity.getRunningPartyOf(token.getUuid()).orElse(null);
         fillBase(world, space, party);
-        if (PotCartridgeItem.landerPays(pot)) collect(pot, nest, token, player);
         ItemStack coin = coinOf(token);
         int coins = 0;
         List<ItemStack> items = new ArrayList<>();

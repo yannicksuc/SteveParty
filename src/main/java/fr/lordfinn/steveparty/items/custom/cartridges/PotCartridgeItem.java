@@ -23,7 +23,7 @@ import java.util.List;
  * items in the nest, and the shiny things given to it. No nest linked: the pot does nothing.
  * <p>
  * Settings ({@link ModComponents#BOARD_CARTRIDGE_SETTINGS}): {@link #STAKE} (coins put in by a passing token, 1 by
- * default, 0 to 100), {@link #LANDER_PAYS} (the winner pays a stake too before taking the pot), {@link #START} (the base:
+ * default, 0 to 100), {@link #START} (the base:
  * the nest is filled up to it from the space's storage, never made from nothing, when new and after each win; 0 by
  * default), {@link #CAP} (the most coins the nest holds as a pot, 0 for no cap). Remembered
  * ({@link ModComponents#BOARD_CARTRIDGE_STATE}): {@link #BASE_DUE}, its base still to be taken from a storage (a pot
@@ -32,21 +32,20 @@ import java.util.List;
 public class PotCartridgeItem extends BoardRuleCartridgeItem {
     /** Its tile's straw (the nest's). */
     public static final int COLOR = 0xC0A060;
-    public static final String STAKE = "stake", LANDER_PAYS = "lander_pays", START = "start", CAP = "cap", BASE_DUE = "base_due";
+    public static final String STAKE = "stake", START = "start", CAP = "cap", BASE_DUE = "base_due";
     /** Every number of the menu goes from 0 to 100 (a stake of 0: the pot only grows by what its nest is given). */
     public static final int MAX = 100;
 
     private static final String K = MENU_KEY + "pot.";
     private static final Setting STAKE_SETTING = new Setting(STAKE, 1, 0, MAX), START_SETTING = new Setting(START, 0, 0, MAX),
-            CAP_SETTING = new Setting(CAP, 0, 0, MAX), LANDER_PAYS_SETTING = new Setting(LANDER_PAYS, 0, 0, 1);
+            CAP_SETTING = new Setting(CAP, 0, 0, MAX);
     /** Its nest (linked or not), then each number its own stepper, two a row (its meaning in its label's tooltip). */
     private static final List<CartridgeModule> MODULES = List.of(
             description("pot_cartridge", 2),
             new InfoModule("nest", K + "nest", 1, PotCartridgeItem::nestLine, stack -> new ItemStack(ModItems.MAGPIE_NEST)).tipped(),
             STAKE_SETTING.number(STAKE, K + STAKE, stack -> COLOR).half().tipped(),
             START_SETTING.number(START, K + START, stack -> COLOR).half().tipped(),
-            CAP_SETTING.number(CAP, K + CAP, stack -> COLOR).half().tipped(),
-            LANDER_PAYS_SETTING.yesNo("lander_pays", K + "lander_pays"));
+            CAP_SETTING.number(CAP, K + CAP, stack -> COLOR).half().tipped());
 
     public PotCartridgeItem(Settings settings) {
         super(settings);
@@ -99,10 +98,6 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
 
     public static int stake(ItemStack stack) {
         return STAKE_SETTING.get(stack);
-    }
-
-    public static boolean landerPays(ItemStack stack) {
-        return LANDER_PAYS_SETTING.get(stack) == 1;
     }
 
     public static int start(ItemStack stack) {
