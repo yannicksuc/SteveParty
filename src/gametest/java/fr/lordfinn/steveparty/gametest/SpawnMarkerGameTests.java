@@ -237,17 +237,20 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         MarkerResidents.update(context.getWorld().getServer());
         MobEntity resident = MarkerResidents.resident(context.getWorld(), marker);
         context.assertTrue(resident != null && facing(resident.getYaw(), 225), "its mob faces north-east");
-        // sneaking, an empty hand turns it a sixteenth clockwise; its mob turns with it
+        // an empty hand does nothing; sneaking, the Wrench (its tool) turns it a sixteenth clockwise; its mob turns with it
         ServerPlayerEntity turner = player(context);
         turner.setSneaking(true);
         BlockHitResult hit = new BlockHitResult(Vec3d.ofBottomCenter(marker), Direction.UP, marker, false);
         context.getWorld().getBlockState(marker).onUse(context.getWorld(), turner, hit);
+        context.assertTrue(context.getWorld().getBlockState(marker).get(SpawnMarkerBlock.ROTATION) == 10, "an empty hand: nothing");
+        Runnable wrench = () -> SpawnMarkerBlock.wrench(context.getWorld().getBlockState(marker), context.getWorld(), marker, turner);
+        wrench.run();
         BlockState turned = context.getWorld().getBlockState(marker);
         context.assertTrue(turned.get(SpawnMarkerBlock.ROTATION) == 11 && SpawnMarkerBlock.yaw(turned) == 247.5f
                 && SpawnMarkerBlock.compass(11).equals("ene"), "turned 22.5° clockwise: east-north-east");
         MobEntity again = MarkerResidents.resident(context.getWorld(), marker);
         context.assertTrue(again != null && facing(again.getYaw(), 247.5f), "its mob turned with it");
-        for (int i = 0; i < 15; i++) context.getWorld().getBlockState(marker).onUse(context.getWorld(), turner, hit);
+        for (int i = 0; i < 15; i++) wrench.run();
         context.assertTrue(context.getWorld().getBlockState(marker).get(SpawnMarkerBlock.ROTATION) == 10, "16 turns: a whole turn, north-east again");
         context.complete();
     }
