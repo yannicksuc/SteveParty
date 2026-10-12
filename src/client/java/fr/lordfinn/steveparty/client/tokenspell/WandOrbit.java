@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.client.tokenspell;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.particles.SpellPalette;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -24,6 +24,9 @@ import org.joml.Vector3f;
  * gentle pulse. Drawn with the held item itself (first and third person) into the same buffers, as opaque cut-outs
  * like the wand: so they never lag behind, and shader packs draw them with the hand, in front of the sky and clouds
  * (a translucent layer was drawn behind the clouds with Iris). Never on item icons, dropped items or item frames.
+ * The shapes face the camera by undoing the view rotation the shader applies on top of the item's matrices:
+ * first person items are not drawn in view space (the hand's matrices carry the inverse camera rotation, which the
+ * model-view matrix applies back), so a fixed view-space billboard turned with the world yaw.
  * No allocation per frame. Render thread only.
  */
 public final class WandOrbit {
@@ -70,12 +73,8 @@ public final class WandOrbit {
         matrix.transformPosition(JEWEL_X + HALF_SIZE, JEWEL_Y, JEWEL_Z, POINT);
         float halfSize = POINT.distance(CENTER);
 
-        // Face the camera: first person items are drawn in view space; in the world, the camera's rotation
-        if (mode.isFirstPerson()) {
-            BILLBOARD.identity();
-        } else {
-            BILLBOARD.set(MinecraftClient.getInstance().gameRenderer.getCamera().getRotation());
-        }
+        // Face the camera: undo the view rotation the shader applies on top of these matrices (ModelViewMat)
+        RenderSystem.getModelViewMatrix().getNormalizedRotation(BILLBOARD).conjugate();
         BILLBOARD.transform(RIGHT.set(halfSize, 0, 0));
         BILLBOARD.transform(UP.set(0, halfSize, 0));
 
