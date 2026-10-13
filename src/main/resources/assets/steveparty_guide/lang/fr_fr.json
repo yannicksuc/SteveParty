@@ -295,7 +295,7 @@
   "book.steveparty.guide.creatures.wickling.page1.title": "Voleur",
   "book.steveparty.guide.creatures.wickling.page2.text": "- Coups : il réapparaît plus loin\n- Projectiles : le blessent\n- [#](1C4E80)**Briquet**[#]() : rend le butin, puis apprivoisé [#](2E7D32)**1 fois sur 3**[#]()",
   "book.steveparty.guide.creatures.wickling.page2.title": "L'apprivoiser",
-  "book.steveparty.guide.creatures.wickling.page3.text": "- Il t'éclaire dans le noir\n- Toiles d'araignée : plus de ralentissement\n- [#](9A6A00)Accroupi + clic[#]() sur lui assis : [#](1C4E80)**Bougeoir**[#]()",
+  "book.steveparty.guide.creatures.wickling.page3.text": "- Il t'éclaire dans le noir\n- Toiles d'araignée : plus de ralentissement\n- [#](9A6A00)Clic[#]() : il te suit\n- [#](9A6A00)Accroupi + clic[#]() : [#](1C4E80)**Bougeoir**[#]()",
   "book.steveparty.guide.creatures.wickling.page3.title": "Compagnon",
   "book.steveparty.guide.decoration.building.description": "Terre cuite et béton polis",
   "book.steveparty.guide.decoration.building.name": "Blocs de construction",

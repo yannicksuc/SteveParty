@@ -33,8 +33,8 @@ import java.util.EnumSet;
  *     reach (to relight it). Sneaking with an empty hand, it stays put, so they can turn to it and click it.</li>
  *     <li><b>In the dark, never in the crosshair</b>: their crosshair goes through it unless they reach for it
  *     ({@link FrousseuxEntity#canHit}): their clicks go to the block or the mob behind it.</li>
- *     <li><b>Its owner's word</b> (an empty hand, see FrousseuxEntity#interactMob): sneaking, a following one sits
- *     and stays; a sitting one gets up on a plain click, and turns into a candle holder on a sneaking one.</li>
+ *     <li><b>Its owner's word</b> (an empty hand, see FrousseuxEntity#interactMob): a plain click, it follows them;
+ *     a sneaking one, it turns into a candle holder (and only they wake it up again).</li>
  *     <li><b>Several of them</b>: each takes its own place (by its rank among its owner's following Frousseux:
  *     PetSlots), fanned out side by side in front in a lit place, on the different places by them in the dark, and
  *     they keep {@link #SPACING} apart.</li>
@@ -180,12 +180,12 @@ public final class FrousseuxCompanion {
 
     /**
      * How much a following Frousseux fades for {@code viewer}, its owner (never for anyone else): never when they
-     * reach for it (sneaking with an empty hand, flint and steel) or it sits; gone when right by their camera
+     * reach for it (sneaking with an empty hand, flint and steel); gone when right by their camera
      * (crossing in front of it, or on them); faded (its body nearly invisible, its flame half) a little farther, but
      * for one in front of them in a lit place, where it is meant to be looked at.
      */
     public static int fadeFor(FrousseuxEntity frousseux, PlayerEntity viewer, Vec3d camera) {
-        if (!frousseux.isTamed() || !frousseux.isOwner(viewer) || frousseux.isSitting() || reachesFor(viewer)) {
+        if (!frousseux.isTamed() || !frousseux.isOwner(viewer) || reachesFor(viewer)) {
             return FrousseuxEntity.FADE_NONE;
         }
         double distance = camera.distanceTo(frousseux.getBoundingBox().getCenter());
@@ -218,7 +218,7 @@ public final class FrousseuxCompanion {
         return centre.subtract(0, FrousseuxEntity.HEIGHT / 2, 0);
     }
 
-    /** A sitting one turned into a candle holder ({@link FrousseuxCandleHolderBlock}), where it floats. */
+    /** Turned into a candle holder ({@link FrousseuxCandleHolderBlock}), where it floats. */
     static void toCandleHolder(FrousseuxEntity frousseux, ServerWorld world, PlayerEntity player) {
         FrousseuxCandleHolderBlock.fallAsleep(frousseux, world, player);
     }
@@ -257,7 +257,7 @@ public final class FrousseuxCompanion {
 
         @Override
         public boolean canStart() {
-            if (!frousseux.isTamed() || frousseux.isSitting() || frousseux.isBoardActor() || !frousseux.isAlive()) return false;
+            if (!frousseux.isTamed() || frousseux.isBoardActor() || !frousseux.isAlive()) return false;
             owner = frousseux.getOwnerPlayer();
             return owner != null && owner.isAlive() && !owner.isSpectator();
         }
@@ -290,7 +290,7 @@ public final class FrousseuxCompanion {
             World world = frousseux.getWorld();
             PlayerEntity owner = this.owner;
             mates.refresh(16, 20, entity -> entity instanceof FrousseuxEntity mate && mate.isOwner(owner)
-                    && !mate.isSitting() && !mate.isBoardActor());
+                    && !mate.isBoardActor());
             boolean held = centre != null && reachesFor(owner) && !holdsFlint(owner); // sneaking, empty hand: it stays put
             if (holdsFlint(owner)) {
                 centre = inFront(world, owner);

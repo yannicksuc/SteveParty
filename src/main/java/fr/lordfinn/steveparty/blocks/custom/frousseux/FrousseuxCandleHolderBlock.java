@@ -70,8 +70,8 @@ import java.util.UUID;
  *     <li><b>Light</b>: its flame's ({@link #FLAME}, its stage when it fell asleep: 15, 12, 9 or 6, as the
  *     Frousseux's own).</li>
  *     <li><b>Right-click with an empty hand</b>: it wakes up, the same Frousseux (same UUID, name, owner, health),
- *     and follows its owner again; its saucer drops. Only its owner may wake it (or an operator, or a player in
- *     creative); anyone else is told so. Holding an item, the item is used as usual (blocks are placed against it).</li>
+ *     and follows its owner again; its saucer drops. Only its owner may wake it, as only its owner put it to sleep
+ *     (one that never had an owner, anyone); anyone else is told so. Holding an item, the item is used as usual (blocks are placed against it).</li>
  *     <li><b>Broken</b>: it drops as its item, which keeps it (block entity data) and its saucer (block state);
  *     placed, it is back as it was. Broken in creative, it drops too, like a shulker box: never lost.</li>
  * </ul>
@@ -230,7 +230,6 @@ public class FrousseuxCandleHolderBlock extends BlockWithEntity {
         frousseux.refreshPositionAndAngles(pos.getX() + 0.5, pos.getY() + 0.05, pos.getZ() + 0.5, yaw, 0);
         frousseux.setHeadYaw(yaw);
         frousseux.setBodyYaw(yaw);
-        frousseux.setSitting(false);
         world.removeBlock(pos, false);
         world.spawnEntity(frousseux);
         if (saucer) Block.dropStack(world, pos, new ItemStack(ModItems.CANDLE_SAUCER));
@@ -248,9 +247,9 @@ public class FrousseuxCandleHolderBlock extends BlockWithEntity {
         return ActionResult.success(world.isClient);
     }
 
-    /** Only its owner wakes it (or an operator, or a player in creative); one that never had an owner, anyone. */
+    /** Only its owner wakes it, as only its owner put it to sleep; one that never had an owner, anyone. */
     public static boolean mayWake(FrousseuxCandleHolderBlockEntity holder, PlayerEntity player) {
-        return isOwnersOrNobodys(holder, player) || player.isCreative() || player.hasPermissionLevel(2);
+        return isOwnersOrNobodys(holder, player);
     }
 
     /** Its owner's (or one that never had an owner). */

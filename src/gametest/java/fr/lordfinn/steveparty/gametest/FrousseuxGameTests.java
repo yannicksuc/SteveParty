@@ -230,7 +230,7 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.assertTrue(awake != null && awake.getUuid().equals(uuid), "it wakes up, the same one");
         context.assertTrue(context.getWorld().getBlockState(at).isAir(), "the block is gone");
         context.assertTrue(awake.getHealth() == 3f, "the same health");
-        context.assertTrue(awake.isOwner(owner) && !awake.isSitting(), "its owner's, following");
+        context.assertTrue(awake.isOwner(owner) && awake.goesWithOwner(owner), "its owner's, following");
         context.assertTrue("Mèche".equals(awake.getCustomName().getString()), "its name");
         context.assertTrue(awake.getColor() == FrousseuxColor.PURPLE, "its colour");
         context.complete();
@@ -257,9 +257,6 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.assertTrue(frousseux.followedOwner().equals(owner.getUuid()), "theirs");
         context.assertTrue(frousseux.goesWithOwner(owner), "following: it goes along");
         context.assertFalse(frousseux.goesWithOwner(other), "not with someone else");
-        frousseux.setSitting(true);
-        context.assertFalse(frousseux.goesWithOwner(owner), "sitting: it stays");
-        frousseux.setSitting(false);
         Vec3d spot = frousseux.arrivalSpot(owner);
         Entity moved = PetTeleports.bring(frousseux, context.getWorld(), spot, 0);
         context.assertTrue(moved == frousseux && frousseux.getPos().distanceTo(spot) < 1.0E-3, "brought to its spot, the same one");
@@ -278,11 +275,30 @@ public class FrousseuxGameTests implements SteveGameTest {
         var holder = (FrousseuxCandleHolderBlockEntity) context.getWorld().getBlockEntity(at);
         context.assertTrue(FrousseuxCandleHolderBlock.mayWake(holder, owner), "its owner wakes it");
         context.assertFalse(FrousseuxCandleHolderBlock.isOwnersOrNobodys(holder, other), "it is not someone else's");
-        // someone else: only as an operator (the test server's mock players may be ones)
-        context.assertTrue(FrousseuxCandleHolderBlock.mayWake(holder, other) == (other.isCreative() || other.hasPermissionLevel(2)),
-                "someone else only as an operator or in creative");
+        context.assertFalse(FrousseuxCandleHolderBlock.mayWake(holder, other), "someone else doesn't");
         other.changeGameMode(GameMode.CREATIVE);
-        context.assertTrue(FrousseuxCandleHolderBlock.mayWake(holder, other), "a player in creative does");
+        context.assertFalse(FrousseuxCandleHolderBlock.mayWake(holder, other), "not even in creative: only its owner");
+        context.complete();
+    }
+
+    /** Its owner's empty hand: a plain click, it follows; sneaking, a candle holder. Nobody else's hand does either. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aClickFollowsASneakingClickMakesACandleHolderOwnerOnly(TestContext context) {
+        TestBoards.floor(context, 8);
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
+        ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
+        ServerPlayerEntity other = player(context, new BlockPos(5, 1, 5));
+        frousseux.tame(owner);
+        BlockPos at = BlockPos.ofFloored(frousseux.getPos().add(0, 0.1, 0));
+        context.assertTrue(frousseux.interact(owner, Hand.MAIN_HAND).isAccepted(), "a plain click is answered");
+        context.assertTrue(frousseux.isAlive() && frousseux.goesWithOwner(owner), "it follows");
+        other.setSneaking(true);
+        frousseux.interact(other, Hand.MAIN_HAND);
+        context.assertTrue(frousseux.isAlive(), "someone else's sneaking click: nothing");
+        owner.setSneaking(true);
+        context.assertTrue(frousseux.interact(owner, Hand.MAIN_HAND).isAccepted(), "a sneaking click is answered");
+        context.assertTrue(frousseux.isRemoved(), "asleep");
+        context.assertTrue(context.getWorld().getBlockState(at).isOf(ModBlocks.FROUSSEUX_CANDLE_HOLDER), "a candle holder");
         context.complete();
     }
 

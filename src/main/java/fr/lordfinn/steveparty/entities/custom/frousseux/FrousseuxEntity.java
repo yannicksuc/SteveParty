@@ -90,7 +90,7 @@ import java.util.function.ToIntFunction;
  *     player near ({@link FrousseuxCourier}): it flies off to them instead and drops it at their feet. Killed, it
  *     drops it; tamed, it gives it back.</li>
  *     <li><b>Tamed</b> ({@link #getOwner()}): it follows its owner about, lighting the way, out of their sight line
- *     and their crosshair ({@link FrousseuxCompanion}); never steals; sits and stays on its owner's word.</li>
+ *     and their crosshair ({@link FrousseuxCompanion}); never steals; turns into a candle holder on its owner's word.</li>
  * </ul>
  * The board's Frousseux ({@link #isBoardActor()}) do none of the above: invulnerable, moved by the board, never
  * saved, no light.
@@ -163,8 +163,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
             DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.BYTE);
     /** A tamed one in a lit place (FrousseuxCompanion): in front of its owner, in their crosshair. */
     private static final TrackedData<Boolean> LIT_MODE =
-            DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-    private static final TrackedData<Boolean> SITTING =
             DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** The item drawn under it (what it carries), or flying to or from it. */
     private static final TrackedData<ItemStack> SHOWN_ITEM =
@@ -251,7 +249,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         builder.add(SHY, false);
         builder.add(FLAME_STAGE, (byte) -1);
         builder.add(OWNER, Optional.empty());
-        builder.add(SITTING, false);
         builder.add(LIT_MODE, false);
         builder.add(SHOWN_ITEM, ItemStack.EMPTY);
         builder.add(ITEM_FLIGHT, 0);
@@ -331,15 +328,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     public @Nullable PlayerEntity getOwnerPlayer() {
         UUID owner = getOwner();
         return owner == null ? null : getWorld().getPlayerByUuid(owner);
-    }
-
-    /** Sitting: it stays where it was told to, instead of following. */
-    public boolean isSitting() {
-        return this.dataTracker.get(SITTING);
-    }
-
-    public void setSitting(boolean sitting) {
-        this.dataTracker.set(SITTING, sitting);
     }
 
     /** What it stole and carries (server side), or empty. */
@@ -440,7 +428,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
      */
     @Override
     public boolean canHit() {
-        if (getWorld().isClient && isTamed() && !isSitting() && !isLitMode() && CLIENT_PASS_THROUGH.test(this)) return false;
+        if (getWorld().isClient && isTamed() && !isLitMode() && CLIENT_PASS_THROUGH.test(this)) return false;
         return super.canHit();
     }
 
@@ -965,8 +953,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /**
      * Flint and steel: a wild one gives back what it stole on the first strike, then each strike has a chance in
      * {@link #TAME_CHANCE} to tame it (hearts) or not (smoke); and it relights a weak flame. Its owner's empty hand
-     * ({@link FrousseuxCompanion}): sneaking, a following one sits, a sitting one turns into a candle holder; a
-     * sitting one gets up again on a plain click.
+     * (only its owner's: {@link FrousseuxCompanion}): a plain click, it follows them; sneaking, it turns into a candle
+     * holder (which only its owner wakes up again).
      */
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
@@ -986,8 +974,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         }
         if (hand == Hand.MAIN_HAND && stack.isEmpty() && isTamed() && isOwner(player)) {
             if (getWorld() instanceof ServerWorld world) {
-                if (player.isSneaking() && isSitting()) FrousseuxCompanion.toCandleHolder(this, world, player);
-                else if (player.isSneaking() || isSitting()) sit(world, !isSitting());
+                if (player.isSneaking()) FrousseuxCompanion.toCandleHolder(this, world, player);
+                else follow(world);
             }
             return ActionResult.success(getWorld().isClient);
         }
@@ -1008,7 +996,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (!stolen.isEmpty()) giveBack(player);
         setOwner(player.getUuid());
         ModCriteria.fire(player, "frousseux_tamed", getColor().ordinal(), this);
-        setSitting(false);
         fleeTicks = 0;
         fleeFrom = null;
         shyTicks = 0;
@@ -1021,14 +1008,12 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         laugh();
     }
 
-    /** Sits down where it is (stays), or gets up and follows again. */
-    public void sit(ServerWorld world, boolean sitting) {
-        setSitting(sitting);
+    /** Follows its owner (again): a happy little flicker. */
+    public void follow(ServerWorld world) {
         flight.stop();
         getNavigation().stop();
-        world.spawnParticles(sitting ? ParticleTypes.WAX_ON : ParticleTypes.WAX_OFF, getX(), getBodyY(0.5), getZ(),
-                4, 0.25, 0.2, 0.25, 0.5);
-        playSound(ModSounds.FROUSSEUX_AMBIENT, 0.6f, sitting ? 0.8f : 1.2f);
+        world.spawnParticles(ParticleTypes.WAX_OFF, getX(), getBodyY(0.5), getZ(), 4, 0.25, 0.2, 0.25, 0.5);
+        playSound(ModSounds.FROUSSEUX_AMBIENT, 0.6f, 1.2f);
     }
 
     /** Its flame relit: health back, sparks and a little flare. */
@@ -1067,7 +1052,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** Going along: tamed by them, following (not sitting, not on a lead or riding), not a board actor. */
     @Override
     public boolean goesWithOwner(ServerPlayerEntity owner) {
-        return followsFreely(owner) && !isSitting() && !boardActor;
+        return followsFreely(owner) && !boardActor;
     }
 
     @Override
@@ -1096,7 +1081,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         nbt.putString("Color", getColor().asString());
         UUID owner = getOwner();
         if (owner != null) nbt.putUuid("Owner", owner);
-        if (isSitting()) nbt.putBoolean("Sitting", true);
         ItemStack carried = stolen.isEmpty() ? gift : stolen; // a gift still flying is saved as still carried
         if (!carried.isEmpty()) nbt.put("Stolen", carried.encode(getRegistryManager()));
         if (stealCooldown > 0) nbt.putInt("StealCooldown", stealCooldown);
@@ -1123,7 +1107,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
             colorFromData = true;
         }
         setOwner(nbt.containsUuid("Owner") ? nbt.getUuid("Owner") : null);
-        setSitting(nbt.getBoolean("Sitting"));
         stolen = nbt.contains("Stolen")
                 ? ItemStack.fromNbt(getRegistryManager(), nbt.get("Stolen")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
         this.dataTracker.set(SHOWN_ITEM, stolen.copy());
