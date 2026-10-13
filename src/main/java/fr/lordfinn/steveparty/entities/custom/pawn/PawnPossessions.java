@@ -18,6 +18,7 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -66,9 +67,13 @@ import java.util.function.Predicate;
  * camera is the pawn's (vanilla camera entity: first person from the statue's eyes, which they don't see; the statue
  * in third person). Nothing of this is saved: temporary attribute modifiers, invisibility flag, camera.
  * <p>
- * <b>Leaving it</b> ({@link #eject}): sneak, or anything that ends the possession: the pawn removed (stored in a Token,
- * killed, unloaded, gone to another dimension), in lava, the player disconnecting, dying, changing dimension or game
- * mode, or teleported (vanilla resets the camera). The player gets their size back next to the pawn; the pawn stays,
+ * <b>Carried</b> ({@link #onPawnCaptured}): another player stores the pawn in a Token: its player stays inside, his
+ * view now his carrier's (the vanilla camera on the carrier, his body following), until the Token is used again (the
+ * pawn back in the world: his view back in it) or he sneaks out (next to his carrier).
+ * <p>
+ * <b>Leaving it</b> ({@link #eject}): sneak, or anything that ends the possession: the pawn removed (killed, unloaded,
+ * gone to another dimension), in lava, the player disconnecting, dying, changing dimension or game mode, or
+ * teleported (vanilla resets the camera); carried, his carrier gone (left, dead, in another world). The player gets their size back next to the pawn; the pawn stays,
  * empty, a regular pawn. A player is in one pawn at most, and a pawn holds one player at most.
  * <p>
  * Every possession is checked once per server tick ({@link #tick}), so whatever ends it the player is out within a
@@ -111,9 +116,11 @@ public final class PawnPossessions {
     /** A player inside a pawn. */
     private static final class Possession {
         final UUID pawn;
-        final RegistryKey<World> world;
+        RegistryKey<World> world;
         int age;
         boolean camera;
+        /** The player carrying the pawn in a Token (null: the pawn is in the world). */
+        @Nullable UUID carrier;
 
         Possession(PlayerPawnEntity pawn) {
             this.pawn = pawn.getUuid();
@@ -283,6 +290,21 @@ public final class PawnPossessions {
             return;
         }
         possession.age++;
+        if (possession.carrier != null) {
+            PlayerPawnEntity placed = findPawn(server, possession.pawn);
+            if (placed == null) {
+                tickCarried(server, player, possession);
+                return;
+            }
+            // the Token used again: back inside the pawn, his view in it again (a few ticks later)
+            possession.carrier = null;
+            possession.world = placed.getWorld().getRegistryKey();
+            possession.camera = false;
+            possession.age = 0;
+            pawn = placed;
+            pawn.setPossessor(playerId);
+            if (player.getCameraEntity() != player) player.setCameraEntity(player);
+        }
         boolean sneakOut = possession.camera && player.isSneaking();
         boolean cameraLost = possession.camera && player.getCameraEntity() != pawn;
         if (pawn == null || pawn.isRemoved() || !pawn.isAlive() || !player.isAlive() || player.isSpectator()
@@ -301,6 +323,57 @@ public final class PawnPossessions {
         }
     }
 
+    /**
+     * Carried in a Token: his view his carrier's (vanilla's camera moves him with it), still a statue, out of sight. Out
+     * when he sneaks (vanilla gives the camera back) or his carrier is gone: next to the carrier.
+     */
+    private static void tickCarried(MinecraftServer server, ServerPlayerEntity player, Possession possession) {
+        ServerPlayerEntity carrier = server.getPlayerManager().getPlayer(possession.carrier);
+        boolean cameraLost = possession.camera && player.getCameraEntity() != carrier;
+        if (carrier == null || !carrier.isAlive() || carrier.isSpectator() || carrier.getWorld() != player.getWorld()
+                || !player.isAlive() || player.isSpectator() || cameraLost) {
+            eject(player, null);
+            if (carrier != null && carrier.getWorld() == player.getWorld()) besides(player, carrier);
+            return;
+        }
+        player.setVelocity(Vec3d.ZERO);
+        player.fallDistance = 0;
+        if (!player.isInvisible()) player.setInvisible(true);
+        if (!possession.camera && possession.age >= CAMERA_DELAY && !player.isSneaking()) {
+            possession.camera = true;
+            player.setCameraEntity(carrier);
+            MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.player_pawn.carried", carrier.getDisplayName()),
+                    MessageUtils.MessageType.ACTION_BAR);
+        }
+    }
+
+    /** The pawn {@code id}, in whichever world it is, or null. */
+    private static @Nullable PlayerPawnEntity findPawn(MinecraftServer server, UUID id) {
+        for (ServerWorld world : server.getWorlds()) {
+            if (world.getEntity(id) instanceof PlayerPawnEntity pawn && pawn.isAlive()) return pawn;
+        }
+        return null;
+    }
+
+    /**
+     * {@code holder} stores {@code pawn} in a Token: the player inside stays in it, carried ({@link #tickCarried}),
+     * unless it is himself (never: he can't act from inside).
+     *
+     * @return whether its player is carried (the pawn's removal then lets nobody out)
+     */
+    public static boolean onPawnCaptured(PlayerPawnEntity pawn, PlayerEntity holder) {
+        UUID playerId = pawn.getPossessor();
+        Possession possession = playerId == null ? null : POSSESSIONS.get(playerId);
+        if (possession == null || holder.getUuid().equals(playerId) || !(holder instanceof ServerPlayerEntity)) return false;
+        possession.carrier = holder.getUuid();
+        possession.camera = false;
+        possession.age = 0;
+        pawn.setPossessor(null);
+        ServerPlayerEntity player = holder.getServer() == null ? null : holder.getServer().getPlayerManager().getPlayer(playerId);
+        if (player != null && player.getCameraEntity() != player) player.setCameraEntity(player);
+        return true;
+    }
+
     /** The player stays at the pawn's position (moved with it on the board), out of sight. */
     private static void holdAt(ServerPlayerEntity player, PlayerPawnEntity pawn) {
         player.setPosition(pawn.getX(), pawn.getY(), pawn.getZ());
@@ -314,7 +387,7 @@ public final class PawnPossessions {
     /** The pawn left the world (stored in a Token, killed, unloaded...): its player comes out at once. */
     static void onPawnRemoved(PlayerPawnEntity pawn) {
         UUID playerId = pawn.getPossessor();
-        if (playerId == null || pawn.getServer() == null) return;
+        if (playerId == null || pawn.getServer() == null) return; // empty, or its player carried (onPawnCaptured)
         ServerPlayerEntity player = pawn.getServer().getPlayerManager().getPlayer(playerId);
         if (player != null && POSSESSIONS.containsKey(playerId)) {
             eject(player, pawn);
@@ -345,18 +418,24 @@ public final class PawnPossessions {
         if (player.getCameraEntity() != player) player.setCameraEntity(player);
         if (pawn == null || !player.isAlive() || pawn.getWorld() != player.getWorld()) return;
         ServerWorld world = player.getServerWorld();
-        Vec3d spot = exitSpot(world, player, pawn);
-        player.teleport(world, spot.x, spot.y, spot.z, pawn.getYaw(), 0);
+        besides(player, pawn);
+    }
+
+    /** {@code player}, out, put on a free spot right next to {@code by} (the pawn, or his carrier). */
+    private static void besides(ServerPlayerEntity player, Entity by) {
+        ServerWorld world = player.getServerWorld();
+        Vec3d spot = exitSpot(world, player, by);
+        player.teleport(world, spot.x, spot.y, spot.z, by.getYaw(), 0);
         player.fallDistance = 0;
         world.playSound(null, spot.x, spot.y, spot.z, SoundEvents.ENTITY_CHICKEN_EGG, SoundCategory.PLAYERS, 0.8F, 1.3F);
         world.spawnParticles(ParticleTypes.POOF, spot.x, spot.y + 0.9, spot.z, 8, 0.25, 0.4, 0.25, 0.02);
     }
 
     /**
-     * Where the player comes out: a free spot right next to the pawn (in front of it first), on the ground and out
-     * of lava; the pawn's own position when there is none.
+     * Where the player comes out: a free spot right next to the pawn (or his carrier: {@code pawn}), in front of it
+     * first, on the ground and out of lava; its own position when there is none.
      */
-    private static Vec3d exitSpot(ServerWorld world, ServerPlayerEntity player, PlayerPawnEntity pawn) {
+    private static Vec3d exitSpot(ServerWorld world, ServerPlayerEntity player, Entity pawn) {
         EntityDimensions body = player.getDimensions(EntityPose.STANDING);
         Vec3d at = pawn.getPos();
         float yaw = pawn.getYaw() * MathHelper.RADIANS_PER_DEGREE;

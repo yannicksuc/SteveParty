@@ -2856,6 +2856,7 @@
   "tooltip.steveparty.tokenizer_wand.player": "on a player: they become a token (sneak to get out)",
   "message.steveparty.player_pawn.refused": "The spell can't take this player now.",
   "message.steveparty.player_pawn.inside": "You are a pawn! Sneak to get out.",
+  "message.steveparty.player_pawn.carried": "In %s's pocket! Sneak to get out.",
   "message.steveparty.player_pawn.pose": "Pose: %s",
   "pose.steveparty.player_pawn.stand": "Standing",
   "pose.steveparty.player_pawn.wave": "Wave",
