@@ -69,6 +69,7 @@
     "ZoneBubbleProjectileMixin",
     "PotionEntityBubbleMixin",
     "ProjectileEntityBubbleMixin",
+    "ProjectileEntityFrousseuxMixin",
     "LivingEntityBubbledImmunityMixin",
     "ZoneBubblePlayerEntityMixin",
     "ZoneBubbleRandomTickMixin",

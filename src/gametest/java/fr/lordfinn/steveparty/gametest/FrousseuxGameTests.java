@@ -20,6 +20,8 @@ import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -279,6 +281,26 @@ public class FrousseuxGameTests implements SteveGameTest {
         other.changeGameMode(GameMode.CREATIVE);
         context.assertFalse(FrousseuxCandleHolderBlock.mayWake(holder, other), "not even in creative: only its owner");
         context.complete();
+    }
+
+    /** A ghost: an arrow flies through it, never bouncing off it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void anArrowFliesThroughIt(TestContext context) {
+        FrousseuxEntity frousseux = frousseux(context, new BlockPos(4, 2, 3));
+        frousseux.setAiDisabled(true);
+        frousseux.setNoGravity(true);
+        Vec3d center = frousseux.getBoundingBox().getCenter();
+        ArrowEntity arrow = new ArrowEntity(EntityType.ARROW, context.getWorld());
+        arrow.setPosition(center.x - 3, center.y, center.z);
+        arrow.setVelocity(1.0, 0, 0);
+        arrow.setNoGravity(true);
+        context.getWorld().spawnEntity(arrow);
+        context.waitAndRun(8, () -> {
+            context.assertTrue(arrow.getX() > center.x + 1, "through it: " + (arrow.getX() - center.x));
+            context.assertTrue(frousseux.isAlive(), "unhurt");
+            arrow.discard();
+            context.complete();
+        });
     }
 
     /** Its owner's empty hand: a plain click, it follows; sneaking, a candle holder. Nobody else's hand does either. */
