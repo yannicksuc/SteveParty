@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
@@ -167,11 +168,24 @@ public final class PipeTravel {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> !isTravelling(entity)
                 || !(source.isOf(DamageTypes.IN_WALL) || source.isOf(DamageTypes.FALL) || source.isOf(DamageTypes.FLY_INTO_WALL)
                 || source.isOf(DamageTypes.CRAMMING)));
+        // Leaving the server inside a pipe: out of it first, never saved riding a carrier (he would come back in it)
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> leavePipe(handler.player));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             ENTRIES.clear();
             BARRED.clear();
             PASSAGES.clear();
         });
+    }
+
+    /** A player leaving the server while in a pipe: out of the pipe he is in (a free side of it), else where he is. */
+    private static void leavePipe(ServerPlayerEntity player) {
+        if (!(player.getVehicle() instanceof PipeCarrierEntity carrier) || !(player.getWorld() instanceof ServerWorld world)) return;
+        PASSAGES.remove(carrier.getUuid());
+        BlockPos here = BlockPos.ofFloored(carrier.getPos());
+        if (PipeBlock.isPipe(world.getBlockState(here)) && ejectFrom(world, carrier, player, here)) return;
+        carrier.setDismountAt(carrier.getPos());
+        player.stopRiding();
+        carrier.discard();
     }
 
     public static boolean isTravelling(Entity entity) {

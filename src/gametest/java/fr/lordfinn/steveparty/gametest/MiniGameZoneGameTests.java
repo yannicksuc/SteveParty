@@ -670,7 +670,7 @@ public class MiniGameZoneGameTests implements SteveGameTest {
         UUID id = arena(context, true);
         Vec3d start2 = p2.getPos();
         GameProfile away = p2.getGameProfile();
-        ServerPlayerEntity back = null;
+        ServerPlayerEntity back;
         try {
             alone(context, p1, p2);
             p2.getInventory().setStack(0, new ItemStack(Items.COBBLESTONE, 12));
@@ -685,15 +685,24 @@ public class MiniGameZoneGameTests implements SteveGameTest {
             MiniGameTest.stop(id);
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "the round is over: p2 is waited for");
             back = TestPlayers.join(context, away);
-            context.assertTrue(back.getPos().distanceTo(start2) < 0.01, "back where it stood before the round");
-            context.assertTrue(back.getInventory().count(Items.COBBLESTONE) == 12 && back.getInventory().count(Items.DIAMOND) == 0,
-                    "with what it owns, once");
-            context.assertTrue(ZoneBubbles.ofPlayer(back) == null && !back.getCommandTags().contains(STASH_TAG), "of no session");
-        } finally {
-            if (back != null) cleanUp(context, id, back);
+        } catch (RuntimeException e) {
             cleanUp(context, id, p1, p2);
+            throw e;
         }
-        done(context);
+        // Brought back the tick after its join (it came out of the pipe with everyone: saved in the arena)
+        ServerPlayerEntity joined = back;
+        context.waitAndRun(2, () -> {
+            try {
+                context.assertTrue(joined.getPos().distanceTo(start2) < 0.01, "back where it stood before the round");
+                context.assertTrue(joined.getInventory().count(Items.COBBLESTONE) == 12 && joined.getInventory().count(Items.DIAMOND) == 0,
+                        "with what it owns, once");
+                context.assertTrue(ZoneBubbles.ofPlayer(joined) == null && !joined.getCommandTags().contains(STASH_TAG), "of no session");
+            } finally {
+                cleanUp(context, id, joined);
+                cleanUp(context, id, p1, p2);
+            }
+            done(context);
+        });
     }
 
     // ------------------------------------------------------------------ deaths and disconnections during a round

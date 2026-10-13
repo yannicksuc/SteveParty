@@ -535,7 +535,8 @@ public class MiniGamePipeGameTests implements SteveGameTest {
         ItemStack page = new ItemStack(ModItems.MINI_GAME_PAGE);
         page(context, page, players1, players2, teamA, yellow);
 
-        BlockPos programmedPipe = new BlockPos(1, 2, 3), junction = programmedPipe.up(), greenIn = junction.east(), blueIn = junction.west();
+        // Room in front of both ways in (a block against a mouth shuts it)
+        BlockPos programmedPipe = new BlockPos(2, 2, 3), junction = programmedPipe.up(), greenIn = junction.east(), blueIn = junction.west();
         context.setBlockState(programmedPipe.down(), Blocks.STONE);
         context.setBlockState(programmedPipe, ModBlocks.COPPER_MINIGAME_PIPE.getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN).with(PipeShape.connection(Direction.UP), true));
         context.setBlockState(junction, pipe(PipeKind.OPAQUE, CYAN).getDefaultState().with(PipeShape.connection(Direction.DOWN), true)
