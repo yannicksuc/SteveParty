@@ -376,6 +376,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         field.setDrawsBackground(false);
         field.setMaxLength(GoalPoleBaseBlockEntity.MAX_STRING_LENGTH);
         field.setText(text);
+        // Opened at its start: setText leaves it scrolled to its end, its first letters hidden
+        field.setCursorToStart(false);
         field.setChangedListener(s -> refresh());
         return addDrawableChild(field);
     }
