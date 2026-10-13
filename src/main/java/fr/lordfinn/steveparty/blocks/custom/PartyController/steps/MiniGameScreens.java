@@ -143,14 +143,16 @@ final class MiniGameScreens {
 
     // ---------------------------------------------------------------- the results
 
-    /** Shows results to the players and the audience: the card, and the same lines in the chat ({@code note}: a last line). */
+    /**
+     * Shows results to the players and the party's players (its interested players): the card, and the same lines in
+     * the chat ({@code note}: a last line). Nobody else, however near.
+     */
     void tellResults(PartyControllerEntity controller, MiniGameResults results, @Nullable Text note) {
         String title = results.title();
         ItemStack coin = results.coinItem(), star = results.starItem();
         lastResults = results;
         MiniGamePagePayloads.Results payload = new MiniGamePagePayloads.Results(results);
         List<ServerPlayerEntity> audience = previewAudience(controller);
-        for (ServerPlayerEntity player : controller.getPartyAudience()) if (!audience.contains(player)) audience.add(player);
         for (ServerPlayerEntity player : audience) {
             if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Results.ID)) ServerPlayNetworking.send(player, payload);
         }
