@@ -18,6 +18,7 @@ import fr.lordfinn.steveparty.powerups.PowerUps;
 import fr.lordfinn.steveparty.powerups.effects.PowerUpProtection;
 import fr.lordfinn.steveparty.powerups.effects.PowerUpStar;
 import fr.lordfinn.steveparty.powerups.effects.StarRelocator;
+import fr.lordfinn.steveparty.powerups.effects.ThiefBellEffect;
 import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.minecraft.block.Blocks;
@@ -225,7 +226,8 @@ public class PowerUpWiringGameTests implements SteveGameTest {
     public void thiefBellStealsFromThePickedPlayer(TestContext context) {
         ServerPlayerEntity thief = survivalPlayer(context), poor = player(context), rich = player(context);
         PartyControllerEntity controller = party(context, new ArrayList<>(), thief, poor, rich);
-        InventoryUtils.giveOrDrop(poor, new ItemStack(Items.GOLD_INGOT), 6);
+        // as many as the least it steals: robbed of them all, whatever it rolls
+        InventoryUtils.giveOrDrop(poor, new ItemStack(Items.GOLD_INGOT), ThiefBellEffect.MIN_COINS);
         InventoryUtils.giveOrDrop(rich, new ItemStack(Items.GOLD_INGOT), 30);
         context.waitAndRun(2, () -> {
             context.assertTrue(use(context, thief, PowerUps.THIEF_BELL, 2), "the list is shown");
@@ -234,8 +236,8 @@ public class PowerUpWiringGameTests implements SteveGameTest {
             context.assertTrue(!use(context, thief, PowerUps.MUSHROOM, 1), "no other power-up while picking");
             thief.setStackInHand(Hand.MAIN_HAND, new ItemStack(PowerUps.THIEF_BELL.item(), 2));
             pick(context, thief, poor);
-            context.assertEquals(count(poor, Items.GOLD_INGOT), 0, "the picked player is robbed (5 to 15, at most 6)");
-            context.assertEquals(count(thief, Items.GOLD_INGOT), 6, "the thief gets them");
+            context.assertEquals(count(poor, Items.GOLD_INGOT), 0, "the picked player is robbed (5 to 15, at most what he holds)");
+            context.assertEquals(count(thief, Items.GOLD_INGOT), ThiefBellEffect.MIN_COINS, "the thief gets them");
             context.assertEquals(count(rich, Items.GOLD_INGOT), 30, "not the other one");
             context.assertEquals(held(thief), 1, "consumed");
             context.assertEquals(turn(controller).getPowerUps().used(), PowerUps.THIEF_BELL, "the turn remembers it");
