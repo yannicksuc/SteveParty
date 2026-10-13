@@ -30,6 +30,7 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -704,5 +705,47 @@ public class PartyControllerDashboardGameTests implements SteveGameTest {
             TestPlayers.remove(context, player);
         }
         context.complete();
+    }
+
+    /**
+     * A Party Controller placed in creative starts with its storage infinite (saved), one placed in survival does not,
+     * nor a copy carrying its own settings; the setting stays switchable.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void placedInCreativeItsStorageStartsInfinite(TestContext context) {
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        try {
+            BlockPos creative = new BlockPos(1, 1, 1), survival = new BlockPos(3, 1, 1), copy = new BlockPos(5, 1, 1);
+            context.assertTrue(placed(context, player, creative, new ItemStack(ModBlocks.PARTY_CONTROLLER)).isInfiniteBank(),
+                    "placed in creative: infinite");
+            PartyControllerEntity saved = context.getBlockEntity(creative);
+            NbtCompound nbt = saved.createNbt(context.getWorld().getRegistryManager());
+            context.assertTrue(nbt.getBoolean("InfiniteBank"), "saved");
+            saved.setInfiniteBank(false);
+            context.assertTrue(!saved.isInfiniteBank(), "still switchable");
+
+            ItemStack withData = new ItemStack(ModBlocks.PARTY_CONTROLLER);
+            NbtCompound data = new NbtCompound();
+            data.putString("id", "steveparty:party_controller_entity");
+            withData.set(DataComponentTypes.BLOCK_ENTITY_DATA, NbtComponent.of(data));
+            context.assertTrue(!placed(context, player, copy, withData).isInfiniteBank(), "a copy keeps its own settings");
+
+            player.changeGameMode(GameMode.SURVIVAL);
+            context.assertTrue(!placed(context, player, survival, new ItemStack(ModBlocks.PARTY_CONTROLLER)).isInfiniteBank(),
+                    "placed in survival: its real storage");
+            for (BlockPos pos : List.of(creative, survival, copy)) context.setBlockState(pos, Blocks.AIR);
+        } finally {
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
+    /** The controller at {@code relative}, placed by {@code player} from {@code stack}. */
+    private static PartyControllerEntity placed(TestContext context, ServerPlayerEntity player, BlockPos relative, ItemStack stack) {
+        context.setBlockState(relative, ModBlocks.PARTY_CONTROLLER);
+        BlockPos pos = context.getAbsolutePos(relative);
+        var state = context.getWorld().getBlockState(pos);
+        state.getBlock().onPlaced(context.getWorld(), pos, state, player, stack);
+        return context.getBlockEntity(relative);
     }
 }

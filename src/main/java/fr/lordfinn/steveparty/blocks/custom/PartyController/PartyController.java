@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -243,6 +244,12 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
         if (!world.isClient) {
+            // Placed in creative: its storage starts infinite (a copy keeps its own settings); still switchable
+            if (placer instanceof PlayerEntity player && player.getAbilities().creativeMode
+                    && !itemStack.contains(DataComponentTypes.BLOCK_ENTITY_DATA)
+                    && world.getBlockEntity(pos) instanceof PartyControllerEntity controller) {
+                controller.setInfiniteBank(true);
+            }
             updatePoweredState(state, world, pos);
         }
     }
