@@ -361,6 +361,7 @@ public class BubbleEntity extends Entity {
             mergeAround(world);
             if (isRemoved()) return;
         }
+        for (Entity rider : getPassengerList()) rider.fallDistance = 0; // floating, never falling: no fall to pay once out
         Vec3d drift = BubbleRiding.drift(getPassengerList());
         if (drift.lengthSquared() > 1.0E-8) stir();
         strain = Math.max(0, strain - BubbleRiding.STRAIN_DECAY);
@@ -765,14 +766,17 @@ public class BubbleEntity extends Entity {
                 BubbleRiding.slowFallingTicks(dropUnder(rider)), 0, false, true), this);
     }
 
-    /** How far {@code rider} is above the ground (or {@link BubbleRiding#GROUND_SEARCH} if none is that near). */
+    /** How far {@code rider} is above the ground, however high (down to the bottom of the world over the void). */
     private double dropUnder(Entity rider) {
+        World world = getWorld();
         BlockPos.Mutable pos = rider.getBlockPos().mutableCopy();
-        for (int down = 0; down < BubbleRiding.GROUND_SEARCH && pos.getY() > getWorld().getBottomY(); down++) {
-            if (!getWorld().getBlockState(pos).getCollisionShape(getWorld(), pos).isEmpty()) return Math.max(0, rider.getY() - (pos.getY() + 1));
-            pos.move(0, -1, 0);
+        pos.setY(Math.min(pos.getY(), world.getTopY() - 1));
+        for (; pos.getY() >= world.getBottomY(); pos.move(0, -1, 0)) {
+            if (!world.getBlockState(pos).getCollisionShape(world, pos).isEmpty() || !world.getFluidState(pos).isEmpty()) {
+                return Math.max(0, rider.getY() - (pos.getY() + 1));
+            }
         }
-        return BubbleRiding.GROUND_SEARCH;
+        return Math.max(0, rider.getY() - world.getBottomY());
     }
 
     // ---------------------------------------------------------------- vanilla

@@ -602,7 +602,24 @@ public class BubblerGameTests implements SteveGameTest {
         context.assertTrue(BubbleRiding.slowFallingTicks(0) == BubbleRiding.SLOW_FALLING_MIN, "low: 3 s");
         int high = BubbleRiding.slowFallingTicks(40);
         context.assertTrue(high * BubbleRiding.SLOW_FALL_SPEED >= 40, "40 blocks up: long enough to land (" + high + " ticks)");
+        int sky = BubbleRiding.slowFallingTicks(300);
+        context.assertTrue(sky * BubbleRiding.SLOW_FALL_SPEED >= 300, "300 blocks up: long enough to land (" + sky + " ticks)");
         context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_fall", tickLimit = 40)
+    public void ridingItNoFallBuildsUp(TestContext context) {
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
+        BubbleEntity bubble = riding(context, player, new BlockPos(3, 1, 3), 2);
+        context.waitAndRun(5, () -> {
+            player.fallDistance = 60;
+            context.waitAndRun(1, () -> {
+                context.assertTrue(player.fallDistance == 0, "floating: no fall distance (" + player.fallDistance + ")");
+                TestPlayers.remove(context, player);
+                bubble.discard();
+                context.complete();
+            });
+        });
     }
 
     // ---------------------------------------------------------------- merging
