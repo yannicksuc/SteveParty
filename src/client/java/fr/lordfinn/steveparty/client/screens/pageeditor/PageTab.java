@@ -141,7 +141,7 @@ public final class PageTab {
                 ConsoleButton.Kind.PAPER_TEAL, null, () -> {
             editor.save();
             editor.send(new MiniGamePagePayloads.Action(editor.hand(), editor.pageId(), MiniGamePagePayloads.Action.Kind.DRAW_ZONE));
-            editor.close();
+            editor.closeEditor();
         }));
         draw.setTooltip(Tooltip.of(Text.translatable(KEY + "zone.draw.hint", PageZone.MAX_SIDE)));
         draw.active = canEdit;

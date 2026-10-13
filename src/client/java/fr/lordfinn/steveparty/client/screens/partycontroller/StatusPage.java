@@ -91,7 +91,7 @@ public final class StatusPage {
         ConsoleButton launch = dashboard.add(new ConsoleButton(x + CX + CW - launchWidth, y + BUTTON_Y, launchWidth, BTN_H, launchText,
                 ConsoleButton.Kind.GREEN, null, () -> {
             dashboard.click(BUTTON_LAUNCH);
-            dashboard.close();
+            dashboard.closeDashboard();
         }));
         launch.active = blocker == Blocker.NONE;
         launch.setTooltip(Tooltip.of(blocker == Blocker.NONE

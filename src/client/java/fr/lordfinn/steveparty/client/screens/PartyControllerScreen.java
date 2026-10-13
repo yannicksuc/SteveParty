@@ -380,6 +380,11 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     @Override
+    public void closeDashboard() {
+        close();
+    }
+
+    @Override
     public void close() {
         if (client != null && client.player != null)
             client.player.playSound(CLOSE_TILE_GUI_SOUND_EVENT, 1.0F, 1.0F);
