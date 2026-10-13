@@ -418,8 +418,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             progress++;
             world.markDirty(pos); // saved, but no client sync needed: the client predicts the progress
         }
-        if (progress >= CRAFT_TIME && status == Status.OK) {
-            completeCraft();
+        // waits at 100% while the output is blocked; nothing is consumed until the die is out
+        if (progress >= CRAFT_TIME && status == Status.OK && completeCraft()) {
             progress = 0;
             if (!getStatus().allowsRunning()) {
                 // A slot ran out: stop the loop, the missing items show as ghosts
@@ -582,9 +582,20 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
                 && output.getCount() + die.getCount() <= output.getMaxCount();
     }
 
-    private void completeCraft() {
+    /**
+     * One die: atomic, nothing is consumed unless the die goes into the output slot (checked again here, whatever the
+     * caller checked). @return true if a die was forged.
+     */
+    private boolean completeCraft() {
         ItemStack die = createDie();
-        if (die.isEmpty()) return;
+        if (die.isEmpty() || !isActivated() || checkResources(this) != Status.OK || !canAcceptOutput(die)) return false;
+        // the die first, then what it costs
+        ItemStack output = inventory.get(OUTPUT_SLOT);
+        if (output.isEmpty()) {
+            inventory.set(OUTPUT_SLOT, die);
+        } else {
+            output.increment(die.getCount());
+        }
         // Faces are kept (they are the die's weights): one blank face per face slot used is consumed instead
         inventory.get(BLANK_SLOT).decrement(countFaces(this));
         for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
@@ -592,17 +603,12 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             // Black fragments are never consumed
             if (!stack.isEmpty() && !isInfiniteFragment(stack)) stack.decrement(1);
         }
-        ItemStack output = inventory.get(OUTPUT_SLOT);
-        if (output.isEmpty()) {
-            inventory.set(OUTPUT_SLOT, die);
-        } else {
-            output.increment(die.getCount());
-        }
         if (world != null) {
             world.addSyncedBlockEvent(pos, getCachedState().getBlock(), FORGED_EVENT, 0); // client animation
             world.playSound(null, pos, SoundEvents.BLOCK_ANVIL_USE, SoundCategory.BLOCKS, 0.4f, 1.8f);
             world.playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.BLOCKS, 0.8f, 1.2f);
         }
+        return true;
     }
 
     // =================================================================== activation
@@ -748,10 +754,16 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     }
 
     private static final double DANCE_RANGE = 11;
+    /**
+     * Most Mulas a forge holds (dancers and spectators): the others around are free Mulas. Keeps a crowd (a stack of
+     * spawn eggs) from all piling onto one forge, and bounds what its core blowing up sends flying.
+     */
+    public static final int MAX_RESIDENTS = 64;
 
     /**
      * Once a second, only with its core in: the Mulas within {@link MulaHome#RADIUS} blocks now live here (MulaHome:
-     * they don't leave its area; not one its owner is leading, not one living at another forge), and those within
+     * they don't leave its area; not one its owner is leading, not one living at another forge), up to
+     * {@value #MAX_RESIDENTS} (those already here, then the nearest; the others are let go), and those within
      * {@value #DANCE_RANGE} blocks (not sitting, not scared) get their place in the forge's dance, in the order of their
      * ids (stable). Up to {@link MulaDances#CAP} dance at once; the others watch from round the dance, and the turns
      * move on at each new dance ({@link MulaDances#turnStart}) so everyone dances. The dance itself is computed by each
@@ -765,9 +777,17 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
                 m -> m.isAlive() && !m.isToken() && !m.isBoardActor() && !m.isBursting() && !m.isLedByOwner() && !m.isLeashed()
                         && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= r * r);
         if (around.isEmpty()) return;
+        // those already living here first, then the nearest: the first MAX_RESIDENTS live here, the others are let go
+        around.removeIf(m -> m.homeForge() != null && !m.homeForge().equals(pos) && MulaHome.holds(world, m.homeForge()));
+        around.sort(Comparator.comparing((MulaEntity m) -> !pos.equals(m.homeForge()))
+                .thenComparingDouble(m -> (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz)));
         List<MulaEntity> dancers = new ArrayList<>();
-        for (var m : around) {
-            if (m.homeForge() != null && !m.homeForge().equals(pos) && MulaHome.holds(world, m.homeForge())) continue;
+        for (int i = 0; i < around.size(); i++) {
+            MulaEntity m = around.get(i);
+            if (i >= MAX_RESIDENTS) {
+                if (pos.equals(m.homeForge())) m.clearHome();
+                continue;
+            }
             m.setHomeForge(pos);
             if (!m.isSitting() && !m.getMulaBrain().isShy() && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= DANCE_RANGE * DANCE_RANGE) {
                 dancers.add(m);
@@ -792,7 +812,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /**
      * The core blows up: the Mulas living here burst too, a chain reaction from the core outwards (a few ticks apart),
      * and fly away as shooting stars spread round the compass (100 to 400 blocks: the forge can't hold them any more).
-     * They drop no fragments (a blast is not a meal). Bounded to this forge's Mulas; one already bursting is left alone.
+     * They drop no fragments (a blast is not a meal). Bounded to this forge's Mulas (at most {@value #MAX_RESIDENTS}, one
+     * every 4 ticks: no storm); one already bursting is left alone, and a burst sets off nothing else.
      */
     private void burstMulas(Vec3d center) {
         double r = MulaHome.RADIUS + 2;
@@ -802,7 +823,9 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
                 m -> m.isAlive() && !m.isToken() && pos.equals(m.homeForge()) && !m.isBursting());
         if (mulas.isEmpty()) return;
         mulas.sort(Comparator.comparingDouble(m -> m.squaredDistanceTo(center)));
-        int n = mulas.size();
+        // never more than a forge holds (its home was given before the cap: the others are only let go)
+        for (int i = MAX_RESIDENTS; i < mulas.size(); i++) mulas.get(i).clearHome();
+        int n = Math.min(mulas.size(), MAX_RESIDENTS);
         double start = world.getRandom().nextDouble() * MathHelper.TAU;
         for (int i = 0; i < n; i++) {
             MulaEntity m = mulas.get(i);

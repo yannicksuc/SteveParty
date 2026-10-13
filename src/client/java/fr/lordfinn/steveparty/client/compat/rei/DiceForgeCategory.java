@@ -42,9 +42,28 @@ public class DiceForgeCategory implements DisplayCategory<DiceForgeDisplay> {
         return WIDTH;
     }
 
+    /** Tall enough for the whole explanation in the current language (it was cut after 5 lines in French). */
     @Override
     public int getDisplayHeight() {
-        return HEIGHT;
+        return Math.max(HEIGHT, TEXT_TOP + howLines().size() * LINE + 4);
+    }
+
+    /** Where the explanation starts, from the top of the display. */
+    private static final int TEXT_TOP = 54;
+    private String howFor;
+    private List<Text> howLines = List.of();
+
+    /** The explanation wrapped to the display's width, kept until the language changes. */
+    private List<Text> howLines() {
+        Text how = Text.translatable("rei.steveparty.dice_forge.how");
+        String key = how.getString();
+        if (!key.equals(howFor)) {
+            List<Text> lines = new ArrayList<>();
+            CartridgeApplicationCategory.wrap(how, WIDTH - 10, lines);
+            howLines = lines;
+            howFor = key;
+        }
+        return howLines;
     }
 
     @Override
@@ -69,11 +88,8 @@ public class DiceForgeCategory implements DisplayCategory<DiceForgeDisplay> {
         widgets.add(Widgets.createResultSlotBackground(new Point(x + 118, row)));
         widgets.add(Widgets.createSlot(new Point(x + 118, row)).entries(display.dice()).disableBackground().markOutput());
         // How
-        List<Text> lines = new ArrayList<>();
-        CartridgeApplicationCategory.wrap(Text.translatable("rei.steveparty.dice_forge.how"), WIDTH - 10, lines);
-        int textY = row + 24;
-        for (Text line : lines) {
-            if (textY + LINE > bounds.getMaxY()) break;
+        int textY = bounds.y + TEXT_TOP;
+        for (Text line : howLines()) {
             widgets.add(Widgets.createLabel(new Point(bounds.x + 5, textY), line).leftAligned().noShadow().color(GREY, LIGHT));
             textY += LINE;
         }
