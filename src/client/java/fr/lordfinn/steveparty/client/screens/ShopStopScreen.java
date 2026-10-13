@@ -86,6 +86,12 @@ public class ShopStopScreen extends CardboardTradeScreen {
         close();
     }
 
+    /** No tray: the countdown and the bags take the counter's column around the payment row. */
+    @Override
+    protected boolean drawsCounterTray() {
+        return false;
+    }
+
     @Override
     protected boolean canBuyMore() {
         return !shopHandler.isLimitReached();

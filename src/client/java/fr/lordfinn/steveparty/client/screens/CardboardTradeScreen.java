@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.screens;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
+import fr.lordfinn.steveparty.client.gui.paint.PixelArt;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -61,7 +62,9 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
     private static final PartyGui.Theme CARD_PICKED = new PartyGui.Theme(0xFF1E3A08, 0xFFE2FFB0,
             0xFF000000 | ShopCartridgeItem.COLOR, 0xFF5E8F17);
     private static final PartyGui.Theme CARD_SOLD_OUT = new PartyGui.Theme(0xFF4A3A33, 0xFFC9BBA8, 0xFFAD9F8C, 0xFF7E715F);
-    private static final int GROOVE = 0xFFA8692F, GROOVE_EDGE = 0xFF6B3F1C;
+    private static final int GROOVE = 0xFFA8692F, GROOVE_EDGE = 0xFF6B3F1C, TRAY = 0xFFCC9250;
+    /** The bottom of the counter's tray: 8 px above the inventory's slots. */
+    private static final int TRAY_END = 75;
     protected static final int LIME = 0xFF000000 | ShopCartridgeItem.COLOR, LIME_DARK = 0xFF5E8F17, LIME_LIGHT = 0xFFD4F58E;
     protected static final int INK = 0xFF3C241D, RED = 0xFFD8323F, RED_DARK = 0xFF5E0A12, PRICE_MISSING = 0xFFC0182A;
     /** The slots' kraft: a darker cardboard cell pressed into the box, a deep brown shadow on top; the ghosts' veil in it. */
@@ -147,6 +150,11 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
         PartyGui.panel(context, x, y, WIDTH, HEIGHT, CARDBOARD);
         drawAwning(context, x + 3, y + 3, WIDTH - 6);
         drawScrollbar(context, x + BAR_X, y + TOP, visibleCards * CARD_STEP - 1);
+        if (drawsCounterTray()) {
+            // The counter's tray, the payment row centred in it, 8 px above the inventory
+            PixelArt.inset(context, x + COUNTER_X, y + TOP, COUNTER_END - COUNTER_X - 1, TRAY_END - TOP - 1,
+                    TRAY, CARDBOARD.shadow(), CARDBOARD.highlight());
+        }
         drawCounter(context, x, y);
         // Every slot of the screen but the result (in its frame) in the mod's style, straight on the cardboard
         for (Slot slot : handler.slots) if (slot.id != 2) slot(context, x + slot.x, y + slot.y);
@@ -230,6 +238,14 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
     protected @Nullable TradeOffer pickedOffer() {
         TradeOfferList offers = offers();
         return picked >= 0 && picked < offers.size() ? offers.get(picked) : null;
+    }
+
+    /**
+     * Whether the payment row sits in a tray filling the counter's column down to the inventory: a merchant's screen,
+     * with nothing else there (a shop stop puts its countdown and its bags around the row instead).
+     */
+    protected boolean drawsCounterTray() {
+        return true;
     }
 
     /** Whether one more purchase is allowed here (a shop stop counts them). */
