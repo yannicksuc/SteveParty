@@ -34,7 +34,7 @@ public record TeleportSettingsComponent(TeleportNetwork network, boolean cycle, 
             Codec.BOOL.optionalFieldOf("cycle", false).forGetter(TeleportSettingsComponent::cycle),
             Codec.BOOL.optionalFieldOf("push", false).forGetter(TeleportSettingsComponent::push),
             Codec.BOOL.optionalFieldOf("push_triggers", true).forGetter(TeleportSettingsComponent::pushTriggers),
-            BlockPos.CODEC.listOf().optionalFieldOf("targets", List.of()).forGetter(TeleportSettingsComponent::targets)
+            BlockPos.CODEC.listOf().optionalFieldOf("tp_links", List.of()).forGetter(TeleportSettingsComponent::targets)
     ).apply(builder, TeleportSettingsComponent::new));
 
     public static final PacketCodec<ByteBuf, TeleportSettingsComponent> PACKET_CODEC = PacketCodec.tuple(
