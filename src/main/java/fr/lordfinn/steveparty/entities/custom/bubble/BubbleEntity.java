@@ -15,6 +15,7 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.Leashable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
@@ -27,12 +28,15 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.thrown.SnowballEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
@@ -41,6 +45,7 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,11 +64,16 @@ import java.util.function.Function;
  *     ({@link BubbleRiding}); every rider's keys count.</li>
  *     <li><b>Merging</b>: two bubbles with riders touching become one bigger bubble with all of them
  *     ({@link #absorb}), the one with more riders (else the older) taking the other in.</li>
- *     <li><b>Popping</b> ({@link #pop}): a rider's punch (any rider leaving), a puff too many (puffs chained too
+ *     <li><b>Leaving</b>: a rider sneaking (or teleported...) leaves it alone, falling slowly; it shrinks around those
+ *     left and pops once the last one is out.</li>
+ *     <li><b>On a lead</b>: a lead ties it to whoever holds it, who guides it from the ground ({@link #followLeash}); it
+ *     floats freely then and is never left still.</li>
+ *     <li><b>Popping</b> ({@link #pop}): a rider's punch, a puff too many (puffs chained too
  *     fast strain it: {@link #strainedPuff}), bumping into a block (a wall, the floor, a
  *     ceiling) or touching a mob, a player, a boat... ({@link #popsOnTouch}; not in its first moments, rising from its
  *     Bubbler), an arrow or any projectile from outside but a snowball (a snowball pushes it its way; what its riders
- *     shoot from inside flies out through it, {@link #letsOut}), a hit by luck ({@link BubbleRiding#HIT_POP_CHANCE}; never with a Silk Touch
+ *     shoot from inside flies out through it, {@link #letsOut}), a splash or lingering potion bursting on or near it
+ *     ({@link #splashedBy}: its riders take the splash), a hit by luck ({@link BubbleRiding#HIT_POP_CHANCE}; never with a Silk Touch
  *     tool, a hit only pushes it then), anything else that hurts, left still too long ({@link #getStillTicks}: 15 s
  *     without moving, never while it travels), crossing the border of a mini-game zone, or nothing left in it. Its
  *     riders fall slowly then ({@link #fallSlowly}); its item drops.</li>
@@ -71,7 +81,7 @@ import java.util.function.Function;
  * The server moves it; a client moves it the same way between the server's updates, its own rider's keys at once,
  * and eases it toward the server's position ({@link #clientTick}).
  */
-public class BubbleEntity extends Entity {
+public class BubbleEntity extends Entity implements Leashable {
     /** Its side (blocks). */
     private static final TrackedData<Float> SIDE = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.FLOAT);
     /** The height its bottom hovers at (NaN: floating freely). */
@@ -126,6 +136,10 @@ public class BubbleEntity extends Entity {
     private int trembling;
     /** Server: its riders going over to a bigger bubble (they don't pop it), it popping, one of its riders gone. */
     private boolean transferring, popping, popPending;
+    /** Server: riders who just left it, still inside its film (their touch never pops it until they are out). */
+    private final List<Entity> leavers = new ArrayList<>();
+    /** Its lead, if any (see {@link Leashable}). */
+    private @Nullable LeashData leashData;
     /** Client: the server's last position, and the ticks since. */
     private @Nullable Vec3d serverPos;
     private int sinceUpdate;
@@ -343,7 +357,12 @@ public class BubbleEntity extends Entity {
 
     @Override
     public void tick() {
+        // vanilla's lead (ticked by the entity's own tick or here): its holder found, the lead snapped past 10 blocks;
+        // its pull is ours (followLeash), gentler
+        Vec3d speed = getVelocity();
         super.tick();
+        Leashable.tickLeash(this);
+        if (isLeashed()) setVelocity(speed);
         if (getWorld() instanceof ServerWorld world) serverTick(world);
         else clientTick();
     }
@@ -361,8 +380,10 @@ public class BubbleEntity extends Entity {
             mergeAround(world);
             if (isRemoved()) return;
         }
-        Vec3d drift = BubbleRiding.drift(getPassengerList());
-        if (drift.lengthSquared() > 1.0E-8) stir();
+        for (Entity rider : getPassengerList()) rider.fallDistance = 0; // floating, never falling: no fall to pay once out
+        leavers.removeIf(left -> left.isRemoved() || !left.getBoundingBox().intersects(getBoundingBox()));
+        Vec3d drift = BubbleRiding.drift(getPassengerList()).add(followLeash());
+        if (drift.lengthSquared() > 1.0E-8 || isLeashed()) stir();
         strain = Math.max(0, strain - BubbleRiding.STRAIN_DECAY);
         Vec3d puffed = puffs(world);
         if (isRemoved()) return; // a puff too many
@@ -451,7 +472,7 @@ public class BubbleEntity extends Entity {
      */
     private boolean popsOnTouch(Entity entity) {
         if (!entity.isAlive() || entity.isSpectator() || entity instanceof BubbleEntity || entity instanceof ProjectileEntity) return false;
-        if (entity.getRootVehicle() instanceof BubbleEntity) return false;
+        if (entity.getRootVehicle() instanceof BubbleEntity || leavers.contains(entity)) return false;
         return entity instanceof LivingEntity || entity.isCollidable();
     }
 
@@ -669,14 +690,23 @@ public class BubbleEntity extends Entity {
         if (!getWorld().isClient) resize();
     }
 
-    /** A rider leaving (sneaking, punching, teleported...) pops it, the others with him; he falls slowly. */
+    /**
+     * A rider leaving (sneaking, teleported...) leaves alone and falls slowly: it shrinks around the others, popping once
+     * the last one is out (a rider's punch pops it for all: {@link #riderPunch}).
+     */
     @Override
     protected void removePassenger(Entity passenger) {
         super.removePassenger(passenger);
         if (getWorld().isClient || transferring) return;
         if (fromEffect && passenger instanceof LivingEntity living) living.removeStatusEffect(ModEffects.BUBBLED);
         fallSlowly(passenger);
-        if (!popping) popPending = true;
+        if (popping) return;
+        if (getPassengerList().isEmpty()) {
+            popPending = true;
+        } else {
+            leavers.add(passenger);
+            resize();
+        }
     }
 
     /** Its riders float inside, spread around its middle, swaying a little. */
@@ -736,6 +766,26 @@ public class BubbleEntity extends Entity {
         return true;
     }
 
+    /**
+     * A splash or lingering potion bursting at {@code potion}'s position: the bubbles it bursts on or near (within
+     * {@link BubbleRiding#SPLASH_REACH} of their film) pop, but the one it was thrown from (it flies out through it), so
+     * that their riders take the splash.
+     */
+    public static void splashedBy(ServerWorld world, ProjectileEntity potion) {
+        Vec3d at = potion.getPos();
+        double reach = BubbleRiding.SPLASH_REACH;
+        for (BubbleEntity bubble : world.getEntitiesByClass(BubbleEntity.class, new Box(at, at).expand(reach + 4), b -> !b.isRemoved())) {
+            Box film = bubble.getBoundingBox();
+            double dx = Math.max(0, Math.max(film.minX - at.x, at.x - film.maxX));
+            double dy = Math.max(0, Math.max(film.minY - at.y, at.y - film.maxY));
+            double dz = Math.max(0, Math.max(film.minZ - at.z, at.z - film.maxZ));
+            if (dx * dx + dy * dy + dz * dz > reach * reach) continue;
+            Entity owner = potion.getOwner();
+            if (owner != null && owner.getRootVehicle() == bubble) continue;
+            bubble.pop();
+        }
+    }
+
     /** It pops: a soft pop and droplets, its riders out falling slowly, its item dropped. */
     public void pop() {
         if (isRemoved() || !(getWorld() instanceof ServerWorld world)) return;
@@ -747,6 +797,7 @@ public class BubbleEntity extends Entity {
         world.spawnParticles(ParticleTypes.BUBBLE_POP, center.x, center.y, center.z, 10 + 4 * mass(), spread, spread, spread, 0.03);
         world.spawnParticles(ParticleTypes.SPLASH, center.x, center.y, center.z, 12, spread, spread, spread, 0.1);
         removeAllPassengers();
+        if (isLeashed()) detachLeash(true, true);
         ItemStack item = getItem();
         if (!item.isEmpty()) {
             ItemEntity drop = new ItemEntity(world, center.x, center.y - 0.125, center.z, item.copy(), 0, 0, 0);
@@ -765,14 +816,77 @@ public class BubbleEntity extends Entity {
                 BubbleRiding.slowFallingTicks(dropUnder(rider)), 0, false, true), this);
     }
 
-    /** How far {@code rider} is above the ground (or {@link BubbleRiding#GROUND_SEARCH} if none is that near). */
+    /** How far {@code rider} is above the ground, however high (down to the bottom of the world over the void). */
     private double dropUnder(Entity rider) {
+        World world = getWorld();
         BlockPos.Mutable pos = rider.getBlockPos().mutableCopy();
-        for (int down = 0; down < BubbleRiding.GROUND_SEARCH && pos.getY() > getWorld().getBottomY(); down++) {
-            if (!getWorld().getBlockState(pos).getCollisionShape(getWorld(), pos).isEmpty()) return Math.max(0, rider.getY() - (pos.getY() + 1));
-            pos.move(0, -1, 0);
+        pos.setY(Math.min(pos.getY(), world.getTopY() - 1));
+        for (; pos.getY() >= world.getBottomY(); pos.move(0, -1, 0)) {
+            if (!world.getBlockState(pos).getCollisionShape(world, pos).isEmpty() || !world.getFluidState(pos).isEmpty()) {
+                return Math.max(0, rider.getY() - (pos.getY() + 1));
+            }
         }
-        return BubbleRiding.GROUND_SEARCH;
+        return Math.max(0, rider.getY() - world.getBottomY());
+    }
+
+    // ---------------------------------------------------------------- lead
+
+    /**
+     * Its lead's pull this tick (blocks a tick): toward over its holder's head like a balloon once further than
+     * {@link BubbleRiding#LEAD_SLACK}, its speed eased toward one that slows down as it gets there (no overshoot into its
+     * holder). Leashed, it floats freely.
+     */
+    private Vec3d followLeash() {
+        Entity holder = getLeashHolder();
+        if (holder == null) return Vec3d.ZERO;
+        release();
+        Vec3d toward = holder.getPos().add(0, holder.getHeight() + 0.5 + getSide() / 2, 0).subtract(center());
+        double far = toward.length() - BubbleRiding.LEAD_SLACK;
+        if (far <= 0) return Vec3d.ZERO;
+        velocityModified = true;
+        Vec3d wanted = toward.normalize().multiply(Math.min(far * BubbleRiding.LEAD_PULL, BubbleRiding.LEAD_MAX));
+        return wanted.subtract(getVelocity()).multiply(BubbleRiding.LEAD_GRIP);
+    }
+
+    @Override
+    public @Nullable LeashData getLeashData() {
+        return leashData;
+    }
+
+    @Override
+    public void setLeashData(@Nullable LeashData leashData) {
+        this.leashData = leashData;
+    }
+
+    /** Its own riders can't tie it (it is guided from outside). */
+    @Override
+    public boolean canLeashAttachTo() {
+        return Leashable.super.canLeashAttachTo() && getItem().isEmpty();
+    }
+
+    /** The lead is tied under it. */
+    @Override
+    public Vec3d getLeashOffset() {
+        return new Vec3d(0, 0.1, 0);
+    }
+
+    /** A lead ties it to the player (not one of its riders); its holder's empty-handed use unties it. */
+    @Override
+    public ActionResult interact(PlayerEntity player, Hand hand) {
+        if (hasPassenger(player) || !isAlive()) return ActionResult.PASS;
+        if (getLeashHolder() == player) {
+            if (!getWorld().isClient) detachLeash(true, !player.isInCreativeMode());
+            return ActionResult.success(getWorld().isClient);
+        }
+        ItemStack stack = player.getStackInHand(hand);
+        if (stack.isOf(Items.LEAD) && canLeashAttachTo()) {
+            if (!getWorld().isClient) {
+                attachLeash(player, true);
+                stack.decrementUnlessCreative(1, player);
+            }
+            return ActionResult.success(getWorld().isClient);
+        }
+        return super.interact(player, hand);
     }
 
     // ---------------------------------------------------------------- vanilla
@@ -806,6 +920,7 @@ public class BubbleEntity extends Entity {
         origin = nbt.contains("Origin") ? BlockPos.fromLong(nbt.getLong("Origin")) : null;
         setHoverY(nbt.contains("HoverY") ? nbt.getDouble("HoverY") : Double.NaN);
         setItem(nbt.contains("Item") ? ItemStack.fromNbt(getRegistryManager(), nbt.get("Item")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY);
+        leashData = readLeashDataFromNbt(nbt);
         if (!getItem().isEmpty()) setSide(BubbleRiding.ITEM_SIDE);
         else if (nbt.contains("Side")) setSide(nbt.getFloat("Side"));
     }
@@ -823,5 +938,6 @@ public class BubbleEntity extends Entity {
         if (isHovering()) nbt.putDouble("HoverY", getHoverY());
         if (!getItem().isEmpty()) nbt.put("Item", getItem().encode(getRegistryManager()));
         nbt.putFloat("Side", getSide());
+        writeLeashDataToNbt(nbt, leashData);
     }
 }

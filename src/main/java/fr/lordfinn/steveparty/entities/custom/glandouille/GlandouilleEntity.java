@@ -458,6 +458,12 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         return super.isAiDisabled() || hasVehicle();
     }
 
+    /** Riding (up a tower, in hand) is no NoAI: a client never takes it for a board hologram (it is aimed at, hit). */
+    @Override
+    public boolean hasNoAiFlag() {
+        return super.isAiDisabled();
+    }
+
     @Override
     protected Vec3d getPassengerAttachmentPos(Entity passenger, EntityDimensions dimensions, float scaleFactor) {
         // on top of its cap, sunk a little into it

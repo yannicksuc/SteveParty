@@ -15,6 +15,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
@@ -124,6 +125,22 @@ public class TokenSpellGameTests implements SteveGameTest {
         } finally {
             TestPlayers.remove(context, player);
         }
+        context.complete();
+    }
+
+    /** A squished player is never resized for good: his base scale untouched, his exact size back when it ends. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aSquishedPlayerGetsHisExactScaleBack(TestContext context) {
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        TestPlayers.removeAtEnd(context, player);
+        var scale = player.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
+        double base = scale.getBaseValue();
+        player.addStatusEffect(new StatusEffectInstance(SQUISHED, 5, 20));
+        context.assertTrue(Math.abs(player.getHeight() - 2.0) < 0.01, "squished to 2 blocks: " + player.getHeight());
+        context.assertTrue(scale.getBaseValue() == base, "his base untouched: " + scale.getBaseValue());
+        player.removeStatusEffect(SQUISHED);
+        context.assertTrue(scale.getBaseValue() == base && Math.abs(scale.getValue() - base) < 1.0E-9,
+                "his exact scale back: " + scale.getValue());
         context.complete();
     }
 

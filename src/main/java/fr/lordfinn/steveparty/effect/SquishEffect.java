@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.effect;
 
 import fr.lordfinn.steveparty.StatusEffectExtension;
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.payloads.custom.SquishAnimationPayload;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -9,11 +10,13 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -38,11 +41,14 @@ import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
  *     blocks (amplifier 0 = scale 1).</li>
  * </ul>
  * The server applies the final scale once, when the effect is applied (hitbox consistent from then on, nothing
- * sent per tick). The shrink / wobble / spin animation is purely visual and played by the clients over the
+ * sent per tick). A mob's base scale is set (a token stays one); a player's never is: a temporary modifier
+ * ({@link #PLAYER_MODIFIER}, never saved) squishes him while the effect lasts, his own scale back exactly when it ends. The shrink / wobble / spin animation is purely visual and played by the clients over the
  * effect duration, from a single {@link SquishAnimationPayload}.
  */
 public class SquishEffect extends StatusEffect implements StatusEffectExtension {
     private static final double SCALE_EPSILON = 1.0E-3;
+    /** A squished player's scale (his base untouched, never saved with him). */
+    private static final Identifier PLAYER_MODIFIER = Steveparty.id("squished_player");
     /** While {@link #squishToSize(MobEntity, float, int, ServerPlayerEntity, boolean)} runs: who cast it, and whether the others hear it. */
     private static @Nullable ServerPlayerEntity castBy;
     private static boolean othersHear = true;
@@ -135,9 +141,9 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
         EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
         if (scaleAttribute == null) return;
 
-        double startScale = scaleAttribute.getBaseValue();
+        double startScale = entity instanceof PlayerEntity ? entity.getScale() : scaleAttribute.getBaseValue();
         double targetScale = getTargetScale(entity, amplifier, scaleAttribute);
-        scaleAttribute.setBaseValue(targetScale);
+        setScale(entity, scaleAttribute, targetScale);
 
         if (duration > 0) {
             sendAnimation(entity, (float) startScale, (float) targetScale, duration, amplifier);
@@ -188,16 +194,34 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
             // Normally the scale is already final (set in onApplied): only fix it if it drifted, e.g. an entity
             // saved mid-squish by an older version of the mod
             double targetScale = getTargetScale(entity, amplifier, scaleAttribute);
-            if (Math.abs(scaleAttribute.getBaseValue() - targetScale) > SCALE_EPSILON) {
-                scaleAttribute.setBaseValue(targetScale);
-            }
+            double now = entity instanceof PlayerEntity ? entity.getScale() : scaleAttribute.getBaseValue();
+            if (Math.abs(now - targetScale) > SCALE_EPSILON) setScale(entity, scaleAttribute, targetScale);
         }
         return true;
+    }
+
+    /**
+     * {@code entity} at {@code targetScale}: a mob's base scale; a player's through {@link #PLAYER_MODIFIER} over what
+     * he is without it (his base and anything else that sizes him), his base never touched.
+     */
+    private static void setScale(LivingEntity entity, EntityAttributeInstance scaleAttribute, double targetScale) {
+        if (!(entity instanceof PlayerEntity)) {
+            scaleAttribute.setBaseValue(targetScale);
+            return;
+        }
+        scaleAttribute.removeModifier(PLAYER_MODIFIER);
+        double without = Math.max(1.0E-3, scaleAttribute.getValue());
+        scaleAttribute.addTemporaryModifier(new EntityAttributeModifier(PLAYER_MODIFIER, targetScale / without - 1,
+                EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        entity.calculateDimensions();
     }
 
     @Override
     public void steveparty$onRemoved(LivingEntity livingEntity) {
         livingEntity.setGlowing(false);
+        // a player: his own size back, exactly (his base was never touched)
+        EntityAttributeInstance scale = livingEntity.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
+        if (livingEntity instanceof PlayerEntity && scale != null && scale.removeModifier(PLAYER_MODIFIER)) livingEntity.calculateDimensions();
         if (QUIET_ENDS.remove(livingEntity.getUuid())) return;
         livingEntity.getWorld().playSound(livingEntity, livingEntity.getBlockPos(),
                 SoundEvent.of(Identifier.ofVanilla("entity.zombie_villager.converted")),

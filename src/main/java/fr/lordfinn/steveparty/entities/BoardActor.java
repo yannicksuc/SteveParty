@@ -17,6 +17,14 @@ public interface BoardActor {
     /** Records that it is a board actor ({@link #isBoardActor} true from now on); called by {@link #makeBoardActor}. */
     void setBoardActor();
 
+    /**
+     * Its own NoAI flag (synced), from which a client guesses a hologram ({@code BoardActors#isHologram}); a mob whose
+     * {@code isAiDisabled} also says "not thinking" for other reasons (riding...) answers its flag alone here.
+     */
+    default boolean hasNoAiFlag() {
+        return ((MobEntity) this).isAiDisabled();
+    }
+
     /** What else becoming a board actor changes for this mob (no gravity, no light...), after its AI is turned off. */
     default void onBoardActor() {
     }

@@ -2861,6 +2861,7 @@
   "tooltip.steveparty.tokenizer_wand.player": "sur un joueur : il devient un pion (s'accroupir pour en sortir)",
   "message.steveparty.player_pawn.refused": "Le sort ne peut pas prendre ce joueur maintenant.",
   "message.steveparty.player_pawn.inside": "Tu es un pion ! Sneak pour en sortir.",
+  "message.steveparty.player_pawn.carried": "Dans la poche de %s ! Sneak pour en sortir.",
   "message.steveparty.player_pawn.pose": "Pose : %s",
   "pose.steveparty.player_pawn.stand": "Debout",
   "pose.steveparty.player_pawn.wave": "Coucou",

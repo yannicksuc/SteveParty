@@ -82,11 +82,21 @@ public final class BubbleRiding {
     /** A hit's push and a snowball's (blocks a tick, before the bubble's weight), and a hit's chance to pop it (never with Silk Touch). */
     public static final double HIT_PUSH = 0.45, SNOWBALL_PUSH = 0.5;
     public static final float HIT_POP_CHANCE = 0.25f;
-    /** Popped, its riders fall slowly: at least this long (ticks, 3 s), longer high up to reach the ground safely, at most this long. */
-    public static final int SLOW_FALLING_MIN = 60, SLOW_FALLING_MAX = 600;
-    /** How fast one falls with Slow Falling at most (blocks a tick), and how far down the ground is looked for. */
+    /** How near its film a splash or lingering potion bursting pops it (blocks). */
+    public static final double SPLASH_REACH = 2;
+    /**
+     * On a lead: how far it floats from its holder freely (blocks); beyond, the speed it is pulled at (this share of the
+     * gap a tick, at most this fast, blocks a tick), and how much of the way to that speed it gets a tick.
+     */
+    public static final double LEAD_SLACK = 3, LEAD_PULL = 0.08, LEAD_MAX = 0.3, LEAD_GRIP = 0.15;
+    /**
+     * Popped, its riders fall slowly: at least this long (ticks, 3 s), longer high up to reach the ground safely (from
+     * the top of the world to its bottom), at most this long (over the void).
+     */
+    public static final int SLOW_FALLING_MIN = 60, SLOW_FALLING_MAX = 1200;
+    /** How fast one falls with Slow Falling at most (blocks a tick), and the extra ticks it lasts (a drift aside, a lower landing). */
     public static final double SLOW_FALL_SPEED = 0.45;
-    public static final int GROUND_SEARCH = 96;
+    public static final int SLOW_FALLING_MARGIN = 40;
 
     private BubbleRiding() {
     }
@@ -174,6 +184,6 @@ public final class BubbleRiding {
 
     /** How long a rider falls slowly once out, {@code drop} blocks above the ground. */
     public static int slowFallingTicks(double drop) {
-        return MathHelper.clamp((int) Math.ceil(drop / SLOW_FALL_SPEED) + 20, SLOW_FALLING_MIN, SLOW_FALLING_MAX);
+        return MathHelper.clamp((int) Math.ceil(drop / SLOW_FALL_SPEED) + SLOW_FALLING_MARGIN, SLOW_FALLING_MIN, SLOW_FALLING_MAX);
     }
 }

@@ -698,6 +698,30 @@ public class GlandouilleGameTests implements SteveGameTest {
     }
 
     /**
+     * A player's real blow (his attack, not a call to onHit): one in a tower is flicked out, a lone one pushed. One up a
+     * tower is never taken for a board hologram by a client (its riding is no NoAI flag).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aPlayersBlowFlicksOrPushes(TestContext context) {
+        TestBoards.floor(context, 8);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(2, 1, 3));
+        GlandouilleEntity lone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(2, 1, 6));
+        members.getFirst().setAiDisabled(true);
+        lone.setAiDisabled(true);
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f);
+        context.waitAndRun(2, () -> {
+            GlandouilleEntity middle = members.get(1);
+            context.assertTrue(middle.isAiDisabled() && !middle.hasNoAiFlag(), "riding: not thinking, yet no NoAI (a client aims at it)");
+            player.attack(middle);
+            context.assertTrue(middle.getVehicle() == null, "the blow flicked it out of the tower");
+            context.assertEquals(middle.getMood(), Mood.FLYING, "it flies");
+            player.attack(lone);
+            context.assertTrue(lone.getVelocity().horizontalLengthSquared() > 0.01, "the lone one pushed: " + lone.getVelocity());
+            context.complete();
+        });
+    }
+
+    /**
      * The bottom one of a tower hit: the whole tower goes along the blow, still a tower of 3 all the way (in the air and
      * landed), each one right above the one below.
      */

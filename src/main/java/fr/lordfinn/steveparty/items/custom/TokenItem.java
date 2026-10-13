@@ -35,6 +35,8 @@ import net.minecraft.world.World;
 
 import java.util.List;
 import java.util.UUID;
+import fr.lordfinn.steveparty.entities.custom.pawn.PawnPossessions;
+import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
 
 import static fr.lordfinn.steveparty.components.ModComponents.ENTITY_DATA_COMPONENT;
 import static net.minecraft.sound.SoundEvents.BLOCK_ENCHANTMENT_TABLE_USE;
@@ -146,6 +148,8 @@ public class TokenItem extends Item {
         stack.set(DataComponentTypes.CUSTOM_NAME, Text.translatable("item.steveparty.token.of", customName));
 
         user.setStackInHand(hand, stack);
+        // a player inside the pawn stays in it, carried along: his view his carrier's
+        if (entity instanceof PlayerPawnEntity pawn) PawnPossessions.onPawnCaptured(pawn, user);
         entity.remove(Entity.RemovalReason.DISCARDED);
         playSound(user.getWorld(), user.getBlockPos(), 1.0F);
 

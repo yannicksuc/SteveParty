@@ -22,6 +22,10 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameRules;
 
@@ -30,8 +34,9 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 
 /**
- * Player pawns: the wand's spell on a player makes a pawn with the player inside; whatever ends it (sneak, the pawn
- * stored or removed, the player leaving or dying) the player comes out at their size and the pawn stays. The statue's
+ * Player pawns: the wand's spell on a player makes a pawn with the player inside; stored in a Token by someone else,
+ * the player is carried along, his view his carrier's; whatever ends it (sneak, the pawn removed, the player leaving
+ * or dying, his carrier leaving) the player comes out at their size and the pawn stays. The statue's
  * held item is never copied nor lost.
  */
 public class PlayerPawnGameTests implements SteveGameTest {
@@ -175,31 +180,63 @@ public class PlayerPawnGameTests implements SteveGameTest {
         }, POSSESSED_TICK + 3);
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
-    public void storingThePawnInATokenGetsThePlayerOut(TestContext context) {
+    /**
+     * Another player stores the pawn in a Token: its player stays inside, his view his carrier's; the Token used again,
+     * his view is back in the pawn; sneaking, he is out next to it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
+    public void storingThePawnInATokenCarriesThePlayersView(TestContext context) {
         ServerPlayerEntity[] target = new ServerPlayerEntity[1];
+        PlayerPawnEntity[] pawn = new PlayerPawnEntity[1];
         ServerPlayerEntity holder = playerAt(context, 5.5, 3.5);
         ItemStack[] token = new ItemStack[1];
-        withPossessedPawn(context, (player, pawn) -> {
+        withPossessedPawn(context, (player, found) -> {
             target[0] = player;
-            pawn.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND, 3));
+            found.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND, 3));
             // Its owner (the caster) or a creative player can store it: the holder is creative
             holder.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TOKEN));
-            ActionResult result = holder.interact(pawn, Hand.MAIN_HAND);
+            ActionResult result = holder.interact(found, Hand.MAIN_HAND);
             context.assertTrue(result.isAccepted(), "stored: " + result);
             token[0] = holder.getMainHandStack();
-            context.assertTrue(pawn.isRemoved(), "the pawn is in the Token");
-            context.assertTrue(normal(player), "out at once");
+            context.assertTrue(found.isRemoved(), "the pawn is in the Token");
+            context.assertTrue(PawnPossessions.isInsideAPawn(player) && player.isInvisible(), "still inside, carried");
+            NbtCompound data = token[0].get(ModComponents.ENTITY_DATA_COMPONENT).entityData();
+            context.assertTrue(data.getString("SkinName").equals(player.getGameProfile().getName()), "the statue is in the Token");
+            context.assertTrue(data.getList("HandItems", 10).getCompound(0).getInt("count") == 3, "with its diamonds: " + data.get("HandItems"));
         }, () -> {
-            try {
-                context.assertTrue(normal(target[0]), "still out");
-                NbtCompound data = token[0].get(ModComponents.ENTITY_DATA_COMPONENT).entityData();
-                context.assertTrue(data.getString("SkinName").equals(target[0].getGameProfile().getName()), "the statue is in the Token");
-                context.assertTrue(data.getList("HandItems", 10).getCompound(0).getInt("count") == 3, "with its diamonds: " + data.get("HandItems"));
-            } finally {
-                leave(context, holder);
-            }
-        }, POSSESSED_TICK + 2);
+        }, POSSESSED_TICK + 40);
+        context.runAtTick(POSSESSED_TICK + 5, () -> {
+            context.assertTrue(target[0].getCameraEntity() == holder, "his view his carrier's: " + target[0].getCameraEntity());
+            context.assertTrue(PawnPossessions.isInsideAPawn(target[0]), "a statue still");
+            BlockPos floor = context.getAbsolutePos(new BlockPos(1, 1, 5));
+            ItemUsageContext use = new ItemUsageContext(holder, Hand.MAIN_HAND,
+                    new BlockHitResult(Vec3d.ofCenter(floor), Direction.UP, floor, false));
+            context.assertTrue(token[0].useOnBlock(use).isAccepted(), "the Token used again");
+            pawn[0] = pawns(context, target[0]).getFirst();
+        });
+        context.runAtTick(POSSESSED_TICK + 12, () -> {
+            context.assertTrue(target[0].getCameraEntity() == pawn[0], "his view back in the pawn");
+            context.assertTrue(target[0].getUuid().equals(pawn[0].getPossessor()), "inside it again");
+            target[0].setSneaking(true);
+        });
+        context.runAtTick(POSSESSED_TICK + 16, () -> {
+            context.assertTrue(normal(target[0]), "out");
+            context.assertTrue(pawn[0].isAlive() && !pawn[0].isPossessed(), "the pawn stays, empty");
+            leave(context, holder);
+        });
+    }
+
+    /** Carried, his carrier gone: he is out at once. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aCarriedPlayerIsOutWhenHisCarrierLeaves(TestContext context) {
+        ServerPlayerEntity[] target = new ServerPlayerEntity[1];
+        ServerPlayerEntity holder = playerAt(context, 5.5, 3.5);
+        withPossessedPawn(context, (player, found) -> {
+            target[0] = player;
+            holder.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TOKEN));
+            context.assertTrue(holder.interact(found, Hand.MAIN_HAND).isAccepted(), "stored");
+        }, () -> context.assertTrue(normal(target[0]), "out"), POSSESSED_TICK + 10);
+        context.runAtTick(POSSESSED_TICK + 5, () -> leave(context, holder));
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)

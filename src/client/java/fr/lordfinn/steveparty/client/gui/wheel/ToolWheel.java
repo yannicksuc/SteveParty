@@ -269,15 +269,19 @@ public final class ToolWheel {
     }
 
     /**
-     * Mouse movement while the wheel is open: moves its cursor (in screen pixels, as the camera would have turned).
+     * Mouse movement while the wheel is open: moves its cursor as a menu's pointer moves (the mouse's own motion on the
+     * screen, whatever the camera sensitivity: vanilla multiplied it by its sensitivity factor, taken out again here).
      *
      * @return true if the wheel took it (the camera stays still)
      */
     public static boolean moveCursor(double dx, double dy) {
         if (open == null || layout == null) return false;
-        double scale = MinecraftClient.getInstance().getWindow().getScaleFactor();
-        cursorX += dx / scale;
-        cursorY += dy / scale;
+        MinecraftClient client = MinecraftClient.getInstance();
+        double scale = client.getWindow().getScaleFactor();
+        double turn = cameraFactor(client.options.getMouseSensitivity().getValue());
+        cursorX += dx / turn / scale;
+        // nor inverted (vanilla turned it upside down for the camera with "Invert Mouse")
+        cursorY += (client.options.getInvertYMouse().getValue() ? -dy : dy) / turn / scale;
         // Kept on the wheel: a hard flick still lands on the outer ring
         double max = outerRadius(layout) + 8;
         double length = Math.sqrt(cursorX * cursorX + cursorY * cursorY);
@@ -286,6 +290,15 @@ public final class ToolWheel {
             cursorY *= max / length;
         }
         return true;
+    }
+
+    /**
+     * What vanilla multiplies the mouse's motion by to turn the camera, at this sensitivity option (0..1): the cube of
+     * {@code 0.6 * sensitivity + 0.2}, times 8 (1 at the default 50%).
+     */
+    public static double cameraFactor(double sensitivity) {
+        double f = sensitivity * 0.6 + 0.2;
+        return Math.max(1.0E-3, f * f * f * 8);
     }
 
     // ---------------------------------------------------------------- hover
