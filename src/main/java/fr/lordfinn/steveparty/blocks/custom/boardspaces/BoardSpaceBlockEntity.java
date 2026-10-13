@@ -244,9 +244,22 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
                 if ((own == null || own.destinations().isEmpty()) && kept != null) {
                     stack.set(ModComponents.DESTINATIONS_COMPONENT, kept);
                 }
+                withoutSelfLink(stack, pos);
             }
         }
         super.setStack(slot, stack);
+    }
+
+    /**
+     * A copy of a cartridge of this tile (or one that came back to it) never leads to the tile itself: such a link
+     * would be counted as a fork. Dropped as it is placed.
+     */
+    static void withoutSelfLink(ItemStack cartridge, BlockPos self) {
+        DestinationsComponent links = cartridge.get(ModComponents.DESTINATIONS_COMPONENT);
+        if (links == null || !links.destinations().contains(self)) return;
+        List<BlockPos> kept = new ArrayList<>(links.destinations());
+        kept.removeIf(self::equals);
+        cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(kept, links.world()));
     }
 
     private void rememberLinks(int slot) {
