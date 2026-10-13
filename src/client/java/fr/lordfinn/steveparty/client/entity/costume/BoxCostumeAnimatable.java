@@ -73,7 +73,9 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "Box", TRANSITION_TICKS, this::animate));
+        // The merchant's "idle" carries his sound cue: ignored here, the costume's sounds follow the wearer (BoxCostumeClient)
+        controllers.add(new AnimationController<>(this, "Box", TRANSITION_TICKS, this::animate)
+                .setSoundKeyframeHandler(event -> {}));
     }
 
     private PlayState animate(AnimationState<BoxCostumeAnimatable> event) {

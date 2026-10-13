@@ -103,6 +103,12 @@ dependencies {
     localRuntime "org.antlr:antlr4-runtime:4.13.1"
 }
 
+// A resource deleted from the sources must leave the jar too: Copy keeps the files it copied earlier, so an
+// incremental build shipped the recipes of a removed item (steveparty:board_trap errored at every start)
+tasks.withType(ProcessResources).configureEach {
+    doFirst { delete destinationDir }
+}
+
 processResources {
     inputs.property "version", project.version
     inputs.property "minecraft_version", project.minecraft_version
@@ -245,3 +251,127 @@ tasks.register('checkUiText') {
     }
 }
 tasks.named('check') { dependsOn 'checkUiText' }
+
+// A mod interface must never share a method with Minecraft: in production Minecraft's methods are renamed
+// (intermediary) but the mod's interfaces are not, so a class satisfying such a method through its Minecraft
+// superclass (Screen#close for PageEditor#close) has no implementation at runtime (AbstractMethodError), and one
+// redeclaring it leaves the interface hanging on the remapper. Fails on any method of a mod interface whose name and
+// parameters match a method of a Minecraft supertype of a mod class implementing it. Reads the bytecode (ASM), never
+// loads a class.
+@groovy.transform.CompileStatic
+class InterfaceNameCheck {
+    static class Info {
+        String name
+        String superName
+        List<String> interfaces = []
+        boolean isInterface
+        /** Non-static, non-private, non-synthetic methods: name + parameter descriptor. */
+        Set<String> methods = new HashSet<>()
+    }
+
+    final ClassLoader loader
+    final Map<String, Info> cache = new HashMap<>()
+
+    InterfaceNameCheck(ClassLoader loader) { this.loader = loader }
+
+    static boolean isMod(String name) { name.startsWith('fr/lordfinn/') }
+
+    static boolean isMinecraft(String name) { name.startsWith('net/minecraft/') }
+
+    Info info(String name) {
+        if (cache.containsKey(name)) return cache.get(name)
+        Info info = null
+        InputStream input = loader.getResourceAsStream(name + '.class')
+        if (input != null) {
+            byte[] bytes = input.withCloseable { InputStream s -> s.readAllBytes() }
+            info = read(bytes)
+        }
+        cache.put(name, info)
+        return info
+    }
+
+    static Info read(byte[] bytes) {
+        Info info = new Info()
+        new org.objectweb.asm.ClassReader(bytes).accept(new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9) {
+            @Override
+            void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+                info.name = name
+                info.superName = superName
+                info.interfaces = interfaces == null ? [] as List<String> : interfaces.toList()
+                info.isInterface = (access & org.objectweb.asm.Opcodes.ACC_INTERFACE) != 0
+            }
+
+            @Override
+            org.objectweb.asm.MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                int skip = org.objectweb.asm.Opcodes.ACC_STATIC | org.objectweb.asm.Opcodes.ACC_PRIVATE | org.objectweb.asm.Opcodes.ACC_SYNTHETIC
+                if ((access & skip) == 0 && !name.startsWith('<')) info.methods.add(name + descriptor.substring(0, descriptor.indexOf(')') + 1))
+                return null
+            }
+        }, org.objectweb.asm.ClassReader.SKIP_CODE)
+        return info
+    }
+
+    Set<Info> supertypes(Info type) {
+        Set<Info> supertypes = new LinkedHashSet<>()
+        Deque<Info> pending = new ArrayDeque<>()
+        pending.add(type)
+        while (!pending.isEmpty()) {
+            Info current = pending.poll()
+            if (!supertypes.add(current)) continue
+            ([current.superName] + current.interfaces).each { String parent ->
+                Info parentInfo = parent == null ? null : info(parent)
+                if (parentInfo != null) pending.add(parentInfo)
+            }
+        }
+        return supertypes
+    }
+
+    /** The methods {@code type} has from its Minecraft supertypes. */
+    Set<String> minecraftMethods(Info type) {
+        Set<String> methods = new HashSet<>()
+        supertypes(type).findAll { Info s -> isMinecraft(s.name) }.each { Info mc -> methods.addAll(mc.methods) }
+        return methods
+    }
+
+    /** The offenders among the classes of {@code dirs}. */
+    List<String> offenders(Collection<File> dirs) {
+        Set<String> offenders = new TreeSet<>()
+        dirs.each { File dir ->
+            if (!dir.exists()) return
+            dir.eachFileRecurse(groovy.io.FileType.FILES) { File file ->
+                if (!file.getName().endsWith('.class')) return
+                Info type = read(file.bytes)
+                cache.put(type.name, type)
+                if (type.isInterface || !isMod(type.name)) return
+                Set<String> fromMinecraft = minecraftMethods(type)
+                if (fromMinecraft.isEmpty()) return
+                supertypes(type).findAll { Info s -> s.isInterface && isMod(s.name) }.each { Info modInterface ->
+                    // A mod interface overriding a Minecraft interface's method (ImplementedInventory) is remapped with it
+                    Set<String> inherited = minecraftMethods(modInterface)
+                    modInterface.methods.each { String method ->
+                        if (fromMinecraft.contains(method) && !inherited.contains(method))
+                            offenders.add(modInterface.name.replace('/', '.') + '#' + method + ' (implemented by ' + type.name.replace('/', '.') + ')')
+                    }
+                }
+            }
+        }
+        return new ArrayList<>(offenders)
+    }
+}
+
+tasks.register('checkInterfaceNames') {
+    group = 'verification'
+    description = 'Fails on a mod interface method named like a method its implementers inherit from Minecraft'
+    def classDirs = sourceSets.main.output.classesDirs + sourceSets.client.output.classesDirs
+    def classpath = sourceSets.client.compileClasspath + sourceSets.main.compileClasspath
+    dependsOn 'classes', 'clientClasses'
+    inputs.files(classDirs)
+    doLast {
+        def urls = (classDirs.files + classpath.files).collect { it.toURI().toURL() } as URL[]
+        def loader = new URLClassLoader(urls, (ClassLoader) null)
+        def offenders = new InterfaceNameCheck(loader).offenders(classDirs.files)
+        loader.close()
+        if (!offenders.isEmpty()) throw new GradleException("Mod interface methods named like Minecraft methods (rename them):\n" + offenders.join('\n'))
+    }
+}
+tasks.named('check') { dependsOn 'checkInterfaceNames' }

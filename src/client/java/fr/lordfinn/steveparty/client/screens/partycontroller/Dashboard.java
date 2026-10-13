@@ -41,7 +41,8 @@ public interface Dashboard {
 
     void showPage(Page page);
 
-    void close();
+    /** Closes the dashboard screen (not {@code close}: a name of Minecraft's, renamed in production). */
+    void closeDashboard();
 
     /** The item standing for the currency (the slot of the Gains tab). */
     default ItemStack currency(PartyCurrency currency) {

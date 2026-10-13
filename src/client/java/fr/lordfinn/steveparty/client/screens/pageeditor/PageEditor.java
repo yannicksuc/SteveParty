@@ -54,7 +54,8 @@ public interface PageEditor {
     /** Sends the texts and formats if they changed. */
     void save();
 
-    void close();
+    /** Closes the editor screen (not {@code close}: a name of Minecraft's, renamed in production). */
+    void closeEditor();
 
     void playClick();
 

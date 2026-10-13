@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.service.TurnMoves;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.command.CommandSource;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
@@ -21,16 +22,16 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class MoveTokenCommand {
+    private static final int OP_LEVEL = 2;
+
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess) {
         dispatcher.register(
                 literal("move_token")
+                        .requires(source -> source.hasPermissionLevel(OP_LEVEL))
                         .then(argument("tokenName", StringArgumentType.string())
-                                .suggests((context, builder) -> {
-                                    ServerCommandSource source = context.getSource();
-                                    List<String> tokenNames = getNearbyTokenNames(source);
-                                    tokenNames.forEach(builder::suggest);
-                                    return builder.buildFuture();
-                                })
+                                // Quoted when needed: the argument is a string, a name with a space must be typed in quotes
+                                .suggests((context, builder) -> CommandSource.suggestMatching(
+                                        getNearbyTokenNames(context.getSource()).stream().map(StringArgumentType::escapeIfRequired), builder))
                                 .then(argument("rollNumber", IntegerArgumentType.integer(1, 10))
                                         .executes(context -> {
                                             String tokenName = StringArgumentType.getString(context, "tokenName");
@@ -58,14 +59,13 @@ public class MoveTokenCommand {
         );
     }
 
-    /**
-     * Récupère les noms personnalisés des mobs proches.
-     */
+    /** The custom names of the mobs nearby: the ones the command can move. */
     private static List<String> getNearbyTokenNames(ServerCommandSource source) {
         return source.getWorld()
-                .getEntitiesByClass(MobEntity.class, getNearbyBox(source), null)
+                .getEntitiesByClass(MobEntity.class, getNearbyBox(source), MobEntity::hasCustomName)
                 .stream()
-                .map(mob -> mob.getCustomName() != null ? mob.getCustomName().getString() : mob.getName().getString())
+                .map(mob -> mob.getCustomName().getString())
+                .distinct()
                 .collect(Collectors.toList());
     }
 
