@@ -9,6 +9,8 @@ import fr.lordfinn.steveparty.hud.HudPlacements.Hud;
 import fr.lordfinn.steveparty.client.mixin.BossBarHudAccessor;
 import fr.lordfinn.steveparty.hud.HudPlacements;
 import fr.lordfinn.steveparty.utils.Easing;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -73,6 +75,8 @@ public final class PartyHud {
 
     public static void initialize() {
         PartyHudLayout.load();
+        // Texts built with no party at hand (tooltips, menus) name the currencies of the party played
+        PartyCurrencyText.setClientParty(currency -> currency == PartyCurrency.STAR ? live.starItem() : live.coinItem());
         layoutKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.steveparty.party_hud_layout",
                 InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_M, "category.steveparty"));
         // Shows or hides the whole party HUD (remembered; the layout screen shows it all the same)

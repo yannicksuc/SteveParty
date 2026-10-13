@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
@@ -171,8 +172,8 @@ final class MiniGameScreens {
         if (row.team() >= 0) line.append(Podiums.teamText(row.team())).append(" (");
         line.append(String.join(", ", row.names()));
         if (row.team() >= 0) line.append(")");
-        if (row.coins() > 0) line.append(Text.literal("  +" + row.coins() + " ").append(coin.getName()).formatted(Formatting.GREEN));
-        if (row.stars() > 0) line.append(Text.literal("  +" + row.stars() + " ").append(star.getName()).formatted(Formatting.YELLOW));
+        if (row.coins() > 0) line.append(Text.literal("  ").append(PartyCurrencyText.amount(coin, "+" + row.coins())).formatted(Formatting.GREEN));
+        if (row.stars() > 0) line.append(Text.literal("  ").append(PartyCurrencyText.amount(star, "+" + row.stars())).formatted(Formatting.YELLOW));
         return line;
     }
 }

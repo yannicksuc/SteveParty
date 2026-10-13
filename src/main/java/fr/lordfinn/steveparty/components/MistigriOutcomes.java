@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.components;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.lordfinn.steveparty.Steveparty;
@@ -81,6 +83,15 @@ public record MistigriOutcomes(List<Outcome> outcomes, int draws) {
                 case PITY -> 1;
                 case SHARE_COINS, SHARE_STARS -> 0;
                 default -> -1;
+            };
+        }
+
+        /** The currency it moves, null if none. */
+        public @org.jetbrains.annotations.Nullable PartyCurrency currency() {
+            return switch (this) {
+                case LOSE_COINS, SHARE_COINS, PITY -> PartyCurrency.COIN;
+                case LOSE_STARS, SHARE_STARS -> PartyCurrency.STAR;
+                default -> null;
             };
         }
 
@@ -196,12 +207,20 @@ public record MistigriOutcomes(List<Outcome> outcomes, int draws) {
             return percent ? held * amount / 100 : amount;
         }
 
-        /** Its effect alone: « −10 coins », « −50% of stars », « Back 3 spaces »... */
+        /** {@link #effect(ItemStack, ItemStack)} where no party is at hand (the menu): see {@link PartyCurrencyText#contextual}. */
         public MutableText effect() {
+            return effect(PartyCurrencyText.contextual(PartyCurrency.COIN), PartyCurrencyText.contextual(PartyCurrency.STAR));
+        }
+
+        /** Its effect alone, in the party's {@code coin} and {@code star}: « −10 × Coin », « −50% (Party Star) », « Back 3 spaces »... */
+        public MutableText effect(ItemStack coin, ItemStack star) {
             String key = "hud.steveparty.mistigri.effect." + kind.id;
             if (!kind.hasAmount()) return Text.translatable(key);
-            if (percent) return Text.translatable(key + ".percent", amount);
-            return amount == 1 ? Text.translatable(key + ".one") : Text.translatable(key, amount);
+            PartyCurrency currency = kind.currency();
+            if (currency == null) return amount == 1 ? Text.translatable(key + ".one") : Text.translatable(key, amount);
+            ItemStack item = currency == PartyCurrency.STAR ? star : coin;
+            if (percent) return Text.translatable(key + ".percent", amount, PartyCurrencyText.name(item));
+            return Text.translatable(key, PartyCurrencyText.amount(item, amount));
         }
 
         /** Who it falls on, short and in its target's colour: « 1st place », « Everyone »... */
@@ -219,8 +238,13 @@ public record MistigriOutcomes(List<Outcome> outcomes, int draws) {
          * colour of their target.
          */
         public MutableText text(@org.jetbrains.annotations.Nullable Text lander) {
+            return text(lander, PartyCurrencyText.contextual(PartyCurrency.COIN), PartyCurrencyText.contextual(PartyCurrency.STAR));
+        }
+
+        /** The same, in the party's {@code coin} and {@code star}. */
+        public MutableText text(@org.jetbrains.annotations.Nullable Text lander, ItemStack coin, ItemStack star) {
             Text who = target == Target.LANDED && lander != null ? lander.copy().styled(style -> style.withColor(target.color)) : who();
-            return Text.translatable("hud.steveparty.mistigri.line", who, effect());
+            return Text.translatable("hud.steveparty.mistigri.line", who, effect(coin, star));
         }
     }
 

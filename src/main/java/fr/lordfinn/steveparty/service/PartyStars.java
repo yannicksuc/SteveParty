@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
@@ -294,14 +295,15 @@ public final class PartyStars {
         Text tokenName = mob.getDisplayName();
         if (coins < price) {
             MessageUtils.sendToPlayers(party.getPartyAudience(), Text.translatable("message.steveparty.star.too_poor",
-                    owner.getDisplayName(), price, coins).formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
+                    owner.getDisplayName(), PartyCurrencyText.amount(party, PartyCurrency.COIN, price),
+                    PartyCurrencyText.amount(party, PartyCurrency.COIN, coins)).formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
             // its host comes with the star all the same, and is disappointed (the token goes on meanwhile)
             if (bankStars(party, world) > 0) StarHosts.arrive(world, mob, space.getPos(), party, false);
             return false;
         }
         // The star given comes from the party's bank: none left there, nothing to sell (the token goes on)
         if (bankStars(party, world) <= 0) {
-            MessageUtils.sendToPlayers(party.getPartyAudience(), Text.translatable("message.steveparty.star.bank_empty")
+            MessageUtils.sendToPlayers(party.getPartyAudience(), Text.translatable("message.steveparty.star.bank_empty", PartyCurrencyText.amount(party, PartyCurrency.STAR, 0))
                     .formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
             return false;
         }
@@ -313,10 +315,11 @@ public final class PartyStars {
         if (!ABoardSpaceBlock.countsAsStep(space.getCachedState().getBlock())) BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, space);
         Vec3d at = BoardSpaces.standPos(world, space.getPos());
         world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.BLOCKS, 0.8F, 1.5F);
-        MutableText prompt = Text.translatable("message.steveparty.star.offer", price, coins).formatted(Formatting.GOLD)
+        MutableText prompt = Text.translatable("message.steveparty.star.offer",
+                        PartyCurrencyText.amount(party, PartyCurrency.COIN, price), PartyCurrencyText.amount(party, PartyCurrency.COIN, coins)).formatted(Formatting.GOLD)
                 .append(" ")
                 .append(button(Text.translatable("message.steveparty.star.buy_button"), Formatting.YELLOW, "/steveparty star buy",
-                        Text.translatable("message.steveparty.star.buy_hover", price)))
+                        Text.translatable("message.steveparty.star.buy_hover", PartyCurrencyText.amount(party, PartyCurrency.COIN, price))))
                 .append(" ")
                 .append(button(Text.translatable("message.steveparty.star.pass_button"), Formatting.GRAY, "/steveparty star pass",
                         Text.translatable("message.steveparty.star.pass_hover")))
@@ -414,13 +417,14 @@ public final class PartyStars {
         ItemStack coin = party.getCurrency(PartyCurrency.COIN);
         int coins = InventoryUtils.count(buyer.getInventory(), coin);
         if (coins < price) {
-            MessageUtils.sendToPlayer(buyer, Text.translatable("message.steveparty.star.too_poor", buyer.getDisplayName(), price, coins)
+            MessageUtils.sendToPlayer(buyer, Text.translatable("message.steveparty.star.too_poor", buyer.getDisplayName(),
+                    PartyCurrencyText.amount(coin, price), PartyCurrencyText.amount(coin, coins))
                     .formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
             return false;
         }
         ItemStack star = party.getCurrency(PartyCurrency.STAR);
         if (PartyResources.of(party).take(star, 1) < 1) {
-            MessageUtils.sendToPlayers(audienceWith(party, buyer), Text.translatable("message.steveparty.star.bank_empty")
+            MessageUtils.sendToPlayers(audienceWith(party, buyer), Text.translatable("message.steveparty.star.bank_empty", PartyCurrencyText.amount(party, PartyCurrency.STAR, 0))
                     .formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
             return false;
         }
@@ -429,9 +433,9 @@ public final class PartyStars {
         InventoryUtils.giveOrDrop(buyer, star, 1);
         List<ServerPlayerEntity> audience = party.getPartyAudience();
         if (!audience.contains(buyer)) audience.add(buyer);
-        MessageUtils.sendToPlayers(audience, Text.translatable("message.steveparty.star.bought", buyer.getDisplayName(), price)
+        MessageUtils.sendToPlayers(audience, Text.translatable("message.steveparty.star.bought", buyer.getDisplayName(), PartyCurrencyText.amount(coin, price))
                 .formatted(Formatting.GOLD, Formatting.BOLD), MessageUtils.MessageType.CHAT);
-        MessageUtils.sendToPlayers(audience, Text.translatable("message.steveparty.star.bought_title", buyer.getDisplayName())
+        MessageUtils.sendToPlayers(audience, Text.translatable("message.steveparty.star.bought_title", buyer.getDisplayName(), PartyCurrencyText.amount(star, 1))
                 .formatted(Formatting.GOLD), MessageUtils.MessageType.TITLE);
         Vec3d at = BoardSpaces.standPos(world, space);
         world.playSound(null, at.x, at.y, at.z, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8F, 1.0F);

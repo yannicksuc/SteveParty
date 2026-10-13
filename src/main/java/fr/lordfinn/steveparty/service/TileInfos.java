@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
@@ -146,7 +147,7 @@ public final class TileInfos {
             if (!told) info.title(TileInfo.line("role.trap"), trap.color());
             int amount = trap.effect().amount();
             Text effect = switch (trap.effect().kind()) {
-                case COINS -> TileInfo.line("trap.coins", amount);
+                case COINS -> TileInfo.line("trap.coins", PartyCurrencyText.amount(party, PartyCurrency.COIN, amount));
                 case BACK -> TileInfo.line("trap.back", amount);
                 case SKIP_TURN -> TileInfo.line("trap.skip_turn");
                 case STEAL_ITEM -> TileInfo.line("trap.steal_item");

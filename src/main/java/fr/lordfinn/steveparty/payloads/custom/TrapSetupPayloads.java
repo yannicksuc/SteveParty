@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.payloads.custom;
 
+import fr.lordfinn.steveparty.powerups.PowerUpLimit;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TrapSetupComponent;
@@ -61,7 +64,8 @@ public final class TrapSetupPayloads {
                     player.getGameProfile().getName(), player.getUuid());
             stack.set(ModComponents.TRAP_SETUP, setup);
             player.playSoundToPlayer(SoundEvents.ITEM_BOOK_PAGE_TURN, SoundCategory.PLAYERS, 1F, 0.9F);
-            player.sendMessage(Text.translatable("message.steveparty.powerup.trap.signed", setup.effect().describe())
+            player.sendMessage(Text.translatable("message.steveparty.powerup.trap.signed", setup.effect().describe(
+                            PartyCurrencyText.item(PowerUpLimit.partyOf(player.getUuid()), PartyCurrency.COIN)))
                     .formatted(Formatting.DARK_RED), true);
         }
     }

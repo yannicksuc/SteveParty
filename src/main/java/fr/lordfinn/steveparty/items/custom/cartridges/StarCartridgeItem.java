@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -83,7 +85,7 @@ public class StarCartridgeItem extends CartridgeItem implements MobSpawnCartridg
     @Override
     protected void appendState(ItemStack stack, Tooltips tips) {
         StarSettingsComponent settings = settings(stack);
-        tips.state("tooltip.steveparty.star_cartridge.price", Tooltips.coins(Text.translatable("tooltip.steveparty.coins", settings.price())));
+        tips.state("tooltip.steveparty.star_cartridge.price", Tooltips.coins(PartyCurrencyText.contextualAmount(PartyCurrency.COIN, settings.price())));
 
     }
 }

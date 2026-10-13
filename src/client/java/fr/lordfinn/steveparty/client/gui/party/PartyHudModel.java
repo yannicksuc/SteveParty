@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -301,10 +302,10 @@ final class PartyHudModel {
             model.set(Action.ROLLED, HudDraw.ICON_DICE, effect.swapWith().isEmpty()
                     ? Text.translatable(mine ? "hud.steveparty.party.swap.choosing.you" : "hud.steveparty.party.swap.choosing", owner)
                     : Text.translatable("hud.steveparty.party.swap", effect.swapWith()));
-            if (effect.coinFace()) model.badge = coinsBadge(effect.coins());
+            if (effect.coinFace()) model.badge = coinsBadge(effect.coins(), live.coinItem());
         } else if (live.effect().coinFace()) {
             model.set(Action.ROLLED, HudDraw.ICON_DICE, mine ? Text.translatable("hud.steveparty.party.rolled.you") : Text.translatable("hud.steveparty.party.rolled", owner));
-            model.badge = coinsBadge(live.effect().coins());
+            model.badge = coinsBadge(live.effect().coins(), live.coinItem());
         } else if (live.roll() != 0 || live.effect().rolled()) {
             // A number: the steps (0 for the face 0, negative for a roll going backward)
             model.set(Action.ROLLED, HudDraw.ICON_DICE, mine ? Text.translatable("hud.steveparty.party.rolled.you") : Text.translatable("hud.steveparty.party.rolled", owner));
@@ -319,10 +320,9 @@ final class PartyHudModel {
         }
     }
 
-    /** "+5 coins", "−3 coins", "+1 coin". */
-    private static String coinsBadge(int coins) {
-        return Text.translatable(Math.abs(coins) == 1 ? "hud.steveparty.party.coins.one" : "hud.steveparty.party.coins",
-                DiceOutcome.signed(coins)).getString();
+    /** "+5 × Coin", "−3 × Coin", in the party's coin. */
+    private static String coinsBadge(int coins, ItemStack coin) {
+        return PartyCurrencyText.amount(PartyCurrencyText.orDefault(coin, PartyCurrency.COIN), DiceOutcome.signed(coins)).getString();
     }
 
     private void set(Action action, Identifier icon, Text text) {

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
@@ -142,10 +143,11 @@ public final class CommonPots {
         Stake stake = collect(pot, nest, token, player);
         space.update();
         Text name = token.getDisplayName();
-        int coins = nest.count(coinOf(token));
+        ItemStack coin = coinOf(token);
+        Text total = PartyCurrencyText.amount(coin, nest.count(coin));
         Text message = stake.coins() > 0
-                ? Text.translatable("message.steveparty.pot.stake", name, stake.coins(), coins)
-                : Text.translatable("message.steveparty.pot.no_stake", name, coins);
+                ? Text.translatable("message.steveparty.pot.stake", name, PartyCurrencyText.amount(coin, stake.coins()), total)
+                : Text.translatable("message.steveparty.pot.no_stake", name, PartyCurrencyText.amount(coin, 0), total);
         MessageUtils.sendToNearby(world, at, 100, message.copy().formatted(Formatting.GOLD), MessageUtils.MessageType.ACTION_BAR);
         if (stake.coins() > 0) fetch(world, space, token, coinOf(token));
         return stake;
@@ -220,8 +222,8 @@ public final class CommonPots {
         }
         int things = items.stream().mapToInt(ItemStack::getCount).sum();
         Text message = things > 0
-                ? Text.translatable("message.steveparty.pot.won_items", player.getDisplayName(), coins, things)
-                : Text.translatable("message.steveparty.pot.won", player.getDisplayName(), coins);
+                ? Text.translatable("message.steveparty.pot.won_items", player.getDisplayName(), PartyCurrencyText.amount(coin, coins), things)
+                : Text.translatable("message.steveparty.pot.won", player.getDisplayName(), PartyCurrencyText.amount(coin, coins));
         MessageUtils.sendToNearby(world, at, 100, message.copy().formatted(Formatting.GOLD, Formatting.BOLD), MessageUtils.MessageType.CHAT);
         fanfare(world, at);
         deliver(world, space, token, coin);

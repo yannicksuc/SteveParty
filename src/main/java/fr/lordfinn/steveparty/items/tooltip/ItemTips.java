@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.items.tooltip;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.jumpshoes.JumpShoes;
@@ -85,10 +87,10 @@ public final class ItemTips {
         for (int i = 1; i <= 10; i++) {
             int value = i;
             map.put(item("coin_dice_face_" + i), (stack, tips) -> tips
-                    .summary(KEY + "coin_dice_face.summary", Tooltips.coins(value))
+                    .summary(KEY + "coin_dice_face.summary", Tooltips.coins(PartyCurrencyText.contextualAmount(PartyCurrency.COIN, value)))
                     .more(more -> more.note(KEY + "dice_face.no_move")));
             map.put(item("debt_dice_face_" + i), (stack, tips) -> tips
-                    .summary(KEY + "debt_dice_face.summary", Tooltips.bad(value))
+                    .summary(KEY + "debt_dice_face.summary", Tooltips.bad(PartyCurrencyText.contextualAmount(PartyCurrency.COIN, value)))
                     .more(more -> more.note(KEY + "dice_face.no_move")));
         }
         map.put(item("swap_dice_face"), (stack, tips) -> tips
