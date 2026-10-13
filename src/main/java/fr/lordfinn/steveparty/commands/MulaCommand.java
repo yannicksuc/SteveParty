@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEphemeride;
+import fr.lordfinn.steveparty.entities.custom.MulaRebirths;
 import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.argument.EntityArgumentType;
@@ -41,6 +42,18 @@ public final class MulaCommand {
     private static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("mula")
                 .requires(source -> source.hasPermissionLevel(2))
+                // /mula rebirths: how many burst Mulas wait to come back here; clear: none of them comes back (after a /kill)
+                .then(literal("rebirths")
+                        .executes(context -> {
+                            int n = MulaRebirths.get(context.getSource().getWorld()).size();
+                            context.getSource().sendFeedback(() -> Text.translatable("command.steveparty.mula.rebirths", n), false);
+                            return n;
+                        })
+                        .then(literal("clear").executes(context -> {
+                            int n = MulaRebirths.get(context.getSource().getWorld()).clear();
+                            context.getSource().sendFeedback(() -> Text.translatable("command.steveparty.mula.rebirths_cleared", n), true);
+                            return n;
+                        })))
                 // /mula ephemeride start: a night of shooting stars now; nearest: the nearest Mula spawn site
                 .then(literal("ephemeride")
                         .then(literal("start").executes(context -> {

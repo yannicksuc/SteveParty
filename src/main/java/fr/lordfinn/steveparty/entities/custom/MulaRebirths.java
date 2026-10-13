@@ -15,9 +15,10 @@ import net.minecraft.world.PersistentState;
 import net.minecraft.world.chunk.WorldChunk;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -28,6 +29,12 @@ import java.util.UUID;
  * over this (almost always empty) list, a map lookup per pending Mula, nothing loaded or generated for it. It keeps its
  * UUID, which rules out duplicates: nothing is spawned if a Mula with that UUID is already in the world, and an old
  * copy of a pending Mula that shows up (a chunk saved before its burst, after a crash) is removed on load.
+ * <p>
+ * Bounded, so that a storm of bursts can never flood the world back: at most {@value #MAX_PENDING} Mulas wait (a wild
+ * one bursting beyond that is not reborn: its star is its end), at most {@value #MAX_PER_CHECK} come back per second,
+ * and a wild one whose chunk stayed unloaded {@value #WILD_EXPIRY_TICKS} ticks after its due time is forgotten. A Mula
+ * that is someone's (tamed or named) is always kept. {@code /mula rebirths clear} empties the list
+ * (after a {@code /kill}, nothing comes back).
  */
 public class MulaRebirths extends PersistentState {
     private static final String ID = "steveparty_mula_rebirths";
@@ -36,11 +43,18 @@ public class MulaRebirths extends PersistentState {
     private static final double ABOVE_GROUND = 2.5;
     /** Status sent to the clients when it is reborn (sparkle ring, chime). */
     public static final byte REBORN_STATUS = 100;
+    /** Most Mulas waiting to be reborn per dimension (someone's Mulas are always taken in, even beyond). */
+    public static final int MAX_PENDING = 256;
+    /** Most Mulas reborn per check (once a second): a long list comes back as a trickle, never as a wave. */
+    public static final int MAX_PER_CHECK = 4;
+    /** A wild Mula whose chunk was not loaded this long after its due time is forgotten (a Minecraft day). */
+    public static final long WILD_EXPIRY_TICKS = 24000;
 
     public record Entry(UUID id, int x, int z, double y, long due, NbtCompound mula) {
     }
 
-    private final List<Entry> entries = new ArrayList<>();
+    /** By Mula id, in the order they burst. */
+    private final Map<UUID, Entry> entries = new LinkedHashMap<>();
 
     public static void initialize() {
         ServerTickEvents.END_WORLD_TICK.register(world -> {
@@ -68,35 +82,70 @@ public class MulaRebirths extends PersistentState {
         return world.getPersistentStateManager().get(TYPE, ID);
     }
 
-    public void add(Entry entry) {
-        entries.removeIf(e -> e.id().equals(entry.id()));
-        entries.add(entry);
+    /**
+     * Records a Mula to be reborn. @return false when the list is full and it is a wild Mula: it is not reborn.
+     */
+    public boolean add(Entry entry) {
+        boolean replaced = entries.remove(entry.id()) != null;
+        if (!replaced && entries.size() >= MAX_PENDING && !isKept(entry.mula())) return false;
+        entries.put(entry.id(), entry);
         markDirty();
+        return true;
     }
 
     public void remove(UUID id) {
-        if (entries.removeIf(e -> e.id().equals(id))) markDirty();
+        if (entries.remove(id) != null) markDirty();
+    }
+
+    /** Forgets every pending rebirth (none of them comes back). @return how many there were. */
+    public int clear() {
+        int n = entries.size();
+        if (n > 0) {
+            entries.clear();
+            markDirty();
+        }
+        return n;
+    }
+
+    public int size() {
+        return entries.size();
     }
 
     public boolean isPending(UUID id) {
-        for (Entry e : entries) if (e.id().equals(id)) return true;
-        return false;
+        return entries.containsKey(id);
     }
 
     public List<Entry> entries() {
-        return List.copyOf(entries);
+        return List.copyOf(entries.values());
     }
 
-    /** Rebirths whose time has come and whose chunk is loaded. */
+    /** Someone's Mula (tamed or named): never dropped from the list. */
+    public static boolean isKept(NbtCompound mula) {
+        return mula.containsUuid("Owner") || mula.contains("CustomName");
+    }
+
+    /**
+     * Rebirths whose time has come and whose chunk is loaded, at most {@value #MAX_PER_CHECK}; wild Mulas long overdue in
+     * an unloaded chunk are forgotten.
+     */
     public void tick(ServerWorld world) {
         long now = world.getTime();
-        for (Iterator<Entry> it = entries.iterator(); it.hasNext(); ) {
+        int reborn = 0;
+        for (Iterator<Entry> it = entries.values().iterator(); it.hasNext(); ) {
             Entry entry = it.next();
             if (entry.due() > now) continue;
             WorldChunk chunk = world.getChunkManager().getWorldChunk(entry.x() >> 4, entry.z() >> 4);
-            if (chunk == null) continue;
+            if (chunk == null) {
+                if (now - entry.due() > WILD_EXPIRY_TICKS && !isKept(entry.mula())) {
+                    it.remove();
+                    markDirty();
+                }
+                continue;
+            }
+            if (reborn >= MAX_PER_CHECK) continue; // the next ones next second
             it.remove();
             markDirty();
+            reborn++;
             rebirth(world, entry);
         }
     }
@@ -124,7 +173,7 @@ public class MulaRebirths extends PersistentState {
     @Override
     public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         NbtList list = new NbtList();
-        for (Entry e : entries) {
+        for (Entry e : entries.values()) {
             NbtCompound c = new NbtCompound();
             c.putUuid("Id", e.id());
             c.putInt("X", e.x());
@@ -144,7 +193,8 @@ public class MulaRebirths extends PersistentState {
         for (int i = 0; i < list.size(); i++) {
             NbtCompound c = list.getCompound(i);
             if (!c.containsUuid("Id")) continue;
-            rebirths.entries.add(new Entry(c.getUuid("Id"), c.getInt("X"), c.getInt("Z"), c.getDouble("Y"),
+            UUID id = c.getUuid("Id");
+            rebirths.entries.put(id, new Entry(id, c.getInt("X"), c.getInt("Z"), c.getDouble("Y"),
                     c.getLong("Due"), c.getCompound("Mula")));
         }
         return rebirths;

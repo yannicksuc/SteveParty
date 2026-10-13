@@ -133,7 +133,12 @@ public class GravityGameTests implements SteveGameTest {
             CowEntity cow = EntityType.COW.create(context.getWorld());
             cow.refreshPositionAndAngles(core.x + 3, core.y - 0.5, core.z, 0, 0);
             context.getWorld().spawnEntity(cow);
-            hitboxes.get(0).damage(context.getWorld().getDamageSources().generic(), 1f);
+            // only a player's hit sets it off
+            context.assertFalse(hitboxes.get(0).damage(context.getWorld().getDamageSources().generic(), 1f), "not any damage");
+            context.assertTrue(forge.isActivated(), "still there");
+            PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+            hitboxes.get(0).damage(context.getWorld().getDamageSources().playerAttack(player), 1f);
+            player.discard();
             context.assertTrue(!forge.isActivated(), "the core is gone");
             context.assertTrue(forge.getStack(FIRST_FRAGMENT_SLOT).isOf(ModItems.BLACK_STAR_FRAGMENT), "nothing else lost");
             context.waitAndRun(3, () -> {

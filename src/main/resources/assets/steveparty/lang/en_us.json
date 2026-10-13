@@ -1023,6 +1023,8 @@
   "command.steveparty.mula.no_spawn_site": "No Mula spawn site yet",
   "command.steveparty.mula.nearest_site.came": "Nearest Mula spawn site: %s %s (they came)",
   "command.steveparty.mula.nearest_site.waiting": "Nearest Mula spawn site: %s %s (waiting)",
+  "command.steveparty.mula.rebirths": "Mulas waiting to be reborn in this dimension: %s",
+  "command.steveparty.mula.rebirths_cleared": "Pending Mula rebirths cleared: %s",
   "command.steveparty.mula.unknown_animation": "Unknown Mula animation: %s",
   "block.steveparty.telescope": "Telescope",
   "tooltip.steveparty.telescope.what": "Replays the past nights of shooting stars, to find where the Mulas came down",

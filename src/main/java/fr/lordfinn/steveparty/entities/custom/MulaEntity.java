@@ -417,15 +417,17 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
         NbtCompound saved = new NbtCompound();
         if (!this.saveSelfNbt(saved)) return;
         int flight = MulaStarEntity.flightTicksFor(distance);
-        MulaRebirths.get(world).add(new MulaRebirths.Entry(this.getUuid(), x, z, atForge ? endY : this.getY(),
+        // the list full (a storm of bursts): a wild one is not reborn, its star is its end
+        boolean comesBack = MulaRebirths.get(world).add(new MulaRebirths.Entry(this.getUuid(), x, z, atForge ? endY : this.getY(),
                 world.getTime() + flight, saved));
         MulaStarEntity star = new MulaStarEntity(ModEntities.MULA_STAR, world);
         star.launch(this.getX(), startY, this.getZ(), this.getVariant(), dirX, dirZ, distance, apex, endY - startY);
         world.spawnEntity(star);
         world.playSound(null, this.getX(), startY, this.getZ(), SoundEvents.ENTITY_ALLAY_ITEM_THROWN,
                 SoundCategory.NEUTRAL, 0.6f, 1.5f * voice());
-        Steveparty.LOGGER.info("A {} Mula burst into a shooting star: reborn at {} {} in {} s{}",
-                getVariant().name().toLowerCase(Locale.ROOT), x, z, flight / 20, atForge ? " (at its forge)" : "");
+        Steveparty.LOGGER.debug("A {} Mula burst into a shooting star: {} {} {} in {} s{}",
+                getVariant().name().toLowerCase(Locale.ROOT), comesBack ? "reborn at" : "not reborn (too many pending), lands at",
+                x, z, flight / 20, atForge ? " (at its forge)" : "");
         this.discard();
     }
 
