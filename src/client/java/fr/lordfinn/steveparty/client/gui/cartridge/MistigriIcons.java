@@ -42,7 +42,13 @@ final class MistigriIcons {
         draw(context, "weight", x, y, 7, 7, off);
     }
 
-    /** The picked cards, 10 square. */
+    /**
+     * The picked cards' drawing inside its 10 × 10 PNG: from its top-left corner, this wide and high (the rest is
+     * empty): it is centred on its drawing, not on its PNG.
+     */
+    static final int CARDS_W = 8, CARDS_H = 9;
+
+    /** The picked cards, its drawing's top-left corner at ({@code x}, {@code y}). */
     static void cards(DrawContext context, int x, int y) {
         draw(context, "cards", x, y, 10, 10, false);
     }

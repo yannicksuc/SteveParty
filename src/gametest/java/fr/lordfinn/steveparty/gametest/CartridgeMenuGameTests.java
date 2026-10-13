@@ -275,7 +275,7 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                                 context.assertTrue(confirm <= moduleW - 2 - 4, name + ": « Delete? Yes No » on one line (" + confirm + ")");
                                 // Under the box, beside the draws: « + Add » with its word
                                 int add = width(translate(lang, k + "add", context)) + 17;
-                                context.assertTrue(add <= moduleW - 63, name + ": « + " + translate(lang, k + "add", context) + " » fits (" + add + ")");
+                                context.assertTrue(add <= moduleW - 66, name + ": « + " + translate(lang, k + "add", context) + " » fits (" + add + ")");
                             }
                         }
                         // The ghost slots or a block slot: the player's inventory under the shell, to pick the items
