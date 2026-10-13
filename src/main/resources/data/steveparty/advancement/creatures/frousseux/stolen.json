@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:gold_nugget",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.frousseux.stolen.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.frousseux.stolen.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "stolen": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_stole"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "stolen"
+    ]
+  ]
+}

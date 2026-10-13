@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/glandouille/squash",
+  "display": {
+    "icon": {
+      "id": "minecraft:target",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.glandouille.strike.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.glandouille.strike.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "strike": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "glandouille_strike"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "strike"
+    ]
+  ]
+}

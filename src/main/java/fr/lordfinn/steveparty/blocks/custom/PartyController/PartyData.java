@@ -38,6 +38,8 @@ public class PartyData {
     private final ThresholdGates.State thresholdGates = new ThresholdGates.State();
     /** The prizes won at each Trichaudron space during this party: saved with the party, see TrichaudronPrizes. */
     private final TrichaudronPrizes.Won trichaudronWon = new TrichaudronPrizes.Won();
+    /** Bad spaces each player landed on during this party (advancements; not saved: counted again after a restart). */
+    private final Map<UUID, Integer> badLandings = new HashMap<>();
 
     // Constructor
     public PartyData() {
@@ -247,6 +249,7 @@ public class PartyData {
         this.traps.clear();
         this.thresholdGates.reset();
         this.trichaudronWon.reset();
+        this.badLandings.clear();
     }
 
     /** The hidden traps set with the Trap power-up during this party (see {@code TrapEffect}). */
@@ -262,6 +265,11 @@ public class PartyData {
     /** The prizes won at the Trichaudron spaces during this party (see {@code TrichaudronPrizes}). */
     public TrichaudronPrizes.Won getTrichaudronWon() {
         return trichaudronWon;
+    }
+
+    /** {@code player} landed on a bad space once more. @return how many they landed on during this party */
+    public int addBadLanding(UUID player) {
+        return badLandings.merge(player, 1, Integer::sum);
     }
 
     public int getNbTurn() {

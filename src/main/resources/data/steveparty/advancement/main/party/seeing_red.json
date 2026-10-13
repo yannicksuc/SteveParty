@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:red_plastic_block",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.seeing_red.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.seeing_red.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "red": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "landed_bad",
+        "value": {
+          "min": 3
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "red"
+    ]
+  ]
+}

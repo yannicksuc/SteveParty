@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/magpie/feed",
+  "display": {
+    "icon": {
+      "id": "minecraft:elytra",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.magpie.long_flight.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.magpie.long_flight.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "flight": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "magpie_long_flight"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "flight"
+    ]
+  ]
+}

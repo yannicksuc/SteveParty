@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:creatures/glandouille/plant",
+  "display": {
+    "icon": {
+      "id": "steveparty:young_glandouille_spawn_egg",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.glandouille.young.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.glandouille.young.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "young": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "glandouille_hatched",
+        "value": 1
+      }
+    }
+  },
+  "requirements": [
+    [
+      "young"
+    ]
+  ],
+  "rewards": {
+    "experience": 100
+  }
+}

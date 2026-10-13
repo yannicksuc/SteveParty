@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/trichaudron/drain",
+  "display": {
+    "icon": {
+      "id": "minecraft:shield",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.trichaudron.shield.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.trichaudron.shield.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "blocked": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "trichaudron_shield"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "blocked"
+    ]
+  ]
+}

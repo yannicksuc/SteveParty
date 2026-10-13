@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/board/first_tile",
+  "display": {
+    "icon": {
+      "id": "steveparty:tile_linker_brush",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.tile_linker_brush.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.tile_linker_brush.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "linked": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "tiles_linked"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "linked"
+    ]
+  ]
+}

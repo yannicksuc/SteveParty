@@ -1,0 +1,35 @@
+{
+  "parent": "steveparty:creatures/trichaudron/tame",
+  "display": {
+    "icon": {
+      "id": "minecraft:lead",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.trichaudron.crew.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.trichaudron.crew.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "crew": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "trichaudron_riders",
+        "value": {
+          "min": 3
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "crew"
+    ]
+  ],
+  "rewards": {
+    "experience": 100
+  }
+}

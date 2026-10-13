@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/frousseux/tamed",
+  "display": {
+    "icon": {
+      "id": "steveparty:frousseux_candle_holder",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.frousseux.candle_holder.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.frousseux.candle_holder.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "holder": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_candle_holder"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "holder"
+    ]
+  ]
+}

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.dice.DiceModule;
@@ -359,6 +360,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             DiceReveal.send(this, faces.size(), faces, total);
             this.lastThrow = new DiceThrow(faces, announced);
             DiceThrowRevealed.EVENT.invoker().onRevealed(this, this.getOwner().orElse(null), lastThrow);
+            PartyAdvancements.rolled(this, faces);
         }
         this.getOwner().ifPresent(owner -> DiceRollEvent.EVENT.invoker().onRoll(this, owner, announced.steps()));
         modules.forEach((module, count) -> module.afterRoll(this, announced, count));

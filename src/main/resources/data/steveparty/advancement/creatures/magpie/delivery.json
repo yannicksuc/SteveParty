@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/magpie/nest",
+  "display": {
+    "icon": {
+      "id": "minecraft:gold_nugget",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.magpie.delivery.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.magpie.delivery.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "delivery": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "magpie_delivery"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "delivery"
+    ]
+  ]
+}

@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.screen_handlers.PlayerSlots;
@@ -87,6 +89,12 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             @Override
             public boolean canInsert(ItemStack stack) {
                 return false;
+            }
+
+            @Override
+            public void onTakeItem(PlayerEntity player, ItemStack stack) {
+                ModCriteria.fire(player, "dice_forged", DiceFacesComponent.facesOf(stack).size());
+                super.onTakeItem(player, stack);
             }
         });
 
@@ -221,6 +229,7 @@ public class DiceForgeScreenHandler extends ScreenHandler {
                 slot.markDirty();
             }
             if (stackInSlot.getCount() == itemStack.getCount()) return ItemStack.EMPTY;
+            if (index == OUTPUT_SLOT) slot.onTakeItem(player, itemStack);
         }
 
         return itemStack;

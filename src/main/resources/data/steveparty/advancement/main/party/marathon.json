@@ -1,0 +1,35 @@
+{
+  "parent": "steveparty:main/party/finish",
+  "display": {
+    "icon": {
+      "id": "steveparty:step_controller",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.marathon.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.marathon.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "long": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "party_finished",
+        "value": {
+          "min": 20
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "long"
+    ]
+  ],
+  "rewards": {
+    "experience": 100
+  }
+}

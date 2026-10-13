@@ -1,0 +1,42 @@
+{
+  "parent": "steveparty:wild_cards/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:bone",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.wild_cards.roll_the_bones.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.wild_cards.roll_the_bones.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "rolled": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "roll_over",
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "#minecraft:skeletons"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "rolled"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

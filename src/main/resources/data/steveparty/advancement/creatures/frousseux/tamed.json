@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:frousseux_spawn_egg",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.frousseux.tamed.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.frousseux.tamed.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ]
+}

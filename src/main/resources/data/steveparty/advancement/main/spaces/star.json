@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:party_star",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.spaces.star.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.spaces.star.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "bought": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "star_bought"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "bought"
+    ]
+  ],
+  "rewards": {
+    "experience": 25
+  }
+}

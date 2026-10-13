@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -264,6 +265,7 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
                 world.setBlockState(top, topState.with(FLAG, true).with(FACING, flagFacing(hit, player)), Block.NOTIFY_LISTENERS);
                 if (!player.isCreative()) stack.decrement(1);
                 world.playSound(null, top, SoundEvents.BLOCK_WOOL_FALL, SoundCategory.BLOCKS, 1f, 1f);
+                ModCriteria.fire(player, "flag_hung");
             }
             case DYE -> {
                 if (topPole != null) topPole.setFlagColor(FlagItem.dyeColor(((DyeItem) stack.getItem()).getColor()));

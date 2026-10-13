@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.effect.SquishEffect;
@@ -321,6 +322,7 @@ public class TokenizerWandItem extends Item {
         player.getItemCooldownManager().set(wand.getItem(), SPELL_COOLDOWN);
         playCastBurst(player, mob);
         if (othersHear) playCastSounds(player, mob);
+        ModCriteria.fire(player, resize ? "pawn_resized" : "pawn_tokenized", Math.round(size * 100), mob);
         return resize ? SpellResult.RESIZED : SpellResult.TOKENIZED;
     }
 
@@ -337,7 +339,9 @@ public class TokenizerWandItem extends Item {
             sendPlayerRefused(player);
             return SpellResult.NOT_ALLOWED;
         }
-        PawnPossessions.startSpell(target, player.getUuid(), clampTokenSize(target, requestedSize), sanitizeColor(requestedColor));
+        float size = clampTokenSize(target, requestedSize);
+        PawnPossessions.startSpell(target, player.getUuid(), size, sanitizeColor(requestedColor));
+        ModCriteria.fire(player, "pawn_tokenized", Math.round(size * 100), target);
         player.getItemCooldownManager().set(wand.getItem(), SPELL_COOLDOWN);
         playSpellEffects(target);
         playCastBurst(player, target);
@@ -401,6 +405,7 @@ public class TokenizerWandItem extends Item {
                 : Text.translatableWithFallback("message.steveparty.token_boss_refused",
                         "The spell can't take a boss (game rule stevepartyTokenizeBosses).");
         MessageUtils.sendToPlayer(player, message, MessageUtils.MessageType.ACTION_BAR);
+        ModCriteria.fire(player, "pawn_refused", mob);
     }
 
     private static void tokenizeEntity(MobEntity mob, PlayerEntity user, float size, int color) {

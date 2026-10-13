@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.mistigri;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -106,7 +107,7 @@ public final class MistigriSummoning {
         if (!isBlackCat(target) || !nearWitchHut(world, target.getBlockPos())) return;
         CatEntity cat = (CatEntity) target;
         if (unlucky(faces)) {
-            transform(world, cat);
+            ModCriteria.fire(die.getOnlineOwner(), "mistigri_summoned", transform(world, cat));
         } else {
             Vec3d at = cat.getPos().add(0, 0.5, 0);
             world.spawnParticles(ParticleTypes.SMOKE, at.x, at.y, at.z, 8, 0.2, 0.2, 0.2, 0.01);

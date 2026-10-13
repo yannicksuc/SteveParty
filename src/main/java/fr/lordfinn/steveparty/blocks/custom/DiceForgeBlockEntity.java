@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
@@ -226,6 +227,10 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     private UUID coreEntityId;
     /** Redstone input read once after placement/load (the block entity does not exist yet in onBlockAdded). */
     private boolean powerChecked = false;
+    /** Server, never saved: whether it was at its max level at the last check (null: not checked yet), its last dance. */
+    @Nullable
+    private Boolean wasMaxLevel;
+    private long lastDance = -1;
 
     private final PropertyDelegate properties = new PropertyDelegate() {
         @Override
@@ -380,7 +385,10 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             return;
         }
         syncCoreEntity((ServerWorld) world);
-        if (isActivated() && Math.floorMod(world.getTime() + pos.hashCode(), 20) == 0) conductMulas();
+        if (Math.floorMod(world.getTime() + pos.hashCode(), 20) == 0) {
+            if (isActivated()) conductMulas();
+            watchMaxLevel((ServerWorld) world);
+        }
 
         if (!powerChecked) {
             powerChecked = true;
@@ -769,6 +777,11 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         int eligible = dancers.size();
         int count = Math.min(MulaDances.CAP, eligible);
         int start = MulaDances.turnStart(world.getTime(), eligible);
+        long dance = Math.floorDiv(world.getTime(), MulaDances.DANCE_TICKS);
+        if (count > 0 && lastDance >= 0 && dance != lastDance) {
+            ModCriteria.fireNear((ServerWorld) world, Vec3d.ofCenter(pos), 16, "mula_dance", count, null);
+        }
+        if (count > 0) lastDance = dance;
         for (int j = 0; j < eligible; j++) {
             MulaEntity m = dancers.get((start + j) % eligible);
             if (j < count) m.assignDance(pos, j, count);
@@ -800,12 +813,25 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         }
     }
 
+    /** Server, once a second: reaching its max level is seen by the players around (an advancement), not on load. */
+    private void watchMaxLevel(ServerWorld world) {
+        boolean max = isMaxLevel();
+        if (max && Boolean.FALSE.equals(wasMaxLevel)) {
+            int black = 0;
+            for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
+                if (isInfiniteFragment(inventory.get(i))) black += inventory.get(i).getCount();
+            }
+            ModCriteria.fireNear(world, Vec3d.ofCenter(pos), 16, "forge_level_max", black, null);
+        }
+        wasMaxLevel = max;
+    }
+
     /** The risen core pulls what is around it: the higher, the stronger and the farther. */
     private void pullAround() {
         float lift = coreAltitude - CORE_BASE_LIFT;
         if (world == null || !isActivated() || lift <= 0) return;
         double height = Math.min(1, lift / MAX_CORE_ALTITUDE);
-        GravityPull.pullAround(world, getCoreCenter(), PULL_RANGE * height, PULL_STRENGTH * height, true, PULL_ORBIT);
+        GravityPull.pullAround(world, getCoreCenter(), PULL_RANGE * height, PULL_STRENGTH * height, true, PULL_ORBIT, false, 0);
     }
 
     /** Keeps the hitbox entity on the risen core (and removes it when there is no core, or it is too low to be hit). */
@@ -834,6 +860,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
      */
     public void explodeCore(@Nullable Entity cause) {
         if (!(world instanceof ServerWorld serverWorld) || !isActivated()) return;
+        ModCriteria.fire(cause instanceof PlayerEntity player ? player : null, "forge_core_exploded");
         Vec3d center = getCoreCenter();
         burstMulas(center);
         if (running) stop(false);

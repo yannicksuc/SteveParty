@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:advance_back_cartridge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.spaces.advance_back.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.spaces.advance_back.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "landed": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "landed_advance_back"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "landed"
+    ]
+  ]
+}

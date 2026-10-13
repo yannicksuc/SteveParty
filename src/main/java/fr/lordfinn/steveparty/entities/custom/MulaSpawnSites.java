@@ -294,12 +294,18 @@ public class MulaSpawnSites extends PersistentState {
      * @return true if one of his guide stars went out
      */
     public boolean visitAround(UUID player, BlockPos at, double reach) {
+        return visitAround(player, at, reach, () -> {});
+    }
+
+    /** {@link #visitAround(UUID, BlockPos, double)}, {@code firstVisit} run for each site he reaches for the first time. */
+    public boolean visitAround(UUID player, BlockPos at, double reach, Runnable firstVisit) {
         boolean guideLost = false;
         for (Site s : sites) {
             double dx = s.pos.getX() - at.getX(), dz = s.pos.getZ() - at.getZ();
             if (dx * dx + dz * dz > reach * reach || hasVisited(player, s.id)) continue;
             guideLost |= hasFound(player, s.id);
             markVisited(player, s.id);
+            firstVisit.run();
         }
         return guideLost;
     }

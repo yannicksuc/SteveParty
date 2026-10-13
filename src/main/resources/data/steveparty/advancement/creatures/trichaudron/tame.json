@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:creatures/trichaudron/drain",
+  "display": {
+    "icon": {
+      "id": "steveparty:trichaudron_spawn_egg",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.trichaudron.tame.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.trichaudron.tame.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "trichaudron_tamed"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ],
+  "rewards": {
+    "experience": 25
+  }
+}

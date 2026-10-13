@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:shop_cartridge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.spaces.shop.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.spaces.shop.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "bought": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "shop_bought"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "bought"
+    ]
+  ]
+}

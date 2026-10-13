@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -180,6 +181,8 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implemen
                     index -> cycleIndex = index, (pattern, count) -> moved.add(new Moved(pattern, count)));
             // The amounts float over the pig once (the player paid sees them there), and over each player paid
             if (paid) payoutEffects(serverWorld, player, moved, !succeeded);
+            int given = moved.stream().mapToInt(m -> Math.max(0, m.count())).sum();
+            if (paid && given > 0) ModCriteria.fire(player, "piggy_bank_payout", given);
             succeeded |= paid;
         }
         lastSucceeded = succeeded;

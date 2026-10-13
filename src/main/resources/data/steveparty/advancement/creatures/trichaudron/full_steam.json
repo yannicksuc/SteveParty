@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/trichaudron/tame",
+  "display": {
+    "icon": {
+      "id": "minecraft:blaze_powder",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.trichaudron.full_steam.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.trichaudron.full_steam.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "jet": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "trichaudron_jet"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "jet"
+    ]
+  ]
+}

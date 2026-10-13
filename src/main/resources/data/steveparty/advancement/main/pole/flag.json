@@ -15,24 +15,9 @@
   },
   "criteria": {
     "flag": {
-      "trigger": "minecraft:item_used_on_block",
+      "trigger": "steveparty:event",
       "conditions": {
-        "location": [
-          {
-            "condition": "minecraft:location_check",
-            "predicate": {
-              "block": {
-                "blocks": "steveparty:goal_pole"
-              }
-            }
-          },
-          {
-            "condition": "minecraft:match_tool",
-            "predicate": {
-              "items": "steveparty:flag"
-            }
-          }
-        ]
+        "event": "flag_hung"
       }
     }
   },

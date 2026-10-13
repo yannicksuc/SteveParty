@@ -210,6 +210,13 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         return (int) Math.min(Integer.MAX_VALUE, count);
     }
 
+    /** Server: how many of its slots are full ({@link #SLOT_LIMIT} things). */
+    public int getFullSlots() {
+        int full = 0;
+        for (ItemStack slot : slots) if (slot.getCount() >= SLOT_LIMIT) full++;
+        return full;
+    }
+
     /**
      * Server, the pot won: everything it holds comes out (copies, a stack per slot, its count maybe above its stack
      * size), the nest empty.

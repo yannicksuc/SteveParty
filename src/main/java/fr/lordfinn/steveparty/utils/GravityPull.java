@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.utils;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
@@ -10,12 +11,16 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * The pull of a gravity core, like a small planet: the entities around it are drawn to it, the way the dice float to
@@ -43,6 +48,9 @@ public final class GravityPull {
     public static final double SNEAK_SLOW = 0.35;
     /** A player pulled by a lone gravity core is reminded how to break free this often (ticks). */
     private static final int HINT_TICKS = 40;
+    /** How far from its orbit (blocks, across and up) an entity counts as orbiting, and when each was last seen so. */
+    private static final double ORBIT_TOLERANCE = 0.75;
+    private static final Map<Entity, Long> ORBITING = new WeakHashMap<>();
 
     private GravityPull() {
     }
@@ -66,16 +74,40 @@ public final class GravityPull {
      */
     public static void pullAround(World world, Vec3d core, double range, double strength, boolean falloff, double orbit,
                                   boolean sneakSlows) {
+        pullAround(world, core, range, strength, falloff, orbit, sneakSlows, -1);
+    }
+
+    /**
+     * @param orbitValue the {@code entity_orbiting} advancement event's value for what reaches its orbit here (0: a
+     *                   Dice Forge, 1: a Gravity Core), -1 for none
+     * @see #pullAround(World, Vec3d, double, double, boolean, double, boolean)
+     */
+    public static void pullAround(World world, Vec3d core, double range, double strength, boolean falloff, double orbit,
+                                  boolean sneakSlows, int orbitValue) {
         if (range <= 0 || strength <= 0) return;
         Box area = new Box(core, core).expand(range);
+        boolean watch = orbitValue >= 0 && world instanceof ServerWorld && world.getTime() % 20 == 0;
         for (Entity entity : world.getOtherEntities(null, area, e -> isPulledHere(e, world.isClient))) {
             double pace = sneakSlows && entity instanceof PlayerEntity && entity.isSneaking() ? SNEAK_SLOW : 1;
             boolean pulled = pull(entity, core, range, strength, falloff, orbit, pace);
+            if (pulled && watch) orbiting((ServerWorld) world, entity, core, orbit, orbitValue);
             // Only the local player is pulled on the client: the hint stays on its action bar while it is pulled
             if (pulled && sneakSlows && entity instanceof PlayerEntity player && entity.age % HINT_TICKS == 0) {
                 player.sendMessage(Text.translatable("message.steveparty.gravity_core.pulled").formatted(Formatting.LIGHT_PURPLE), true);
             }
         }
+    }
+
+    /** Server, once a second: what circles on its orbit is seen orbiting (an advancement), once per 5 s per entity. */
+    private static void orbiting(ServerWorld world, Entity entity, Vec3d core, double orbit, int orbitValue) {
+        Vec3d at = entity.getBoundingBox().getCenter();
+        double dx = at.x - core.x, dz = at.z - core.z;
+        if (Math.abs(Math.sqrt(dx * dx + dz * dz) - orbit) > ORBIT_TOLERANCE || Math.abs(at.y - core.y) > ORBIT_TOLERANCE) return;
+        long now = world.getTime();
+        Long last = ORBITING.get(entity);
+        if (last != null && now - last < 100) return;
+        ORBITING.put(entity, now);
+        ModCriteria.fireNear(world, core, 32, "entity_orbiting", orbitValue, entity);
     }
 
     private static boolean isPulledHere(Entity entity, boolean client) {

@@ -1,0 +1,37 @@
+{
+  "parent": "steveparty:creatures/magpie/feed",
+  "display": {
+    "icon": {
+      "id": "minecraft:feather",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.magpie.chick.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.magpie.chick.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "bred": {
+      "trigger": "minecraft:bred_animals",
+      "conditions": {
+        "child": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:wild_magpie"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "bred"
+    ]
+  ]
+}

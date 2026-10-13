@@ -1,0 +1,40 @@
+{
+  "parent": "steveparty:creatures/mistigri/summon",
+  "display": {
+    "icon": {
+      "id": "minecraft:cod",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.mistigri.tame.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.mistigri.tame.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mistigri"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ],
+  "rewards": {
+    "experience": 25
+  }
+}

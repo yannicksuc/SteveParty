@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:glandouille_spawn_egg",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.glandouille.squash.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.glandouille.squash.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "squashed": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "glandouille_squashed"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "squashed"
+    ]
+  ]
+}

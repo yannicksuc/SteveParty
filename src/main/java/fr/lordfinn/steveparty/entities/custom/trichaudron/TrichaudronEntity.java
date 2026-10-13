@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.mixin.LivingEntityJumpingAccessor;
 import fr.lordfinn.steveparty.particles.ModParticles;
@@ -606,6 +607,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         player.setStackInHand(hand, ItemUsage.exchangeStack(player.getStackInHand(hand), player, new ItemStack(Items.LAVA_BUCKET)));
         playSound(SoundEvents.ITEM_BUCKET_FILL_LAVA, 1.0f, 1.0f);
         playSound(ModSounds.TRICHAUDRON_GURGLE, 0.8f, 1.0f);
+        if (getTank() == 0) ModCriteria.fire(player, "trichaudron_drained", this);
         if (getTank() == 0 && !isTamed()) { // emptied: a sigh, its heads sulking a moment
             getWorld().sendEntityStatus(this, STATUS_EMPTIED);
             playSound(SoundEvents.BLOCK_FIRE_EXTINGUISH, 1.0f, 0.5f);
@@ -619,6 +621,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         setPersistent();
         setTarget(null);
         getWorld().sendEntityStatus(this, STATUS_TAMED);
+        ModCriteria.fire(player, "trichaudron_tamed", this);
     }
 
     /** The middle of a head (a little behind its nozzle). */
@@ -657,6 +660,8 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
     private void mount(PlayerEntity player) {
         player.setYaw(getYaw());
         player.startRiding(this);
+        int players = (int) getPassengerList().stream().filter(rider -> rider instanceof PlayerEntity).count();
+        for (Entity rider : getPassengerList()) if (rider instanceof PlayerEntity p) ModCriteria.fire(p, "trichaudron_riders", players, this);
         if (!isTamed()) {
             scheduleThrow();
             if (!isEmptier(player)) provoke(player); // a stranger climbing on: once thrown off, it fights him
@@ -770,6 +775,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         int head = random.nextInt(HEADS.length);
         rider.stopRiding();
         if (!(getWorld() instanceof ServerWorld world)) return;
+        if (rider instanceof PlayerEntity player) ModCriteria.fire(player, "trichaudron_bucked", this);
         Vec3d from = nozzle(head);
         Vec3d away = rider.getPos().subtract(getPos());
         away = new Vec3d(away.x, 0, away.z);
@@ -781,6 +787,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         world.sendEntityStatus(this, (byte) (STATUS_SULK + head));
         if (rider instanceof LivingEntity living) {
             if (TrichaudronBlast.shields(living, rider.getPos().subtract(from).normalize())) {
+                if (living instanceof PlayerEntity player) ModCriteria.fire(player, "trichaudron_shield", this);
                 world.playSound(null, rider.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 0.8f);
                 return;
             }
@@ -949,6 +956,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         aimHeadAt(head, aim, true);
         setVent(head, VENT_SPITTING);
         TrichaudronBlast.fire(this, head, blastOrigin(head), aim);
+        ModCriteria.fire(rider, "trichaudron_jet", this);
         ventIdleAt[head] = now + 10;
     }
 

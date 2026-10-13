@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.enchantment.Enchantment;
@@ -131,6 +132,7 @@ public final class TrichaudronBlast {
                 .entryOf(TrichaudronEntity.THERMAL_STEAM), trichaudron);
         for (LivingEntity entity : inJet) {
             if (shields(entity, dir)) {
+                if (entity instanceof PlayerEntity player) ModCriteria.fire(player, "trichaudron_shield", trichaudron);
                 length = Math.max(0.5, along(entity, from, dir, Double.MAX_VALUE, Double.MAX_VALUE) - entity.getWidth() * 0.5);
                 world.playSound(null, entity.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 0.8f);
                 blocked = true;

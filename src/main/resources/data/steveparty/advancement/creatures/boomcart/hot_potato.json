@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/boomcart/load",
+  "display": {
+    "icon": {
+      "id": "minecraft:flint_and_steel",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.boomcart.hot_potato.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.boomcart.hot_potato.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "relaunched": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "boomcart_relaunched"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "relaunched"
+    ]
+  ]
+}

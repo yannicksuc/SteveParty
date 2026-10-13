@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.service.BoardActors;
@@ -846,6 +847,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity, Boar
         }
         // A shop stop counts its purchases (it sells a limited number of items)
         if (activeScreenHandler instanceof ShopStopScreenHandler shopStop) shopStop.onPurchase();
+        firePurchase(getCustomer());
         refreshOfferAvailability();
         updateTradesToClient(getCustomer(), 0);
         triggerCashRegisters();
@@ -856,6 +858,18 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity, Boar
             passenger.setSilent(silentStatus);
         } else
             this.playSound(SoundEvents.ENTITY_VILLAGER_TRADE, 1.0F, this.getSoundPitch());
+    }
+
+    /** The advancements of a sale: a Shop space's, or a player's shop (its owner sold something). */
+    private void firePurchase(@Nullable PlayerEntity buyer) {
+        if (buyer == null) return;
+        if (boardShop != null) {
+            ModCriteria.fire(buyer, "shop_bought", this);
+            return;
+        }
+        ModCriteria.fire(buyer, "player_shop_bought", this);
+        UUID owner = getOwnerUuid();
+        if (owner != null && !owner.equals(buyer.getUuid())) ModCriteria.fire(getServer(), owner, "player_shop_sold", 1, this);
     }
 
     private void triggerCashRegisters() {

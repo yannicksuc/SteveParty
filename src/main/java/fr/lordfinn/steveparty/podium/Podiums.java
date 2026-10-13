@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.podium;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Block;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.StepControllerBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
 import com.mojang.authlib.GameProfile;
@@ -233,6 +234,7 @@ public final class Podiums {
         world.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.BLOCKS, 0.6f, 1.2f);
 
         player.sendMessage(Text.translatable("message.steveparty.podium.registered", placeText(place)).formatted(Formatting.GOLD), true);
+        ModCriteria.fire(player, "podium_claimed", place);
         for (UUID gone : ousted) {
             ServerPlayerEntity loser = world.getServer().getPlayerManager().getPlayer(gone);
             if (loser != null && loser != player)

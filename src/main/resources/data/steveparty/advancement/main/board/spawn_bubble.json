@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:main/board/first_tile",
+  "display": {
+    "icon": {
+      "id": "steveparty:spawn_marker",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.spawn_bubble.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.spawn_bubble.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:spawn_marker"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

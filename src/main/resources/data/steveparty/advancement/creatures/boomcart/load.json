@@ -1,0 +1,58 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:tnt",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.boomcart.load.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.boomcart.load.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "tnt": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:boomcart"
+            }
+          }
+        ],
+        "item": {
+          "items": "minecraft:tnt"
+        }
+      }
+    },
+    "rocket": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:boomcart"
+            }
+          }
+        ],
+        "item": {
+          "items": "minecraft:firework_rocket"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tnt",
+      "rocket"
+    ]
+  ]
+}

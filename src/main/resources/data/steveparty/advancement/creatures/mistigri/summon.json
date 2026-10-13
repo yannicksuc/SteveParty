@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:mistigri_spawn_egg",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.mistigri.summon.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.mistigri.summon.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "summoned": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "mistigri_summoned"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "summoned"
+    ]
+  ]
+}

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
+import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
@@ -572,6 +573,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             partyController.nextStep();
             return;
         }
+        PartyAdvancements.landed(token, this, behavior, partyController);
         behavior.onDestinationReached(this.world, this.pos, token, this, partyController);
         if (!behavior.keepsTurn(token)) partyController.nextStep();
     }

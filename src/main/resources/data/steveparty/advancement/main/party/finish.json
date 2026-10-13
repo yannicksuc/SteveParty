@@ -1,0 +1,30 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:flag",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.finish.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.finish.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "ended": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "party_finished"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "ended"
+    ]
+  ],
+  "rewards": {}
+}

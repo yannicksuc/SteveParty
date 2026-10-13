@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.boomcart;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -313,6 +314,7 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity, BoardA
         retarget(player.getUuid());
         playSound(ModSounds.BOOMCART_LIGHT, 1.0f, 1.0f);
         if (result == BoomcartFuse.Result.PASSED) {
+            ModCriteria.fire(player, "boomcart_relaunched", this);
             player.sendMessage(fuse.extension() > 0
                     ? Text.translatable("message.steveparty.boomcart.passed", fuse.extension() / 20)
                     : Text.translatable("message.steveparty.boomcart.passed_last"), true);
@@ -385,6 +387,17 @@ public class BoomcartEntity extends PathAwareEntity implements GeoEntity, BoardA
         }
         Vec3d at = getPos().add(0, HEIGHT * 0.6, 0);
         playSound(ModSounds.BOOMCART_EXPLODE, 1.0f, 1.0f);
+        PlayerEntity lighter = fuse.last() == null ? null : world.getPlayerByUuid(fuse.last());
+        if (lighter != null) {
+            double reach = carriesFirework() ? BURST_RADIUS : TNT_POWER * 2; // who the blast reaches
+            for (PlayerEntity player : world.getPlayers()) {
+                if (player != lighter && player.isAlive() && !player.isSpectator() && player.squaredDistanceTo(at) <= reach * reach) {
+                    ModCriteria.fire(lighter, "boomcart_blast_other", this);
+                    break;
+                }
+            }
+            if (carriesFirework()) ModCriteria.fire(lighter, "boomcart_fireworks", this);
+        }
         if (carriesFirework()) {
             show = burstOf(getLoad());
             world.sendEntityStatus(this, BURST_STATUS);

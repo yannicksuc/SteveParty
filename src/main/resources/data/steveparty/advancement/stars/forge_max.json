@@ -1,0 +1,35 @@
+{
+  "parent": "steveparty:stars/ignition",
+  "display": {
+    "icon": {
+      "id": "steveparty:dice_forge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.forge_max.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.forge_max.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "max": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "forge_level_max"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "max"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/star_fragment"
+    ]
+  }
+}

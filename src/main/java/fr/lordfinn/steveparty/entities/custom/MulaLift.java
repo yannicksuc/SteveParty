@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -104,6 +105,7 @@ public final class MulaLift {
                 MulaEntity first = mulas.get(0);
                 world.playSound(null, first.getX(), first.getY(), first.getZ(), SoundEvents.ENTITY_ALLAY_ITEM_GIVEN,
                         SoundCategory.NEUTRAL, 0.5f, 1.3f * first.voice());
+                ModCriteria.fire(player, "mula_lifted", mulas.size());
             }
             state.carried = true;
             state.releaseTicks = 0;

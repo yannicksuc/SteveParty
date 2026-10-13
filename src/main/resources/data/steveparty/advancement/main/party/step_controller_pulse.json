@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/party/step_controller",
+  "display": {
+    "icon": {
+      "id": "minecraft:redstone",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.step_controller_pulse.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.step_controller_pulse.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "pulse": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "step_controller_pulse"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "pulse"
+    ]
+  ]
+}

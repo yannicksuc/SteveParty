@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -226,6 +227,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         boolean done;
         if (driven.party() != null) {
             done = StepPulse.apply(driven.party(), mode);
+            if (done) ModCriteria.fireNear(serverWorld, this.pos.toCenterPos(), 16, "step_controller_pulse", mode.ordinal() + 1, null);
         } else {
             MiniGameSession session = driven.session();
             done = session != null && session.step(mode);

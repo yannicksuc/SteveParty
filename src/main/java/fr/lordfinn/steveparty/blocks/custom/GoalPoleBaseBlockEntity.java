@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.authlib.GameProfile;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import com.mojang.brigadier.StringReader;
@@ -565,7 +566,9 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
             }
             cursor.move(Direction.UP);
         }
-        if (reached) Podiums.onGoalReached(this, holder);
+        if (!reached) return;
+        ModCriteria.fire(world.getServer().getPlayerManager().getPlayer(holder), "pole_goal_reached");
+        Podiums.onGoalReached(this, holder);
     }
 
     // ------------------------------------------------------------------ sides: a player, or a team

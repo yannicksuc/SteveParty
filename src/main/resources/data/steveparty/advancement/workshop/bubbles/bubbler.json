@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:workshop/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:bubbler",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.bubbles.bubbler.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.bubbles.bubbler.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:bubbler"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

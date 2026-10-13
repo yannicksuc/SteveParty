@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:workshop/bubbles/boost",
+  "display": {
+    "icon": {
+      "id": "minecraft:pufferfish",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.bubbles.overinflated.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.bubbles.overinflated.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "pop": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "bubble_strain_pop"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "pop"
+    ]
+  ]
+}

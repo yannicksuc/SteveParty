@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.minigame;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
@@ -539,6 +540,7 @@ public final class MiniGameTest implements MiniGameSession {
                     ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
                     return player != null ? player.getGameProfile().getName() : uuid.toString().substring(0, 8);
                 }).asTest();
+        places.forEach((uuid, place) -> ModCriteria.fire(server, uuid, "minigame_test", place, null));
         // The results are read: the round is over, inventories and zone are given back
         arena.end();
         send(new MiniGamePagePayloads.Results(results));

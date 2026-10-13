@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:workshop/bubbles/ride",
+  "display": {
+    "icon": {
+      "id": "minecraft:slime_ball",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.bubbles.merge.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.bubbles.merge.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "merge": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "bubble_merge"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "merge"
+    ]
+  ]
+}

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
+import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.nbt.NbtCompound;
@@ -39,6 +40,7 @@ public class EndPartyStep extends PartyStep {
         super.start(partyControllerEntity);
         if (!(partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)) return;
 
+        PartyAdvancements.partyEnded(partyControllerEntity, serverWorld);
         // Release every token of the party so they are no longer considered in game
         // (the tokens that are not loaded are released as soon as they are loaded again)
         Set<UUID> allTokens = new LinkedHashSet<>(partyControllerEntity.getPartyData().getTokens());

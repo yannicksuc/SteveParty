@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:main/pawns/first_pawn",
+  "display": {
+    "icon": {
+      "id": "steveparty:token",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pawns.tiny_pawn.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pawns.tiny_pawn.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "tiny": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "pawn_tokenized",
+        "value": {
+          "max": 30
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tiny"
+    ]
+  ]
+}

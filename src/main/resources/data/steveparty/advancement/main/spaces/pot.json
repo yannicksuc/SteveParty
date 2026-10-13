@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:pot_cartridge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.spaces.pot.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.spaces.pot.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "won": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "pot_won"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "won"
+    ]
+  ],
+  "rewards": {
+    "experience": 25
+  }
+}

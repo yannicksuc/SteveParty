@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.bubble;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.BubblerBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.effect.ModEffects;
@@ -533,6 +534,7 @@ public class BubbleEntity extends Entity {
                 if (charge < BubbleRiding.CHARGE_MIN) continue;
                 Vec3d look = player.getRotationVector();
                 push = push.add(BubbleRiding.puff(charge, look, riders.size()));
+                ModCriteria.fire(player, "bubble_boost", 100 * charge / BubbleRiding.CHARGE_MAX);
                 rested.put(id, life + BubbleRiding.PUFF_COOLDOWN);
                 Vec3d behind = center().subtract(look.multiply(getSide() / 2));
                 world.spawnParticles(ParticleTypes.CLOUD, behind.x, behind.y, behind.z, 5, 0.12, 0.12, 0.12, 0.03);
@@ -540,6 +542,7 @@ public class BubbleEntity extends Entity {
                 world.playSound(null, behind.x, behind.y, behind.z, ModSounds.BUBBLE_WHOOSH, SoundCategory.PLAYERS, 0.7f,
                         1.2f - (float) BubbleRiding.puffStrength(charge) * 0.3f);
                 if (strainedPuff(world)) {
+                    for (Entity popped : riders) ModCriteria.fire(popped instanceof PlayerEntity p ? p : null, "bubble_strain_pop");
                     pop();
                     return Vec3d.ZERO;
                 }
@@ -649,6 +652,8 @@ public class BubbleEntity extends Entity {
             world.playSound(null, center.x, center.y, center.z, ModSounds.BUBBLE_MERGE, SoundCategory.PLAYERS, 0.8f, 0.8f);
             world.spawnParticles(ParticleTypes.BUBBLE_POP, center.x, center.y, center.z, 12, getSide() / 3, getSide() / 3, getSide() / 3, 0.02);
         }
+        int count = getPassengerList().size();
+        for (Entity rider : getPassengerList()) ModCriteria.fire(rider instanceof PlayerEntity p ? p : null, "bubble_merge", count);
     }
 
     // ---------------------------------------------------------------- riders

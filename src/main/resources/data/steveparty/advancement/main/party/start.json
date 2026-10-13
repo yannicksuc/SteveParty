@@ -1,0 +1,30 @@
+{
+  "parent": "steveparty:main/party/party_controller",
+  "display": {
+    "icon": {
+      "id": "steveparty:party_controller",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.start.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.start.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "started": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "party_started"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "started"
+    ]
+  ],
+  "rewards": {}
+}
