@@ -43,14 +43,14 @@ final class MistigriIcons {
     }
 
     /**
-     * The picked cards' drawing inside its 10 × 10 PNG: from its top-left corner, this wide and high (the rest is
-     * empty): it is centred on its drawing, not on its PNG.
+     * The picked cards' drawing inside its 10 × 10 PNG: from {@link #CARDS_X} pixels in, this wide and high (the rest
+     * is empty): it is centred on its drawing, not on its PNG.
      */
-    static final int CARDS_W = 8, CARDS_H = 9;
+    static final int CARDS_X = 1, CARDS_W = 8, CARDS_H = 10;
 
     /** The picked cards, its drawing's top-left corner at ({@code x}, {@code y}). */
     static void cards(DrawContext context, int x, int y) {
-        draw(context, "cards", x, y, 10, 10, false);
+        draw(context, "cards", x - CARDS_X, y, 10, 10, false);
     }
 
     /**
