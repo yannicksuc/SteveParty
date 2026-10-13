@@ -470,10 +470,11 @@ public final class MiniGameTest implements MiniGameSession {
         // Away in this mini-game from now on (nobody in two mini-games at once): free pipes, the linked pipes closed,
         // the chip at the top of the screen
         for (UUID uuid : returns.keySet()) MiniGamePipes.enterParty(uuid, pageId, () -> !closed);
-        Text start = Text.translatable("message.steveparty.minigame.test.start", players.size(), formatName()).formatted(Formatting.GOLD);
+        Text start = Text.translatable("message.steveparty.minigame.test.start" + (players.size() == 1 ? ".one" : ""), players.size(), formatName())
+                .formatted(Formatting.GOLD);
         for (ServerPlayerEntity player : audience()) {
             // Those taken in it can leave it from the chat
-            player.sendMessage(returns.containsKey(player.getUuid()) ? start.copy().append(" ").append(leaveButton()) : start, false);
+            player.sendMessage(returns.containsKey(player.getUuid()) ? start.copy().append("\n").append(leaveButton()) : start, false);
         }
         countdown(countdownSeconds);
     }

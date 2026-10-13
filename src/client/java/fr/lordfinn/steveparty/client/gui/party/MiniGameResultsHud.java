@@ -91,8 +91,8 @@ public final class MiniGameResultsHud {
     private static void drawTestLabel(DrawContext context, String title) {
         if (MiniGamePracticeHud.practice() != null) return;
         TextRenderer font = HudDraw.font();
-        Text name = title.isEmpty() ? Text.translatable("item.steveparty.mini_game_page") : Text.literal(title);
-        Text text = Text.translatable("hud.steveparty.minigame.in", name);
+        Text text = title.isEmpty() ? Text.translatable("hud.steveparty.minigame.in.untitled")
+                : Text.translatable("hud.steveparty.minigame.in", Text.literal(title));
         // One line at most the screen's width - 40: a longer one scrolls in the chip
         int textWidth = Math.min(font.getWidth(text), context.getScaledWindowWidth() - 40);
         float[] spot = PartyHud.practiceSpot(context.getScaledWindowWidth());

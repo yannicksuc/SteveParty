@@ -88,7 +88,7 @@ public final class PartyLeave {
     public static void tellHowToLeave(ServerPlayerEntity player, PartyControllerEntity controller) {
         player.sendMessage(Text.translatableWithFallback("message.steveparty.party_joined", "Party running: Party Controller at %s.",
                         where(player, controller.getGlobalPos())).formatted(Formatting.GRAY)
-                .append(" ").append(leaveButton()), false);
+                .append("\n").append(leaveButton()), false);
     }
 
     /** « [Leave the party] », running {@link #COMMAND}. */

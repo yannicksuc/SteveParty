@@ -46,6 +46,8 @@ public final class MiniGameFreeze {
     public static final int SECONDS = 3;
     private static final Identifier MODIFIER = Steveparty.id("mini_game_freeze");
     private static final int FADE_IN = 0, STAY = 25, FADE_OUT = 5;
+    /** Ticks before the first number: the card of the mini-game is still fading out, everyone is still coming out. */
+    private static final int LEAD_TICKS = 10;
 
     /** A countdown: those it freezes, those who see it, the title over the numbers, and whether the round is still on. */
     private record Countdown(Set<UUID> frozen, Set<UUID> audience, Text title, int start, BooleanSupplier stillOn) {
@@ -98,9 +100,7 @@ public final class MiniGameFreeze {
         for (ServerPlayerEntity player : audience) watching.add(player.getUuid());
         watching.addAll(frozen);
         Text title = name.isEmpty() ? Text.empty() : Text.literal(name).styled(style -> style.withColor(0xFFC52E).withBold(true));
-        Countdown countdown = new Countdown(frozen, watching, title, server.getTicks(), stillOn);
-        RUNNING.add(countdown);
-        show(server, countdown, SECONDS);
+        RUNNING.add(new Countdown(frozen, watching, title, server.getTicks() + LEAD_TICKS, stillOn));
     }
 
     private static void tick(MinecraftServer server) {
@@ -111,7 +111,7 @@ public final class MiniGameFreeze {
                 end(server, countdown, false);
                 continue;
             }
-            if (elapsed <= 0 || elapsed % 20 != 0) continue;
+            if (elapsed < 0 || elapsed % 20 != 0) continue;
             int left = SECONDS - elapsed / 20;
             if (left > 0) show(server, countdown, left);
             else end(server, countdown, true);
@@ -120,7 +120,7 @@ public final class MiniGameFreeze {
 
     /** The title with {@code left} under it (or alone without a title), and a tick of sound. */
     private static void show(MinecraftServer server, Countdown countdown, int left) {
-        Text number = Text.literal(Integer.toString(left)).styled(style -> style.withColor(0xFFFFFF).withBold(true));
+        Text number = Text.literal(Integer.toString(left)).styled(style -> style.withColor(0xFFC52E).withBold(true));
         for (UUID uuid : countdown.audience()) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
             if (player == null) continue;
