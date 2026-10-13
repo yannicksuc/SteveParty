@@ -1,6 +1,9 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
+import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
@@ -9,6 +12,7 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.PageZoneTool;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -20,19 +24,22 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.world.World;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.utils.RaycastUtils.isTargetingBlock;
 
 /**
  * A page of the mini-games catalogue. The item only carries the id of the page ({@link MiniGamePageRef}): what the
  * page says (title, description, picture, accepted team layouts, players) is kept by the server
- * ({@link MiniGamePages}), so every copy of a page shows the same thing. Right-clicked in hand, it opens its editor;
- * a click on a pipe mouth links that pipe to the page, or unlinks it (see {@code PipeBlock}, {@code MiniGamePipes#click}).
+ * ({@link MiniGamePages}), so every copy of a page shows the same thing. Right-clicked in hand, it opens its editor,
+ * in the air or on any block but one it links or goes in ({@link #actsOn}); a click on a pipe mouth links that pipe
+ * to the page, or unlinks it (see {@code PipeBlock}, {@code MiniGamePipes#click}). In the hand of who may edit it,
+ * it forgets every second the links to blocks that are gone ({@link MiniGamePages#purgeDeadLinks}).
  * In zone mode, its clicks draw the zone of the page instead ({@link PageZoneTool}); sneak + right-click in the air
  * ends the mode, and so does putting it away (out of the hands).
  */
@@ -58,8 +65,8 @@ public class MiniGamePageItem extends Item {
             return TypedActionResult.pass(player.getStackInHand(hand));
         }
 
-        // Prevent opening the editor if the player is targeting a block or an entity
-        if (isTargetingBlock(player)) {
+        // Not on a block it links or goes in (a click it did nothing with: not allowed, the other hand...)
+        if (aimsAtWhatItActsOn(player, world)) {
             return TypedActionResult.pass(player.getStackInHand(hand));
         }
 
@@ -68,6 +75,16 @@ public class MiniGamePageItem extends Item {
         }
 
         return TypedActionResult.success(player.getStackInHand(hand), world.isClient());
+    }
+
+    /** Whether a page links the block in {@code state} by a click, or goes in it: a pipe, a podium, a goal pole base, a step controller, a Mini-game Controller. */
+    public static boolean actsOn(BlockState state) {
+        return state.getBlock() instanceof PipeBlock || Podiums.linkable(state) || state.getBlock() instanceof MiniGameControllerBlock;
+    }
+
+    private static boolean aimsAtWhatItActsOn(PlayerEntity player, World world) {
+        HitResult hit = player.raycast(player.getBlockInteractionRange(), 0.0F, false);
+        return hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK && actsOn(world.getBlockState(block.getBlockPos()));
     }
 
     /** The page's title once it has one. */

@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGameIntroShot;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
@@ -442,6 +443,17 @@ public class MiniGamePageGameTests implements SteveGameTest {
         MiniGamePageData page = MiniGamePages.get(server, id);
         context.assertEquals(page.pipeLinks().stream().map(MiniGamePipeLink::mouth).toList(), List.of(keptAt), "the pipe still there stays linked");
         context.assertTrue(page.podiumLinks().isEmpty(), "the podium gone is forgotten");
+        context.complete();
+    }
+
+    /** The page opens on any block but those it links or goes in (playtest 2, #18): it used to open only in the air. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void thePageOpensOnAnyBlockButItsOwn(TestContext context) {
+        context.assertTrue(MiniGamePageItem.actsOn(ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][13].getDefaultState()), "a pipe: linked");
+        context.assertTrue(MiniGamePageItem.actsOn(ModBlocks.GOLD_PODIUM.getDefaultState()), "a podium: linked");
+        context.assertTrue(MiniGamePageItem.actsOn(ModBlocks.MINI_GAME_CONTROLLER.getDefaultState()), "a Mini-game Controller: the page goes in");
+        context.assertTrue(!MiniGamePageItem.actsOn(Blocks.STONE.getDefaultState()) && !MiniGamePageItem.actsOn(Blocks.GRASS_BLOCK.getDefaultState()),
+                "any other block: the editor opens");
         context.complete();
     }
 
