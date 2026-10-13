@@ -27,6 +27,11 @@
       "type": "modonomicon:text",
       "title": "book.steveparty.guide.mini_games.pipe_roles.page0.title",
       "text": "book.steveparty.guide.mini_games.pipe_roles.page0.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.mini_games.pipe_roles.page1.title",
+      "text": "book.steveparty.guide.mini_games.pipe_roles.page1.text"
     }
   ]
 }
