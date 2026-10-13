@@ -1851,7 +1851,31 @@ def icon(item):
     return {"id": item}
 
 
+def drop_observation_quests():
+    """Observation tasks (look at an entity) proved unreliable on the server: their quests are left out, and a
+    quest that needed one depends on what that one needed instead."""
+    gone = {}
+    for ch in CHAPTERS:
+        for qq in ch["quests"]:
+            if any(t.get("type") == "observation" for t in qq["tasks"]):
+                gone[qq["key"]] = qq["deps"]
+
+    def resolve(deps):
+        out = []
+        for d in deps:
+            for r in (resolve(gone[d]) if d in gone else [d]):
+                if r not in out:
+                    out.append(r)
+        return out
+
+    for ch in CHAPTERS:
+        ch["quests"] = [qq for qq in ch["quests"] if qq["key"] not in gone]
+        for qq in ch["quests"]:
+            qq["deps"] = resolve(qq["deps"])
+
+
 def build():
+    drop_observation_quests()
     lang = {"en": {}, "fr": {}}
 
     def tr(kind, oid, sub, en, fr):

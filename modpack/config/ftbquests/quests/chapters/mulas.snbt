@@ -16,51 +16,6 @@
 				"0ED330980267EDAF"
 			]
 			icon: {
-				id: "steveparty:mula_spawn_egg"
-			}
-			id: "75B73EB45B67D1C0"
-			rewards: [
-				{
-					id: "4C6C3D67BBDF70FA"
-					type: "xp"
-					xp: 50
-				}
-				{
-					count: 3
-					id: "0088736BF048E0D6"
-					item: {
-						count: 1
-						id: "steveparty:coin"
-					}
-					type: "item"
-				}
-				{
-					auto: "invisible"
-					command: "/scoreboard players add {p} steveparty_quests 1"
-					elevate_perms: true
-					id: "6043244078D8B160"
-					silent: true
-					type: "command"
-				}
-			]
-			size: 1.25d
-			tasks: [
-				{
-					id: "4BD4F0F3352150F2"
-					observation_type: "entity_type"
-					timer: 20L
-					to_observe: "steveparty:mula"
-					type: "observation"
-				}
-			]
-			x: 0.0d
-			y: 2.0d
-		}
-		{
-			dependencies: [
-				"0ED330980267EDAF"
-			]
-			icon: {
 				id: "minecraft:clock"
 			}
 			id: "30B76A9DDAC3BA6B"
@@ -142,7 +97,7 @@
 		}
 		{
 			dependencies: [
-				"75B73EB45B67D1C0"
+				"0ED330980267EDAF"
 			]
 			icon: {
 				id: "minecraft:cooked_cod"

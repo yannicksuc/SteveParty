@@ -16,50 +16,6 @@
 				"0ED330980267EDAF"
 			]
 			icon: {
-				id: "steveparty:frousseux_spawn_egg"
-			}
-			id: "0656F36FB9B9B08E"
-			rewards: [
-				{
-					id: "2774443425265011"
-					type: "xp"
-					xp: 25
-				}
-				{
-					id: "235E1BA99951F50F"
-					item: {
-						count: 1
-						id: "minecraft:flint_and_steel"
-					}
-					type: "item"
-				}
-				{
-					auto: "invisible"
-					command: "/scoreboard players add {p} steveparty_quests 1"
-					elevate_perms: true
-					id: "70906CD1A1FD2C4A"
-					silent: true
-					type: "command"
-				}
-			]
-			size: 1.25d
-			tasks: [
-				{
-					id: "654DA9F295A84E44"
-					observation_type: "entity_type"
-					timer: 20L
-					to_observe: "steveparty:frousseux"
-					type: "observation"
-				}
-			]
-			x: 0.0d
-			y: 0.0d
-		}
-		{
-			dependencies: [
-				"0656F36FB9B9B08E"
-			]
-			icon: {
 				id: "minecraft:torch"
 			}
 			id: "5DF43B3F6C9F0DC0"
@@ -97,7 +53,7 @@
 		}
 		{
 			dependencies: [
-				"0656F36FB9B9B08E"
+				"0ED330980267EDAF"
 			]
 			icon: {
 				id: "minecraft:flint_and_steel"

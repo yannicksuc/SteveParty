@@ -172,11 +172,6 @@
 	]
 	quest.05F0B762268E85CD.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
 	quest.05F0B762268E85CD.title: "Tuile"
-	quest.0656F36FB9B9B08E.quest_desc: [
-		"Grottes sombres de l'Overworld, seuls ou à deux : un fantôme de cire à flamme de bougie (17 couleurs). Sa lumière est réelle, et aucun monstre n'approche à moins de 8 blocs."
-		"Regardez-en un pour valider la quête."
-	]
-	quest.0656F36FB9B9B08E.title: "Une lueur dans le noir"
 	quest.06ACFD0AAF8EF257.quest_desc: [
 		"Page + papier (ou le bouton Copier) : une copie liée, modifier l'une modifie toutes les autres. Pratique pour des tuyaux et podiums éloignés."
 	]
@@ -403,11 +398,6 @@
 	]
 	quest.174373BB4245951D.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
 	quest.174373BB4245951D.title: "Escalier en briques de terre cuite polie orange"
-	quest.1844358FDF98C72B.quest_desc: [
-		"Sous les arbres, par 2 à 4 : des jeunes verts, des vieux moussus (vieilles taïgas), des glacés (taïgas enneigées) qui glissent comme des palets de curling."
-		"Approchez à moins de 4 blocs : il charge. Il ne blesse jamais, il bouscule et étourdit 2 s. Regardez-en un pour valider la quête."
-	]
-	quest.1844358FDF98C72B.title: "Gland grognon"
 	quest.186792E8E005709E.quest_desc: [
 		"Hors de la colonne du Bulleur, une bulle éclate contre un bloc, un mob, une flèche, ou après 15 s immobile."
 		"Une boule de neige la pousse : un distributeur de boules de neige fait un canon à bulles. Toucher de soie la pousse sans l'éclater."
@@ -424,11 +414,6 @@
 		"4 Tuiles en carré 2x2 : 1 grande tuile (2x2 blocs)."
 	]
 	quest.18EC779BAD8C3C13.title: "Petites et grandes tuiles"
-	quest.194C00CE411FD0CE.quest_desc: [
-		"Puits de mine abandonnés (rarement) et grottes sombres autour, toujours seul. Sur des rails, il suit la voie. Il rugit quand on approche à moins de 3 blocs."
-		"Regardez-en un pour valider la quête."
-	]
-	quest.194C00CE411FD0CE.title: "Un wagonnet vivant"
 	quest.19A1A7E217DE13A3.quest_desc: [
 		"Les petits plus du mod, tous trouvés."
 	]
@@ -1129,11 +1114,6 @@
 		"Les clients font clic droit sur le marchand : les offres en cartes (rouge : trop cher, barrée : épuisée). La boutique du propriétaire est protégée."
 	]
 	quest.5FECE4CA8D043161.title: "Ouvert !"
-	quest.6044441CFBBF75EE.quest_desc: [
-		"Terres du Nether, deltas de basalte, vallées de sable des âmes, au bord de la lave ou dedans : rare et seul. Neutre tant qu'on ne le frappe pas ; près d'un bastion, il peut porter des piglins et chasser les joueurs."
-		"Regardez-en un pour valider la quête."
-	]
-	quest.6044441CFBBF75EE.title: "Trois têtes, un chaudron"
 	quest.609D01D79D635986.quest_desc: [
 		"5 pépites d'or. Bougeoir + soucoupe : il se pose sur sa soucoupe. Seul dans la grille, il en ressort."
 	]
@@ -1166,11 +1146,6 @@
 		"Deux cases Téléportation de la même couleur sur un plateau. Une teinture sur la case change son réseau ; une couleur seule n'envoie personne."
 	]
 	quest.639372715E2D9036.title: "Un réseau de téléportation"
-	quest.63B4933358A5ED3D.quest_desc: [
-		"Forêts, taïgas et bosquets de cerisiers, le jour, par 1 à 3. Six couleurs, selon la forêt. Elles sautent de perchoir en perchoir et s'envolent à moins de 6 blocs."
-		"Regardez-en une pour valider la quête."
-	]
-	quest.63B4933358A5ED3D.title: "Une pie !"
 	quest.63E7493B3F8C4B36.quest_desc: [
 		"6 blocs de plastique de la couleur en deux colonnes : 6 tuyaux. Lié à une page, un tuyau de cette couleur a le rôle « Spectateurs »."
 	]
@@ -1181,11 +1156,6 @@
 	]
 	quest.653CF6E9C6766795.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
 	quest.653CF6E9C6766795.title: "Tuyau à hublot cyan"
-	quest.6544C5A9787AD7A1.quest_desc: [
-		"Un chat noir dans une cabane de sorcière ou à 16 blocs. Clic droit dessus avec n'importe quel dé du mod : un 1 (ou 0) et il enfle en Mistigri ; sinon, il crache."
-		"Regardez un Mistigri pour valider la quête."
-	]
-	quest.6544C5A9787AD7A1.title: "Un coup de malchance"
 	quest.65FD4DC5FA855317.quest_desc: [
 		"Lancez près de votre pion sur un plateau relié : il avance du résultat. À un embranchement, clic droit main vide sur une flèche."
 	]
@@ -1335,11 +1305,6 @@
 	]
 	quest.74A69E19FF0BCA86.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
 	quest.74A69E19FF0BCA86.title: "Dalle en briques de béton poli bleu clair"
-	quest.75B73EB45B67D1C0.quest_desc: [
-		"Les Mulas tombent du ciel les nuits d'étoiles filantes (Éphéméride), surtout à la pleine lune : suivez la première vague d'étoiles, à 150 à 600 blocs."
-		"Regardez-en une pour valider la quête."
-	]
-	quest.75B73EB45B67D1C0.title: "Une Mula !"
 	quest.75D850169554760C.quest_desc: [
 		"Repeignez jusqu'à la première tuile : une boucle avec une case départ suffit pour une partie."
 		"Plusieurs liens depuis une case : un embranchement, le joueur choisit. Aucun lien : un cul-de-sac."

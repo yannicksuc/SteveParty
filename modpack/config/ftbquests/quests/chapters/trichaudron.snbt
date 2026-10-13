@@ -16,51 +16,6 @@
 				"0ED330980267EDAF"
 			]
 			icon: {
-				id: "steveparty:trichaudron_spawn_egg"
-			}
-			id: "6044441CFBBF75EE"
-			rewards: [
-				{
-					id: "1DF1C600206E37E1"
-					type: "xp"
-					xp: 50
-				}
-				{
-					count: 2
-					id: "76C65E9CD850FA6A"
-					item: {
-						count: 1
-						id: "minecraft:bucket"
-					}
-					type: "item"
-				}
-				{
-					auto: "invisible"
-					command: "/scoreboard players add {p} steveparty_quests 1"
-					elevate_perms: true
-					id: "36638D36301A9CC8"
-					silent: true
-					type: "command"
-				}
-			]
-			size: 1.25d
-			tasks: [
-				{
-					id: "0BA25662EB400C91"
-					observation_type: "entity_type"
-					timer: 20L
-					to_observe: "steveparty:trichaudron"
-					type: "observation"
-				}
-			]
-			x: 0.0d
-			y: 0.0d
-		}
-		{
-			dependencies: [
-				"6044441CFBBF75EE"
-			]
-			icon: {
 				id: "minecraft:shield"
 			}
 			id: "0A6FCAD1E1458EE5"
@@ -98,7 +53,7 @@
 		}
 		{
 			dependencies: [
-				"6044441CFBBF75EE"
+				"0ED330980267EDAF"
 			]
 			icon: {
 				id: "minecraft:lava_bucket"
@@ -180,7 +135,7 @@
 		}
 		{
 			dependencies: [
-				"6044441CFBBF75EE"
+				"0ED330980267EDAF"
 				"2E754E69CDD7EF1A"
 			]
 			id: "263C5F0A947E29AD"

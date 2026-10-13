@@ -16,51 +16,6 @@
 				"0ED330980267EDAF"
 			]
 			icon: {
-				id: "steveparty:magpie_spawn_egg"
-			}
-			id: "63B4933358A5ED3D"
-			rewards: [
-				{
-					id: "035DAB0DD4E2F44C"
-					type: "xp"
-					xp: 25
-				}
-				{
-					count: 8
-					id: "7BDA090047107690"
-					item: {
-						count: 1
-						id: "minecraft:wheat_seeds"
-					}
-					type: "item"
-				}
-				{
-					auto: "invisible"
-					command: "/scoreboard players add {p} steveparty_quests 1"
-					elevate_perms: true
-					id: "3FB00526C2C1A0DA"
-					silent: true
-					type: "command"
-				}
-			]
-			size: 1.25d
-			tasks: [
-				{
-					id: "7AC0E2340FE6CE64"
-					observation_type: "entity_type"
-					timer: 20L
-					to_observe: "steveparty:wild_magpie"
-					type: "observation"
-				}
-			]
-			x: 0.0d
-			y: 0.0d
-		}
-		{
-			dependencies: [
-				"63B4933358A5ED3D"
-			]
-			icon: {
 				id: "minecraft:wheat_seeds"
 			}
 			id: "5E498DCFAA8D5873"
@@ -139,7 +94,7 @@
 		}
 		{
 			dependencies: [
-				"63B4933358A5ED3D"
+				"0ED330980267EDAF"
 			]
 			id: "2CE0BF8C6935F2C0"
 			rewards: [
@@ -222,7 +177,7 @@
 		}
 		{
 			dependencies: [
-				"63B4933358A5ED3D"
+				"0ED330980267EDAF"
 			]
 			icon: {
 				id: "minecraft:oak_leaves"
