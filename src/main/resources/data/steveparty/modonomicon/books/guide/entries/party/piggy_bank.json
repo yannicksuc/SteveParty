@@ -25,9 +25,17 @@
   "background_u_index": 1,
   "pages": [
     {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:piggy_bank"
+      },
+      "title": "book.steveparty.guide.party.piggy_bank.page0.title",
+      "text": "book.steveparty.guide.party.piggy_bank.page0.text"
+    },
+    {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.party.piggy_bank.page0.text",
-      "title": "book.steveparty.guide.party.piggy_bank.page0.title"
+      "title": "book.steveparty.guide.party.piggy_bank.page1.title",
+      "text": "book.steveparty.guide.party.piggy_bank.page1.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

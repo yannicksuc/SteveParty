@@ -24,9 +24,17 @@
   },
   "pages": [
     {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:party_bell"
+      },
+      "title": "book.steveparty.guide.party.bell.page0.title",
+      "text": "book.steveparty.guide.party.bell.page0.text"
+    },
+    {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.party.bell.page0.text",
-      "title": "book.steveparty.guide.party.bell.page0.title"
+      "title": "book.steveparty.guide.party.bell.page1.title",
+      "text": "book.steveparty.guide.party.bell.page1.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

@@ -25,14 +25,16 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.cartridges.replay.page0.text",
-      "title": "book.steveparty.guide.cartridges.replay.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:replay_cartridge"
+      },
+      "title": "book.steveparty.guide.cartridges.replay.page0.title",
+      "text": "book.steveparty.guide.cartridges.replay.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:replay_cartridge",
-      "text": "book.steveparty.guide.cartridges.replay.page1.text"
+      "recipe_id_1": "steveparty:replay_cartridge"
     }
   ]
 }

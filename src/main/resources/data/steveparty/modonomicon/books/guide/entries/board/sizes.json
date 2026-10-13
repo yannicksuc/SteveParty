@@ -25,17 +25,18 @@
   "pages": [
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.sizes.page0.text",
-      "title": "book.steveparty.guide.board.sizes.page0.title"
+      "title": "book.steveparty.guide.board.sizes.page0.title",
+      "text": "book.steveparty.guide.board.sizes.page0.text"
     },
     {
       "type": "modonomicon:stonecutting_recipe",
-      "recipe_id_1": "steveparty:small_tile_from_stonecutting"
+      "recipe_id_1": "steveparty:small_tile_from_stonecutting",
+      "text": "book.steveparty.guide.board.sizes.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.sizes.page2.text",
-      "title": "book.steveparty.guide.board.sizes.page2.title"
+      "title": "book.steveparty.guide.board.sizes.page2.title",
+      "text": "book.steveparty.guide.board.sizes.page2.text"
     }
   ]
 }

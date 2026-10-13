@@ -25,19 +25,27 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.party.goal_pole.page0.text",
-      "title": "book.steveparty.guide.party.goal_pole.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:goal_pole"
+      },
+      "title": "book.steveparty.guide.party.goal_pole.page0.title",
+      "text": "book.steveparty.guide.party.goal_pole.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.party.goal_pole.page1.text",
-      "title": "book.steveparty.guide.party.goal_pole.page1.title"
+      "title": "book.steveparty.guide.party.goal_pole.page1.title",
+      "text": "book.steveparty.guide.party.goal_pole.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.party.goal_pole.page2.text",
-      "title": "book.steveparty.guide.party.goal_pole.page2.title"
+      "title": "book.steveparty.guide.party.goal_pole.page2.title",
+      "text": "book.steveparty.guide.party.goal_pole.page2.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.party.goal_pole.page3.title",
+      "text": "book.steveparty.guide.party.goal_pole.page3.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
@@ -49,7 +57,7 @@
       "item": {
         "item": "steveparty:flag"
       },
-      "text": "book.steveparty.guide.party.goal_pole.page4.text"
+      "text": "book.steveparty.guide.party.goal_pole.page5.text"
     }
   ]
 }

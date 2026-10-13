@@ -11,6 +11,7 @@ never announce to chat; a gated child always carries its parent's gates; no two 
 Exit code 1 on any error. Warnings (long texts) do not fail.
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -28,8 +29,11 @@ RECIPE_TYPES = {
     "modonomicon:smelting_recipe": {"minecraft:smelting"},
     "modonomicon:stonecutting_recipe": {"minecraft:stonecutting"},
 }
-PAGE_TYPES = {"modonomicon:text", "modonomicon:spotlight", *RECIPE_TYPES}
-TEXT_MAX, SMALL_MAX = 420, 190  # rough characters that fit a page before Modonomicon scales text down
+PAGE_TYPES = {"modonomicon:text", "modonomicon:spotlight", "modonomicon:entity", *RECIPE_TYPES}
+# Visible characters (markup stripped) a page holds and stays light: about 6 body lines on a text page, 4 under
+# an item, a recipe or a creature. Beyond, the page reads as a wall of text: split it.
+TEXT_MAX, SMALL_MAX = 220, 130
+COLOUR = re.compile(r"\[#\]\(([^)]*)\)")
 
 errors, warnings = [], []
 
@@ -53,6 +57,8 @@ for k in mod_lang:
     parts = k.split(".")
     if len(parts) == 3 and parts[0] in ("item", "block") and parts[1] == "steveparty":
         mod_items.add("steveparty:" + parts[2])
+mod_entities = {"steveparty:" + k.split(".")[2] for k in mod_lang if k.startswith("entity.steveparty.") and k.count(".") == 2}
+VANILLA_ENTITIES = {"minecraft:cat", "minecraft:villager"}
 mod_blocks = {"steveparty:" + k.split(".")[2] for k in mod_lang if k.startswith("block.steveparty.") and k.count(".") == 2}
 for d in RES_DIRS:
     for m in (d / "assets" / "steveparty" / "models" / "item").glob("*.json"):
@@ -222,7 +228,7 @@ for eid, e in entries.items():
         t = pg.get("type")
         if t not in PAGE_TYPES:
             err(f"{pw}: unexpected page type {t}")
-        for field in ("title", "text"):
+        for field in ("title", "text", "name"):
             if pg.get(field):
                 key(pg[field], pw)
         if t in RECIPE_TYPES:
@@ -236,12 +242,21 @@ for eid, e in entries.items():
                     err(f"{pw}: recipe {rid} is {recipes[rid]}, {t} cannot draw it")
         if t == "modonomicon:spotlight" and not item_exists(pg.get("item", {}).get("item", "")):
             err(f"{pw}: unknown spotlight item {pg.get('item')}")
+        if t == "modonomicon:entity" and pg.get("entity_id", "").split("{")[0] not in mod_entities | VANILLA_ENTITIES:
+            err(f"{pw}: unknown entity {pg.get('entity_id')}")
         limit = TEXT_MAX if t == "modonomicon:text" else SMALL_MAX
         if pg.get("text"):
             for name, lang in (("en", en), ("fr", fr)):
-                n = len(lang.get(pg["text"], ""))
-                if n > limit:
-                    warnings.append(f"{pw}: {name} text is {n} chars (> {limit}), it will be scaled down")
+                text = lang.get(pg["text"], "")
+                # colour runs: [#](RRGGBB) opens one (Modonomicon adds the #), [#]() closes it
+                for c in COLOUR.findall(text):
+                    if c and not re.fullmatch(r"[0-9A-Fa-f]{6}", c):
+                        err(f"{pw}: {name} colour [#]({c}) must be [#](RRGGBB), no #")
+                if text.count("[#](") % 2:
+                    err(f"{pw}: {name} colour run not closed with [#]()")
+                visible = COLOUR.sub("", text).replace("**", "").replace("\\\n", "").replace("%%", "%")
+                if len(visible) > limit:
+                    warnings.append(f"{pw}: {name} text is {len(visible)} visible chars (> {limit}): split the page")
 
 for k in set(en) - used:
     err(f"lang: unused key {k}")

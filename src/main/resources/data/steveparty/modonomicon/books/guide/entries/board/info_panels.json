@@ -26,13 +26,13 @@
   "pages": [
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.info_panels.page0.text",
-      "title": "book.steveparty.guide.board.info_panels.page0.title"
+      "title": "book.steveparty.guide.board.info_panels.page0.title",
+      "text": "book.steveparty.guide.board.info_panels.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.info_panels.page1.text",
-      "title": "book.steveparty.guide.board.info_panels.page1.title"
+      "title": "book.steveparty.guide.board.info_panels.page1.title",
+      "text": "book.steveparty.guide.board.info_panels.page1.text"
     }
   ]
 }

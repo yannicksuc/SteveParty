@@ -25,14 +25,17 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.spawn_bubble.page0.text",
-      "title": "book.steveparty.guide.board.spawn_bubble.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:spawn_marker"
+      },
+      "title": "book.steveparty.guide.board.spawn_bubble.page0.title",
+      "text": "book.steveparty.guide.board.spawn_bubble.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.spawn_bubble.page1.text",
-      "title": "book.steveparty.guide.board.spawn_bubble.page1.title"
+      "title": "book.steveparty.guide.board.spawn_bubble.page1.title",
+      "text": "book.steveparty.guide.board.spawn_bubble.page1.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

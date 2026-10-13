@@ -12,14 +12,17 @@
   "show_when_any_parent_unlocked": false,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.getting_started.welcome.page0.text",
-      "title": "book.steveparty.guide.getting_started.welcome.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:party_star"
+      },
+      "title": "book.steveparty.guide.getting_started.welcome.page0.title",
+      "text": "book.steveparty.guide.getting_started.welcome.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.getting_started.welcome.page1.text",
-      "title": "book.steveparty.guide.getting_started.welcome.page1.title"
+      "title": "book.steveparty.guide.getting_started.welcome.page1.title",
+      "text": "book.steveparty.guide.getting_started.welcome.page1.text"
     }
   ]
 }

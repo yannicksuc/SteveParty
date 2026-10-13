@@ -25,9 +25,17 @@
   "background_u_index": 1,
   "pages": [
     {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:tile"
+      },
+      "title": "book.steveparty.guide.board.placing.page0.title",
+      "text": "book.steveparty.guide.board.placing.page0.text"
+    },
+    {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.placing.page0.text",
-      "title": "book.steveparty.guide.board.placing.page0.title"
+      "title": "book.steveparty.guide.board.placing.page1.title",
+      "text": "book.steveparty.guide.board.placing.page1.text"
     }
   ]
 }

@@ -24,14 +24,17 @@
   },
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.stamping.page0.text",
-      "title": "book.steveparty.guide.board.stamping.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:stencil"
+      },
+      "title": "book.steveparty.guide.board.stamping.page0.title",
+      "text": "book.steveparty.guide.board.stamping.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.stamping.dyes.text",
-      "title": "book.steveparty.guide.board.stamping.dyes.title"
+      "title": "book.steveparty.guide.board.stamping.page1.title",
+      "text": "book.steveparty.guide.board.stamping.page1.text"
     }
   ]
 }

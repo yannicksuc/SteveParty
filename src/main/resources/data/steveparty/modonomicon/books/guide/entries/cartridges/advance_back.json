@@ -25,14 +25,21 @@
   "background_u_index": 1,
   "pages": [
     {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:advance_back_cartridge"
+      },
+      "title": "book.steveparty.guide.cartridges.advance_back.page0.title",
+      "text": "book.steveparty.guide.cartridges.advance_back.page0.text"
+    },
+    {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.cartridges.advance_back.page0.text",
-      "title": "book.steveparty.guide.cartridges.advance_back.page0.title"
+      "title": "book.steveparty.guide.cartridges.advance_back.page1.title",
+      "text": "book.steveparty.guide.cartridges.advance_back.page1.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:advance_back_cartridge",
-      "text": "book.steveparty.guide.cartridges.advance_back.page1.text"
+      "recipe_id_1": "steveparty:advance_back_cartridge"
     }
   ]
 }
