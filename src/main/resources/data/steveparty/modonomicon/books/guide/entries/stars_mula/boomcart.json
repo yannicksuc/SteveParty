@@ -1,13 +1,13 @@
 {
-  "category": "creatures",
+  "category": "stars_mula",
   "name": "book.steveparty.guide.creatures.boomcart.name",
   "description": "book.steveparty.guide.creatures.boomcart.description",
   "icon": {
     "item": "steveparty:boomcart_spawn_egg"
   },
-  "x": 2,
-  "y": -3,
-  "sort_number": 3,
+  "x": -4,
+  "y": 10,
+  "sort_number": 103,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "background_u_index": 1,

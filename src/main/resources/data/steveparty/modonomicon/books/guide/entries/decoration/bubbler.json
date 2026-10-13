@@ -1,13 +1,13 @@
 {
-  "category": "gadgets",
+  "category": "decoration",
   "name": "book.steveparty.guide.gadgets.bubbler.name",
   "description": "book.steveparty.guide.gadgets.bubbler.description",
   "icon": {
     "item": "steveparty:bubbler"
   },
-  "x": 0,
+  "x": 5,
   "y": 3,
-  "sort_number": 3,
+  "sort_number": 153,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "background_u_index": 1,

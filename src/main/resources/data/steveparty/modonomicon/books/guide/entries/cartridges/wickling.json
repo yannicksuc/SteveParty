@@ -31,8 +31,7 @@
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:frousseux_cartridge",
-      "text": "book.steveparty.guide.cartridges.wickling.page1.text"
+      "recipe_id_1": "steveparty:frousseux_cartridge"
     }
   ]
 }

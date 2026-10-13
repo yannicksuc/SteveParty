@@ -1,13 +1,13 @@
 {
-  "category": "creatures",
+  "category": "stars_mula",
   "name": "book.steveparty.guide.creatures.trichaudron.name",
   "description": "book.steveparty.guide.creatures.trichaudron.description",
   "icon": {
     "item": "steveparty:trichaudron_spawn_egg"
   },
-  "x": -2,
-  "y": 3,
-  "sort_number": 2,
+  "x": 2,
+  "y": 7,
+  "sort_number": 102,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "background_u_index": 1,

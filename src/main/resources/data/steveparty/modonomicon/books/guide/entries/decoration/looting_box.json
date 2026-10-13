@@ -1,13 +1,13 @@
 {
-  "category": "gadgets",
+  "category": "decoration",
   "name": "book.steveparty.guide.gadgets.looting_box.name",
   "description": "book.steveparty.guide.gadgets.looting_box.description",
   "icon": {
     "item": "steveparty:looting_box"
   },
-  "x": 0,
+  "x": 5,
   "y": -6,
-  "sort_number": 0,
+  "sort_number": 150,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "pages": [

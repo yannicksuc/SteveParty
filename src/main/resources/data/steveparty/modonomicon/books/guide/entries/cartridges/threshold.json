@@ -36,8 +36,7 @@
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:threshold_cartridge",
-      "text": "book.steveparty.guide.cartridges.threshold.page2.text"
+      "recipe_id_1": "steveparty:threshold_cartridge"
     }
   ]
 }
