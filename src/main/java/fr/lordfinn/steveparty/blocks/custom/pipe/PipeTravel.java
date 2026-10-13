@@ -678,23 +678,28 @@ public final class PipeTravel {
      * @return false if there is no such mouth, or the traveller can't be brought there
      */
     public static boolean emerge(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed) {
+        return emerge(world, mouth, traveller, speed, null);
+    }
+
+    /** @param yaw where a player comes out looking (level), null: where he looked */
+    public static boolean emerge(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed, @Nullable Float yaw) {
         if (traveller.isRemoved() || PipeShape.mouth(world.getBlockState(mouth.pos()), mouth.dir()) == null) return false;
-        if (!ZoneBorder.ACTIVE) return bringOut(world, mouth, traveller, speed);
+        if (!ZoneBorder.ACTIVE) return bringOut(world, mouth, traveller, speed, yaw);
         // A mini-game zone in session: only its players come out in it, and none of them comes out elsewhere while
         // it plays there; for who may, the trip is the mod's own and passes the border
         if (!ZoneBubbles.mayArrive(traveller, world, mouth.pos())) return false;
         boolean[] out = new boolean[1];
-        ZoneBubbles.unguarded(() -> out[0] = bringOut(world, mouth, traveller, speed));
+        ZoneBubbles.unguarded(() -> out[0] = bringOut(world, mouth, traveller, speed, yaw));
         return out[0];
     }
 
-    private static boolean bringOut(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed) {
+    private static boolean bringOut(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed, @Nullable Float yaw) {
         if (traveller.hasVehicle()) traveller.stopRiding();
         Vec3d center = Vec3d.ofCenter(mouth.pos());
         double feet = center.y - traveller.getHeight() / 2;
-        if (traveller.getWorld() != world) {
+        if (traveller.getWorld() != world || (yaw != null && traveller instanceof ServerPlayerEntity)) {
             if (!(traveller instanceof ServerPlayerEntity player)) return false;
-            player.teleport(world, center.x, feet, center.z, Set.of(), player.getYaw(), player.getPitch());
+            player.teleport(world, center.x, feet, center.z, Set.of(), yaw != null ? yaw : player.getYaw(), yaw != null ? 0 : player.getPitch());
             if (player.getWorld() != world) return false;
         } else {
             traveller.requestTeleport(center.x, feet, center.z);

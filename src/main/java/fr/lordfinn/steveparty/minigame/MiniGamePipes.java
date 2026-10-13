@@ -233,20 +233,49 @@ public final class MiniGamePipes {
      * @return false if the pipe is no more, or has no mouth
      */
     public static boolean emerge(MinecraftServer server, MiniGamePipeLink link, ServerPlayerEntity player) {
+        return emerge(server, link, player, false);
+    }
+
+    /** @param facing he comes out looking along the pipe ({@link #facing}) */
+    private static boolean emerge(MinecraftServer server, MiniGamePipeLink link, ServerPlayerEntity player, boolean facing) {
         ServerWorld world = server.getWorld(link.mouth().dimension());
         if (world == null) return false;
         Direction opening = openingOf(world, link);
-        return opening != null && PipeTravel.emerge(world, new PipeNetworks.End(link.mouth().pos(), opening, false), player, PipeTravel.BASE_SPEED);
+        if (opening == null) return false;
+        Float yaw = facing ? facing(world, link.mouth().pos(), opening) : null;
+        return PipeTravel.emerge(world, new PipeNetworks.End(link.mouth().pos(), opening, false), player, PipeTravel.BASE_SPEED, yaw);
     }
 
     /**
-     * A round sends its player out of the pipe of his side ({@link #emerge}): his name takes the colour of that pipe
-     * until he leaves the round ({@link MiniGameNameColors}).
+     * A round sends its player out of the pipe of his side ({@link #emerge}), looking along that pipe: his name takes
+     * the colour of that pipe until he leaves the round ({@link MiniGameNameColors}).
      */
     public static boolean emergeInRound(MinecraftServer server, MiniGamePipeLink link, ServerPlayerEntity player, @Nullable UUID page) {
-        boolean out = emerge(server, link, player);
+        boolean out = emerge(server, link, player, true);
         if (out && page != null) MiniGameNameColors.apply(player, link.role(), page);
         return out;
+    }
+
+    /**
+     * Where one coming out of the mouth looks, level: the way the mouth opens when it opens sideways; out of an upward or
+     * downward one, the way the pipe ran before it turned up or down (looking away from where it comes from), as far as
+     * 16 blocks back; null when it runs straight (he keeps his own).
+     */
+    public static @Nullable Float facing(ServerWorld world, BlockPos mouth, Direction opening) {
+        if (opening.getAxis().isHorizontal()) return opening.asRotation();
+        Direction back = opening.getOpposite();
+        BlockPos pos = mouth;
+        for (int i = 0; i < 16; i++) {
+            BlockState here = world.getBlockState(pos);
+            if (!PipeBlock.isPipe(here) || !here.get(PipeShape.connection(back))) return null;
+            pos = pos.offset(back);
+            BlockState state = world.getBlockState(pos);
+            if (!PipeBlock.isPipe(state)) return null;
+            for (Direction side : Direction.Type.HORIZONTAL) {
+                if (state.get(PipeShape.connection(side))) return side.getOpposite().asRotation();
+            }
+        }
+        return null;
     }
 
     // ------------------------------------------------------------------ party

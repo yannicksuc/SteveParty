@@ -33,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -80,7 +79,6 @@ import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
 public final class MiniGameTest implements MiniGameSession {
     public static final double RECRUIT_RADIUS = 10;
     public static final int COUNTDOWN_SECONDS = 3;
-    private static final int EMERGE_GAP_TICKS = 8;
     private static final int WATCH_INTERVAL_TICKS = 20;
 
     public enum Phase { COUNTDOWN, PLAYING, FINISHED }
@@ -495,6 +493,7 @@ public final class MiniGameTest implements MiniGameSession {
         MiniGamePipes.leaveParty(uuid);
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
         if (player != null) {
+            MiniGameFreeze.release(player);
             arena.leave(player);
             if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Preview.ID)) {
                 ServerPlayNetworking.send(player, new MiniGamePagePayloads.Preview(false, MiniGamePageData.empty(MiniGamePageData.NO_ID), 0, 0));
@@ -540,24 +539,25 @@ public final class MiniGameTest implements MiniGameSession {
             return;
         }
         phase = Phase.PLAYING;
-        Map<MiniGamePipeLink, Integer> queues = new HashMap<>();
+        // Everyone out at once (those who share a pipe too), the players standing still for the countdown
+        List<ServerPlayerEntity> out = new ArrayList<>();
         pipes.forEach((uuid, link) -> {
-            int wait = queues.merge(link, 1, Integer::sum) - 1;
-            if (wait == 0) comeOut(link, uuid);
-            else later(wait * EMERGE_GAP_TICKS, () -> comeOut(link, uuid));
+            ServerPlayerEntity player = comeOut(link, uuid);
+            if (player != null && players.contains(uuid)) out.add(player);
         });
         MiniGamePartyStep.announceStart(page.title(), page, audience());
+        MiniGameFreeze.start(server, out, audience(), page.title(), () -> !closed && phase == Phase.PLAYING);
     }
 
-    private void comeOut(MiniGamePipeLink link, UUID uuid) {
+    /** @return the player if he comes out of the pipe, else null */
+    private @Nullable ServerPlayerEntity comeOut(MiniGamePipeLink link, UUID uuid) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-        // Its turn at the pipe came after the results: it would come out in an arena put back as built, with what it owns
-        if (phase != Phase.PLAYING) return;
-        if (player != null && !MiniGamePipes.emergeInRound(server, link, player, pageId)) {
-            // No pipe to come out of any more: it stays where it is, with what it owns
-            arena.leave(player);
-            player.sendMessage(Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED), false);
-        }
+        if (player == null) return null;
+        if (MiniGamePipes.emergeInRound(server, link, player, pageId)) return player;
+        // No pipe to come out of any more: it stays where it is, with what it owns
+        arena.leave(player);
+        player.sendMessage(Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED), false);
+        return null;
     }
 
     /** Those of {@code uuids} who are connected and have a pipe to come out of. */

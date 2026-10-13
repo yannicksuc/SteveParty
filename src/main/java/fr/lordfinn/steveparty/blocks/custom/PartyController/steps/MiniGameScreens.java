@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.minigame.MiniGameFreeze;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
@@ -12,8 +13,6 @@ import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -117,22 +116,23 @@ final class MiniGameScreens {
     // ---------------------------------------------------------------- the start
 
     /**
-     * The mini-game starts: its title in big on the screen (« Go! » under it), and in the chat its title and, when
-     * it has one, its description, for the players and the audience.
+     * The mini-game starts: in the chat its title and, when it has one, its description, for the players and the
+     * audience; on the screen its title over the countdown of {@link MiniGameFreeze} (see {@link MiniGameDeparture}).
      */
     void announce(PartyControllerEntity controller, @Nullable MiniGamePageData page, boolean inChat) {
+        announceStart(startName(controller, page), page, previewAudience(controller), inChat);
+    }
+
+    /** The name the mini-game is announced by: its page's title, else its item's name, else none (empty). */
+    String startName(PartyControllerEntity controller, @Nullable MiniGamePageData page) {
         ItemStack stack = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
-        String name = page != null && page.hasTitle() ? page.title() : stack.isEmpty() ? "" : stack.getName().getString();
-        announceStart(name, page, previewAudience(controller), inChat);
+        return page != null && page.hasTitle() ? page.title() : stack.isEmpty() ? "" : stack.getName().getString();
     }
 
     /** See {@link MiniGamePartyStep#announceStart(String, MiniGamePageData, Collection, boolean)}. */
     static void announceStart(String name, @Nullable MiniGamePageData page, Collection<ServerPlayerEntity> audience, boolean inChat) {
-        Text go = Text.translatableWithFallback("message.steveparty.minigame.go", "Go!").styled(style -> style.withColor(0x55FF55).withBold(true));
-        Text title = name.isEmpty() ? go : Text.literal(name).styled(style -> style.withColor(0xFFC52E).withBold(true));
+        Text title = Text.literal(name).styled(style -> style.withColor(0xFFC52E).withBold(true));
         for (ServerPlayerEntity player : audience) {
-            if (!name.isEmpty()) player.networkHandler.sendPacket(new SubtitleS2CPacket(go));
-            player.networkHandler.sendPacket(new TitleS2CPacket(title));
             if (name.isEmpty() || !inChat) continue;
             player.sendMessage(Text.translatable("message.steveparty.minigame.title", title), false);
             if (page != null && !MiniGameText.strip(page.description()).isBlank()) {

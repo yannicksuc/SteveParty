@@ -28,6 +28,7 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameArena;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
+import fr.lordfinn.steveparty.minigame.MiniGameFreeze;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
@@ -388,12 +389,41 @@ public class MiniGamePipeGameTests implements SteveGameTest {
         return all;
     }
 
+    // ------------------------------------------------------------------ arrivals
+
+    /**
+     * Out of a mini-game's pipe, a player looks along it (playtest 2, #11): the way a side mouth opens; out of an
+     * upward mouth, the way the pipe ran before it turned up; a pipe straight from below leaves him his own.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void comingOutLooksAlongThePipe(TestContext context) {
+        ServerWorld world = context.getWorld();
+        BlockState pipe = ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][GREEN].getDefaultState();
+        int flags = Block.NOTIFY_LISTENERS | Block.FORCE_STATE;
+        // A side mouth opening east
+        BlockPos side = context.getAbsolutePos(new BlockPos(1, 2, 1));
+        world.setBlockState(side, pipe.with(PipeShape.connection(Direction.WEST), true), flags);
+        context.assertEquals(MiniGamePipes.facing(world, side, Direction.EAST), Direction.EAST.asRotation(), "a side mouth: the way it opens");
+        // An upward mouth on an elbow coming from the west
+        BlockPos up = context.getAbsolutePos(new BlockPos(4, 3, 1)), elbow = up.down();
+        world.setBlockState(up, pipe.with(PipeShape.connection(Direction.DOWN), true), flags);
+        world.setBlockState(elbow, pipe.with(PipeShape.connection(Direction.UP), true).with(PipeShape.connection(Direction.WEST), true), flags);
+        context.assertEquals(MiniGamePipes.facing(world, up, Direction.UP), Direction.EAST.asRotation(), "up out of an elbow: the way the pipe ran");
+        // Straight up from below: no way to tell
+        BlockPos straight = context.getAbsolutePos(new BlockPos(6, 3, 1));
+        world.setBlockState(straight, pipe.with(PipeShape.connection(Direction.DOWN), true), flags);
+        world.setBlockState(straight.down(), pipe.with(PipeShape.connection(Direction.UP), true).with(PipeShape.connection(Direction.DOWN), true), flags);
+        context.assertTrue(MiniGamePipes.facing(world, straight, Direction.UP) == null, "straight up: his own");
+        context.complete();
+    }
+
     // ------------------------------------------------------------------ party
 
     /**
-     * The departure of a party's mini-game: each player comes out of a pipe of its team (two in the same pipe one
-     * after the other), the audience out of the spectators pipe; the pipes linked to the page are closed to them during
-     * the round (the exit pipe too); the end of the mini-game brings everyone back.
+     * The departure of a party's mini-game: each player comes out of a pipe of its team, all at once (two in the same
+     * pipe too), the audience out of the spectators pipe; the players stand still for the countdown, the audience
+     * does not (playtest 2, #11); the pipes linked to the page are closed to them during the round (the exit pipe
+     * too); the end of the mini-game brings everyone back.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = PARTY_BATCH, tickLimit = 200)
     public void partySendsPlayersOutOfTheirPipesAndBack(TestContext context) {
@@ -440,7 +470,9 @@ public class MiniGamePipeGameTests implements SteveGameTest {
                 context.assertTrue(step.isAway(player.getUuid()) && MiniGamePipes.isInParty(player.getUuid()), "sent to the mini-game");
             }
             context.assertTrue(PipeTravel.isTravelling(good) && PipeTravel.isTravelling(bad1) && PipeTravel.isTravelling(bad2), "they ride out of the pipes");
-            context.assertTrue(!PipeTravel.isTravelling(bad3), "the second player of a pipe waits for the first to be out");
+            context.assertTrue(PipeTravel.isTravelling(bad3), "the second player of a pipe comes out at the same time");
+            context.assertTrue(MiniGameFreeze.isFrozen(good) && MiniGameFreeze.isFrozen(bad3) && !MiniGameFreeze.isFrozen(watcher),
+                    "the players stand still for the countdown, not the audience");
 
             when(context, () -> TestAsserts.cameOutAt(context, good, blue) && TestAsserts.cameOutAt(context, bad1, red1) && TestAsserts.cameOutAt(context, bad2, red2) && TestAsserts.cameOutAt(context, bad3, red1)
                     && TestAsserts.cameOutAt(context, watcher, white), 60, "they never all came out of their pipes", () -> {
