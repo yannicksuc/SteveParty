@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.board;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
@@ -333,7 +334,10 @@ public final class TileLinkerBrush {
             return;
         }
         if (kind.linked(world, target)) kind.unlink(player, world, target);
-        else kind.link(player, world, target);
+        else {
+            kind.link(player, world, target);
+            ModCriteria.fire(player, "tiles_linked");
+        }
     }
 
     /** The player may not change the holder at {@code pos} (adventure mode, protected area, a party running...). */

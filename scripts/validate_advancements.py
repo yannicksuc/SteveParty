@@ -16,13 +16,11 @@ ASSETS = os.path.join(RES, "assets", "steveparty")
 PENDING = os.path.join(ROOT, "docs", "advancements-pending", "data", "steveparty")
 JAVA = os.path.join(ROOT, "src", "main", "java", "fr", "lordfinn", "steveparty")
 
-# Custom triggers implemented after the 1.21.1 port
-CUSTOM_TRIGGERS = {
-    "pawn_spell", "dice_rolled", "dice_coins", "dice_forged", "dice_forge_level", "entity_orbiting",
-    "forge_core_exploded", "mula_burst", "mula_lifted", "ephemeride_seen", "telescope_star_found",
-    "mula_site_reached", "mula_dance", "boxed_trader_created", "shop_sale", "party_started", "party_ended",
-    "pawn_landed", "minigame_ended", "minigame_ready", "podium_claimed", "pole_goal_reached", "looting_box_hit",
-}
+# Custom triggers registered in Java (advancement/ModCriteria). "event" carries an "event" name that the Java code
+# fires through ModCriteria.fire / fireNear: every name used here must appear in the Java sources.
+CUSTOM_TRIGGERS = {"event"}
+# Events whose name is built in Java: roll_<dice count>, roll_face_<kind> (landed_<space type> is checked apart).
+EVENT_PREFIXES = ("roll_face_", "roll_1", "roll_2", "roll_3")
 VANILLA_ENTITY_TAGS = {"skeletons", "raiders", "undead", "arthropod", "zombies", "illager", "aquatic"}
 
 errors = []
@@ -76,6 +74,15 @@ def registered_triggers():
                     if f'"steveparty:{t}"' in src or f'"{t}"' in src:
                         found.add("steveparty:" + t)
     return found
+
+
+def java_sources():
+    out = []
+    for dp, _, fs in os.walk(JAVA):
+        for f in fs:
+            if f.endswith(".java"):
+                out.append(open(os.path.join(dp, f), encoding="utf-8").read())
+    return "\n".join(out)
 
 
 def walk_files(base):
@@ -137,6 +144,7 @@ def main():
     vanilla = load_vanilla()
     mod = mod_ids()
     registered = registered_triggers()
+    java = java_sources()
     live = walk_files(DATA)
     pending = walk_files(PENDING)
     for rid in set(live) & set(pending):
@@ -176,6 +184,16 @@ def main():
                         err(f"{where}/{name}: unknown custom trigger {t}")
                 elif t not in vanilla["trigger_type"]:
                     err(f"{where}/{name}: unknown vanilla trigger {t}")
+                if t == "steveparty:event":
+                    e = c.get("conditions", {}).get("event")
+                    if not e:
+                        err(f"{where}/{name}: event trigger without an event name")
+                    elif e.startswith("landed_") and e != "landed_bad":
+                        kind = e[len("landed_"):]
+                        if kind not in ("default", "inventory") and f'"tile_{kind}"' not in java and f'"board_space_{kind}"' not in java:
+                            err(f"{where}/{name}: {e}: no board space type {kind}")
+                    elif f'"{e}"' not in java and not any(e.startswith(px) for px in EVENT_PREFIXES):
+                        err(f"{where}/{name}: event {e} is never fired in Java")
                 scan(f"{where}/{name}", c.get("conditions", {}), vanilla, mod)
             d = a.get("display")
             if d:

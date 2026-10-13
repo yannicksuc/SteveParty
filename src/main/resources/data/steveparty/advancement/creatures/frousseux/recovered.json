@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/frousseux/stolen",
+  "display": {
+    "icon": {
+      "id": "minecraft:gold_ingot",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.frousseux.recovered.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.frousseux.recovered.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "recovered": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_recovered"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "recovered"
+    ]
+  ]
+}

@@ -25,6 +25,6 @@ public class GravityCoreBlockEntity extends BlockEntity implements TickableBlock
         // Center of the 8x8x8 core, in the upper half of the block
         Vec3d center = new Vec3d(pos.getX() + 0.5, pos.getY() + 0.75, pos.getZ() + 0.5);
         // A sneaking player moves slower in its orbit (it breaks by hand: a lone core never traps anyone)
-        GravityPull.pullAround(world, center, RANGE, STRENGTH, false, ORBIT, true);
+        GravityPull.pullAround(world, center, RANGE, STRENGTH, false, ORBIT, true, 1);
     }
 }

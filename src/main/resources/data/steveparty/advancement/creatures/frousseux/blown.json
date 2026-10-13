@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:wind_charge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.frousseux.blown.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.frousseux.blown.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "blown": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_blown"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "blown"
+    ]
+  ]
+}

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
@@ -129,7 +130,9 @@ public class MagpieNestBlock extends BlockWithEntity {
             return ItemActionResult.CONSUME;
         }
         ItemStack offered = stack.copyWithCount(player.isSneaking() ? 1 : stack.getCount());
+        int full = nest.getFullSlots();
         ItemStack left = nest.insert(offered);
+        if (nest.getFullSlots() > full) ModCriteria.fire(player, "nest_slot_full");
         int put = offered.getCount() - left.getCount();
         stack.decrementUnlessCreative(put, player);
         clink(world, pos, nest.isCoin(offered));

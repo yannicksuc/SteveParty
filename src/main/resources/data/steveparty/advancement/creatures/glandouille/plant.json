@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:acorn",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.glandouille.plant.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.glandouille.plant.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "planted": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:acorn_crop"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "planted"
+    ]
+  ]
+}

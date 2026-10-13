@@ -1,0 +1,35 @@
+{
+  "parent": "steveparty:workshop/bubbles/merge",
+  "display": {
+    "icon": {
+      "id": "minecraft:cake",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.bubbles.group_hug.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.bubbles.group_hug.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "merge": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "bubble_merge",
+        "value": {
+          "min": 4
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "merge"
+    ]
+  ],
+  "rewards": {
+    "experience": 25
+  }
+}

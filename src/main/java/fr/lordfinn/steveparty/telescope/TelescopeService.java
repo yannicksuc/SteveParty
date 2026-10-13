@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.telescope;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.TelescopeBlockEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
 import fr.lordfinn.steveparty.payloads.Payloads;
@@ -230,6 +231,7 @@ public final class TelescopeService {
         if (distance > RANGE + 64 || !sites.markFound(player.getUuid(), id)) return false;
         syncGuides(player);
         player.sendMessage(guideText(dx, dz), true);
+        ModCriteria.fire(player, "telescope_star_found");
         return true;
     }
 
@@ -290,7 +292,9 @@ public final class TelescopeService {
         if (sites == null || sites.siteCount() == 0) return;
         for (ServerPlayerEntity player : world.getPlayers()) {
             if (player.isSpectator()) continue;
-            if (sites.visitAround(player.getUuid(), player.getBlockPos(), REACH)) syncGuides(player);
+            if (sites.visitAround(player.getUuid(), player.getBlockPos(), REACH, () -> ModCriteria.fire(player, "mula_site_reached"))) {
+                syncGuides(player);
+            }
         }
     }
 }

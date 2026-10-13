@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.magpie;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
@@ -611,6 +612,7 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
                 if (!carried.isEmpty()) {
                     ItemStack left = home.insert(carried);
                     if (!left.isEmpty()) dropStack(left);
+                    ModCriteria.fireNear(world, getPos(), 16, "magpie_delivery", 1, this);
                     setCarried(ItemStack.EMPTY);
                     world.playSound(null, getX(), getY(), getZ(), SoundEvents.BLOCK_CHAIN_PLACE, SoundCategory.NEUTRAL, 0.5F, 1.8F);
                 }
@@ -1070,6 +1072,7 @@ public class WildMagpieEntity extends AnimalEntity implements GeoEntity {
 
     private void startFlight(Flight next) {
         flight = next;
+        if (next.far && getWorld() instanceof ServerWorld world) ModCriteria.fireNear(world, getPos(), 24, "magpie_long_flight", 1, this);
         flightTick = 0;
         perch = null;
         courtship = 0;

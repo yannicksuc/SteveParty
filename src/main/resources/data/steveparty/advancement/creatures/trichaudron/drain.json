@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:lava_bucket",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.trichaudron.drain.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.trichaudron.drain.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "drained": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "trichaudron_drained"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "drained"
+    ]
+  ]
+}

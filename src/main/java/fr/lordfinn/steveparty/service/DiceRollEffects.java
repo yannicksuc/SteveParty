@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import com.mojang.authlib.properties.PropertyMap;
@@ -252,6 +253,7 @@ public final class DiceRollEffects {
                 int lost = InventoryUtils.take(player.getInventory(), coin, -coins);
                 PartyResources.deposit(party.get(), coin.copyWithCount(lost));
                 applied = -lost;
+                if (lost > 0 && InventoryUtils.count(player.getInventory(), coin) == 0) ModCriteria.fire(player, "dice_broke", lost);
             }
         }
         Text who = player != null ? player.getDisplayName() : token.getDisplayName();

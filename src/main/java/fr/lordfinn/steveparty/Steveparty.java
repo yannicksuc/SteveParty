@@ -29,6 +29,7 @@ import fr.lordfinn.steveparty.commands.PlayerPawnCommand;
 import fr.lordfinn.steveparty.commands.PodiumCommand;
 import fr.lordfinn.steveparty.commands.VillagerBlockCommand;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
 import fr.lordfinn.steveparty.data.handler.ModHandler;
 import fr.lordfinn.steveparty.effect.ModEffects;
@@ -156,6 +157,7 @@ public class Steveparty implements ModInitializer {
         ModHandler.initialize();
         ModRecipes.initialize();
         ModScoreboardCriteria.initialize();
+        ModCriteria.initialize();
         GoalPoleNetwork.initialize();
         MiniGamePipes.initialize();
         MiniGameNameColors.initialize();

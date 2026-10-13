@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/boomcart/hot_potato",
+  "display": {
+    "icon": {
+      "id": "steveparty:boomcart_spawn_egg",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.boomcart.end_of_the_line.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.boomcart.end_of_the_line.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "blast": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "boomcart_blast_other"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "blast"
+    ]
+  ]
+}

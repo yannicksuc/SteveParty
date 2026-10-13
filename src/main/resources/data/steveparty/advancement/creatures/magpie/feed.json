@@ -1,0 +1,40 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:wheat_seeds",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.magpie.feed.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.magpie.feed.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "fed": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:wild_magpie"
+            }
+          }
+        ],
+        "item": {
+          "items": "#steveparty:magpie_food"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "fed"
+    ]
+  ]
+}

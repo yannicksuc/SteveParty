@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:wild_cards/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:obsidian",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.wild_cards.obsidian_trader.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.wild_cards.obsidian_trader.description"
+    },
+    "frame": "challenge",
+    "hidden": true
+  },
+  "criteria": {
+    "created": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "boxed_trader_obsidian"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "created"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

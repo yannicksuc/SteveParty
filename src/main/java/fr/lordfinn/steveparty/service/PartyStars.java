@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -442,6 +443,7 @@ public final class PartyStars {
         world.spawnParticles(ParticleTypes.FIREWORK, at.x, at.y + 1.0, at.z, 40, 0.4, 0.6, 0.4, 0.15);
         world.spawnParticles(ParticleTypes.WAX_OFF, at.x, at.y + 1.0, at.z, 30, 0.6, 0.6, 0.6, 0.5);
         place(party, world, space);
+        ModCriteria.fire(buyer, "star_bought", 1);
         return true;
     }
 

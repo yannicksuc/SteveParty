@@ -1,0 +1,35 @@
+{
+  "parent": "steveparty:creatures/glandouille/strike",
+  "display": {
+    "icon": {
+      "id": "steveparty:acorn_hat",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.glandouille.tower.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.glandouille.tower.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "tower": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "glandouille_tower",
+        "value": {
+          "min": 25
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tower"
+    ]
+  ],
+  "rewards": {
+    "experience": 100
+  }
+}

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
@@ -227,6 +228,7 @@ public final class CommonPots {
         MessageUtils.sendToNearby(world, at, 100, message.copy().formatted(Formatting.GOLD, Formatting.BOLD), MessageUtils.MessageType.CHAT);
         fanfare(world, at);
         deliver(world, space, token, coin);
+        ModCriteria.fire(player, "pot_won", coins);
         return win;
     }
 

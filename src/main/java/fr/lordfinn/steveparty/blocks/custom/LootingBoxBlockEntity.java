@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
@@ -199,6 +200,7 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
 
             // Register player's jump state
             playersWhoPunchedThisJump.add(player.getUuid());
+            ModCriteria.fire(player, "looting_box_hit");
 
             // Reduce remaining punches
             hitsRemaining--;

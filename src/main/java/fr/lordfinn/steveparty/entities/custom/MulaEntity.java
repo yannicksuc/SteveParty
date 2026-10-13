@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
@@ -1290,6 +1291,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
                 bellyClearTicks = BELLY_CLEAR_TICKS;
                 // at the pop it flies away as a shooting star, to be reborn far away
                 starLaunchTicks = STAR_LAUNCH_TICKS;
+                ModCriteria.fire(player, "mula_burst", this);
             } else {
                 playSpecial("celebrate", CELEBRATE_TICKS);
             }

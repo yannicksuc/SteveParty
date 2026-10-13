@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:workshop/bubbles/ride",
+  "display": {
+    "icon": {
+      "id": "minecraft:bow",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.bubbles.bubbled.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.bubbles.bubbled.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "hit": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "bubbled_hit"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "hit"
+    ]
+  ]
+}

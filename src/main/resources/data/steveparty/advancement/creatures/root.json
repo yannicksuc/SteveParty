@@ -1,0 +1,136 @@
+{
+  "display": {
+    "icon": {
+      "id": "steveparty:acorn",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.root.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.root.description"
+    },
+    "frame": "task",
+    "background": "steveparty:textures/block/magpie_nest.png",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "glandouille": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:glandouille"
+            }
+          }
+        ]
+      }
+    },
+    "frousseux": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:frousseux"
+            }
+          }
+        ]
+      }
+    },
+    "boomcart": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:boomcart"
+            }
+          }
+        ]
+      }
+    },
+    "trichaudron": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:trichaudron"
+            }
+          }
+        ]
+      }
+    },
+    "wild_magpie": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:wild_magpie"
+            }
+          }
+        ]
+      }
+    },
+    "mistigri": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mistigri"
+            }
+          }
+        ]
+      }
+    },
+    "acorn": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:acorn"
+          }
+        ]
+      }
+    },
+    "nest": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:magpie_nest"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "glandouille",
+      "frousseux",
+      "boomcart",
+      "trichaudron",
+      "wild_magpie",
+      "mistigri",
+      "acorn",
+      "nest"
+    ]
+  ]
+}

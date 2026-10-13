@@ -39,6 +39,11 @@ public abstract class ABoardSpaceBehavior {
         this.tileType = tileType;
     }
 
+    /** The role this behaviour plays. */
+    public BoardSpaceType getTileType() {
+        return tileType;
+    }
+
     public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
         if (entity instanceof PlayerEntity)
             onPlayerStep(world, pos, state, entity);

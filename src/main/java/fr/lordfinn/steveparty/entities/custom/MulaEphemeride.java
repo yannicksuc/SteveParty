@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.utils.ServerMemory;
@@ -152,6 +153,7 @@ public final class MulaEphemeride {
             world.spawnEntity(star);
         }
         if (e.sited.add(player.getUuid())) {
+            ModCriteria.fire(player, "ephemeride_seen");
             double d = MIN_SITE + random.nextDouble() * (MAX_SITE - MIN_SITE);
             BlockPos site = BlockPos.ofFloored(player.getX() + dirX * d, ground, player.getZ() + dirZ * d);
             MulaSpawnSites.get(world).add(site, world.getTime(), e.day, group(random));

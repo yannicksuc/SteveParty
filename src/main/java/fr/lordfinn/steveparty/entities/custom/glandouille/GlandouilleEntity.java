@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom.glandouille;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.effect.DazedEffect;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
@@ -828,6 +829,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         }
         stomps++;
         remember(player);
+        ModCriteria.fire(player, "glandouille_squashed", this);
         World world = getWorld();
         if (world instanceof ServerWorld serverWorld) {
             serverWorld.spawnParticles(ParticleTypes.POOF, getX(), getY() + getHeight() * 0.5, getZ(), 6, 0.25, 0.1, 0.25, 0.02);
@@ -841,6 +843,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             } finally {
                 squashKill = false;
             }
+            ModCriteria.fire(player, "glandouille_flattened", this);
             return true;
         }
         if (stomps >= variant.flattenAt) {
@@ -993,6 +996,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
                 e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e) && !spares(e))) {
             // another tower (or a lone one): it lands on top of it and stays there
             if (other instanceof GlandouilleEntity glandouille && GlandouilleTowers.joinOnImpact(this, glandouille)) {
+                if (thrown && thrower instanceof PlayerEntity player) ModCriteria.fire(player, "glandouille_strike", GlandouilleTowers.height(this), this);
                 setNoGravity(false);
                 setVelocity(Vec3d.ZERO);
                 setMood(Mood.CALM, 0);

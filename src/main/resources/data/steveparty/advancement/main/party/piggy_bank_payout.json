@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/party/piggy_bank",
+  "display": {
+    "icon": {
+      "id": "steveparty:piggy_bank",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.piggy_bank_payout.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.piggy_bank_payout.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "paid": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "piggy_bank_payout"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "paid"
+    ]
+  ]
+}

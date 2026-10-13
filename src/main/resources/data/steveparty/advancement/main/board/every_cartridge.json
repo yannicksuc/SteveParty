@@ -11,7 +11,7 @@
     "description": {
       "translate": "advancements.steveparty.main.board.every_cartridge.description"
     },
-    "frame": "goal"
+    "frame": "challenge"
   },
   "criteria": {
     "start": {
@@ -213,6 +213,6 @@
     ]
   ],
   "rewards": {
-    "experience": 25
+    "experience": 100
   }
 }

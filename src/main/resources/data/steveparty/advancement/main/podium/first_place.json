@@ -1,0 +1,30 @@
+{
+  "parent": "steveparty:main/podium/podium",
+  "display": {
+    "icon": {
+      "id": "steveparty:gold_podium",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.podium.first_place.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.podium.first_place.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "first": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "podium_claimed",
+        "value": 1
+      }
+    }
+  },
+  "requirements": [
+    [
+      "first"
+    ]
+  ]
+}

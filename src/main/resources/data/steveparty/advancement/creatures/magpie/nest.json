@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:creatures/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:magpie_nest",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.magpie.nest.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.magpie.nest.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:magpie_nest"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.frousseux;
 
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -203,6 +204,7 @@ public class FrousseuxCandleHolderBlock extends BlockWithEntity {
         BlockState state = ModBlocks.FROUSSEUX_CANDLE_HOLDER.getDefaultState()
                 .with(ROTATION, rotationFacing(player.getYaw())).with(COLOR, frousseux.getColor())
                 .with(FLAME, frousseux.getFlame().ordinal());
+        ModCriteria.fire(player, "frousseux_candle_holder", frousseux);
         frousseux.discard(); // its moving light goes with it
         world.setBlockState(pos, state, Block.NOTIFY_ALL);
         if (world.getBlockEntity(pos) instanceof FrousseuxCandleHolderBlockEntity holder) holder.setFrousseux(data);

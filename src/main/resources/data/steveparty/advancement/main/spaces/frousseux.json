@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:frousseux_cartridge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.spaces.frousseux.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.spaces.frousseux.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "landed": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "landed_frousseux"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "landed"
+    ]
+  ]
+}

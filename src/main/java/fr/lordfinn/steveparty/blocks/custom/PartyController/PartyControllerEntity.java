@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
@@ -716,6 +717,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         // The star stands on one of the board's star spaces, at random
         PartyStars.onPartyStarted(this, serverWorld);
         fr.lordfinn.steveparty.api.event.PartyEvents.STARTED.invoker().onPartyStarted(this);
+        PartyAdvancements.partyStarted(this, serverWorld);
         nextStep();
         markDirty();
         // Goal pole bases linked to this party start again from 0

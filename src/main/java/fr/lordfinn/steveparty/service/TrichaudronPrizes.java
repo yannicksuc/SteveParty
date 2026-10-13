@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
@@ -473,6 +474,7 @@ public final class TrichaudronPrizes {
                         .formatted(Formatting.GOLD), MessageUtils.MessageType.ACTION_BAR);
                 BoardSequences.tell(party, Text.translatable("message.steveparty.trichaudron_space.won_by", name, prizeText(won))
                         .formatted(Formatting.GOLD), player);
+                ModCriteria.fire(player, "trichaudron_prize", moved);
             } else if (player != null) {
                 // its chests emptied meanwhile: nothing given
                 MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.trichaudron_space.gone")

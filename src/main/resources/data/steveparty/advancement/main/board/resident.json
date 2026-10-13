@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/board/spawn_bubble",
+  "display": {
+    "icon": {
+      "id": "steveparty:spawn_marker",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.resident.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.resident.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "resident": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "spawn_bubble_resident"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "resident"
+    ]
+  ]
+}

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.glandouille;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
@@ -163,6 +164,7 @@ public class AcornCropBlock extends CropBlock {
         hatched.setPersistent();
         world.spawnEntity(hatched);
         hatched.hatchAsleep();
+        ModCriteria.fireNear(world, Vec3d.ofCenter(pos), 16, "glandouille_hatched", variant.ordinal(), hatched);
         world.playSound(null, pos, ModSounds.GLANDOUILLE_HATCH, SoundCategory.BLOCKS, 1f, 1f);
         world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 10, 0.3, 0.3, 0.3, 0);
         return hatched;

@@ -1,0 +1,61 @@
+{
+  "parent": "steveparty:main/board/check_point",
+  "display": {
+    "icon": {
+      "id": "minecraft:magenta_dye",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.dyed_check_point.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.dyed_check_point.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "dyed": {
+      "trigger": "minecraft:item_used_on_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:check_point"
+              }
+            }
+          },
+          {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "items": [
+                "minecraft:white_dye",
+                "minecraft:orange_dye",
+                "minecraft:magenta_dye",
+                "minecraft:light_blue_dye",
+                "minecraft:yellow_dye",
+                "minecraft:lime_dye",
+                "minecraft:pink_dye",
+                "minecraft:gray_dye",
+                "minecraft:light_gray_dye",
+                "minecraft:cyan_dye",
+                "minecraft:purple_dye",
+                "minecraft:blue_dye",
+                "minecraft:brown_dye",
+                "minecraft:green_dye",
+                "minecraft:red_dye",
+                "minecraft:black_dye"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "dyed"
+    ]
+  ]
+}

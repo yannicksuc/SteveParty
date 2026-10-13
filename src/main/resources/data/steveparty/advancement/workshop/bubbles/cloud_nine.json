@@ -1,0 +1,49 @@
+{
+  "parent": "steveparty:workshop/bubbles/boost",
+  "display": {
+    "icon": {
+      "id": "minecraft:white_wool",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.bubbles.cloud_nine.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.bubbles.cloud_nine.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "high": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "vehicle": {
+                "type": "steveparty:bubble"
+              },
+              "location": {
+                "position": {
+                  "y": {
+                    "min": 192
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "high"
+    ]
+  ],
+  "rewards": {
+    "experience": 25
+  }
+}

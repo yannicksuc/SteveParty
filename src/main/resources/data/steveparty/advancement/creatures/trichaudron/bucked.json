@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:creatures/trichaudron/drain",
+  "display": {
+    "icon": {
+      "id": "minecraft:saddle",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.trichaudron.bucked.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.trichaudron.bucked.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "bucked": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "trichaudron_bucked"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "bucked"
+    ]
+  ]
+}

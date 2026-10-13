@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.glandouille;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.payloads.Payloads;
@@ -372,7 +373,10 @@ public final class GlandouilleTowers {
             return false;
         }
         carried.stopRiding();
-        if (climb(carried, target, false)) return true;
+        if (climb(carried, target, false)) {
+            ModCriteria.fire(player, "glandouille_tower", height(target), bottom(target));
+            return true;
+        }
         carried.startRiding(player, true);
         return false;
     }

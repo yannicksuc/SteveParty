@@ -1,0 +1,193 @@
+{
+  "parent": "steveparty:creatures/frousseux/tamed",
+  "display": {
+    "icon": {
+      "id": "minecraft:candle",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.frousseux.all_colours.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.frousseux.all_colours.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "plain": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 0
+      }
+    },
+    "white": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 1
+      }
+    },
+    "orange": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 2
+      }
+    },
+    "magenta": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 3
+      }
+    },
+    "light_blue": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 4
+      }
+    },
+    "yellow": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 5
+      }
+    },
+    "lime": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 6
+      }
+    },
+    "pink": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 7
+      }
+    },
+    "gray": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 8
+      }
+    },
+    "light_gray": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 9
+      }
+    },
+    "cyan": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 10
+      }
+    },
+    "purple": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 11
+      }
+    },
+    "blue": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 12
+      }
+    },
+    "brown": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 13
+      }
+    },
+    "green": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 14
+      }
+    },
+    "red": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 15
+      }
+    },
+    "black": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "frousseux_tamed",
+        "value": 16
+      }
+    }
+  },
+  "requirements": [
+    [
+      "plain"
+    ],
+    [
+      "white"
+    ],
+    [
+      "orange"
+    ],
+    [
+      "magenta"
+    ],
+    [
+      "light_blue"
+    ],
+    [
+      "yellow"
+    ],
+    [
+      "lime"
+    ],
+    [
+      "pink"
+    ],
+    [
+      "gray"
+    ],
+    [
+      "light_gray"
+    ],
+    [
+      "cyan"
+    ],
+    [
+      "purple"
+    ],
+    [
+      "blue"
+    ],
+    [
+      "brown"
+    ],
+    [
+      "green"
+    ],
+    [
+      "red"
+    ],
+    [
+      "black"
+    ]
+  ],
+  "rewards": {
+    "experience": 100
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "parent": "steveparty:creatures/glandouille/young",
+  "display": {
+    "icon": {
+      "id": "steveparty:frosty_glandouille_spawn_egg",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.glandouille.all_variants.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.glandouille.all_variants.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "v0": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "glandouille_hatched",
+        "value": 0
+      }
+    },
+    "v1": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "glandouille_hatched",
+        "value": 1
+      }
+    },
+    "v2": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "glandouille_hatched",
+        "value": 2
+      }
+    },
+    "v3": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "glandouille_hatched",
+        "value": 3
+      }
+    }
+  },
+  "requirements": [
+    [
+      "v0"
+    ],
+    [
+      "v1"
+    ],
+    [
+      "v2"
+    ],
+    [
+      "v3"
+    ]
+  ],
+  "rewards": {
+    "experience": 100
+  }
+}

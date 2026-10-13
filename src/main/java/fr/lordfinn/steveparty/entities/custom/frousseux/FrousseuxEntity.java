@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.frousseux;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.entities.BoardActor;
 import fr.lordfinn.steveparty.entities.FollowsOwnerAnywhere;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -689,6 +690,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         ItemStack taken = inventory.getStack(slot).split(1);
         inventory.markDirty();
         stolen = taken;
+        ModCriteria.fire(player, "frousseux_stole", this);
         setPersistent(); // never despawns with someone's diamond
         this.dataTracker.set(SHOWN_ITEM, taken.copy());
         startItemFlight(player, true);
@@ -792,6 +794,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (stolen.isEmpty()) return;
         ItemStack back = stolen;
         stolen = ItemStack.EMPTY;
+        ModCriteria.fire(player, "frousseux_recovered", this);
         this.dataTracker.set(SHOWN_ITEM, back.copy());
         startItemFlight(player, false);
         player.getInventory().offerOrDrop(back);
@@ -928,7 +931,8 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     @Override
     public boolean isImmuneToExplosion(Explosion explosion) {
         if (boardActor) return super.isImmuneToExplosion(explosion);
-        if (explosion.getEntity() instanceof AbstractWindChargeEntity && getWorld() instanceof ServerWorld world && isAlive()) {
+        if (explosion.getEntity() instanceof AbstractWindChargeEntity charge && getWorld() instanceof ServerWorld world && isAlive()) {
+            ModCriteria.fire(charge.getOwner() instanceof PlayerEntity owner ? owner : null, "frousseux_blown", this);
             world.spawnParticles(ParticleTypes.SMOKE, getX(), getY() + HEIGHT + 0.2, getZ(), 4, 0.06, 0.1, 0.06, 0.01);
         }
         return true;
@@ -945,6 +949,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (getWorld().isClient) return;
         light.clear(getWorld());
         if (!stolen.isEmpty()) {
+            ModCriteria.fire(damageSource.getAttacker() instanceof PlayerEntity killer ? killer : null, "frousseux_recovered", this);
             dropStack(stolen); // what it stole falls with it
             stolen = ItemStack.EMPTY;
             this.dataTracker.set(SHOWN_ITEM, ItemStack.EMPTY);
@@ -1002,6 +1007,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     public void tame(PlayerEntity player) {
         if (!stolen.isEmpty()) giveBack(player);
         setOwner(player.getUuid());
+        ModCriteria.fire(player, "frousseux_tamed", getColor().ordinal(), this);
         setSitting(false);
         fleeTicks = 0;
         fleeFrom = null;

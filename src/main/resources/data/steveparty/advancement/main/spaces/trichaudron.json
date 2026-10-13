@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:trichaudron_cartridge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.spaces.trichaudron.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.spaces.trichaudron.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "prize": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "trichaudron_prize"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "prize"
+    ]
+  ]
+}

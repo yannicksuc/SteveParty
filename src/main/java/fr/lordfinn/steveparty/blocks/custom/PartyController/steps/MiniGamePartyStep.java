@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
+import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
@@ -440,7 +442,10 @@ public class MiniGamePartyStep extends PartyStep {
      */
     public boolean toggleReady(PartyControllerEntity controller, UUID player) {
         if (!isPractice() || !participants.contains(player)) return false;
-        if (!ready.remove(player)) ready.add(player);
+        if (!ready.remove(player)) {
+            ready.add(player);
+            if (controller.getWorld() != null) ModCriteria.fire(controller.getWorld().getServer(), player, "minigame_ready", 1, null);
+        }
         controller.markDirty();
         if (!checkReady(controller)) screens.showPractice(controller);
         return true;
@@ -592,6 +597,7 @@ public class MiniGamePartyStep extends PartyStep {
             screens.tellResults(controller, MiniGamePayout.results(controller, server, places, payout.paid()), note);
         }
         fr.lordfinn.steveparty.api.event.MiniGameEvents.ENDED.invoker().onMiniGameEnded(controller, this, Map.copyOf(places), List.copyOf(winners));
+        PartyAdvancements.miniGameRound(server, places, MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue));
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
     }

@@ -1,10 +1,12 @@
 package fr.lordfinn.steveparty.mixin;
 
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.effect.BubbledEffect;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleEntity;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
@@ -67,7 +69,8 @@ public abstract class ProjectileEntityBubbleMixin {
         if (!steveparty$bubbled || !(hit instanceof EntityHitResult entityHit)) return;
         if (!(entityHit.getEntity() instanceof LivingEntity target) || !target.isAlive()) return;
         ProjectileEntity self = (ProjectileEntity) (Object) this;
-        BubbledEffect.bubble(target, BubbledEffect.PROJECTILE_TICKS, self.getOwner() instanceof LivingEntity owner ? owner : null);
+        if (BubbledEffect.bubble(target, BubbledEffect.PROJECTILE_TICKS, self.getOwner() instanceof LivingEntity owner ? owner : null)
+                && self.getOwner() instanceof PlayerEntity shooter) ModCriteria.fire(shooter, "bubbled_hit", target);
     }
 
     /** Bubbled, it stays so when saved. */

@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:workshop/bubbles/ride",
+  "display": {
+    "icon": {
+      "id": "minecraft:wind_charge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.bubbles.boost.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.bubbles.boost.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "boost": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "bubble_boost",
+        "value": {
+          "min": 95
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "boost"
+    ]
+  ]
+}

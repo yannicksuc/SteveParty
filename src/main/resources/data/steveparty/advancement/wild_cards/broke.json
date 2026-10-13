@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:wild_cards/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:debt_dice_face_10",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.wild_cards.broke.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.wild_cards.broke.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "broke": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "dice_broke"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "broke"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

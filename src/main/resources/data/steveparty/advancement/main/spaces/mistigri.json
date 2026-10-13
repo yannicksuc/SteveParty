@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:mistigri_cartridge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.spaces.mistigri.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.spaces.mistigri.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "landed": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "landed_mistigri"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "landed"
+    ]
+  ]
+}

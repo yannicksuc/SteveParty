@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.payloads.Payloads;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.service.MarkerResidents;
@@ -41,6 +42,7 @@ public record SpawnMarkerSettings(BlockPos pos, boolean resident, int lift) impl
         if (player.squaredDistanceTo(pos.toCenterPos()) > REACH * REACH || !ScreenHandlerChecks.canBuildAt(player, pos)) return false;
         if (!(world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity marker)) return false;
         boolean changed = marker.isResident() != settings.resident() || marker.getLiftSteps() != settings.lift();
+        if (settings.resident() && !marker.isResident()) ModCriteria.fire(player, "spawn_bubble_resident");
         marker.setResident(settings.resident());
         marker.setLiftSteps(settings.lift());
         if (changed) {

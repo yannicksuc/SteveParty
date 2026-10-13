@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:creatures/magpie/nest",
+  "display": {
+    "icon": {
+      "id": "steveparty:coin",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.creatures.magpie.nest_egg.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.creatures.magpie.nest_egg.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "full": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "nest_slot_full"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "full"
+    ]
+  ],
+  "rewards": {
+    "experience": 25
+  }
+}

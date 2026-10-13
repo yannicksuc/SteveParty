@@ -1,8 +1,10 @@
 package fr.lordfinn.steveparty.mixin;
 
 import com.mojang.authlib.GameProfile;
+import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -92,6 +94,8 @@ public abstract class PlayerFallMixin extends PlayerEntity {
 
 
                 world.spawnEntity(trader);
+                ModCriteria.fire(player, "boxed_trader_created", trader);
+                if (belowState.isOf(Blocks.OBSIDIAN)) ModCriteria.fire(player, "boxed_trader_obsidian", trader);
                 world.playSound(null, belowPos, SoundEvents.ENTITY_VILLAGER_CELEBRATE, SoundCategory.BLOCKS, 1.0F, 1.0F);
             }
         }
