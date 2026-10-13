@@ -645,7 +645,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         return new ArrayList<>(findStartTokenTiles(serverWorld).keySet());
     }
 
-    /** The tokens bound to the start tiles of its board, in their order, each with its start tile (the first one bound to it). */
+    /** The tokens on the start tiles of its board they are bound to, in their order, each with its start tile (the first one bound to it). */
     public Map<UUID, BlockPos> findStartTokenTiles(ServerWorld serverWorld) {
         return board(serverWorld, true).startTokens();
     }
@@ -850,7 +850,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public void sendTokensHome(ServerWorld serverWorld, Collection<UUID> tokens) {
         Map<UUID, BlockPos> homes = tokenHomes.startTiles();
         // A party started without them (an older save): the start tiles still bound to its tokens
-        if (!homes.keySet().containsAll(tokens)) findStartTokenTiles(serverWorld).forEach(homes::putIfAbsent);
+        if (!homes.keySet().containsAll(tokens))
+            PartyBoard.boundTokens(serverWorld, board(serverWorld, true).starts()).forEach(homes::putIfAbsent);
         for (UUID tokenUUID : tokens) {
             BlockPos home = homes.get(tokenUUID);
             if (home != null) tokenHomes.sendHome(serverWorld, tokenUUID, home);

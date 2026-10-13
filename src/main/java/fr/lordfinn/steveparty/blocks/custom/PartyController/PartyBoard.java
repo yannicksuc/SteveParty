@@ -8,6 +8,8 @@ import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.mob.MobEntity;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtLongArray;
@@ -46,6 +48,8 @@ public final class PartyBoard {
     private static final int MARGIN = 16;
     /** A board of more spaces than this is cut there (a mistake, or a loop of links far away). */
     static final int MAX_SPACES = 4096;
+    /** How far from its start tile a bound token may be and still play (it floats over it, bobbing). */
+    private static final double ON_START_DISTANCE = 2.5;
 
     private PartyBoard() {}
 
@@ -167,11 +171,27 @@ public final class PartyBoard {
         return reached;
     }
 
-    /** The tokens bound to the start tiles {@code starts}, in their order, each with its start tile (the first one bound to it). */
+    /**
+     * The tokens standing on the start tiles {@code starts} they are bound to, in their order, each with its start tile
+     * (the first one bound to it). A tile still bound to a token that is gone or elsewhere has no token: it used to add
+     * a player without a pawn to the party.
+     */
     private static Map<UUID, BlockPos> startTokens(ServerWorld world, List<BlockPos> starts) {
         Map<UUID, BlockPos> tokens = new LinkedHashMap<>();
+        boundTokens(world, starts).forEach((uuid, tilePos) -> {
+            if (isOn(world, uuid, tilePos)) tokens.put(uuid, tilePos);
+        });
+        return tokens;
+    }
+
+    /**
+     * The tokens bound to the start tiles {@code starts}, wherever they are now, in their order, each with its start
+     * tile (the first one bound to it).
+     */
+    public static Map<UUID, BlockPos> boundTokens(ServerWorld world, Collection<BlockPos> starts) {
+        Map<UUID, BlockPos> tokens = new LinkedHashMap<>();
         for (BlockPos tilePos : starts) {
-            if (!(world.getBlockEntity(tilePos) instanceof BoardSpaceBlockEntity tile)) continue;
+            if (!isLoaded(world, tilePos) || !(world.getBlockEntity(tilePos) instanceof BoardSpaceBlockEntity tile)) continue;
             String potentialUuid = tile.getActiveCartridgeItemStack().get(TB_START_BOUND_ENTITY);
             if (potentialUuid == null) continue;
             try {
@@ -180,6 +200,13 @@ public final class PartyBoard {
             }
         }
         return tokens;
+    }
+
+    /** Whether the token {@code uuid} is a living token floating on (or standing by) its start tile {@code tilePos}. */
+    private static boolean isOn(ServerWorld world, UUID uuid, BlockPos tilePos) {
+        return world.getEntity(uuid) instanceof MobEntity token && token.isAlive()
+                && ((TokenizedEntityInterface) token).steveparty$isTokenized()
+                && token.getPos().squaredDistanceTo(tilePos.toCenterPos()) <= ON_START_DISTANCE * ON_START_DISTANCE;
     }
 
     /** Whether the block at {@code pos} is a start tile (a board space with a Start Cartridge active). */
