@@ -10,7 +10,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.world.ServerWorld;
 
 import fr.lordfinn.steveparty.service.ThresholdGates;
@@ -128,45 +127,23 @@ public class PartyData {
         return nbt;
     }
 
-    public void writeToPacket(PacketByteBuf buf) {
-        // Write steps to the buffer
-        buf.writeInt(steps.size()); // Write the size of the steps list
-        if (!steps.isEmpty())
-            for (PartyStep step : steps) {
-                NbtCompound stepNbt = step.toNbt();
-                buf.writeNbt(stepNbt); // Write each step as NBT
-            }
-
-        // Write tokens to the buffer
-        buf.writeInt(tokens.size()); // Write the size of the tokens list
-        if (!tokens.isEmpty())
-            for (UUID uuid : tokens) {
-                buf.writeUuid(uuid); // Write each UUID directly
-            }
-
-        buf.writeInt(stepIndex);
-        buf.writeInt(nbTurn);
+    /**
+     * The steps as NBT, made now: what the clients are sent. Never hand the live party to a packet, Netty encodes it
+     * later on its own thread while the server thread is still adding steps.
+     */
+    public List<NbtCompound> stepsNbt() {
+        List<NbtCompound> nbt = new ArrayList<>(steps.size());
+        for (PartyStep step : steps) nbt.add(step.toNbt());
+        return List.copyOf(nbt);
     }
 
-    public static PartyData fromBuf(PacketByteBuf buf) {
+    /** The client's copy of a party sent as {@link #stepsNbt()}, its tokens, step and number of turns. */
+    public static PartyData received(List<NbtCompound> stepsNbt, List<UUID> tokens, int stepIndex, int nbTurn) {
         PartyData party = new PartyData();
-
-        // Read steps from the buffer
-        int stepCount = buf.readInt(); // Read the size of the steps list
-        for (int i = 0; i < stepCount; i++) {
-            NbtCompound stepNbt = buf.readNbt(); // Read each step as NBT
-            party.steps.add(stepNbt != null ? PartyStepFactory.get(stepNbt) : new PartyStep());
-        }
-
-        // Read tokens from the buffer
-        int tokenCount = buf.readInt(); // Read the size of the tokens list
-        for (int i = 0; i < tokenCount; i++) {
-            UUID uuid = buf.readUuid(); // Read each UUID directly
-            party.tokens.add(uuid);
-        }
-
-        party.stepIndex = buf.readInt();
-        party.nbTurn = buf.readInt();
+        for (NbtCompound stepNbt : stepsNbt) party.steps.add(stepNbt != null ? PartyStepFactory.get(stepNbt) : new PartyStep());
+        party.tokens.addAll(tokens);
+        party.stepIndex = stepIndex;
+        party.nbTurn = nbTurn;
         return party;
     }
 
