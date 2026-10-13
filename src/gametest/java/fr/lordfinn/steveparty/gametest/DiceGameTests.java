@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.gametest.kit.TestWait;
 import fr.lordfinn.steveparty.items.ModItems;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.PigEntity;
@@ -358,5 +359,19 @@ public class DiceGameTests implements SteveGameTest {
             pig.discard();
             context.complete();
         });
+    }
+
+    /** Thrown with the item, a die goes around its thrower's own pawn, not another player's pawn standing closer. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
+    public void aThrownDieGoesAroundItsThrowersOwnPawn(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new ItemStack(ModItems.DEFAULT_DICE), -20, false);
+        PigEntity someoneElses = fr.lordfinn.steveparty.gametest.kit.TestBoards.token(context, new BlockPos(4, 2, 5), UUID.randomUUID());
+        PigEntity his = fr.lordfinn.steveparty.gametest.kit.TestBoards.token(context, new BlockPos(1, 2, 1), player.getUuid());
+        player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        context.assertEquals(dice.getTarget().orElse(null), his.getUuid(), "his own pawn, though another one is closer");
+        someoneElses.discard();
+        his.discard();
+        context.complete();
     }
 }

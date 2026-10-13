@@ -47,7 +47,8 @@ public class PartyBoardGameTests implements SteveGameTest {
         context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
         PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
         ItemStack start = new ItemStack(ModItems.TILE_BEHAVIOR_START);
-        UUID token = UUID.randomUUID();
+        PigEntity pig = TestBoards.token(context, START.up(), null);
+        UUID token = pig.getUuid();
         start.set(ModComponents.TB_START_BOUND_ENTITY, token.toString());
         space(context, START, start, MIDDLE);
         space(context, MIDDLE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), END);
@@ -62,7 +63,6 @@ public class PartyBoardGameTests implements SteveGameTest {
         context.assertEquals(board.graph().nodes().size(), 3, "the board check sees its 3 spaces");
 
         // A party runs on it: its spaces know it, the lone tile does not
-        PigEntity pig = TestBoards.token(context, START.up(), null);
         PartyControllerEntity party = TestBoards.party(context, CONTROLLER, 1, pig.getUuid());
         party.board(context.getWorld(), true);
         context.assertTrue(PartyControllerEntity.getPartyOfBoardSpace(context.getWorld(), context.getAbsolutePos(END), 1, false)
@@ -112,6 +112,33 @@ public class PartyBoardGameTests implements SteveGameTest {
         context.setBlockState(CONTROLLER, Blocks.AIR);
         context.assertEquals(CartridgeContainers.storageOf(new ItemStack(ModItems.INVENTORY_CARTRIDGE), world, end, 1),
                 CartridgeContainers.Storage.NONE, "the controller gone: none");
+        context.complete();
+    }
+
+    /**
+     * A start tile still bound to a pawn that is gone, or that stands elsewhere, has no pawn: no player without a pawn
+     * joins the party. A pawn put back on it plays again.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_board_phantom")
+    public void aStartBoundToAGoneOrAwayPawnHasNone(TestContext context) {
+        TestBoards.floor(context, 9);
+        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
+        ItemStack gone = new ItemStack(ModItems.TILE_BEHAVIOR_START);
+        gone.set(ModComponents.TB_START_BOUND_ENTITY, UUID.randomUUID().toString());
+        space(context, START, gone, MIDDLE);
+        PigEntity away = TestBoards.token(context, new BlockPos(7, 1, 7), null);
+        ItemStack bound = new ItemStack(ModItems.TILE_BEHAVIOR_START);
+        bound.set(ModComponents.TB_START_BOUND_ENTITY, away.getUuidAsString());
+        space(context, MIDDLE, bound, START);
+
+        context.assertTrue(controller.findStartTokens(context.getWorld()).isEmpty(), "no pawn on its start: nobody plays");
+        context.assertEquals(controller.board(context.getWorld(), true).starts().size(), 2, "both starts still count");
+
+        away.refreshPositionAndAngles(context.getAbsolutePos(MIDDLE.up()).toBottomCenterPos(), 0, 0);
+        context.assertEquals(controller.findStartTokens(context.getWorld()), List.of(away.getUuid()), "back on its start: it plays");
+        away.discard();
+        context.setBlockState(CONTROLLER, Blocks.AIR);
         context.complete();
     }
 }

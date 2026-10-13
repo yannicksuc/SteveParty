@@ -254,4 +254,107 @@ public class PartyStopGameTests implements SteveGameTest {
         cleanUp(context, board);
         context.complete();
     }
+
+    /**
+     * A player leaving ({@code /steveparty leave}) sends his pawn home at once, even when the pawn's owner changed
+     * during the party (his turns still name him); the others' pawns stay where they are.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void leavingSendsHisPawnHome(TestContext context) {
+        Board board = startedParty(context);
+        ServerPlayerEntity alice = TestPlayers.joined(context, "home", "A", net.minecraft.world.GameMode.SURVIVAL, 3, 2, 3);
+        ServerPlayerEntity bob = TestPlayers.joined(context, "home", "B", net.minecraft.world.GameMode.SURVIVAL, 4, 2, 3);
+        TestPlayers.removeAtEnd(context, alice);
+        TestPlayers.removeAtEnd(context, bob);
+        ((TokenizedEntityInterface) board.a()).steveparty$setTokenOwner(alice);
+        ((TokenizedEntityInterface) board.b()).steveparty$setTokenOwner(bob);
+        PartyControllerEntity controller = board.controller();
+        controller.addInterestedPlayer(alice);
+        controller.addInterestedPlayer(bob);
+        var data = controller.getPartyData();
+        // Her turn, then the owner of her pawn changed (a start tile clicked, a pawn handed over)
+        data.getSteps().add(data.getStepIndex() + 1, new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(board.a().getUuid(), alice.getUuid()));
+        ((TokenizedEntityInterface) board.a()).steveparty$setTokenOwner((net.minecraft.entity.player.PlayerEntity) null);
+        Vec3d away = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(SPACE_A));
+        board.a().requestTeleport(away.x, away.y, away.z);
+        Vec3d awayB = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(SPACE_B));
+        board.b().requestTeleport(awayB.x, awayB.y, awayB.z);
+
+        context.getWorld().getServer().getCommandManager().executeWithPrefix(alice.getCommandSource(), "/steveparty leave");
+        assertOn(context, board.a(), START_A, "her pawn is back on its start tile");
+        context.assertTrue(!inGame(board.a()), "her pawn is out of the game");
+        context.assertTrue(!controller.getPartyData().getTokens().contains(board.a().getUuid()), "her pawn left the party");
+        assertOn(context, board.b(), SPACE_B, "bob's pawn stays where it is");
+        context.assertTrue(controller.getPartyData().isStarted(), "the party goes on");
+        controller.stopParty(Text.literal("Tester"));
+        cleanUp(context, board);
+        context.complete();
+    }
+
+    /**
+     * Who launched the party from the dashboard may stop it (no operator needed); another player may not while its
+     * launcher is known. Launched by no one known (redstone), a player of the party may.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theLauncherMayStopHisParty(TestContext context) {
+        Board board = startedParty(context);
+        PartyControllerEntity controller = board.controller();
+        ServerPlayerEntity vivi = TestPlayers.joined(context, "stop", "V", net.minecraft.world.GameMode.SURVIVAL, 3, 2, 3);
+        ServerPlayerEntity other = TestPlayers.joined(context, "stop", "O", net.minecraft.world.GameMode.SURVIVAL, 4, 2, 3);
+        TestPlayers.removeAtEnd(context, vivi);
+        TestPlayers.removeAtEnd(context, other);
+        ((TokenizedEntityInterface) board.b()).steveparty$setTokenOwner(other);
+
+        // Launched by redstone: a player of the party may stop it, a passer-by may not
+        context.assertTrue(controller.getLauncher() == null, "no launcher");
+        context.assertTrue(controller.canStop(other), "a player of the party may stop it");
+        context.assertTrue(!controller.canStop(vivi), "a passer-by may not");
+        controller.stopParty(Text.literal("Tester"));
+        assertOn(context, board.a(), START_A, "a home");
+
+        // Launched by Vivi from the dashboard
+        controller.launchBy(vivi);
+        context.assertTrue(controller.getPartyData().isStarted(), "started again");
+        context.assertEquals(controller.getLauncher(), vivi.getUuid(), "Vivi launched it");
+        context.assertTrue(!controller.canEdit(vivi), "she may not change its settings now");
+        var handlerOther = new PartyControllerScreenHandler(1, other.getInventory(), controller);
+        context.assertTrue(!handlerOther.onButtonClick(other, PartyControllerScreenHandler.BUTTON_STOP), "another player may not");
+        context.assertTrue(controller.getPartyData().isStarted(), "the party goes on");
+        var handler = new PartyControllerScreenHandler(2, vivi.getInventory(), controller);
+        context.assertTrue(handler.onButtonClick(vivi, PartyControllerScreenHandler.BUTTON_STOP), "she stops it");
+        context.assertTrue(!controller.getPartyData().isStarted(), "stopped");
+        context.assertTrue(controller.getLauncher() == null, "launcher forgotten");
+        cleanUp(context, board);
+        context.complete();
+    }
+
+    /** Two pawns of the same colour (two reds): at the start the second gets another one, the first keeps its own. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void eachPawnHasItsOwnColour(TestContext context) {
+        PigEntity a = token(context, START_A), b = token(context, START_B);
+        ((TokenizedEntityInterface) a).steveparty$setTokenColor(0xFF0000);
+        ((TokenizedEntityInterface) b).steveparty$setTokenColor(0xF01010);
+        b.setCustomName(Text.literal("Poulette").withColor(0xF01010));
+        startTile(context, START_A, a);
+        startTile(context, START_B, b);
+        tile(context, SPACE_A, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
+        context.setBlockState(CONTROLLER.down(), Blocks.STONE);
+        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
+        controller.boot();
+        context.assertTrue(controller.getPartyData().getTokens().size() == 2, "both play");
+        int colorA = PartyLiveData.colorOf(a), colorB = PartyLiveData.colorOf(b);
+        context.assertEquals(colorA, 0xFF0000, "the first keeps its red");
+        context.assertTrue(colorB >= 0 && colorB != colorA, "the second has another colour");
+        int dr = (colorA >> 16) - (colorB >> 16), dg = (colorA >> 8 & 0xFF) - (colorB >> 8 & 0xFF), db = (colorA & 0xFF) - (colorB & 0xFF);
+        context.assertTrue(dr * dr + dg * dg + db * db > 60 * 60, "far from red");
+        context.assertTrue(b.getCustomName() != null && "Poulette".equals(b.getCustomName().getString())
+                && b.getCustomName().getStyle().getColor() != null && b.getCustomName().getStyle().getColor().getRgb() == colorB,
+                "its name keeps its text, in its new colour");
+        controller.stopParty(Text.literal("Tester"));
+        ((TokenizedEntityInterface) a).steveparty$setTokenized(false);
+        ((TokenizedEntityInterface) b).steveparty$setTokenized(false);
+        TestCleanup.removeIf(context, CONTROLLER, ModBlocks.PARTY_CONTROLLER);
+        context.complete();
+    }
 }

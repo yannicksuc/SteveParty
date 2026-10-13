@@ -213,6 +213,28 @@ public final class DevClientCommands {
                                             return 1;
                                         }))))
                         // The wheel of the tool in hand, open, its cursor at (x, y) from its centre (GUI pixels)
+                        // The end-of-party results card and chat lines, with made-up places (tie: the first two tied)
+                        .then(ClientCommandManager.literal("results")
+                                .then(ClientCommandManager.argument("tie", BoolArgumentType.bool()).executes(context -> {
+                                    var client = context.getSource().getClient();
+                                    boolean tie = BoolArgumentType.getBool(context, "tie");
+                                    String me = client.getSession().getUsername();
+                                    java.util.List<fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResults.Place> places = java.util.List.of(
+                                            new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResults.Place(1, null, me, 3, 24, tie),
+                                            new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResults.Place(2, null, "Vivi_NotOfficial", 3, tie ? 24 : 17, tie),
+                                            new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResults.Place(3, null, "taurasus", 1, 40, false),
+                                            new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResults.Place(4, null, "Maxence_YT", 0, 0, false));
+                                    net.minecraft.item.ItemStack coin = new net.minecraft.item.ItemStack(net.minecraft.item.Items.GOLD_NUGGET);
+                                    net.minecraft.item.ItemStack star = new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.PARTY_STAR);
+                                    client.send(() -> {
+                                        fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud.show(
+                                                fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResults.card(places, coin, star));
+                                        if (client.player != null)
+                                            for (var line : fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResults.lines(places, coin, star))
+                                                client.player.sendMessage(line, false);
+                                    });
+                                    return 1;
+                                })))
                         .then(ClientCommandManager.literal("wheel")
                                 .then(ClientCommandManager.argument("x", IntegerArgumentType.integer())
                                         .then(ClientCommandManager.argument("y", IntegerArgumentType.integer()).executes(context -> {

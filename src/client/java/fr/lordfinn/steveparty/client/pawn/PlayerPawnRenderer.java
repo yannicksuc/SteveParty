@@ -47,7 +47,8 @@ public class PlayerPawnRenderer extends LivingEntityRenderer<PlayerPawnEntity, P
 
     /** Its player's skin (online or not, see SkinUtils). */
     private static SkinTextures skin(PlayerPawnEntity pawn) {
-        return SkinUtils.getSkinTextures(pawn.getSkinOwner() != null ? pawn.getSkinOwner() : Util.NIL_UUID);
+        return SkinUtils.getSkinTextures(pawn.getSkinOwner() != null ? pawn.getSkinOwner() : Util.NIL_UUID, pawn.getSkinName(),
+                pawn.getSkinTextures(), pawn.getSkinSignature());
     }
 
     /** The statue's size, then the pose's moves of the whole figure. */

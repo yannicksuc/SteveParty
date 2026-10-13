@@ -91,6 +91,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public static final int PARTY_AUDIENCE_RADIUS = 100;
     /** Players who won the last mini-game (piggy banks may reward them). */
     private final List<UUID> lastWinners = new ArrayList<>();
+    /** The player who launched the running party from the dashboard, null if none (redstone, an older save). */
+    private @Nullable UUID launcher;
     /** The party program: party cards read in order (dashboard, Program page). Empty: the default party. */
     /** 2 rows of 12 (the 18 of the 9 x 2 grid first: a saved program keeps its cards in their order). */
     public static final int PROGRAM_SLOTS = 24;
@@ -294,6 +296,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             lastWinners.forEach(uuid -> winnersNbt.add(NbtString.of(uuid.toString())));
             nbt.put("LastWinners", winnersNbt);
         }
+        if (launcher != null) nbt.putUuid("Launcher", launcher);
         program.writeNbt(nbt, wrapper);
         if (!bankItems.isEmpty()) nbt.put(BANK_ITEMS, Inventories.writeNbt(new NbtCompound(), bankItems.getHeldStacks(), wrapper));
     }
@@ -324,6 +327,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             } catch (IllegalArgumentException ignored) {
             }
         });
+        launcher = nbt.containsUuid("Launcher") ? nbt.getUuid("Launcher") : null;
         program.readNbt(nbt, wrapper);
         // A controller saved before it had its own bank: an empty one (its linked chests are kept)
         bankItems.getHeldStacks().clear();
@@ -529,6 +533,33 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         return player.hasPermissionLevel(2) || PartyCommands.holdsGameMasterWand(player);
     }
 
+    /**
+     * Who may stop the running party from its dashboard: whoever {@linkplain #canEdit may edit} it, the player who
+     * launched it, or, launched by no one known (redstone), a player of it; always someone allowed to build here.
+     */
+    public boolean canStop(PlayerEntity player) {
+        if (canEdit(player)) return true;
+        if (world == null || !partyData.isStarted() || !ScreenHandlerChecks.canBuildAt(player, pos)) return false;
+        if (launcher != null) return launcher.equals(player.getUuid());
+        UUID playerUUID = player.getUuid();
+        if (audience.ids().contains(playerUUID)) return true;
+        for (UUID tokenUUID : partyData.getTokens()) if (playsToken(tokenUUID, playerUUID)) return true;
+        return false;
+    }
+
+    /** {@code player} launches a party from the dashboard: he may stop it (see {@link #canStop}). */
+    public void launchBy(PlayerEntity player) {
+        boot();
+        if (!partyData.isStarted()) return;
+        launcher = player.getUuid();
+        markDirty();
+    }
+
+    /** The player who launched the running party from the dashboard, null if none. */
+    public @Nullable UUID getLauncher() {
+        return partyData.isStarted() ? launcher : null;
+    }
+
     // ------------------------------------------------------------------ the catalogue
 
     /**
@@ -645,7 +676,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         return new ArrayList<>(findStartTokenTiles(serverWorld).keySet());
     }
 
-    /** The tokens bound to the start tiles of its board, in their order, each with its start tile (the first one bound to it). */
+    /** The tokens on the start tiles of its board they are bound to, in their order, each with its start tile (the first one bound to it). */
     public Map<UUID, BlockPos> findStartTokenTiles(ServerWorld serverWorld) {
         return board(serverWorld, true).startTokens();
     }
@@ -727,7 +758,10 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         clearInterestedPlayers();
         // The winners of a previous party win nothing in this one (Piggy Banks, bells)
         lastWinners.clear();
+        launcher = null;
         getTokenFromStartTiles(serverWorld);
+        // Each pawn its own colour (two reds could not be told apart on the HUD)
+        PartyColors.makeUnique(serverWorld, partyData.getTokens());
         setTokensStatus(serverWorld);
         // A warning for everyone around if the board has problems (the party still starts)
         BoardValidator.warnAtStart(serverWorld, this);
@@ -817,6 +851,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         for (UUID tokenUUID : tokens) releaseToken(serverWorld, tokenUUID);
         TrapEffect.clearAll(this);
         partyData.reset();
+        launcher = null;
         tokenHomes.forgetStartTiles();
         setStarSpace(null);
         PartyStars.sync(serverWorld);
@@ -850,7 +885,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public void sendTokensHome(ServerWorld serverWorld, Collection<UUID> tokens) {
         Map<UUID, BlockPos> homes = tokenHomes.startTiles();
         // A party started without them (an older save): the start tiles still bound to its tokens
-        if (!homes.keySet().containsAll(tokens)) findStartTokenTiles(serverWorld).forEach(homes::putIfAbsent);
+        if (!homes.keySet().containsAll(tokens))
+            PartyBoard.boundTokens(serverWorld, board(serverWorld, true).starts()).forEach(homes::putIfAbsent);
         for (UUID tokenUUID : tokens) {
             BlockPos home = homes.get(tokenUUID);
             if (home != null) tokenHomes.sendHome(serverWorld, tokenUUID, home);
@@ -926,7 +962,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         if (!(this.world instanceof ServerWorld serverWorld)) return false;
         boolean started = partyData.isStarted();
         Set<UUID> tokens = new LinkedHashSet<>();
-        if (started) for (UUID token : partyData.getTokens()) if (isTokenOwnedBy(token, playerUUID)) tokens.add(token);
+        if (started) for (UUID token : partyData.getTokens()) if (playsToken(token, playerUUID)) tokens.add(token);
         boolean followed = audience.forget(playerUUID);
         if (!followed && tokens.isEmpty()) return false;
         if (started && partyData.getCurrentStep() != null) partyData.getCurrentStep().onPlayerLeft(playerUUID, this);
@@ -945,6 +981,19 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         sendTokensHome(serverWorld, tokens);
         markDirty();
         return true;
+    }
+
+    /**
+     * Whether {@code playerUUID} plays the token: its owner, or the owner its turns name (its owner may have changed
+     * during the party; leaving must still take his pawn home).
+     */
+    private boolean playsToken(UUID tokenUUID, UUID playerUUID) {
+        if (isTokenOwnedBy(tokenUUID, playerUUID)) return true;
+        for (PartyStep step : partyData.getSteps()) {
+            if (step instanceof TokenTurnPartyStep turn && tokenUUID.equals(turn.getTokenUUID()) && playerUUID.equals(turn.getOwnerUUID()))
+                return true;
+        }
+        return false;
     }
 
     /** Where this controller is (dimension and position). */

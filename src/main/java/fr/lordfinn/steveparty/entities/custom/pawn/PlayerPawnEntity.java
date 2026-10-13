@@ -44,6 +44,12 @@ public class PlayerPawnEntity extends MobEntity {
     private static final TrackedData<Optional<UUID>> SKIN_OWNER = DataTracker.registerData(PlayerPawnEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     /** Their name, for the skin lookup of a player who is not online. */
     private static final TrackedData<String> SKIN_NAME = DataTracker.registerData(PlayerPawnEntity.class, TrackedDataHandlerRegistry.STRING);
+    /**
+     * Their skin itself (the "textures" property of their profile, and its signature), kept from when they were made a
+     * pawn: the statue keeps their skin when they are offline, with no lookup ("" if unknown).
+     */
+    private static final TrackedData<String> SKIN_TEXTURES = DataTracker.registerData(PlayerPawnEntity.class, TrackedDataHandlerRegistry.STRING);
+    private static final TrackedData<String> SKIN_SIGNATURE = DataTracker.registerData(PlayerPawnEntity.class, TrackedDataHandlerRegistry.STRING);
     private static final TrackedData<Integer> POSE = DataTracker.registerData(PlayerPawnEntity.class, TrackedDataHandlerRegistry.INTEGER);
     /** The player inside the pawn, if any. Never saved: possession ends when the player leaves (see PawnPossessions). */
     private static final TrackedData<Optional<UUID>> POSSESSOR = DataTracker.registerData(PlayerPawnEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
@@ -74,6 +80,8 @@ public class PlayerPawnEntity extends MobEntity {
         super.initDataTracker(builder);
         builder.add(SKIN_OWNER, Optional.empty());
         builder.add(SKIN_NAME, "");
+        builder.add(SKIN_TEXTURES, "");
+        builder.add(SKIN_SIGNATURE, "");
         builder.add(POSE, PlayerPawnPose.STAND.ordinal());
         builder.add(POSSESSOR, Optional.empty());
     }
@@ -82,6 +90,21 @@ public class PlayerPawnEntity extends MobEntity {
     public void setSkin(UUID id, String name) {
         this.dataTracker.set(SKIN_OWNER, Optional.of(id));
         this.dataTracker.set(SKIN_NAME, name);
+    }
+
+    /** The skin itself: the "textures" property of the player's profile ({@code signature} may be empty). */
+    public void setSkinTextures(String textures, String signature) {
+        this.dataTracker.set(SKIN_TEXTURES, textures == null ? "" : textures);
+        this.dataTracker.set(SKIN_SIGNATURE, signature == null ? "" : signature);
+    }
+
+    /** The "textures" property kept for its skin, "" if unknown. */
+    public String getSkinTextures() {
+        return this.dataTracker.get(SKIN_TEXTURES);
+    }
+
+    public String getSkinSignature() {
+        return this.dataTracker.get(SKIN_SIGNATURE);
     }
 
     public @Nullable UUID getSkinOwner() {
@@ -190,6 +213,10 @@ public class PlayerPawnEntity extends MobEntity {
         UUID skinOwner = this.getSkinOwner();
         if (skinOwner != null) nbt.putUuid("SkinOwner", skinOwner);
         nbt.putString("SkinName", this.getSkinName());
+        if (!this.getSkinTextures().isEmpty()) {
+            nbt.putString("SkinTextures", this.getSkinTextures());
+            nbt.putString("SkinSignature", this.getSkinSignature());
+        }
         nbt.putString("StatuePose", this.getStatuePose().id());
     }
 
@@ -198,6 +225,7 @@ public class PlayerPawnEntity extends MobEntity {
         super.readCustomDataFromNbt(nbt);
         this.dataTracker.set(SKIN_OWNER, nbt.containsUuid("SkinOwner") ? Optional.of(nbt.getUuid("SkinOwner")) : Optional.empty());
         this.dataTracker.set(SKIN_NAME, nbt.getString("SkinName"));
+        this.setSkinTextures(nbt.getString("SkinTextures"), nbt.getString("SkinSignature"));
         if (nbt.contains("StatuePose", NbtElement.STRING_TYPE)) this.setStatuePose(PlayerPawnPose.byId(nbt.getString("StatuePose")));
         // Hand drop chance as constructed (a pawn saved by a command with other chances must not drop twice)
         this.setEquipmentDropChance(EquipmentSlot.MAINHAND, 0.0F);

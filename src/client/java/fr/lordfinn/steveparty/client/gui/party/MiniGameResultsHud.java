@@ -30,8 +30,8 @@ import java.util.List;
  */
 public final class MiniGameResultsHud {
     private static final int WIDTH = 210, PAD = 7, ROW = 14, CHIP = 24;
-    private static final int ROOM_ABOVE = 40, ROOM_BELOW = 64;
-    private static final float IN_TICKS = 7, OUT_TICKS = 10, STAY_TICKS = 20 * 7;
+    private static final int ROOM_ABOVE = 40, ROOM_BELOW = 64, PARTY_END_TOP = 10;
+    private static final float IN_TICKS = 7, OUT_TICKS = 10, STAY_TICKS = 20 * 7, PARTY_END_STAY_TICKS = 20 * 12;
     private static final int[] PLACE_COLORS = {0xFFFFC52E, 0xFFC9D3DA, 0xFFC9793F, 0xFF9C7FD6};
 
     private static @Nullable MiniGameResults results;
@@ -74,7 +74,8 @@ public final class MiniGameResultsHud {
         double now = PartyHud.now();
         float age = (float) (now - shownAt);
         float in = Easing.easeOutCubic(age / IN_TICKS);
-        float out = age < STAY_TICKS ? 1 : 1 - Easing.clamp01((age - STAY_TICKS) / OUT_TICKS);
+        float stay = results.kind().partyEnd() ? PARTY_END_STAY_TICKS : STAY_TICKS;
+        float out = age < stay ? 1 : 1 - Easing.clamp01((age - stay) / OUT_TICKS);
         if (out <= 0) {
             results = null;
             return;
@@ -102,20 +103,26 @@ public final class MiniGameResultsHud {
         int room = screenHeight - ROOM_ABOVE - ROOM_BELOW;
         // The title and the note under the rows wrap: the card grows with them
         List<OrderedText> title = shown.title().isEmpty() ? List.of() : UiText.wrap(font, Text.literal(shown.title()), WIDTH - 2 * PAD);
-        Text note = Text.translatable(shown.kind() == MiniGameResults.Kind.PRACTICE
-                ? "hud.steveparty.minigame.results.practice" : "hud.steveparty.minigame.results.test");
-        List<OrderedText> noteLines = shown.test() ? UiText.wrap(font, note, WIDTH - 2 * PAD) : List.of();
+        Text note = Text.translatable(switch (shown.kind()) {
+            case PRACTICE -> "hud.steveparty.minigame.results.practice";
+            case PARTY_END_TIE -> "hud.steveparty.party.results.tie";
+            default -> "hud.steveparty.minigame.results.test";
+        });
+        boolean noted = shown.test() || shown.kind() == MiniGameResults.Kind.PARTY_END_TIE;
+        List<OrderedText> noteLines = noted ? UiText.wrap(font, note, WIDTH - 2 * PAD) : List.of();
         int head = PAD + 12 + UiText.LINE_H * title.size() + 3;
         int rows = Math.max(1, Math.min(shown.rows().size(), Math.max(1, (room - head - PAD) / ROW)));
         int height = head + rows * ROW + PAD - 2 + (noteLines.isEmpty() ? 0 : 1 + UiText.LINE_H * noteLines.size());
         int x = (screenWidth - WIDTH) / 2;
-        int y = Math.max(4, ROOM_ABOVE + (room - height) / 2);
+        // A party's end stays long, while its lines fill the chat: the card at the top, clear of the chat
+        int y = shown.kind().partyEnd() ? PARTY_END_TOP : Math.max(4, ROOM_ABOVE + (room - height) / 2);
 
         MatrixStack matrices = context.getMatrices();
         matrices.push();
         matrices.translate(0, slide, 0);
         HudDraw.plate(context, Plate.TEAL, x, y, WIDTH, height, alpha);
-        Text heading = Text.translatable("hud.steveparty.minigame.results").styled(style -> style.withBold(true));
+        Text heading = Text.translatable(shown.kind().partyEnd() ? "hud.steveparty.party.results" : "hud.steveparty.minigame.results")
+                .styled(style -> style.withBold(true));
         HudDraw.centered(context, heading, x + PAD, y + PAD, WIDTH - 2 * PAD, HudDraw.TEXT, alpha);
         for (int i = 0; i < title.size(); i++) {
             HudDraw.centered(context, title.get(i), x + PAD, y + PAD + 11 + UiText.LINE_H * i, WIDTH - 2 * PAD, HudDraw.TEXT_SOFT, alpha);
@@ -126,7 +133,8 @@ public final class MiniGameResultsHud {
             top += ROW;
         }
         for (int i = 0; i < noteLines.size(); i++) {
-            HudDraw.centered(context, noteLines.get(i), x + PAD, top + 1 + UiText.LINE_H * i, WIDTH - 2 * PAD, HudDraw.TEXT_WARN, alpha);
+            HudDraw.centered(context, noteLines.get(i), x + PAD, top + 1 + UiText.LINE_H * i, WIDTH - 2 * PAD,
+                    shown.kind().partyEnd() ? HudDraw.TEXT_SOFT : HudDraw.TEXT_WARN, alpha);
         }
         matrices.pop();
     }
@@ -145,8 +153,10 @@ public final class MiniGameResultsHud {
         }
         // What was paid, from the right
         int right = x + width;
-        right = drawGain(context, font, shown.starItem(), row.stars(), right, y, alpha);
-        right = drawGain(context, font, shown.coinItem(), row.coins(), right, y, alpha);
+        // A party's end: what each has (0 included), not what was won
+        boolean totals = shown.kind().partyEnd();
+        right = drawGain(context, font, shown.starItem(), row.stars(), totals, right, y, alpha);
+        right = drawGain(context, font, shown.coinItem(), row.coins(), totals, right, y, alpha);
         // Who
         MutableText names = Text.empty();
         int color = row.place() == 0 ? HudDraw.TEXT_SOFT : HudDraw.TEXT;
@@ -162,10 +172,10 @@ public final class MiniGameResultsHud {
         HudDraw.text(context, names, left, y + 2, right - left - 4, color, alpha);
     }
 
-    /** « +10 [item] », right-aligned on {@code right}. @return the new right edge */
-    private static int drawGain(DrawContext context, TextRenderer font, ItemStack item, int amount, int right, int y, float alpha) {
-        if (amount <= 0) return right;
-        String text = "+" + amount;
+    /** « +10 [item] » (« 10 [item] » for a {@code total}), right-aligned on {@code right}. @return the new right edge */
+    private static int drawGain(DrawContext context, TextRenderer font, ItemStack item, int amount, boolean total, int right, int y, float alpha) {
+        if (amount <= 0 && !total) return right;
+        String text = total ? String.valueOf(amount) : "+" + amount;
         int iconX = right - 10;
         if (alpha > 0.5f && !item.isEmpty()) {
             MatrixStack matrices = context.getMatrices();
@@ -177,7 +187,7 @@ public final class MiniGameResultsHud {
         }
         // The row makes room for it (the names take what is left)
         int textWidth = font.getWidth(text), textX = iconX - 2 - textWidth;
-        HudDraw.text(context, text, textX, y + 2, textWidth, HudDraw.TEXT_MINE, alpha);
+        HudDraw.text(context, text, textX, y + 2, textWidth, total ? HudDraw.TEXT : HudDraw.TEXT_MINE, alpha);
         return textX - 6;
     }
 }

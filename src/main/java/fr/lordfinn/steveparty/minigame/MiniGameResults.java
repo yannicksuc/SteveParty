@@ -36,7 +36,16 @@ public record MiniGameResults(String title, ItemStack coinItem, ItemStack starIt
         /** Played out of any party ({@link MiniGameTest}): what each place would be paid, nothing was. */
         NO_PARTY,
         /** The practice round of a party: nothing was paid, the real round comes after. */
-        PRACTICE
+        PRACTICE,
+        /** The end of a party: its ranking, with the stars and coins each player has (not gains). */
+        PARTY_END,
+        /** The same, where players with the same stars and coins were ranked by their start roll. */
+        PARTY_END_TIE;
+
+        /** @return true for the ranking of a whole party ({@link #PARTY_END}, {@link #PARTY_END_TIE}). */
+        public boolean partyEnd() {
+            return this == PARTY_END || this == PARTY_END_TIE;
+        }
     }
 
     /** The same results, as those of a mini-game played out of any party: nothing was paid. */
@@ -51,7 +60,7 @@ public record MiniGameResults(String title, ItemStack coinItem, ItemStack starIt
 
     /** @return true when nothing was paid (out of a party, or a practice round). */
     public boolean test() {
-        return kind != Kind.PAID;
+        return kind == Kind.NO_PARTY || kind == Kind.PRACTICE;
     }
 
     public static final int MAX_ROWS = 16;
