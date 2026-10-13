@@ -19,6 +19,7 @@
     "CapeFeatureRendererBoxCostumeMixin",
     "InGameHudAccessor",
     "ChatHudAccessor",
+    "CameraPawnViewMixin",
     "CameraPipeViewMixin",
     "ClientPlayerEntityBrushMoveMixin",
     "ClientPlayerInteractionManagerStencilPaintMixin",
