@@ -418,8 +418,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             progress++;
             world.markDirty(pos); // saved, but no client sync needed: the client predicts the progress
         }
-        if (progress >= CRAFT_TIME && status == Status.OK) {
-            completeCraft();
+        // waits at 100% while the output is blocked; nothing is consumed until the die is out
+        if (progress >= CRAFT_TIME && status == Status.OK && completeCraft()) {
             progress = 0;
             if (!getStatus().allowsRunning()) {
                 // A slot ran out: stop the loop, the missing items show as ghosts
@@ -582,9 +582,20 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
                 && output.getCount() + die.getCount() <= output.getMaxCount();
     }
 
-    private void completeCraft() {
+    /**
+     * One die: atomic, nothing is consumed unless the die goes into the output slot (checked again here, whatever the
+     * caller checked). @return true if a die was forged.
+     */
+    private boolean completeCraft() {
         ItemStack die = createDie();
-        if (die.isEmpty()) return;
+        if (die.isEmpty() || !isActivated() || checkResources(this) != Status.OK || !canAcceptOutput(die)) return false;
+        // the die first, then what it costs
+        ItemStack output = inventory.get(OUTPUT_SLOT);
+        if (output.isEmpty()) {
+            inventory.set(OUTPUT_SLOT, die);
+        } else {
+            output.increment(die.getCount());
+        }
         // Faces are kept (they are the die's weights): one blank face per face slot used is consumed instead
         inventory.get(BLANK_SLOT).decrement(countFaces(this));
         for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
@@ -592,17 +603,12 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             // Black fragments are never consumed
             if (!stack.isEmpty() && !isInfiniteFragment(stack)) stack.decrement(1);
         }
-        ItemStack output = inventory.get(OUTPUT_SLOT);
-        if (output.isEmpty()) {
-            inventory.set(OUTPUT_SLOT, die);
-        } else {
-            output.increment(die.getCount());
-        }
         if (world != null) {
             world.addSyncedBlockEvent(pos, getCachedState().getBlock(), FORGED_EVENT, 0); // client animation
             world.playSound(null, pos, SoundEvents.BLOCK_ANVIL_USE, SoundCategory.BLOCKS, 0.4f, 1.8f);
             world.playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.BLOCKS, 0.8f, 1.2f);
         }
+        return true;
     }
 
     // =================================================================== activation

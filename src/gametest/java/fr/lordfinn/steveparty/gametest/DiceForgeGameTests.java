@@ -102,6 +102,43 @@ public class DiceForgeGameTests implements SteveGameTest {
         });
     }
 
+    /**
+     * Playtest 2026-10-13: fragments were once used up with no die out. A craft is atomic: the output slot taken by
+     * something else, the loop waits at 100% and nothing is consumed; freed, exactly one die costs one of each.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = TICK_LIMIT)
+    public void nothingIsConsumedWhileTheOutputCannotTakeTheDie(TestContext context) {
+        DiceForgeBlockEntity forge = placeActivatedForge(context);
+        forge.setStack(0, new ItemStack(face(1), 2));
+        forge.setStack(FIRST_FRAGMENT_SLOT, new ItemStack(ModItems.PURPLE_STAR_FRAGMENT, 3));
+        forge.setStack(FIRST_FRAGMENT_SLOT + 1, new ItemStack(ModItems.RED_STAR_FRAGMENT, 3));
+        forge.setStack(FIRST_FRAGMENT_SLOT + 2, new ItemStack(ModItems.BLUE_STAR_FRAGMENT, 3));
+        forge.setStack(FIRST_FRAGMENT_SLOT + 3, new ItemStack(ModItems.GREEN_STAR_FRAGMENT, 3));
+        forge.setStack(FIRST_FRAGMENT_SLOT + 4, new ItemStack(ModItems.YELLOW_STAR_FRAGMENT, 3));
+        forge.setStack(BLANK_SLOT, blanks(5));
+        context.assertTrue(forge.start(), "production starts");
+        // something else lands in the output during the craft
+        forge.setStack(OUTPUT_SLOT, new ItemStack(Items.STONE, 64));
+        context.waitAndRun(CRAFT_TIME + 10, () -> {
+            context.assertEquals(forge.getStatus(), Status.OUTPUT_BLOCKED, "blocked");
+            for (int i = 0; i < FRAGMENT_SLOTS; i++) {
+                context.assertEquals(forge.getStack(FIRST_FRAGMENT_SLOT + i).getCount(), 3, "no fragment consumed");
+            }
+            context.assertEquals(forge.getStack(BLANK_SLOT).getCount(), 5, "no blank face consumed");
+            forge.setStack(OUTPUT_SLOT, ItemStack.EMPTY);
+            context.waitAndRun(3, () -> {
+                context.assertTrue(forge.getStack(OUTPUT_SLOT).isOf(ModItems.DEFAULT_DICE)
+                        && forge.getStack(OUTPUT_SLOT).getCount() == 1, "one die out: " + forge.getStack(OUTPUT_SLOT));
+                for (int i = 0; i < FRAGMENT_SLOTS; i++) {
+                    context.assertEquals(forge.getStack(FIRST_FRAGMENT_SLOT + i).getCount(), 2, "one fragment of each");
+                }
+                context.assertEquals(forge.getStack(BLANK_SLOT).getCount(), 4, "one blank face");
+                forge.toggleProduction();
+                GravityGameTests.removeAndComplete(context, FORGE_POS);
+            });
+        });
+    }
+
     /** Non-black colours must differ between fragment slots; black may be repeated. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void duplicateNonBlackFragmentsAreRejected(TestContext context) {
