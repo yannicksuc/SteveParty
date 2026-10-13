@@ -37,6 +37,8 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -111,7 +113,10 @@ public class ThresholdGameTests implements SteveGameTest {
 
     private static List<Played> record(TestContext context) {
         List<Played> played = new ArrayList<>();
-        Consumer<Played> listener = played::add;
+        Box area = context.getTestBox().expand(1);
+        Consumer<Played> listener = event -> {
+            if (area.contains(Vec3d.ofCenter(event.tile()))) played.add(event);
+        };
         TileFeedback.LISTENERS.add(listener);
         atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return played;

@@ -67,14 +67,13 @@ import net.minecraft.world.GameMode;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
 import static fr.lordfinn.steveparty.gametest.kit.TestAsserts.assertOn;
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
@@ -166,18 +165,6 @@ public class TileTeleportGameTests implements SteveGameTest {
         return pig;
     }
 
-    private static final Map<TestContext, List<Runnable>> CLEANUPS = new WeakHashMap<>();
-
-    /** Runs {@code cleanup} when the test succeeds ({@link #finish}; a final task would end these waiting tests). */
-    private static void onEnd(TestContext context, Runnable cleanup) {
-        CLEANUPS.computeIfAbsent(context, c -> new ArrayList<>()).add(cleanup);
-    }
-
-    private static void finish(TestContext context) {
-        List<Runnable> cleanups = CLEANUPS.remove(context);
-        if (cleanups != null) cleanups.forEach(Runnable::run);
-        context.complete();
-    }
 
     /** Records the teleports of this test's token. */
     private static List<TileTeleport.Teleported> teleports(TestContext context, MobEntity token) {
@@ -186,7 +173,7 @@ public class TileTeleportGameTests implements SteveGameTest {
             if (teleported.token().equals(token.getUuid())) list.add(teleported);
         };
         TileTeleport.LISTENERS.add(listener);
-        onEnd(context, () -> TileTeleport.LISTENERS.remove(listener));
+        atEnd(context, () -> TileTeleport.LISTENERS.remove(listener));
         return list;
     }
 
@@ -197,7 +184,7 @@ public class TileTeleportGameTests implements SteveGameTest {
             if (played.kind() == TileFeedback.Kind.LAND && box.contains(played.tile())) list.add(played);
         };
         TileFeedback.LISTENERS.add(listener);
-        onEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
+        atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return list;
     }
 
@@ -226,7 +213,7 @@ public class TileTeleportGameTests implements SteveGameTest {
         controller.nextStep();
         controller.nextStep();
         context.assertEquals(data.getStepIndex(), 1, "the token's turn");
-        onEnd(context, () -> {
+        atEnd(context, () -> {
             ((TokenizedEntityInterface) token).steveparty$setTokenized(false);
             context.removeBlock(CONTROLLER);
         });
@@ -291,7 +278,7 @@ public class TileTeleportGameTests implements SteveGameTest {
             context.assertEquals(teleports.getFirst().to(), to, "to the other violet tile");
             context.assertEquals(data.getStepIndex(), 2, "the next turn");
             context.assertEquals(landings.size(), 1, "no landing on the arrival tile");
-            finish(context);
+            context.complete();
         });
     }
 
@@ -324,7 +311,7 @@ public class TileTeleportGameTests implements SteveGameTest {
         BoardGraph graph = BoardGraph.collect(context.getWorld(), box(context));
         context.assertEquals(graph.teleportPartners(context.getAbsolutePos(PATH.get(0))), List.of(v2, v4), "the board's violet tiles");
         context.assertTrue(graph.isTeleportAlone(graph.node(context.getAbsolutePos(new BlockPos(1, 1, 6)))), "the other board's one is alone");
-        finish(context);
+        context.complete();
     }
 
     /** Alone in its network: a plain landing (no teleport, the turn goes on at once), and the board check warns. */
@@ -351,7 +338,7 @@ public class TileTeleportGameTests implements SteveGameTest {
         BoardGraph graph = BoardGraph.collect(context.getWorld(), box(context));
         context.assertEquals(graph.distance(second), graph.distance(alone), "reached at the first violet tile's distance");
         context.assertTrue(teleports.isEmpty(), "never teleported");
-        finish(context);
+        context.complete();
     }
 
     private static boolean warned(TestContext context, BlockPos absolute) {
@@ -389,7 +376,7 @@ public class TileTeleportGameTests implements SteveGameTest {
                 context.assertEquals(landed(landings, context, PATH.get(3), TileFeedback.Landing.GOOD), triggers, "the bonus plays: " + triggers);
                 context.assertEquals(landed(landings, context, PATH.get(3), TileFeedback.Landing.DEFAULT), !triggers, "a plain landing: " + !triggers);
                 context.assertEquals(teleports.size(), 1, "one teleport");
-                finish(context);
+                context.complete();
             });
         });
     }
@@ -414,7 +401,7 @@ public class TileTeleportGameTests implements SteveGameTest {
                 context.assertTrue(!TileTeleport.isTeleporting(pig), "not warping");
                 context.assertTrue(landed(landings, context, PATH.get(3), TileFeedback.Landing.DEFAULT), "a plain landing");
                 context.assertTrue(!landed(landings, context, PATH.get(3), TileFeedback.Landing.TELEPORT), "not the teleport one");
-                finish(context);
+                context.complete();
             });
         });
     }
@@ -441,7 +428,7 @@ public class TileTeleportGameTests implements SteveGameTest {
                             new BoardSpaceDestination(context.getAbsolutePos(b), true), pig.getUuid());
                     when(context, turnEnded(controller), 150, "turn ends", () -> {
                         assertOn(context, pig, context.getAbsolutePos(b), "the chosen way");
-                        finish(context);
+                        context.complete();
                     });
                 });
     }
@@ -542,7 +529,7 @@ public class TileTeleportGameTests implements SteveGameTest {
                 assertStandsOn(context, pigs.get(i), context.getAbsolutePos(arrivals.get(i)), List.of("lowered", "sloped", "large").get(i));
                 context.assertTrue(!TileTeleport.isTeleporting(pigs.get(i)), "not sent back (" + i + ")");
             }
-            finish(context);
+            context.complete();
         });
     }
 
@@ -556,6 +543,6 @@ public class TileTeleportGameTests implements SteveGameTest {
         context.assertTrue(!TileTeleport.isTeleporting(pig), "passing: no teleport");
         ((TokenizedEntityInterface) pig).steveparty$setNbSteps(0);
         pig.discard();
-        finish(context);
+        context.complete();
     }
 }

@@ -34,6 +34,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -139,7 +141,10 @@ final class DiceTestKit {
 
     static List<Played> record(TestContext context) {
         List<Played> played = new ArrayList<>();
-        Consumer<Played> listener = played::add;
+        Box area = context.getTestBox().expand(1);
+        Consumer<Played> listener = event -> {
+            if (area.contains(Vec3d.ofCenter(event.tile()))) played.add(event);
+        };
         TileFeedback.LISTENERS.add(listener);
         atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return played;

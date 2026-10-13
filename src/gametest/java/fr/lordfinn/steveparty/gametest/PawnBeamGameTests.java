@@ -87,9 +87,13 @@ public class PawnBeamGameTests implements SteveGameTest {
                 context.assertTrue(shown(context, token), "still a while after the landing"));
         context.runAtTick(context.getTick() + PawnBeams.LANDING_TICKS + 5, () -> {
             context.assertFalse(shown(context, token), "a few seconds later: gone");
-            // The next turn waits for a roll again, then the party is stopped: none
-            party.nextStep();
-            context.assertTrue(shown(context, token), "its next turn: the beam");
+            // The next turn waits for a roll again (the turn may have ended by itself meanwhile), then the party is
+            // stopped: none
+            if (party.getPartyData().getStepIndex() == 1) party.nextStep();
+            context.assertEquals(party.getPartyData().getStepIndex(), 2, "its next turn");
+            TokenTurnPartyStep next = (TokenTurnPartyStep) party.getPartyData().getCurrentStep();
+            context.assertTrue(shown(context, token), "its next turn: the beam (" + next.getStatus() + ", rolled "
+                    + next.hasRolled() + ", absent " + next.isWaitingForAbsentToken() + ")");
             party.stopParty(null);
             context.assertTrue(PawnBeams.beams(context.getWorld()).isEmpty(), "the party over: no beam");
             context.complete();

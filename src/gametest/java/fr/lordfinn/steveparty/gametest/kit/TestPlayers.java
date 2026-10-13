@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest.kit;
 
 import com.mojang.authlib.GameProfile;
+import fr.lordfinn.steveparty.gametest.mixin.ServerPlayerEntityTestAccessor;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.network.ClientConnection;
@@ -43,6 +44,23 @@ public final class TestPlayers {
     public static ServerPlayerEntity mock(TestContext context, GameMode mode) {
         ServerPlayerEntity player = mock(context);
         player.changeGameMode(mode);
+        return player;
+    }
+
+    /** {@code player} can be hurt at once, without the few seconds of grace a player who just joined has. */
+    public static ServerPlayerEntity vulnerable(ServerPlayerEntity player) {
+        ((ServerPlayerEntityTestAccessor) player).steveparty$setJoinInvulnerabilityTicks(0);
+        return player;
+    }
+
+    /**
+     * {@code player}'s own tick (its status effects wearing off...) run every tick until the test ends, as its
+     * connection does for a real player: a test player has none.
+     */
+    public static ServerPlayerEntity ticking(TestContext context, ServerPlayerEntity player) {
+        TestWait.everyTick(context, () -> {
+            if (!player.isRemoved()) player.playerTick();
+        });
         return player;
     }
 
@@ -113,21 +131,24 @@ public final class TestPlayers {
     public static void place(TestContext context, ServerPlayerEntity player, Vec3d relative, float yaw, float pitch) {
         Vec3d abs = context.getAbsolute(relative);
         player.refreshPositionAndAngles(abs.x, abs.y, abs.z, yaw, pitch);
-        headFacing(player, yaw);
+        turnHead(player, yaw);
     }
 
     /** Moves the player to the bottom centre of the relative block {@code at}, looking {@code yaw} and level. */
     public static void placeOn(TestContext context, ServerPlayerEntity player, BlockPos at, float yaw) {
         BlockPos abs = context.getAbsolutePos(at);
         player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, yaw, 0);
-        headFacing(player, yaw);
+        turnHead(player, yaw);
     }
 
-    /** Head and body turned to {@code yaw}: a mock player never ticks, they would stay at 0 (where he looks: his head). */
-    private static void headFacing(ServerPlayerEntity player, float yaw) {
+    /**
+     * Head and body turned to {@code yaw} too, as a client keeps them: where a player looks (its rotation vector, its
+     * crosshair) follows its head, left where it spawned else (a test player never ticks).
+     */
+    public static void turnHead(ServerPlayerEntity player, float yaw) {
         player.setHeadYaw(yaw);
-        player.prevHeadYaw = yaw;
         player.setBodyYaw(yaw);
+        player.prevHeadYaw = yaw;
         player.prevBodyYaw = yaw;
     }
 

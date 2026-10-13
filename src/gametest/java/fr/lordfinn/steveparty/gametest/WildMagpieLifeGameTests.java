@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -8,7 +9,6 @@ import fr.lordfinn.steveparty.entities.custom.magpie.MagpieVariant;
 import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieEntity;
 import fr.lordfinn.steveparty.gametest.kit.LandAround;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
-import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;

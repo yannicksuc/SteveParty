@@ -17,6 +17,7 @@ import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestBank;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
@@ -94,6 +95,13 @@ public class PiggyBankGameTests implements SteveGameTest {
         context.complete();
     }
 
+    /** A party bell on stone at {@code pos}, taken off when the test ends: left behind, it would listen to the parties of the tests after it. */
+    private static void placeBell(TestContext context, BlockPos pos, BlockState bell) {
+        context.setBlockState(pos.down(), Blocks.STONE);
+        context.setBlockState(pos, bell);
+        TestCleanup.atEnd(context, () -> TestCleanup.removeIf(context, pos, ModBlocks.PARTY_BELL));
+    }
+
     /** During a turn, its player is paid; the next turn, the next one. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "piggy_turn")
     public void turnPlayerIsTheOwnerOfTheTurnPlaying(TestContext context) {
@@ -123,8 +131,7 @@ public class PiggyBankGameTests implements SteveGameTest {
         ServerPlayerEntity a = player(context, "A", 2.5, 4.5), b = player(context, "B", 6.5, 4.5);
         PartyControllerEntity controller = placeController(context);
         placeBank(context, Target.TURN_PLAYER, 10);
-        context.setBlockState(BANK.east().down(), Blocks.STONE);
-        context.setBlockState(BANK.east(), ModBlocks.PARTY_BELL.getDefaultState().with(PartyBellBlock.MOMENT, PartyMoment.TURN_END));
+        placeBell(context, BANK.east(), ModBlocks.PARTY_BELL.getDefaultState().with(PartyBellBlock.MOMENT, PartyMoment.TURN_END));
         controller.setPartyData(twoTurns(UUID.randomUUID(), a.getUuid(), UUID.randomUUID(), b.getUuid()));
         controller.nextStep();
         controller.nextStep();
@@ -142,8 +149,7 @@ public class PiggyBankGameTests implements SteveGameTest {
         ServerPlayerEntity a = player(context, "A", 2.5, 4.5), b = player(context, "B", 6.5, 4.5);
         PartyControllerEntity controller = placeController(context);
         placeBank(context, Target.TURN_PLAYER, 10);
-        context.setBlockState(BANK.east().down(), Blocks.STONE);
-        context.setBlockState(BANK.east(), ModBlocks.PARTY_BELL.getDefaultState().with(PartyBellBlock.MOMENT, PartyMoment.TURN_START));
+        placeBell(context, BANK.east(), ModBlocks.PARTY_BELL.getDefaultState().with(PartyBellBlock.MOMENT, PartyMoment.TURN_START));
         controller.setPartyData(twoTurns(UUID.randomUUID(), a.getUuid(), UUID.randomUUID(), b.getUuid()));
         controller.nextStep();
         controller.nextStep(); // turn of A starts
@@ -164,8 +170,7 @@ public class PiggyBankGameTests implements SteveGameTest {
         PartyControllerEntity controller = placeController(context);
         PiggyBankBlockEntity bank = placeBank(context, Target.TURN_PLAYER, 10);
         BlockPos bell = new BlockPos(1, 1, 7);
-        context.setBlockState(bell.down(), Blocks.STONE);
-        context.setBlockState(bell, ModBlocks.PARTY_BELL.getDefaultState().with(PartyBellBlock.MOMENT, PartyMoment.TURN_END)
+        placeBell(context, bell, ModBlocks.PARTY_BELL.getDefaultState().with(PartyBellBlock.MOMENT, PartyMoment.TURN_END)
                 .with(PartyBellBlock.WAITING, true));
         PartyData data = twoTurns(UUID.randomUUID(), a.getUuid(), UUID.randomUUID(), b.getUuid());
         controller.setPartyData(data);

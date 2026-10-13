@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Glandouille: it never hurts (it shoves), stomps flatten then finish it (the mossy one takes one more), towers
@@ -772,9 +773,9 @@ public class GlandouilleGameTests implements SteveGameTest {
             lone.onHit(player, player);
             context.assertEquals(b.getMood(), Mood.FLYING, "b flies out alone");
             context.assertTrue(lone.getVelocity().x > 0.1, "a lone one is pushed as before: " + lone.getVelocity());
-            context.waitAndRun(40, () -> {
+            // as soon as c is back (b, holding a grudge, may come back later on)
+            when(context, () -> c.getVehicle() == a, 40, "c back on a", () -> {
                 context.assertTrue(b.getVehicle() == null && !GlandouilleTowers.hasRider(b), "b alone");
-                context.assertTrue(c.getVehicle() == a, "c back on a");
                 context.assertEquals(GlandouilleTowers.height(a), 2, "a tower of 2");
                 context.assertTrue(horizontal(a.getPos(), aStart) < 0.05, "a not pushed: " + a.getPos().subtract(aStart) + " " + a.getMood());
                 context.complete();
