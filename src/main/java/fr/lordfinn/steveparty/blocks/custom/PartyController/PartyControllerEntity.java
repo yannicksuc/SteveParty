@@ -927,7 +927,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         if (!(this.world instanceof ServerWorld serverWorld)) return false;
         boolean started = partyData.isStarted();
         Set<UUID> tokens = new LinkedHashSet<>();
-        if (started) for (UUID token : partyData.getTokens()) if (isTokenOwnedBy(token, playerUUID)) tokens.add(token);
+        if (started) for (UUID token : partyData.getTokens()) if (playsToken(token, playerUUID)) tokens.add(token);
         boolean followed = audience.forget(playerUUID);
         if (!followed && tokens.isEmpty()) return false;
         if (started && partyData.getCurrentStep() != null) partyData.getCurrentStep().onPlayerLeft(playerUUID, this);
@@ -946,6 +946,19 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         sendTokensHome(serverWorld, tokens);
         markDirty();
         return true;
+    }
+
+    /**
+     * Whether {@code playerUUID} plays the token: its owner, or the owner its turns name (its owner may have changed
+     * during the party; leaving must still take his pawn home).
+     */
+    private boolean playsToken(UUID tokenUUID, UUID playerUUID) {
+        if (isTokenOwnedBy(tokenUUID, playerUUID)) return true;
+        for (PartyStep step : partyData.getSteps()) {
+            if (step instanceof TokenTurnPartyStep turn && tokenUUID.equals(turn.getTokenUUID()) && playerUUID.equals(turn.getOwnerUUID()))
+                return true;
+        }
+        return false;
     }
 
     /** Where this controller is (dimension and position). */

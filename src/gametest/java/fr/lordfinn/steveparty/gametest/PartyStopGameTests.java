@@ -254,4 +254,40 @@ public class PartyStopGameTests implements SteveGameTest {
         cleanUp(context, board);
         context.complete();
     }
+
+    /**
+     * A player leaving ({@code /steveparty leave}) sends his pawn home at once, even when the pawn's owner changed
+     * during the party (his turns still name him); the others' pawns stay where they are.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void leavingSendsHisPawnHome(TestContext context) {
+        Board board = startedParty(context);
+        ServerPlayerEntity alice = TestPlayers.joined(context, "home", "A", net.minecraft.world.GameMode.SURVIVAL, 3, 2, 3);
+        ServerPlayerEntity bob = TestPlayers.joined(context, "home", "B", net.minecraft.world.GameMode.SURVIVAL, 4, 2, 3);
+        TestPlayers.removeAtEnd(context, alice);
+        TestPlayers.removeAtEnd(context, bob);
+        ((TokenizedEntityInterface) board.a()).steveparty$setTokenOwner(alice);
+        ((TokenizedEntityInterface) board.b()).steveparty$setTokenOwner(bob);
+        PartyControllerEntity controller = board.controller();
+        controller.addInterestedPlayer(alice);
+        controller.addInterestedPlayer(bob);
+        var data = controller.getPartyData();
+        // Her turn, then the owner of her pawn changed (a start tile clicked, a pawn handed over)
+        data.getSteps().add(data.getStepIndex() + 1, new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(board.a().getUuid(), alice.getUuid()));
+        ((TokenizedEntityInterface) board.a()).steveparty$setTokenOwner((net.minecraft.entity.player.PlayerEntity) null);
+        Vec3d away = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(SPACE_A));
+        board.a().requestTeleport(away.x, away.y, away.z);
+        Vec3d awayB = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(SPACE_B));
+        board.b().requestTeleport(awayB.x, awayB.y, awayB.z);
+
+        context.getWorld().getServer().getCommandManager().executeWithPrefix(alice.getCommandSource(), "/steveparty leave");
+        assertOn(context, board.a(), START_A, "her pawn is back on its start tile");
+        context.assertTrue(!inGame(board.a()), "her pawn is out of the game");
+        context.assertTrue(!controller.getPartyData().getTokens().contains(board.a().getUuid()), "her pawn left the party");
+        assertOn(context, board.b(), SPACE_B, "bob's pawn stays where it is");
+        context.assertTrue(controller.getPartyData().isStarted(), "the party goes on");
+        controller.stopParty(Text.literal("Tester"));
+        cleanUp(context, board);
+        context.complete();
+    }
 }
