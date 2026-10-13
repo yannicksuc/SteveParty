@@ -64,8 +64,8 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
     private static final int GROOVE = 0xFFA8692F, GROOVE_EDGE = 0xFF6B3F1C;
     protected static final int LIME = 0xFF000000 | ShopCartridgeItem.COLOR, LIME_DARK = 0xFF5E8F17, LIME_LIGHT = 0xFFD4F58E;
     protected static final int INK = 0xFF3C241D, RED = 0xFFD8323F, RED_DARK = 0xFF5E0A12, PRICE_MISSING = 0xFFC0182A;
-    /** The mod's slot (inventory_panel.png): grey, its corners rounded, a dark edge on top. */
-    private static final int SLOT = 0xFF8C8C8C, SLOT_TOP = 0xFF484D55;
+    /** The slots' kraft: a darker cardboard cell pressed into the box, a deep brown shadow on top; the ghosts' veil in it. */
+    private static final int SLOT = 0xFF8E5A2E, SLOT_TOP = 0xFF4E2C14, GHOST_VEIL = 0x998E5A2E;
     /** The awning's stripes ({@code shop_awning.png}: a lime one, then a white one, {@link #STRIPE} × {@link #AWNING_H}). */
     private static final Identifier AWNING = Steveparty.id("textures/gui/shop_awning.png");
     private static final int STRIPE = 10, AWNING_H = 11;
@@ -222,14 +222,9 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
         }
     }
 
-    /** The mod's slot under the item drawn at ({@code itemX}, {@code itemY}): rounded, its dark top edge above it. */
+    /** The mod's rounded slot ({@link PartyGui#slot}) under the item drawn at ({@code itemX}, {@code itemY}), in kraft. */
     private static void slot(DrawContext context, int itemX, int itemY) {
-        context.fill(itemX + 1, itemY - 1, itemX + 15, itemY, SLOT_TOP);
-        PartyGui.pixel(context, itemX, itemY, SLOT_TOP);
-        PartyGui.pixel(context, itemX + 15, itemY, SLOT_TOP);
-        context.fill(itemX + 1, itemY, itemX + 15, itemY + 1, SLOT);
-        context.fill(itemX, itemY + 1, itemX + 16, itemY + 15, SLOT);
-        context.fill(itemX + 1, itemY + 15, itemX + 15, itemY + 16, SLOT);
+        PartyGui.slot(context, itemX, itemY, SLOT, SLOT_TOP);
     }
 
     protected @Nullable TradeOffer pickedOffer() {
@@ -269,7 +264,7 @@ public class CardboardTradeScreen extends HandledScreen<MerchantScreenHandler> {
     private void ghost(DrawContext context, int slot, ItemStack stack) {
         Slot s = handler.getSlot(slot);
         if (stack.isEmpty() || s.hasStack()) return;
-        PartyGui.ghostItem(context, stack, this.x + s.x, this.y + s.y, textRenderer);
+        PartyGui.ghostItem(context, stack, this.x + s.x, this.y + s.y, textRenderer, GHOST_VEIL);
     }
 
     private void drawOfferTooltip(DrawContext context, int mouseX, int mouseY) {
