@@ -78,6 +78,24 @@ public class TrichaudronGameTests implements SteveGameTest {
         }
     }
 
+    /** No fall hurts it; pushed into the ground, it climbs back out on top. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "trichaudron_ground", tickLimit = 60)
+    public void noFallHurtsItAndItClimbsOutOfTheGround(TestContext context) {
+        strip(context, 8);
+        TrichaudronEntity trichaudron = spawn(context, new BlockPos(3, 1, 8));
+        float health = trichaudron.getHealth();
+        trichaudron.handleFallDamage(60, 1, context.getWorld().getDamageSources().fall());
+        context.assertTrue(trichaudron.getHealth() == health, "no fall damage: " + trichaudron.getHealth());
+        double floor = context.getAbsolutePos(new BlockPos(3, 1, 8)).getY();
+        trichaudron.setPosition(trichaudron.getX(), floor - 1.5, trichaudron.getZ());
+        context.waitAndRun(25, () -> {
+            context.assertTrue(trichaudron.getY() >= floor - 1.0E-3, "out of the ground: " + (trichaudron.getY() - floor));
+            context.assertTrue(trichaudron.isAlive(), "never smothered");
+            trichaudron.discard();
+            context.complete();
+        });
+    }
+
     private static void pool(TestContext context, BlockPos corner, int w, int d) {
         for (int x = 0; x < w; x++) for (int z = 0; z < d; z++) context.setBlockState(corner.add(x, 0, z), Blocks.LAVA);
     }

@@ -136,6 +136,8 @@ import java.util.UUID;
 public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, RideableInventory, BoardActor {
     /** Its shell and legs: 52 px wide, the tank's rim 61 px high. The necks reach far beyond (not in the box). */
     public static final float WIDTH = 3.2f, HEIGHT = 3.8125f, EYE_HEIGHT = 2.76f;
+    /** How far up it climbs out of the ground it was pushed into, at most (blocks). */
+    private static final double UNSTUCK_RISE = 4;
     public static final int TANK_MAX = 27, SPAWN_TANK_MIN = 14, SPAWN_TANK_MAX = 20;
     public static final double MAX_HEALTH = 80, ARMOR = 10, SPEED = 0.09;
     /** The tank's front rim, where the riders sit: its height, how far ahead of the middle. */
@@ -1062,9 +1064,29 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         setBit(CLIMBING, false);
     }
 
+    /** A stone giant on huge feet: no fall hurts it (its riders neither: it lands for them). */
     @Override
-    protected int computeFallDamage(float fallDistance, float damageMultiplier) {
-        return super.computeFallDamage(fallDistance - 12, damageMultiplier); // its heads and steam soften a landing
+    public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource source) {
+        return false;
+    }
+
+    /**
+     * Pushed into the ground (an explosion, a pull, a block placed on it): it climbs back out on top, never stuck
+     * smothering in it (nor drawn black, its light read inside the blocks). Once a second, up to {@link #UNSTUCK_RISE}.
+     */
+    private void unstick() {
+        if (age % 20 != 0 || hasVehicle() || climbTo != null) return;
+        World world = getWorld();
+        Box box = getBoundingBox().contract(0.05);
+        if (world.isSpaceEmpty(this, box)) return;
+        for (double up = 0.25; up <= UNSTUCK_RISE; up += 0.25) {
+            if (world.isSpaceEmpty(this, box.offset(0, up, 0))) {
+                setPosition(getX(), getY() + up, getZ());
+                setVelocity(getVelocity().x, 0, getVelocity().z);
+                velocityDirty = true;
+                return;
+            }
+        }
     }
 
     // ---------------------------------------------------------------- moving
@@ -1215,6 +1237,7 @@ public class TrichaudronEntity extends PathAwareEntity implements GeoEntity, Rid
         }
         if (grabArmed > 0 && climbTo == null && --grabArmed >= 0 && tryGrab()) grabArmed = 0;
         tickClimb();
+        unstick();
         tickUntamedRider(now);
     }
 
