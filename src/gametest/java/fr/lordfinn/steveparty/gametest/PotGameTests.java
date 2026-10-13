@@ -56,6 +56,12 @@ import java.util.function.BooleanSupplier;
  * player and their coins).
  */
 public class PotGameTests implements SteveGameTest {
+    /** Beyond the template: the path goes on to x = 11 (else the token may freeze at a chunk edge). */
+    @Override
+    public int landAround() {
+        return 4;
+    }
+
     private static final BlockPos CONTROLLER = new BlockPos(0, 1, 7);
     private static final List<BlockPos> PATH = List.of(new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1),
             new BlockPos(7, 1, 1), new BlockPos(9, 1, 1), new BlockPos(11, 1, 1));
