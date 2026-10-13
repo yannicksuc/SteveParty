@@ -760,6 +760,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         lastWinners.clear();
         launcher = null;
         getTokenFromStartTiles(serverWorld);
+        // Each pawn its own colour (two reds could not be told apart on the HUD)
+        PartyColors.makeUnique(serverWorld, partyData.getTokens());
         setTokensStatus(serverWorld);
         // A warning for everyone around if the board has problems (the party still starts)
         BoardValidator.warnAtStart(serverWorld, this);

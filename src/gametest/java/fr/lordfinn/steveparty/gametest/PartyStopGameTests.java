@@ -327,4 +327,34 @@ public class PartyStopGameTests implements SteveGameTest {
         cleanUp(context, board);
         context.complete();
     }
+
+    /** Two pawns of the same colour (two reds): at the start the second gets another one, the first keeps its own. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void eachPawnHasItsOwnColour(TestContext context) {
+        PigEntity a = token(context, START_A), b = token(context, START_B);
+        ((TokenizedEntityInterface) a).steveparty$setTokenColor(0xFF0000);
+        ((TokenizedEntityInterface) b).steveparty$setTokenColor(0xF01010);
+        b.setCustomName(Text.literal("Poulette").withColor(0xF01010));
+        startTile(context, START_A, a);
+        startTile(context, START_B, b);
+        tile(context, SPACE_A, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
+        context.setBlockState(CONTROLLER.down(), Blocks.STONE);
+        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
+        controller.boot();
+        context.assertTrue(controller.getPartyData().getTokens().size() == 2, "both play");
+        int colorA = PartyLiveData.colorOf(a), colorB = PartyLiveData.colorOf(b);
+        context.assertEquals(colorA, 0xFF0000, "the first keeps its red");
+        context.assertTrue(colorB >= 0 && colorB != colorA, "the second has another colour");
+        int dr = (colorA >> 16) - (colorB >> 16), dg = (colorA >> 8 & 0xFF) - (colorB >> 8 & 0xFF), db = (colorA & 0xFF) - (colorB & 0xFF);
+        context.assertTrue(dr * dr + dg * dg + db * db > 60 * 60, "far from red");
+        context.assertTrue(b.getCustomName() != null && "Poulette".equals(b.getCustomName().getString())
+                && b.getCustomName().getStyle().getColor() != null && b.getCustomName().getStyle().getColor().getRgb() == colorB,
+                "its name keeps its text, in its new colour");
+        controller.stopParty(Text.literal("Tester"));
+        ((TokenizedEntityInterface) a).steveparty$setTokenized(false);
+        ((TokenizedEntityInterface) b).steveparty$setTokenized(false);
+        TestCleanup.removeIf(context, CONTROLLER, ModBlocks.PARTY_CONTROLLER);
+        context.complete();
+    }
 }
