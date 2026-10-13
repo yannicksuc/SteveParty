@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.powerups.PowerUpService;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
+import fr.lordfinn.steveparty.dice.DiceTargets;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -141,7 +142,10 @@ public class DefaultDiceItem extends Item {
     protected void configureDiceEntity(DiceEntity diceEntity, PlayerEntity player, Hand hand) {
         diceEntity.setVelocity(throwVelocity(player));
         diceEntity.setOwner(player.getUuid());
+        MobEntity ownPawn = aimedAt == null && !player.isSneaking() && player.getWorld() instanceof ServerWorld world
+                ? DiceTargets.ownPawn(world, player, diceEntity.getPos()) : null;
         if (aimedAt != null && aimedAt.isAlive()) diceEntity.setTargetEntity(aimedAt);
+        else if (ownPawn != null) diceEntity.setTargetEntity(ownPawn);
         else diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
         diceEntity.setItemReference(player.getStackInHand(hand).copyWithCount(1));
     }
