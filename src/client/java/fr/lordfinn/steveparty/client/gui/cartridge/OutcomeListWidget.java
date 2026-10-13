@@ -42,7 +42,14 @@ import java.util.function.IntConsumer;
  */
 final class OutcomeListWidget {
     private static final int ROW_H = OutcomeListModule.ROW_H;
-    private static final int KIND_B = 18, KIND_GAP = 0, TARGET_B = 15, GAP = 1, NUM_H = 13, STEP_W = 11, VALUE_W = 25, MODE_W = 11, WEIGHT_W = 15, DRAWS_W = 27;
+    /**
+     * The open row's grid, {@link #GRID_W} wide, every line of it the same width, centred under the row: the kinds as one
+     * segmented bar (buttons {@link #KIND_B} square sharing their 1-pixel edges: 7 × 17 + 1), the targets as touching
+     * buttons ({@link #TARGET_B} wide: 8 × 15), the figures (amount and #/% on the left, the weight on the right edge).
+     * {@link #ED_GAP} between the lines, above the first and under the last.
+     */
+    private static final int GRID_W = 120, KIND_PITCH = 17, ED_GAP = 3, SIGN_GAP = 2, GROUP_GAP = 3;
+    private static final int KIND_B = 18, KIND_GAP = KIND_PITCH - KIND_B, TARGET_B = 15, GAP = 0, NUM_H = 13, STEP_W = 11, VALUE_W = 25, MODE_W = 11, WEIGHT_W = 15, DRAWS_W = 27;
     private static final int DELETE_W = 11, SCROLLBAR = 4, SCROLL_STEP = 9;
     private static final long SETTLE_MS = 1500;
     // Colours: the shell's
@@ -128,29 +135,38 @@ final class OutcomeListWidget {
         return bw - 2 - (bar ? SCROLLBAR : 0);
     }
 
-    /** A row's editor height in {@code w}: the palettes (wrapped), the figures, its margins. */
-    private int editorH(Outcome outcome, int w) {
-        int room = w - 4;
-        int kinds = rows(Kind.values().length, KIND_B, KIND_GAP, room), targets = rows(Target.values().length, TARGET_B, GAP, room);
-        int h = 3 + kinds * (KIND_B + KIND_GAP) + 2 + targets * (TARGET_B + GAP) + 2;
-        return h + (figuresWrap(outcome, room) ? 2 * (NUM_H + 2) : NUM_H + 2) + 2;
+    /** The open row's grid width in a row {@code iw} wide: {@link #GRID_W}, less in a narrow column (its lines wrap). */
+    private static int gridW(int iw) {
+        return Math.min(GRID_W, iw - 4);
+    }
+
+    /** A row's editor height (its row {@code iw} wide): the palettes (wrapped when narrow), the figures, the gaps. */
+    private int editorH(Outcome outcome, int iw) {
+        int w = gridW(iw);
+        int kinds = rows(Kind.values().length, KIND_B, KIND_GAP, w), targets = rows(Target.values().length, TARGET_B, GAP, w);
+        return ED_GAP + kinds * KIND_B + (kinds - 1) * (ED_GAP) + ED_GAP + targets * TARGET_B + (targets - 1) * ED_GAP + ED_GAP
+                + (figuresWrap(outcome, w) ? 2 * NUM_H + ED_GAP : NUM_H) + ED_GAP;
+    }
+
+    private static int perRow(int size, int gap, int room) {
+        return Math.max(1, (room + gap) / (size + gap));
     }
 
     private static int rows(int count, int size, int gap, int room) {
-        int perRow = Math.max(1, (room + gap) / (size + gap));
+        int perRow = perRow(size, gap, room);
         return (count + perRow - 1) / perRow;
     }
 
     private static int amountGroupW(Outcome outcome) {
         if (!outcome.kind().hasAmount()) return 0;
-        return 2 * STEP_W + VALUE_W + (outcome.kind().percent ? 3 + 2 * MODE_W : 0);
+        return 2 * STEP_W + VALUE_W + (outcome.kind().percent ? SIGN_GAP + 2 * MODE_W : 0);
     }
 
     private static final int WEIGHT_GROUP_W = 9 + 2 * STEP_W + WEIGHT_W;
 
     private static boolean figuresWrap(Outcome outcome, int room) {
         int amount = amountGroupW(outcome);
-        return amount > 0 && amount + 6 + WEIGHT_GROUP_W > room;
+        return amount > 0 && amount + GROUP_GAP + WEIGHT_GROUP_W > room;
     }
 
     /** The « Delete? » row: whether its buttons go under the question. */
@@ -214,7 +230,11 @@ final class OutcomeListWidget {
                 hits.add(new Hit(x0 + iw - 2 - DELETE_W, y + (ROW_H - DELETE_W) / 2, DELETE_W, DELETE_W, Part.DELETE, row, 0, editable));
                 hits.add(new Hit(x0, y, iw, ROW_H, Part.ROW, row, 0, editable));
             }
-            if (row == open && row != confirm) layoutEditor(outcome, row, x0 + 2, y + ROW_H + 3, iw - 4);
+            if (row == open && row != confirm) {
+                // Centred between the gold bar (2 pixels) and the row's right end (the delete button's right edge)
+                int gw = gridW(iw), left = x0 + 2 + (iw - 4 - gw) / 2;
+                layoutEditor(outcome, row, left, y + ROW_H + ED_GAP, gw);
+            }
             y += h;
         }
 
@@ -227,39 +247,39 @@ final class OutcomeListWidget {
         hits.add(new Hit(dx, fy + 1, DRAWS_W, NUM_H, Part.DRAWS, -1, 0, editable && m > 0));
         dx -= STEP_W;
         hits.add(new Hit(dx, fy + 1, STEP_W, NUM_H, Part.DRAWS_DOWN, -1, 0, editable && k > 1));
-        int addW = Math.min(addWords(), dx - 14 - bx);
+        int addW = Math.min(addWords(), dx - GROUP_GAP - MistigriIcons.CARDS_W - 6 - bx);
         hits.add(new Hit(bx, fy, Math.max(16, addW), OutcomeListModule.FOOTER_H, Part.ADD, -1, 0,
                 editable && outcomes.size() < MistigriOutcomes.MAX));
     }
 
     private void layoutEditor(Outcome outcome, int row, int x, int y, int w) {
-        int perRow = Math.max(1, (w + KIND_GAP) / (KIND_B + KIND_GAP));
+        int perRow = perRow(KIND_B, KIND_GAP, w);
         for (Kind kind : Kind.values()) {
             int i = kind.ordinal();
-            hits.add(new Hit(x + i % perRow * (KIND_B + KIND_GAP), y + i / perRow * (KIND_B + KIND_GAP), KIND_B, KIND_B, Part.KIND, row, i, editable));
+            hits.add(new Hit(x + i % perRow * KIND_PITCH, y + i / perRow * (KIND_B + ED_GAP), KIND_B, KIND_B, Part.KIND, row, i, editable));
         }
-        y += rows(Kind.values().length, KIND_B, KIND_GAP, w) * (KIND_B + KIND_GAP) + 2;
-        perRow = Math.max(1, (w + GAP) / (TARGET_B + GAP));
+        y += rows(Kind.values().length, KIND_B, KIND_GAP, w) * (KIND_B + ED_GAP);
+        perRow = perRow(TARGET_B, GAP, w);
         for (Target target : Target.values()) {
             int i = target.ordinal();
             boolean allowed = outcome.kind().anyTarget || target == Target.LANDED;
-            hits.add(new Hit(x + i % perRow * (TARGET_B + GAP), y + i / perRow * (TARGET_B + GAP), TARGET_B, TARGET_B, Part.TARGET, row, i, editable && allowed));
+            hits.add(new Hit(x + i % perRow * TARGET_B, y + i / perRow * (TARGET_B + ED_GAP), TARGET_B, TARGET_B, Part.TARGET, row, i, editable && allowed));
         }
-        y += rows(Target.values().length, TARGET_B, GAP, w) * (TARGET_B + GAP) + 2;
+        y += rows(Target.values().length, TARGET_B, GAP, w) * (TARGET_B + ED_GAP);
         Kind kind = outcome.kind();
         if (kind.hasAmount()) {
-            int ax = x;
             int min = outcome.percent() ? 5 : kind.min, max = outcome.percent() ? 100 : kind.max;
-            hits.add(new Hit(ax, y, STEP_W, NUM_H, Part.AMOUNT_DOWN, row, 0, editable && outcome.amount() > min));
-            hits.add(new Hit(ax + STEP_W, y, VALUE_W, NUM_H, Part.AMOUNT, row, 0, editable));
-            hits.add(new Hit(ax + STEP_W + VALUE_W, y, STEP_W, NUM_H, Part.AMOUNT_UP, row, 0, editable && outcome.amount() < max));
+            hits.add(new Hit(x, y, STEP_W, NUM_H, Part.AMOUNT_DOWN, row, 0, editable && outcome.amount() > min));
+            hits.add(new Hit(x + STEP_W, y, VALUE_W, NUM_H, Part.AMOUNT, row, 0, editable));
+            hits.add(new Hit(x + STEP_W + VALUE_W, y, STEP_W, NUM_H, Part.AMOUNT_UP, row, 0, editable && outcome.amount() < max));
             if (kind.percent) {
-                int px = ax + 2 * STEP_W + VALUE_W + 3;
+                int px = x + 2 * STEP_W + VALUE_W + SIGN_GAP;
                 hits.add(new Hit(px, y, MODE_W, NUM_H, Part.NUMBER, row, 0, editable));
                 hits.add(new Hit(px + MODE_W, y, MODE_W, NUM_H, Part.PERCENT, row, 1, editable));
             }
         }
-        int wy = figuresWrap(outcome, w) ? y + NUM_H + 2 : y;
+        // The weight on the grid's right edge, under the last kind and the last target
+        int wy = figuresWrap(outcome, w) ? y + NUM_H + ED_GAP : y;
         int wx = x + w - WEIGHT_GROUP_W + 9;
         hits.add(new Hit(wx, wy, STEP_W, NUM_H, Part.WEIGHT_DOWN, row, 0, editable && outcome.weight() > 0));
         hits.add(new Hit(wx + STEP_W, wy, WEIGHT_W, NUM_H, Part.WEIGHT, row, 0, editable));
@@ -286,10 +306,16 @@ final class OutcomeListWidget {
         if (outcomes.size() == 0) {
             UiText.centered(context, font, Text.translatable(K + "empty"), bx + 4, by + bh / 2 - 4, bw - 8, SOFT, false);
         }
+        Hit chosenKind = null;
         for (Hit hit : hits) {
             if (hit.row < 0 || hit.part == Part.ROW || hit.y + hit.h < by || hit.y > by + bh) continue;
+            if (hit.part == Part.KIND && hit.row < outcomes.size() && outcomes.get(hit.row).kind().ordinal() == hit.value) {
+                chosenKind = hit; // the kinds share their edges: the chosen one's gold edges over its neighbours'
+                continue;
+            }
             drawHit(context, outcomes, hit, inBox && hit.contains(mouseX, mouseY));
         }
+        if (chosenKind != null) drawHit(context, outcomes, chosenKind, inBox && chosenKind.contains(mouseX, mouseY));
         context.disableScissor();
         if (scrollMax > 0) {
             int track = bh - 4, thumb = Math.max(8, track * track / (track + scrollMax));
@@ -399,7 +425,7 @@ final class OutcomeListWidget {
                 ButtonGlyphs.text(context, font, hit.part == Part.PERCENT ? "%" : "#", hit.x, hit.y, hit.w, hit.h, chosen ? 0xFF3B2600 : TEXT);
             }
             case ADD -> {
-                PartyGui.Theme theme = !hit.active ? PartyGui.BUTTON_DISABLED : hot ? PartyGui.BUTTON_PRIMARY.brighter() : PartyGui.BUTTON_PRIMARY;
+                PartyGui.Theme theme = !hit.active ? OFF_BUTTON : hot ? PartyGui.BUTTON_PRIMARY.brighter() : PartyGui.BUTTON_PRIMARY;
                 if (!editable) return;
                 PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, theme, false);
                 Text label = Text.translatable(K + "add");
@@ -415,7 +441,9 @@ final class OutcomeListWidget {
             }
             case DRAWS -> {
                 int m = outcomes.eligible().size();
-                MistigriIcons.cards(context, hit.x - STEP_W - 12, hit.y + (hit.h - 10) / 2);
+                int fy = by + OutcomeListModule.LIST_H + OutcomeListModule.FOOTER_GAP;
+                MistigriIcons.cards(context, hit.x - STEP_W - GROUP_GAP - MistigriIcons.CARDS_W,
+                        fy + (OutcomeListModule.FOOTER_H - MistigriIcons.CARDS_H) / 2);
                 figure(context, hit, outcomes.drawCount() + "/" + m, outcomes.drawCount() < m ? GOLD : TEXT, hot);
             }
             default -> {
@@ -431,6 +459,13 @@ final class OutcomeListWidget {
         return ICONS[kind.ordinal()];
     }
 
+    /**
+     * A button that can't be pressed now: the same black edge and size as the others (it stays on the grid, edges
+     * aligned), a dim grey body, a dark sign: still a button, clearly off.
+     */
+    private static final PartyGui.Theme OFF_BUTTON = new PartyGui.Theme(OUTLINE, 0xFF6E6E6E, 0xFF555555, 0xFF3C3C3C);
+    private static final int OFF_SIGN = 0xFF2E2E2E;
+
     private static final PartyGui.Theme DIM = new PartyGui.Theme(0xFF1E1E1E, 0xFF333333, 0xFF2A2A2A, 0xFF222222);
 
     private void textButton(DrawContext context, Hit hit, String key, PartyGui.Theme theme, int color) {
@@ -440,9 +475,9 @@ final class OutcomeListWidget {
 
     private void step(DrawContext context, Hit hit, String sign, boolean hot) {
         if (!editable) return;
-        PartyGui.Theme theme = hit.active ? (hot ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
+        PartyGui.Theme theme = hit.active ? (hot ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : OFF_BUTTON;
         PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, theme, false);
-        int color = hit.active ? PartyGui.TEXT_DARK : 0xFF7A7A7A;
+        int color = hit.active ? PartyGui.TEXT_DARK : OFF_SIGN;
         if (sign.equals("+")) ButtonGlyphs.plus(context, hit.x, hit.y, hit.w, hit.h, color);
         else ButtonGlyphs.minus(context, hit.x, hit.y, hit.w, hit.h, color);
     }
