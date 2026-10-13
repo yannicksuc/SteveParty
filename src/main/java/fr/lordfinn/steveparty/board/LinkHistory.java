@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.board;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+
 import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
@@ -42,7 +44,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -135,6 +137,17 @@ public final class LinkHistory {
             if (!(world.getBlockEntity(pos) instanceof StepControllerBlockEntity stepController)
                     || !Objects.equals(stepController.getLink(), undo ? after : before)) return false;
             stepController.setLink(undo ? before : after);
+            return true;
+        }
+    }
+
+    /** The start tiles linked to a Party Controller, see {@link ControllerStartLinks}. */
+    public record StartLinksChange(BlockPos pos, List<BlockPos> before, List<BlockPos> after) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            if (!(world.getBlockEntity(pos) instanceof PartyControllerEntity controller)
+                    || !controller.getStartLinks().equals(undo ? after : before)) return false;
+            controller.setStartLinks(undo ? before : after);
             return true;
         }
     }

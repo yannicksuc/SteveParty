@@ -153,7 +153,8 @@
       "fr.lordfinn.steveparty.gametest.TrichaudronGameTests",
       "fr.lordfinn.steveparty.gametest.BubblerGameTests",
       "fr.lordfinn.steveparty.gametest.ApiGameTests",
-      "fr.lordfinn.steveparty.gametest.PartyBoardGameTests"
+      "fr.lordfinn.steveparty.gametest.PartyBoardGameTests",
+      "fr.lordfinn.steveparty.gametest.ControllerStartLinksGameTests"
     ],
     "steveparty": [
       "fr.lordfinn.steveparty.gametest.addon.TestAddon"
