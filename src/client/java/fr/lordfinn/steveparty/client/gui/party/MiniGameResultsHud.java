@@ -30,7 +30,7 @@ import java.util.List;
  */
 public final class MiniGameResultsHud {
     private static final int WIDTH = 210, PAD = 7, ROW = 14, CHIP = 24;
-    private static final int ROOM_ABOVE = 40, ROOM_BELOW = 64;
+    private static final int ROOM_ABOVE = 40, ROOM_BELOW = 64, PARTY_END_TOP = 10;
     private static final float IN_TICKS = 7, OUT_TICKS = 10, STAY_TICKS = 20 * 7, PARTY_END_STAY_TICKS = 20 * 12;
     private static final int[] PLACE_COLORS = {0xFFFFC52E, 0xFFC9D3DA, 0xFFC9793F, 0xFF9C7FD6};
 
@@ -114,7 +114,8 @@ public final class MiniGameResultsHud {
         int rows = Math.max(1, Math.min(shown.rows().size(), Math.max(1, (room - head - PAD) / ROW)));
         int height = head + rows * ROW + PAD - 2 + (noteLines.isEmpty() ? 0 : 1 + UiText.LINE_H * noteLines.size());
         int x = (screenWidth - WIDTH) / 2;
-        int y = Math.max(4, ROOM_ABOVE + (room - height) / 2);
+        // A party's end stays long, while its lines fill the chat: the card at the top, clear of the chat
+        int y = shown.kind().partyEnd() ? PARTY_END_TOP : Math.max(4, ROOM_ABOVE + (room - height) / 2);
 
         MatrixStack matrices = context.getMatrices();
         matrices.push();

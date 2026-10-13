@@ -87,6 +87,11 @@ public final class PartyResults {
             if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Results.ID)) ServerPlayNetworking.send(player, payload);
             player.playSoundToPlayer(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1f);
         }
+        for (Text line : lines(places, coin, star)) MessageUtils.sendToPlayers(audience, line, MessageUtils.MessageType.CHAT);
+    }
+
+    /** The ranking as the chat tells it: who won, a line per place, and how a tie was broken. */
+    public static List<Text> lines(List<Place> places, ItemStack coin, ItemStack star) {
         List<Text> lines = new ArrayList<>();
         lines.add(Text.translatableWithFallback("message.steveparty.party.results", "Party over: %s wins!", places.getFirst().name())
                 .styled(style -> style.withColor(0xFFC52E).withBold(true)));
@@ -94,7 +99,7 @@ public final class PartyResults {
         if (places.stream().anyMatch(Place::tied))
             lines.add(Text.translatableWithFallback("message.steveparty.party.results.tie", "Same stars and coins: the better start roll wins.")
                     .formatted(Formatting.GRAY));
-        for (Text line : lines) MessageUtils.sendToPlayers(audience, line, MessageUtils.MessageType.CHAT);
+        return lines;
     }
 
     private static Text line(Place place, ItemStack coin, ItemStack star) {
@@ -103,8 +108,9 @@ public final class PartyResults {
                 .styled(style -> style.withColor(place.place() == 1 ? 0xFFD700 : 0xFFFFFF).withBold(place.place() == 1)));
         line.append(Text.translatable("message.steveparty.minigame.results.separator"));
         line.append(place.name());
-        line.append(Text.literal("  ").append(PartyCurrencyText.amount(star, place.stars())).formatted(Formatting.YELLOW));
+        // Coins then stars, as on the card and in the mini-game results
         line.append(Text.literal("  ").append(PartyCurrencyText.amount(coin, place.coins())).formatted(Formatting.GOLD));
+        line.append(Text.literal("  ").append(PartyCurrencyText.amount(star, place.stars())).formatted(Formatting.YELLOW));
         return line;
     }
 }
