@@ -108,6 +108,18 @@ public class StarCartridgeGameTests implements SteveGameTest {
         }
     }
 
+    /**
+     * A token of {@code owner} on START (a plain cow would wander off it, and the board is what joins where the tokens
+     * stand).
+     */
+    private static CowEntity token(TestContext context, ServerPlayerEntity owner) {
+        CowEntity cow = context.spawnEntity(EntityType.COW, START);
+        TokenizedEntityInterface token = (TokenizedEntityInterface) cow;
+        token.steveparty$setTokenized(true);
+        token.steveparty$setTokenOwner(owner.getUuid());
+        return cow;
+    }
+
     /** A party of one token, started up to its first turn (the controller off the board). */
     private static PartyControllerEntity party(TestContext context, CowEntity token, ServerPlayerEntity owner) {
         context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
@@ -136,10 +148,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
         space(context, END, ModBlocks.TILE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), null);
         space(context, OTHER, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), START);
         space(context, ANOTHER, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), START);
-        CowEntity cow = context.spawnEntity(EntityType.COW, START);
-        TokenizedEntityInterface token = (TokenizedEntityInterface) cow;
-        token.steveparty$setTokenized(true);
-        token.steveparty$setTokenOwner(owner.getUuid());
+        CowEntity cow = token(context, owner);
         owner.setPosition(context.getAbsolute(new Vec3d(4, 1, -10)));
         PartyControllerEntity controller = party(context, cow, owner);
         controller.setStarSpace(context.getAbsolutePos(STAR));
@@ -219,7 +228,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
             off.setStack(1, new ItemStack(ModItems.STAR_CARTRIDGE));
             context.assertEquals(off.getCachedState().get(ABoardSpaceBlock.TILE_TYPE), BoardSpaceType.DEFAULT, "a switched-off star space");
             onBoard(context);
-            CowEntity cow = context.spawnEntity(EntityType.COW, START);
+            CowEntity cow = token(context, owner);
             PartyControllerEntity controller = party(context, cow, owner);
             for (int i = 0; i < 12; i++) {
                 PartyStars.onPartyStarted(controller, context.getWorld());
@@ -245,7 +254,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
             waiting.set(ModComponents.STAR_SETTINGS, StarSettingsComponent.DEFAULT.withRelocate(false));
             stays.setStack(0, waiting);
             onBoard(context);
-            CowEntity cow = context.spawnEntity(EntityType.COW, START);
+            CowEntity cow = token(context, owner);
             PartyControllerEntity controller = party(context, cow, owner);
             controller.setStarSpace(context.getAbsolutePos(STAR));
 
@@ -275,7 +284,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
             BoardSpaceBlockEntity star = context.getBlockEntity(STAR);
             star.setStack(0, new ItemStack(ModItems.STAR_CARTRIDGE));
             onBoard(context);
-            CowEntity cow = context.spawnEntity(EntityType.COW, START);
+            CowEntity cow = token(context, owner);
             PartyControllerEntity controller = party(context, cow, owner);
             controller.setStarSpace(context.getAbsolutePos(STAR));
 
