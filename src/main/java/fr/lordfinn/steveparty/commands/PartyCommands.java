@@ -1,9 +1,12 @@
 package fr.lordfinn.steveparty.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLeave;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.service.ShopStops;
@@ -11,6 +14,7 @@ import fr.lordfinn.steveparty.service.TrichaudronPrizes;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.argument.BlockPosArgumentType;
+import net.minecraft.command.argument.GameProfileArgumentType;
 import net.minecraft.command.argument.UuidArgumentType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -18,11 +22,15 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +43,8 @@ import static net.minecraft.server.command.CommandManager.literal;
  *     <li>{@code /steveparty skip_turn [token] [controller pos]}: skips the current turn if it waits for its absent token</li>
  *     <li>{@code /steveparty exclude <token> [controller pos]}: excludes a token from the party (own token, absent
  *     current turn, or any token with a Game Master wand in hand)</li>
+ *     <li>{@code /steveparty leave}: the player leaves the party he is in, wherever it is (see {@link PartyLeave})</li>
+ *     <li>{@code /steveparty kick <players>} (operators, or a Game Master wand holder near the party): makes them leave</li>
  *     <li>{@code /steveparty party stop [controller pos]} (operators): stops the running party, as the dashboard's
  *     « Stop the party » button does; without a position, the closest one within {@link #STOP_RANGE} blocks</li>
  * </ul>
@@ -82,6 +92,13 @@ public class PartyCommands {
                         .then(argument("token", UuidArgumentType.uuid())
                                 .executes(context -> ShopStops.open(context.getSource().getPlayerOrThrow(),
                                         UuidArgumentType.getUuid(context, "token")) ? 1 : 0)))
+                // The player leaves the party he is in, wherever it is (also the chat's « [Leave the party] »)
+                .then(literal("leave")
+                        .executes(context -> leave(context.getSource())))
+                // Makes players leave: operators, or a Game Master near the party
+                .then(literal("kick")
+                        .then(argument("players", GameProfileArgumentType.gameProfile())
+                                .executes(context -> kick(context.getSource(), GameProfileArgumentType.getProfileArgument(context, "players")))))
                 .then(literal("party").requires(source -> source.hasPermissionLevel(OP_LEVEL))
                         .then(literal("stop")
                                 .executes(context -> stop(context.getSource(), null))
@@ -106,6 +123,60 @@ public class PartyCommands {
         source.sendFeedback(() -> Text.translatableWithFallback("command.steveparty.party_stopped",
                 "Party of the controller at %s, %s, %s stopped.", at.getX(), at.getY(), at.getZ()), true);
         return 1;
+    }
+
+    private static int leave(ServerCommandSource source) throws CommandSyntaxException {
+        ServerPlayerEntity player = source.getPlayerOrThrow();
+        List<GlobalPos> left = PartyLeave.leave(source.getServer(), player.getUuid());
+        if (left.isEmpty()) {
+            source.sendFeedback(() -> Text.translatableWithFallback("command.steveparty.leave.none",
+                    "You are in no party."), false);
+            return 0;
+        }
+        source.sendFeedback(() -> Text.translatableWithFallback("command.steveparty.leave.done",
+                "You left the party. Your pawn goes back to start, you keep your items."), false);
+        return left.size();
+    }
+
+    private static int kick(ServerCommandSource source, Collection<GameProfile> profiles) {
+        boolean op = source.hasPermissionLevel(OP_LEVEL);
+        if (!op && (source.getPlayer() == null || !holdsGameMasterWand(source.getPlayer()))) {
+            source.sendError(Text.translatableWithFallback("command.steveparty.kick.not_allowed",
+                    "Only an operator, or a Game Master (Tokenizer Wand enchanted with Game Master in hand), can do this."));
+            return 0;
+        }
+        int kicked = 0;
+        for (GameProfile profile : profiles) {
+            // A Game Master only kicks from the parties around him
+            if (!op && !nearPartyOf(source, profile.getId())) {
+                source.sendError(Text.translatableWithFallback("command.steveparty.kick.not_near",
+                        "%s is in no party near you.", profile.getName()));
+                continue;
+            }
+            List<GlobalPos> left = PartyLeave.leave(source.getServer(), profile.getId());
+            if (left.isEmpty()) {
+                source.sendError(Text.translatableWithFallback("command.steveparty.kick.none", "%s is in no party.", profile.getName()));
+                continue;
+            }
+            kicked++;
+            ServerPlayerEntity target = source.getServer().getPlayerManager().getPlayer(profile.getId());
+            if (target != null && target != source.getPlayer()) {
+                target.sendMessage(Text.translatableWithFallback("message.steveparty.kicked", "%s took you out of the party.",
+                        source.getDisplayName()).formatted(Formatting.RED), false);
+            }
+            source.sendFeedback(() -> Text.translatableWithFallback("command.steveparty.kick.done",
+                    "%s is out of the party.", profile.getName()), true);
+        }
+        return kicked;
+    }
+
+    /** {@code player} follows or plays a running party whose controller is within {@link #RANGE} blocks of the source. */
+    private static boolean nearPartyOf(ServerCommandSource source, UUID player) {
+        return PartyControllerEntity.getActivePartyControllers().stream()
+                .filter(entity -> !entity.isRemoved() && entity.getWorld() == source.getWorld() && entity.getPartyData().isStarted())
+                .filter(entity -> entity.getPos().toCenterPos().isInRange(source.getPosition(), RANGE))
+                .anyMatch(entity -> entity.getInterestedPlayers().contains(player)
+                        || entity.getPartyData().getTokens().stream().anyMatch(token -> entity.isTokenOwnedBy(token, player)));
     }
 
     private static BlockPos getPos(CommandContext<ServerCommandSource> context) {

@@ -54,6 +54,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -720,6 +721,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         PartyAdvancements.partyStarted(this, serverWorld);
         nextStep();
         markDirty();
+        // Each player is told where the party is and how to leave it
+        for (ServerPlayerEntity player : getInterestedPlayersEntities()) PartyLeave.tellHowToLeave(player, this);
         // Goal pole bases linked to this party start again from 0
         GoalPoleNetwork.onPartyStarted(this);
     }
@@ -771,6 +774,13 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      * @return false if no party runs (nothing done)
      */
     public boolean stopParty(@Nullable Text stoppedBy) {
+        return stop(stoppedBy != null
+                ? Text.translatableWithFallback("message.steveparty.party_stopped", "The party was stopped by %s.", stoppedBy)
+                : Text.translatableWithFallback("message.steveparty.party_stopped.removed", "The party was stopped: its Party Controller is gone."));
+    }
+
+    /** See {@link #stopParty}: {@code message} tells everyone around why. */
+    private boolean stop(Text message) {
         if (!(this.world instanceof ServerWorld serverWorld) || !partyData.isStarted()) return false;
         List<ServerPlayerEntity> audience = getPartyAudience();
         flow.endCurrentStep();
@@ -790,9 +800,6 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         // The players' HUDs go (steps, standings)
         clearInterestedPlayers();
         this.audience.forgetLiveData();
-        Text message = stoppedBy != null
-                ? Text.translatableWithFallback("message.steveparty.party_stopped", "The party was stopped by %s.", stoppedBy)
-                : Text.translatableWithFallback("message.steveparty.party_stopped.removed", "The party was stopped: its Party Controller is gone.");
         MessageUtils.sendToPlayers(audience, message.copy().formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
         markDirty();
         return true;
@@ -844,6 +851,11 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      * @return false if the token is not part of this party
      */
     public boolean excludeToken(UUID tokenUUID) {
+        return takeOut(tokenUUID, false);
+    }
+
+    /** See {@link #excludeToken}: {@code left} its player left the party himself (that is what everyone is told). */
+    private boolean takeOut(UUID tokenUUID, boolean left) {
         if (!(this.world instanceof ServerWorld serverWorld)) return false;
         if (!partyData.getTokens().contains(tokenUUID)) return false;
         Text tokenName = getTokenDisplayName(serverWorld, tokenUUID);
@@ -863,9 +875,10 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             step.onTokenExcluded(tokenUUID, this);
 
         releaseToken(serverWorld, tokenUUID);
-        MessageUtils.sendToPlayers(getPartyAudience(),
-                Text.translatableWithFallback("message.steveparty.token_excluded",
-                        "%s has been excluded from the party.", tokenName).formatted(Formatting.RED),
+        MessageUtils.sendToPlayers(getPartyAudience(), (left
+                        ? Text.translatableWithFallback("message.steveparty.token_left", "%s left the party.", tokenName)
+                        : Text.translatableWithFallback("message.steveparty.token_excluded", "%s has been excluded from the party.", tokenName))
+                        .formatted(Formatting.RED),
                 MessageUtils.MessageType.CHAT);
 
         if (isItsTurn) {
@@ -875,6 +888,45 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             sendPacketToInterestedPlayers();
         }
         return true;
+    }
+
+    /**
+     * A player leaves the party ({@code /steveparty leave}, or made to leave): he stops following it (his HUD goes),
+     * the current step lets him go (out of a mini-game's arena, with what he owns) and each of his tokens is taken out
+     * of it as at the party's end: its dice given back, its shop and star choice called off, its next turns removed
+     * (its own turn passes to the next step), out of the game and back on its start tile. What he owns (coins, stars,
+     * power-ups) stays his: nothing is taken or given. If no token is left, the party is over (as if stopped).
+     *
+     * @return false if he neither follows the party nor plays a token in it (nothing done)
+     */
+    public boolean removePlayer(UUID playerUUID) {
+        if (!(this.world instanceof ServerWorld serverWorld)) return false;
+        boolean started = partyData.isStarted();
+        Set<UUID> tokens = new LinkedHashSet<>();
+        if (started) for (UUID token : partyData.getTokens()) if (isTokenOwnedBy(token, playerUUID)) tokens.add(token);
+        boolean followed = audience.forget(playerUUID);
+        if (!followed && tokens.isEmpty()) return false;
+        if (started && partyData.getCurrentStep() != null) partyData.getCurrentStep().onPlayerLeft(playerUUID, this);
+        if (tokens.isEmpty()) return true;
+        if (tokens.containsAll(partyData.getTokens())) {
+            // The last player leaves: the party is over
+            stop(Text.translatableWithFallback("message.steveparty.party_left_empty", "Everyone left: the party is over."));
+            return true;
+        }
+        PartyTokenHomes.dropDiceOf(serverWorld, pos, tokens, List.of(playerUUID));
+        for (UUID token : tokens) {
+            ShopStops.cancel(token);
+            PartyStars.cancelOffer(token);
+        }
+        for (UUID token : tokens) takeOut(token, true);
+        sendTokensHome(serverWorld, tokens);
+        markDirty();
+        return true;
+    }
+
+    /** Where this controller is (dimension and position). */
+    public GlobalPos getGlobalPos() {
+        return audience.here();
     }
 
     /**

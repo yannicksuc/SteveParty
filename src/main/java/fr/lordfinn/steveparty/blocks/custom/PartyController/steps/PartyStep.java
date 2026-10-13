@@ -138,6 +138,13 @@ public class PartyStep {
     }
 
     /**
+     * A player left the party (his tokens are excluded right after): the step lets him go (a mini-game brings him
+     * back from its arena, with what he owns).
+     */
+    public void onPlayerLeft(UUID playerUUID, PartyControllerEntity partyControllerEntity) {
+    }
+
+    /**
      * A party bell in waiting mode received its redstone signal for {@code moment}.
      *
      * @return true if this step was waiting for it (and goes on)

@@ -27,8 +27,11 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.GlobalPos;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.Optional;
 
 /**
  * The party HUDs of a party's audience: the turn bar ({@link TurnBarHud}) and the standings ({@link StandingsHud}),
@@ -124,6 +127,11 @@ public final class PartyHud {
         live = PartyLiveData.EMPTY;
         model = null;
         dirty = false;
+    }
+
+    /** Where the controller of the party shown is, empty when no party is shown (or not known yet). */
+    public static Optional<GlobalPos> controller() {
+        return data.isStarted() ? live.controller() : Optional.empty();
     }
 
     /** The model of the running party, null when none (rebuilt once after a change). */

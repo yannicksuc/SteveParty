@@ -8,10 +8,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.GlobalPos;
+import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -62,15 +65,40 @@ public final class PartyAudience {
     }
 
     void add(ServerPlayerEntity player) {
-        interestedPlayers.add(player.getUuid());
+        boolean added = interestedPlayers.add(player.getUuid());
+        memberships().ifPresent(memberships -> memberships.follow(player.getUuid(), here()));
         sendTo(player);
         controller.markDirty();
+        if (added && controller.getPartyData().isStarted()) PartyLeave.tellHowToLeave(player, controller);
     }
 
     void remove(ServerPlayerEntity player) {
-        interestedPlayers.remove(player.getUuid());
-        sendClear(player);
+        forget(player.getUuid());
+    }
+
+    /**
+     * {@code playerUUID} stops following the party: his HUD is cleared if he is connected (in any dimension).
+     *
+     * @return false if he did not follow it
+     */
+    boolean forget(UUID playerUUID) {
+        memberships().ifPresent(memberships -> memberships.unfollow(playerUUID, here()));
+        if (!interestedPlayers.remove(playerUUID)) return false;
+        ServerPlayerEntity player = controller.getWorld() != null && controller.getWorld().getServer() != null
+                ? controller.getWorld().getServer().getPlayerManager().getPlayer(playerUUID) : null;
+        if (player != null) sendClear(player);
         controller.markDirty();
+        return true;
+    }
+
+    /** Where the controller is (dimension and position). */
+    GlobalPos here() {
+        return GlobalPos.create(controller.getWorld() != null ? controller.getWorld().getRegistryKey() : World.OVERWORLD, controller.getPos());
+    }
+
+    private Optional<PartyMemberships> memberships() {
+        return controller.getWorld() != null && controller.getWorld().getServer() != null
+                ? Optional.of(PartyMemberships.get(controller.getWorld().getServer())) : Optional.empty();
     }
 
     /** Everyone stops following the party: their steps HUD is cleared, in any dimension. */
@@ -82,6 +110,7 @@ public final class PartyAudience {
                     ? controller.getWorld().getServer().getPlayerManager().getPlayer(playerUUID) : null;
             if (player != null) sendClear(player);
         }
+        memberships().ifPresent(memberships -> interestedPlayers.forEach(uuid -> memberships.unfollow(uuid, here())));
         interestedPlayers.clear();
         controller.markDirty();
     }
@@ -92,6 +121,7 @@ public final class PartyAudience {
             ServerPlayerEntity player = serverWorld.getServer().getPlayerManager().getPlayer(playerUUID);
             if (player != null) sendClear(player);
         }
+        memberships().ifPresent(memberships -> interestedPlayers.forEach(uuid -> memberships.unfollow(uuid, here())));
     }
 
     /** The owners of the party's loaded tokens follow it. */
@@ -104,8 +134,21 @@ public final class PartyAudience {
         }
     }
 
-    void onPlayerJoin(ServerPlayerEntity player) {
-        if (interestedPlayers.contains(player.getUuid())) sendTo(player);
+    /** @return true if the player follows this running party: he gets its HUD and the way to leave it */
+    boolean onPlayerJoin(ServerPlayerEntity player) {
+        UUID playerUUID = player.getUuid();
+        if (!interestedPlayers.contains(playerUUID)) {
+            // A player of the party who was away when it started follows it from now on
+            PartyData data = controller.getPartyData();
+            if (!data.isStarted() || data.getTokens().stream().noneMatch(token -> controller.isTokenOwnedBy(token, playerUUID)))
+                return false;
+            add(player);
+            return true;
+        }
+        sendTo(player);
+        if (!controller.getPartyData().isStarted()) return false;
+        PartyLeave.tellHowToLeave(player, controller);
+        return true;
     }
 
     /** The connected interested players, in the controller's dimension. */

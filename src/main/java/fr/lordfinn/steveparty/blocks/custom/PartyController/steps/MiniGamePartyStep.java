@@ -636,6 +636,17 @@ public class MiniGamePartyStep extends PartyStep {
         tokens.remove(tokenUUID);
     }
 
+    /** He no longer plays it nor votes; if he was sent to it, he gets what he owns back and comes back now. */
+    @Override
+    public void onPlayerLeft(UUID playerUUID, PartyControllerEntity partyControllerEntity) {
+        participants.remove(playerUUID);
+        ready.remove(playerUUID);
+        departure.playerLeft(partyControllerEntity, playerUUID);
+        partyControllerEntity.markDirty();
+        // He may have been the last one the practice vote waited for
+        if (isPractice()) checkReady(partyControllerEntity);
+    }
+
     /** @return true once the roulette chose the mini-game. */
     public boolean isMiniGameChosen() {
         return miniGameChosen;

@@ -27,6 +27,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
+import net.minecraft.util.math.GlobalPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -51,12 +52,13 @@ import java.util.UUID;
  * @param effect        what the roll of the current turn does besides steps (coins, swap, a face 0)
  * @param program       before the party's steps exist (the turn order rolls, the preparation): what its program will
  *                      play, for the turn bar's strip of steps; empty afterwards (the steps say it)
+ * @param controller    where the party's controller is (dimension and position), so the player knows which party it is
  */
 public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean shopping, int absentSeconds,
                             ItemStack starItem, ItemStack coinItem, List<Standing> standings, RollEffect effect,
-                            PartyDashboardData.Timeline program) {
+                            PartyDashboardData.Timeline program, Optional<GlobalPos> controller) {
     public static final PartyLiveData EMPTY = new PartyLiveData(0, 0, false, false, -1, ItemStack.EMPTY, ItemStack.EMPTY, List.of(), RollEffect.NONE,
-            PartyDashboardData.Timeline.EMPTY);
+            PartyDashboardData.Timeline.EMPTY, Optional.empty());
     /** The most steps of the program sent in {@link #program}. */
     public static final int MAX_PROGRAM_STEPS = 32;
 
@@ -143,7 +145,8 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         if (other == null || roll != other.roll || stepsLeft != other.stepsLeft || moving != other.moving
                 || shopping != other.shopping || absentSeconds != other.absentSeconds || !effect.equals(other.effect)
                 || !ItemStack.areEqual(starItem, other.starItem) || !ItemStack.areEqual(coinItem, other.coinItem)
-                || standings.size() != other.standings.size() || !program.equals(other.program))
+                || standings.size() != other.standings.size() || !program.equals(other.program)
+                || !controller.equals(other.controller))
             return false;
         for (int i = 0; i < standings.size(); i++) {
             if (!standings.get(i).sameAs(other.standings.get(i))) return false;
@@ -176,7 +179,7 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         for (UUID token : data.getTokens()) standings.add(standingOf(controller, world, token));
         return new PartyLiveData(roll, stepsLeft, moving, shopping, absentSeconds,
                 controller.getCurrency(PartyCurrency.STAR), controller.getCurrency(PartyCurrency.COIN), standings, effect,
-                programOf(controller, data));
+                programOf(controller, data), Optional.of(controller.getGlobalPos()));
     }
 
     /** What the program will play, while the party's steps are not generated yet (see {@link #program}). */
@@ -311,8 +314,10 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
             ItemStack coinItem = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
             List<Standing> standings = STANDINGS_CODEC.decode(buf);
             RollEffect effect = new RollEffect(buf.readBoolean(), buf.readBoolean(), buf.readInt(), buf.readBoolean(), buf.readString());
+            PartyDashboardData.Timeline program = PartyDashboardData.readTimeline(buf);
+            Optional<GlobalPos> controller = buf.readOptional(GlobalPos.PACKET_CODEC);
             return new PartyLiveData(roll, stepsLeft, moving, shopping, absentSeconds, starItem, coinItem, standings, effect,
-                    PartyDashboardData.readTimeline(buf));
+                    program, controller);
         }
 
         @Override
@@ -331,6 +336,7 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
             buf.writeBoolean(data.effect.swap);
             buf.writeString(data.effect.swapWith);
             PartyDashboardData.writeTimeline(buf, data.program);
+            buf.writeOptional(data.controller, GlobalPos.PACKET_CODEC);
         }
     };
 

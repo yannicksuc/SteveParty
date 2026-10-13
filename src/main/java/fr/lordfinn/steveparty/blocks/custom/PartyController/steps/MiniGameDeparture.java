@@ -189,6 +189,17 @@ final class MiniGameDeparture {
         }
     }
 
+    /** {@code uuid} left the party: out of the arena with what he owns, back where he stood before the mini-game. */
+    void playerLeft(PartyControllerEntity controller, UUID uuid) {
+        MiniGamePipes.leaveParty(uuid);
+        MinecraftServer server = controller.getWorld() == null ? null : controller.getWorld().getServer();
+        if (server == null) return;
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+        if (player != null) arena.leave(player);
+        MiniGameReturns.Return back = step.returnPositions.remove(uuid);
+        if (back != null) MiniGameReturns.bringBack(server, uuid, back);
+    }
+
     /**
      * Brings everyone sent to the mini-game back where they stood before it: now if they are online, else when they
      * come (see {@link MiniGameReturns}).
