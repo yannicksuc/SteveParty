@@ -1,0 +1,41 @@
+{
+  "category": "creatures",
+  "name": "book.steveparty.guide.creatures.magpie.name",
+  "description": "book.steveparty.guide.creatures.magpie.description",
+  "icon": {
+    "item": "steveparty:magpie_spawn_egg"
+  },
+  "x": -2,
+  "y": -3,
+  "sort_number": 0,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.magpie.page0.text",
+      "title": "book.steveparty.guide.creatures.magpie.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.magpie.page1.text",
+      "title": "book.steveparty.guide.creatures.magpie.page1.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.magpie.page2.text",
+      "title": "book.steveparty.guide.creatures.magpie.page2.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.magpie.page3.text",
+      "title": "book.steveparty.guide.creatures.magpie.page3.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:magpie_nest",
+      "text": "book.steveparty.guide.creatures.magpie.page4.text"
+    }
+  ]
+}

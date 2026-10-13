@@ -20,6 +20,11 @@
       "type": "modonomicon:text",
       "text": "book.steveparty.guide.stars_mula.mula.page1.text",
       "title": "book.steveparty.guide.stars_mula.mula.page1.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.stars_mula.mula.host.text",
+      "title": "book.steveparty.guide.stars_mula.mula.host.title"
     }
   ]
 }

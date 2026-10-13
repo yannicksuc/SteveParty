@@ -17,6 +17,11 @@
       "title": "book.steveparty.guide.shops.overview.page0.title"
     },
     {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.shops.overview.board.text",
+      "title": "book.steveparty.guide.shops.overview.board.title"
+    },
+    {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:shopkeeper_key",
       "text": "book.steveparty.guide.shops.overview.page1.text"

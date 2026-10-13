@@ -30,6 +30,11 @@
       "title": "book.steveparty.guide.cartridges.shop.page0.title"
     },
     {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.shop.offers.text",
+      "title": "book.steveparty.guide.cartridges.shop.offers.title"
+    },
+    {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:shop_cartridge",
       "text": "book.steveparty.guide.cartridges.shop.page1.text"
