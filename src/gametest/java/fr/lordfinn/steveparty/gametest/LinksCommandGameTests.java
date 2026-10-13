@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import fr.lordfinn.steveparty.board.ControllerStartLinks;
 import fr.lordfinn.steveparty.commands.LinksCommand;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
@@ -88,7 +89,7 @@ public class LinksCommandGameTests implements SteveGameTest {
         int result = server.getCommandManager().getDispatcher().execute(LinksCommand.COMMAND, source);
         context.assertEquals(result, 1, "the command ran");
         context.assertEquals(said.size(), LinksCommand.lines().size(), "every line said: " + said.size());
-        context.assertEquals(said.size(), 3 + LinksCommand.BRUSH_LINES + LinksCommand.CLICK_LINES, "a title, two parts");
+        context.assertEquals(said.size(), 4 + LinksCommand.BRUSH_LINES + LinksCommand.CLICK_LINES, "a title, two parts, the start tiles line");
         context.complete();
     }
 
@@ -105,6 +106,8 @@ public class LinksCommandGameTests implements SteveGameTest {
         }
         // The command's lines use exactly those keys
         for (Text line : LinksCommand.lines()) {
+            // Built on the server in the player's language (clients of before have no key for it)
+            if (line.getString().contains(ControllerStartLinks.linksLine(null).getString())) continue;
             String key = keyOf(line);
             context.assertTrue(key != null && keys.contains(key), "a line of the command has a known key: " + line.getString());
         }

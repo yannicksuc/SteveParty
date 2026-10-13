@@ -34,8 +34,8 @@ import static fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControll
 import static fr.lordfinn.steveparty.components.ModComponents.TB_START_BOUND_ENTITY;
 
 /**
- * The board of a Party Controller. Its start tiles are the ones within {@link PartyControllerEntity#START_TILES_SEARCH_RADIUS}
- * blocks of it; its board spaces are the ones the paths from them join (the links of the cartridges, whichever way:
+ * The board of a Party Controller. Its start tiles are the ones linked to it with the Tile Linker Brush; none linked,
+ * the ones within {@link PartyControllerEntity#START_TILES_SEARCH_RADIUS} blocks of it; its board spaces are the ones the paths from them join (the links of the cartridges, whichever way:
  * see {@link BoardGraph#boardOf}), however far they go. A board standing beside it, or a lone tile, is not part of it.
  * <p>
  * Never loads a chunk. The controller remembers its board ({@link Memory}): a start tile or a space in a chunk that
@@ -104,11 +104,21 @@ public final class PartyBoard {
      *
      * @param partySpaces where the tokens of its party started and stand: on its board too (a party may have been
      *                    started from start tiles that are gone, or without any)
+     * @param startLinks  the start tiles linked to the controller: when there is any, its only ones
      */
-    static Snapshot scan(ServerWorld world, BlockPos controller, Memory memory, Collection<BlockPos> partySpaces) {
-        // The start tiles around the controller, and the ones it remembers in chunks that are not loaded
-        List<BlockPos> loadedStarts = boardSpaces(world, controller, START_TILES_SEARCH_RADIUS, BoardSpaceType.TILE_START);
-        List<BlockPos> unloadedStarts = memory.starts.stream().filter(pos -> !isLoaded(world, pos)).toList();
+    static Snapshot scan(ServerWorld world, BlockPos controller, Memory memory, Collection<BlockPos> partySpaces,
+                         List<BlockPos> startLinks) {
+        // The start tiles linked to the controller (else around it), and the ones in chunks that are not loaded
+        List<BlockPos> loadedStarts, unloadedStarts;
+        if (!startLinks.isEmpty()) {
+            loadedStarts = new ArrayList<>();
+            for (BlockPos pos : startLinks) if (isLoaded(world, pos) && isStart(world, pos)) loadedStarts.add(pos);
+            sort(loadedStarts);
+            unloadedStarts = startLinks.stream().filter(pos -> !isLoaded(world, pos)).toList();
+        } else {
+            loadedStarts = boardSpaces(world, controller, START_TILES_SEARCH_RADIUS, BoardSpaceType.TILE_START);
+            unloadedStarts = memory.starts.stream().filter(pos -> !isLoaded(world, pos)).toList();
+        }
         List<BlockPos> starts = new ArrayList<>(loadedStarts);
         starts.addAll(unloadedStarts);
         sort(starts);
@@ -170,6 +180,13 @@ public final class PartyBoard {
             }
         }
         return tokens;
+    }
+
+    /** Whether the block at {@code pos} is a start tile (a board space with a Start Cartridge active). */
+    public static boolean isStart(net.minecraft.world.World world, BlockPos pos) {
+        BlockState state = world.getBlockState(pos);
+        return state.getBlock() instanceof ABoardSpaceBlock && state.get(ABoardSpaceBlock.TILE_TYPE) == BoardSpaceType.TILE_START
+                && world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity;
     }
 
     private static BlockBox box(Collection<BlockPos> positions, int margin) {

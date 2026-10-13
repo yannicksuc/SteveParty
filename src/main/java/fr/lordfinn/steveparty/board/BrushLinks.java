@@ -68,6 +68,7 @@ public final class BrushLinks {
 
     static {
         PROVIDERS.add(StepControllerLinks.PROVIDER);
+        PROVIDERS.add(ControllerStartLinks.PROVIDER);
     }
 
     /** Another kind of links the brush paints (an addon's holder or cartridge). */
@@ -182,11 +183,21 @@ public final class BrushLinks {
         BrushLinkable kind = kindFor(of(world, from, level), world, to);
         if (kind == null) {
             // A Step Controller reached from the element it is to drive
-            BrushLinkable back = StepControllerLinks.reverse(world, from, to);
+            BrushLinkable back = reverse(world, from, to);
             if (back == null) return Outcome.NOTHING;
             return back.linked(world, from) ? Outcome.ERASE : Outcome.LINK;
         }
         return kind.linked(world, to) ? Outcome.ERASE : Outcome.LINK;
+    }
+
+    /**
+     * Reaching the holder {@code to} from {@code from}, which links nothing to it: the link of {@code to} to
+     * {@code from}, painted the other way round (a Step Controller from the element it is to drive, a Party Controller
+     * from a start tile); null for none.
+     */
+    static @Nullable BrushLinkable reverse(World world, BlockPos from, BlockPos to) {
+        BrushLinkable back = StepControllerLinks.reverse(world, from, to);
+        return back != null ? back : ControllerStartLinks.reverse(world, from, to);
     }
 
     /**

@@ -72,6 +72,7 @@ import static fr.lordfinn.steveparty.components.ModComponents.*;
  */
 public class PartyControllerEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
     private static final String BANK_ITEMS = "BankItems";
+    private static final String START_LINKS = "StartLinks";
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
     /**
@@ -119,6 +120,11 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private final PartyBoard.Memory boardMemory = new PartyBoard.Memory();
     private @Nullable PartyBoard.Snapshot board;
     private long boardScanTime;
+    /**
+     * The start tiles linked to it with the Tile Linker Brush (see {@link fr.lordfinn.steveparty.board.ControllerStartLinks}):
+     * when there is any, they are its only start tiles; none: the ones within {@link #START_TILES_SEARCH_RADIUS} blocks.
+     */
+    private final List<BlockPos> startLinks = new ArrayList<>();
     /** Its own storage, {@link #BANK_SIZE} slots (see {@link PartyBank}): saved, never sent to the clients. */
     private final SimpleInventory bankItems = new SimpleInventory(BANK_SIZE) {
         @Override
@@ -282,6 +288,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         if (starSpace != null) nbt.putLong("StarSpace", starSpace.asLong());
         tokenHomes.writeNbt(nbt);
         boardMemory.writeNbt(nbt);
+        if (!startLinks.isEmpty()) nbt.putLongArray(START_LINKS, startLinks.stream().mapToLong(BlockPos::asLong).toArray());
         if (!lastWinners.isEmpty()) {
             NbtList winnersNbt = new NbtList();
             lastWinners.forEach(uuid -> winnersNbt.add(NbtString.of(uuid.toString())));
@@ -307,6 +314,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         starSpace = nbt.contains("StarSpace") ? BlockPos.fromLong(nbt.getLong("StarSpace")) : null;
         tokenHomes.readNbt(nbt);
         boardMemory.readNbt(nbt);
+        startLinks.clear();
+        for (long linked : nbt.getLongArray(START_LINKS)) startLinks.add(BlockPos.fromLong(linked));
         board = null;
         lastWinners.clear();
         nbt.getList("LastWinners", NbtElement.STRING_TYPE).forEach(element -> {
@@ -587,7 +596,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         long now = world.getTime();
         if (board != null && !fresh && now - boardScanTime < BOARD_SCAN_INTERVAL && now >= boardScanTime) return board;
         Set<BlockPos> before = Set.copyOf(boardMemory.spaces());
-        board = PartyBoard.scan(world, pos, boardMemory, partySpaces(world));
+        board = PartyBoard.scan(world, pos, boardMemory, partySpaces(world), startLinks);
         boardScanTime = now;
         boardMemory.update(board);
         if (!before.equals(boardMemory.spaces())) {
@@ -595,6 +604,20 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             saveOnly();
         }
         return board;
+    }
+
+    /** The start tiles linked to it with the brush, in their order; empty: its start tiles are found around it. */
+    public List<BlockPos> getStartLinks() {
+        return Collections.unmodifiableList(startLinks);
+    }
+
+    /** Sets the start tiles linked to it (its board is read again); saved and sent to the clients. */
+    public void setStartLinks(List<BlockPos> links) {
+        if (startLinks.equals(links)) return;
+        startLinks.clear();
+        for (BlockPos linked : links) startLinks.add(linked.toImmutable());
+        board = null;
+        markDirty();
     }
 
     /** Where the tokens of its party started and stand (none without a party). */

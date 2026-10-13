@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.commands;
 
+import fr.lordfinn.steveparty.board.ControllerStartLinks;
+
 import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.ServerCommandSource;
@@ -37,16 +39,24 @@ public final class LinksCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("steveparty").then(literal("links").executes(context -> {
             ServerCommandSource source = context.getSource();
-            for (Text line : lines()) source.sendFeedback(() -> line, false);
+            for (Text line : lines(source.getPlayer())) source.sendFeedback(() -> line, false);
             return 1;
         })));
     }
 
-    /** What the command says, in order. */
+    /** What the command says, in order (in English for the lines built here). */
     public static List<Text> lines() {
+        return lines(null);
+    }
+
+    /** What the command says to {@code player}, in order. */
+    public static List<Text> lines(@org.jetbrains.annotations.Nullable net.minecraft.server.network.ServerPlayerEntity player) {
         List<Text> lines = new ArrayList<>();
         lines.add(Text.translatable(KEY + "title").formatted(Formatting.GOLD, Formatting.BOLD));
         part(lines, "brush", BRUSH_LINES);
+        // The start tiles of a Party Controller (the clients of before have no key for it: built here)
+        lines.add(Text.literal(" • ").formatted(Formatting.DARK_GRAY)
+                .append(ControllerStartLinks.linksLine(player).copy().formatted(Formatting.GRAY)));
         part(lines, "click", CLICK_LINES);
         return lines;
     }

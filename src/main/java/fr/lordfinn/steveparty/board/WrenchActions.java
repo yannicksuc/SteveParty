@@ -84,7 +84,11 @@ public final class WrenchActions {
         BlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof PartyController) {
             // The board this controller plays: checked, the report in the chat
-            if (!isRepeat(player, pos, world.getTime())) BoardValidator.send(player, BoardValidator.check(world, pos));
+            if (!isRepeat(player, pos, world.getTime())) {
+                BoardValidator.send(player, BoardValidator.check(world, pos));
+                if (world.getBlockEntity(pos) instanceof fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller)
+                    player.sendMessage(ControllerStartLinks.status(player, controller), false);
+            }
             return ActionResult.SUCCESS;
         }
         // Same answer as the client's prediction: the hand swings, the off hand item is not used instead

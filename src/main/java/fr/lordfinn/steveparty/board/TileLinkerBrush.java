@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.board;
 
 import fr.lordfinn.steveparty.advancement.ModCriteria;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
@@ -243,6 +244,19 @@ public final class TileLinkerBrush {
             return;
         }
         BlockPos from = stroke.last;
+        BrushLinkable fromKind = from == null ? null : BrushLinks.kindFor(BrushLinks.of(world, from, level(brush)), world, pos);
+        // From a Party Controller, the tiles the look crosses on the way to a start tile: skipped (no path from them)
+        if (fromKind == null && from != null && world.getBlockEntity(from) instanceof PartyControllerEntity
+                && BrushLinks.reverse(world, from, pos) == null && BoardLinks.container(world, pos) != null) return;
+        if (fromKind instanceof ControllerStartLinks.Starts) {
+            // From a Party Controller to its start tiles: each once a stroke, the stroke goes on from the controller
+            if (!stroke.cells.add(pos.toImmutable())) return;
+            stroke.start = null;
+            WrenchActions.recorded(player, world, brush, () -> link(player, brush, world, from, pos));
+            return;
+        }
+        // From a start tile to a Party Controller: the stroke goes on from the controller, that start tile done
+        if (from != null && ControllerStartLinks.reverse(world, from, pos) != null) stroke.cells.add(from);
         stroke.last = pos.toImmutable();
         BrushLinks.Held origin = from == null ? null : BrushLinks.holder(world, from, level(brush));
         if (origin == null) {
@@ -250,6 +264,8 @@ public final class TileLinkerBrush {
             // waits to know what the stroke links from it
             setAnchor(brush, world, pos);
             stroke.start = pos.toImmutable();
+            // A Party Controller shows its start tiles
+            ControllerStartLinks.show(world, pos);
             world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS, 0.5f, 1.2f);
             return;
         }
@@ -285,7 +301,7 @@ public final class TileLinkerBrush {
         List<BrushLinkable> kinds = BrushLinks.of(world, from, level(brush));
         BrushLinkable kind = BrushLinks.kindFor(kinds, world, to);
         // A Step Controller reached from the element it is to drive: its link, painted the other way round
-        BrushLinkable back = kind == null ? StepControllerLinks.reverse(world, from, to) : null;
+        BrushLinkable back = kind == null ? BrushLinks.reverse(world, from, to) : null;
         if (back != null) {
             toggle(player, world, to, back, from);
             return;
