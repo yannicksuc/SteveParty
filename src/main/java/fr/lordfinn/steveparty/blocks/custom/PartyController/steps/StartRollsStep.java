@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
+import fr.lordfinn.steveparty.dice.OneThrowPerRoll;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
@@ -20,6 +21,8 @@ import java.util.*;
 public class StartRollsStep extends PartyStep {
     // <token UUID, roll>. No initializer: it would run after super(nbt) and wipe what fromNbt just read
     public Map<UUID, Integer> rolls;
+    /** <player UUID, the first die of their throw> while it rolls. Not saved (no initializer: see rolls). */
+    private Map<UUID, DiceEntity> thrown;
 
     public StartRollsStep(NbtCompound nbt) {
         super(nbt);
@@ -38,6 +41,7 @@ public class StartRollsStep extends PartyStep {
         super.start(partyControllerEntity);
         // (Re)starting the step means everybody rolls again
         rolls.clear();
+        thrown().clear();
         partyControllerEntity.markDirty();
 
         if (partyControllerEntity.getPartyData().getTokens().isEmpty()) {
@@ -65,6 +69,7 @@ public class StartRollsStep extends PartyStep {
         Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = partyControllerEntity.getPartyData().getTokensWithOwners(world);
         PlayerEntity player = world.getPlayerByUuid(ownerUUID);
         if (player != null && tokensWithOwners.containsValue(player)) {
+            thrown().remove(ownerUUID);
             TokenizedEntityInterface diceTarget = null;
             if (dice.getTarget().isPresent()) {
                 UUID diceTargetUUID = dice.getTarget().get();
@@ -95,6 +100,34 @@ public class StartRollsStep extends PartyStep {
         return ActionResult.PASS;
     }
 
+    /**
+     * One throw per roll: a player's throw waits for the result of the one on its way, and once each of their tokens
+     * has its roll they throw no more (a Step Controller's replay asks everyone again).
+     */
+    @Override
+    public boolean refusesThrow(UUID player, PartyControllerEntity controller) {
+        if (status != Status.IN_PROGRESS || rolls == null) return false;
+        if (OneThrowPerRoll.inFlight(thrown().get(player))) return true;
+        if (!(controller.getWorld() instanceof ServerWorld world)) return false;
+        boolean owns = false;
+        for (Map.Entry<TokenizedEntityInterface, PlayerEntity> entry : controller.getPartyData().getTokensWithOwners(world).entrySet()) {
+            if (entry.getValue() == null || !player.equals(entry.getValue().getUuid())) continue;
+            owns = true;
+            if (!rolls.containsKey(((Entity) entry.getKey()).getUuid())) return false;
+        }
+        return owns;
+    }
+
+    @Override
+    public void onDieThrown(UUID player, DiceEntity lead) {
+        if (status == Status.IN_PROGRESS) thrown().put(player, lead);
+    }
+
+    private Map<UUID, DiceEntity> thrown() {
+        if (thrown == null) thrown = new HashMap<>();
+        return thrown;
+    }
+
     /** Each player rolls for the turn order: their token waits until it has its roll. */
     @Override
     public boolean waitsForChoiceOf(UUID token) {
@@ -116,6 +149,28 @@ public class StartRollsStep extends PartyStep {
                 partyControllerEntity.nextStep();
             }
         });
+    }
+
+    /**
+     * A Step Controller passes: the turn order is made with the rolls already in (who has not rolled plays last), and
+     * the party goes on.
+     */
+    public boolean pass(PartyControllerEntity partyControllerEntity) {
+        if (!isStillActive(partyControllerEntity)) return false;
+        sortTokensByRoll(partyControllerEntity);
+        partyControllerEntity.nextStep();
+        return true;
+    }
+
+    /** A Step Controller replays: the rolls are forgotten, everyone rolls again. */
+    public boolean rollAgain(PartyControllerEntity partyControllerEntity) {
+        if (!isStillActive(partyControllerEntity) || !(partyControllerEntity.getWorld() instanceof ServerWorld world)) return false;
+        rolls.clear();
+        partyControllerEntity.markDirty();
+        MessageUtils.sendToPlayers(partyControllerEntity.getPartyData().getOwners(world).stream().map(e -> (ServerPlayerEntity) e).toList(),
+                Text.translatable("message.steveparty.start_rolls"), MessageUtils.MessageType.CHAT);
+        partyControllerEntity.sendPacketToInterestedPlayers();
+        return true;
     }
 
     private static boolean isOwnerValid(UUID ownerUUID, TokenizedEntityInterface token, Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners) {

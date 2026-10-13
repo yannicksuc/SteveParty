@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.minigame;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -40,12 +41,12 @@ public interface MiniGameSession {
     void onPodiumsChanged();
 
     /**
-     * A step controller linked to the page received a pulse.
+     * A Step Controller acting on it received a pulse (see {@link StepPulse}): « next » ends the round with the places
+     * on its podiums as they stand (a practice round: the real round starts), « replay » starts the round again.
      *
-     * @param mode 0: next (the mini-game ends with its results, read on the podiums as they stand); 1 (restart) and 2
-     *             (previous): it stops without results
+     * @return false if it can't be done now (not being played)
      */
-    void step(int mode);
+    boolean step(StepPulse.Mode mode);
 
     /** The mini-game being played right now on one of {@code pages}, in any dimension and at any distance; null for none. */
     static @Nullable MiniGameSession playing(Collection<UUID> pages) {

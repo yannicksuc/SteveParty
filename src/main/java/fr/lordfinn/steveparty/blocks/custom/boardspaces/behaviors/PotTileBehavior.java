@@ -92,6 +92,5 @@ public class PotTileBehavior extends ABoardSpaceBehavior {
         if (PotCartridgeItem.stake(stack) > 0) info.line(coin, TileInfo.bad(TileInfo.line("pot.stake", PotCartridgeItem.stake(stack))));
         if (PotCartridgeItem.start(stack) > 0) info.build(coin, TileInfo.line("pot.start", TileInfo.value(PotCartridgeItem.start(stack))));
         if (PotCartridgeItem.cap(stack) > 0) info.build(coin, TileInfo.line("pot.cap", TileInfo.value(PotCartridgeItem.cap(stack))));
-        if (PotCartridgeItem.landerPays(stack)) info.build(TileInfo.line("pot.lander_pays"));
     }
 }

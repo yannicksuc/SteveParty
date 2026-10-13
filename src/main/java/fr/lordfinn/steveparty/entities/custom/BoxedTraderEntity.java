@@ -376,18 +376,18 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity, Boar
     /**
      * Opens this trader's shop for {@code player} wherever they are, for a shop stop (see
      * {@link fr.lordfinn.steveparty.service.ShopStops}): the screen has a « Buy nothing » button and a countdown, and
-     * sells at most {@code limit} items. A player trading with him face to face is sent away first: the board has
+     * sells at most {@code limit} items, {@code purchases} of them already bought. A player trading with him face to face is sent away first: the board has
      * priority.
      *
      * @return the opened screen, or null if the shop has nothing to sell or the screen could not open
      */
     @Nullable
-    public ShopStopScreenHandler openShopStop(ServerPlayerEntity player, int limit) {
+    public ShopStopScreenHandler openShopStop(ServerPlayerEntity player, int limit, int purchases) {
         if (this.getCustomer() != null) releaseCustomer(this.getCustomer());
         this.fillRecipes();
         if (tradeOffers.isEmpty()) return null;
         OptionalInt opened = player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
-                (syncId, playerInventory, playerx) -> new ShopStopScreenHandler(syncId, playerInventory, this, limit) {
+                (syncId, playerInventory, playerx) -> new ShopStopScreenHandler(syncId, playerInventory, this, limit, purchases) {
                     @Override
                     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity clicker) {
                         if (slotIndex == OUTPUT_ID && !BoxedTraderEntity.this.canTakeCurrentTrade(this)) {

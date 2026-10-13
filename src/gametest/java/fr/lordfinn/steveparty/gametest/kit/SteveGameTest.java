@@ -14,7 +14,8 @@ import java.lang.reflect.Method;
 public interface SteveGameTest extends FabricGameTest {
     /**
      * How far beyond its template a test of this class plays, in blocks (its land loaded on the spot: it costs the
-     * server some time, only the classes that need it ask for it).
+     * server some time, only the classes that need it ask for it). A test going farther than its class's says so itself:
+     * {@link LandAround}.
      */
     default int landAround() {
         return 0;
@@ -23,7 +24,8 @@ public interface SteveGameTest extends FabricGameTest {
     @Override
     default void invokeTestMethod(TestContext context, Method method) {
         GameTest test = method.getAnnotation(GameTest.class);
-        TestArea.load(context, landAround(), test != null ? test.tickLimit() : 100);
+        LandAround land = method.getAnnotation(LandAround.class);
+        TestArea.load(context, land != null ? land.value() : landAround(), test != null ? test.tickLimit() : 100);
         invokeWhenReady(context, method);
     }
 

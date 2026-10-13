@@ -7,10 +7,12 @@ import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.hud.OutcomeRoulette;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
 import fr.lordfinn.steveparty.payloads.custom.OutcomeRoulettePayload;
 import fr.lordfinn.steveparty.service.MistigriSentences;
-import fr.lordfinn.steveparty.service.MistigriSentences.Sentence;
+import fr.lordfinn.steveparty.components.MistigriOutcomes;
+import fr.lordfinn.steveparty.components.MistigriOutcomes.Kind;
+import fr.lordfinn.steveparty.components.MistigriOutcomes.Outcome;
+import fr.lordfinn.steveparty.components.MistigriOutcomes.Target;
 import fr.lordfinn.steveparty.service.OutcomeRoulettes;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import io.netty.buffer.Unpooled;
@@ -106,24 +108,24 @@ public class OutcomeRouletteGameTests implements SteveGameTest {
         PartyControllerEntity party = party(context, tokens, player);
         InventoryUtils.giveOrDrop(player, new ItemStack(Items.GOLD_INGOT), 30);
         ItemStack cartridge = new ItemStack(ModItems.MISTIGRI_CARTRIDGE);
-        for (Sentence sentence : Sentence.values()) MistigriCartridgeItem.setWeight(cartridge, sentence, 0);
-        MistigriCartridgeItem.setWeight(cartridge, Sentence.COINS_SMALL, 1);
-        MistigriCartridgeItem.setWeight(cartridge, Sentence.CURSED, 1);
+        Outcome fine = new Outcome(Kind.LOSE_COINS, Target.LANDED, 10, false, 1), curse = new Outcome(Kind.CURSED_DIE, Target.LANDED, 0, false, 1);
+        MistigriOutcomes.set(cartridge, new MistigriOutcomes(List.of(fine, curse), 0));
         BoardSpaceBlockEntity tile = tile(context, TILE, cartridge);
         MobEntity token = tokens.getFirst();
         boolean[] done = {false};
         context.assertTrue(MistigriSentences.start(context.getWorld(), tile.getPos(), token, party, cartridge, null,
                 () -> done[0] = true) == MistigriSentences.Start.STARTED, "started");
-        Sentence drawn = MistigriSentences.sentence(token);
+        Outcome drawn = MistigriSentences.outcome(token);
         when(context, () -> MistigriSentences.roulette(token) != null, WHOLE, "the roulette starts", () -> {
             OutcomeRoulettes.Roulette roulette = MistigriSentences.roulette(token);
             context.assertEquals(roulette.lines().size(), 2, "only what may fall is listed");
             context.assertEquals(roulette.lines().getFirst().chance(), 50, "with its chance");
-            Sentence announced = List.of(Sentence.COINS_SMALL, Sentence.CURSED).get(roulette.result());
+            Outcome announced = List.of(fine, curse).get(roulette.result());
+            context.assertEquals(roulette.lines().get(roulette.result()).text(), announced.text(player.getName()), "its own sentence");
             context.assertEquals(announced, drawn, "it stops on the drawn sentence");
             when(context, () -> done[0], WHOLE, "the show ends", () -> {
                 boolean coins = count(player, Items.GOLD_INGOT) == 20, cursed = CursedRolls.isCursed(player);
-                context.assertTrue(announced == Sentence.COINS_SMALL ? coins && !cursed : cursed && !coins,
+                context.assertTrue(announced == fine ? coins && !cursed : cursed && !coins,
                         "the announced sentence, and only it, is applied (" + announced + ")");
                 context.complete();
             });
@@ -141,7 +143,7 @@ public class OutcomeRouletteGameTests implements SteveGameTest {
         BoardSpaceBlockEntity tile = tile(context, TILE, cartridge);
         MobEntity token = tokens.getFirst();
         boolean[] done = {false};
-        MistigriSentences.start(context.getWorld(), tile.getPos(), token, party, cartridge, Sentence.COINS_SMALL, () -> done[0] = true);
+        MistigriSentences.start(context.getWorld(), tile.getPos(), token, party, cartridge, new Outcome(Kind.LOSE_COINS, Target.LANDED, 10, false, 1), () -> done[0] = true);
         when(context, () -> MistigriSentences.roulette(token) != null, WHOLE, "the roulette starts", () -> {
             OutcomeRoulettes.Roulette roulette = MistigriSentences.roulette(token);
             context.waitAndRun(OutcomeRoulette.TOTAL_TICKS - 3, () -> {
@@ -168,13 +170,13 @@ public class OutcomeRouletteGameTests implements SteveGameTest {
         BoardSpaceBlockEntity tile = tile(context, TILE, cartridge);
         MobEntity token = tokens.getFirst();
         boolean[] done = {false};
-        MistigriSentences.start(context.getWorld(), tile.getPos(), token, party, cartridge, Sentence.JOKE, () -> done[0] = true);
+        MistigriSentences.start(context.getWorld(), tile.getPos(), token, party, cartridge, new Outcome(Kind.PITY, Target.LANDED, 2, false, 2), () -> done[0] = true);
         when(context, () -> MistigriSentences.roulette(token) != null, WHOLE, "the roulette starts", () -> {
             OutcomeRoulettes.Roulette roulette = MistigriSentences.roulette(token);
             context.assertTrue(roulette.sentTo().contains(first.getUuid()), "the token's player");
             context.assertTrue(roulette.sentTo().contains(second.getUuid()), "the other player, far away");
             context.assertTrue(OutcomeRoulettes.recipients(party, null).contains(second), "a recipient wherever they are");
-            context.assertEquals(roulette.lines().size(), Sentence.values().length, "every sentence of the default cartridge");
+            context.assertEquals(roulette.lines().size(), MistigriOutcomes.DEFAULT.size(), "every sentence of the default cartridge");
             context.complete();
         });
     }

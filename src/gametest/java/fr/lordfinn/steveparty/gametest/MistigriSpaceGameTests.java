@@ -11,9 +11,14 @@ import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriDieEntity;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.MistigriSentences;
-import fr.lordfinn.steveparty.service.MistigriSentences.Sentence;
+import fr.lordfinn.steveparty.components.MistigriOutcomes;
+import fr.lordfinn.steveparty.components.MistigriOutcomes.Kind;
+import fr.lordfinn.steveparty.components.MistigriOutcomes.Outcome;
+import fr.lordfinn.steveparty.components.MistigriOutcomes.Target;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
@@ -23,7 +28,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,9 +67,14 @@ public class MistigriSpaceGameTests implements SteveGameTest {
         return controller;
     }
 
+    /** A sentence on the player who landed. */
+    private static Outcome on(Kind kind, int amount, boolean percent) {
+        return new Outcome(kind, Target.LANDED, amount, percent, 1);
+    }
+
     /** Starts the show for {@code token} on a Mistigri tile, the sentence forced; checks his actors. */
     private static MistigriSentences.Start start(TestContext context, PartyControllerEntity party, MobEntity token,
-                                                 Sentence sentence, boolean[] done) {
+                                                 Outcome sentence, boolean[] done) {
         ItemStack cartridge = new ItemStack(ModItems.MISTIGRI_CARTRIDGE);
         BoardSpaceBlockEntity tile = tile(context, TILE, cartridge);
         MistigriSentences.Start start = MistigriSentences.start(context.getWorld(), tile.getPos(), token, party, cartridge,
@@ -79,7 +88,7 @@ public class MistigriSpaceGameTests implements SteveGameTest {
     }
 
     /** Runs a whole show with {@code sentence} on the first player, then {@code check} once it is over. */
-    private static void show(TestContext context, Sentence sentence, ServerPlayerEntity[] players, Runnable before, Runnable check) {
+    private static void show(TestContext context, Outcome sentence, ServerPlayerEntity[] players, Runnable before, Runnable check) {
         List<MobEntity> tokens = new ArrayList<>();
         PartyControllerEntity party = party(context, tokens, players);
         before.run();
@@ -110,7 +119,7 @@ public class MistigriSpaceGameTests implements SteveGameTest {
         PartyControllerEntity party = party(context, tokens, player);
         MobEntity token = tokens.getFirst();
         boolean[] done = {false};
-        context.assertTrue(start(context, party, token, Sentence.JOKE, done) == MistigriSentences.Start.STARTED, "started");
+        context.assertTrue(start(context, party, token, on(Kind.PITY, 2, false), done) == MistigriSentences.Start.STARTED, "started");
         MistigriEntity actor = MistigriSentences.actor(token);
         when(context, () -> MistigriSentences.die(token) != null, WHOLE, "his die appears", () -> {
             MistigriDieEntity die = MistigriSentences.die(token);
@@ -140,7 +149,7 @@ public class MistigriSpaceGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void theSmallFine(TestContext context) {
         ServerPlayerEntity player = player(context);
-        show(context, Sentence.COINS_SMALL, new ServerPlayerEntity[]{player}, () -> give(player, Items.GOLD_INGOT, 30),
+        show(context, on(Kind.LOSE_COINS, 10, false), new ServerPlayerEntity[]{player}, () -> give(player, Items.GOLD_INGOT, 30),
                 () -> {
                     context.assertEquals(count(player, Items.GOLD_INGOT), 20, "10 coins taken");
                     context.assertEquals(bank(context, Items.GOLD_INGOT), 10, "into the party's bank");
@@ -150,21 +159,21 @@ public class MistigriSpaceGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void theBigFineNeverMoreThanHeld(TestContext context) {
         ServerPlayerEntity player = player(context);
-        show(context, Sentence.COINS_BIG, new ServerPlayerEntity[]{player}, () -> give(player, Items.GOLD_INGOT, 12),
+        show(context, on(Kind.LOSE_COINS, 20, false), new ServerPlayerEntity[]{player}, () -> give(player, Items.GOLD_INGOT, 12),
                 () -> context.assertEquals(count(player, Items.GOLD_INGOT), 0, "all 12, no more"));
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void halfTheCoins(TestContext context) {
         ServerPlayerEntity player = player(context);
-        show(context, Sentence.COINS_HALF, new ServerPlayerEntity[]{player}, () -> give(player, Items.GOLD_INGOT, 31),
+        show(context, on(Kind.LOSE_COINS, 50, true), new ServerPlayerEntity[]{player}, () -> give(player, Items.GOLD_INGOT, 31),
                 () -> context.assertEquals(count(player, Items.GOLD_INGOT), 16, "half of 31, rounded down: 15 taken"));
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void aStar(TestContext context) {
         ServerPlayerEntity player = player(context);
-        show(context, Sentence.STAR, new ServerPlayerEntity[]{player}, () -> {
+        show(context, on(Kind.LOSE_STARS, 1, false), new ServerPlayerEntity[]{player}, () -> {
             give(player, Items.EMERALD, 2);
             give(player, Items.GOLD_INGOT, 10);
         }, () -> {
@@ -177,7 +186,7 @@ public class MistigriSpaceGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void everyonePays(TestContext context) {
         ServerPlayerEntity first = player(context), second = player(context);
-        show(context, Sentence.EVERYONE, new ServerPlayerEntity[]{first, second}, () -> {
+        show(context, new Outcome(Kind.LOSE_COINS, Target.ALL, 5, false, 1), new ServerPlayerEntity[]{first, second}, () -> {
             give(first, Items.GOLD_INGOT, 10);
             give(second, Items.GOLD_INGOT, 3);
         }, () -> {
@@ -191,15 +200,20 @@ public class MistigriSpaceGameTests implements SteveGameTest {
     public void aCursedDie(TestContext context) {
         ServerPlayerEntity player = player(context);
         atEnd(context, () -> player.removeCommandTag(CursedRolls.TAG));
-        show(context, Sentence.CURSED, new ServerPlayerEntity[]{player}, () -> {
+        show(context, on(Kind.CURSED_DIE, 0, false), new ServerPlayerEntity[]{player}, () -> {
         }, () -> context.assertTrue(CursedRolls.isCursed(player), "their next roll is cursed"));
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
     public void theLenientOne(TestContext context) {
         ServerPlayerEntity player = player(context);
-        show(context, Sentence.JOKE, new ServerPlayerEntity[]{player}, () -> give(player, Items.GOLD_INGOT, 30),
-                () -> context.assertEquals(count(player, Items.GOLD_INGOT), 29, "one coin, out of pity"));
+        show(context, on(Kind.PITY, 2, false), new ServerPlayerEntity[]{player}, () -> {
+            give(player, Items.GOLD_INGOT, 30);
+            PartyResources.deposit(context.getBlockEntity(DiceTestKit.CONTROLLER), new ItemStack(Items.GOLD_INGOT, 5));
+        }, () -> {
+            context.assertEquals(count(player, Items.GOLD_INGOT), 32, "two coins, out of pity");
+            context.assertEquals(bank(context, Items.GOLD_INGOT), 3, "out of the party's bank");
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = WHOLE + 20, batchId = BATCH)
@@ -213,7 +227,7 @@ public class MistigriSpaceGameTests implements SteveGameTest {
         MobEntity token = token(context, on, player.getUuid());
         PartyControllerEntity party = DiceTestKit.party(context, player.getUuid(), token);
         boolean[] done = {false};
-        context.assertTrue(MistigriSentences.start(context.getWorld(), tile.getPos(), token, party, cartridge, Sentence.BACK,
+        context.assertTrue(MistigriSentences.start(context.getWorld(), tile.getPos(), token, party, cartridge, on(Kind.MOVE_BACK, 3, false),
                 () -> done[0] = true) == MistigriSentences.Start.STARTED, "started");
         when(context, () -> !MistigriSentences.isRunning(token), WHOLE, "the show ends", () -> {
             context.assertFalse(done[0], "the turn waits for the move back");
@@ -230,7 +244,7 @@ public class MistigriSpaceGameTests implements SteveGameTest {
         PartyControllerEntity party = party(context, tokens, player);
         boolean[] done = {false};
         MobEntity token = tokens.getFirst();
-        start(context, party, token, Sentence.COINS_SMALL, done);
+        start(context, party, token, on(Kind.LOSE_COINS, 10, false), done);
         MistigriEntity actor = MistigriSentences.actor(token);
         context.waitAndRun(5, () -> {
             context.removeBlock(DiceTestKit.CONTROLLER);
@@ -249,38 +263,19 @@ public class MistigriSpaceGameTests implements SteveGameTest {
         PartyControllerEntity party = party(context, tokens, player);
         ((TokenizedEntityInterface) tokens.getFirst()).steveparty$setTokenOwner((UUID) null);
         boolean[] done = {false};
-        context.assertTrue(start(context, party, tokens.getFirst(), Sentence.JOKE, done) == MistigriSentences.Start.NO_PLAYER, "no player");
+        context.assertTrue(start(context, party, tokens.getFirst(), on(Kind.PITY, 2, false), done) == MistigriSentences.Start.NO_PLAYER, "no player");
         context.assertTrue(MistigriSentences.actor(tokens.getFirst()) == null && !done[0], "no Mistigri");
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
-    public void theWeightsDecide(TestContext context) {
-        ItemStack cartridge = new ItemStack(ModItems.MISTIGRI_CARTRIDGE);
-        Random random = Random.create(42);
-        for (Sentence sentence : Sentence.values()) {
-            context.assertEquals(MistigriCartridgeItem.weight(cartridge, sentence), sentence.defaultWeight, sentence.id + " default weight");
-        }
-        for (Sentence sentence : Sentence.values()) MistigriCartridgeItem.setWeight(cartridge, sentence, 0);
-        context.assertTrue(MistigriSentences.draw(cartridge, random) == null, "every weight 0: nothing drawn");
-        MistigriCartridgeItem.setWeight(cartridge, Sentence.STAR, 9);
-        for (int i = 0; i < 20; i++) context.assertTrue(MistigriSentences.draw(cartridge, random) == Sentence.STAR, "only the star");
-        MistigriCartridgeItem.setWeight(cartridge, Sentence.JOKE, 9);
-        int jokes = 0;
-        for (int i = 0; i < 400; i++) if (MistigriSentences.draw(cartridge, random) == Sentence.JOKE) jokes++;
-        context.assertTrue(jokes > 140 && jokes < 260, "two even weights: about half each (" + jokes + ")");
-        context.complete();
-    }
-
+    /** A new cartridge's sentences: all on the roulette, and their colour. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void cartridgeSettings(TestContext context) {
         ItemStack cartridge = new ItemStack(ModItems.MISTIGRI_CARTRIDGE);
-        context.assertEquals(MistigriCartridgeItem.amount(cartridge, MistigriCartridgeItem.COINS_SMALL), 10, "small fine: 10");
-        context.assertEquals(MistigriCartridgeItem.amount(cartridge, MistigriCartridgeItem.COINS_BIG), 20, "big fine: 20");
-        context.assertEquals(MistigriCartridgeItem.amount(cartridge, MistigriCartridgeItem.EVERYONE), 5, "everyone: 5");
-        context.assertEquals(MistigriCartridgeItem.amount(cartridge, MistigriCartridgeItem.BACK), 3, "back: 3");
-        MistigriCartridgeItem.setAmount(cartridge, MistigriCartridgeItem.BACK, 50);
-        context.assertEquals(MistigriCartridgeItem.amount(cartridge, MistigriCartridgeItem.BACK), MistigriCartridgeItem.MAX_BACK, "capped");
+        MistigriOutcomes outcomes = MistigriOutcomes.of(cartridge);
+        context.assertEquals(outcomes, MistigriOutcomes.DEFAULT, "the default sentences");
+        context.assertEquals(outcomes.drawCount(), outcomes.size(), "all of them on the roulette");
+        context.assertFalse(cartridge.contains(ModComponents.MISTIGRI_OUTCOMES), "the default is not stored");
         BoardSpaceBlockEntity tile = tile(context, TILE, cartridge);
         context.assertEquals(TileFeedback.landingOf(tile), TileFeedback.Landing.MISTIGRI, "its landing");
         context.assertEquals(TileFeedback.tileColor(tile), MistigriCartridgeItem.COLOR, "witch plum");

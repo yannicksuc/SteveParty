@@ -15,6 +15,7 @@ import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.BrushLinkable;
 import fr.lordfinn.steveparty.board.BrushLinks;
+import fr.lordfinn.steveparty.board.StepControllerLinks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
@@ -69,13 +70,13 @@ final class BrushOverlay {
     /** The dotted links' opacity (the bank's, a Spawn Bubble's): discreet. */
     static final float DOTS_ALPHA = 0.9f;
 
-    /**
-     * A holder of a cartridge, its targets and their colour (see BrushLinkable); {@code bubble}: a mob space's link to
-     * its Spawn Bubble, dotted in the bubble's colours rather than arrows.
-     */
-    private record HolderLinks(Vec3d from, List<Vec3d> to, int color, boolean bubble) {
+    /** How a holder's links are drawn: arrows; dots in a Spawn Bubble's colours; yellow dots from a Step Controller. */
+    private enum Style { ARROWS, BUBBLE, STEP }
+
+    /** A holder of a cartridge, its targets and their colour (see BrushLinkable), and how they are drawn. */
+    private record HolderLinks(Vec3d from, List<Vec3d> to, int color, Style style) {
         HolderLinks(Vec3d from, List<Vec3d> to, int color) {
-            this(from, to, color, false);
+            this(from, to, color, Style.ARROWS);
         }
     }
 
@@ -116,7 +117,9 @@ final class BrushOverlay {
             List<Vec3d> to = new ArrayList<>(targets.size()), gone = new ArrayList<>();
             for (BlockPos target : targets) (gone(world, kind, target) ? gone : to).add(anchor(world, target));
             Vec3d from = anchor(world, kind.holder());
-            if (!to.isEmpty()) found.add(new HolderLinks(from, to, kind.color(), kind instanceof CartridgeLinks.SpawnPoint));
+            Style style = kind instanceof CartridgeLinks.SpawnPoint ? Style.BUBBLE
+                    : kind instanceof StepControllerLinks.Element ? Style.STEP : Style.ARROWS;
+            if (!to.isEmpty()) found.add(new HolderLinks(from, to, kind.color(), style));
             // A container no longer there: a broken link, in red
             if (!gone.isEmpty()) found.add(new HolderLinks(from, gone, BoardLinks.CUT_COLOR));
         }
@@ -212,15 +215,18 @@ final class BrushOverlay {
 
     /**
      * Arrows flowing from each holder around to its targets, in the colour of the kind of link; dots from a mob space
-     * to its Spawn Bubble.
+     * to its Spawn Bubble, and yellow ones from a Step Controller to the party element it drives.
      */
     private static void holderLinks(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world, float tickDelta) {
         if (holders.isEmpty()) return;
         double seconds = (world.getTime() + tickDelta) / 20.0, phase = seconds * 2.5;
         for (HolderLinks links : holders) {
             for (Vec3d to : links.to()) {
-                if (links.bubble()) WorldDraw.bubbleLink(matrices, consumers, camera, links.from(), to, DOTS_ALPHA, seconds);
-                else WorldDraw.path(matrices, consumers, camera, links.from(), to, 0xC0000000 | links.color(), 0.4, 0.45, phase, 0.3, 0);
+                switch (links.style()) {
+                    case BUBBLE -> WorldDraw.bubbleLink(matrices, consumers, camera, links.from(), to, DOTS_ALPHA, seconds);
+                    case STEP -> WorldDraw.stepLink(matrices, consumers, camera, links.from(), to, DOTS_ALPHA, seconds);
+                    case ARROWS -> WorldDraw.path(matrices, consumers, camera, links.from(), to, 0xC0000000 | links.color(), 0.4, 0.45, phase, 0.3, 0);
+                }
             }
         }
     }

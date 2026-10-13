@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.ArrayList;
 import net.minecraft.text.Text;
 import fr.lordfinn.steveparty.items.custom.cartridges.MistigriCartridgeItem;
+import fr.lordfinn.steveparty.components.MistigriOutcomes;
 import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -58,16 +59,15 @@ public class MistigriTileBehavior extends MobTileBehavior {
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof MistigriCartridgeItem)) return;
-        List<MistigriSentences.Sentence> sentences = new ArrayList<>();
-        for (MistigriSentences.Sentence sentence : MistigriSentences.Sentence.values()) {
-            if (MistigriCartridgeItem.chance(stack, sentence) > 0) sentences.add(sentence);
-        }
-        sentences.sort(Comparator.comparingInt((MistigriSentences.Sentence sentence) -> -MistigriCartridgeItem.chance(stack, sentence)));
-        for (int i = 0; i < sentences.size(); i++) {
-            MistigriSentences.Sentence sentence = sentences.get(i);
-            Text line = TileInfo.line("mistigri", TileInfo.rgb(MistigriCartridgeItem.chance(stack, sentence) + "%",
-                            sentence.harsh ? TileInfo.BAD : TileInfo.GOOD),
-                    Text.translatable("message.steveparty.mistigri_space.sentence." + sentence.id, sentence.amount(stack)));
+        MistigriOutcomes outcomes = MistigriOutcomes.of(stack);
+        double[] chances = outcomes.chances();
+        List<Integer> rows = new ArrayList<>();
+        for (int row = 0; row < chances.length; row++) if (chances[row] > 0) rows.add(row);
+        rows.sort(Comparator.comparingDouble(row -> -chances[row]));
+        for (int i = 0; i < rows.size(); i++) {
+            MistigriOutcomes.Outcome outcome = outcomes.get(rows.get(i));
+            Text line = TileInfo.line("mistigri", TileInfo.rgb(Math.round(100 * chances[rows.get(i)]) + "%",
+                    outcome.kind().tone() > 0 ? TileInfo.GOOD : TileInfo.BAD), outcome.text());
             info.line(ItemStack.EMPTY, line, i < 3 ? TileInfo.Layer.PLAY : TileInfo.Layer.DETAIL);
         }
     }

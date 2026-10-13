@@ -700,6 +700,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         flow.endCurrentStep();
         flow.started();
         clearInterestedPlayers();
+        // The winners of a previous party win nothing in this one (Piggy Banks, bells)
+        lastWinners.clear();
         getTokenFromStartTiles(serverWorld);
         setTokensStatus(serverWorld);
         // A warning for everyone around if the board has problems (the party still starts)
@@ -812,36 +814,15 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      * The party is over (ended or stopped): each of {@code tokens} goes back onto the start tile it started the party
      * from, still, with a puff of smoke (a token that is not loaded, or whose start tile is not, goes as soon as both
      * are). A token whose start tile is gone stays where it is.
-     *
-     * @return the board space each loaded token stood on before (none for the ones standing nowhere)
      */
-    public Map<UUID, BlockPos> sendTokensHome(ServerWorld serverWorld, Collection<UUID> tokens) {
+    public void sendTokensHome(ServerWorld serverWorld, Collection<UUID> tokens) {
         Map<UUID, BlockPos> homes = tokenHomes.startTiles();
         // A party started without them (an older save): the start tiles still bound to its tokens
         if (!homes.keySet().containsAll(tokens)) findStartTokenTiles(serverWorld).forEach(homes::putIfAbsent);
-        Map<UUID, BlockPos> left = new LinkedHashMap<>();
         for (UUID tokenUUID : tokens) {
             BlockPos home = homes.get(tokenUUID);
-            if (home == null) continue;
-            if (serverWorld.getEntity(tokenUUID) instanceof Entity entity) {
-                BoardSpaceBlockEntity space = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(entity);
-                if (space != null) left.put(tokenUUID, space.getPos().toImmutable());
-            }
-            tokenHomes.sendHome(serverWorld, tokenUUID, home);
+            if (home != null) tokenHomes.sendHome(serverWorld, tokenUUID, home);
         }
-        return left;
-    }
-
-    /**
-     * A party brought back from its end: each loaded token of {@code spaces} goes back onto the board space it stood
-     * on when the party ended (see {@link #sendTokensHome}), if that space is still there.
-     */
-    public void sendTokensBack(ServerWorld serverWorld, Map<UUID, BlockPos> spaces) {
-        spaces.forEach((tokenUUID, space) -> {
-            if (serverWorld.getEntity(tokenUUID) instanceof MobEntity mob && serverWorld.isChunkLoaded(space)
-                    && serverWorld.getBlockEntity(space) instanceof BoardSpaceBlockEntity)
-                PartyTokenHomes.place(serverWorld, mob, space);
-        });
     }
 
     /**
@@ -988,14 +969,6 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
 
     public void nextStep() {
         flow.nextStep();
-    }
-
-    public void restartStep() {
-        flow.restartStep();
-    }
-
-    public void previousStep() {
-        flow.previousStep();
     }
 
     /**

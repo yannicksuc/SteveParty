@@ -194,19 +194,22 @@ public class ShopStopGameTests implements SteveGameTest {
     }
 
     /**
-     * The token waits on the shop space with {@code steps} steps left, the owner has the shop screen, the space's merchant
-     * is there (a hologram) and glows.
+     * The token waits on the shop space with {@code steps} steps left, the space's merchant is there (a hologram the
+     * owner can click) and glows; no screen popped up: the owner right-clicks the merchant and gets the shop screen.
      */
     private static ShopStopScreenHandler assertShopping(TestContext context, Board board, ServerPlayerEntity owner, int steps) {
         context.assertTrue(ShopStops.isShopping(board.token().getUuid()), "the token waits at the shop");
         context.assertEquals(spaceOf(board.token()), context.getAbsolutePos(SHOP), "stopped on the shop space");
         context.assertEquals(board.tokenized().steveparty$getNbSteps(), steps, "steps left");
-        context.assertTrue(owner.currentScreenHandler instanceof ShopStopScreenHandler, "the owner has the shop screen");
+        context.assertFalse(owner.currentScreenHandler instanceof MerchantScreenHandler, "nothing pops up");
         BoxedTraderEntity trader = board.trader();
         context.assertTrue(trader != null && !trader.isRemoved(), "the space summoned its merchant");
         context.assertTrue(BoardActors.isBoardActor(trader) && trader.isBoardActor() && trader.isAiDisabled(), "a hologram");
         context.assertTrue(trader.isInvulnerable() && !trader.shouldSave(), "invulnerable, never saved");
         context.assertTrue(trader.hasStatusEffect(StatusEffects.GLOWING), "the merchant is highlighted");
+        context.assertTrue(BoardActors.isTargetable(trader), "his shopper can click him");
+        owner.interact(trader, Hand.MAIN_HAND);
+        context.assertTrue(owner.currentScreenHandler instanceof ShopStopScreenHandler, "a click on him: the shop screen");
         ShopStopScreenHandler handler = (ShopStopScreenHandler) owner.currentScreenHandler;
         context.assertTrue(handler.getSecondsLeft() > 0, "a countdown runs");
         return handler;
@@ -310,6 +313,11 @@ public class ShopStopGameTests implements SteveGameTest {
                 context.assertFalse(trader.bringsOwnStall(), "no stall of his own then");
                 context.assertTrue(stall.isEmpty(), "the stall's contents untouched");
                 owner.closeHandledScreen();
+                context.assertTrue(ShopStops.isShopping(board.token().getUuid()), "closed: still waiting");
+                context.useBlock(stallPos, owner);
+                context.assertTrue(owner.currentScreenHandler instanceof ShopStopScreenHandler, "his stall opens his shop");
+                context.assertTrue(stall.isEmpty(), "not the stall's own screen");
+                owner.currentScreenHandler.onButtonClick(owner, ShopStopScreenHandler.BUY_NOTHING_BUTTON_ID);
                 assertWentOn(context, board, owner, trader, END, () -> {
                     context.assertTrue(stall.isEmpty(), "still untouched");
                     finish(context, board, owner);
@@ -356,10 +364,15 @@ public class ShopStopGameTests implements SteveGameTest {
                 context.assertTrue(trader.getBlockState() == Blocks.HAY_BLOCK.getDefaultState(), "he wears the cartridge's disguise");
                 context.assertEquals(handler.getLimit(), 2, "two purchases allowed");
                 context.assertTrue(buyOnce(handler, owner), "first purchase");
+                owner.closeHandledScreen();
                 later(context, 2, () -> {
                     context.assertTrue(ShopStops.isShopping(board.token().getUuid()), "one more purchase allowed: still shopping");
-                    context.assertTrue(buyOnce(handler, owner), "second purchase");
-                    context.assertFalse(buyOnce(handler, owner), "no third one");
+                    context.assertEquals(ShopStops.purchasesOf(board.token().getUuid()), 1, "the purchase is kept");
+                    context.assertTrue(ShopStops.open(owner, board.token().getUuid()), "the chat's link opens it again");
+                    ShopStopScreenHandler again = (ShopStopScreenHandler) owner.currentScreenHandler;
+                    context.assertEquals(again.getPurchases(), 1, "the first purchase counts");
+                    context.assertTrue(buyOnce(again, owner), "second purchase");
+                    context.assertFalse(buyOnce(again, owner), "no third one");
                     later(context, 2, () -> assertWentOn(context, board, owner, trader, END, () -> finish(context, board, owner)));
                 });
             });
@@ -427,16 +440,31 @@ public class ShopStopGameTests implements SteveGameTest {
         });
     }
 
-    /** Closing the screen is « Buy nothing ». */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_closingTheScreenGoesOn")
-    public void closingTheScreenGoesOn(TestContext context) {
+    /**
+     * Closing the screen ends nothing: the merchant waits, the chat's link (its owner's only) opens it again, « Buy
+     * nothing » then goes on.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_closingTheScreenKeepsTheChoice")
+    public void closingTheScreenKeepsTheChoice(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
             walk(context, board, 2, () -> {
                 assertShopping(context, board, owner, 2);
                 BoxedTraderEntity trader = board.trader();
                 owner.closeHandledScreen();
-                assertWentOn(context, board, owner, trader, END, () -> finish(context, board, owner));
+                later(context, 5, () -> {
+                    context.assertTrue(ShopStops.isShopping(board.token().getUuid()), "closed: the choice still waits");
+                    context.assertFalse(trader.isRemoved(), "the merchant waits");
+                    ServerPlayerEntity stranger = TestPlayers.mock(context);
+                    context.assertFalse(ShopStops.open(stranger, board.token().getUuid()), "the link is its owner's only");
+                    context.assertFalse(stranger.currentScreenHandler instanceof MerchantScreenHandler, "no screen for the others");
+                    TestPlayers.remove(context, stranger);
+                    context.assertTrue(ShopStops.open(owner, board.token().getUuid()), "the link opens it again");
+                    context.assertTrue(owner.currentScreenHandler instanceof ShopStopScreenHandler, "the shop screen");
+                    owner.currentScreenHandler.onButtonClick(owner, ShopStopScreenHandler.BUY_NOTHING_BUTTON_ID);
+                    context.assertFalse(ShopStops.open(owner, board.token().getUuid()), "over: the link does nothing");
+                    assertWentOn(context, board, owner, trader, END, () -> finish(context, board, owner));
+                });
             });
         });
     }

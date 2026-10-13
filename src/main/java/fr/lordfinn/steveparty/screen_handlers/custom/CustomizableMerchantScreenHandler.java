@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.powerups.PowerUpLimit;
+import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -11,6 +12,7 @@ import net.minecraft.text.Text;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.MerchantScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.village.Merchant;
 import net.minecraft.village.TradeOffer;
@@ -34,6 +36,12 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
     public CustomizableMerchantScreenHandler(int syncId, PlayerInventory playerInventory, Merchant merchant) {
         super(syncId, playerInventory, merchant);
         this.player = playerInventory.player;
+    }
+
+    /** Not the vanilla merchant screen: the client opens the Boxed Trader's cardboard one. */
+    @Override
+    public ScreenHandlerType<?> getType() {
+        return ModScreensHandlers.BOXED_TRADER_SCREEN_HANDLER;
     }
 
     public void setSelectedTradeIndex(int index) {

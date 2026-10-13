@@ -66,6 +66,7 @@ import fr.lordfinn.steveparty.client.renderer.PawnBeamRenderer;
 import fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer;
 import fr.lordfinn.steveparty.client.board.TileInfoClient;
 import fr.lordfinn.steveparty.client.board.NestInfoClient;
+import fr.lordfinn.steveparty.client.board.PiggyBankInfoClient;
 import fr.lordfinn.steveparty.client.screens.CartridgeScreen;
 import fr.lordfinn.steveparty.client.screens.TrichaudronScreen;
 import fr.lordfinn.steveparty.client.screens.MiniGameControllerScreen;
@@ -274,6 +275,7 @@ public class StevepartyClient implements ClientModInitializer {
         BrushClient.initialize();
         TileInfoClient.initialize();
         NestInfoClient.initialize();
+        PiggyBankInfoClient.initialize();
         TileOutline.initialize();
         DevClientCommands.initialize();
         StencilHammerStrikes.initialize();
@@ -536,6 +538,7 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(GOAL_POLE_BASE_SCREEN_HANDLER, GoalPoleBaseScreen::new);
         HandledScreens.register(GOAL_POLE_SCREEN_HANDLER, GoalPoleScreen::new);
         HandledScreens.register(LOOTING_BOX_SCREEN_HANDLER, LootingBoxScreen::new);
+        HandledScreens.register(PIGGY_BANK_SCREEN_HANDLER, PiggyBankScreen::new);
         HandledScreens.register(DICE_FORGE_SCREEN_HANDLER, DiceForgeScreen::new);
         HandledScreens.register(PARTY_CONTROLLER_SCREEN_HANDLER, PartyControllerScreen::new);
         HandledScreens.register(MINI_GAME_CONTROLLER_SCREEN_HANDLER, MiniGameControllerScreen::new);

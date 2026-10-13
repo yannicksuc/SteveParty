@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.board;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.HopSwitchBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
@@ -33,7 +34,8 @@ import java.util.stream.IntStream;
 
 /**
  * Everything the Tile Linker Brush links: the blocks holding a cartridge (board spaces of every role, routers, Hop
- * Switches, Looting Boxes, Piggy Banks, the Party Controller, for the chests of its bank) and, for each, the kinds of links their cartridge
+ * Switches, Looting Boxes, Piggy Banks, the Party Controller, for the chests of its bank; a Step Controller, for the
+ * party element it drives, see {@link StepControllerLinks}) and, for each, the kinds of links their cartridge
  * stores ({@link BrushLinkable}), given by {@link Provider}s: the built-in ones are in {@link CartridgeLinks}, another
  * holder or cartridge adds its own with {@link #register}. Same answers on both sides (the cartridges of the holders are
  * sent to the clients).
@@ -64,6 +66,10 @@ public final class BrushLinks {
 
     private static final List<Provider> PROVIDERS = new ArrayList<>(CartridgeLinks.PROVIDERS);
 
+    static {
+        PROVIDERS.add(StepControllerLinks.PROVIDER);
+    }
+
     /** Another kind of links the brush paints (an addon's holder or cartridge). */
     public static void register(Provider provider) {
         PROVIDERS.add(provider);
@@ -73,8 +79,12 @@ public final class BrushLinks {
 
     /** Whether the block at {@code pos} holds a cartridge the brush can link from (a part of a large tile stands for its tile). */
     public static boolean isHolder(World world, BlockPos pos) {
-        BlockEntity blockEntity = world.getBlockEntity(BoardSpaces.resolve(world, pos));
-        return blockEntity instanceof CartridgeContainerBlockEntity || blockEntity instanceof PartyControllerEntity;
+        return isHolder(world.getBlockEntity(BoardSpaces.resolve(world, pos)));
+    }
+
+    private static boolean isHolder(@Nullable BlockEntity blockEntity) {
+        return blockEntity instanceof CartridgeContainerBlockEntity || blockEntity instanceof PartyControllerEntity
+                || blockEntity instanceof StepControllerBlockEntity;
     }
 
     /**
@@ -86,6 +96,7 @@ public final class BrushLinks {
         BlockEntity blockEntity = world.getBlockEntity(resolved);
         if (blockEntity instanceof CartridgeContainerBlockEntity container) return held(world, resolved, BoardLinks.slotOf(container, level));
         if (blockEntity instanceof PartyControllerEntity) return held(world, resolved, BANK);
+        if (blockEntity instanceof StepControllerBlockEntity) return held(world, resolved, 0);
         return null;
     }
 
@@ -105,6 +116,11 @@ public final class BrushLinks {
                 BlockState state = controller.getCachedState();
                 if (!world.isClient) world.updateListeners(at, state, state, Block.NOTIFY_ALL);
             }, controller::canEdit);
+        }
+        if (blockEntity instanceof StepControllerBlockEntity && slot == 0) {
+            // No cartridge: its link is kept by the block itself
+            BlockPos at = pos.toImmutable();
+            return new Held(at, 0, ItemStack.EMPTY, () -> { }, player -> ScreenHandlerChecks.canBuildAt(player, at));
         }
         return null;
     }
@@ -164,7 +180,12 @@ public final class BrushLinks {
     public static Outcome outcome(World world, @Nullable BlockPos from, int level, BlockPos to) {
         if (from == null || from.equals(to)) return Outcome.NOTHING;
         BrushLinkable kind = kindFor(of(world, from, level), world, to);
-        if (kind == null) return Outcome.NOTHING;
+        if (kind == null) {
+            // A Step Controller reached from the element it is to drive
+            BrushLinkable back = StepControllerLinks.reverse(world, from, to);
+            if (back == null) return Outcome.NOTHING;
+            return back.linked(world, from) ? Outcome.ERASE : Outcome.LINK;
+        }
         return kind.linked(world, to) ? Outcome.ERASE : Outcome.LINK;
     }
 
@@ -182,7 +203,7 @@ public final class BrushLinks {
                 WorldChunk chunk = world.getChunkManager().getWorldChunk(chunkX, chunkZ);
                 if (chunk == null) continue;
                 for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-                    if (!(blockEntity instanceof CartridgeContainerBlockEntity) && !(blockEntity instanceof PartyControllerEntity)) continue;
+                    if (!isHolder(blockEntity)) continue;
                     if (Vec3d.ofCenter(blockEntity.getPos()).squaredDistanceTo(center) > radius2) continue;
                     kinds.addAll(of(world, blockEntity.getPos(), level));
                 }

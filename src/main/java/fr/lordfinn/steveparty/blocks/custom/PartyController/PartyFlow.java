@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
 import fr.lordfinn.steveparty.api.event.PartyEvents;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -18,7 +17,7 @@ import java.util.List;
 import static fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.*;
 
 /**
- * The course of a party, step after step: moving to the next / previous step (ringing the party bells of the moments
+ * The course of a party, step after step: moving to the next step (ringing the party bells of the moments
  * in between, waiting for them when one waits), resuming the step that was running when the controller was saved,
  * and the phase the comparators read.
  */
@@ -82,7 +81,7 @@ final class PartyFlow {
         PartyData partyData = data();
         PartyStep currentStep = partyData.getCurrentStep();
         int index = partyData.getStepIndex();
-        // A mini-game ended from outside (a step controller): its results are read on its podiums and paid all the same
+        // A mini-game ended from outside (a Step Controller): its results are read on its podiums and paid all the same
         if (currentStep instanceof MiniGamePartyStep miniGame) miniGame.concludeIfPlaying(controller);
         endCurrentStep();
         if (currentStep instanceof EventPartyStep event && event.isTransition() && index >= 0) {
@@ -160,29 +159,6 @@ final class PartyFlow {
         boolean waiting = PartyBellBlockEntity.ring(controller, moment, value);
         updatePhase();
         return waiting;
-    }
-
-    void restartStep() {
-        endCurrentStep();
-        startStep(data().getStepIndex());
-    }
-
-    void previousStep() {
-        PartyData partyData = data();
-        PartyStep currentStep = partyData.getCurrentStep();
-        boolean leavingEnd = currentStep != null && currentStep.getType() == PartyStepType.END && partyData.getStepIndex() > 0;
-        endCurrentStep();
-        if (currentStep instanceof EventPartyStep event && event.isTransition()) {
-            // Not a real step: drop it, then go back to the step before it
-            partyData.getSteps().remove(partyData.getStepIndex());
-        }
-        // The END step released the tokens: going back into the game puts them in game again
-        // (the step being resumed grants CAN_MOVE as usual)
-        if (leavingEnd && controller.getWorld() instanceof ServerWorld serverWorld)
-            controller.tokenHomes().restoreInGame(serverWorld, partyData.getTokens());
-        // ... and back where they stood when it ended (the END step sent them home)
-        if (leavingEnd && currentStep instanceof EndPartyStep end) end.sendTokensBack(controller);
-        startStep(partyData.getStepIndex() - 1);
     }
 
     void endCurrentStep() {

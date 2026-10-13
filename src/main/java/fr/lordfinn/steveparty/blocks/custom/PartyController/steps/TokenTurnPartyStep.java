@@ -6,6 +6,8 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.dice.DicePrompts;
+import fr.lordfinn.steveparty.dice.OneThrowPerRoll;
 import fr.lordfinn.steveparty.powerups.effects.PowerUpProtection;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -32,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class TokenTurnPartyStep extends PartyStep {
@@ -59,6 +62,8 @@ public class TokenTurnPartyStep extends PartyStep {
     private boolean replay;
     /** The die spent for this turn (a copy), given back with a replay. Not saved: lost across a restart. */
     private ItemStack spentDie = ItemStack.EMPTY;
+    /** The die thrown for this turn's roll (the first of the throw) while it rolls. Not saved. */
+    private @Nullable DiceEntity thrown;
     /** Total of the dice rolled for this turn by its player, 0 until they roll (shown by the party HUD). Not saved. */
     private int roll;
     /** What that roll does (coins, swap, a face 0...), {@link DiceOutcome#NONE} until they roll. Not saved. */
@@ -87,6 +92,7 @@ public class TokenTurnPartyStep extends PartyStep {
     public void start(PartyControllerEntity partyControllerEntity) {
         super.start(partyControllerEntity);
         absentDeadline = -1;
+        thrown = null;
         roll = 0;
         outcome = DiceOutcome.NONE;
         rollCoins = null;
@@ -199,6 +205,7 @@ public class TokenTurnPartyStep extends PartyStep {
     @Override
     public ActionResult onDiceRoll(DiceEntity dice, UUID ownerUUID, int rollValue, PartyControllerEntity partyControllerEntity) {
         if (status == Status.IN_PROGRESS && (owner == null || owner.equals(ownerUUID))) {
+            thrown = null;
             spentDie = spentDie(dice);
             roll = rollValue;
             DiceOutcome rolled = dice.getOutcome();
@@ -207,6 +214,21 @@ public class TokenTurnPartyStep extends PartyStep {
             swapWith = "";
         }
         return ActionResult.PASS;
+    }
+
+    /**
+     * One throw per roll: once this turn's player threw, another throw waits for that die's result, and a roll that
+     * plays closes the turn's roll (blank sides open it again). A replay is a turn of its own.
+     */
+    @Override
+    public boolean refusesThrow(UUID player, PartyControllerEntity controller) {
+        if (status != Status.IN_PROGRESS || (owner != null && !owner.equals(player))) return false;
+        return hasRolled() || OneThrowPerRoll.inFlight(thrown);
+    }
+
+    @Override
+    public void onDieThrown(UUID player, DiceEntity lead) {
+        if (status == Status.IN_PROGRESS && (owner == null || owner.equals(player)) && !hasRolled()) thrown = lead;
     }
 
     /** @return what the roll of this turn does, {@link DiceOutcome#NONE} while its player has not rolled */
@@ -323,6 +345,47 @@ public class TokenTurnPartyStep extends PartyStep {
                     MessageUtils.MessageType.CHAT);
         }
         partyControllerEntity.nextStep();
+        return true;
+    }
+
+    /**
+     * A Step Controller passes this turn: only while it waits for its player (the roll, or its absent token), nothing
+     * under way (no die resolving, no picker open, the pawn still). A turn that has rolled ends by itself.
+     *
+     * @return false if the turn can't be passed now (nothing done)
+     */
+    public boolean pass(PartyControllerEntity partyControllerEntity) {
+        if (!isStillActive(partyControllerEntity) || tokenUUID == null) return false;
+        if (isWaitingForAbsentToken()) return skipAbsentTurn(partyControllerEntity);
+        if (!waitsForChoiceOf(tokenUUID) || Steveparty.SCHEDULER.isScheduled(tokenUUID) || DiceRollEffects.isResolving(tokenUUID)
+                || (owner != null && DicePrompts.isAsking(owner))) return false;
+        if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
+            MessageUtils.sendToPlayers(partyControllerEntity.getPartyAudience(),
+                    Text.translatable("message.steveparty.absent_turn.skipped", getTokenDisplayName(serverWorld)).formatted(Formatting.GRAY),
+                    MessageUtils.MessageType.CHAT);
+        }
+        partyControllerEntity.nextStep();
+        return true;
+    }
+
+    /**
+     * A Step Controller replays this turn: its player plays once more right after it, as on a Replay tile
+     * ({@link #grantReplay}).
+     *
+     * @return false if this turn gives no extra one (it is already one, or one follows it already)
+     */
+    public boolean replay(PartyControllerEntity partyControllerEntity) {
+        List<PartyStep> steps = partyControllerEntity.getPartyData().getSteps();
+        int next = partyControllerEntity.getPartyData().getStepIndex() + 1;
+        if (next < steps.size() && steps.get(next) instanceof TokenTurnPartyStep extra && extra.replay
+                && Objects.equals(extra.tokenUUID, tokenUUID)) return false;
+        if (grantReplay(partyControllerEntity) == null) return false;
+        if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
+            MessageUtils.sendToPlayers(partyControllerEntity.getPartyAudience(),
+                    Text.translatable("message.steveparty.tile_landed.replay", getTokenDisplayName(serverWorld)).formatted(Formatting.GOLD),
+                    MessageUtils.MessageType.CHAT);
+            partyControllerEntity.sendPacketToInterestedPlayers();
+        }
         return true;
     }
 

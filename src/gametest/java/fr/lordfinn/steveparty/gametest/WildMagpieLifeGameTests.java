@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpieEntity;
 import fr.lordfinn.steveparty.entities.custom.magpie.MagpieVariant;
 import fr.lordfinn.steveparty.entities.custom.magpie.WildMagpieEntity;
+import fr.lordfinn.steveparty.gametest.kit.LandAround;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import net.minecraft.block.Block;
@@ -49,10 +50,10 @@ import java.util.function.Supplier;
 public class WildMagpieLifeGameTests implements SteveGameTest {
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("WildMagpieLifeGameTests");
 
-    /** The long flights go 40 blocks away and back. */
+    /** Hops and walks a few blocks from the template (the long flight asks for its own land). */
     @Override
     public int landAround() {
-        return 48;
+        return 16;
     }
 
     private static void when(TestContext context, BooleanSupplier condition, int ticks, Supplier<String> what, Runnable then) {
@@ -425,6 +426,7 @@ public class WildMagpieLifeGameTests implements SteveGameTest {
      * lands far beyond an ordinary hop; with its nest back at the start, its next flight takes it home.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 700, batchId = "wild_magpie_long")
+    @LandAround(48) // 40 blocks away and back
     public void aLongFlightGoesFarAndComesHome(TestContext context) {
         ServerWorld world = context.getWorld();
         int roof = 10;
