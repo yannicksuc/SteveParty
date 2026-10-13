@@ -38,12 +38,12 @@ public record MistigriOutcomes(List<Outcome> outcomes, int draws) {
         /** Each one aimed at loses stars (a number, or a share of theirs), into the party's bank. */
         LOSE_STARS("lose_stars", 1, 9, 1, true, true),
         /**
-         * The common pot of coins: each one aimed at puts coins in (a number, or a share of theirs), and the pot is dealt
-         * out coin by coin to the players who put nothing in (everyone when all did), the poorest first. Nothing goes to
+         * Redistributes coins: each one aimed at gives coins (a number, or a share of theirs), dealt
+         * out coin by coin to the players who gave nothing (everyone when all gave), the poorest first. Nothing goes to
          * the bank, nothing comes out of it.
          */
         SHARE_COINS("share_coins", 1, 99, 10, true, true),
-        /** The common pot of stars: the same with stars, dealt out to the fewest stars first. */
+        /** Redistributes stars: the same with stars, dealt out to the fewest stars first. */
         SHARE_STARS("share_stars", 1, 9, 1, true, true),
         /** The player who landed moves back this many spaces (only them: the others are not moving). */
         MOVE_BACK("move_back", 1, 9, 3, false, false),
@@ -231,7 +231,7 @@ public record MistigriOutcomes(List<Outcome> outcomes, int draws) {
 
     /**
      * A new cartridge's: mostly fines for the one who landed, a few harsher and rarer ones, the whole party sharing a
-     * fine, the first place feeding the common pot, a move back, a cursed die and a little pity. All on the roulette.
+     * fine, the first place redistributing some of its coins, a move back, a cursed die and a little pity. All on the roulette.
      */
     public static final MistigriOutcomes DEFAULT = new MistigriOutcomes(List.of(
             new Outcome(Kind.LOSE_COINS, Target.LANDED, 10, false, 4),

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.gui.cartridge;
 
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import net.minecraft.client.render.DiffuseLighting;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.components.MistigriOutcomes;
@@ -15,6 +16,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
@@ -370,7 +372,7 @@ final class OutcomeListWidget {
         boolean off = outcome.weight() == 0;
         // Its kind, who, how much
         int iy = y + (ROW_H - 16) / 2;
-        context.drawItem(icon(outcome.kind()), x0 + PAD, iy);
+        flatItem(context, icon(outcome.kind()), x0 + PAD, iy);
         context.getMatrices().push();
         context.getMatrices().translate(0, 0, 200);
         MistigriIcons.badge(context, outcome.kind(), x0 + PAD, iy);
@@ -422,9 +424,15 @@ final class OutcomeListWidget {
             case KIND -> {
                 Kind kind = Kind.values()[hit.value];
                 boolean chosen = outcome != null && outcome.kind() == kind;
-                PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, chosen ? PartyGui.BUTTON_SELECTED : hot ? DARK.brighter() : DARK, chosen);
+                if (chosen) {
+                    // A bright gold ring (its edges over its neighbours'), a dark inside: the item stays readable
+                    context.fill(hit.x, hit.y, hit.x + hit.w, hit.y + hit.h, GOLD);
+                    context.fill(hit.x + 1, hit.y + 1, hit.x + hit.w - 1, hit.y + hit.h - 1, 0xFF5A4410);
+                } else {
+                    PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, hot ? DARK.brighter() : DARK, false);
+                }
                 int ix = hit.x + (hit.w - 16) / 2, iy = hit.y + (hit.h - 16) / 2;
-                context.drawItem(icon(kind), ix, iy);
+                flatItem(context, icon(kind), ix, iy);
                 context.getMatrices().push();
                 context.getMatrices().translate(0, 0, 200);
                 MistigriIcons.badge(context, kind, ix, iy);
@@ -484,6 +492,18 @@ final class OutcomeListWidget {
 
     private static final ItemStack[] ICONS = new ItemStack[Kind.values().length];
 
+    /**
+     * An item lit flat, like a sprite: a 3D model (the Party Star) is otherwise lit from the side as in a slot, its
+     * faces dulled to grey next to the flat coin.
+     */
+    private static void flatItem(DrawContext context, ItemStack stack, int x, int y) {
+        context.draw();
+        DiffuseLighting.disableGuiDepthLighting();
+        context.drawItem(stack, x, y);
+        context.draw();
+        DiffuseLighting.enableGuiDepthLighting();
+    }
+
     /** A kind's icon in the default currencies (the cartridge is not tied to a party here). */
     private static ItemStack icon(Kind kind) {
         if (ICONS[kind.ordinal()] == null) ICONS[kind.ordinal()] = kind.icon(PartyCurrency.COIN.defaultStack(), PartyCurrency.STAR.defaultStack());
@@ -531,10 +551,13 @@ final class OutcomeListWidget {
         switch (hit.part) {
             case ROW -> {
                 if (outcome == null) return null;
+                // The sentence as the roulette writes it, its target in its colour; then its chance and the click
                 lines.add(outcome.text());
-                if (outcome.weight() == 0) lines.add(Text.translatable(K + "never").formatted(Formatting.GRAY));
-                else lines.add(Text.translatable(K + "chance", Math.round(100 * chances[hit.row])).formatted(Formatting.GRAY));
-                if (editable) lines.add(Text.translatable(open == hit.row ? K + "row.close" : K + "row.open").formatted(Formatting.YELLOW));
+                MutableText second = outcome.weight() == 0 ? Text.translatable(K + "never").formatted(Formatting.GRAY)
+                        : Text.translatable(K + "chance", Math.round(100 * chances[hit.row])).formatted(Formatting.GRAY);
+                if (editable) second.append(Text.literal(" · ").formatted(Formatting.DARK_GRAY))
+                        .append(Text.translatable(open == hit.row ? K + "row.close" : K + "row.open").formatted(Formatting.YELLOW));
+                lines.add(second);
             }
             case DELETE -> lines.add(Text.translatable(K + "delete"));
             case KIND -> {
