@@ -91,12 +91,12 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
      */
     private static final Object[][] PRESETS = {
             {ModScoreboardCriteria.LANDED_ON_POLE_ID, ModBlocks.GOAL_POLE.asItem(), "goal.landed_on_pole.label", "goal.landed_on_pole", "landed_on_pole"},
-            {"minecraft.custom:minecraft.jump", Items.RABBIT_FOOT, null, null, "jump"},
-            {"deathCount", Items.SKELETON_SKULL, "goal.deaths", null, "deaths"},
-            {"minecraft.custom:minecraft.mob_kills", Items.ZOMBIE_HEAD, null, null, "mob_kills"},
-            {"playerKillCount", Items.PLAYER_HEAD, "goal.player_kills", null, "player_kills"},
-            {"totalKillCount", Items.IRON_SWORD, "goal.kills", null, "kills"},
-            {"minecraft.custom:minecraft.walk_one_cm", Items.LEATHER_BOOTS, null, null, "walk"},
+            {"minecraft.custom:minecraft.jump", Items.RABBIT_FOOT, null, "goal.meaning.jump", "jump"},
+            {"deathCount", Items.SKELETON_SKULL, "goal.deaths", "goal.meaning.deaths", "deaths"},
+            {"minecraft.custom:minecraft.mob_kills", Items.ZOMBIE_HEAD, null, "goal.meaning.mob_kills", "mob_kills"},
+            {"playerKillCount", Items.PLAYER_HEAD, "goal.player_kills", "goal.meaning.player_kills", "player_kills"},
+            {"totalKillCount", Items.IRON_SWORD, "goal.kills", "goal.meaning.kills", "kills"},
+            {"minecraft.custom:minecraft.walk_one_cm", Items.LEATHER_BOOTS, null, "goal.meaning.walk", "walk"},
             {"dummy", Items.COMMAND_BLOCK, "goal.dummy.label", "goal.dummy", "dummy"},
     };
     /** The other simple criteria of the scoreboard: name and icon (label: {@code goal.criterion.<name>}). */
