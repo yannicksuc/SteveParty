@@ -38,23 +38,42 @@ public final class UiText {
     /** The box of the line the mouse is over (screen pixels), and since when: its scroll starts from its beginning. */
     private static int[] hoveredBox = new int[4];
     private static long hoveredSince, hoveredSeen;
+    /** Another tooltip was drawn during this frame of the screen (an item's, a panel's...): this one is not drawn over it. */
+    private static boolean otherTooltip;
+    /** True while this class draws its own tooltip (not another one). */
+    private static boolean drawingOwn;
 
     private UiText() {
     }
 
     /** Shows the tooltip of a hovered line that does not fit, on top of every screen. Once, by the client initializer. */
     public static void initialize() {
-        ScreenEvents.BEFORE_INIT.register((client, screen, width, height) ->
-                ScreenEvents.afterRender(screen).register((s, context, mouseX, mouseY, delta) -> {
-                    Text text = hovered;
-                    hovered = null;
-                    // A hovered widget with a tooltip of its own: that one is shown, not this one over it
-                    for (var child : s.children()) {
-                        if (child instanceof net.minecraft.client.gui.widget.ClickableWidget widget && widget.visible
-                                && widget.isHovered() && widget.getTooltip() != null) return;
-                    }
-                    if (text != null) context.drawOrderedTooltip(client.textRenderer, wrap(client.textRenderer, text, TOOLTIP_W), mouseX, mouseY);
-                }));
+        ScreenEvents.BEFORE_INIT.register((client, screen, width, height) -> {
+            ScreenEvents.beforeRender(screen).register((s, context, mouseX, mouseY, delta) -> otherTooltip = false);
+            ScreenEvents.afterRender(screen).register((s, context, mouseX, mouseY, delta) -> {
+                Text text = hovered;
+                hovered = null;
+                // The screen drew a tooltip of its own (a slot's item, an (i), a panel): that one is shown, not this one over it
+                if (otherTooltip) return;
+                // A hovered widget with a tooltip of its own: the same
+                for (var child : s.children()) {
+                    if (child instanceof net.minecraft.client.gui.widget.ClickableWidget widget && widget.visible
+                            && widget.isHovered() && widget.getTooltip() != null) return;
+                }
+                if (text == null) return;
+                drawingOwn = true;
+                try {
+                    context.drawOrderedTooltip(client.textRenderer, wrap(client.textRenderer, text, TOOLTIP_W), mouseX, mouseY);
+                } finally {
+                    drawingOwn = false;
+                }
+            });
+        });
+    }
+
+    /** A tooltip is being drawn (every one goes through {@code DrawContextTooltipMixin}). */
+    public static void tooltipDrawn() {
+        if (!drawingOwn) otherTooltip = true;
     }
 
     /**
