@@ -100,6 +100,7 @@ public class PlayerPawnGameTests implements SteveGameTest {
         ServerPlayerEntity caster = playerAt(context, 1.5, 1.5);
         caster.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TOKENIZER_WAND));
         ServerPlayerEntity target = playerAt(context, TARGET_POS.getX() + 0.5, TARGET_POS.getZ() + 0.5);
+        target.getGameProfile().getProperties().put("textures", new com.mojang.authlib.properties.Property("textures", "skin-data", "skin-signature"));
         SpellResult result = TokenizerWandItem.castSpell(caster, target.getId(), 1F, BLUE);
         context.assertTrue(result == SpellResult.TOKENIZED, "tokenized: " + result);
         context.assertTrue(PawnPossessions.isUnderSpell(target), "under the spell");
@@ -119,6 +120,8 @@ public class PlayerPawnGameTests implements SteveGameTest {
                 context.assertTrue(token.steveparty$getTokenSize() == 1F, "chosen size");
                 context.assertEquals(token.steveparty$getTokenColor(), BLUE, "chosen colour");
                 context.assertTrue(target.getUuid().equals(pawn.getSkinOwner()), "wears the target's skin");
+                context.assertTrue(pawn.getSkinTextures().equals("skin-data") && pawn.getSkinSignature().equals("skin-signature"),
+                        "keeps the skin itself (worn when the player is offline)");
                 context.assertTrue(target.getUuid().equals(pawn.getPossessor()), "the target is inside");
                 context.assertTrue(PawnPossessions.isInsideAPawn(target), "inside a pawn");
                 context.assertTrue(target.isInvisible(), "invisible");
@@ -308,6 +311,7 @@ public class PlayerPawnGameTests implements SteveGameTest {
         PlayerPawnEntity pawn = context.spawnEntity(ModEntities.PLAYER_PAWN, TARGET_POS);
         UUID skin = UUID.randomUUID();
         pawn.setSkin(skin, "Someone");
+        pawn.setSkinTextures("skin-data", "skin-signature");
         pawn.setStatuePose(PlayerPawnPose.DAB);
         pawn.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.GOLDEN_APPLE, 2));
         NbtCompound nbt = new NbtCompound();
@@ -317,7 +321,8 @@ public class PlayerPawnGameTests implements SteveGameTest {
         context.assertTrue(loaded != null, "created");
         loaded.readNbt(nbt);
         context.assertTrue(loaded.getStatuePose() == PlayerPawnPose.DAB, "pose kept");
-        context.assertTrue(skin.equals(loaded.getSkinOwner()) && loaded.getSkinName().equals("Someone"), "skin kept");
+        context.assertTrue(skin.equals(loaded.getSkinOwner()) && loaded.getSkinName().equals("Someone")
+                && loaded.getSkinTextures().equals("skin-data") && loaded.getSkinSignature().equals("skin-signature"), "skin kept");
         context.assertTrue(loaded.getHeldItem().isOf(Items.GOLDEN_APPLE) && loaded.getHeldItem().getCount() == 2, "item kept");
         context.assertTrue(!loaded.isPossessed(), "nobody inside after a reload");
         context.complete();

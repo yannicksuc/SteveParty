@@ -88,6 +88,8 @@ public final class PawnPossessions {
     private static final class Spell {
         final UUID player;
         final String name;
+        /** The "textures" property of the player's profile and its signature ("" if none). */
+        final String textures, signature;
         final UUID caster;
         final float size;
         final int color;
@@ -99,6 +101,9 @@ public final class PawnPossessions {
         Spell(ServerPlayerEntity player, UUID caster, float size, int color) {
             this.player = player.getUuid();
             this.name = player.getGameProfile().getName();
+            com.mojang.authlib.properties.Property skin = player.getGameProfile().getProperties().get("textures").stream().findFirst().orElse(null);
+            this.textures = skin == null ? "" : skin.value();
+            this.signature = skin == null || skin.signature() == null ? "" : skin.signature();
             this.caster = caster;
             this.size = size;
             this.color = color;
@@ -244,6 +249,7 @@ public final class PawnPossessions {
         pawn.setHeadYaw(spell.yaw);
         pawn.setBodyYaw(spell.yaw);
         pawn.setSkin(spell.player, spell.name);
+        pawn.setSkinTextures(spell.textures, spell.signature);
         TokenizedEntityInterface token = (TokenizedEntityInterface) pawn;
         token.steveparty$setTokenized(true);
         token.steveparty$setTokenOwner(spell.caster);
