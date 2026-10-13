@@ -13,24 +13,27 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.gadgets.bubbler.page0.text",
-      "title": "book.steveparty.guide.gadgets.bubbler.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:bubbler"
+      },
+      "title": "book.steveparty.guide.gadgets.bubbler.page0.title",
+      "text": "book.steveparty.guide.gadgets.bubbler.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.gadgets.bubbler.page1.text",
-      "title": "book.steveparty.guide.gadgets.bubbler.page1.title"
+      "title": "book.steveparty.guide.gadgets.bubbler.page1.title",
+      "text": "book.steveparty.guide.gadgets.bubbler.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.gadgets.bubbler.page2.text",
-      "title": "book.steveparty.guide.gadgets.bubbler.page2.title"
+      "title": "book.steveparty.guide.gadgets.bubbler.page2.title",
+      "text": "book.steveparty.guide.gadgets.bubbler.page2.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.gadgets.bubbler.page3.text",
-      "title": "book.steveparty.guide.gadgets.bubbler.page3.title"
+      "title": "book.steveparty.guide.gadgets.bubbler.page3.title",
+      "text": "book.steveparty.guide.gadgets.bubbler.page3.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

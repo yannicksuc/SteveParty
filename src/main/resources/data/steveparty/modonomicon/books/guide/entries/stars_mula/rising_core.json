@@ -36,8 +36,13 @@
   "pages": [
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.stars_mula.rising_core.page0.text",
-      "title": "book.steveparty.guide.stars_mula.rising_core.page0.title"
+      "title": "book.steveparty.guide.stars_mula.rising_core.page0.title",
+      "text": "book.steveparty.guide.stars_mula.rising_core.page0.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.stars_mula.rising_core.page1.title",
+      "text": "book.steveparty.guide.stars_mula.rising_core.page1.text"
     }
   ]
 }

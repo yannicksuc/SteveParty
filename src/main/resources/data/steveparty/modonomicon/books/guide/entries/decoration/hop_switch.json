@@ -19,13 +19,17 @@
   ],
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.decoration.hop_switch.page0.text",
-      "title": "book.steveparty.guide.decoration.hop_switch.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:hop_switch"
+      },
+      "title": "book.steveparty.guide.decoration.hop_switch.page0.title",
+      "text": "book.steveparty.guide.decoration.hop_switch.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:hop_switch"
+      "recipe_id_1": "steveparty:hop_switch",
+      "text": "book.steveparty.guide.decoration.hop_switch.page1.text"
     }
   ]
 }

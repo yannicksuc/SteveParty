@@ -12,9 +12,12 @@
   "show_when_any_parent_unlocked": false,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.gadgets.looting_box.page0.text",
-      "title": "book.steveparty.guide.gadgets.looting_box.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:looting_box"
+      },
+      "title": "book.steveparty.guide.gadgets.looting_box.page0.title",
+      "text": "book.steveparty.guide.gadgets.looting_box.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

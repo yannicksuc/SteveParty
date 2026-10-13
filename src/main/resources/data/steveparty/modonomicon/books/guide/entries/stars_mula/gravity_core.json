@@ -24,14 +24,21 @@
   },
   "pages": [
     {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:gravity_core"
+      },
+      "title": "book.steveparty.guide.stars_mula.gravity_core.page0.title",
+      "text": "book.steveparty.guide.stars_mula.gravity_core.page0.text"
+    },
+    {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.stars_mula.gravity_core.page0.text",
-      "title": "book.steveparty.guide.stars_mula.gravity_core.page0.title"
+      "title": "book.steveparty.guide.stars_mula.gravity_core.page1.title",
+      "text": "book.steveparty.guide.stars_mula.gravity_core.page1.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:gravity_core",
-      "text": "book.steveparty.guide.stars_mula.gravity_core.page1.text"
+      "recipe_id_1": "steveparty:gravity_core"
     }
   ]
 }

@@ -26,8 +26,8 @@
   "pages": [
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.shops.owners.page0.text",
-      "title": "book.steveparty.guide.shops.owners.page0.title"
+      "title": "book.steveparty.guide.shops.owners.page0.title",
+      "text": "book.steveparty.guide.shops.owners.page0.text"
     }
   ]
 }

@@ -26,8 +26,13 @@
   "pages": [
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.mini_games.formats.page0.text",
-      "title": "book.steveparty.guide.mini_games.formats.page0.title"
+      "title": "book.steveparty.guide.mini_games.formats.page0.title",
+      "text": "book.steveparty.guide.mini_games.formats.page0.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.mini_games.formats.page1.title",
+      "text": "book.steveparty.guide.mini_games.formats.page1.text"
     }
   ]
 }

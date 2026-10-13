@@ -19,20 +19,24 @@
   ],
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.decoration.signs.page0.text",
-      "title": "book.steveparty.guide.decoration.signs.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:oak_easel_sign"
+      },
+      "title": "book.steveparty.guide.decoration.signs.page0.title",
+      "text": "book.steveparty.guide.decoration.signs.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.decoration.signs.page1.text",
-      "title": "book.steveparty.guide.decoration.signs.page1.title"
+      "title": "book.steveparty.guide.decoration.signs.page1.title",
+      "text": "book.steveparty.guide.decoration.signs.page1.text"
     },
     {
       "type": "modonomicon:spotlight",
       "item": {
         "item": "steveparty:plastic_road_sign"
       },
+      "title": "book.steveparty.guide.decoration.signs.page2.title",
       "text": "book.steveparty.guide.decoration.signs.page2.text"
     }
   ]

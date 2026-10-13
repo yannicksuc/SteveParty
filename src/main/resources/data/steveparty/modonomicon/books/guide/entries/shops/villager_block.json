@@ -19,14 +19,17 @@
   ],
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.shops.villager_block.page0.text",
-      "title": "book.steveparty.guide.shops.villager_block.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:villager_block"
+      },
+      "title": "book.steveparty.guide.shops.villager_block.page0.title",
+      "text": "book.steveparty.guide.shops.villager_block.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.shops.villager_block.page1.text",
-      "title": "book.steveparty.guide.shops.villager_block.page1.title"
+      "title": "book.steveparty.guide.shops.villager_block.page1.title",
+      "text": "book.steveparty.guide.shops.villager_block.page1.text"
     }
   ]
 }

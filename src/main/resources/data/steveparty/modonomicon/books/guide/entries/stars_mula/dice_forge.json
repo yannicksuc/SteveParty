@@ -24,14 +24,21 @@
   },
   "pages": [
     {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:dice_forge"
+      },
+      "title": "book.steveparty.guide.stars_mula.dice_forge.page0.title",
+      "text": "book.steveparty.guide.stars_mula.dice_forge.page0.text"
+    },
+    {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.stars_mula.dice_forge.page0.text",
-      "title": "book.steveparty.guide.stars_mula.dice_forge.page0.title"
+      "title": "book.steveparty.guide.stars_mula.dice_forge.page1.title",
+      "text": "book.steveparty.guide.stars_mula.dice_forge.page1.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:dice_forge",
-      "text": "book.steveparty.guide.stars_mula.dice_forge.page1.text"
+      "recipe_id_1": "steveparty:dice_forge"
     }
   ]
 }
