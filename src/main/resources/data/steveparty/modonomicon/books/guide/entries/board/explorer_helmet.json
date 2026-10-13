@@ -24,14 +24,17 @@
   },
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.explorer_helmet.page0.text",
-      "title": "book.steveparty.guide.board.explorer_helmet.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:explorer_helmet"
+      },
+      "title": "book.steveparty.guide.board.explorer_helmet.page0.title",
+      "text": "book.steveparty.guide.board.explorer_helmet.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.explorer_helmet.page1.text",
-      "title": "book.steveparty.guide.board.explorer_helmet.page1.title"
+      "title": "book.steveparty.guide.board.explorer_helmet.page1.title",
+      "text": "book.steveparty.guide.board.explorer_helmet.page1.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

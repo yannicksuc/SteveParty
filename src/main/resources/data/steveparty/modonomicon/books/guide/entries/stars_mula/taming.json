@@ -25,9 +25,17 @@
   "background_u_index": 1,
   "pages": [
     {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:red_star_fragment"
+      },
+      "title": "book.steveparty.guide.stars_mula.taming.page0.title",
+      "text": "book.steveparty.guide.stars_mula.taming.page0.text"
+    },
+    {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.stars_mula.taming.page0.text",
-      "title": "book.steveparty.guide.stars_mula.taming.page0.title"
+      "title": "book.steveparty.guide.stars_mula.taming.page1.title",
+      "text": "book.steveparty.guide.stars_mula.taming.page1.text"
     }
   ]
 }

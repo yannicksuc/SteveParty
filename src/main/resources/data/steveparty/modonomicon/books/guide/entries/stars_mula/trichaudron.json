@@ -13,29 +13,37 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.trichaudron.page0.text",
-      "title": "book.steveparty.guide.creatures.trichaudron.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:trichaudron_spawn_egg"
+      },
+      "title": "book.steveparty.guide.creatures.trichaudron.page0.title",
+      "text": "book.steveparty.guide.creatures.trichaudron.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.trichaudron.page1.text",
-      "title": "book.steveparty.guide.creatures.trichaudron.page1.title"
+      "title": "book.steveparty.guide.creatures.trichaudron.page1.title",
+      "text": "book.steveparty.guide.creatures.trichaudron.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.trichaudron.page2.text",
-      "title": "book.steveparty.guide.creatures.trichaudron.page2.title"
+      "title": "book.steveparty.guide.creatures.trichaudron.page2.title",
+      "text": "book.steveparty.guide.creatures.trichaudron.page2.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.trichaudron.page3.text",
-      "title": "book.steveparty.guide.creatures.trichaudron.page3.title"
+      "title": "book.steveparty.guide.creatures.trichaudron.page3.title",
+      "text": "book.steveparty.guide.creatures.trichaudron.page3.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.trichaudron.page4.text",
-      "title": "book.steveparty.guide.creatures.trichaudron.page4.title"
+      "title": "book.steveparty.guide.creatures.trichaudron.page4.title",
+      "text": "book.steveparty.guide.creatures.trichaudron.page4.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.creatures.trichaudron.page5.title",
+      "text": "book.steveparty.guide.creatures.trichaudron.page5.text"
     }
   ]
 }

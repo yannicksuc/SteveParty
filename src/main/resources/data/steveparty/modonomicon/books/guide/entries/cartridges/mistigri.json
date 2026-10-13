@@ -25,29 +25,37 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.cartridges.mistigri.page0.text",
-      "title": "book.steveparty.guide.cartridges.mistigri.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:mistigri_cartridge"
+      },
+      "title": "book.steveparty.guide.cartridges.mistigri.page0.title",
+      "text": "book.steveparty.guide.cartridges.mistigri.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.cartridges.mistigri.page1.text",
-      "title": "book.steveparty.guide.cartridges.mistigri.page1.title"
+      "title": "book.steveparty.guide.cartridges.mistigri.page1.title",
+      "text": "book.steveparty.guide.cartridges.mistigri.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.cartridges.mistigri.page2.text",
-      "title": "book.steveparty.guide.cartridges.mistigri.page2.title"
+      "title": "book.steveparty.guide.cartridges.mistigri.page2.title",
+      "text": "book.steveparty.guide.cartridges.mistigri.page2.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.cartridges.mistigri.page3.text",
-      "title": "book.steveparty.guide.cartridges.mistigri.page3.title"
+      "title": "book.steveparty.guide.cartridges.mistigri.page3.title",
+      "text": "book.steveparty.guide.cartridges.mistigri.page3.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.cartridges.mistigri.page4.title",
+      "text": "book.steveparty.guide.cartridges.mistigri.page4.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:mistigri_cartridge",
-      "text": "book.steveparty.guide.cartridges.mistigri.page4.text"
+      "text": "book.steveparty.guide.cartridges.mistigri.page5.text"
     }
   ]
 }

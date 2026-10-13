@@ -12,14 +12,18 @@
   "show_when_any_parent_unlocked": false,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.mini_games.pages.page0.text",
-      "title": "book.steveparty.guide.mini_games.pages.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:mini_game_page"
+      },
+      "title": "book.steveparty.guide.mini_games.pages.page0.title",
+      "text": "book.steveparty.guide.mini_games.pages.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:mini_game_page",
-      "recipe_id_2": "steveparty:mini_games_catalogue"
+      "recipe_id_2": "steveparty:mini_games_catalogue",
+      "text": "book.steveparty.guide.mini_games.pages.page1.text"
     }
   ]
 }

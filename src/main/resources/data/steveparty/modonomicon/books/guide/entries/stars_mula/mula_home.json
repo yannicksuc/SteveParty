@@ -36,8 +36,8 @@
   "pages": [
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.stars_mula.mula_home.page0.text",
-      "title": "book.steveparty.guide.stars_mula.mula_home.page0.title"
+      "title": "book.steveparty.guide.stars_mula.mula_home.page0.title",
+      "text": "book.steveparty.guide.stars_mula.mula_home.page0.text"
     }
   ]
 }

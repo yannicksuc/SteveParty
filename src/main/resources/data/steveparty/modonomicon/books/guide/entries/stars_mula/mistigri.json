@@ -13,19 +13,33 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.mistigri.page0.text",
-      "title": "book.steveparty.guide.creatures.mistigri.page0.title"
+      "type": "modonomicon:entity",
+      "entity_id": "steveparty:mistigri",
+      "rotate": false,
+      "default_rotation": -20,
+      "scale": 0.5,
+      "name": "book.steveparty.guide.creatures.mistigri.page0.title",
+      "text": "book.steveparty.guide.creatures.mistigri.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.mistigri.page1.text",
-      "title": "book.steveparty.guide.creatures.mistigri.page1.title"
+      "title": "book.steveparty.guide.creatures.mistigri.page1.title",
+      "text": "book.steveparty.guide.creatures.mistigri.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.mistigri.page2.text",
-      "title": "book.steveparty.guide.creatures.mistigri.page2.title"
+      "title": "book.steveparty.guide.creatures.mistigri.page2.title",
+      "text": "book.steveparty.guide.creatures.mistigri.page2.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.creatures.mistigri.page3.title",
+      "text": "book.steveparty.guide.creatures.mistigri.page3.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.creatures.mistigri.page4.title",
+      "text": "book.steveparty.guide.creatures.mistigri.page4.text"
     }
   ]
 }

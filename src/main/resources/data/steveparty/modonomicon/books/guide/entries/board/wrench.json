@@ -19,18 +19,22 @@
   ],
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.wrench.page0.text",
-      "title": "book.steveparty.guide.board.wrench.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:wrench"
+      },
+      "title": "book.steveparty.guide.board.wrench.page0.title",
+      "text": "book.steveparty.guide.board.wrench.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:wrench"
+      "recipe_id_1": "steveparty:wrench",
+      "text": "book.steveparty.guide.board.wrench.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.wrench.page2.text",
-      "title": "book.steveparty.guide.board.wrench.page2.title"
+      "title": "book.steveparty.guide.board.wrench.page2.title",
+      "text": "book.steveparty.guide.board.wrench.page2.text"
     }
   ]
 }

@@ -12,19 +12,23 @@
   "show_when_any_parent_unlocked": false,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.decoration.building.page0.text",
-      "title": "book.steveparty.guide.decoration.building.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:polished_white_terracotta"
+      },
+      "title": "book.steveparty.guide.decoration.building.page0.title",
+      "text": "book.steveparty.guide.decoration.building.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:polished_white_terracotta",
-      "recipe_id_2": "steveparty:polished_white_concrete"
+      "recipe_id_2": "steveparty:polished_white_concrete",
+      "text": "book.steveparty.guide.decoration.building.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.decoration.building.page2.text",
-      "title": "book.steveparty.guide.decoration.building.page2.title"
+      "title": "book.steveparty.guide.decoration.building.page2.title",
+      "text": "book.steveparty.guide.decoration.building.page2.text"
     }
   ]
 }

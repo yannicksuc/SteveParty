@@ -25,24 +25,27 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.pawns_dice.faces.page0.text",
-      "title": "book.steveparty.guide.pawns_dice.faces.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:blank_dice_face"
+      },
+      "title": "book.steveparty.guide.pawns_dice.faces.page0.title",
+      "text": "book.steveparty.guide.pawns_dice.faces.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:blank_dice_face_from_crafting"
+      "recipe_id_1": "steveparty:blank_dice_face_from_crafting",
+      "text": "book.steveparty.guide.pawns_dice.faces.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.pawns_dice.faces.page2.text",
-      "title": "book.steveparty.guide.pawns_dice.faces.page2.title"
+      "title": "book.steveparty.guide.pawns_dice.faces.page2.title",
+      "text": "book.steveparty.guide.pawns_dice.faces.page2.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:swap_dice_face_from_crafting",
-      "recipe_id_2": "steveparty:coin_dice_face_1_from_crafting",
-      "text": "book.steveparty.guide.pawns_dice.faces.page3.text"
+      "recipe_id_2": "steveparty:coin_dice_face_1_from_crafting"
     }
   ]
 }

@@ -24,13 +24,17 @@
   },
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.shops.register.page0.text",
-      "title": "book.steveparty.guide.shops.register.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:cash_register"
+      },
+      "title": "book.steveparty.guide.shops.register.page0.title",
+      "text": "book.steveparty.guide.shops.register.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:cash_register"
+      "recipe_id_1": "steveparty:cash_register",
+      "text": "book.steveparty.guide.shops.register.page1.text"
     }
   ]
 }

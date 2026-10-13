@@ -25,9 +25,12 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.cartridges.stop.page0.text",
-      "title": "book.steveparty.guide.cartridges.stop.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:board_space_behavior_stop"
+      },
+      "title": "book.steveparty.guide.cartridges.stop.page0.title",
+      "text": "book.steveparty.guide.cartridges.stop.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

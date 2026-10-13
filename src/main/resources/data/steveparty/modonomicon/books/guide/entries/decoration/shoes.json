@@ -12,14 +12,16 @@
   "show_when_any_parent_unlocked": false,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.gadgets.shoes.page0.text",
-      "title": "book.steveparty.guide.gadgets.shoes.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:triple_jump_shoes"
+      },
+      "title": "book.steveparty.guide.gadgets.shoes.page0.title",
+      "text": "book.steveparty.guide.gadgets.shoes.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:triple_jump_shoes",
-      "text": "book.steveparty.guide.gadgets.shoes.page1.text"
+      "recipe_id_1": "steveparty:triple_jump_shoes"
     }
   ]
 }

@@ -13,24 +13,25 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.wickling.page0.text",
-      "title": "book.steveparty.guide.creatures.wickling.page0.title"
+      "type": "modonomicon:entity",
+      "entity_id": "steveparty:frousseux",
+      "name": "book.steveparty.guide.creatures.wickling.page0.title",
+      "text": "book.steveparty.guide.creatures.wickling.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.wickling.page1.text",
-      "title": "book.steveparty.guide.creatures.wickling.page1.title"
+      "title": "book.steveparty.guide.creatures.wickling.page1.title",
+      "text": "book.steveparty.guide.creatures.wickling.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.wickling.page2.text",
-      "title": "book.steveparty.guide.creatures.wickling.page2.title"
+      "title": "book.steveparty.guide.creatures.wickling.page2.title",
+      "text": "book.steveparty.guide.creatures.wickling.page2.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.wickling.page3.text",
-      "title": "book.steveparty.guide.creatures.wickling.page3.title"
+      "title": "book.steveparty.guide.creatures.wickling.page3.title",
+      "text": "book.steveparty.guide.creatures.wickling.page3.text"
     }
   ]
 }

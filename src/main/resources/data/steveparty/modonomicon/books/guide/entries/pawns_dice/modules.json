@@ -25,14 +25,22 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.pawns_dice.modules.page0.text",
-      "title": "book.steveparty.guide.pawns_dice.modules.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:dice_module_lucky"
+      },
+      "title": "book.steveparty.guide.pawns_dice.modules.page0.title",
+      "text": "book.steveparty.guide.pawns_dice.modules.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.pawns_dice.modules.page1.text",
-      "title": "book.steveparty.guide.pawns_dice.modules.page1.title"
+      "title": "book.steveparty.guide.pawns_dice.modules.page1.title",
+      "text": "book.steveparty.guide.pawns_dice.modules.page1.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.pawns_dice.modules.page2.title",
+      "text": "book.steveparty.guide.pawns_dice.modules.page2.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

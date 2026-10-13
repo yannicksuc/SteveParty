@@ -19,14 +19,22 @@
   ],
   "pages": [
     {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:blue_star_fragment"
+      },
+      "title": "book.steveparty.guide.stars_mula.fragments.page0.title",
+      "text": "book.steveparty.guide.stars_mula.fragments.page0.text"
+    },
+    {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.stars_mula.fragments.page0.text",
-      "title": "book.steveparty.guide.stars_mula.fragments.page0.title"
+      "title": "book.steveparty.guide.stars_mula.fragments.page1.title",
+      "text": "book.steveparty.guide.stars_mula.fragments.page1.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:blue_star_fragments_block",
-      "text": "book.steveparty.guide.stars_mula.fragments.page1.text"
+      "text": "book.steveparty.guide.stars_mula.fragments.page2.text"
     }
   ]
 }

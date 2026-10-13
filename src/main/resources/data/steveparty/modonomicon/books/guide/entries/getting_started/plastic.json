@@ -19,13 +19,17 @@
   ],
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.getting_started.plastic.page0.text",
-      "title": "book.steveparty.guide.getting_started.plastic.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:plastic_pellets"
+      },
+      "title": "book.steveparty.guide.getting_started.plastic.page0.title",
+      "text": "book.steveparty.guide.getting_started.plastic.page0.text"
     },
     {
       "type": "modonomicon:smelting_recipe",
-      "recipe_id_1": "steveparty:plastic_pellets_from_smelting_sugar_cane"
+      "recipe_id_1": "steveparty:plastic_pellets_from_smelting_sugar_cane",
+      "text": "book.steveparty.guide.getting_started.plastic.page1.text"
     }
   ]
 }

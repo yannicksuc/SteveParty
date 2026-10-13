@@ -25,14 +25,22 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.cartridges.key_gate.page0.text",
-      "title": "book.steveparty.guide.cartridges.key_gate.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:key_gate_cartridge"
+      },
+      "title": "book.steveparty.guide.cartridges.key_gate.page0.title",
+      "text": "book.steveparty.guide.cartridges.key_gate.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.cartridges.key_gate.page1.text",
-      "title": "book.steveparty.guide.cartridges.key_gate.page1.title"
+      "title": "book.steveparty.guide.cartridges.key_gate.page1.title",
+      "text": "book.steveparty.guide.cartridges.key_gate.page1.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.cartridges.key_gate.page2.title",
+      "text": "book.steveparty.guide.cartridges.key_gate.page2.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

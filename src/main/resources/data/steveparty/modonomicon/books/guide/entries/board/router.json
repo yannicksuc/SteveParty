@@ -24,14 +24,17 @@
   },
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.router.page0.text",
-      "title": "book.steveparty.guide.board.router.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:board_space_redstone_router"
+      },
+      "title": "book.steveparty.guide.board.router.page0.title",
+      "text": "book.steveparty.guide.board.router.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.board.router.page1.text",
-      "title": "book.steveparty.guide.board.router.page1.title"
+      "title": "book.steveparty.guide.board.router.page1.title",
+      "text": "book.steveparty.guide.board.router.page1.text"
     },
     {
       "type": "modonomicon:crafting_recipe",

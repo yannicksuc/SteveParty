@@ -12,9 +12,12 @@
   "show_when_any_parent_unlocked": false,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.decoration.plastic_blocks.page0.text",
-      "title": "book.steveparty.guide.decoration.plastic_blocks.page0.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:white_plastic_block"
+      },
+      "title": "book.steveparty.guide.decoration.plastic_blocks.page0.title",
+      "text": "book.steveparty.guide.decoration.plastic_blocks.page0.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
