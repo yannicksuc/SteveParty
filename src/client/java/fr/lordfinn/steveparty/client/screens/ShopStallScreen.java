@@ -12,6 +12,7 @@ import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
@@ -77,6 +78,9 @@ public class ShopStallScreen extends HandledScreen<ShopStallScreenHandler> {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         for (int column = 0; column < ShopCartridgeItem.OFFERS; column++) {
+            Slot price = handler.slots.get(column);
+            StallArt.drawBasePrice(context, textRenderer, price.getStack(), handler.slots.get(column + ShopCartridgeItem.OFFERS).getStack(),
+                    handler.slots.get(column + 2 * ShopCartridgeItem.OFFERS).getStack(), x + price.x, y + price.y);
             StallArt.drawStock(context, textRenderer, x, y, column, handler.stock(column));
         }
         boolean back = overBack(mouseX, mouseY);

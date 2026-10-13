@@ -894,6 +894,7 @@ public final class CartridgePanel {
         context.getMatrices().scale(scale, scale, 1);
         StallArt.drawTop(context, 0, 0);
         StallArt.drawItems(context, textRenderer, stallSlots(current), 0, 0);
+        StallArt.drawBasePrices(context, textRenderer, stallSlots(current), 0, 0);
         for (int column = 0; column < ShopCartridgeItem.OFFERS; column++) StallArt.drawStock(context, textRenderer, 0, 0, column, stock.applyAsInt(column));
         context.getMatrices().pop();
         if (over) {

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.gui;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopStock;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
@@ -87,6 +88,25 @@ public final class StallArt {
             context.drawItem(stack, x + slotX(i), y + slotY(i));
             context.drawItemInSlot(font, stack, x + slotX(i), y + slotY(i));
         }
+    }
+
+    /** The base prices of the offers' columns left without a price, ghosted in their price slot (a stall's order). */
+    public static void drawBasePrices(DrawContext context, TextRenderer font, List<ItemStack> slots, int x, int y) {
+        for (int column = 0; column < ShopCartridgeItem.OFFERS && column + 2 * ShopCartridgeItem.OFFERS < slots.size(); column++) {
+            drawBasePrice(context, font, slots.get(column), slots.get(column + ShopCartridgeItem.OFFERS),
+                    slots.get(column + 2 * ShopCartridgeItem.OFFERS), x + slotX(column), y + slotY(column));
+        }
+    }
+
+    /**
+     * The price {@code sold} would sell at with its two price slots left empty ({@link TradingStallBlockEntity#basePrice}),
+     * ghosted in its (empty) price slot at ({@code x}, {@code y}); nothing when a price is set or it has none.
+     */
+    public static void drawBasePrice(DrawContext context, TextRenderer font, ItemStack price, ItemStack secondPrice,
+                                     ItemStack sold, int x, int y) {
+        if (!price.isEmpty() || !secondPrice.isEmpty() || sold.isEmpty()) return;
+        ItemStack base = TradingStallBlockEntity.basePrice(sold);
+        if (!base.isEmpty()) PartyGui.ghostItem(context, base, x, y, font);
     }
 
     /** Column {@code column}'s stock on its arrow: white, red when sold out, gold « ∞ »; nothing without an offer or a storage. */

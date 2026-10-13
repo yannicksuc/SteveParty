@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.components.InventoryComponent;
@@ -52,14 +51,9 @@ public final class ShopStock {
         return stock;
     }
 
-    /**
-     * Where its sales come from: its containers, or none linked the bank of its board's Party Controller (even before a
-     * party starts: what that bank holds now).
-     */
+    /** Where its sales come from: the board space's source ({@link CartridgeContainers#sourceFor}), the shop's own. */
     private static PartyResources source(ItemStack cartridge, World world, @Nullable BlockPos holder) {
-        if (!CartridgeContainers.isEmpty(cartridge) || holder == null) return CartridgeContainers.sourceFor(cartridge, world, holder);
-        return PartyResources.of(PartyControllerEntity.getControllerOfBoardSpace(world, holder,
-                PartyControllerEntity.BOARD_NEARBY_RADIUS).orElse(null));
+        return CartridgeContainers.sourceFor(cartridge, world, holder);
     }
 
     /** How many times {@code source} can give {@code sold} (as many as that each time). */

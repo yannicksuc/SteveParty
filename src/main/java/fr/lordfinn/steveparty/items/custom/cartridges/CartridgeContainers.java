@@ -162,25 +162,23 @@ public final class CartridgeContainers {
 
     /**
      * Where the cartridge of the board space at {@code space} takes and puts its items now: its own linked containers,
-     * in order ({@link #available}: they really give and take); with none linked, the party running on its board
-     * through its one source ({@link PartyResources#of(PartyControllerEntity)}: its bank), so that a board needs no
-     * chest per space; outside a party, none (the space gives nothing: nothing is ever made from nothing).
-     * {@code space} null: its own only.
+     * in order ({@link #available}: they really give and take); with none linked, its board's Party Controller through
+     * its one source ({@link PartyResources#of(PartyControllerEntity)}: its bank, or its infinite storage), so that a
+     * board needs no chest per space: the same storage its menu, its tile info and its shop show, party running or not;
+     * none without a controller (nothing is ever made from nothing). {@code space} null: its own only.
      */
     public static PartyResources sourceFor(ItemStack stack, World world, @Nullable BlockPos space) {
         if (!isEmpty(stack) || space == null) return PartyResources.of(available(stack, world));
-        PartyControllerEntity party = partyBankOf(stack, world, space);
-        return PartyResources.of(party);
+        return PartyResources.of(partyBankOf(stack, world, space));
     }
 
     /**
      * The Party Controller whose bank the cartridge of the board space at {@code space} falls back on: none linked of
-     * its own, and a party running on its board (the nearest one); null otherwise.
+     * its own, and the controller of its board ({@link PartyControllerEntity#getControllerOfBoardSpace}); null otherwise.
      */
     public static @Nullable PartyControllerEntity partyBankOf(ItemStack stack, World world, BlockPos space) {
         if (!isEmpty(stack) || world.isClient) return null;
-        return PartyControllerEntity.getPartyOfBoardSpace(world, space,
-                PartyControllerEntity.BOARD_NEARBY_RADIUS, false).orElse(null);
+        return PartyControllerEntity.getControllerOfBoardSpace(world, space, PartyControllerEntity.BOARD_NEARBY_RADIUS).orElse(null);
     }
 
     /**
