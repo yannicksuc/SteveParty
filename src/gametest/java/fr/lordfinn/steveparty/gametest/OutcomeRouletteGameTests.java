@@ -121,7 +121,8 @@ public class OutcomeRouletteGameTests implements SteveGameTest {
             context.assertEquals(roulette.lines().size(), 2, "only what may fall is listed");
             context.assertEquals(roulette.lines().getFirst().chance(), 50, "with its chance");
             Outcome announced = List.of(fine, curse).get(roulette.result());
-            context.assertEquals(roulette.lines().get(roulette.result()).text(), announced.text(player.getName()), "its own sentence");
+            context.assertEquals(roulette.lines().get(roulette.result()).text(), announced.text(player.getName(), party.getCurrency(PartyCurrency.COIN),
+                    party.getCurrency(PartyCurrency.STAR)), "its own sentence, in the party's currency");
             context.assertEquals(announced, drawn, "it stops on the drawn sentence");
             when(context, () -> done[0], WHOLE, "the show ends", () -> {
                 boolean coins = count(player, Items.GOLD_INGOT) == 20, cursed = CursedRolls.isCursed(player);
