@@ -235,18 +235,26 @@ public class PipeGameTests implements SteveGameTest {
         });
     }
 
-    /** Sneaking in front of a mouth, looking at it, close: in. Not looking at it: nothing. */
+    /**
+     * Sneaking in front of a mouth, looking at it, close: in. Not looking at it: nothing. With a Mini-game Page in hand
+     * (setting the pipe up), nothing either (playtest 2, #16).
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void sneakingInFrontOfAMouthGoesIn(TestContext context) {
         straightRun(context, 1, 4, 2, 2);
+        straightRun(context, 1, 4, 2, 8);
         // Eyes level with the pipe, looking east at the west mouth
         ServerPlayerEntity player = player(context, new Vec3d(0.4, 2.5 - 1.27, 2.5), -90);
         ServerPlayerEntity away = player(context, new Vec3d(0.4, 2.5 - 1.27, 5.5), 90);
+        ServerPlayerEntity builder = player(context, new Vec3d(0.4, 2.5 - 1.27, 8.5), -90);
+        builder.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.MINI_GAME_PAGE));
         player.setSneaking(true);
         away.setSneaking(true);
+        builder.setSneaking(true);
         context.waitAndRun(3, () -> {
             context.assertTrue(player.getVehicle() instanceof PipeCarrierEntity, "the sneaking player facing the mouth went in");
             context.assertTrue(!away.hasVehicle(), "the one looking away did not");
+            context.assertTrue(!builder.hasVehicle(), "the one with a Mini-game Page in hand did not");
             context.complete();
         });
     }

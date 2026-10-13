@@ -9,6 +9,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
@@ -333,7 +336,7 @@ public final class PipeTravel {
         if (PipeShape.mouth(state, Direction.UP) == null || !entity.getBoundingBox().expand(0, 0.01, 0).intersects(hollow(pos, Direction.UP))
                 || barred(entity, pos, Direction.UP)) return false;
         double speed = Math.max(-entity.getVelocity().y, Math.sqrt(2 * 0.08 * fallDistance));
-        if (entity instanceof PlayerEntity && speed < FAST_ENTRY && !entity.isSneaking()) return false;
+        if (entity instanceof PlayerEntity player && speed < FAST_ENTRY && (!entity.isSneaking() || configuring(player))) return false;
         if (!enter(world, pos, Direction.UP, entity, speed)) return false;
         entity.fallDistance = 0;
         return true;
@@ -375,9 +378,20 @@ public final class PipeTravel {
         return launched && entity.getY() >= bar.height - 1.5;
     }
 
-    /** A sneaking player: in the mouth it stands in, or the one it looks at up close. */
+    /**
+     * A player with a Mini-game Page or a Wrench in hand is setting pipes up: sneaking (to click a pipe without opening
+     * anything) does not take him in. Falling fast, running in or clicking with an empty hand still does.
+     */
+    public static boolean configuring(PlayerEntity player) {
+        for (ItemStack held : List.of(player.getMainHandStack(), player.getOffHandStack())) {
+            if (held.getItem() instanceof MiniGamePageItem || held.getItem() instanceof WrenchItem) return true;
+        }
+        return false;
+    }
+
+    /** A sneaking player: in the mouth it stands in, or the one it looks at up close (not while {@link #configuring}). */
     private static void sneak(ServerWorld world, ServerPlayerEntity player) {
-        if (!canTravel(world, player)) return;
+        if (!canTravel(world, player) || configuring(player)) return;
         BlockPos feet = BlockPos.ofFloored(player.getX(), player.getY() + 0.01, player.getZ());
         BlockState under = world.getBlockState(feet);
         if (PipeShape.mouth(under, Direction.UP) != null && player.getBoundingBox().expand(0, 0.01, 0).intersects(hollow(feet, Direction.UP))) {
