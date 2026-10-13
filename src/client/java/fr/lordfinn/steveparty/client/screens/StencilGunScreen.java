@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.client.gui.ConsolePaint;
+import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
@@ -119,7 +119,7 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         Sprite[] silhouettes = new Sprite[2];
         for (int i = 0; i < StencilGunItem.SIZE; i++) {
             Slot slot = handler.slots.get(i);
-            ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, THEME.slot(), THEME.rim(), THEME.rim());
+            PartyGui.slot(context, x + slot.x, y + slot.y, THEME.slot(), THEME.outline());
             if (slot.hasStack()) ToolWheel.drawItemShadow(context, slot.getStack(), x + slot.x, y + slot.y);
             if (slot.hasStack() || !(slot instanceof StencilGunScreenHandler.FilteredSlot filtered) || client == null) continue;
             int kind = filtered.takesStencils() ? 1 : 0;

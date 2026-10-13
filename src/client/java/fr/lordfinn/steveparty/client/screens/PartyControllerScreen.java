@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.screens;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
+import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.screens.partycontroller.Dashboard;
@@ -204,7 +205,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             if (!slot.isEnabled()) continue;
             // The dice places after the first free one are greyed (not usable yet)
             boolean off = isDiceSlot(slot.id) && !handler.isDiceSlotUsable(slot.id);
-            ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, off ? SLOT_OFF_BODY : SLOT_BODY, SLOT_EDGE, off ? SLOT_OFF_LOW : SLOT_LOW);
+            PartyGui.slot(context, x + slot.x, y + slot.y, off ? SLOT_OFF_BODY : SLOT_BODY, SLOT_EDGE);
         }
         if (page() == Page.SETTINGS) settings.drawFreeDie(context);
         // The empty catalogue slot shows, faded, the item it takes (the currency slots are never empty)

@@ -138,12 +138,17 @@ public final class PartyGui {
      * ({@code x}, {@code y}), rounded corners, its shadow along the top.
      */
     public static void slot(DrawContext context, int x, int y) {
-        context.fill(x + 1, y, x + 15, y + 1, SLOT_SHADOW);
-        context.fill(x, y + 1, x + 1, y + 2, SLOT_SHADOW);
-        context.fill(x + 15, y + 1, x + 16, y + 2, SLOT_SHADOW);
-        context.fill(x + 1, y + 1, x + 15, y + 2, SLOT_FILL);
-        context.fill(x, y + 2, x + 16, y + 15, SLOT_FILL);
-        context.fill(x + 1, y + 15, x + 15, y + 16, SLOT_FILL);
+        slot(context, x, y, SLOT_FILL, SLOT_SHADOW);
+    }
+
+    /** The same slot in a screen's own colours: its {@code fill} and the darker {@code shadow} along its top. */
+    public static void slot(DrawContext context, int x, int y, int fill, int shadow) {
+        context.fill(x + 1, y, x + 15, y + 1, shadow);
+        context.fill(x, y + 1, x + 1, y + 2, shadow);
+        context.fill(x + 15, y + 1, x + 16, y + 2, shadow);
+        context.fill(x + 1, y + 1, x + 15, y + 2, fill);
+        context.fill(x, y + 2, x + 16, y + 15, fill);
+        context.fill(x + 1, y + 15, x + 15, y + 16, fill);
     }
 
     private static final int SLOT_FILL = 0xFF8D8D8D, SLOT_SHADOW = 0xFF444C55;
