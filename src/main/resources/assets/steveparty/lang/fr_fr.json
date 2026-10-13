@@ -1469,6 +1469,7 @@
   "gui.steveparty.party_controller.stop.confirm": "Confirmer ?",
   "gui.steveparty.party_controller.stop.tooltip": "Termine la partie tout de suite, sans gagnant : les pions retournent sur leurs cases de départ.\n§7Clique deux fois pour confirmer.",
   "gui.steveparty.party_controller.stop.confirm.tooltip": "Clique encore pour arrêter la partie.",
+  "gui.steveparty.party_controller.stop.locked": "§cTu ne peux pas l'arrêter\n§7L'arrêtent : qui l'a lancée, un opérateur ou le §eMaître du jeu§7.\nToi, tu peux la quitter : §f/steveparty leave",
   "gui.steveparty.party_controller.launch.blocked": "Impossible de lancer la partie :",
   "gui.steveparty.party_controller.state.ready": "Prête à jouer !",
   "gui.steveparty.party_controller.state.todo.one": "Encore 1 étape",

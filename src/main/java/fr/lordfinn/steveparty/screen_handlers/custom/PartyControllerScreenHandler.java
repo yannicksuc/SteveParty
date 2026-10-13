@@ -562,11 +562,11 @@ public class PartyControllerScreenHandler extends ScreenHandler {
                 board = PartyDashboardData.checkBoard(controller, world);
                 if (PartyDashboardData.launchBlocker(controller.getPartyData().isStarted(), board, controller.canEdit(player))
                         != PartyDashboardData.Blocker.NONE) return false;
-                controller.boot();
+                controller.launchBy(player);
             }
             case BUTTON_STOP -> {
-                // The screen asked for a confirmation first; the same rule as the settings (a party runs: operator or Game Master)
-                if (!controller.canEdit(player) || !controller.stopParty(player.getDisplayName())) return false;
+                // The screen asked for a confirmation first: an operator, a Game Master, or who launched it (see canStop)
+                if (!controller.canStop(player) || !controller.stopParty(player.getDisplayName())) return false;
             }
             default -> {
                 return false;

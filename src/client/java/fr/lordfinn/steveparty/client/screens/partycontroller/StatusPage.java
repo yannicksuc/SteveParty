@@ -120,8 +120,8 @@ public final class StatusPage {
             }
             dashboard.rebuild();
         }));
-        stop.active = data.canEdit();
-        stop.setTooltip(Tooltip.of(!data.canEdit() ? Text.translatable(KEY + "locked")
+        stop.active = data.canStop();
+        stop.setTooltip(Tooltip.of(!data.canStop() ? Text.translatable(KEY + "stop.locked")
                 : Text.translatable(KEY + (confirming ? "stop.confirm.tooltip" : "stop.tooltip"))));
     }
 

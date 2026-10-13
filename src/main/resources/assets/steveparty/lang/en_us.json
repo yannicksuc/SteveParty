@@ -1469,6 +1469,7 @@
   "gui.steveparty.party_controller.stop.confirm": "Confirm?",
   "gui.steveparty.party_controller.stop.tooltip": "Ends the party now, without a winner: the pawns go back to their start tiles.\n§7Click twice to confirm.",
   "gui.steveparty.party_controller.stop.confirm.tooltip": "Click again to stop the party.",
+  "gui.steveparty.party_controller.stop.locked": "§cYou can't stop it\n§7Who can: whoever launched it, an operator or the §eGame Master§7.\nYou can leave it: §f/steveparty leave",
   "gui.steveparty.party_controller.launch.blocked": "The party can't start:",
   "gui.steveparty.party_controller.state.ready": "Ready to play!",
   "gui.steveparty.party_controller.state.todo.one": "1 step left",

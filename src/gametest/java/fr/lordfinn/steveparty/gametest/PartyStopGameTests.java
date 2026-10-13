@@ -290,4 +290,41 @@ public class PartyStopGameTests implements SteveGameTest {
         cleanUp(context, board);
         context.complete();
     }
+
+    /**
+     * Who launched the party from the dashboard may stop it (no operator needed); another player may not while its
+     * launcher is known. Launched by no one known (redstone), a player of the party may.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theLauncherMayStopHisParty(TestContext context) {
+        Board board = startedParty(context);
+        PartyControllerEntity controller = board.controller();
+        ServerPlayerEntity vivi = TestPlayers.joined(context, "stop", "V", net.minecraft.world.GameMode.SURVIVAL, 3, 2, 3);
+        ServerPlayerEntity other = TestPlayers.joined(context, "stop", "O", net.minecraft.world.GameMode.SURVIVAL, 4, 2, 3);
+        TestPlayers.removeAtEnd(context, vivi);
+        TestPlayers.removeAtEnd(context, other);
+        ((TokenizedEntityInterface) board.b()).steveparty$setTokenOwner(other);
+
+        // Launched by redstone: a player of the party may stop it, a passer-by may not
+        context.assertTrue(controller.getLauncher() == null, "no launcher");
+        context.assertTrue(controller.canStop(other), "a player of the party may stop it");
+        context.assertTrue(!controller.canStop(vivi), "a passer-by may not");
+        controller.stopParty(Text.literal("Tester"));
+        assertOn(context, board.a(), START_A, "a home");
+
+        // Launched by Vivi from the dashboard
+        controller.launchBy(vivi);
+        context.assertTrue(controller.getPartyData().isStarted(), "started again");
+        context.assertEquals(controller.getLauncher(), vivi.getUuid(), "Vivi launched it");
+        context.assertTrue(!controller.canEdit(vivi), "she may not change its settings now");
+        var handlerOther = new PartyControllerScreenHandler(1, other.getInventory(), controller);
+        context.assertTrue(!handlerOther.onButtonClick(other, PartyControllerScreenHandler.BUTTON_STOP), "another player may not");
+        context.assertTrue(controller.getPartyData().isStarted(), "the party goes on");
+        var handler = new PartyControllerScreenHandler(2, vivi.getInventory(), controller);
+        context.assertTrue(handler.onButtonClick(vivi, PartyControllerScreenHandler.BUTTON_STOP), "she stops it");
+        context.assertTrue(!controller.getPartyData().isStarted(), "stopped");
+        context.assertTrue(controller.getLauncher() == null, "launcher forgotten");
+        cleanUp(context, board);
+        context.complete();
+    }
 }
