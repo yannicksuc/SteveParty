@@ -11,7 +11,11 @@ import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLeave;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,6 +39,11 @@ public class PartyHudEditScreen extends Screen {
     private float snapLineX = -1, snapLineY = -1;
     private ButtonWidget turnBarToggle, standingsToggle, noticeToggle;
     private PartyHudModel sample;
+    /** A party was shown when the buttons were laid out (the « leave » button with it). */
+    private boolean inParty;
+    /** Ticks left to confirm leaving the party (its button asks once), 0: not asked. */
+    private int confirmLeave;
+    private @Nullable ButtonWidget leaveButton;
 
     public PartyHudEditScreen(@Nullable Screen parent) {
         super(Text.translatable("screen.steveparty.party_hud_layout"));
@@ -48,6 +57,7 @@ public class PartyHudEditScreen extends Screen {
                 client.player == null ? "Steve" : client.player.getGameProfile().getName());
         // A column on the left (free at the default layout: the bar and its notice at the top, the standings on the
         // right): per HUD its toggle, its anchor picker and its reset; then « reset all » and « done »
+        inParty = PartyHud.model() != null;
         int left = 4, top = buttonsTop();
         ButtonWidget[] toggles = new ButtonWidget[Hud.values().length];
         for (Hud hud : Hud.values()) {
@@ -75,13 +85,51 @@ public class PartyHudEditScreen extends Screen {
         ButtonWidget help = addDrawableChild(ButtonWidget.builder(Text.literal("?"), button -> {
         }).dimensions(left + 108, last, 20, 20).build());
         help.setTooltip(Tooltip.of(Text.translatable("screen.steveparty.party_hud_layout.help")));
+        // In a party: the way out of it, under the rest
+        if (inParty) {
+            // A heavy action: a little further from « done », and a second click confirms it
+            leaveButton = addDrawableChild(ButtonWidget.builder(leaveText(), button -> leave())
+                    .dimensions(left, last + 28, COLUMN_W, 20).build());
+            leaveButton.setTooltip(Tooltip.of(Text.translatable("message.steveparty.leave_hover")));
+        } else {
+            leaveButton = null;
+        }
         PartyHud.editing = true;
+    }
+
+    @Override
+    public void tick() {
+        // The party began or ended meanwhile: the column gets (or loses) its « leave » button
+        if ((PartyHud.model() != null) != inParty) {
+            confirmLeave = 0;
+            clearAndInit();
+            return;
+        }
+        if (confirmLeave > 0 && --confirmLeave == 0 && leaveButton != null) leaveButton.setMessage(leaveText());
+    }
+
+    private Text leaveText() {
+        return Text.translatable(confirmLeave > 0 ? "screen.steveparty.party_hud_layout.leave_confirm"
+                : "screen.steveparty.party_hud_layout.leave").formatted(Formatting.RED);
+    }
+
+    private void leave() {
+        if (client == null || client.player == null) return;
+        if (confirmLeave == 0) {
+            confirmLeave = 60;
+            if (leaveButton != null) leaveButton.setMessage(leaveText());
+            return;
+        }
+        client.player.networkHandler.sendChatCommand(PartyLeave.COMMAND.substring(1));
+        close();
     }
 
     /** The buttons' column: its top, under the turn bar and its notice, centred on the screen when there is room. */
     private int buttonsTop() {
-        int column = (Hud.values().length + 1) * 24 - 4;
-        return Math.max(Math.min(100, height - column - 26), (height - column) / 2);
+        int column = rows() * 24 - 4 + (inParty ? 4 : 0);
+        // Room under it for the title, and in a party for where it is, above the hotbar
+        int under = inParty ? 50 : 26;
+        return Math.max(Math.min(100, height - column - under), (height - column) / 2);
     }
 
     /** An anchor picker: the nine anchors of a HUD, its anchor lit; a click puts it at another one. */
@@ -178,12 +226,41 @@ public class PartyHudEditScreen extends Screen {
         // While a HUD is dragged: the nine anchors, the one it will stick to lit
         if (dragged != null && !resizing) drawAnchors(context, dragged);
         // The title over the column (how it works: the « ? » button's tooltip, nothing over the HUDs)
-        int under = buttonsTop() + (Hud.values().length + 1) * 24 + 2;
+        int under = buttonsTop() + rows() * 24 + (inParty ? 4 : 0) + 2;
         int titleHeight = UiText.wrapped(context, textRenderer, title, 4, under, COLUMN_W, 0xFFFFFFFF, true);
-        if (real == null) UiText.wrapped(context, textRenderer, Text.translatable("screen.steveparty.party_hud_layout.sample"),
-                4, under + titleHeight + 1, COLUMN_W, 0xFF9A9A9A, true);
+        Text party = real == null ? Text.translatable("screen.steveparty.party_hud_layout.sample") : whereText();
+        if (party != null) UiText.wrapped(context, textRenderer, party, 4, under + titleHeight + 1, COLUMN_W,
+                real == null ? 0xFF9A9A9A : 0xFFC8C8C8, true);
         super.render(context, mouseX, mouseY, delta);
         context.getMatrices().pop();
+    }
+
+    /** The rows of the buttons' column: one per HUD, « reset all / done / ? », and « leave the party » while in one. */
+    private int rows() {
+        return Hud.values().length + 1 + (inParty ? 1 : 0);
+    }
+
+    /** Which party is shown: where its controller is and how far (its dimension when it is not this one), null if unknown. */
+    private @Nullable Text whereText() {
+        GlobalPos at = PartyHud.controller().orElse(null);
+        if (at == null || client == null || client.player == null) return null;
+        BlockPos pos = at.pos();
+        String coords = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+        if (client.player.getWorld().getRegistryKey() != at.dimension())
+            return Text.translatable("screen.steveparty.party_hud_layout.where_dimension", coords, dimensionName(at));
+        int distance = (int) Math.round(Math.sqrt(client.player.getPos().squaredDistanceTo(pos.toCenterPos())));
+        return Text.translatable("screen.steveparty.party_hud_layout.where", coords, distance);
+    }
+
+    /** The dimension as players call it (« Nether », « End »), else its id's path. */
+    private static Text dimensionName(GlobalPos at) {
+        String path = at.dimension().getValue().getPath();
+        return switch (path) {
+            case "the_nether" -> Text.literal("Nether");
+            case "the_end" -> Text.literal("End");
+            case "overworld" -> Text.literal("Overworld");
+            default -> Text.literal(path);
+        };
     }
 
     /** The nine anchor points of the screen, the dragged HUD's (the zone its centre is in) lit. */

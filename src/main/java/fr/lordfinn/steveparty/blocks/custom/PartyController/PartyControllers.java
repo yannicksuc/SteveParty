@@ -144,9 +144,11 @@ public final class PartyControllers {
     }
 
     static void onPlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
+        boolean following = false;
         for (PartyControllerEntity entity : all()) {
-            if (!entity.isRemoved()) entity.audience().onPlayerJoin(handler.player);
+            if (!entity.isRemoved() && entity.audience().onPlayerJoin(handler.player)) following = true;
         }
+        PartyLeave.onPlayerJoin(handler.player, following);
     }
 
     static ActionResult onDiceRoll(DiceEntity dice, UUID ownerUUID, int rollValue) {
