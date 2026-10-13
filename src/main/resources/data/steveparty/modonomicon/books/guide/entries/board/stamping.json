@@ -27,6 +27,11 @@
       "type": "modonomicon:text",
       "text": "book.steveparty.guide.board.stamping.page0.text",
       "title": "book.steveparty.guide.board.stamping.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.stamping.dyes.text",
+      "title": "book.steveparty.guide.board.stamping.dyes.title"
     }
   ]
 }

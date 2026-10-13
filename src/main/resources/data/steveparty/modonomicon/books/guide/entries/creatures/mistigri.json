@@ -1,0 +1,31 @@
+{
+  "category": "creatures",
+  "name": "book.steveparty.guide.creatures.mistigri.name",
+  "description": "book.steveparty.guide.creatures.mistigri.description",
+  "icon": {
+    "item": "steveparty:mistigri_spawn_egg"
+  },
+  "x": -2,
+  "y": 0,
+  "sort_number": 1,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.mistigri.page0.text",
+      "title": "book.steveparty.guide.creatures.mistigri.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.mistigri.page1.text",
+      "title": "book.steveparty.guide.creatures.mistigri.page1.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.mistigri.page2.text",
+      "title": "book.steveparty.guide.creatures.mistigri.page2.title"
+    }
+  ]
+}

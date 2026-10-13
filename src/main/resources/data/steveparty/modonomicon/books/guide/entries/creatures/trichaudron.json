@@ -1,0 +1,41 @@
+{
+  "category": "creatures",
+  "name": "book.steveparty.guide.creatures.trichaudron.name",
+  "description": "book.steveparty.guide.creatures.trichaudron.description",
+  "icon": {
+    "item": "steveparty:trichaudron_spawn_egg"
+  },
+  "x": -2,
+  "y": 3,
+  "sort_number": 2,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.trichaudron.page0.text",
+      "title": "book.steveparty.guide.creatures.trichaudron.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.trichaudron.page1.text",
+      "title": "book.steveparty.guide.creatures.trichaudron.page1.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.trichaudron.page2.text",
+      "title": "book.steveparty.guide.creatures.trichaudron.page2.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.trichaudron.page3.text",
+      "title": "book.steveparty.guide.creatures.trichaudron.page3.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.trichaudron.page4.text",
+      "title": "book.steveparty.guide.creatures.trichaudron.page4.title"
+    }
+  ]
+}

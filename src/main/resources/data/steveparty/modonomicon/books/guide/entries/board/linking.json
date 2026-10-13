@@ -35,6 +35,11 @@
       "title": "book.steveparty.guide.board.linking.page1.title"
     },
     {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.linking.targets.text",
+      "title": "book.steveparty.guide.board.linking.targets.title"
+    },
+    {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:tile_linker_brush"
     }

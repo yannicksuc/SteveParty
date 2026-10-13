@@ -1,0 +1,43 @@
+{
+  "category": "cartridges",
+  "name": "book.steveparty.guide.cartridges.pot.name",
+  "description": "book.steveparty.guide.cartridges.pot.description",
+  "icon": {
+    "item": "steveparty:pot_cartridge"
+  },
+  "x": -4,
+  "y": -3,
+  "sort_number": 11,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "cartridges/cartridge",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/lay_the_board",
+    "tooltip": "book.steveparty.guide.lock.lay_the_board"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.pot.page0.text",
+      "title": "book.steveparty.guide.cartridges.pot.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.pot.page1.text",
+      "title": "book.steveparty.guide.cartridges.pot.page1.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:pot_cartridge",
+      "text": "book.steveparty.guide.cartridges.pot.page2.text"
+    }
+  ]
+}

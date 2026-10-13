@@ -1,0 +1,31 @@
+{
+  "category": "creatures",
+  "name": "book.steveparty.guide.creatures.boomcart.name",
+  "description": "book.steveparty.guide.creatures.boomcart.description",
+  "icon": {
+    "item": "steveparty:boomcart_spawn_egg"
+  },
+  "x": 2,
+  "y": -3,
+  "sort_number": 3,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.boomcart.page0.text",
+      "title": "book.steveparty.guide.creatures.boomcart.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.boomcart.page1.text",
+      "title": "book.steveparty.guide.creatures.boomcart.page1.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.creatures.boomcart.page2.text",
+      "title": "book.steveparty.guide.creatures.boomcart.page2.title"
+    }
+  ]
+}
