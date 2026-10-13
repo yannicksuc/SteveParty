@@ -83,6 +83,11 @@ public final class BubbleRiding {
     public static final double HIT_PUSH = 0.45, SNOWBALL_PUSH = 0.5;
     public static final float HIT_POP_CHANCE = 0.25f;
     /**
+     * On a lead: how far it floats from its holder freely (blocks); beyond, the speed it is pulled at (this share of the
+     * gap a tick, at most this fast, blocks a tick), and how much of the way to that speed it gets a tick.
+     */
+    public static final double LEAD_SLACK = 3, LEAD_PULL = 0.08, LEAD_MAX = 0.3, LEAD_GRIP = 0.15;
+    /**
      * Popped, its riders fall slowly: at least this long (ticks, 3 s), longer high up to reach the ground safely (from
      * the top of the world to its bottom), at most this long (over the void).
      */

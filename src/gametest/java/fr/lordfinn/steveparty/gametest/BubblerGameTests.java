@@ -646,6 +646,58 @@ public class BubblerGameTests implements SteveGameTest {
         });
     }
 
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_leave_one", tickLimit = 60)
+    public void aRiderLeavingLeavesAloneTheLastOnePopsIt(TestContext context) {
+        ServerPlayerEntity a = TestPlayers.mock(context, GameMode.SURVIVAL), b = TestPlayers.mock(context, GameMode.SURVIVAL);
+        riding(context, a, new BlockPos(3, 1, 3), 4);
+        riding(context, b, new BlockPos(4, 1, 3), 4);
+        context.waitAndRun(3, () -> {
+            BubbleEntity merged = (BubbleEntity) a.getVehicle();
+            context.assertTrue(merged != null && b.getVehicle() == merged, "both ride one bubble");
+            a.stopRiding();
+            context.waitAndRun(3, () -> {
+                context.assertFalse(merged.isRemoved(), "one rider out: the bubble stays");
+                context.assertTrue(b.getVehicle() == merged, "the other still rides it");
+                context.assertTrue(Math.abs(merged.getSide() - BubbleRiding.side(1.8f, 1)) < 1.0E-3, "shrunk around him: " + merged.getSide());
+                context.assertTrue(a.hasStatusEffect(StatusEffects.SLOW_FALLING), "the one out falls slowly");
+                b.stopRiding();
+                context.waitAndRun(2, () -> {
+                    context.assertTrue(merged.isRemoved(), "the last one out: it pops");
+                    TestPlayers.remove(context, a, b);
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_lead", tickLimit = 160)
+    public void aLeadGuidesItFromTheGround(TestContext context) {
+        clear(context, 0, 1, 0, 14, 7, 6);
+        ServerPlayerEntity rider = TestPlayers.mock(context, GameMode.SURVIVAL);
+        BubbleEntity bubble = riding(context, rider, new BlockPos(3, 1, 3), 1);
+        ServerPlayerEntity guide = TestPlayers.mock(context, GameMode.SURVIVAL);
+        BlockPos abs = context.getAbsolutePos(new BlockPos(5, 1, 3));
+        guide.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, 90, 0);
+        guide.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LEAD));
+        context.waitAndRun(20, () -> {
+            context.assertTrue(bubble.interact(guide, Hand.MAIN_HAND).isAccepted(), "the lead ties it");
+            context.assertTrue(bubble.getLeashHolder() == guide, "tied to the guide");
+            context.assertTrue(guide.getMainHandStack().isEmpty(), "the lead used");
+            context.assertTrue(rider.getVehicle() == bubble, "its rider still in");
+            double startX = bubble.getX();
+            BlockPos far = context.getAbsolutePos(new BlockPos(12, 1, 3));
+            guide.refreshPositionAndAngles(far.getX() + 0.5, far.getY(), far.getZ() + 0.5, 90, 0);
+            context.waitAndRun(60, () -> {
+                context.assertFalse(bubble.isRemoved(), "guided, not popped");
+                context.assertTrue(bubble.getX() - startX > 1.5, "pulled toward its guide: " + (bubble.getX() - startX));
+                context.assertFalse(bubble.isHovering(), "leashed: it floats freely");
+                TestPlayers.remove(context, rider, guide);
+                bubble.discard();
+                context.complete();
+            });
+        });
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubbler_crowd", tickLimit = 80)
     public void severalMobsOnOneBubblerEndInOneBigBubble(TestContext context) {
         bubbler(context, new BlockPos(3, 1, 3));
