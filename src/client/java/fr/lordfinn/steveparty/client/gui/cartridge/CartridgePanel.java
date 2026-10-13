@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.cartridge;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.LinksHelp;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -287,11 +288,11 @@ public final class CartridgePanel {
         for (int i = 0; i < n; i++) {
             CartridgeModule module = modules.get(i);
             infoLines.add(List.of());
-            labels[i] = module.labelKey() == null ? null : I18n.translate(module.labelKey());
+            labels[i] = module.labelKey() == null ? null : PartyCurrencyText.menuText(module.labelKey()).getString();
             int body = switch (module) {
                 case ChoiceModule choice -> {
                     optionTexts[i] = new String[choice.options().size()];
-                    for (int o = 0; o < optionTexts[i].length; o++) optionTexts[i][o] = I18n.translate(choice.options().get(o).key());
+                    for (int o = 0; o < optionTexts[i].length; o++) optionTexts[i][o] = PartyCurrencyText.menuText(choice.options().get(o).key()).getString();
                     yield choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                 }
                 case NumberModule number -> NumberModule.ROW_H;
@@ -300,7 +301,7 @@ public final class CartridgePanel {
                 case BlockSlotModule slot -> {
                     if (slot.inline()) yield 0;
                     // Beside the slot: the block's name (drawn each frame), then the hint, wrapped
-                    List<OrderedText> hint = textRenderer.wrapLines(Text.translatable(slot.hintKey()), blockTextW());
+                    List<OrderedText> hint = textRenderer.wrapLines(PartyCurrencyText.menuText(slot.hintKey()), blockTextW());
                     infoLines.set(i, hint);
                     yield Math.max(BlockSlotModule.SLOT, (1 + hint.size()) * InfoModule.LINE_H);
                 }
@@ -1155,8 +1156,8 @@ public final class CartridgePanel {
             if (!module.tooltipKeys().isEmpty() && module.labelKey() != null
                     && HitArea.contains(mouseX, mouseY, mx, moduleY(i), layout.w(i), CartridgeModule.LABEL_H)) {
                 List<Text> lines = new ArrayList<>();
-                lines.add(Text.translatable(module.labelKey()));
-                for (String key : module.tooltipKeys()) lines.add(Text.translatable(key).formatted(Formatting.GRAY));
+                lines.add(PartyCurrencyText.menuText(module.labelKey()));
+                for (String key : module.tooltipKeys()) lines.add(PartyCurrencyText.menuText(key).formatted(Formatting.GRAY));
                 context.drawTooltip(textRenderer, wrap(lines), mouseX, mouseY);
                 return true;
             }
@@ -1166,8 +1167,8 @@ public final class CartridgePanel {
                     if (!HitArea.contains(mouseX, mouseY, choiceX(choice, i, mx, o), top, choiceW(choice, i), bh)) continue;
                     ChoiceModule.Option option = choice.options().get(o);
                     List<Text> lines = new ArrayList<>();
-                    lines.add(Text.translatable(option.key()));
-                    if (option.tooltipKey() != null) lines.add(Text.translatable(option.tooltipKey()).formatted(Formatting.GRAY));
+                    lines.add(PartyCurrencyText.menuText(option.key()));
+                    if (option.tooltipKey() != null) lines.add(PartyCurrencyText.menuText(option.tooltipKey()).formatted(Formatting.GRAY));
                     if (!choice.enabled(current)) lines.add(Text.translatable(CartridgeItem.MENU_KEY + "unpowered").formatted(Formatting.DARK_GRAY));
                     context.drawTooltip(textRenderer, wrap(lines), mouseX, mouseY);
                     return true;
@@ -1214,7 +1215,7 @@ public final class CartridgePanel {
                 if (HitArea.contains(mouseX, mouseY, blockSlotX(slot, mx), blockSlotY(slot, top), BlockSlotModule.SLOT, BlockSlotModule.SLOT)) {
                     // A slot reads as one: only what it is for, and why a block in hand doesn't go there
                     List<Text> lines = new ArrayList<>();
-                    lines.add(Text.translatable(slot.hintKey()));
+                    lines.add(PartyCurrencyText.menuText(slot.hintKey()));
                     ItemStack cursor = cursor();
                     if (canEdit.getAsBoolean() && !cursor.isEmpty() && slot.blockOf(cursor.getItem()) == null) {
                         lines.add(Text.translatable(CartridgeItem.MENU_KEY + "block_slot.refused", cursor.getName()).formatted(Formatting.RED));

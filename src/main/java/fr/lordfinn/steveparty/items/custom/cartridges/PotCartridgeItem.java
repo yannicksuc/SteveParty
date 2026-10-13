@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -126,6 +127,6 @@ public class PotCartridgeItem extends BoardRuleCartridgeItem {
 
     @Override
     protected void appendMore(ItemStack stack, Tooltips.More more) {
-        more.note("tooltip.steveparty.cartridge.pot_cartridge.rules");
+        more.note(PartyCurrencyText.menuText("tooltip.steveparty.cartridge.pot_cartridge.rules"));
     }
 }

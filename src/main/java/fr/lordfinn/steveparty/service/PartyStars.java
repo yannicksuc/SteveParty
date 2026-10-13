@@ -303,7 +303,7 @@ public final class PartyStars {
         }
         // The star given comes from the party's bank: none left there, nothing to sell (the token goes on)
         if (bankStars(party, world) <= 0) {
-            MessageUtils.sendToPlayers(party.getPartyAudience(), Text.translatable("message.steveparty.star.bank_empty", PartyCurrencyText.amount(party, PartyCurrency.STAR, 0))
+            MessageUtils.sendToPlayers(party.getPartyAudience(), Text.translatable("message.steveparty.star.bank_empty", PartyCurrencyText.name(party, PartyCurrency.STAR))
                     .formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
             return false;
         }
@@ -424,7 +424,7 @@ public final class PartyStars {
         }
         ItemStack star = party.getCurrency(PartyCurrency.STAR);
         if (PartyResources.of(party).take(star, 1) < 1) {
-            MessageUtils.sendToPlayers(audienceWith(party, buyer), Text.translatable("message.steveparty.star.bank_empty", PartyCurrencyText.amount(party, PartyCurrency.STAR, 0))
+            MessageUtils.sendToPlayers(audienceWith(party, buyer), Text.translatable("message.steveparty.star.bank_empty", PartyCurrencyText.name(party, PartyCurrency.STAR))
                     .formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
             return false;
         }

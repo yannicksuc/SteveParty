@@ -99,6 +99,22 @@ public class CurrencyTextGameTests implements SteveGameTest {
         context.complete();
     }
 
+    /** The menus name the currencies of the party played (on a client), else the mod's: « Price (Gold Nugget) ». */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void menuTextsNameTheContextualCurrencies(TestContext context) {
+        String price = "gui.steveparty.cartridge_menu.star.price";
+        context.assertTrue(keys(PartyCurrencyText.menuText(price)).containsAll(List.of("item.steveparty.coin", "item.steveparty.party_star")),
+                "outside a party: the mod's items");
+        PartyCurrencyText.setClientParty(currency -> new ItemStack(currency == PartyCurrency.COIN ? Items.GOLD_NUGGET : Items.NETHER_STAR));
+        try {
+            List<String> keys = keys(PartyCurrencyText.menuText(price));
+            context.assertTrue(keys.contains(NUGGET) && keys.contains(NETHER_STAR), "in a party: its items " + keys);
+        } finally {
+            PartyCurrencyText.setClientParty(currency -> ItemStack.EMPTY);
+        }
+        context.complete();
+    }
+
     /** A sentence passed in a party tells the coins taken in its item: « LordFinn −3 × Gold Nugget ». */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void mistigriChatNamesThePartysCoin(TestContext context) {
