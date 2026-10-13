@@ -482,15 +482,15 @@ final class OutcomeListWidget {
     }
 
     private static final ItemStack[] ICONS = new ItemStack[Kind.values().length];
-    /** The chosen toggle: the gold button with a white outline (the dark gold one hardly showed on the grey). */
-    private static final PartyGui.Theme CHOSEN = new PartyGui.Theme(0xFFFFFFFF, PartyGui.BUTTON_SELECTED.highlight(),
+    /** The chosen toggle: the gold button with a black outline. */
+    private static final PartyGui.Theme CHOSEN = new PartyGui.Theme(OUTLINE, PartyGui.BUTTON_SELECTED.highlight(),
             PartyGui.BUTTON_SELECTED.body(), PartyGui.BUTTON_SELECTED.shadow());
     /** The plate under a chosen toggle's icon: dark, so that a gold coin or the white figures read on the gold. */
     private static final int CHOSEN_PLATE = 0xFF4A3810;
 
     /**
      * The one look of a chosen toggle in the open row (kinds, targets, # / %): the gold button, pressed, its outline
-     * white; under an icon ({@code plate}) a dark plate inside its gold edge. Its content stays where it is when not
+     * black; under an icon ({@code plate}) a dark plate inside its gold edge. Its content stays where it is when not
      * chosen.
      */
     private static void chosen(DrawContext context, Hit hit, boolean plate) {
