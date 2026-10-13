@@ -259,6 +259,25 @@ public class PipeGameTests implements SteveGameTest {
         });
     }
 
+    /**
+     * A block against a mouth shuts it (playtest 2, #17): nothing goes in by it, a click, a sneak or a run alike. A
+     * block that does not cover it (a fence post) leaves it open.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aBlockInFrontShutsTheMouth(TestContext context) {
+        straightRun(context, 2, 4, 2, 2);
+        ServerWorld world = context.getWorld();
+        BlockPos mouth = context.getAbsolutePos(new BlockPos(2, 2, 2));
+        ServerPlayerEntity player = player(context, new Vec3d(0.4, 2.5 - 1.27, 2.5), -90);
+        context.setBlockState(new BlockPos(1, 2, 2), Blocks.STONE);
+        context.assertTrue(!PipeTravel.enter(world, mouth, Direction.WEST, player, 1), "a stone against the mouth: shut");
+        context.setBlockState(new BlockPos(1, 2, 2), Blocks.OAK_FENCE);
+        context.assertTrue(!PipeTravel.closed(world, new PipeNetworks.End(mouth, Direction.WEST, false)), "a fence post does not cover it");
+        context.setBlockState(new BlockPos(1, 2, 2), Blocks.AIR);
+        context.assertTrue(PipeTravel.enter(world, mouth, Direction.WEST, player, 1), "nothing in front: open");
+        context.complete();
+    }
+
     /** Landing fast in an upward mouth: in, without fall damage. Flying fast into a side mouth: in, no damage. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void fastEntryWithoutDamage(TestContext context) {

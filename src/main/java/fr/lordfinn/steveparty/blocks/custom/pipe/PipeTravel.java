@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
@@ -236,12 +237,13 @@ public final class PipeTravel {
 
     /**
      * {@code entity} goes into the mouth of the pipe at {@code mouth} opening on {@code opening}, at the end of the
-     * tick, at {@code speed} (at least {@link #BASE_SPEED}).
+     * tick, at {@code speed} (at least {@link #BASE_SPEED}). A mouth {@link #closed} by a block takes nothing in.
      *
      * @return false if it cannot travel
      */
     public static boolean enter(ServerWorld world, BlockPos mouth, Direction opening, Entity entity, double speed) {
-        if (!canTravel(world, entity) || PipeShape.mouth(world.getBlockState(mouth), opening) == null) return false;
+        if (!canTravel(world, entity) || PipeShape.mouth(world.getBlockState(mouth), opening) == null
+                || closed(world, new PipeNetworks.End(mouth, opening, false))) return false;
         // Not straight back into the mouth it just came out of
         Bar bar = BARRED.get(entity);
         if (bar != null && bar.mouth.equals(mouth) && bar.opening == opening && world.getTime() - bar.since < COOLDOWN) return false;
@@ -656,6 +658,16 @@ public final class PipeTravel {
         if (own == null) return null;
         PipeNetworks.End near = networks.nearestMouth(capped.pos(), own, PipeNetworks.WARP_RADIUS);
         return near == null ? null : new Destination(world, near);
+    }
+
+    /**
+     * The mouth is shut by the block in front of it: a block whose side against the mouth is whole (a full block, a
+     * piston, its head pushed against it, a slab lying on an upward mouth). Nothing goes in by it.
+     */
+    public static boolean closed(ServerWorld world, PipeNetworks.End end) {
+        BlockPos front = end.pos().offset(end.dir());
+        VoxelShape shape = world.getBlockState(front).getCollisionShape(world, front);
+        return !shape.isEmpty() && Block.isFaceFullSquare(shape, end.dir().getOpposite());
     }
 
     /** A block in front of the mouth (nothing can come out). */
