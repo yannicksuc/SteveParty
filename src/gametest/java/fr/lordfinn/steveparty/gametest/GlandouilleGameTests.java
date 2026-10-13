@@ -763,6 +763,7 @@ public class GlandouilleGameTests implements SteveGameTest {
         TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(1, 1, 3));
         GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2);
+        a.setAiDisabled(true); // left to itself, the tower of 2 goes for a stroll before the check
         GlandouilleEntity lone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 6));
         ServerPlayerEntity player = player(context, new BlockPos(0, 1, 3), -90f); // facing +x
         context.waitAndRun(2, () -> {
