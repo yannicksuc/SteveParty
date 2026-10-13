@@ -103,6 +103,12 @@ dependencies {
     localRuntime "org.antlr:antlr4-runtime:4.13.1"
 }
 
+// A resource deleted from the sources must leave the jar too: Copy keeps the files it copied earlier, so an
+// incremental build shipped the recipes of a removed item (steveparty:board_trap errored at every start)
+tasks.withType(ProcessResources).configureEach {
+    doFirst { delete destinationDir }
+}
+
 processResources {
     inputs.property "version", project.version
     inputs.property "minecraft_version", project.minecraft_version
