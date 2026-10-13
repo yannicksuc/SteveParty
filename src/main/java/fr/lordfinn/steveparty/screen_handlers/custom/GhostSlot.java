@@ -91,8 +91,8 @@ public class GhostSlot extends Slot {
     }
 
     /**
-     * One more / one less of the item: going under 1 turns a given item into a taken one (and back), on a slot that
-     * may take; on one that only gives, it stops at 1.
+     * One more / one less of the item, from one to a full stack of it (64, 16, 1...) given or taken: going under 1
+     * turns a given item into a taken one (and back), on a slot that may take; on one that only gives, it stops at 1.
      */
     public void onScroll(double amount) {
         ItemStack stack = this.getStack();
@@ -100,11 +100,17 @@ public class GhostSlot extends Slot {
         boolean positive = isPositive(stack);
         int change = amount > 0 ? 1 : -1;
         if (!positive) change = -change;
-        int count = stack.getCount() + change;
+        int max = maxQuantity(stack);
+        int count = Math.min(stack.getCount(), max) + change;
         if (count <= 0 && !signed.getAsBoolean()) return;
         if (count <= 0) stack.set(IS_NEGATIVE, positive);
-        if (count > 0 && count <= MAX_COUNT) stack.setCount(count);
+        else stack.setCount(Math.min(count, max));
         markDirty();
+    }
+
+    /** The most of {@code stack}'s item a ghost slot gives or takes: one full stack of it. */
+    public static int maxQuantity(ItemStack stack) {
+        return Math.clamp(stack.getMaxCount(), 1, MAX_COUNT);
     }
 
     /**

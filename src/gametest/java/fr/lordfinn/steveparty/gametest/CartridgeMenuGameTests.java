@@ -490,6 +490,18 @@ public class CartridgeMenuGameTests implements SteveGameTest {
             menu.handleGhostScroll(player, 0, 1);
             ItemStack stored = cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(0);
             context.assertTrue(stored.isOf(Items.DIAMOND) && stored.getCount() == 3, "3 diamonds given, written in the cartridge: " + stored);
+            // The wheel stops at a full stack, given or taken
+            for (int i = 0; i < 70; i++) menu.handleGhostScroll(player, 0, 1);
+            stored = cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(0);
+            context.assertEquals(stored.getCount(), 64, "at most 64 diamonds given");
+            for (int i = 0; i < 140; i++) menu.handleGhostScroll(player, 0, -1);
+            stored = cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(0);
+            context.assertTrue(!GhostSlot.isPositive(stored) && stored.getCount() == 64, "at most 64 diamonds taken: " + stored);
+            menu.setCursorStack(new ItemStack(Items.ENDER_PEARL));
+            menu.onSlotClick(1, 0, SlotActionType.PICKUP, player);
+            menu.setCursorStack(ItemStack.EMPTY);
+            for (int i = 0; i < 20; i++) menu.handleGhostScroll(player, 1, 1);
+            context.assertEquals(cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(1).getCount(), 16, "at most 16 pearls");
             player.currentScreenHandler = player.playerScreenHandler;
 
             // In an Advanced Tile: slot 2 holds the Inventory Cartridge, slot 0 a Stop
