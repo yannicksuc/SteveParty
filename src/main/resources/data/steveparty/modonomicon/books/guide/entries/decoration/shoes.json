@@ -1,13 +1,13 @@
 {
-  "category": "gadgets",
+  "category": "decoration",
   "name": "book.steveparty.guide.gadgets.shoes.name",
   "description": "book.steveparty.guide.gadgets.shoes.description",
   "icon": {
     "item": "steveparty:triple_jump_shoes"
   },
-  "x": 0,
+  "x": 5,
   "y": -3,
-  "sort_number": 1,
+  "sort_number": 151,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "pages": [

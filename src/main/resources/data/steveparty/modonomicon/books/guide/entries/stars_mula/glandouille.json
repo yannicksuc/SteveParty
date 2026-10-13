@@ -1,13 +1,13 @@
 {
-  "category": "creatures",
+  "category": "stars_mula",
   "name": "book.steveparty.guide.creatures.glandouille.name",
   "description": "book.steveparty.guide.creatures.glandouille.description",
   "icon": {
     "item": "steveparty:glandouille_spawn_egg"
   },
   "x": 2,
-  "y": 3,
-  "sort_number": 5,
+  "y": 10,
+  "sort_number": 105,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "pages": [

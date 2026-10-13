@@ -1,13 +1,13 @@
 {
-  "category": "creatures",
+  "category": "stars_mula",
   "name": "book.steveparty.guide.creatures.mistigri.name",
   "description": "book.steveparty.guide.creatures.mistigri.description",
   "icon": {
     "item": "steveparty:mistigri_spawn_egg"
   },
-  "x": -2,
-  "y": 0,
-  "sort_number": 1,
+  "x": -1,
+  "y": 7,
+  "sort_number": 101,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "background_u_index": 1,

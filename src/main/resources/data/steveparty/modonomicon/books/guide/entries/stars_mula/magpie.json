@@ -1,13 +1,13 @@
 {
-  "category": "creatures",
+  "category": "stars_mula",
   "name": "book.steveparty.guide.creatures.magpie.name",
   "description": "book.steveparty.guide.creatures.magpie.description",
   "icon": {
     "item": "steveparty:magpie_spawn_egg"
   },
-  "x": -2,
-  "y": -3,
-  "sort_number": 0,
+  "x": -4,
+  "y": 7,
+  "sort_number": 100,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "background_u_index": 1,

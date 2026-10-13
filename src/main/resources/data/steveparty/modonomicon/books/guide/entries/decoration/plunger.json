@@ -1,13 +1,13 @@
 {
-  "category": "gadgets",
+  "category": "decoration",
   "name": "book.steveparty.guide.gadgets.plunger.name",
   "description": "book.steveparty.guide.gadgets.plunger.description",
   "icon": {
     "item": "steveparty:plunger"
   },
-  "x": 0,
+  "x": 5,
   "y": 0,
-  "sort_number": 2,
+  "sort_number": 152,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "pages": [
