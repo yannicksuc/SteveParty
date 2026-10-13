@@ -34,8 +34,16 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "6043244078D8B160"
+					silent: true
+					type: "command"
+				}
 			]
-			size: 1.5d
+			size: 1.25d
 			tasks: [
 				{
 					id: "4BD4F0F3352150F2"
@@ -46,7 +54,7 @@
 				}
 			]
 			x: 0.0d
-			y: 0.0d
+			y: 2.0d
 		}
 		{
 			dependencies: [
@@ -71,6 +79,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "252B835BB96AC694"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -78,8 +94,8 @@
 					type: "checkmark"
 				}
 			]
-			x: -2.5d
-			y: -2.0d
+			x: 0.0d
+			y: 6.75d
 		}
 		{
 			dependencies: [
@@ -101,6 +117,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "6C96A8528B05A593"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -109,11 +133,12 @@
 						count: 1
 						id: "steveparty:telescope"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: -2.5d
-			y: 0.0d
+			x: 2.0d
+			y: 6.75d
 		}
 		{
 			dependencies: [
@@ -137,15 +162,25 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "583AFAD36B6A26C3"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
+					advancement: "steveparty:stars/feed"
+					criterion: ""
 					id: "04EA31FDEEA1354B"
-					type: "checkmark"
+					type: "advancement"
 				}
 			]
 			x: 2.0d
-			y: 0.0d
+			y: 2.0d
 		}
 		{
 			dependencies: [
@@ -170,8 +205,17 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "142A1FB633517858"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "hexagon"
+			size: 1.25d
 			tasks: [
 				{
 					id: "5825AA1A010F8CD0"
@@ -179,7 +223,7 @@
 				}
 			]
 			x: 4.0d
-			y: 0.0d
+			y: 1.25d
 		}
 		{
 			dependencies: [
@@ -204,15 +248,25 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "4C70F271CFAC9384"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
+					advancement: "steveparty:stars/tame"
+					criterion: ""
 					id: "0AD37302AA8E222A"
-					type: "checkmark"
+					type: "advancement"
 				}
 			]
-			x: 2.0d
-			y: -2.0d
+			x: 4.0d
+			y: 5.5d
 		}
 		{
 			dependencies: [
@@ -237,6 +291,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "00AB0CB5BD095FDD"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -244,8 +306,8 @@
 					type: "checkmark"
 				}
 			]
-			x: 4.0d
-			y: -2.0d
+			x: 6.0d
+			y: 4.5d
 		}
 		{
 			dependencies: [
@@ -266,6 +328,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "5928A661D76721AC"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -278,7 +348,7 @@
 				}
 			]
 			x: 6.0d
-			y: -3.75d
+			y: 3.0d
 		}
 		{
 			dependencies: [
@@ -299,6 +369,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "1DE7886EC8F06851"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -311,7 +389,7 @@
 				}
 			]
 			x: 6.0d
-			y: -2.25d
+			y: -0.25d
 		}
 		{
 			dependencies: [
@@ -332,6 +410,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "51C29C69FC1C1DA3"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -344,7 +430,7 @@
 				}
 			]
 			x: 6.0d
-			y: -0.75d
+			y: -1.75d
 		}
 		{
 			dependencies: [
@@ -365,6 +451,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "079371DC3B8D2955"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -377,7 +471,7 @@
 				}
 			]
 			x: 6.0d
-			y: 0.75d
+			y: 1.25d
 		}
 		{
 			dependencies: [
@@ -398,6 +492,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "7B6CAB444F906FB0"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -410,7 +512,7 @@
 				}
 			]
 			x: 6.0d
-			y: 2.25d
+			y: -3.25d
 		}
 		{
 			dependencies: [
@@ -432,6 +534,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3D933D3F454DA404"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -444,7 +554,7 @@
 				}
 			]
 			x: 6.0d
-			y: 3.75d
+			y: 6.5d
 		}
 		{
 			dependencies: [
@@ -467,6 +577,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "5DA0DC2DFF23F1A0"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -475,11 +593,12 @@
 						count: 1
 						id: "steveparty:white_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 8.0d
-			y: -3.75d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -501,6 +620,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "2208D08045498FDA"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -509,11 +636,12 @@
 						count: 1
 						id: "steveparty:orange_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 8.0d
-			y: -2.25d
+			x: 10.0d
+			y: -3.25d
 		}
 		{
 			dependencies: [
@@ -535,6 +663,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "2B95E0EADA6BD890"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -543,11 +679,12 @@
 						count: 1
 						id: "steveparty:cyan_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 8.0d
-			y: -0.75d
+			y: 3.75d
 		}
 		{
 			dependencies: [
@@ -569,6 +706,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "443A3B7CA027769C"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -577,11 +722,12 @@
 						count: 1
 						id: "steveparty:brown_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 8.0d
-			y: 0.75d
+			x: 10.0d
+			y: -0.25d
 		}
 		{
 			dependencies: [
@@ -603,6 +749,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "6613B33ACD6A4643"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -611,11 +765,12 @@
 						count: 1
 						id: "steveparty:pink_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 10.0d
-			y: -3.75d
+			y: 1.25d
 		}
 		{
 			dependencies: [
@@ -637,6 +792,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "38477FB77A7C6E6B"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -645,11 +808,12 @@
 						count: 1
 						id: "steveparty:light_blue_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 10.0d
-			y: -2.25d
+			y: 3.0d
 		}
 		{
 			dependencies: [
@@ -671,6 +835,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "1ACF36466EF0CE95"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -679,11 +851,12 @@
 						count: 1
 						id: "steveparty:lime_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 10.0d
-			y: -0.75d
+			x: 12.0d
+			y: 2.5d
 		}
 		{
 			dependencies: [
@@ -705,6 +878,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "0C7A3DD82EFECB4B"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -713,11 +894,12 @@
 						count: 1
 						id: "steveparty:gray_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 10.0d
-			y: 0.75d
+			x: 12.0d
+			y: 6.75d
 		}
 		{
 			dependencies: [
@@ -739,6 +921,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3AA9483F2C98182C"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -747,11 +937,12 @@
 						count: 1
 						id: "steveparty:magenta_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 12.0d
-			y: -3.75d
+			y: -2.25d
 		}
 		{
 			dependencies: [
@@ -773,6 +964,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "43E36B1420E51A82"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -781,11 +980,12 @@
 						count: 1
 						id: "steveparty:light_gray_star_fragment"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 12.0d
-			y: 0.75d
+			y: 5.25d
 		}
 		{
 			dependencies: [
@@ -806,6 +1006,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "7276AF7891A2337F"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -814,11 +1022,12 @@
 						count: 1
 						id: "steveparty:blue_star_fragments_block"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 6.0d
-			y: 5.25d
+			x: 10.0d
+			y: 6.0d
 		}
 		{
 			dependencies: [
@@ -828,37 +1037,46 @@
 				"19AA36BD5464D0A3"
 				"48EDC9CAA41959B9"
 			]
-			id: "085FCFBD2E80A60F"
+			id: "49297133DC9D18C2"
 			rewards: [
 				{
-					id: "0BB7F7051884D9FB"
+					id: "0727603BF07E44EE"
 					type: "xp"
 					xp: 100
 				}
 				{
 					count: 5
-					id: "3D5D2B2207EE2F5B"
+					id: "2C66C4FD2956E661"
 					item: {
 						count: 1
 						id: "steveparty:coin"
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "4EB019C3A2F483C5"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "hexagon"
-			size: 1.5d
+			size: 1.25d
 			tasks: [
 				{
-					id: "516549B9EA340CE7"
+					id: "04266FB5FFED7499"
 					item: {
 						count: 1
 						id: "steveparty:party_star"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 12.0d
-			y: 3.0d
+			x: 10.0d
+			y: -1.75d
 		}
 		{
 			dependencies: [
@@ -883,19 +1101,29 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "579EF7F796D47747"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
+					advancement: "steveparty:stars/luck_potion"
+					criterion: ""
 					id: "46BA7D6AF2B6F247"
-					type: "checkmark"
+					type: "advancement"
 				}
 			]
-			x: 8.0d
-			y: 3.0d
+			x: 4.0d
+			y: -0.25d
 		}
 		{
 			dependencies: [
-				"085FCFBD2E80A60F"
+				"49297133DC9D18C2"
 				"6FC6A979673D9964"
 				"2275C38C50DEE4C0"
 				"1447F66898AC91E0"
@@ -931,17 +1159,20 @@
 					table_id: 6010736241247292296L
 					type: "random"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "5119508A094C5367"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "gear"
 			size: 2.0d
-			tasks: [
-				{
-					id: "1C3AC68ACB32FD19"
-					type: "checkmark"
-				}
-			]
-			x: 14.5d
-			y: 0.0d
+			tasks: [ ]
+			x: 14.0d
+			y: 3.5d
 		}
 	]
 }

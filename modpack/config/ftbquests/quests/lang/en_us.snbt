@@ -11,6 +11,18 @@
 		"Engrave custom dice, and give the Mulas a home."
 	]
 	chapter.0EECA9B86DA7992A.title: "Dice Forge"
+	chapter.1D02C1C8CA264695.chapter_subtitle: [
+		"Soap bubbles you can ride and steer, and the Spawn Bubbles of the board."
+	]
+	chapter.1D02C1C8CA264695.title: "Bubbles"
+	chapter.1E0F7E79363BE53E.chapter_subtitle: [
+		"Little candle ghosts of the caves: thieves of shiny things, then lamps that follow you."
+	]
+	chapter.1E0F7E79363BE53E.title: "Wicklings"
+	chapter.20802D17BC960CF2.chapter_subtitle: [
+		"The big black cat of bad luck, and the sentences of its loaded die."
+	]
+	chapter.20802D17BC960CF2.title: "Mistigri"
 	chapter.27D1C0A527E638AD.chapter_subtitle: [
 		"The Party Controller runs turns, mini-games and prizes."
 	]
@@ -35,6 +47,14 @@
 		"A villager hidden in a box sells the offers of your stalls."
 	]
 	chapter.386B56372B494AA4.title: "Shops"
+	chapter.3C301572B4DB69D9.chapter_subtitle: [
+		"Forest birds that love shiny things, their nests, and the Common Pot they guard."
+	]
+	chapter.3C301572B4DB69D9.title: "Magpies"
+	chapter.3DFE53E2B3C777E3.chapter_subtitle: [
+		"A huge three-headed Nether tortoise with a lava tank on its back."
+	]
+	chapter.3DFE53E2B3C777E3.title: "Tricauldrons"
 	chapter.4D82FDE861677663.chapter_subtitle: [
 		"Pages, pipes, podiums and arenas: design your own mini-games."
 	]
@@ -43,14 +63,22 @@
 		"Build a board game in Minecraft, and play it with your friends."
 	]
 	chapter.5136274B67A19584.title: "Welcome"
+	chapter.523ED47A069318CD.chapter_subtitle: [
+		"A grumpy living minecart loaded with TNT or fireworks."
+	]
+	chapter.523ED47A069318CD.title: "Boomcarts"
 	chapter.5BC7CD484E8C4C6D.chapter_subtitle: [
-		"Tiles, cartridges and the Wrench: build the path your pawns will walk."
+		"Cartridges, tiles and the Tile Linker Brush: build the path your pawns will walk."
 	]
 	chapter.5BC7CD484E8C4C6D.title: "The Board"
 	chapter.69138B1BDF728BC8.chapter_subtitle: [
 		"Toy-like blocks in 16 colours that float."
 	]
 	chapter.69138B1BDF728BC8.title: "Plastic"
+	chapter.6CAC87F451708F44.chapter_subtitle: [
+		"Grumpy acorns that shove, stack into towers and go squeak."
+	]
+	chapter.6CAC87F451708F44.title: "Slackorns"
 	chapter.6D6E3AE0E24B2C6E.chapter_subtitle: [
 		"Jump to the top, score, and watch the flag come down."
 	]
@@ -63,58 +91,92 @@
 	chapter_group.60AFE736E3EC9353.title: "Stars"
 	chapter_group.64160321E5CDD4E4.title: "Decoration"
 	chapter_group.7821141F991152DB.title: "The Board Game"
+	chapter_group.7AE3C601DC58F421.title: "Creatures"
 	file.0000000000000001.title: "Steve Party Maker"
 	quest.0043BA5760434BEE.quest_desc: [
 		"During a party, the turn strip, announcements and scoreboard appear on screen. Press M (or /partyhud) to move them, H to hide them."
 	]
 	quest.0043BA5760434BEE.title: "Arrange the HUD"
+	quest.007DDEF3BCF692E9.quest_desc: [
+		"A Blank Die Face in a cross of 4 gold nuggets: a Blank Die Module, the base of every module."
+	]
+	quest.007DDEF3BCF692E9.quest_subtitle: "Craft it: items you already own do not count"
+	quest.007DDEF3BCF692E9.title: "Blank Die Module"
+	quest.01961EB8EB0F1B32.quest_desc: [
+		"Reach the star during a party and buy it ([Buy] in the chat): the price goes to the bank, a star from the bank goes to you. The Mula dances, throws you the star and vanishes; the star may move on to another Star space."
+	]
+	quest.01961EB8EB0F1B32.title: "Catch a star!"
+	quest.01A45DFBA3953647.quest_desc: [
+		"Above the columns of the Prizes tab: the item used as the Coin (Coin by default) and as the Star (Party Star by default). Click with any item to use it instead, gold nuggets or diamonds for example (nothing is taken); empty hand for the default. Messages, menus and spaces then name your items."
+	]
+	quest.01A45DFBA3953647.title: "Your own currency"
 	quest.01C543D5464F2458.quest_desc: [
 		"A purple plastic stud + paper + redstone: 4 cards. Plays the cards since the last Sequence Start again, as many times as cards in its stack."
 		"Cards go in the 24 slots of the Program tab and are read left to right."
 	]
+	quest.01C543D5464F2458.quest_subtitle: "Craft it: items you already own do not count"
 	quest.01C543D5464F2458.title: "Party Card: Repeat"
 	quest.02559E197888FCA2.quest_desc: [
 		"Mix star fragments like dyes: red + blue + yellow. You get back as many fragments as you put in."
 	]
+	quest.02559E197888FCA2.quest_subtitle: "Craft it: items you already own do not count"
 	quest.02559E197888FCA2.title: "White Star Fragment"
 	quest.030135F1CA2F65E1.quest_desc: [
 		"Right-click to choose a moment (party start, turn start, die rolled, mini-game end...): it sends a redstone pulse then, and a comparator reads a value (die result, pawn rank...). In wait mode (Wrench) the party freezes until the bell gets a signal."
 	]
+	quest.030135F1CA2F65E1.quest_subtitle: "Craft it: items you already own do not count"
 	quest.030135F1CA2F65E1.title: "Party Bell"
 	quest.042DD30AE9744165.quest_desc: [
 		"Your mini-games are written, linked and tested. Let the roulette spin!"
 	]
 	quest.042DD30AE9744165.title: "Game designer"
-	quest.04F1186B64C11C43.quest_desc: [
-		"Blank face + tripwire hook. During this move the pawn ignores Stop spaces and shop stops."
+	quest.04AA8B34045AEB8D.quest_desc: [
+		"Cartridge + Party Star. At the start of a party, the party's star lands on one of the Star spaces, under a golden beam. A Mula waits there with the star and plays with it (on the space's Spawn Bubble, if linked). Its menu: the price (20 coins by default), sold on landing or in passing."
 	]
+	quest.04AA8B34045AEB8D.quest_subtitle: "Craft it: items you already own do not count"
+	quest.04AA8B34045AEB8D.title: "Star Cartridge"
+	quest.04C5B29930D85A91.quest_desc: [
+		"On an Advance / Back space, a Boomcart hologram rolls out (from the space's Spawn Bubble, if linked): forward, it explodes behind the pawn and launches it from space to space; backward, it rams it. Only a show: no block broken, nobody hurt."
+	]
+	quest.04C5B29930D85A91.title: "Advance or back"
+	quest.04F1186B64C11C43.quest_desc: [
+		"A Blank Die Module ringed with 7 yellow star fragments, a tripwire hook on top. During this move the pawn ignores Stop spaces and shop stops."
+	]
+	quest.04F1186B64C11C43.quest_subtitle: "Craft it: items you already own do not count"
 	quest.04F1186B64C11C43.title: "Die Module: Skeleton Key"
 	quest.0530BAFFB80A6149.quest_desc: [
-		"Place the Villager Block on the block to imitate, then fall on it from high enough (12 blocks on dirt or hay, 16 on stone, 30 on iron): a Boxed Trader appears, disguised as that block. Look at one to complete this quest."
+		"Place the Villager Block on the block to imitate, then fall on it from high enough (12 blocks on dirt or hay, 16 on stone, 30 on iron): a Boxed Trader appears, disguised as that block. Tick this quest once you have made one."
 	]
 	quest.0530BAFFB80A6149.title: "The fall"
 	quest.0582B9C6A4DD1764.quest_desc: [
 		"Two polished terracotta blocks of different colours as a checkerboard in a 2x2 grid: 4 tiles, each face a 2x2 checkerboard. Swap the colours for the shifted checkerboard."
 	]
+	quest.0582B9C6A4DD1764.quest_subtitle: "Craft it: items you already own do not count"
 	quest.0582B9C6A4DD1764.title: "Polished Terracotta Tiles"
 	quest.05A3BC086CC7390E.quest_desc: [
 		"4 polished blocks in a square: 4 bevelled bricks. Each brick has its own shade, and big walls never repeat."
 	]
+	quest.05A3BC086CC7390E.quest_subtitle: "Craft it: items you already own do not count"
 	quest.05A3BC086CC7390E.title: "Polished Orange Terracotta Bricks"
 	quest.05F0B762268E85CD.quest_desc: [
-		"Three carpets over plastic pellets and a light weighted pressure plate: 2 Tiles."
-		"A Tile is one board space and counts as one step. It holds a single cartridge, which gives it its role. Place it in 8 directions, on slabs, carpets, and even on stairs, where it follows the slope."
+		"4 white plastic slabs around a heavy weighted pressure plate, and a cartridge in the middle of the bottom row: 1 Tile, already holding that cartridge."
+		"A Tile is one board space and counts as one step. Place it in 8 directions, on slabs, carpets, and even on stairs, where it follows the slope."
 	]
+	quest.05F0B762268E85CD.quest_subtitle: "Craft it: items you already own do not count"
 	quest.05F0B762268E85CD.title: "Tile"
+	quest.0656F36FB9B9B08E.quest_desc: [
+		"Wicklings float in dark Overworld caves, alone or in pairs: a wax ghost with a candle flame in one of 17 colours. Its light is real, and no monster comes within 8 blocks of it. Stare at it: it hides its eyes. Look at one to complete this quest."
+	]
+	quest.0656F36FB9B9B08E.title: "A light in the dark"
 	quest.06ACFD0AAF8EF257.quest_desc: [
 		"Page + paper at the crafting table (or the Copy button) makes a linked copy: editing one edits them all. Handy to link pipes and podiums far apart."
 	]
 	quest.06ACFD0AAF8EF257.title: "Linked copies"
 	quest.06ED662D95913D40.quest_desc: [
-		"Wrench in Trace mode: right-click tile after tile (or hold the click and sweep) to link them. Each new tile automatically gets a Cartridge from your inventory, and turns towards the next one."
-		"Left-click in the air undoes, sneak + left-click redoes."
+		"Hold right-click with the brush and sweep the tiles in the order the pawns will walk: each one is linked to the next. A tile without a cartridge gets a Cartridge from your inventory."
+		"Paint a link again in the same direction to erase it. Left-click opens the brush's wheel: undo, redo, link modes."
 	]
-	quest.06ED662D95913D40.title: "Trace the path"
+	quest.06ED662D95913D40.title: "Paint the path"
 	quest.07380C5346B9F4F8.quest_desc: [
 		"Stonecutter: a blank face becomes any number from 0 to 10. Any face goes back to blank the same way."
 	]
@@ -122,22 +184,26 @@
 	quest.07635CE1A88BD949.quest_desc: [
 		"4 orange terracotta in a square: 4 polished blocks (17 colours for terracotta, 16 for concrete). The stonecutter makes every shape from the vanilla block directly."
 	]
+	quest.07635CE1A88BD949.quest_subtitle: "Craft it: items you already own do not count"
 	quest.07635CE1A88BD949.title: "Polished Orange Terracotta"
+	quest.07EC74793C559519.quest_desc: [
+		"Bad luck summoned, tamed and turned into a board game."
+	]
+	quest.07EC74793C559519.title: "Black cat"
 	quest.081AE2BEE25879DB.quest_desc: [
 		"Mix star fragments like dyes: red + yellow. You get back as many fragments as you put in."
 	]
+	quest.081AE2BEE25879DB.quest_subtitle: "Craft it: items you already own do not count"
 	quest.081AE2BEE25879DB.title: "Orange Star Fragment"
-	quest.085FCFBD2E80A60F.quest_desc: [
-		"One fragment each of blue, green, yellow, red and purple (or 5 black fragments), shapeless. Always shining. It is the default Star of a party, and goes into the Dice Forge and the iron and golden mini-game pipes."
-	]
-	quest.085FCFBD2E80A60F.title: "Party Star"
 	quest.08D5A8D740C540DC.quest_desc: [
 		"Mix star fragments like dyes: blue + white. You get back as many fragments as you put in."
 	]
+	quest.08D5A8D740C540DC.quest_subtitle: "Craft it: items you already own do not count"
 	quest.08D5A8D740C540DC.title: "Light Blue Star Fragment"
 	quest.09204066F2CD4A79.quest_desc: [
 		"One gold nugget makes one Coin (shapeless). Coins are the default currency of a party: mini-games pay them out, and shops can sell for them."
 	]
+	quest.09204066F2CD4A79.quest_subtitle: "Craft it: items you already own do not count"
 	quest.09204066F2CD4A79.title: "Coin"
 	quest.09C8D40C342871A4.quest_desc: [
 		"Build your own party: for example Sequence Start, Turns, Repeat x3, Sequence Start, Mini-game, Repeat x2. Without cards, the party plays the number of rounds set in Settings."
@@ -147,6 +213,14 @@
 		"A glow ink sac on a painted pattern makes it shine at night; a dry sponge turns it off."
 	]
 	quest.0A07E78ECC5CEBD1.title: "Glow in the dark"
+	quest.0A6FCAD1E1458EE5.quest_desc: [
+		"Each head is a turret: it charges, then spits a jet of scalding steam up to 30 blocks. Its aim freezes just before it fires: step aside. A shield raised towards the jet stops it completely. Each jet costs it a bucket of lava."
+	]
+	quest.0A6FCAD1E1458EE5.title: "Raise your shield"
+	quest.0AFB2E5299CBC290.quest_desc: [
+		"In their forests, a nest sometimes sits on a treetop: often empty, sometimes with a few nuggets or coins, and 1 to 3 magpies live in it. It never rots with the leaves."
+	]
+	quest.0AFB2E5299CBC290.title: "Nest hunting"
 	quest.0B48C321AB91B3F5.quest_desc: [
 		"Any Mula within 16 blocks of a lit forge moves in and dances around the core: 10 dances of 26 s each, in rings of up to 12. A full Mula that bursts at home lands back 2 to 4 blocks from the forge."
 	]
@@ -154,64 +228,103 @@
 	quest.0B763A1CFE251521.quest_desc: [
 		"Two Default Dice, shapeless. Two linked dice: 2 to 20. Splits back into two."
 	]
+	quest.0B763A1CFE251521.quest_subtitle: "Craft it: items you already own do not count"
 	quest.0B763A1CFE251521.title: "Double Dice"
+	quest.0BE71A5E881EDA13.quest_desc: [
+		"Flint and steel on it: its fuse burns for 8 s, it panics and rushes at the nearest other player. Another player relights it to send it elsewhere (+3 s, then +2, then +1, then no more). Loaded with a rocket, it bursts into fireworks that hurt nobody; with TNT, it is a real explosion."
+	]
+	quest.0BE71A5E881EDA13.title: "Hot potato"
+	quest.0BF6FB84D3C83852.quest_desc: [
+		"Magpies charmed, a chick born and a pot that grows on the board."
+	]
+	quest.0BF6FB84D3C83852.title: "Bird watcher"
 	quest.0CE8734A07EDA523.quest_desc: [
 		"Gold, a heavy pressure plate, redstone and quartz blocks. Podiums record who won: the highest column is first place. Sneak on one or right-click it to take it. Link podiums to the page by clicking them with it."
 	]
+	quest.0CE8734A07EDA523.quest_subtitle: "Craft it: items you already own do not count"
 	quest.0CE8734A07EDA523.title: "Podium"
 	quest.0D2D7E4E7239F684.quest_desc: [
 		"\"Draw the zone\" in the editor, then click two corners (128 blocks per side at most). With the Restore option, each round plays apart in the zone with an empty round inventory, and the arena is put back as built at the end."
 	]
 	quest.0D2D7E4E7239F684.title: "Draw the zone"
+	quest.0D3B9E427A996C6C.quest_desc: [
+		"Cartridge + Gate Key. A gate rises on each locked exit of the space: a pawn needs a Gate Key (used up) to go through. Without one: wait, redo the move to take another way, or go back to start. \"Open\" keeps the gate open for a few turns, or for good."
+	]
+	quest.0D3B9E427A996C6C.quest_subtitle: "Craft it: items you already own do not count"
+	quest.0D3B9E427A996C6C.title: "Key Gate Cartridge"
 	quest.0D7BD49CCA0CD53D.quest_desc: [
 		"3 blocks in a row: 6 slabs (or the stonecutter). Slabs, stairs and walls do not float and cut bubble columns."
 	]
+	quest.0D7BD49CCA0CD53D.quest_subtitle: "Craft it: items you already own do not count"
 	quest.0D7BD49CCA0CD53D.title: "Yellow Plastic Slab"
 	quest.0DEA2F4B09B1E78E.quest_desc: [
 		"Prismarine shards, light blue panes and a chest: 4 Checkpoints. A floating glass cube that a pawn crosses without spending a step: free turns, forks and detours. Its role never triggers on arrival, except Stop and Shop."
 	]
+	quest.0DEA2F4B09B1E78E.quest_subtitle: "Craft it: items you already own do not count"
 	quest.0DEA2F4B09B1E78E.title: "Checkpoint"
 	quest.0E8F42A3F191C38B.quest_desc: [
-		"Cartridge + piston. The pawn that ends on it moves again, 1 to 6 spaces forward (green) or back (pink). Sneak + scroll with it in hand sets the count and direction."
+		"Cartridge + piston. The pawn that ends on it moves again, 1 to 6 spaces forward (green) or back (pink): a Boomcart rolls in, explodes behind it or rams it. Sneak + scroll with it in hand sets the count and direction."
 	]
+	quest.0E8F42A3F191C38B.quest_subtitle: "Craft it: items you already own do not count"
 	quest.0E8F42A3F191C38B.title: "Move Forward / Back Cartridge"
 	quest.0ED330980267EDAF.quest_desc: [
 		"You have the basics. Next: build a board (The Board Game), then explore the other chapters in any order."
 	]
 	quest.0ED330980267EDAF.title: "Ready to party"
+	quest.0F50802FC9CCED0C.quest_desc: [
+		"A stick, redstone and a feather, in a diagonal. The brush paints the links between spaces and shows the board while you hold it."
+	]
+	quest.0F50802FC9CCED0C.quest_subtitle: "Craft it: items you already own do not count"
+	quest.0F50802FC9CCED0C.title: "Tile Linker Brush"
+	quest.0FA4F07B394DBDE0.quest_desc: [
+		"Hold Jump to charge a puff, release: the bubble blows towards where you look. WASD drifts it slowly. Puffs chained too fast stretch it (it swells, turns pink and creaks) until it pops. Attack or sneak to get out: you fall slowly."
+	]
+	quest.0FA4F07B394DBDE0.title: "Bubble pilot"
 	quest.0FC0569B81622F76.quest_desc: [
 		"Mix star fragments like dyes: green + white. You get back as many fragments as you put in."
 	]
+	quest.0FC0569B81622F76.quest_subtitle: "Craft it: items you already own do not count"
 	quest.0FC0569B81622F76.title: "Lime Star Fragment"
 	quest.101F5B0C2C547670.quest_desc: [
-		"Right-click to pick its mode: next step, restart the step, previous step. A redstone pulse applies it to the nearest party (64 blocks), or to a mini-game when linked to its page."
+		"An hourglass: right-click stands it up (Next) or lays it on its side (Replay). A redstone pulse on Next skips what the party waits for: a turn not rolled yet, a waiting bell, the practice round; during a mini-game it ends it with the podiums' places. On Replay, the player plays again after this turn, or the round starts again."
+		"Link it with the Tile Linker Brush to any part of a game (space, Party Controller, Mini-game Controller, podium...), even far away; otherwise it drives the nearest party within 64 blocks."
 	]
+	quest.101F5B0C2C547670.quest_subtitle: "Craft it: items you already own do not count"
 	quest.101F5B0C2C547670.title: "Step controller"
 	quest.10373F304237AA4E.quest_desc: [
 		"6 blocks in steps: 4 stairs."
 	]
+	quest.10373F304237AA4E.quest_subtitle: "Craft it: items you already own do not count"
 	quest.10373F304237AA4E.title: "Polished Light Blue Concrete Stairs"
 	quest.10428E9FDADB4DDF.quest_desc: [
 		"A pink plastic stud + paper + redstone: 4 cards. The next Repeat card starts again from here."
 		"Cards go in the 24 slots of the Program tab and are read left to right."
 	]
+	quest.10428E9FDADB4DDF.quest_subtitle: "Craft it: items you already own do not count"
 	quest.10428E9FDADB4DDF.title: "Party Card: Sequence start"
 	quest.10458D4F11AF735B.quest_desc: [
 		"3 blocks in a row: 6 slabs."
 	]
+	quest.10458D4F11AF735B.quest_subtitle: "Craft it: items you already own do not count"
 	quest.10458D4F11AF735B.title: "Polished Light Blue Concrete Slab"
 	quest.104F2426E5EBE598.quest_desc: [
-		"The controller creates no coins and no stars: it pays mini-game prizes from chests. Put an Inventory Cartridge linked to a chest in the bank slot of the Prizes tab, and fill the chest with the party's coins and stars (Party Stars by default)."
+		"Nothing comes from nothing: the controller creates no coins and no stars. The Bank button of the Prizes tab opens its own 27 slots (hoppers work too); fill them with the party's coins and stars. Prizes, sold stars, coin faces, pots and spaces without a chest are paid from there, and fines go back there."
+		"An Inventory Cartridge next to the Bank button adds its linked chests."
 	]
-	quest.104F2426E5EBE598.title: "The prize chest"
+	quest.104F2426E5EBE598.title: "Fill the bank"
 	quest.114B635016EE5B45.quest_desc: [
 		"4 blocks of a colour and 2 plastic sticks: 3 fences. They connect to each other and carry road signs."
 	]
+	quest.114B635016EE5B45.quest_subtitle: "Craft it: items you already own do not count"
 	quest.114B635016EE5B45.title: "Orange Plastic Fence"
 	quest.123B0FCCF856E8AB.quest_desc: [
 		"Dropped by a blue Mula when it bursts."
 	]
 	quest.123B0FCCF856E8AB.title: "Blue Star Fragment"
+	quest.12D10278EDD127AE.quest_desc: [
+		"Two calm Slackorns that meet climb on each other, up to 5. Right-click one empty-handed to carry it with those above, right-click another to stack them, left-click to throw the bottom one. Hit one in the middle of a tower: it flies off like a missile."
+	]
+	quest.12D10278EDD127AE.title: "Slackorn tower"
 	quest.12DD5B229D31EBED.quest_desc: [
 		"Put two different cartridges in an Advanced Tile and power it: the tile changes role, colour and destinations with the signal. A comparator or a redstone counter makes tiles that change every turn."
 	]
@@ -221,41 +334,67 @@
 	]
 	quest.12EC9CFFA8E18C18.title: "Plumber"
 	quest.137ABC52300C1CE9.quest_desc: [
-		"Fill the ring with 1 to 12 faces (the stack size is the weight), the 4 fragment slots with 4 different colours (black is never used up), and blank faces. Click the core: FORGE! One die every 5 s."
+		"Fill the ring with 1 to 12 faces (the stack size is the weight), the 5 fragment slots with 5 different colours (black can repeat and is never used up), and blank faces. Click the arrow between the blank faces and the die: FORGE! One die every 5 s."
 	]
 	quest.137ABC52300C1CE9.title: "Your own die"
 	quest.13E6F42BB1F3D4AC.quest_desc: [
-		"A Party Star surrounded by 4 blocks of lapis lazuli. Its only use: the head of the Tokenizer Wand."
+		"A Party Star surrounded by 4 blocks of lapis lazuli (see Mulas and Stars for the star). Its only use: the head of the Tokenizer Wand."
 	]
+	quest.13E6F42BB1F3D4AC.quest_subtitle: "Craft it: items you already own do not count"
 	quest.13E6F42BB1F3D4AC.title: "Lapis Crystal Ball"
 	quest.13F7D62B117D88BF.quest_desc: [
 		"A treasure enchantment for the wand only: found in woodland mansion chests, or dropped by evokers and illusioners killed by a player. With it you can resize anyone's pawn and exclude any pawn from a party, like a referee."
 	]
 	quest.13F7D62B117D88BF.title: "Game Master"
+	quest.140D4DEEA26370A8.quest_desc: [
+		"Sneak + right-click your Wickling empty-handed: it sits. Again: it falls asleep and becomes a candle holder block that gives light and keeps everything (colour, name, health). Right-click it empty-handed to wake it up. Broken, it drops as an item: a Wickling is never lost."
+	]
+	quest.140D4DEEA26370A8.title: "Wickling Candle Holder"
 	quest.1447F66898AC91E0.quest_desc: [
 		"Mix star fragments like dyes: red + green (or orange + black). You get back as many fragments as you put in."
 	]
+	quest.1447F66898AC91E0.quest_subtitle: "Craft it: items you already own do not count"
 	quest.1447F66898AC91E0.title: "Brown Star Fragment"
 	quest.1569C7FE3FB27DB1.quest_desc: [
 		"Put your pawn on a Start space: it binds to it, floats and looks at the nearest player. Right-click the space empty-handed to own it. Only bound pawns join a party."
 	]
 	quest.1569C7FE3FB27DB1.title: "Take your place"
 	quest.1661B4C0B973F8ED.quest_desc: [
-		"Crying obsidian, 4 black star fragments and a heavy core. Placed, it pulls everything within 8 blocks into orbit (no fall damage inside; full netherite armour resists). It also powers the Dice Forge."
+		"Crying obsidian, 4 star fragments of any colour and a heavy core. Placed, it pulls everything within 8 blocks into orbit (no fall damage inside; full iron armour or heavier resists). It also powers the Dice Forge."
 	]
+	quest.1661B4C0B973F8ED.quest_subtitle: "Craft it: items you already own do not count"
 	quest.1661B4C0B973F8ED.title: "Gravity Core"
 	quest.169B6F8AE6D4D572.quest_desc: [
 		"Leather boots + rabbit's foot + 2 slime balls, shapeless. Chain jumps within 1.5 s: the second is 1.5 times higher, the third twice as high. Made for poles."
 	]
+	quest.169B6F8AE6D4D572.quest_subtitle: "Craft it: items you already own do not count"
 	quest.169B6F8AE6D4D572.title: "Triple Jump Shoes"
 	quest.174373BB4245951D.quest_desc: [
 		"6 bricks in steps: 4 stairs."
 	]
+	quest.174373BB4245951D.quest_subtitle: "Craft it: items you already own do not count"
 	quest.174373BB4245951D.title: "Polished Orange Terracotta Brick Stairs"
+	quest.1844358FDF98C72B.quest_desc: [
+		"Slackorns live under trees, 2 to 4 together: green young ones, mossy old ones in old taigas, frosty ones in snowy taigas that slide like curling stones. Come within 4 blocks: it stamps twice and charges. It never hurts: it shoves, and stuns a player for 2 s. Look at one to complete this quest."
+	]
+	quest.1844358FDF98C72B.title: "Grumpy acorn"
+	quest.186792E8E005709E.quest_desc: [
+		"Outside the Bubbler's column, a bubble pops on a block, a mob, an arrow, or after 15 s without moving. A snowball pushes it instead: a dispenser firing snowballs makes a bubble cannon. A Silk Touch tool pushes it without ever popping it."
+	]
+	quest.186792E8E005709E.title: "Bubble cannon"
+	quest.18BCF0FF3DA0DC75.quest_desc: [
+		"4 plastic pellets around a water bucket and redstone (the bucket comes back empty). Walk onto it: you are closed in a soap bubble that rises 30 blocks (2 per level of redstone signal), then floats. Sneak to walk over it without being caught. Mobs and dropped items get bubbled too."
+	]
+	quest.18BCF0FF3DA0DC75.quest_subtitle: "Craft it: items you already own do not count"
+	quest.18BCF0FF3DA0DC75.title: "Bubbler"
 	quest.18EC779BAD8C3C13.quest_desc: [
-		"Stonecutter: 1 Tile gives 2 small tiles (1x1). Four standard tiles in a 2x2 square give one large tile (exactly 2x2 blocks). The tooltip and the icon show the size."
+		"Stonecutter: 1 Tile gives 2 small tiles (1x1); 2 small ones give a standard tile back at the crafting table. Four standard tiles in a 2x2 square give one large tile (exactly 2x2 blocks)."
 	]
 	quest.18EC779BAD8C3C13.title: "Small and large tiles"
+	quest.194C00CE411FD0CE.quest_desc: [
+		"Boomcarts roll in abandoned mineshafts (rarely) and the dark caves around them, always alone. On rails they follow the track like a minecart. Grumpy: it roars when you come within 3 blocks. Look at one to complete this quest."
+	]
+	quest.194C00CE411FD0CE.title: "A living minecart"
 	quest.19A1A7E217DE13A3.quest_desc: [
 		"The little extras of the mod, all found."
 	]
@@ -271,22 +410,40 @@
 	quest.19DDB0C5335E0D86.quest_desc: [
 		"A Cartridge surrounded by 4 paper: 4 Mini-Game Pages. A page IS a mini-game: its title, rules, image, formats, pipes, results and zone."
 	]
+	quest.19DDB0C5335E0D86.quest_subtitle: "Craft it: items you already own do not count"
 	quest.19DDB0C5335E0D86.title: "Mini-Game Page"
+	quest.1AE45F8A8581A1AD.quest_desc: [
+		"Fed, lit, passed around, and booming on the board."
+	]
+	quest.1AE45F8A8581A1AD.title: "Demolition crew"
 	quest.1BEF46FC4ACE5F48.quest_desc: [
 		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Exit\"."
 	]
+	quest.1BEF46FC4ACE5F48.quest_subtitle: "Craft it: items you already own do not count"
 	quest.1BEF46FC4ACE5F48.title: "Yellow Pipe: Exit"
+	quest.1C32C1531E31974E.quest_desc: [
+		"Hits do no harm. Jump on its cap: squeak! It flattens and you bounce; the second squash finishes it (the third for a mossy one) and it drops 1 or 2 acorns. Bone meal on a Slackorn can also give one, at most once a minute."
+	]
+	quest.1C32C1531E31974E.title: "Acorn"
+	quest.1DDCEBDE63F41C2D.quest_desc: [
+		"Cartridge + the Mistigri's Die, shapeless. Its loot when it dies: a die with the cursed 1, 2 and 3, twice each. In a party, a pawn that stops on its space brings out the Mistigri, which rolls on its back and juggles its loaded die: the whole party watches a roulette of sentences, then one falls."
+	]
+	quest.1DDCEBDE63F41C2D.quest_subtitle: "Craft it: items you already own do not count"
+	quest.1DDCEBDE63F41C2D.title: "Mistigri Cartridge"
 	quest.1E5F2B0FBCFDA39D.quest_desc: [
 		"Blank face + ender pearl. The roller's pawn swaps places with another player's pawn of their choice."
 	]
+	quest.1E5F2B0FBCFDA39D.quest_subtitle: "Craft it: items you already own do not count"
 	quest.1E5F2B0FBCFDA39D.title: "Swap Die Face"
 	quest.1E702253EDB71ED3.quest_desc: [
 		"4 polished blocks in a square: 4 bevelled bricks. Each brick has its own shade, and big walls never repeat."
 	]
+	quest.1E702253EDB71ED3.quest_subtitle: "Craft it: items you already own do not count"
 	quest.1E702253EDB71ED3.title: "Polished Light Blue Concrete Bricks"
 	quest.1EE3A5D49F8077F1.quest_desc: [
 		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Team A\"."
 	]
+	quest.1EE3A5D49F8077F1.quest_subtitle: "Craft it: items you already own do not count"
 	quest.1EE3A5D49F8077F1.title: "Blue Pipe: Team A"
 	quest.1F2DCDEC85464F26.quest_desc: [
 		"Steve Party Maker turns Minecraft into a party board game: build a board of tiles, turn any mob into a pawn, roll dice, play mini-games and collect stars."
@@ -299,6 +456,7 @@
 	quest.1FAB526747142277.quest_desc: [
 		"A Podium + an iron ingot, shapeless. Only a look: the height of the column decides the place."
 	]
+	quest.1FAB526747142277.quest_subtitle: "Craft it: items you already own do not count"
 	quest.1FAB526747142277.title: "Silver Podium"
 	quest.1FD5DF613F9840F0.quest_desc: [
 		"Put an Inventory Cartridge linked to a chest in it (Wrench), hang it with 2 or 3 blocks of air below, and hit it with your head while jumping: it drops items from the chest. 2 hits, then 3 s to recharge."
@@ -307,6 +465,7 @@
 	quest.203C683BC60BB2EA.quest_desc: [
 		"Gold ingots, polished terracotta, a chest and an amethyst shard."
 	]
+	quest.203C683BC60BB2EA.quest_subtitle: "Craft it: items you already own do not count"
 	quest.203C683BC60BB2EA.title: "Looting Box"
 	quest.2059FF1EE20FE13D.quest_desc: [
 		"Formats tab: team games (2 to 4 sides, \"1 vs all\", \"2 vs 2\"...), free-for-all or all together. In a party only a page whose format fits the teams on the board can be drawn. Team A is the players on positive spaces, team B those on negative ones."
@@ -315,18 +474,22 @@
 	quest.209EEA42C80532A7.quest_desc: [
 		"Two rows of 3: 6 walls."
 	]
+	quest.209EEA42C80532A7.quest_subtitle: "Craft it: items you already own do not count"
 	quest.209EEA42C80532A7.title: "Polished Orange Terracotta Brick Wall"
 	quest.2107B23BC93CF590.quest_desc: [
 		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Team B\". Purple and orange pipes are teams C and D."
 	]
+	quest.2107B23BC93CF590.quest_subtitle: "Craft it: items you already own do not count"
 	quest.2107B23BC93CF590.title: "Red Pipe: Team B"
 	quest.226EA47348D44FE3.quest_desc: [
-		"Blank module + echo shard. The die becomes a power-up: used once, in place of your roll (every other die comes back to its roller)."
+		"A Blank Die Module ringed with 7 purple star fragments, an echo shard on top. The die becomes a power-up: used once, in place of your roll (every other die comes back to its roller)."
 	]
+	quest.226EA47348D44FE3.quest_subtitle: "Craft it: items you already own do not count"
 	quest.226EA47348D44FE3.title: "Power-up Module"
 	quest.2275C38C50DEE4C0.quest_desc: [
 		"Mix star fragments like dyes: gray + white. You get back as many fragments as you put in."
 	]
+	quest.2275C38C50DEE4C0.quest_subtitle: "Craft it: items you already own do not count"
 	quest.2275C38C50DEE4C0.title: "Light Gray Star Fragment"
 	quest.23960C8EFFCAEE1A.quest_desc: [
 		"The base can count a scoreboard criterion instead of landings: jumps, deaths, kills... For example 10 jumps, goal per player, and podiums next to the base."
@@ -335,10 +498,12 @@
 	quest.23B52C759DD360F3.quest_desc: [
 		"6 glass: 6 clear pipes. Linked to a mini-game page, a glass pipe is for spectators."
 	]
+	quest.23B52C759DD360F3.quest_subtitle: "Craft it: items you already own do not count"
 	quest.23B52C759DD360F3.title: "Glass Pipe"
 	quest.24109299821DBF96.quest_desc: [
 		"Mix star fragments like dyes: red + white. You get back as many fragments as you put in."
 	]
+	quest.24109299821DBF96.quest_subtitle: "Craft it: items you already own do not count"
 	quest.24109299821DBF96.title: "Pink Star Fragment"
 	quest.2512D1E030566DA6.quest_desc: [
 		"Dropped by a green Mula when it bursts."
@@ -348,16 +513,26 @@
 		"Make one blue (bonus) and one red (malus) space. They matter: in a party, the colour of the space under each pawn makes the mini-game teams."
 	]
 	quest.257DAAA6F776BD7D.title: "Bonus and malus"
+	quest.258F95E4E3F8CB04.quest_desc: [
+		"Right-click it with TNT or a firework rocket: it swallows the new load and gives back the old one. Hold one within 5 blocks: it opens its mouth wide. A Boomcart loaded by a player never despawns."
+	]
+	quest.258F95E4E3F8CB04.title: "Feed it"
 	quest.25F6A5B53D501ECE.quest_desc: [
 		"A downward piston extending onto an adult villager's head squashes it into a block that keeps the villager inside, alive, with about 70 reactions. Break it by hand (it begs) to pick it up; a sticky piston lets it out."
 	]
 	quest.25F6A5B53D501ECE.title: "Villager Block"
-	quest.267711A12D93A0B2.quest_desc: [
-		"A Tile with a comparator, gold ingots and a chest. It holds 16 cartridges: the redstone power it receives picks the active one (power 0 = slot 1, power 1 = slot 2...)."
+	quest.263C5F0A947E29AD.quest_desc: [
+		"Inventory Cartridge + lava bucket, shapeless (the bucket comes back). In a party, a pawn that stops there brings out a Tricauldron with one head per prize (1 to 5), taken from the linked chests or the bank. The player hits a head, blind by default, and that head spits its prize at them."
 	]
+	quest.263C5F0A947E29AD.quest_subtitle: "Craft it: items you already own do not count"
+	quest.263C5F0A947E29AD.title: "Tricauldron Cartridge"
+	quest.267711A12D93A0B2.quest_desc: [
+		"2 yellow plastic slabs, a light weighted pressure plate, a trapped chest and 2 cartridges: an Advanced Tile holding them. It takes 16 cartridges: the redstone power it receives picks the active one (power 0 = slot 1, power 1 = slot 2...)."
+	]
+	quest.267711A12D93A0B2.quest_subtitle: "Craft it: items you already own do not count"
 	quest.267711A12D93A0B2.title: "Advanced Tile"
 	quest.26EF608BF2CC42FA.quest_desc: [
-		"Right-click: the die flies over the nearest mob (sneak: the nearest player) and spins. Hit it to stop it. The result is announced in the chat."
+		"Right-click: the die flies over the nearest mob (sneak: the nearest player) and spins. Hit it to stop it. The result shows above the hotbar."
 	]
 	quest.26EF608BF2CC42FA.title: "Roll it!"
 	quest.272DDEDA8986AF7E.quest_desc: [
@@ -372,35 +547,64 @@
 		"A lime plastic stud + paper + redstone: 4 cards. One mini-game from the catalogue."
 		"Cards go in the 24 slots of the Program tab and are read left to right."
 	]
+	quest.27B5092765B1742F.quest_subtitle: "Craft it: items you already own do not count"
 	quest.27B5092765B1742F.title: "Party Card: Mini-game"
 	quest.27E0EE1DE702627E.quest_desc: [
 		"Three Default Dice, or a Double + a Default Die. Three linked dice: 3 to 30."
 	]
+	quest.27E0EE1DE702627E.quest_subtitle: "Craft it: items you already own do not count"
 	quest.27E0EE1DE702627E.title: "Triple Dice"
 	quest.280705EA919A80DA.quest_desc: [
 		"A ceramic pig with an Inventory Cartridge: each redstone pulse gives (or takes) its items to a target: the player of the turn, the mini-game winners, everyone, or the nearest player. All-or-nothing mode can sell a star for coins."
 	]
+	quest.280705EA919A80DA.quest_subtitle: "Craft it: items you already own do not count"
 	quest.280705EA919A80DA.title: "Piggy Bank"
-	quest.2ABA40709E3044BA.quest_desc: [
-		"Iron, glass, mushroom stems, paper and redstone. Placed in the arena, it holds the mini-game's page. Its lamp is red (idle), orange (trial round) or green (playing). A comparator reads its state."
+	quest.2843C6B391C3BB10.quest_desc: [
+		"Cartridge + Magpie Nest, shapeless. A Common Pot space, the colour of straw. Click a Magpie Nest with the cartridge (or paint from the space to it with the Tile Linker Brush) to link it: that nest IS the pot."
 	]
+	quest.2843C6B391C3BB10.quest_subtitle: "Craft it: items you already own do not count"
+	quest.2843C6B391C3BB10.title: "Common Pot Cartridge"
+	quest.29342BD8BA7FCED5.quest_desc: [
+		"Squashed, planted, stacked and put on the board."
+	]
+	quest.29342BD8BA7FCED5.title: "Acorn keeper"
+	quest.2AB220E13F0C50C3.quest_desc: [
+		"Throw an acorn within 12 blocks of it: it forgets everything, even its anger, and plays with it for 30 s to a minute."
+	]
+	quest.2AB220E13F0C50C3.title: "Ball of yarn"
+	quest.2ABA40709E3044BA.quest_desc: [
+		"Paper, glass and a redstone torch over gold ingots and any mini-game pipe, on 3 iron ingots. Placed in the arena, it holds the mini-game's page. Its lamp is red (idle), orange (trial round) or green (playing). A comparator reads its state."
+	]
+	quest.2ABA40709E3044BA.quest_subtitle: "Craft it: items you already own do not count"
 	quest.2ABA40709E3044BA.title: "Mini-game Controller"
 	quest.2B3995C665E08E2E.quest_desc: [
 		"You can run a whole party, and drive it with redstone."
 	]
 	quest.2B3995C665E08E2E.title: "Party host"
+	quest.2B5EA72645901420.quest_desc: [
+		"Two occupied bubbles that touch merge into a bigger one (8 passengers at most). Steering is shared: everyone's keys count, and opposite pushes cancel out."
+	]
+	quest.2B5EA72645901420.title: "Two in a bubble"
 	quest.2BAA43480CA56926.quest_desc: [
 		"A gold ingot over two iron bars, in a column. Stack as many segments as you like on the base."
 	]
+	quest.2BAA43480CA56926.quest_subtitle: "Craft it: items you already own do not count"
 	quest.2BAA43480CA56926.title: "Goal Pole"
 	quest.2BD1848C751D2C08.quest_desc: [
 		"Lapis crystal ball, gold block and blaze rod, in a column. A golden wand with a lapis orb."
 	]
+	quest.2BD1848C751D2C08.quest_subtitle: "Craft it: items you already own do not count"
 	quest.2BD1848C751D2C08.title: "Tokenizer Wand"
 	quest.2CC4E00732BE3C9B.quest_desc: [
 		"Book and quill + map + clock + the \"otherside\" disc, shapeless. Holds 91 pages. Put it in the Party Controller: the roulette draws its mini-games."
 	]
+	quest.2CC4E00732BE3C9B.quest_subtitle: "Craft it: items you already own do not count"
 	quest.2CC4E00732BE3C9B.title: "Mini Games Catalogue"
+	quest.2CE0BF8C6935F2C0.quest_desc: [
+		"3 sticks + 1 feather, shapeless (magpies drop feathers). A nest of woven twigs: 27 slots of up to 256 coins or shiny items each. Right-click to put the stack in (sneak: one), empty hand to take the last one back. Hoppers fill and empty it, a comparator reads it, and a pile of coins rises from it."
+	]
+	quest.2CE0BF8C6935F2C0.quest_subtitle: "Craft it: items you already own do not count"
+	quest.2CE0BF8C6935F2C0.title: "Magpie Nest"
 	quest.2D64151C55086784.quest_desc: [
 		"You have built, played and collected everything Steve Party Maker has to offer. Thank you for playing the beta!"
 	]
@@ -409,11 +613,17 @@
 	quest.2E1EFBCB9519EEE1.quest_desc: [
 		"6 plastic blocks of one colour in two columns: 6 opaque pipes (16 colours). A pipe placed against another (or in front of its mouth) connects to it."
 	]
+	quest.2E1EFBCB9519EEE1.quest_subtitle: "Craft it: items you already own do not count"
 	quest.2E1EFBCB9519EEE1.title: "Lime Pipe"
 	quest.2E754E69CDD7EF1A.quest_desc: [
-		"Cartridge + chest. Links up to 8 chests (right-click them) and gives or takes items: positive items are bonus spaces (blue), negative ones malus spaces (red), empty is an item space (orange). The scroll wheel sets the amounts."
+		"Cartridge + chest. Links up to 8 chests (right-click them) and gives or takes items: positive items make a bonus space (blue), negative ones a malus space (red), empty an item space (orange). The scroll wheel sets the amounts. Without a chest, in a party, it uses the Party Controller's bank."
 	]
+	quest.2E754E69CDD7EF1A.quest_subtitle: "Craft it: items you already own do not count"
 	quest.2E754E69CDD7EF1A.title: "Inventory Cartridge"
+	quest.2EE9B60E92035305.quest_desc: [
+		"Saddle it in its screen, like a horse. Up to 3 players sit on the rim, each holding a head: everyone's keys add up. Lava is its fuel (click with a lava bucket while riding). Click to make your head spit; hold Jump for a steam-powered leap."
+	]
+	quest.2EE9B60E92035305.title: "Three riders"
 	quest.2EF12416B1262A81.quest_desc: [
 		"Right-click a mob with the wand (or shoot a spark at it), then draw a circle around it with the mouse. On the guide: a 1-block pawn; twice as big: 2 blocks; smaller: down to 0.25."
 		"The mob becomes a still, silent, invulnerable figurine, and you own it."
@@ -428,12 +638,14 @@
 	]
 	quest.2F86298582A1E025.title: "Dice collector"
 	quest.3015D9B1FF57C11A.quest_desc: [
-		"Blank face + fermented spider eye. A negative module: the pawn moves back, and coins won are lost."
+		"A Blank Die Module ringed with 7 red star fragments, a fermented spider eye on top. A negative module: the pawn moves back, and coins won are lost."
 	]
+	quest.3015D9B1FF57C11A.quest_subtitle: "Craft it: items you already own do not count"
 	quest.3015D9B1FF57C11A.title: "Die Module: Reversed"
 	quest.308B809C31445486.quest_desc: [
 		"3 bricks in a row: 6 slabs."
 	]
+	quest.308B809C31445486.quest_subtitle: "Craft it: items you already own do not count"
 	quest.308B809C31445486.title: "Polished Orange Terracotta Brick Slab"
 	quest.30B76A9DDAC3BA6B.quest_desc: [
 		"At dusk, a full moon has a 25% chance of an Ephemeride: 6 waves of low shooting stars over each player, then a group of 3 to 5 Mulas lands where they went. A Dice Forge at full power guarantees it every full moon."
@@ -442,27 +654,33 @@
 	quest.30E06C6BD698E571.quest_desc: [
 		"9 fragments of one colour: a glowing, glass-like block of animated plasma (16 colours, 12 variants each). The black one is a starry night. It attracts curious Mulas."
 	]
+	quest.30E06C6BD698E571.quest_subtitle: "Craft it: items you already own do not count"
 	quest.30E06C6BD698E571.title: "Block of Blue Star Fragments"
 	quest.33F2B84D658F752B.quest_desc: [
-		"Cartridge + emerald + gold nugget. A pawn that ends on it (or passes a Checkpoint with it) opens the shop of the nearest Boxed Trader for its player. See the Shops chapter."
+		"An Inventory Cartridge + a bandana stolen from a Boxed Trader (see Shops). A pawn that ends on it (or passes a Checkpoint with it) brings out a Boxed Trader for its player. Its offers (9 at most) are set in the cartridge's own little stall; the goods come from its linked chests, else from the Party Controller's bank."
 	]
+	quest.33F2B84D658F752B.quest_subtitle: "Craft it: items you already own do not count"
 	quest.33F2B84D658F752B.title: "Shop Cartridge"
 	quest.345F2775C4F5745A.quest_desc: [
 		"Stone buttons, gold, a chest and iron. Payments go into the linked registers; each sale sends a redstone pulse. Mine it with an iron pickaxe."
 	]
+	quest.345F2775C4F5745A.quest_subtitle: "Craft it: items you already own do not count"
 	quest.345F2775C4F5745A.title: "Cash register"
 	quest.346595A5E4D15B1C.quest_desc: [
 		"9 identical planks: 2 big wooden boards, on a post, hanging or flat."
 	]
+	quest.346595A5E4D15B1C.quest_subtitle: "Craft it: items you already own do not count"
 	quest.346595A5E4D15B1C.title: "Wooden Panel"
 	quest.3476803BD17DBC9E.quest_desc: [
 		"A orange plastic stud + paper + redstone: 4 cards. Rings the Party Bells set to Event; the channel is the stack size."
 		"Cards go in the 24 slots of the Program tab and are read left to right."
 	]
+	quest.3476803BD17DBC9E.quest_subtitle: "Craft it: items you already own do not count"
 	quest.3476803BD17DBC9E.title: "Party Card: Event"
 	quest.35120B4602A51333.quest_desc: [
 		"Two rows of 3: 6 walls."
 	]
+	quest.35120B4602A51333.quest_subtitle: "Craft it: items you already own do not count"
 	quest.35120B4602A51333.title: "Polished Orange Terracotta Wall"
 	quest.35237C08B4821CCD.quest_desc: [
 		"Hoppers on top and sides fill the forge, a hopper below takes the dice out. Powered by redstone, it restarts on its own once restocked. A comparator reads the output."
@@ -475,6 +693,7 @@
 	quest.366E43B34F9C7D7E.quest_desc: [
 		"Planks and sticks (PPP / PPP / S S): 2 easel signs, in any wood, modded ones included. Stands on the ground."
 	]
+	quest.366E43B34F9C7D7E.quest_subtitle: "Craft it: items you already own do not count"
 	quest.366E43B34F9C7D7E.title: "Easel Sign"
 	quest.3817AA11E5F4EFA0.quest_desc: [
 		"Your finish line is ready: jump, score, win."
@@ -483,6 +702,7 @@
 	quest.385B95560FE8A09B.quest_desc: [
 		"Cartridge + lime dye. A start space: a pawn placed on it binds to it, floats and takes its colour. The Party Controller only takes pawns bound to a start space."
 	]
+	quest.385B95560FE8A09B.quest_subtitle: "Craft it: items you already own do not count"
 	quest.385B95560FE8A09B.title: "Start Cartridge"
 	quest.38DC8F88EE22AE2C.quest_desc: [
 		"A pipe that ends inside a solid block is a dead end: it warps you to the nearest mouth of the same colour within 100 blocks. Opaque and windowed pipes of one colour count as one colour."
@@ -491,30 +711,53 @@
 	quest.3B5CBE11E9AEFBBE.quest_desc: [
 		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Entry\"."
 	]
+	quest.3B5CBE11E9AEFBBE.quest_subtitle: "Craft it: items you already own do not count"
 	quest.3B5CBE11E9AEFBBE.title: "Black Pipe: Entry"
 	quest.3E137565F331C99C.quest_desc: [
 		"6 stained glass of one colour: 6 stained glass pipes (16 colours)."
 	]
+	quest.3E137565F331C99C.quest_subtitle: "Craft it: items you already own do not count"
 	quest.3E137565F331C99C.title: "Magenta Stained Glass Pipe"
+	quest.3F2D0BF6F9D5D9F1.quest_desc: [
+		"A Blank Die Module ringed with 7 pink star fragments, TNT on top. The die explodes when it vanishes: it hurts and knocks back everyone around, roller included."
+	]
+	quest.3F2D0BF6F9D5D9F1.quest_subtitle: "Craft it: items you already own do not count"
+	quest.3F2D0BF6F9D5D9F1.title: "Die Module: Firecracker"
 	quest.3F4EF27EE42BEC9C.quest_desc: [
 		"Blank face + Coin: a +1 Coins face (stonecutter for +2 to +10). Instead of moving, the roller gains that many coins of the party."
 	]
+	quest.3F4EF27EE42BEC9C.quest_subtitle: "Craft it: items you already own do not count"
 	quest.3F4EF27EE42BEC9C.title: "Coin Die Face +1"
+	quest.3F68A81D8A5CA07D.quest_desc: [
+		"A redstone torch, gold nuggets, a glass pane and a stone button. Sneak + click a Mini-game Controller to link it: out of a party it plays or stops that mini-game from afar; in a party it says whether you are ready for the real round."
+	]
+	quest.3F68A81D8A5CA07D.quest_subtitle: "Craft it: items you already own do not count"
+	quest.3F68A81D8A5CA07D.title: "Mini-game Remote"
 	quest.405FC7652C003313.quest_desc: [
 		"Custom dice, a core at full height and Mulas dancing around it."
 	]
 	quest.405FC7652C003313.title: "Forgemaster"
+	quest.40EEE1A3FDE98A1B.quest_desc: [
+		"Walking in front of it gives Bad Luck for 1 minute; hitting it, 2 minutes (it gets angry, but never fights). It knocks items off item frames and naps on chests, which won't open until you wake it with raw fish."
+	]
+	quest.40EEE1A3FDE98A1B.title: "Don't cross its path"
 	quest.42057F6E6F797B1D.quest_desc: [
 		"Land on top of a pole: \"+1 ♥\", an extra life: a golden heart for 10 s, no fall damage, and you stand upside down. Each landing scores a point for the base."
 	]
 	quest.42057F6E6F797B1D.title: "Extra Life!"
+	quest.422060BE55D3D1D7.quest_desc: [
+		"Right-click it with empty buckets: 1 bucket of lava each (up to 27), without angering it. Only someone who emptied it can tame it: mount it empty-handed. It yields (70% when empty, never when full, +10% per failed try) or throws you off."
+	]
+	quest.422060BE55D3D1D7.title: "Drain and tame"
 	quest.423032099703F693.quest_desc: [
 		"A plastic block over plastic pellets: 2 road signs of the block's colour. The Wrench cycles the plate: round, square, diamond, triangle, star, heart. Off its post, it floats."
 	]
+	quest.423032099703F693.quest_subtitle: "Craft it: items you already own do not count"
 	quest.423032099703F693.title: "Plastic Road Sign"
 	quest.42C4E05F055ED63B.quest_desc: [
 		"A Party Star on top, obsidian, a blast furnace and a netherite ingot. It engraves dice with the faces and weights you choose, in a loop, by hand, hoppers or redstone."
 	]
+	quest.42C4E05F055ED63B.quest_subtitle: "Craft it: items you already own do not count"
 	quest.42C4E05F055ED63B.title: "Dice Forge"
 	quest.42D5C0FDC568C5B3.quest_desc: [
 		"Your pawn waits on its start space. Time to roll some dice!"
@@ -524,6 +767,7 @@
 		"Gold, a redstone torch, a chest and an amethyst shard. Give it a cartridge whose destinations are the tiles to drive: its redstone input replaces theirs (one lever switches a whole board)."
 		"A comparator on it reads what happens on its tiles: 14 bonus, 13 malus, 10 Stop, 8 Teleport, 1 a pawn passes..."
 	]
+	quest.43758D7B5C5F556E.quest_subtitle: "Craft it: items you already own do not count"
 	quest.43758D7B5C5F556E.title: "Board Space Redstone router"
 	quest.44A6CEA198F3D329.quest_desc: [
 		"Every recipe of the mod can be read in a recipe viewer (REI or EMI) if the pack has one: it also shows every tile with its cartridge."
@@ -537,19 +781,35 @@
 	quest.476FD02CC564638E.quest_desc: [
 		"3 blocks in a row: 6 slabs."
 	]
+	quest.476FD02CC564638E.quest_subtitle: "Craft it: items you already own do not count"
 	quest.476FD02CC564638E.title: "Polished Orange Terracotta Slab"
+	quest.480DEBADCC26795B.quest_desc: [
+		"Cartridge + candle, shapeless. In a party, a pawn that stops there brings out a Wickling: its player picks a victim, the Wickling flies off to rob them (coins or stars, set in its menu) and brings the loot back. With the defence on, the victim has 7 seconds to hit it: each hit gives some back."
+	]
+	quest.480DEBADCC26795B.quest_subtitle: "Craft it: items you already own do not count"
+	quest.480DEBADCC26795B.title: "Wickling Cartridge"
 	quest.486B21C664042E3A.quest_desc: [
 		"A star fragment (any colour), a gold ingot and a gold nugget, in a column. Right-click the trader to link it (the first to do so owns it), then each block: stall, stock chests, registers."
 	]
+	quest.486B21C664042E3A.quest_subtitle: "Craft it: items you already own do not count"
 	quest.486B21C664042E3A.title: "Shopkeeper Key"
 	quest.48EDC9CAA41959B9.quest_desc: [
 		"Dropped by a purple Mula when it bursts."
 	]
 	quest.48EDC9CAA41959B9.title: "Purple Star Fragment"
+	quest.49297133DC9D18C2.quest_desc: [
+		"One fragment each of blue, green, yellow, red and purple (or 5 black fragments), shapeless. Always shining. It is the default Star of a party, and goes into the Star Cartridge, the Lapis Crystal Ball, the Dice Forge and the iron and golden mini-game pipes."
+	]
+	quest.49297133DC9D18C2.quest_subtitle: "Craft it: items you already own do not count"
+	quest.49297133DC9D18C2.title: "Party Star"
 	quest.4973F5A913628816.quest_desc: [
 		"Right-click a wild Mula with a star fragment of its own colour: 1 chance in 3. Tamed, it floats above you like a balloon and orbits your head when you stand still."
 	]
 	quest.4973F5A913628816.title: "Best friend"
+	quest.49A1A95AD39CC7A6.quest_desc: [
+		"A dye on a tile colours its cartridge; on a Checkpoint, the whole cube. A glow ink sac makes the tile or the cube shine in full light, an ink sac turns it off. A sponge removes the dye. The tile's item keeps it all."
+	]
+	quest.49A1A95AD39CC7A6.title: "Colours and glow"
 	quest.49C4BD610323C14F.quest_desc: [
 		"A placed Gravity Core never climbs and cannot explode: a fixed, safe attraction. Chicken carousel, item collector..."
 	]
@@ -557,7 +817,7 @@
 	quest.4A7A5955A37DF6B0.quest_desc: [
 		"Right-click a mouth, sneak in front of it, or fall into it: you rush through the pipe and come out of another end of the network, at random. Mobs, pawns and items go through too."
 	]
-	quest.4A7A5955A37DF6B0.title: "Wahoo!"
+	quest.4A7A5955A37DF6B0.title: "Whoosh!"
 	quest.4A9446B6E9669567.quest_desc: [
 		"Right-click it: five tabs (Status, Players, Program, Prizes, Settings). The Status tab lists what is missing before the \"Start the party\" button lights up. A \"!\" on a tab shows what to fix."
 	]
@@ -583,16 +843,18 @@
 	]
 	quest.4C6E654F6972F00F.title: "Fit a module"
 	quest.4D740A8C8B416C56.quest_desc: [
-		"Blank face + eye of ender. At forks the pawn chooses on its own, at random."
+		"A Blank Die Module ringed with 7 magenta star fragments, an eye of ender on top. At forks the pawn chooses on its own, at random."
 	]
+	quest.4D740A8C8B416C56.quest_subtitle: "Craft it: items you already own do not count"
 	quest.4D740A8C8B416C56.title: "Die Module: Homing"
 	quest.4DC6FEBAF30A3370.quest_desc: [
 		"Your shop is open, on and off the board."
 	]
 	quest.4DC6FEBAF30A3370.title: "Shopkeeper"
 	quest.4E3F2C32016B79DF.quest_desc: [
-		"Blank face + wind charge. Stop or again: after the result, keep it or roll again, once per module."
+		"A Blank Die Module ringed with 7 orange star fragments, a wind charge on top. Stop or again: after the result, keep it or roll again, once per module."
 	]
+	quest.4E3F2C32016B79DF.quest_subtitle: "Craft it: items you already own do not count"
 	quest.4E3F2C32016B79DF.title: "Die Module: Reroll"
 	quest.4F2AF3CC87A16DDE.quest_desc: [
 		"Press \"Play\" on the Mini-Game Controller (or \"Test\" in the page editor): everyone within 5 blocks of a linked pipe plays, without a party. Results show what each place would earn, nothing is paid, and everyone comes back."
@@ -610,14 +872,19 @@
 		"Fed to 40, the Mula grows three times bigger and bursts: 64 star fragments of its colour (a black one: 1). It flies away as a shooting star and is reborn 100 to 400 blocks away."
 	]
 	quest.51391531ACB06CD3.title: "Pop!"
+	quest.5146A65C1CB8AC6A.quest_desc: [
+		"Shoot or throw something from inside a bubble (arrow, snowball, potion...): it leaves a sparkly trail, and the creature it hits is trapped in a bubble of its own."
+	]
+	quest.5146A65C1CB8AC6A.title: "Bubbled!"
 	quest.51CDCA2A7EA71CA8.quest_desc: [
-		"Wrench in hand, the board appears: chevrons along each link, step numbers, \"?\" on forks, \"!\" on dead ends."
+		"Brush in hand, the board appears: chevrons along each link, step numbers, \"?\" on forks, \"!\" on dead ends."
 		"Click a Party Controller with the Wrench (or /steveparty board check) to list every problem of the board."
 	]
 	quest.51CDCA2A7EA71CA8.title: "Board view and check"
 	quest.51F269AB8B964D99.quest_desc: [
 		"A cross of 5 planks: 2 panels. Stencil + axe cut the board along the pattern: a silhouette."
 	]
+	quest.51F269AB8B964D99.quest_subtitle: "Craft it: items you already own do not count"
 	quest.51F269AB8B964D99.title: "Cut-Out Wooden Panel"
 	quest.52B016C6225E8428.quest_desc: [
 		"Stamp a board tile: it takes the dye's colour with the pattern drawn darker. With a cartridge inside, the cartridge keeps the look. A wet sponge wipes it."
@@ -626,15 +893,22 @@
 	quest.5322A5CC09B4DADC.quest_desc: [
 		"Two carpets over two barrels; the carpets give the awning's colours. Each column is an offer (9 max): the goods on top, prices 1 and 2 below. The goods are only a model: the sale takes the same item from the linked chests."
 	]
+	quest.5322A5CC09B4DADC.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5322A5CC09B4DADC.title: "Trading Stall"
 	quest.5392461055ABAF56.quest_desc: [
 		"Iron ingots, a smooth stone slab and an iron block. Insert a stencil and open the editor: left-click cuts a pixel, right-click fills it. Your library keeps up to 128 patterns, and learns every pattern you carry."
 	]
+	quest.5392461055ABAF56.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5392461055ABAF56.title: "Stencil Maker"
 	quest.540F65F4778F3FD7.quest_desc: [
 		"Blue concrete, a stone pressure plate, a clock, iron and redstone. Give it a Cartridge whose destinations are blocks: jump on it and they vanish, appear or toggle for a set time (clock to change it). Plastic is switchable by default."
 	]
+	quest.540F65F4778F3FD7.quest_subtitle: "Craft it: items you already own do not count"
 	quest.540F65F4778F3FD7.title: "Hop Switch"
+	quest.54F196A1821033FE.quest_desc: [
+		"Very rarely, a violent knock sends its cap flying. Without it, the Slackorn is shy and looks for it. Wear the cap, or right-click its owner with it to give it back."
+	]
+	quest.54F196A1821033FE.title: "Acorn Hat"
 	quest.55428C54977D8D69.quest_desc: [
 		"The Wrench breaks any plastic block in one hit, even under water. Shears are fast too."
 	]
@@ -647,26 +921,42 @@
 		"Pawns bound to start spaces, then \"Start the party\" (or a redstone pulse). Everyone rolls for the order, then each round is one turn per pawn and a mini-game. Stars first, then coins, decide the winner."
 	]
 	quest.564863446D9C8AC2.title: "Let's party!"
+	quest.56D37AB8E45CB7CF.quest_desc: [
+		"A Coin, a stone pressure plate and string, shapeless. A power-up: during your turn, before rolling, right-click to set it on the space where your pawn stands. Blank, it steals 10 coins; sneak + right-click to choose what it does (coins, steps back, a lost turn, an item) and sign it."
+		"The next pawn of another player that stops there springs it, for you."
+	]
+	quest.56D37AB8E45CB7CF.quest_subtitle: "Craft it: items you already own do not count"
+	quest.56D37AB8E45CB7CF.title: "Trap"
 	quest.5738F405CD1ABF02.quest_desc: [
 		"Bricks, a sculk sensor, iron and redstone. The base counts the points of the poles stacked on it. Set it up with the Wrench."
 	]
+	quest.5738F405CD1ABF02.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5738F405CD1ABF02.title: "Goal Pole Base"
 	quest.57714CCCE52A3BB1.quest_desc: [
 		"One plastic block gives 4 studs of its colour (4 studs in a square give the block back). A small piece on floor, wall or ceiling that needs no support."
 	]
+	quest.57714CCCE52A3BB1.quest_subtitle: "Craft it: items you already own do not count"
 	quest.57714CCCE52A3BB1.title: "Blue Plastic Stud"
 	quest.57CE1899FD49EB32.quest_desc: [
 		"A spyglass on a copper ingot, over 3 sticks. At night, under a clear sky, look into it: the scroll wheel replays past shooting-star nights within 1000 blocks. Keep a star in the sights to light a guide star above the Mulas."
 	]
+	quest.57CE1899FD49EB32.quest_subtitle: "Craft it: items you already own do not count"
 	quest.57CE1899FD49EB32.title: "Telescope"
 	quest.5806AB33C242D3BE.quest_desc: [
 		"Leather, planks, a stencil and a stick. Loads 9 stencils and 9 dyes (sneak + right-click). Sneak + scroll picks the stencil or the colour (G switches), right-click stamps it, signs, walls, tiles and podiums included."
 	]
+	quest.5806AB33C242D3BE.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5806AB33C242D3BE.title: "Stencil Hammer"
 	quest.58AD4044E1C5BEBD.quest_desc: [
 		"4 identical stones (stone, granite, deepslate, sandstone...): 1 engraved stone. The stencil really digs the pattern; side by side, their tops merge into one lintel."
 	]
+	quest.58AD4044E1C5BEBD.quest_subtitle: "Craft it: items you already own do not count"
 	quest.58AD4044E1C5BEBD.title: "Rock Sign"
+	quest.597CC5EE9AFD84E4.quest_desc: [
+		"Leather, glowstone dust and a copper ingot. Worn with its lamp lit (G), it shows the whole board all the time, the details of the nearby spaces and the exact numbers of the one you look at."
+	]
+	quest.597CC5EE9AFD84E4.quest_subtitle: "Craft it: items you already own do not count"
+	quest.597CC5EE9AFD84E4.title: "Explorer's Helmet"
 	quest.598F31A259B60ADB.quest_desc: [
 		"Both families in every shape, and checkerboard tiles."
 	]
@@ -674,35 +964,56 @@
 	quest.59BCFCAF6BA910B4.quest_desc: [
 		"6 iron ingots, a Party Star and the copper mini-game pipe. Reaches the whole dimension."
 	]
+	quest.59BCFCAF6BA910B4.quest_subtitle: "Craft it: items you already own do not count"
 	quest.59BCFCAF6BA910B4.title: "Iron Mini-game Pipe"
+	quest.5A1C048043D2611F.quest_desc: [
+		"A glass block over a Bubbler at the crafting table. It tells where the creature of a space appears (Boxed Trader, Boomcart, Mula, Wickling, Slackorn, Mistigri, Tricauldron) and which way it faces: link it with the Tile Linker Brush, from the space to the bubble. Wrench: \"Always visible\" (the creature lives on the board during a party) and height; sneak + Wrench turns it."
+	]
+	quest.5A1C048043D2611F.quest_subtitle: "Craft it: items you already own do not count"
+	quest.5A1C048043D2611F.title: "Spawn Bubble"
+	quest.5A220F1629768E53.quest_desc: [
+		"Give it raw cod or salmon, one at a time: it takes 6 to 10. Tamed, it follows you everywhere, gives you Luck within 16 blocks, and monsters within 10 blocks of it miss one hit in three. Empty hand: sit or stand."
+	]
+	quest.5A220F1629768E53.title: "A lucky cat"
 	quest.5A7CE62676D0F450.quest_desc: [
 		"A Podium + a gold ingot, shapeless. Only a look: the height of the column decides the place."
 	]
+	quest.5A7CE62676D0F450.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5A7CE62676D0F450.title: "Gold Podium"
 	quest.5B4767F40E06F23E.quest_desc: [
 		"Mix star fragments like dyes: black + white. You get back as many fragments as you put in."
 	]
+	quest.5B4767F40E06F23E.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5B4767F40E06F23E.title: "Gray Star Fragment"
 	quest.5B628A39A4C798B1.quest_desc: [
 		"The same with two polished concrete colours. Every pair of colours works; the item keeps its colours in its name."
 	]
+	quest.5B628A39A4C798B1.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5B628A39A4C798B1.title: "Polished Concrete Tiles"
 	quest.5C4295392DE2E5D1.quest_desc: [
 		"6 copper ingots around a paper. Click it with a page: it becomes the entrance to that mini-game outside a party, within 100 blocks. Coloured pipes linked to it send each player to their role."
 	]
+	quest.5C4295392DE2E5D1.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5C4295392DE2E5D1.title: "Copper Mini-game Pipe"
 	quest.5C6EDA264FC2653D.quest_desc: [
 		"6 blocks in steps: 4 stairs."
 	]
+	quest.5C6EDA264FC2653D.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5C6EDA264FC2653D.title: "Polished Orange Terracotta Stairs"
 	quest.5DA080B1E3CBDCA8.quest_desc: [
 		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Players\"."
 	]
+	quest.5DA080B1E3CBDCA8.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5DA080B1E3CBDCA8.title: "Green Pipe: Players"
 	quest.5DD0CA51D02BCCC0.quest_desc: [
 		"A stick, a slime ball and a bowl. Right-click a mob to mute it; again to give its voice back."
 	]
+	quest.5DD0CA51D02BCCC0.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5DD0CA51D02BCCC0.title: "Plunger"
+	quest.5DF43B3F6C9F0DC0.quest_desc: [
+		"A wild Wickling steals one shiny item from a player within 2 blocks and runs off giggling. With another player nearby, it flies the item to them and drops it at their feet! A torch or a lantern in hand protects you. Melee hits do nothing (it vanishes and reappears); projectiles work."
+	]
+	quest.5DF43B3F6C9F0DC0.title: "Stop, thief!"
 	quest.5E174C6DCB411FC0.quest_desc: [
 		"Dropped by a black Mula when it bursts (only one, and black Mulas are rare)."
 	]
@@ -710,7 +1021,12 @@
 	quest.5E38267B9B2C3CF9.quest_desc: [
 		"4 light blue concrete in a square: 4 polished blocks (17 colours for terracotta, 16 for concrete). The stonecutter makes every shape from the vanilla block directly."
 	]
+	quest.5E38267B9B2C3CF9.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5E38267B9B2C3CF9.title: "Polished Light Blue Concrete"
+	quest.5E498DCFAA8D5873.quest_desc: [
+		"Hold any seeds: magpies within 10 blocks stop fleeing, come to you in little hops and follow you. Chicks too."
+	]
+	quest.5E498DCFAA8D5873.title: "Seed charmer"
 	quest.5E623F55BBE37FE9.quest_desc: [
 		"Shears again on a trader that has already lost its bandana: you steal the look of its box. Wear it as a chestplate; sneak to hide inside: stand still 2 s and you become a real block."
 	]
@@ -723,47 +1039,89 @@
 	quest.5F62DDBD464BC0DA.quest_desc: [
 		"6 bricks in steps: 4 stairs."
 	]
+	quest.5F62DDBD464BC0DA.quest_subtitle: "Craft it: items you already own do not count"
 	quest.5F62DDBD464BC0DA.title: "Polished Light Blue Concrete Brick Stairs"
 	quest.5FECE4CA8D043161.quest_desc: [
-		"Trader, stall, a stock chest and a register, all linked with the key; an offer on the stall and stock in the chest. Customers right-click the trader and buy. The owner's shop is protected."
+		"Trader, stall, a stock chest and a register, all linked with the key; an offer on the stall and stock in the chest. Customers right-click the trader: its cardboard screen shows the offers as cards (price → item; red when you can't pay, crossed out when sold out). The owner's shop is protected."
 	]
 	quest.5FECE4CA8D043161.title: "Open for business"
+	quest.6044441CFBBF75EE.quest_desc: [
+		"In the Nether wastes, basalt deltas and soul sand valleys, by the lava or swimming in it: rare and alone. Neutral unless you hit it. Near a bastion it may carry piglins, and then it hunts players. Look at one to complete this quest."
+	]
+	quest.6044441CFBBF75EE.title: "Three heads, one cauldron"
+	quest.609D01D79D635986.quest_desc: [
+		"5 gold nuggets: a Candle Saucer. A candle holder + the saucer at the crafting table: the holder sits on its saucer. Alone in the grid, it comes off again, nothing lost."
+	]
+	quest.609D01D79D635986.quest_subtitle: "Craft it: items you already own do not count"
+	quest.609D01D79D635986.title: "Candle Saucer"
+	quest.60C92A51C5BD85F6.quest_desc: [
+		"Plant an acorn on farmland: it grows in 4 stages like a crop, then hatches by itself into a sleeping young Slackorn. Bone meal speeds it up."
+	]
+	quest.60C92A51C5BD85F6.title: "Plant an acorn"
+	quest.615172E117B614F4.quest_desc: [
+		"A gold ingot + an amethyst shard, shapeless. It opens the gates of Key Gate spaces, once. Sell it in a shop, put it in a prize chest or a Tricauldron: like any item."
+	]
+	quest.615172E117B614F4.quest_subtitle: "Craft it: items you already own do not count"
+	quest.615172E117B614F4.title: "Gate Key"
 	quest.61DD313CE6A35BC2.quest_desc: [
 		"Draw your own 16x16 pattern on the grid (flip, rotate, invert, undo...) and save it on the stencil."
 	]
 	quest.61DD313CE6A35BC2.title: "Cut a pattern"
 	quest.620A5C7BA9429AD1.quest_desc: [
-		"Tiles, checkpoints, every cartridge and a closed loop: your board is ready for pawns."
+		"Tiles, checkpoints, the main cartridges and a closed loop: your board is ready for pawns."
 	]
 	quest.620A5C7BA9429AD1.title: "Board builder"
 	quest.6305DEBDCAB9BBA0.quest_desc: [
-		"Blank face + clock. The die spins slowly; its roller hits it to stop on the face shown."
+		"A Blank Die Module ringed with 7 light blue star fragments, a clock on top. The die spins slowly; its roller hits it to stop on the face shown."
 	]
+	quest.6305DEBDCAB9BBA0.quest_subtitle: "Craft it: items you already own do not count"
 	quest.6305DEBDCAB9BBA0.title: "Die Module: Slow"
 	quest.639372715E2D9036.quest_desc: [
 		"Place two Teleport spaces of the same colour on one board. A dye on the tile (purple, green, orange, blue...) changes its network. A lone space of its colour sends nobody anywhere."
 	]
 	quest.639372715E2D9036.title: "A teleport network"
+	quest.63B4933358A5ED3D.quest_desc: [
+		"Wild magpies live in forests, taigas and the cherry grove, 1 to 3 together, by day. They hop from perch to perch (fences, walls, logs, chains) and fly off when you come within 6 blocks. Six colours, depending on the forest. Look at one to complete this quest."
+	]
+	quest.63B4933358A5ED3D.title: "A Magpie!"
 	quest.63E7493B3F8C4B36.quest_desc: [
 		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Spectators\"."
 	]
+	quest.63E7493B3F8C4B36.quest_subtitle: "Craft it: items you already own do not count"
 	quest.63E7493B3F8C4B36.title: "White Pipe: Spectators"
 	quest.653CF6E9C6766795.quest_desc: [
 		"4 plastic blocks and 2 glass: 6 windowed pipes, with a continuous window along the tube."
 	]
+	quest.653CF6E9C6766795.quest_subtitle: "Craft it: items you already own do not count"
 	quest.653CF6E9C6766795.title: "Cyan Windowed Pipe"
+	quest.6544C5A9787AD7A1.quest_desc: [
+		"Find a black cat in or within 16 blocks of a witch hut. Right-click it with any die of the mod: the die is thrown above it. If it lands on 1 (or 0), the cat swells into a Mistigri. Any other result: it just hisses. Look at a Mistigri to complete this quest."
+	]
+	quest.6544C5A9787AD7A1.title: "A stroke of bad luck"
 	quest.65FD4DC5FA855317.quest_desc: [
 		"Roll near one of your pawns standing on a linked board: it walks the result, step by step. At a fork, right-click an arrow empty-handed to choose the way."
 	]
 	quest.65FD4DC5FA855317.title: "Move a pawn"
-	quest.680DFFB134E7498D.quest_desc: [
-		"2 iron ingots and 2 nether quartz in a square: 4 Blank Dice Faces. Every face starts from a blank one (stonecutter), and the Dice Forge uses them up."
+	quest.67A3F4DF1F5ABD68.quest_desc: [
+		"Cartridge + acorn, shapeless. On the board, a tower of Slackorns pushes the pawn that stops there forward or back along the path (its menu: the distance and the tower's height), with every pawn the tower meets. Each pawn met knocks a Slackorn off the tower; with none left, the tower stops."
 	]
+	quest.67A3F4DF1F5ABD68.quest_subtitle: "Craft it: items you already own do not count"
+	quest.67A3F4DF1F5ABD68.title: "Slackorn Cartridge"
+	quest.680DFFB134E7498D.quest_desc: [
+		"2 iron ingots and 2 nether quartz in a square: 4 Blank Die Faces. Every face starts from a blank one (stonecutter), and the Dice Forge uses them up."
+	]
+	quest.680DFFB134E7498D.quest_subtitle: "Craft it: items you already own do not count"
 	quest.680DFFB134E7498D.title: "Blank Die Face"
 	quest.68FDB8B9B18F5221.quest_desc: [
-		"Redstone and an iron ingot. The Wrench links tiles together (modes Trace, Edit, Cut: R or sneak + scroll), shows the board and its problems, opens cartridge blocks with sneak + right-click, and breaks any plastic block in one hit."
+		"Redstone and an iron ingot. Right-click opens a tile, a Checkpoint or a router, no need to sneak; another cartridge in the off hand swaps the tile's cartridge, links kept. It also sets podiums, poles and Spawn Bubbles, and breaks any plastic block in one hit."
 	]
+	quest.68FDB8B9B18F5221.quest_subtitle: "Craft it: items you already own do not count"
 	quest.68FDB8B9B18F5221.title: "Wrench"
+	quest.69316CAE3341B411.quest_desc: [
+		"Right-click in the air with the cartridge: its list of sentences (12 at most). Each one has a type (steal, redistribute, step back, cursed die, mercy), a target (who lands there, 1st, last, everyone, the others, richest, poorest, random), a number and a weight. \"On the roulette\" sets how many are drawn at each stop."
+		"Nothing is created: fines go to the party's bank, mercy comes from it."
+	]
+	quest.69316CAE3341B411.title: "Write the sentences"
 	quest.69911E8F52BE5816.quest_desc: [
 		"At night, Mulas on a lead can lift you up like balloons: one big Mula, two half-full ones or three of any size. You land softly at dawn."
 	]
@@ -773,21 +1131,29 @@
 	]
 	quest.6A47B29FC1D81DDA.title: "Premium Die Face 10"
 	quest.6AD835CCA129C2DD.quest_desc: [
-		"4 plastic pellets + 1 dye + 1 amethyst shard, shapeless: 4 blocks of the dye's colour. 8 blocks around a dye recolour them. Neighbours of the same colour merge into one piece (up to 4x2x4)."
+		"4 plastic pellets + 1 dye, shapeless: 4 blocks of the dye's colour. 8 blocks around a dye recolour them. Neighbours of the same colour merge into one piece (up to 4x2x4)."
 	]
+	quest.6AD835CCA129C2DD.quest_subtitle: "Craft it: items you already own do not count"
 	quest.6AD835CCA129C2DD.title: "Red Plastic Block"
 	quest.6B5FF43F4D5E73E2.quest_desc: [
-		"Plastic pellets around a shulker box. Right-click your pawn with an empty Token to store it, right-click a block to put it back: the way to move a pawn by hand."
+		"5 plastic pellets and a chest. Right-click your pawn with an empty Token to store it, right-click a block to put it back: the way to move a pawn by hand."
 	]
+	quest.6B5FF43F4D5E73E2.quest_subtitle: "Craft it: items you already own do not count"
 	quest.6B5FF43F4D5E73E2.title: "Token"
 	quest.6C63BD50698F0417.quest_desc: [
 		"Two rows of 3: 6 walls."
 	]
+	quest.6C63BD50698F0417.quest_subtitle: "Craft it: items you already own do not count"
 	quest.6C63BD50698F0417.title: "Polished Light Blue Concrete Brick Wall"
 	quest.6D8D21CED52BF7F8.quest_desc: [
 		"Mix star fragments like dyes: blue + green. You get back as many fragments as you put in."
 	]
+	quest.6D8D21CED52BF7F8.quest_subtitle: "Craft it: items you already own do not count"
 	quest.6D8D21CED52BF7F8.title: "Cyan Star Fragment"
+	quest.6E17301AB8D3AB20.quest_desc: [
+		"Feed seeds to two wild magpies within 8 blocks of each other: they fall in love and a chick hatches, of one parent's colour. In a nest it sits inside and sleeps there at night; it grows up in 20 minutes (seeds make it faster)."
+	]
+	quest.6E17301AB8D3AB20.title: "A chick!"
 	quest.6E22696E6BCB0E7C.quest_desc: [
 		"Cursed faces (1 to 3) show a purple skull. For now they count like normal numbers."
 	]
@@ -795,108 +1161,146 @@
 	quest.6E614CCC831846DA.quest_desc: [
 		"A Podium + a copper ingot, shapeless. Only a look: the height of the column decides the place."
 	]
+	quest.6E614CCC831846DA.quest_subtitle: "Craft it: items you already own do not count"
 	quest.6E614CCC831846DA.title: "Bronze Podium"
 	quest.6EF85DD450A37FB8.quest_desc: [
 		"Page in hand, click a pipe mouth to link it (click again to unlink); linked pipes glow while you hold the page. When the mini-game starts, each player comes out of a pipe of their role."
 	]
 	quest.6EF85DD450A37FB8.title: "Link the pipes"
 	quest.6F216B6287815B35.quest_desc: [
-		"Map, stained glass, redstone torch, mushroom stems, a crafter, iron and redstone. The heart of a party."
+		"A map, glass and a redstone torch over gold ingots and a chest, on 3 iron ingots. The heart of a party: it runs the turns, the mini-games and the prizes."
 	]
+	quest.6F216B6287815B35.quest_subtitle: "Craft it: items you already own do not count"
 	quest.6F216B6287815B35.title: "Party Controller"
 	quest.6FC6A979673D9964.quest_desc: [
 		"Mix star fragments like dyes: purple + pink. You get back as many fragments as you put in."
 	]
+	quest.6FC6A979673D9964.quest_subtitle: "Craft it: items you already own do not count"
 	quest.6FC6A979673D9964.title: "Magenta Star Fragment"
 	quest.6FE0D77A51E3FB74.quest_desc: [
 		"6 blocks in steps: 4 stairs. Aligned shapes of the same colour connect their textures too."
 	]
+	quest.6FE0D77A51E3FB74.quest_subtitle: "Craft it: items you already own do not count"
 	quest.6FE0D77A51E3FB74.title: "Green Plastic Stairs"
 	quest.7025AE0D120A1991.quest_desc: [
 		"A plastic block in still water rises to the surface, carrying whatever stands on it. Over soul sand, a bubble column sends it up fast (an elevator); over magma, down. A chain anchors it."
 	]
 	quest.7025AE0D120A1991.title: "It floats!"
+	quest.71053C5ABE278389.quest_desc: [
+		"By day, a magpie picks up a shiny item lying on the ground within 12 blocks (gold, iron, copper, diamond, emerald, lapis, redstone, amethyst, coins...) and carries it to its nest; without a nest it adopts the nearest one. At night it sleeps in a free nest."
+	]
+	quest.71053C5ABE278389.title: "Thief of shiny things"
+	quest.712A530A271BB07F.quest_desc: [
+		"Ridden, steered, merged, and placed on the board."
+	]
+	quest.712A530A271BB07F.title: "Bubble blower"
+	quest.71B10B23BE563B45.quest_desc: [
+		"A thief tamed into a lamp, and a robbery on the board."
+	]
+	quest.71B10B23BE563B45.title: "Candlelight"
+	quest.71C9296D907886EF.quest_desc: [
+		"Dodged, drained, tamed, ridden, and put on the board."
+	]
+	quest.71C9296D907886EF.title: "Lava rider"
 	quest.71CC2E37EF714902.quest_desc: [
 		"2 redstone, 2 paper and 2 plastic pellets. A cartridge gives a tile its role and its destinations. The plain Cartridge has no role: it is just a path."
-		"Right-click a block with it to add a destination; right-click in the air to open its menu. Every other cartridge is this one plus an ingredient."
+		"Right-click in the air with it to open its menu. Every other cartridge is this one plus an ingredient."
 	]
+	quest.71CC2E37EF714902.quest_subtitle: "Craft it: items you already own do not count"
 	quest.71CC2E37EF714902.title: "Cartridge"
 	quest.722DDCFD99F1743D.quest_desc: [
 		"Blank face + spider eye: a -1 Debt face (stonecutter for -2 to -10). The roller loses that many coins, never more than they have."
 	]
+	quest.722DDCFD99F1743D.quest_subtitle: "Craft it: items you already own do not count"
 	quest.722DDCFD99F1743D.title: "Debt Die Face −1"
 	quest.734C85BCB3D708BB.quest_desc: [
 		"4 iron nuggets around a paper: 2 blank stencils. Structure chests sometimes hold stencils with one of 50 built-in patterns. A cut stencil + blank ones copy it."
 	]
+	quest.734C85BCB3D708BB.quest_subtitle: "Craft it: items you already own do not count"
 	quest.734C85BCB3D708BB.title: "Stencil"
 	quest.736773478A5996A7.quest_desc: [
 		"Cartridge + repeater. The player whose pawn ends on it rolls again at once, and gets the die back. One extra turn only."
 	]
+	quest.736773478A5996A7.quest_subtitle: "Craft it: items you already own do not count"
 	quest.736773478A5996A7.title: "Roll Again Cartridge"
+	quest.73EEF7997DCDB74C.quest_desc: [
+		"A magpie comes to live on the linked nest. Every pawn that passes the space stakes coins (1 by default; less if its player has less), the magpie fetches them, and the pawn that stops there wins the whole nest. Its menu: stake, base (taken from the space's storage or the bank, never created) and cap. At the end of the party the nest's coins go back to that storage."
+	]
+	quest.73EEF7997DCDB74C.title: "The Common Pot"
 	quest.7474041B576499AF.quest_desc: [
 		"Smelt sugar cane in a furnace. Plastic pellets are in almost everything: tiles, cartridges, tokens and every plastic block."
 	]
+	quest.7474041B576499AF.quest_subtitle: "Hand the items in: click the task"
 	quest.7474041B576499AF.title: "Plastic Pellets"
 	quest.74A69E19FF0BCA86.quest_desc: [
 		"3 bricks in a row: 6 slabs."
 	]
+	quest.74A69E19FF0BCA86.quest_subtitle: "Craft it: items you already own do not count"
 	quest.74A69E19FF0BCA86.title: "Polished Light Blue Concrete Brick Slab"
 	quest.75B73EB45B67D1C0.quest_desc: [
 		"Mulas fall from the sky on shooting-star nights (Ephemeride), mostly at full moon: follow the direction of the first wave of stars, 150 to 600 blocks away. Look at a Mula to complete this quest."
 	]
 	quest.75B73EB45B67D1C0.title: "A Mula!"
 	quest.75D850169554760C.quest_desc: [
-		"Click the first tile again to close the loop: confetti! A loop with a Start tile is all a party needs."
+		"Paint back to the first tile to close the loop. A loop with a Start space is all a party needs."
 		"Several links from one tile make a fork: the player chooses the way. No link: a dead end."
 	]
 	quest.75D850169554760C.title: "Close the loop"
 	quest.778C3F69BBD69981.quest_desc: [
 		"Two rows of 3: 6 walls."
 	]
+	quest.778C3F69BBD69981.quest_subtitle: "Craft it: items you already own do not count"
 	quest.778C3F69BBD69981.title: "Polished Light Blue Concrete Wall"
 	quest.77D47E2D75956F53.quest_desc: [
 		"4 gold ingots, an eye of ender, 2 Party Stars and the iron mini-game pipe. Reaches every dimension."
 	]
+	quest.77D47E2D75956F53.quest_subtitle: "Craft it: items you already own do not count"
 	quest.77D47E2D75956F53.title: "Golden Mini-game Pipe"
 	quest.77FE553DBC59E8E9.quest_desc: [
 		"Three wool: the colour of the wool makes the flag's (mixed like leather armour). Right-click a segment to hang it; it slides down when the goal is reached. Dye it again in the grid."
 	]
+	quest.77FE553DBC59E8E9.quest_subtitle: "Craft it: items you already own do not count"
 	quest.77FE553DBC59E8E9.title: "Flag"
 	quest.78060E8B8175066C.quest_desc: [
-		"Blank face + compass. The roller picks the face."
+		"A Blank Die Module ringed with 7 blue star fragments, a compass on top. The roller picks the face."
 	]
+	quest.78060E8B8175066C.quest_subtitle: "Craft it: items you already own do not count"
 	quest.78060E8B8175066C.title: "Die Module: Choice"
 	quest.785AA345B1B2CC7F.quest_desc: [
-		"Blank face + rabbit's foot. One extra roll per module (up to 5): keep the best one."
+		"A Blank Die Module ringed with 7 green star fragments, a rabbit's foot on top. One extra roll per module (up to 5): keep the best one."
 	]
+	quest.785AA345B1B2CC7F.quest_subtitle: "Craft it: items you already own do not count"
 	quest.785AA345B1B2CC7F.title: "Die Module: Lucky"
 	quest.78C9F801227DBCA8.quest_desc: [
 		"Cartridge + red dye. A pawn that reaches a Stop space ends its move there, whatever steps it has left. Works on a Checkpoint too."
 	]
+	quest.78C9F801227DBCA8.quest_subtitle: "Craft it: items you already own do not count"
 	quest.78C9F801227DBCA8.title: "Stop Cartridge"
 	quest.79E5CE07E2521CF7.quest_desc: [
 		"Shears on an open trader that wears its bandana: it falls, and the trader hides for 20 s. Wear it on your head: traders ignore you. Give one back to a bald trader to change its colour."
 	]
 	quest.79E5CE07E2521CF7.title: "Bandana"
 	quest.79EBF22157E78E6D.quest_desc: [
-		"The core climbs with the fragments in the forge: 256 fragments (4 full stacks, or 4 black ones, each black counts as 64) lift it 16 blocks up. A forge at max level guarantees an Ephemeride every full moon."
+		"The core climbs with the fragments in the forge: 320 fragments (5 full stacks, or 5 black ones, each black counts as 64) lift it 16 blocks up. A forge at max level guarantees an Ephemeride every full moon."
 	]
 	quest.79EBF22157E78E6D.title: "Highest orbit"
 	quest.7A67F524EE372745.quest_desc: [
-		"Put a Shop Cartridge on your board within 32 blocks of the trader: a pawn that stops there opens the shop for its player, wherever they are. The turn waits for the purchases."
+		"In a party, a pawn stops on a Shop space: its own Boxed Trader pops out, with its stall. Its player right-clicks the trader (or clicks [Open the shop] in the chat) and buys up to the cartridge's limit (1 by default); the turn waits for the purchases. Payments go to the bank."
 	]
 	quest.7A67F524EE372745.title: "Shop stop"
 	quest.7B61B7E9D8BEF2E8.quest_desc: [
 		"Two plastic blocks (any colour) on top of each other: 4 sticks. The plastic fences are made of them."
 	]
+	quest.7B61B7E9D8BEF2E8.quest_subtitle: "Craft it: items you already own do not count"
 	quest.7B61B7E9D8BEF2E8.title: "Plastic Stick"
 	quest.7CD8704D1E8BE3C5.quest_desc: [
 		"A blue plastic stud + paper + redstone: 4 cards. Every pawn plays once."
 		"Cards go in the 24 slots of the Program tab and are read left to right."
 	]
+	quest.7CD8704D1E8BE3C5.quest_subtitle: "Craft it: items you already own do not count"
 	quest.7CD8704D1E8BE3C5.title: "Party Card: Turns"
 	quest.7CE9B67A9BE1ED07.quest_desc: [
-		"A Mula eats only edible food of its colour: blue = cod, red = apples and red meat, green = melon, yellow = golden food and bread, purple = chorus and beetroot, black = cookies, stews and steak. The tooltip tells \"Mula food\"."
+		"A Mula eats only edible food of its colour: blue = cod, red = apples, berries, salmon and raw meat, green = melon, yellow = golden food, bread and honey, purple = chorus and beetroot, black = dried kelp, cookies, stews and steak. The tooltip tells \"Mula food\"."
 	]
 	quest.7CE9B67A9BE1ED07.title: "Snack time"
 	quest.7D674A4D41A2C9AB.quest_desc: [
@@ -914,19 +1318,30 @@
 	quest.7E305E47E151BDCF.quest_desc: [
 		"Two rows of 3 blocks: 6 walls."
 	]
+	quest.7E305E47E151BDCF.quest_subtitle: "Craft it: items you already own do not count"
 	quest.7E305E47E151BDCF.title: "Purple Plastic Wall"
 	quest.7E41138FB7521482.quest_desc: [
-		"8 iron ingots around a wind charge. Rolls 1 to 10."
+		"Rolls 1 to 10. Your first two come with the Tile quest (and the hub's starter chest); more come out of the Dice Forge."
 	]
-	quest.7E41138FB7521482.title: "Default Die"
+	quest.7E41138FB7521482.title: "Simple Die"
 	quest.7F2770DE1C7C8D45.quest_desc: [
 		"Cartridge + ender pearl. A pawn that ends on it is sent to another Teleport space of the same network colour (violet, green, orange or blue)."
 	]
+	quest.7F2770DE1C7C8D45.quest_subtitle: "Craft it: items you already own do not count"
 	quest.7F2770DE1C7C8D45.title: "Teleport Cartridge"
+	quest.7F5DEAD5FEF3AA2C.quest_desc: [
+		"Flint and steel on a wild Wickling: the first strike makes it give back what it stole, then each strike has 1 chance in 3 to tame it. Tamed, it follows you as a lamp: in front of you in the light, at your shoulder in the dark, where your crosshair goes through it. Flint and steel also heals it."
+	]
+	quest.7F5DEAD5FEF3AA2C.title: "Rekindle the flame"
 	quest.7FA9DC98F4753074.quest_desc: [
 		"Right-click the forge with the Gravity Core: it sinks in, then rises and floats above the forge. Sneak + right-click empty-handed takes it back. Hitting the floating core makes it explode (and it is lost)."
 	]
 	quest.7FA9DC98F4753074.title: "Ignite the forge"
+	quest.7FEC43F982FF3CC8.quest_desc: [
+		"Cartridge + iron bars. A wall on the path: a pawn arriving with steps left only goes through if its roll meets the condition (7 or more by default, or a double, a triple); otherwise it stops here. In Barrier mode, each turn is a new try until it passes."
+	]
+	quest.7FEC43F982FF3CC8.quest_subtitle: "Craft it: items you already own do not count"
+	quest.7FEC43F982FF3CC8.title: "Threshold Obstacle Cartridge"
 	reward_table.1FEF45914C419791.title: "Party Favors"
 	reward_table.536A6CC3E21C8B88.title: "Star Chest"
 }

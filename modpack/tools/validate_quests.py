@@ -314,8 +314,10 @@ def main():
                 err(f"{where}: unknown dependency_requirement {qd['dependency_requirement']!r}")
             if "icon" in qd:
                 check_item(qd["icon"], f"{where} icon")
-            if not qd.get("tasks"):
-                err(f"{where}: no task")
+            if not qd.get("tasks") and not qd.get("dependencies"):
+                # A task-less quest completes by itself once its dependencies are done (milestones);
+                # without dependencies it would complete at once.
+                err(f"{where}: no task and no dependency")
             for t in qd.get("tasks", []):
                 tw = f"{where} task {t.get('id')}"
                 register(t.get("id"), tw)
@@ -326,6 +328,12 @@ def main():
                     check_item(t.get("item"), tw)
                     if num(t.get("count", 1)) < 1:
                         err(f"{tw}: count < 1")
+                if t.get("type") == "advancement":
+                    adv = t.get("advancement", "")
+                    if not adv.startswith("steveparty:") or not os.path.isfile(os.path.join(
+                            ROOT, "src", "main", "resources", "data", "steveparty", "advancement",
+                            adv.split(":", 1)[1] + ".json")):
+                        err(f"{tw}: unknown advancement {adv!r}")
                 if t.get("type") == "observation":
                     if t.get("observation_type") == "entity_type" and not entity_exists(t.get("to_observe", "")):
                         err(f"{tw}: unknown entity {t.get('to_observe')}")

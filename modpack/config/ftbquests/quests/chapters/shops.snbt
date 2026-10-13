@@ -31,6 +31,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "01DDB5C3276A8EDA"
+					silent: true
+					type: "command"
+				}
 			]
 			size: 1.25d
 			tasks: [
@@ -69,14 +77,19 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "198DF3B314B87249"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
 					id: "5AC4A724DD1AFC8D"
-					observation_type: "entity_type"
-					timer: 20L
-					to_observe: "steveparty:boxed_trader"
-					type: "observation"
+					type: "checkmark"
 				}
 			]
 			x: 2.0d
@@ -101,6 +114,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3CE5D3D5326D8F6D"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -109,11 +130,12 @@
 						count: 1
 						id: "steveparty:trading_stall"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 4.0d
-			y: -1.5d
+			y: -1.25d
 		}
 		{
 			dependencies: [
@@ -134,6 +156,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "6B2979E1B7B77B27"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -142,6 +172,7 @@
 						count: 1
 						id: "steveparty:cash_register"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
@@ -167,6 +198,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "14BF4D9806536979"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -175,11 +214,12 @@
 						count: 1
 						id: "steveparty:shopkeeper_key"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 4.0d
-			y: 1.5d
+			y: 1.25d
 		}
 		{
 			dependencies: [
@@ -202,6 +242,14 @@
 					table_id: 2301134424961554321L
 					type: "random"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "4550AF52E790B7B8"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "hexagon"
 			size: 1.25d
@@ -216,7 +264,6 @@
 		}
 		{
 			dependencies: [
-				"5FECE4CA8D043161"
 				"33F2B84D658F752B"
 			]
 			icon: {
@@ -238,6 +285,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "2B50136E4053C6C9"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -245,8 +300,8 @@
 					type: "checkmark"
 				}
 			]
-			x: 8.0d
-			y: 0.0d
+			x: 7.75d
+			y: -1.25d
 		}
 		{
 			dependencies: [
@@ -267,6 +322,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "73084C9309864107"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -279,7 +342,7 @@
 				}
 			]
 			x: 2.0d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -301,6 +364,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "7199C47BA1978375"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -312,8 +383,8 @@
 					type: "item"
 				}
 			]
-			x: 2.0d
-			y: 3.5d
+			x: 4.0d
+			y: 2.75d
 		}
 		{
 			dependencies: [
@@ -345,17 +416,20 @@
 					table_id: 6010736241247292296L
 					type: "random"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "66572EEC7F971DD6"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "gear"
 			size: 2.0d
-			tasks: [
-				{
-					id: "737354CCCC5502A2"
-					type: "checkmark"
-				}
-			]
-			x: 10.0d
-			y: 0.0d
+			tasks: [ ]
+			x: 9.5d
+			y: 0.25d
 		}
 	]
 }
