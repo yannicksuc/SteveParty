@@ -139,7 +139,7 @@ public class MistigriOutcomeGameTests implements SteveGameTest {
 
     /**
      * Every kind on every target: it touches the players aimed at and only them; what is taken goes to the bank, what
-     * is given comes out of it, the common pot only passes coins and stars from player to player.
+     * is given comes out of it, a redistribution only passes coins and stars from player to player.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void everyKindOnEveryTarget(TestContext context) {
@@ -239,7 +239,7 @@ public class MistigriOutcomeGameTests implements SteveGameTest {
         context.complete();
     }
 
-    /** The common pot: dealt out to those who put nothing in, the poorest first; among all when all put in. */
+    /** A redistribution: dealt out to those who gave nothing, the poorest first; among all when all gave. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void theCommonPotFeedsThePoorestFirst(TestContext context) {
         Table table = table(context, 4);
@@ -423,7 +423,7 @@ public class MistigriOutcomeGameTests implements SteveGameTest {
             context.assertEquals(roulette.lines().getFirst().text(), robinHood.text(), "its sentence");
             context.assertEquals(roulette.lines().getFirst().chance(), 100, "its chance");
             when(context, () -> done[0], WHOLE, "the show ends", () -> {
-                context.assertEquals(count(b, COIN), 0, "the first place put 10 coins into the pot");
+                context.assertEquals(count(b, COIN), 0, "the first place gave 10 coins");
                 context.assertEquals(count(a, COIN), 10, "dealt out to the other");
                 context.assertEquals(count(b, STAR), 1, "nothing else");
                 context.complete();

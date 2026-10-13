@@ -19,7 +19,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class OutcomeListModule extends CartridgeModule {
     /** A row closed; the box's height (rows shown); the line under it (add, draws). */
-    public static final int ROW_H = 17, VISIBLE_ROWS = 7, LIST_H = VISIBLE_ROWS * ROW_H + 2, FOOTER_GAP = 3, FOOTER_H = 15;
+    /**
+     * The box: its 1-pixel edge, {@link #LIST_PAD} of room above and under the rows, {@link #VISIBLE_ROWS} rows of
+     * {@link #ROW_H}; then {@link #FOOTER_GAP} and the line under it (add, draws). A spacing scale of 2 / 4 / 6 pixels.
+     */
+    public static final int ROW_H = 21, VISIBLE_ROWS = 6, LIST_PAD = 2, LIST_H = 2 + 2 * LIST_PAD + VISIBLE_ROWS * ROW_H,
+            FOOTER_GAP = 4, FOOTER_H = 15;
     /** Its height under its title. */
     public static final int BODY_H = LIST_H + FOOTER_GAP + FOOTER_H;
     /** The actions. */
