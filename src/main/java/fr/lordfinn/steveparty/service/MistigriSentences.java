@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
@@ -141,7 +142,8 @@ public final class MistigriSentences {
 
     /** A sentence's line on the roulette: its icon, text, tone and chance (-1: unsaid). */
     static OutcomeRoulettePayload.Line line(Outcome outcome, int chance, PartyControllerEntity party, @Nullable Text lander) {
-        return new OutcomeRoulettePayload.Line(outcome.kind().icon(party.getCurrency(PartyCurrency.COIN), party.getCurrency(PartyCurrency.STAR)), outcome.text(lander),
+        ItemStack coin = party.getCurrency(PartyCurrency.COIN), star = party.getCurrency(PartyCurrency.STAR);
+        return new OutcomeRoulettePayload.Line(outcome.kind().icon(coin, star), outcome.text(lander, coin, star),
                 switch (outcome.kind().tone()) {
                     case 1 -> OutcomeRoulettePayload.Tone.GOOD;
                     case 0 -> OutcomeRoulettePayload.Tone.NEUTRAL;
@@ -315,7 +317,7 @@ public final class MistigriSentences {
             if (count == 0) continue;
             moves.moved(delta.getKey(), currency, count);
             parts.add(Text.translatable("message.steveparty.mistigri_space.delta", delta.getKey().getDisplayName(),
-                    (count > 0 ? "+" : "−") + Math.abs(count), currency.getName()));
+                    PartyCurrencyText.amount(currency, (count > 0 ? "+" : "−") + Math.abs(count))));
         }
         if (!parts.isEmpty()) return Text.translatable("message.steveparty.mistigri_space.moved", Texts.join(parts, Text.literal(", ")));
         if (aimed.isEmpty()) return Text.translatable("message.steveparty.mistigri_space.nobody");
@@ -509,7 +511,8 @@ public final class MistigriSentences {
         /** The sentence: applied to the players it aims at, told to everyone, his reaction. */
         void pass() {
             ServerPlayerEntity player = player();
-            Text name = outcome.text(player == null ? null : player.getName());
+            Text name = outcome.text(player == null ? null : player.getName(), party.getCurrency(PartyCurrency.COIN),
+                    party.getCurrency(PartyCurrency.STAR));
             boolean harsh = outcome.kind().tone() < 0 || (outcome.kind().tone() == 0 && outcome.target() == Target.LANDED);
             if (harsh) actor.setAngry(SENTENCE_TICKS);
             else actor.act(Action.YAWN);

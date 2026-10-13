@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.powerups.effects;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.dice.DicePrompts;
@@ -210,7 +211,8 @@ public final class ThiefBellEffect {
                     candidate.getDisplayName(), holdings(party, candidate, variant.currency()),
                     party.getCurrency(variant.currency()).getName()).formatted(Formatting.WHITE)));
         }
-        Text title = Text.translatable("gui.steveparty.thief_bell.prompt." + variant.name().toLowerCase(Locale.ROOT));
+        Text title = Text.translatable("gui.steveparty.thief_bell.prompt." + variant.name().toLowerCase(Locale.ROOT),
+                PartyCurrencyText.name(party, variant.currency()));
         DicePrompts.ask(thief, title, DicePrompts.Layout.LIST, options, timeoutTicks, Math.max(0, candidates.indexOf(fallback)),
                 index -> pick.accept(candidates.get(index)));
     }

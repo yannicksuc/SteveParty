@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.dice;
 
+import fr.lordfinn.steveparty.powerups.PowerUpLimit;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -270,7 +273,7 @@ public final class DiceRollSequence {
                 ServerPlayerEntity roller = lead.getOnlineOwner();
                 if (roller != null) {
                     MessageUtils.sendToPlayer(roller, Text.translatable("message.steveparty.dice.lucky.progress",
-                                    results.size(), needed, DiceOutcome.of(results.getLast()).describe()).formatted(Formatting.GOLD),
+                                    results.size(), needed, DiceOutcome.of(results.getLast()).describe(coin())).formatted(Formatting.GOLD),
                             MessageUtils.MessageType.ACTION_BAR);
                 }
                 lead.getWorld().playSound(null, lead.getX(), lead.getY(), lead.getZ(), SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(),
@@ -346,7 +349,7 @@ public final class DiceRollSequence {
         phase = Phase.DECIDING;
         List<DicePrompts.Option> options = List.of(
                 new DicePrompts.Option(optionOf(set).icon(), Text.translatable("gui.steveparty.dice_prompt.reroll.keep",
-                        DiceOutcome.of(set).describe())),
+                        DiceOutcome.of(set).describe(coin()))),
                 new DicePrompts.Option(new ItemStack(DiceModules.REROLL.item()),
                         Text.translatable("gui.steveparty.dice_prompt.reroll.again", left)));
         prompt = DicePrompts.ask(lead.getOnlineOwner(), Text.translatable("gui.steveparty.dice_prompt.reroll"),
@@ -390,10 +393,15 @@ public final class DiceRollSequence {
         });
     }
 
-    private static DicePrompts.Option optionOf(List<DiceFace> set) {
+    /** The coin of the roller's party, the mod's coin outside a party. */
+    private ItemStack coin() {
+        return PartyCurrencyText.item(PowerUpLimit.partyOf(lead.getOwner().orElse(null)), PartyCurrency.COIN);
+    }
+
+    private DicePrompts.Option optionOf(List<DiceFace> set) {
         DiceFace first = set.getFirst();
         ItemStack icon = new ItemStack(first.toItem());
-        Text label = set.size() == 1 ? (icon.isEmpty() ? first.asText() : icon.getName()) : DiceOutcome.of(set).describe();
+        Text label = set.size() == 1 ? (icon.isEmpty() ? first.asText() : icon.getName()) : DiceOutcome.of(set).describe(coin());
         return new DicePrompts.Option(icon, label);
     }
 

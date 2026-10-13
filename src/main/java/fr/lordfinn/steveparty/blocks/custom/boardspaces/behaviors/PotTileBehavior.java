@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.service.TileInfos;
 import net.minecraft.item.Items;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -51,7 +52,8 @@ public class PotTileBehavior extends ABoardSpaceBehavior {
         CommonPots.Win win = CommonPots.win(serverWorld, boardSpaceEntity, token);
         TileFeedback.Landing landing = win.isEmpty() ? TileFeedback.Landing.DEFAULT : TileFeedback.Landing.GOOD;
         TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing,
-                win.isEmpty() ? landing.noticeKey() : "message.steveparty.tile_landed.pot", win.coins());
+                win.isEmpty() ? landing.noticeKey() : "message.steveparty.tile_landed.pot",
+                PartyCurrencyText.amount(CommonPots.coinOf(token), win.coins()));
     }
 
     @Override

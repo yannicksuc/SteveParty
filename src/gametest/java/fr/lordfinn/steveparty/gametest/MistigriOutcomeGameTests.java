@@ -420,7 +420,7 @@ public class MistigriOutcomeGameTests implements SteveGameTest {
         when(context, () -> MistigriSentences.roulette(token) != null, WHOLE, "the roulette starts", () -> {
             OutcomeRoulettes.Roulette roulette = MistigriSentences.roulette(token);
             context.assertEquals(roulette.lines().size(), 1, "one picked");
-            context.assertEquals(roulette.lines().getFirst().text(), robinHood.text(), "its sentence");
+            context.assertEquals(roulette.lines().getFirst().text(), robinHood.text(null, new ItemStack(COIN), new ItemStack(STAR)), "its sentence, in the party's coins");
             context.assertEquals(roulette.lines().getFirst().chance(), 100, "its chance");
             when(context, () -> done[0], WHOLE, "the show ends", () -> {
                 context.assertEquals(count(b, COIN), 0, "the first place gave 10 coins");

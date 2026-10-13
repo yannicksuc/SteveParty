@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.service.TileInfos;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.server.world.ServerWorld;
@@ -59,7 +60,7 @@ public class StarBoardSpaceBehavior extends ABoardSpaceBehavior {
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof StarCartridgeItem)) return;
         var settings = StarCartridgeItem.settings(stack);
-        info.line(TileInfos.star(space), TileInfo.coins(TileInfo.line("star", settings.price())));
+        info.line(TileInfos.star(space), TileInfo.coins(TileInfo.line("star", PartyCurrencyText.amount(TileInfos.coin(space), settings.price()))));
         info.build(TileInfo.line(settings.onPass() ? "star.on_pass" : "star.on_stop"));
         if (!settings.relocate()) info.build(TileInfo.line("star.stays"));
     }

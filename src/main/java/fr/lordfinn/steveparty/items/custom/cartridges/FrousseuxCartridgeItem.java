@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -85,11 +87,13 @@ public class FrousseuxCartridgeItem extends CartridgeItem implements MobSpawnCar
     protected void appendState(ItemStack stack, Tooltips tips) {
         boolean stars = stealsStars(stack);
         tips.state(Text.translatable("tooltip.steveparty.frousseux_cartridge." + (stars ? "stars" : "coins"),
-                Tooltips.rgb(amount(stack), 0xFFD27A)));
+                Tooltips.rgb(PartyCurrencyText.contextualAmount(stars ? PartyCurrency.STAR : PartyCurrency.COIN, amount(stack)), 0xFFD27A)));
     }
 
     @Override
     protected void appendMore(ItemStack stack, Tooltips.More more) {
-        more.note("tooltip.steveparty.frousseux_cartridge." + (stealsStars(stack) ? "no_defence" : "defence"));
+        boolean stars = stealsStars(stack);
+        more.note(Text.translatable("tooltip.steveparty.frousseux_cartridge." + (stars ? "no_defence" : "defence"),
+                stars ? PartyCurrencyText.contextualName(PartyCurrency.STAR) : PartyCurrencyText.contextualAmount(PartyCurrency.COIN, 1)));
     }
 }

@@ -134,7 +134,8 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
 
     /** The roll of the current turn in words: "7", "0", "\u22123" (backward), "+5 coins", "Swap", "3, +2 coins"... */
     public Text rollText() {
-        return new DiceOutcome(roll, effect.coins(), effect.coinFace(), effect.swap(), false).describe();
+        return new DiceOutcome(roll, effect.coins(), effect.coinFace(), effect.swap(), false)
+                .describe(PartyCurrencyText.orDefault(coinItem, PartyCurrency.COIN));
     }
 
     /** True if nothing shown changed (ItemStack has no value equality, so records can't just be compared). */

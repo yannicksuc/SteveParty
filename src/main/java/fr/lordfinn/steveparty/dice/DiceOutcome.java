@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.dice;
 
+import net.minecraft.item.ItemStack;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
 import net.minecraft.text.MutableText;
@@ -68,8 +71,13 @@ public record DiceOutcome(int steps, int coins, boolean coinFace, boolean swap, 
         return coins > 0 ? "+" + coins : coins < 0 ? "−" + -coins : "0";
     }
 
-    /** What was rolled, for the chat: "7", "+5 coins", "Swap", "3, −2 coins"... */
+    /** {@link #describe(ItemStack)} with the mod's coin. */
     public Text describe() {
+        return describe(PartyCurrency.COIN.defaultStack());
+    }
+
+    /** What was rolled, for the chat: "7", "+5 × Coin", "Swap", "3, −2 × Coin"... in the party's {@code coin}. */
+    public Text describe(ItemStack coin) {
         MutableText text = Text.empty();
         boolean first = true;
         if (steps != 0 || !isSpecial()) {
@@ -79,8 +87,7 @@ public record DiceOutcome(int steps, int coins, boolean coinFace, boolean swap, 
         }
         if (coinFace) {
             if (!first) text.append(", ");
-            text.append(Text.translatable(Math.abs(coins) == 1 ? "message.steveparty.dice.coins.one" : "message.steveparty.dice.coins",
-                    signed(coins)).formatted(coins < 0 ? Formatting.RED : Formatting.YELLOW));
+            text.append(PartyCurrencyText.amount(coin, signed(coins)).formatted(coins < 0 ? Formatting.RED : Formatting.YELLOW));
             first = false;
         }
         if (swap) {

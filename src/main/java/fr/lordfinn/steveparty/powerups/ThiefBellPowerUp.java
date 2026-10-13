@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.powerups;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.powerups.effects.ThiefBellEffect;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -75,8 +77,8 @@ public class ThiefBellPowerUp extends PowerUp {
     @Override
     protected Object[] descriptionArgs() {
         return variant == ThiefBellEffect.Variant.GOLDEN
-                ? new Object[]{Text.translatable("powerup.steveparty.golden_thief_bell.desc.star")}
-                : new Object[]{ThiefBellEffect.MIN_COINS + "-" + ThiefBellEffect.MAX_COINS};
+                ? new Object[]{PartyCurrencyText.contextualAmount(PartyCurrency.STAR, 1)}
+                : new Object[]{PartyCurrencyText.contextualAmount(PartyCurrency.COIN, ThiefBellEffect.MIN_COINS + "-" + ThiefBellEffect.MAX_COINS)};
     }
 
     @Override

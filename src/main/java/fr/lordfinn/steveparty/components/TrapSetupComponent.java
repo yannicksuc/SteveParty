@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.components;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.lordfinn.steveparty.powerups.effects.TrapKind;
@@ -32,9 +34,15 @@ public record TrapSetupComponent(TrapKind kind, int amount, String signer, UUID 
             amount = kind.clamp(amount);
         }
 
-        /** What it does, in a few words (« steals 10 coins »): tooltips, the announcement, the setup screen. */
+        /** {@link #describe(ItemStack)} where no party is at hand (tooltips, the setup screen): see {@link PartyCurrencyText#contextual}. */
         public MutableText describe() {
-            return Text.translatable("powerup.steveparty.trap.effect." + kind.id(), amount);
+            return describe(PartyCurrencyText.contextual(PartyCurrency.COIN));
+        }
+
+        /** What it does, in a few words (« steals 10 × Coin »), in the party's {@code coin}. */
+        public MutableText describe(ItemStack coin) {
+            Object shown = kind == TrapKind.COINS ? PartyCurrencyText.amount(coin, amount) : amount;
+            return Text.translatable("powerup.steveparty.trap.effect." + kind.id(), shown);
         }
     }
 

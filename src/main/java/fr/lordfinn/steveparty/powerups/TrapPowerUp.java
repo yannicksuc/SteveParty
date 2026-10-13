@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.powerups;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.components.TrapSetupComponent;
 import fr.lordfinn.steveparty.items.custom.TrapPowerUpItem;
 import fr.lordfinn.steveparty.powerups.effects.TrapEffect;
@@ -48,6 +50,6 @@ public class TrapPowerUp extends PowerUp {
     @Override
     public @Nullable MutableText announcement(PowerUpUse use) {
         return Text.translatable("powerup.steveparty.trap.announce", use.player().getDisplayName(),
-                TrapSetupComponent.effectOf(use.item()).describe().formatted(Formatting.RED));
+                TrapSetupComponent.effectOf(use.item()).describe(PartyCurrencyText.item(use.controller(), PartyCurrency.COIN)).formatted(Formatting.RED));
     }
 }

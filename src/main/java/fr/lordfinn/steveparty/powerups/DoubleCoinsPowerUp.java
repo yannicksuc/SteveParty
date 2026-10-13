@@ -1,5 +1,9 @@
 package fr.lordfinn.steveparty.powerups;
 
+import org.jetbrains.annotations.Nullable;
+import net.minecraft.text.MutableText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -22,10 +26,17 @@ public class DoubleCoinsPowerUp extends PowerUp {
         return coins * FACTOR;
     }
 
+    /** Names the party's coin. */
+    @Override
+    public @Nullable MutableText announcement(PowerUpUse use) {
+        return Text.translatable(translationKey() + ".announce", use.player().getDisplayName(),
+                PartyCurrencyText.name(use.controller(), PartyCurrency.COIN));
+    }
+
     @Override
     public List<Text> effectLines() {
         return List.of(
-                Text.translatable("powerup.steveparty.double_coins.desc",
+                Text.translatable("powerup.steveparty.double_coins.desc", PartyCurrencyText.contextualName(PartyCurrency.COIN),
                         keyword(Text.translatable("powerup.steveparty.double_coins.desc.gained")),
                         keyword(Text.translatable("powerup.steveparty.double_coins.desc.doubled"))).formatted(Formatting.GRAY),
                 Text.translatable("powerup.steveparty.double_coins.desc.bank").formatted(Formatting.DARK_GRAY),

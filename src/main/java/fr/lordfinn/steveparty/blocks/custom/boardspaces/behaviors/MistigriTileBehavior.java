@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.service.TileInfos;
 import java.util.List;
 import java.util.Comparator;
 import java.util.ArrayList;
@@ -64,10 +65,11 @@ public class MistigriTileBehavior extends MobTileBehavior {
         List<Integer> rows = new ArrayList<>();
         for (int row = 0; row < chances.length; row++) if (chances[row] > 0) rows.add(row);
         rows.sort(Comparator.comparingDouble(row -> -chances[row]));
+        ItemStack coin = TileInfos.coin(space), star = TileInfos.star(space);
         for (int i = 0; i < rows.size(); i++) {
             MistigriOutcomes.Outcome outcome = outcomes.get(rows.get(i));
             Text line = TileInfo.line("mistigri", TileInfo.rgb(Math.round(100 * chances[rows.get(i)]) + "%",
-                    outcome.kind().tone() > 0 ? TileInfo.GOOD : TileInfo.BAD), outcome.text());
+                    outcome.kind().tone() > 0 ? TileInfo.GOOD : TileInfo.BAD), outcome.text(null, coin, star));
             info.line(ItemStack.EMPTY, line, i < 3 ? TileInfo.Layer.PLAY : TileInfo.Layer.DETAIL);
         }
     }

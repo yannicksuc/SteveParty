@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.client.blockentity.TrapMarkRenderer;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -47,10 +49,10 @@ public class TrapSetupScreen extends Screen {
         int left = (width - PANEL_W) / 2 + PAD;
         for (TrapKind option : TrapKind.values()) {
             int x = left + option.ordinal() * (KIND_W + GAP);
-            PartyButton button = addDrawableChild(new PartyButton(x, 0, KIND_W, KIND_H, Text.translatable(K + "kind." + option.id()),
+            PartyButton button = addDrawableChild(new PartyButton(x, 0, KIND_W, KIND_H, kindLabel(option),
                     b -> choose(option)).content((context, font, cx, cy, color) ->
                     context.drawTexture(TrapMarkRenderer.icon(option), cx - 8, cy - 8, 0, 0, 16, 16, 16, 16)));
-            button.setTooltip(Tooltip.of(Text.translatable(K + "kind." + option.id())));
+            button.setTooltip(Tooltip.of(kindLabel(option)));
             kindButtons.add(button);
         }
         int right = (width + PANEL_W) / 2 - PAD;
@@ -95,7 +97,12 @@ public class TrapSetupScreen extends Screen {
 
     /** The amount's label, or the kind's name when it has no amount. */
     private Text rowLabel() {
-        return Text.translatable(K + (kind.hasAmount() ? "amount." : "kind.") + kind.id());
+        return Text.translatable(K + (kind.hasAmount() ? "amount." : "kind.") + kind.id(), PartyCurrencyText.contextualName(PartyCurrency.COIN));
+    }
+
+    /** A kind's button: the coins one named after the party's coin. */
+    private static Text kindLabel(TrapKind kind) {
+        return Text.translatable(K + "kind." + kind.id(), PartyCurrencyText.contextualName(PartyCurrency.COIN));
     }
 
     private Text preview() {
