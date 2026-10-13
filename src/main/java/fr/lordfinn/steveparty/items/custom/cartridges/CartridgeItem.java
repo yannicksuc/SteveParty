@@ -1,4 +1,5 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import net.minecraft.util.math.GlobalPos;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.board.DestinationSwap;
@@ -101,9 +102,9 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
 
     /** A short description of what the cartridge does ({@code gui.steveparty.cartridge_menu.desc.<id>}). */
     public static InfoModule description(String id, int lines) {
-        Text text = Text.translatable(MENU_KEY + "desc." + id);
-        List<InfoModule.Line> content = List.of(InfoModule.Line.of(text));
-        return new InfoModule("description", null, lines, context -> content);
+        // Built when shown: it may name the party's currencies (see PartyCurrencyText#menuArgs)
+        return new InfoModule("description", null, lines,
+                context -> List.of(InfoModule.Line.of(PartyCurrencyText.menuText(MENU_KEY + "desc." + id))));
     }
 
     /** The tile's colour, like a dye on the tile (see {@link ColorModule}). */

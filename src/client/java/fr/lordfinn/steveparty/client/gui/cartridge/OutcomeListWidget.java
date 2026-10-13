@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.cartridge;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import net.minecraft.client.render.DiffuseLighting;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -562,13 +563,13 @@ final class OutcomeListWidget {
             case DELETE -> lines.add(Text.translatable(K + "delete"));
             case KIND -> {
                 String id = Kind.values()[hit.value].id;
-                lines.add(Text.translatable(K + "kind." + id));
-                lines.add(Text.translatable(K + "kind." + id + ".tooltip").formatted(Formatting.GRAY));
+                lines.add(PartyCurrencyText.menuText(K + "kind." + id));
+                lines.add(PartyCurrencyText.menuText(K + "kind." + id + ".tooltip").formatted(Formatting.GRAY));
             }
             case TARGET -> {
                 String id = Target.values()[hit.value].id;
-                lines.add(Text.translatable(K + "target." + id).styled(style -> style.withColor(Target.values()[hit.value].color)));
-                lines.add(Text.translatable(K + "target." + id + ".tooltip").formatted(Formatting.GRAY));
+                lines.add(PartyCurrencyText.menuText(K + "target." + id).styled(style -> style.withColor(Target.values()[hit.value].color)));
+                lines.add(PartyCurrencyText.menuText(K + "target." + id + ".tooltip").formatted(Formatting.GRAY));
                 if (!hit.active && editable) lines.add(Text.translatable(K + "only_landed").formatted(Formatting.DARK_GRAY));
             }
             case AMOUNT, AMOUNT_DOWN, AMOUNT_UP -> {

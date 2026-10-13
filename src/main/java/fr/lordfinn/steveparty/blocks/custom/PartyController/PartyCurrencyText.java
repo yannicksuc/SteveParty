@@ -74,6 +74,19 @@ public final class PartyCurrencyText {
         return name(contextual(currency));
     }
 
+    /**
+     * The arguments every menu text gets (the cartridge menus, the Mistigri editor): {@code %1$s} the coin's name,
+     * {@code %2$s} the star's, in the {@link #contextual} currencies. A text without them ignores them.
+     */
+    public static Object[] menuArgs() {
+        return new Object[]{contextualName(PartyCurrency.COIN), contextualName(PartyCurrency.STAR)};
+    }
+
+    /** A menu text: {@code key} with {@link #menuArgs}. */
+    public static MutableText menuText(String key) {
+        return Text.translatable(key, menuArgs());
+    }
+
     /** Client only: where the currencies of the party the client plays in are read. */
     public static void setClientParty(Function<PartyCurrency, ItemStack> currencies) {
         clientParty = currencies;

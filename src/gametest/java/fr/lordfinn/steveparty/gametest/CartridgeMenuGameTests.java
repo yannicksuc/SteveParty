@@ -166,7 +166,9 @@ public class CartridgeMenuGameTests implements SteveGameTest {
 
     private static String translate(JsonObject lang, String key, TestContext context) {
         context.assertTrue(lang.has(key), "missing text " + key);
-        return lang.get(key).getAsString();
+        // As shown: the currencies named (PartyCurrencyText#menuArgs), the mod's own outside a party
+        return lang.get(key).getAsString().replace("%1$s", lang.get("item.steveparty.coin").getAsString())
+                .replace("%2$s", lang.get("item.steveparty.party_star").getAsString());
     }
 
     /**

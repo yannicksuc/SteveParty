@@ -92,8 +92,7 @@ public class FrousseuxCartridgeItem extends CartridgeItem implements MobSpawnCar
 
     @Override
     protected void appendMore(ItemStack stack, Tooltips.More more) {
-        boolean stars = stealsStars(stack);
-        more.note(Text.translatable("tooltip.steveparty.frousseux_cartridge." + (stars ? "no_defence" : "defence"),
-                stars ? PartyCurrencyText.contextualName(PartyCurrency.STAR) : PartyCurrencyText.contextualAmount(PartyCurrency.COIN, 1)));
+        more.note(stealsStars(stack) ? Text.translatable("tooltip.steveparty.frousseux_cartridge.no_defence")
+                : Text.translatable("tooltip.steveparty.frousseux_cartridge.defence", PartyCurrencyText.contextualAmount(PartyCurrency.COIN, 1)));
     }
 }

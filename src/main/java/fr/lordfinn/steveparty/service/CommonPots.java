@@ -147,7 +147,7 @@ public final class CommonPots {
         Text total = PartyCurrencyText.amount(coin, nest.count(coin));
         Text message = stake.coins() > 0
                 ? Text.translatable("message.steveparty.pot.stake", name, PartyCurrencyText.amount(coin, stake.coins()), total)
-                : Text.translatable("message.steveparty.pot.no_stake", name, PartyCurrencyText.amount(coin, 0), total);
+                : Text.translatable("message.steveparty.pot.no_stake", name, total);
         MessageUtils.sendToNearby(world, at, 100, message.copy().formatted(Formatting.GOLD), MessageUtils.MessageType.ACTION_BAR);
         if (stake.coins() > 0) fetch(world, space, token, coinOf(token));
         return stake;
