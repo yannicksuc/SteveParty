@@ -21,6 +21,7 @@ import net.minecraft.client.option.Perspective;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 import java.lang.reflect.Field;
@@ -183,6 +184,34 @@ public final class DevClientCommands {
                                     });
                                     return 1;
                                 })))
+                        // Resource packs reloaded (F3 + T): lang files rebuilt by processResources
+                        .then(ClientCommandManager.literal("reloadassets").executes(context -> {
+                            var client = context.getSource().getClient();
+                            client.send(client::reloadResources);
+                            return 1;
+                        }))
+                        // The guide book open on an entry's page (Modonomicon, dev runtime only: reflection), e.g.
+                        // /sptest guide 4 cartridges/mistigri
+                        .then(ClientCommandManager.literal("guide")
+                                .then(ClientCommandManager.argument("page", IntegerArgumentType.integer(0))
+                                        .then(ClientCommandManager.argument("entry", StringArgumentType.greedyString()).executes(context -> {
+                                            var client = context.getSource().getClient();
+                                            Identifier entry = Steveparty.id(StringArgumentType.getString(context, "entry"));
+                                            int page = IntegerArgumentType.getInteger(context, "page");
+                                            client.send(() -> {
+                                                try {
+                                                    Class<?> manager = Class.forName("com.klikli_dev.modonomicon.client.gui.BookGuiManager");
+                                                    manager.getMethod("openEntry", Identifier.class, Identifier.class, int.class)
+                                                            .invoke(manager.getMethod("get").invoke(null), Steveparty.id("guide"), entry, page);
+                                                } catch (ReflectiveOperationException | RuntimeException e) {
+                                                    Throwable cause = e.getCause() != null ? e.getCause() : e;
+                                                    Steveparty.LOGGER.warn("sptest guide: {}", cause.toString());
+                                                    if (client.player != null) client.player.sendMessage(
+                                                            net.minecraft.text.Text.literal("sptest guide: " + cause), false);
+                                                }
+                                            });
+                                            return 1;
+                                        }))))
                         // The wheel of the tool in hand, open, its cursor at (x, y) from its centre (GUI pixels)
                         .then(ClientCommandManager.literal("wheel")
                                 .then(ClientCommandManager.argument("x", IntegerArgumentType.integer())
