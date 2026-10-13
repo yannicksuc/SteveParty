@@ -485,7 +485,7 @@
 				}
 			]
 			x: -2.0d
-			y: 0.75d
+			y: 0.5d
 		}
 		{
 			dependencies: [
@@ -1156,8 +1156,8 @@
 				"78C9F801227DBCA8"
 				"0E8F42A3F191C38B"
 				"736773478A5996A7"
-				"7F2770DE1C7C8D45"
-				"2E754E69CDD7EF1A"
+				"639372715E2D9036"
+				"257DAAA6F776BD7D"
 				"7FEC43F982FF3CC8"
 				"0D3B9E427A996C6C"
 			]
@@ -1197,8 +1197,8 @@
 			shape: "gear"
 			size: 2.0d
 			tasks: [ ]
-			x: 3.0d
-			y: 1.25d
+			x: 4.25d
+			y: 2.75d
 		}
 	]
 }

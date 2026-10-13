@@ -197,24 +197,22 @@ chapter("welcome", None, "steveparty:party_controller",
 q("welcome", 0, 0, C(), rewards=[XP(20)], icon="steveparty:party_controller", shape="gear", size=2.0,
   title=("Welcome to Steve Party Maker!", "Bienvenue dans Steve Party Maker !"),
   sub=("A party game, block by block", "Un party game, bloc par bloc"),
-  desc=(["Steve Party Maker turns Minecraft into a party board game: build a board of tiles, turn any mob into a pawn, roll dice, play mini-games and collect stars.",
+  desc=(["Build a board game in Minecraft and play it with friends: tiles, pawns, dice, mini-games and stars.",
          "",
-         "This book follows the mod step by step, one quest per item. Every chapter ends with a big milestone.",
-         "Tick this quest to start!"],
-        ["Steve Party Maker transforme Minecraft en jeu de plateau : construisez un plateau de tuiles, transformez n'importe quel mob en pion, lancez les dés, jouez des mini-jeux et collectionnez les étoiles.",
+         "One quest per item, a big milestone at the end of each chapter. Tick this quest to start!"],
+        ["Construisez un jeu de plateau dans Minecraft et jouez-y entre amis : tuiles, pions, dés, mini-jeux et étoiles.",
          "",
-         "Ce livre suit le mod pas à pas, une quête par objet. Chaque chapitre se termine par une grande étape.",
-         "Cochez cette quête pour commencer !"]))
+         "Une quête par objet, une grande étape au bout de chaque chapitre. Cochez cette quête pour commencer !"]))
 
 q("pellets", -3, 2.25, I("plastic_pellets", 4, how="consume"), deps=["welcome"],
   rewards=[XP(15), IT("minecraft:sugar_cane", 8)],
-  desc=(["Smelt sugar cane in a furnace. Plastic pellets are in almost everything: tiles, cartridges, tokens and every plastic block."],
-        ["Faites cuire de la canne à sucre au four. Les granulés de plastique entrent dans presque tout : tuiles, cartouches, jetons et tous les blocs de plastique."]))
+  desc=(["Smelt sugar cane. Pellets go into almost everything: tiles, cartridges, Tokens, plastic blocks."],
+        ["Faites cuire de la canne à sucre. Les granulés entrent dans presque tout : tuiles, cartouches, Pions, blocs de plastique."]))
 
 q("coin", 3, 2.25, I("coin", 1), deps=["welcome"],
   rewards=[XP(15), IT("minecraft:gold_nugget", 4)],
-  desc=(["One gold nugget makes one Coin (shapeless). Coins are the default currency of a party: mini-games pay them out, and shops can sell for them."],
-        ["Une pépite d'or donne une Pièce (sans forme). La Pièce est la monnaie par défaut d'une partie : les mini-jeux en rapportent et les boutiques peuvent vendre contre elle."]))
+  desc=(["1 gold nugget = 1 Coin. The default currency of a party: mini-games pay Coins, shops sell for them."],
+        ["1 pépite d'or = 1 Pièce. La monnaie par défaut d'une partie : les mini-jeux paient en Pièces, les boutiques vendent contre elles."]))
 
 q("recipes", -1, 2.25, C(), deps=["welcome"], rewards=T0(), optional=True, icon="minecraft:knowledge_book",
   title=("Read the recipes", "Lire les recettes"),
@@ -247,137 +245,171 @@ chapter("board", "board_game", "steveparty:tile",
 
 q("cartridge", 0, -7, I("board_space_behavior", 2), deps=["welcome.pellets"], size=1.25,
   rewards=[XP(15), IT("board_space_behavior", 4)],
-  desc=(["2 redstone, 2 paper and 2 plastic pellets. A cartridge gives a tile its role and its destinations. The plain Cartridge has no role: it is just a path.",
-         "Right-click in the air with it to open its menu. Every other cartridge is this one plus an ingredient."],
-        ["2 redstone, 2 papier et 2 granulés de plastique. Une cartouche donne à une case son rôle et ses destinations. La Cartouche simple n'a pas de rôle : c'est juste un chemin.",
-         "Clic droit dans le vide avec elle pour ouvrir son menu. Toutes les autres cartouches, c'est elle plus un ingrédient."]))
+  desc=(["2 redstone + 2 paper + 2 plastic pellets.",
+         "A cartridge gives a tile its role. This plain one has none: just a path. Every other cartridge is this one + an ingredient.",
+         "Right-click in the air: its menu."],
+        ["2 redstone + 2 papier + 2 granulés de plastique.",
+         "Une cartouche donne son rôle à une case. Celle-ci n'en a aucun : juste un chemin. Toute autre cartouche, c'est elle + un ingrédient.",
+         "Clic droit dans le vide : son menu."]))
 
 q("tile", -6, -1.5, I("tile"), deps=["cartridge"], rewards=[XP(15), IT("plastic_pellets", 4), IT("default_dice", 2)], size=1.25,
-  desc=(["4 white plastic slabs around a heavy weighted pressure plate, and a cartridge in the middle of the bottom row: 1 Tile, already holding that cartridge.",
-         "A Tile is one board space and counts as one step. Place it in 8 directions, on slabs, carpets, and even on stairs, where it follows the slope."],
-        ["4 dalles de plastique blanc autour d'une plaque de pression lourde, et une cartouche au milieu de la ligne du bas : 1 Tuile, qui contient déjà cette cartouche.",
-         "Une Tuile est une case du plateau et compte comme un pas. Elle se pose dans 8 directions, sur les dalles, les tapis et même sur les escaliers, dont elle suit la pente."]))
+  desc=(["4 white plastic slabs, a heavy pressure plate and a cartridge: a Tile holding that cartridge.",
+         "One tile = one step. It goes in 8 directions, on slabs, carpets and even stairs."],
+        ["4 dalles de plastique blanc, une plaque de pression lourde et une cartouche : une Tuile qui la contient.",
+         "Une tuile = un pas. Elle se pose dans 8 directions, sur dalles, tapis et même escaliers."]))
 
 q("brush", -4, -1.5, I("tile_linker_brush"), deps=["tile"], rewards=T2(),
-  desc=(["A stick, redstone and a feather, in a diagonal. The brush paints the links between spaces and shows the board while you hold it."],
-        ["Un bâton, de la redstone et une plume, en diagonale. Le pinceau peint les liens entre les cases et montre le plateau tant que vous le tenez."]))
+  desc=(["Stick, redstone and feather, in a diagonal. It paints the links between spaces and shows the board while held."],
+        ["Bâton, redstone et plume, en diagonale. Il peint les liens entre les cases et montre le plateau tant que vous le tenez."]))
 
 q("link", -2, -1.5, C(), deps=["brush"], rewards=T2(), icon="steveparty:tile_linker_brush",
   title=("Paint the path", "Peindre le chemin"),
-  desc=(["Hold right-click with the brush and sweep the tiles in the order the pawns will walk: each one is linked to the next. A tile without a cartridge gets a Cartridge from your inventory.",
-         "Paint a link again in the same direction to erase it. Left-click opens the brush's wheel: undo, redo, link modes."],
-        ["Maintenez le clic droit avec le pinceau et balayez les tuiles dans l'ordre où les pions les parcourront : chacune est reliée à la suivante. Une tuile sans cartouche reçoit une Cartouche de votre inventaire.",
-         "Repeignez un lien dans le même sens pour l'effacer. Le clic gauche ouvre la roue du pinceau : annuler, rétablir, modes de liaison."]))
+  desc=(["Hold right-click and sweep the tiles in walking order: each one links to the next.",
+         "Paint a link again to erase it. Left-click: the brush's wheel (undo, redo, link modes)."],
+        ["Maintenez le clic droit et balayez les tuiles dans l'ordre de marche : chacune se lie à la suivante.",
+         "Repeignez un lien pour l'effacer. Clic gauche : la roue du pinceau (annuler, rétablir, modes)."]))
 
 q("loop", 0, -1.5, C(), deps=["link"], rewards=T2(), icon="minecraft:firework_rocket",
   title=("Close the loop", "Fermer la boucle"),
-  desc=(["Paint back to the first tile to close the loop. A loop with a Start space is all a party needs.",
-         "Several links from one tile make a fork: the player chooses the way. No link: a dead end."],
-        ["Repeignez jusqu'à la première tuile pour fermer la boucle. Une boucle avec une case départ suffit pour une partie.",
-         "Plusieurs liens depuis une case font un embranchement : le joueur choisit. Aucun lien : un cul-de-sac."]))
+  desc=(["Paint back to the first tile: a loop with a Start space is all a party needs.",
+         "Several links from a tile: a fork, the player chooses. No link: a dead end."],
+        ["Repeignez jusqu'à la première tuile : une boucle avec une case départ suffit pour une partie.",
+         "Plusieurs liens depuis une case : un embranchement, le joueur choisit. Aucun lien : un cul-de-sac."]))
 
 q("board_view", 2, -1.5, C(), deps=["loop", "wrench"], rewards=T1(), icon="minecraft:spyglass",
   title=("Board view and check", "Vue du plateau et diagnostic"),
-  desc=(["Brush in hand, the board appears: chevrons along each link, step numbers, \"?\" on forks, \"!\" on dead ends.",
-         "Click a Party Controller with the Wrench (or /steveparty board check) to list every problem of the board."],
-        ["Pinceau en main, le plateau apparaît : chevrons le long des liens, numéros de pas, « ? » aux bifurcations, « ! » aux impasses.",
-         "Clic de Clé sur un Party Controller (ou /steveparty board check) : la liste des problèmes du plateau."]))
+  desc=(["Brush in hand: chevrons along the links, step numbers, \"?\" on forks, \"!\" on dead ends.",
+         "Wrench on a Party Controller (or /steveparty board check): every problem of the board."],
+        ["Pinceau en main : chevrons sur les liens, numéros de pas, « ? » aux bifurcations, « ! » aux impasses.",
+         "Clé sur un Party Controller (ou /steveparty board check) : tous les problèmes du plateau."]))
 
 q("helmet", 4, -1.5, I("explorer_helmet"), deps=["board_view"], rewards=T2(),
-  desc=(["Leather, glowstone dust and a copper ingot. Worn with its lamp lit (G), it shows the whole board all the time, the details of the nearby spaces and the exact numbers of the one you look at."],
-        ["Du cuir, de la poudre de pierre lumineuse et un lingot de cuivre. Porté lampe allumée (G), il montre tout le plateau en permanence, les détails des cases proches et les chiffres exacts de celle que vous regardez."]))
+  desc=(["Leather + glowstone dust + copper ingot.",
+         "Lamp on (G): the whole board, the nearby spaces in detail, the exact numbers of the one you look at."],
+        ["Cuir + poudre de pierre lumineuse + lingot de cuivre.",
+         "Lampe allumée (G) : tout le plateau, le détail des cases proches, les chiffres de celle que vous regardez."]))
 
 q("wrench", -4, 0.5, I("wrench"), deps=["tile"], rewards=T2(),
-  desc=(["Redstone and an iron ingot. Right-click opens a tile, a Checkpoint or a router, no need to sneak; another cartridge in the off hand swaps the tile's cartridge, links kept. It also sets podiums, poles and Spawn Bubbles, and breaks any plastic block in one hit."],
-        ["De la redstone et un lingot de fer. Le clic droit ouvre une tuile, un Point de déclenchement ou un routeur, sans s'accroupir ; une autre cartouche en main secondaire échange celle de la tuile, liens gardés. Elle règle aussi podiums, mâts et Bulles d'apparition, et casse tout bloc de plastique d'un coup."]))
+  desc=(["Redstone + iron ingot.",
+         "Right-click opens tiles, Checkpoints and routers. A cartridge in the off hand swaps the tile's own, links kept.",
+         "It also sets podiums, poles and Spawn Bubbles, and breaks plastic in one hit."],
+        ["Redstone + lingot de fer.",
+         "Clic droit : ouvre tuiles, Points de déclenchement et routeurs. Une cartouche en main secondaire remplace celle de la tuile, liens gardés.",
+         "Elle règle aussi podiums, mâts et Bulles d'apparition, et casse le plastique d'un coup."]))
 
 q("check_point", -6, 0.75, I("check_point", 4), deps=["tile"], rewards=T1(),
-  desc=(["Prismarine shards, light blue panes and a chest: 4 Checkpoints. A floating glass cube that a pawn crosses without spending a step: free turns, forks and detours. Its role never triggers on arrival, except Stop and Shop."],
-        ["Éclats de prismarine, vitres bleu clair et un coffre : 4 Points de déclenchement. Un cube de verre flottant que le pion traverse sans dépenser de pas : virages, bifurcations et détours gratuits. Son rôle ne se déclenche jamais à l'arrivée, sauf Stop et Boutique."]))
+  desc=(["Prismarine shards + light blue panes + chest: 4 Checkpoints.",
+         "Pawns float through without spending a step: free turns, forks and detours. Its role never triggers, except Stop and Shop."],
+        ["Éclats de prismarine + vitres bleu clair + coffre : 4 Points de déclenchement.",
+         "Les pions le traversent sans dépenser de pas : virages, bifurcations et détours gratuits. Son rôle ne joue jamais, sauf Stop et Boutique."]))
 
 q("colours", -6, 2.25, C(), deps=["check_point"], rewards=T1(), icon="minecraft:glow_ink_sac",
   title=("Colours and glow", "Couleurs et lueur"),
-  desc=(["A dye on a tile colours its cartridge; on a Checkpoint, the whole cube. A glow ink sac makes the tile or the cube shine in full light, an ink sac turns it off. A sponge removes the dye. The tile's item keeps it all."],
-        ["Une teinture sur une tuile colore sa cartouche ; sur un Point de déclenchement, tout le cube. Une poche d'encre luisante fait briller la tuile ou le cube en pleine lumière, une poche d'encre l'éteint. Une éponge enlève la teinture. L'objet de la tuile garde tout."]))
+  desc=(["Dye: colours the cartridge (on a Checkpoint, the whole cube).",
+         "Glow ink sac: it shines. Ink sac: off. Sponge: dye removed."],
+        ["Teinture : colore la cartouche (sur un Point de déclenchement, tout le cube).",
+         "Poche d'encre luisante : il brille. Poche d'encre : éteint. Éponge : plus de teinture."]))
 
-q("advanced_tile", -2, 0.75, I("advanced_tile"), deps=["tile"], rewards=T2(),
-  desc=(["2 yellow plastic slabs, a light weighted pressure plate, a trapped chest and 2 cartridges: an Advanced Tile holding them. It takes 16 cartridges: the redstone power it receives picks the active one (power 0 = slot 1, power 1 = slot 2...)."],
-        ["2 dalles de plastique jaune, une plaque de pression légère, un coffre piégé et 2 cartouches : une Tuile avancée qui les contient. Elle en prend 16 : la puissance redstone reçue choisit l'active (puissance 0 = emplacement 1, puissance 1 = emplacement 2...)."]))
+q("advanced_tile", -2, 0.5, I("advanced_tile"), deps=["tile"], rewards=T2(),
+  desc=(["2 yellow plastic slabs, a light pressure plate, a trapped chest and 2 cartridges.",
+         "It holds 16 cartridges: the redstone power picks the active one (0 = slot 1, 1 = slot 2...)."],
+        ["2 dalles de plastique jaune, une plaque de pression légère, un coffre piégé et 2 cartouches.",
+         "Elle contient 16 cartouches : la puissance redstone choisit l'active (0 = emplacement 1, 1 = emplacement 2...)."]))
 
 q("redstone_slots", -2.75, 2.25, C(), deps=["advanced_tile"], rewards=T1(), icon="minecraft:comparator",
   title=("A tile that changes", "Une case qui change"),
-  desc=(["Put two different cartridges in an Advanced Tile and power it: the tile changes role, colour and destinations with the signal. A comparator or a redstone counter makes tiles that change every turn."],
-        ["Mettez deux cartouches différentes dans une Tuile avancée et alimentez-la : la case change de rôle, de couleur et de destinations avec le signal. Un comparateur ou un compteur redstone fait des cases qui changent à chaque tour."]))
+  desc=(["Two different cartridges in an Advanced Tile, then power it: role, colour and destinations follow the signal.",
+         "With a redstone counter, the space changes every turn."],
+        ["Deux cartouches différentes dans une Tuile avancée, puis alimentez-la : rôle, couleur et destinations suivent le signal.",
+         "Avec un compteur redstone, la case change à chaque tour."]))
 
 q("router", -1.25, 2.25, I("board_space_redstone_router"), deps=["advanced_tile"], rewards=T2(),
-  desc=(["Gold, a redstone torch, a chest and an amethyst shard. Give it a cartridge whose destinations are the tiles to drive: its redstone input replaces theirs (one lever switches a whole board).",
-         "A comparator on it reads what happens on its tiles: 14 bonus, 13 malus, 10 Stop, 8 Teleport, 1 a pawn passes..."],
-        ["De l'or, une torche de redstone, un coffre et un éclat d'améthyste. Donnez-lui une cartouche dont les destinations sont les cases à piloter : sa redstone remplace la leur (un levier change tout un plateau).",
-         "Un comparateur dessus capte ce qui se passe sur ses cases : 14 bonus, 13 malus, 10 Stop, 8 Téléportation, 1 un pion passe..."]))
+  desc=(["Gold, a redstone torch, a chest and an amethyst shard.",
+         "The destinations of its cartridge are the tiles it drives: one lever switches a whole board.",
+         "A comparator reads its tiles: 14 bonus, 13 malus, 10 Stop, 8 Teleport, 1 a pawn passes..."],
+        ["Or, torche de redstone, coffre et éclat d'améthyste.",
+         "Les destinations de sa cartouche sont les cases qu'il pilote : un levier change tout un plateau.",
+         "Un comparateur lit ses cases : 14 bonus, 13 malus, 10 Stop, 8 Téléportation, 1 un pion passe..."]))
 
 q("sizes", -8, -0.5, C(), deps=["tile"], rewards=T1(), icon="minecraft:stonecutter",
   title=("Small and large tiles", "Petites et grandes tuiles"),
-  desc=(["Stonecutter: 1 Tile gives 2 small tiles (1x1); 2 small ones give a standard tile back at the crafting table. Four standard tiles in a 2x2 square give one large tile (exactly 2x2 blocks)."],
-        ["Tailleur de pierre : 1 Tuile donne 2 petites tuiles (1x1) ; 2 petites redonnent une tuile standard à l'établi. Quatre tuiles standard en carré 2x2 donnent une grande tuile (exactement 2x2 blocs)."]))
+  desc=(["Stonecutter: 1 Tile = 2 small tiles (1x1); 2 small ones = 1 Tile again at the crafting table.",
+         "4 Tiles in a 2x2 square: 1 large tile (2x2 blocks)."],
+        ["Tailleur de pierre : 1 Tuile = 2 petites tuiles (1x1) ; 2 petites = 1 Tuile à l'établi.",
+         "4 Tuiles en carré 2x2 : 1 grande tuile (2x2 blocs)."]))
 
 q("silk", -8, 1, C(), deps=["tile"], rewards=T0(), optional=True, icon="minecraft:enchanted_book",
   title=("Pack a tile", "Emporter une tuile"),
-  desc=(["Break a tile with a Silk Touch pickaxe: it drops as one item that keeps all its cartridges, their settings and its look. Place it again and it is back as it was."],
-        ["Cassez une tuile avec une pioche Toucher de soie : elle tombe en un seul objet qui garde ses cartouches, leurs réglages et son look. Reposée, elle redevient comme avant."]))
+  desc=(["Break a tile with Silk Touch: one item that keeps its cartridges, their settings and its look."],
+        ["Cassez une tuile avec Toucher de soie : un seul objet qui garde ses cartouches, leurs réglages et son look."]))
 
 # Cartridges in one row between the Cartridge (above) and the rest of the board (below).
 q("start", -6, -5, I("tile_behavior_start"), deps=["cartridge"], rewards=T1(),
-  desc=(["Cartridge + lime dye. A start space: a pawn placed on it binds to it, floats and takes its colour. The Party Controller only takes pawns bound to a start space."],
-        ["Cartouche + teinture vert clair. Une case de départ : un pion posé dessus s'y lie, flotte et lui donne sa couleur. Le Party Controller ne prend que les pions liés à une case de départ."]))
+  desc=(["Cartridge + lime dye. A pawn placed on it binds to it, floats and takes its colour.",
+         "The Party Controller only takes pawns bound to a start space."],
+        ["Cartouche + teinture vert clair. Un pion posé dessus s'y lie, flotte et prend sa couleur.",
+         "Le Party Controller ne prend que les pions liés à une case de départ."]))
 
 q("stop", -4.5, -5, I("board_space_behavior_stop"), deps=["cartridge"], rewards=T1(),
-  desc=(["Cartridge + red dye. A pawn that reaches a Stop space ends its move there, whatever steps it has left. Works on a Checkpoint too."],
-        ["Cartouche + teinture rouge. Un pion qui atteint une case Stop y termine son déplacement, quels que soient ses pas restants. Marche aussi sur un Point de déclenchement."]))
+  desc=(["Cartridge + red dye. A pawn reaching it stops there, whatever steps it has left. Works on a Checkpoint too."],
+        ["Cartouche + teinture rouge. Un pion qui l'atteint s'y arrête, quels que soient ses pas restants. Marche aussi sur un Point de déclenchement."]))
 
 q("advance", -3, -5, I("advance_back_cartridge"), deps=["cartridge"], rewards=T1(),
-  desc=(["Cartridge + piston. The pawn that ends on it moves again, 1 to 6 spaces forward (green) or back (pink): a Boomcart rolls in, explodes behind it or rams it. Sneak + scroll with it in hand sets the count and direction."],
-        ["Cartouche + piston. Le pion qui s'y arrête repart de 1 à 6 cases en avant (vert) ou en arrière (rose) : un Pétaroule arrive, explose derrière lui ou le percute. Accroupi + molette, cartouche en main, règle le nombre et le sens."]))
+  desc=(["Cartridge + piston. The pawn stopping here moves again, 1 to 6 spaces forward (green) or back (pink), pushed by a Boomcart.",
+         "Sneak + scroll, cartridge in hand: count and direction."],
+        ["Cartouche + piston. Le pion qui s'y arrête repart de 1 à 6 cases, en avant (vert) ou en arrière (rose), poussé par un Pétaroule.",
+         "Accroupi + molette, cartouche en main : nombre et sens."]))
 
 q("replay", -1.5, -5, I("replay_cartridge"), deps=["cartridge"], rewards=T1(),
-  desc=(["Cartridge + repeater. The player whose pawn ends on it rolls again at once, and gets the die back. One extra turn only."],
-        ["Cartouche + répéteur. Le joueur dont le pion s'y arrête rejoue aussitôt, et récupère son dé. Un seul tour en plus."]))
+  desc=(["Cartridge + repeater. The player whose pawn stops here rolls again at once, with their die back. One extra turn only."],
+        ["Cartouche + répéteur. Le joueur dont le pion s'y arrête rejoue aussitôt, avec son dé. Un seul tour en plus."]))
 
 q("teleport", 0, -5, I("teleport_cartridge"), deps=["cartridge"], rewards=T1(),
-  desc=(["Cartridge + ender pearl. A pawn that ends on it is sent to another Teleport space of the same network colour (violet, green, orange or blue)."],
-        ["Cartouche + perle de l'Ender. Un pion qui s'y arrête est envoyé sur une autre case Téléportation du même réseau de couleur (violet, vert, orange ou bleu)."]))
+  desc=(["Cartridge + ender pearl. A pawn stopping here goes to another Teleport space of the same colour (purple, green, orange or blue)."],
+        ["Cartouche + perle de l'Ender. Un pion qui s'y arrête part sur une autre case Téléportation de la même couleur (violet, vert, orange ou bleu)."]))
 
 q("inventory", 1.5, -5, I("inventory_cartridge"), deps=["cartridge"], rewards=T1(),
-  desc=(["Cartridge + chest. Links up to 8 chests (right-click them) and gives or takes items: positive items make a bonus space (blue), negative ones a malus space (red), empty an item space (orange). The scroll wheel sets the amounts. Without a chest, in a party, it uses the Party Controller's bank."],
-        ["Cartouche + coffre. Elle retient jusqu'à 8 coffres (clic droit dessus) et donne ou prend des objets : objets positifs = case bonus (bleue), négatifs = case malus (rouge), vide = case objet (orange). La molette règle les quantités. Sans coffre, en partie, elle puise dans la banque du Party Controller."]))
+  desc=(["Cartridge + chest. It links up to 8 chests (right-click them) and gives or takes their items.",
+         "Positive items: bonus space (blue). Negative: malus (red). None: item space (orange).",
+         "No chest, in a party: the Party Controller's storage."],
+        ["Cartouche + coffre. Elle lie jusqu'à 8 coffres (clic droit dessus) et donne ou prend leurs objets.",
+         "Objets positifs : case bonus (bleue). Négatifs : malus (rouge). Aucun : case objet (orange).",
+         "Sans coffre, en partie : le stockage du Party Controller."]))
 
 q("shop", 3, -5, I("shop_cartridge"), deps=["inventory", "shops.bandana"], rewards=T1(),
-  desc=(["An Inventory Cartridge + a bandana stolen from a Boxed Trader (see Shops). A pawn that ends on it (or passes a Checkpoint with it) brings out a Boxed Trader for its player. Its offers (9 at most) are set in the cartridge's own little stall; the goods come from its linked chests, else from the Party Controller's bank."],
-        ["Une Cartouche d'inventaire + un bandana volé à un Marchand en carton (voir Boutiques). Un pion qui s'y arrête (ou qui passe un Point de déclenchement qui la porte) fait sortir un Marchand en carton pour son joueur. Ses offres (9 au plus) se règlent dans le petit étal de la cartouche ; la marchandise vient de ses coffres liés, sinon de la banque du Party Controller."]))
+  desc=(["Inventory Cartridge + a bandana stolen from a Boxed Trader (see Shops).",
+         "A pawn stopping here (or passing a Checkpoint with it) brings out a Boxed Trader. Up to 9 offers, set in the cartridge's stall; the goods come from its chests, else the Party Controller's storage."],
+        ["Cartouche d'inventaire + un bandana volé à un Marchand en carton (voir Boutiques).",
+         "Un pion qui s'y arrête (ou passe un Point de déclenchement qui la porte) fait sortir un Marchand en carton. 9 offres au plus, réglées dans l'étal de la cartouche ; la marchandise vient de ses coffres, sinon du stockage du Party Controller."]))
 
 q("threshold", 4.5, -5, I("threshold_cartridge"), deps=["cartridge"], rewards=T1(),
-  desc=(["Cartridge + iron bars. A wall on the path: a pawn arriving with steps left only goes through if its roll meets the condition (7 or more by default, or a double, a triple); otherwise it stops here. In Barrier mode, each turn is a new try until it passes."],
-        ["Cartouche + barreaux de fer. Un mur sur le chemin : un pion qui arrive avec des pas restants ne passe que si son lancer remplit la condition (7 ou plus par défaut, ou un double, un triple) ; sinon il s'arrête ici. En mode Barrière, chaque tour est un nouvel essai jusqu'à ce qu'il passe."]))
+  desc=(["Cartridge + iron bars. A wall: a pawn with steps left only goes through if its roll meets the condition (7 or more by default, a double, a triple...). Otherwise it stops here.",
+         "Barrier mode: a new try every turn."],
+        ["Cartouche + barreaux de fer. Un mur : un pion avec des pas restants ne passe que si son lancer remplit la condition (7 ou plus par défaut, un double, un triple...). Sinon il s'arrête ici.",
+         "Mode Barrière : un nouvel essai à chaque tour."]))
 
 q("gate_key", 7.5, -5, I("gate_key"), deps=["cartridge"], rewards=T1(),
-  desc=(["A gold ingot + an amethyst shard, shapeless. It opens the gates of Key Gate spaces, once. Sell it in a shop, put it in a prize chest or a Tricauldron: like any item."],
-        ["Un lingot d'or + un éclat d'améthyste, sans forme. Elle ouvre une fois les portails des cases Portail à clé. Vendez-la en boutique, mettez-la dans un coffre de gains ou un Trichaudron : comme n'importe quel objet."]))
+  desc=(["Gold ingot + amethyst shard. Opens a Key Gate once. An item like any other: sell it, give it as a prize, hide it in a Tricauldron."],
+        ["Lingot d'or + éclat d'améthyste. Ouvre une fois un Portail à clé. Un objet comme un autre : vendez-la, offrez-la en gain, cachez-la dans un Trichaudron."]))
 
 q("key_gate", 6, -5, I("key_gate_cartridge"), deps=["gate_key"], rewards=T2(),
-  desc=(["Cartridge + Gate Key. A gate rises on each locked exit of the space: a pawn needs a Gate Key (used up) to go through. Without one: wait, redo the move to take another way, or go back to start. \"Open\" keeps the gate open for a few turns, or for good."],
-        ["Cartouche + Clé de portail. Un portail se dresse sur chaque sortie verrouillée de la case : un pion a besoin d'une Clé de portail (consommée) pour passer. Sans clé : attendre, refaire le déplacement pour prendre un autre chemin, ou retourner au départ. « Ouvert » garde le portail ouvert quelques tours, ou pour toujours."]))
+  desc=(["Cartridge + Gate Key. A gate rises on each locked exit: going through uses up a Gate Key.",
+         "No key: wait, take another way, or go back to start. \"Open\": stays open a few turns, or for good."],
+        ["Cartouche + Clé de portail. Un portail se dresse sur chaque sortie verrouillée : passer consomme une Clé de portail.",
+         "Sans clé : attendre, prendre un autre chemin ou retourner au départ. « Ouvert » : ouvert quelques tours, ou pour toujours."]))
 
 q("tp_pair", 0, -3.5, C(), deps=["teleport"], rewards=T1(), icon="minecraft:ender_pearl",
   title=("A teleport network", "Un réseau de téléportation"),
-  desc=(["Place two Teleport spaces of the same colour on one board. A dye on the tile (purple, green, orange, blue...) changes its network. A lone space of its colour sends nobody anywhere."],
-        ["Posez deux cases Téléportation de la même couleur sur un plateau. Une teinture sur la case (violet, vert, orange, bleu...) change son réseau. Une case seule de sa couleur n'envoie personne."]))
+  desc=(["Two Teleport spaces of the same colour on one board. A dye on the space changes its network; a lone colour sends nobody anywhere."],
+        ["Deux cases Téléportation de la même couleur sur un plateau. Une teinture sur la case change son réseau ; une couleur seule n'envoie personne."]))
 
 q("bonus_malus", 1.5, -3.5, C(), deps=["inventory"], rewards=T1(), icon="minecraft:chest",
   title=("Bonus and malus", "Bonus et malus"),
-  desc=(["Make one blue (bonus) and one red (malus) space. They matter: in a party, the colour of the space under each pawn makes the mini-game teams."],
-        ["Faites une case bleue (bonus) et une rouge (malus). Elles comptent : en partie, la couleur de la case sous chaque pion forme les équipes des mini-jeux."]))
+  desc=(["One blue (bonus) and one red (malus) space. In a party, the colour under each pawn makes the mini-game teams."],
+        ["Une case bleue (bonus) et une rouge (malus). En partie, la couleur sous chaque pion forme les équipes des mini-jeux."]))
 
-done("done", 3, 1.25, ["loop", "wrench", "check_point", "advanced_tile", "router", "start", "stop", "advance",
-                       "replay", "teleport", "inventory", "threshold", "key_gate"],
+done("done", 4.25, 2.75, ["loop", "wrench", "check_point", "advanced_tile", "router", "start", "stop", "advance",
+                       "replay", "tp_pair", "bonus_malus", "threshold", "key_gate"],
      ("Board builder", "Bâtisseur de plateau"),
      (["Tiles, checkpoints, the main cartridges and a closed loop: your board is ready for pawns."],
       ["Tuiles, points de déclenchement, les principales cartouches et une boucle fermée : votre plateau attend ses pions."]),
@@ -391,8 +423,8 @@ chapter("pawns", "board_game", "steveparty:tokenizer_wand",
          ["N'importe quel mob devient un pion avec la Baguette de pions."]))
 
 q("crystal_ball", 0, 0, I("lapis_crystal_ball"), deps=["welcome.done"], rewards=T2(), size=1.25,
-  desc=(["A Party Star surrounded by 4 blocks of lapis lazuli (see Mulas and Stars for the star). Its only use: the head of the Tokenizer Wand."],
-        ["Une Party Star entourée de 4 blocs de lapis-lazuli (l'étoile : voir Mulas et étoiles). Son seul usage : la tête de la Baguette de pions."]))
+  desc=(["A Party Star in 4 lapis blocks (the star: see Mulas and Stars). The head of the Tokenizer Wand."],
+        ["Une Party Star entre 4 blocs de lapis-lazuli (l'étoile : voir Mulas et étoiles). La tête de la Baguette de pions."]))
 
 q("wand", 2, 0, I("tokenizer_wand"), deps=["crystal_ball"], rewards=T3(),
   desc=(["Lapis crystal ball, gold block and blaze rod, in a column. A golden wand with a lapis orb."],
@@ -400,10 +432,10 @@ q("wand", 2, 0, I("tokenizer_wand"), deps=["crystal_ball"], rewards=T3(),
 
 q("pionificus", 4, 0, C(), deps=["wand"], rewards=T2(), icon="steveparty:tokenizer_wand",
   title=("Pionificus!", "Pionificus !"),
-  desc=(["Right-click a mob with the wand (or shoot a spark at it), then draw a circle around it with the mouse. On the guide: a 1-block pawn; twice as big: 2 blocks; smaller: down to 0.25.",
-         "The mob becomes a still, silent, invulnerable figurine, and you own it."],
-        ["Clic droit sur un mob avec la baguette (ou lancez-lui une flammèche), puis dessinez un cercle autour de lui à la souris. Sur le guide : pion d'un bloc ; deux fois plus grand : 2 blocs ; plus petit : jusqu'à 0,25.",
-         "Le mob devient une figurine immobile, muette et invulnérable, dont vous êtes le propriétaire."]))
+  desc=(["Right-click a mob with the wand (or shoot it a spark), then draw a circle around it: on the guide, a 1-block pawn; from 0.25 to 2 blocks.",
+         "It becomes your still, silent, invulnerable figurine."],
+        ["Clic droit sur un mob avec la baguette (ou lancez-lui une flammèche), puis tracez un cercle autour : sur le guide, un pion d'un bloc ; de 0,25 à 2 blocs.",
+         "Il devient votre figurine immobile, muette et invulnérable."]))
 
 q("resize", 4, -1.75, C(), deps=["pionificus"], rewards=T0(), optional=True, icon="minecraft:blaze_rod",
   title=("Resizing spell", "Sort de redimensionnement"),
@@ -416,19 +448,23 @@ q("dye", 4, 1.75, C(), deps=["pionificus"], rewards=T0(), optional=True, icon="m
         ["Clic droit sur un pion avec une teinture : son nom et son socle changent de couleur (et sa case de départ aussi)."]))
 
 q("token", 6, 0, I("token"), deps=["pionificus"], rewards=T2(),
-  desc=(["5 plastic pellets and a chest. Right-click your pawn with an empty Token to store it, right-click a block to put it back: the way to move a pawn by hand."],
-        ["5 granulés de plastique et un coffre. Clic droit sur votre pion avec un Jeton vide pour le ranger, clic droit sur un bloc pour le reposer : la façon de déplacer un pion à la main."]))
+  desc=(["5 plastic pellets + chest. Right-click your pawn with an empty Token to store it, right-click a block to put it back: how a pawn moves by hand."],
+        ["5 granulés de plastique + coffre. Clic droit sur votre pion avec un Pion (l'objet) vide pour le ranger, clic droit sur un bloc pour le reposer : ainsi se déplace un pion à la main."]))
 
 q("bind", 8, -1.25, C(), deps=["token", "board.start"], rewards=MILESTONE(), icon="steveparty:tile_behavior_start",
   shape="hexagon", size=1.25,
   title=("Take your place", "Prendre sa place"),
-  desc=(["Put your pawn on a Start space: it binds to it, floats and looks at the nearest player. Right-click the space empty-handed to own it. Only bound pawns join a party."],
-        ["Posez votre pion sur une case de départ : il s'y lie, flotte et regarde le joueur le plus proche. Clic droit main vide sur la case pour en devenir propriétaire. Seuls les pions liés entrent dans une partie."]))
+  desc=(["Put your pawn on a Start space: it binds to it and floats. Right-click the space empty-handed to own it.",
+         "Only bound pawns join a party."],
+        ["Posez votre pion sur une case de départ : il s'y lie et flotte. Clic droit main vide sur la case pour en devenir propriétaire.",
+         "Seuls les pions liés entrent dans une partie."]))
 
 q("game_master", 2, 1.75, C(), deps=["wand"], rewards=T2(), optional=True, icon="minecraft:enchanted_book",
   title=("Game Master", "Maître du jeu"),
-  desc=(["A treasure enchantment for the wand only: found in woodland mansion chests, or dropped by evokers and illusioners killed by a player. With it you can resize anyone's pawn and exclude any pawn from a party, like a referee."],
-        ["Un enchantement trésor, uniquement pour la baguette : dans les coffres de manoir, ou lâché par les évocateurs et illusionnistes tués par un joueur. Il permet de redimensionner le pion de n'importe qui et d'exclure n'importe quel pion d'une partie, comme un arbitre."]))
+  desc=(["A treasure enchantment for the wand: woodland mansion chests, evokers and illusioners.",
+         "Resize anyone's pawn and exclude any pawn from a party, like a referee."],
+        ["Un enchantement trésor pour la baguette : coffres de manoir, évocateurs et illusionnistes.",
+         "Redimensionnez le pion de n'importe qui et excluez n'importe quel pion d'une partie, comme un arbitre."]))
 
 done("done", 10, 0, ["bind", "token"],
      ("Pawn master", "Maître des pions"),
@@ -444,18 +480,18 @@ chapter("dice", "board_game", "steveparty:default_dice",
          ["Lancez, avancez, et gravez vos propres faces."]))
 
 q("default_dice", 4.5, -4, I("default_dice", how="own"), deps=["welcome.done"], rewards=[XP(15), IT("default_dice", 1)], size=1.25,
-  desc=(["Rolls 1 to 10. Your first two come with the Tile quest (and the hub's starter chest); more come out of the Dice Forge."],
-        ["Donne 1 à 10. Les deux premiers viennent avec la quête Tuile (et le coffre de départ du hub) ; les suivants sortent de la forge à dés."]))
+  desc=(["Rolls 1 to 10. The first two come with the Tile quest; more come out of the Dice Forge."],
+        ["Donne 1 à 10. Les deux premiers viennent avec la quête Tuile ; les suivants sortent de la Forge à dés."]))
 
 q("roll", 6.25, -3.25, C(), deps=["default_dice"], rewards=T1(), icon="steveparty:default_dice",
   title=("Roll it!", "Lancez-le !"),
-  desc=(["Right-click: the die flies over the nearest mob (sneak: the nearest player) and spins. Hit it to stop it. The result shows above the hotbar."],
-        ["Clic droit : le dé part au-dessus du mob le plus proche (accroupi : du joueur le plus proche) et tourne. Frappez-le pour l'arrêter. Le résultat s'affiche au-dessus de la barre d'inventaire."]))
+  desc=(["Right-click: the die flies over the nearest mob (sneak: the nearest player) and spins. Hit it to stop it."],
+        ["Clic droit : le dé part au-dessus du mob le plus proche (accroupi : du joueur le plus proche) et tourne. Frappez-le pour l'arrêter."]))
 
 q("move", 8.25, -3.25, C(), deps=["roll", "pawns.pionificus"], rewards=T2(), icon="steveparty:tile",
   title=("Move a pawn", "Faire avancer un pion"),
-  desc=(["Roll near one of your pawns standing on a linked board: it walks the result, step by step. At a fork, right-click an arrow empty-handed to choose the way."],
-        ["Lancez près d'un de vos pions posé sur un plateau relié : il avance du résultat, case par case. À un embranchement, clic droit main vide sur une flèche pour choisir."]))
+  desc=(["Roll near your pawn on a linked board: it walks the result. At a fork, right-click an arrow empty-handed."],
+        ["Lancez près de votre pion sur un plateau relié : il avance du résultat. À un embranchement, clic droit main vide sur une flèche."]))
 
 q("double", 6.25, -4.5, I("double_dice"), deps=["default_dice"], rewards=T1(),
   desc=(["Two Default Dice, shapeless. Two linked dice: 2 to 20. Splits back into two."],
@@ -467,8 +503,8 @@ q("triple", 8.75, -4.5, I("triple_dice"), deps=["double"], rewards=T2(),
 
 # Faces sub-tree
 q("blank", 4.5, -0.5, I("blank_dice_face", 4), deps=["default_dice"], rewards=[XP(15), IT("blank_dice_face", 4)], size=1.25,
-  desc=(["2 iron ingots and 2 nether quartz in a square: 4 Blank Die Faces. Every face starts from a blank one (stonecutter), and the Dice Forge uses them up."],
-        ["2 lingots de fer et 2 quartz du Nether en carré : 4 Faces de dé vierges. Toute face part d'une vierge (tailleur de pierre), et la Forge à dés en consomme."]))
+  desc=(["2 iron ingots + 2 nether quartz: 4 Blank Die Faces. Every face starts blank (stonecutter); the Dice Forge uses them up."],
+        ["2 lingots de fer + 2 quartz du Nether : 4 Faces de dé vierges. Toute face part d'une vierge (tailleur de pierre) ; la Forge à dés en consomme."]))
 
 # Faces around the Blank Die Face, modules in a row between it and "Fit a module": every arrow is a straight spoke.
 q("face6", 2.75, -3.25, I("dice_face_6", how="own"), deps=["blank"], rewards=T1(),
@@ -488,19 +524,19 @@ q("cursed", 1.25, 0.25, I("cursed_dice_face_3", how="own"), deps=["blank"], rewa
         ["Les faces maudites (1 à 3) portent un crâne violet. Pour l'instant, elles comptent comme des nombres normaux."]))
 
 q("coin_face", 7.75, -0.75, I("coin_dice_face_1"), deps=["blank", "welcome.coin"], rewards=T1(),
-  desc=(["Blank face + Coin: a +1 Coins face (stonecutter for +2 to +10). Instead of moving, the roller gains that many coins of the party."],
-        ["Face vierge + Pièce : une face Pièces +1 (tailleur de pierre pour +2 à +10). Au lieu d'avancer, le lanceur gagne autant de pièces de la partie."]))
+  desc=(["Blank face + Coin: a +1 Coins face (stonecutter: +2 to +10). Instead of moving, the roller gets that many Coins from the storage."],
+        ["Face vierge + Pièce : une face Pièces +1 (tailleur de pierre : +2 à +10). Au lieu d'avancer, le lanceur reçoit autant de Pièces du stockage."]))
 
 q("debt_face", 7.25, -2.25, I("debt_dice_face_1"), deps=["blank"], rewards=T1(),
-  desc=(["Blank face + spider eye: a -1 Debt face (stonecutter for -2 to -10). The roller loses that many coins, never more than they have."],
-        ["Face vierge + œil d'araignée : une face Dette -1 (tailleur de pierre pour -2 à -10). Le lanceur perd autant de pièces, jamais plus que ce qu'il a."]))
+  desc=(["Blank face + spider eye: a -1 Debt face (stonecutter: -2 to -10). The roller pays that many Coins to the storage, never more than they have."],
+        ["Face vierge + œil d'araignée : une face Dette -1 (tailleur de pierre : -2 à -10). Le lanceur verse autant de Pièces au stockage, jamais plus qu'il n'en a."]))
 
 q("swap_face", 7.5, 0.5, I("swap_dice_face"), deps=["blank"], rewards=T2(),
   desc=(["Blank face + ender pearl. The roller's pawn swaps places with another player's pawn of their choice."],
         ["Face vierge + perle de l'Ender. Le pion du lanceur échange sa place avec celui d'un autre joueur, à son choix."]))
 
 # Modules sub-tree: a blank module first, then each module from 7 fragments of its colour (its icon's ring)
-q("blank_module", 4.5, 0.75, I("blank_dice_module"), deps=["blank"], rewards=T1(),
+q("blank_module", 4.5, 0.875, I("blank_dice_module"), deps=["blank"], rewards=T1(),
   desc=(["A Blank Die Face in a cross of 4 gold nuggets: a Blank Die Module, the base of every module."],
         ["Une Face de dé vierge dans une croix de 4 pépites d'or : un Module de dé vierge, la base de tous les modules."]))
 
@@ -520,8 +556,8 @@ MODULES = [
      "Stop or again: after the result, keep it or roll again, once per module.",
      "Stop ou encore : après le résultat, gardez-le ou relancez, une fois par module."),
     ("reversed", "red", "a fermented spider eye", "un œil d'araignée fermenté",
-     "A negative module: the pawn moves back, and coins won are lost.",
-     "Un module négatif : le pion recule, et les pièces gagnées sont perdues."),
+     "A negative module: the pawn moves back, and Coins won are lost.",
+     "Un module négatif : le pion recule, et les Pièces gagnées sont perdues."),
     ("skeleton_key", "yellow", "a tripwire hook", "un crochet",
      "During this move the pawn ignores Stop spaces and shop stops.",
      "Pendant ce déplacement, le pion ignore les cases Stop et les haltes boutique."),
@@ -539,18 +575,18 @@ def fr_plural(colour):
 
 
 for i, (m, colour, ing_en, ing_fr, en, fr) in enumerate(MODULES):
-    q("module_" + m, 0.125 + i * 1.25, 2, I("dice_module_" + m), deps=["blank_module", "mulas.frag_" + colour],
+    q("module_" + m, 0.125 + i * 1.25, 2.25, I("dice_module_" + m), deps=["blank_module", "mulas.frag_" + colour],
       rewards=T1(),
-      desc=([f"A Blank Die Module ringed with 7 {EN_COLOR[colour]} star fragments, {ing_en} on top. {en}"],
-            [f"Un Module de dé vierge entouré de 7 fragments d'étoile {fr_plural(colour)}, avec {ing_fr} au-dessus. {fr}"]))
+      desc=([f"A Blank Die Module ringed with 7 {EN_COLOR[colour]} star fragments, {ing_en} on top.", en],
+            [f"Un Module de dé vierge entouré de 7 fragments d'étoile {fr_plural(colour)}, avec {ing_fr} au-dessus.", fr]))
 
 q("fit_module", 4.5, 4.25, C(), deps=["module_" + m[0] for m in MODULES], dep_req="one_completed",
   rewards=T2(), icon="minecraft:crafting_table",
   title=("Fit a module", "Poser un module"),
-  desc=(["Crafting table: a die (default, forged, double or triple) + one or more module items gives the same die with those modules. The module items stay in the grid. A die can carry several modules: they are listed in its tooltip."],
-        ["Établi : un dé (simple, forgé, double ou triple) + un ou plusieurs objets module donnent le même dé avec ces modules. Les objets module restent dans la grille. Un dé peut en porter plusieurs : ils sont listés dans son infobulle."]))
+  desc=(["Crafting table: a die + module items = the same die with those modules (the module items stay in the grid). Its tooltip lists them."],
+        ["Établi : un dé + des objets module = le même dé avec ces modules (les objets module restent dans la grille). Son infobulle les liste."]))
 
-done("done", 12.25, 0, ["triple", "move", "swap_face", "coin_face", "fit_module"],
+done("done", 12.375, 2, ["triple", "move", "swap_face", "coin_face", "fit_module"],
      ("Dice collector", "Collectionneur de dés"),
      (["Dice, special faces and modules: every roll can now be a surprise."],
       ["Dés, faces spéciales et modules : chaque lancer peut maintenant être une surprise."]),
@@ -564,31 +600,41 @@ chapter("party", "board_game", "steveparty:party_controller",
          ["Le Party Controller enchaîne les tours, les mini-jeux et les gains."]))
 
 q("controller", 0, 0, I("party_controller"), deps=["board.tile", "dice.default_dice"], rewards=T3(), size=1.25,
-  desc=(["A map, glass and a redstone torch over gold ingots and a chest, on 3 iron ingots. The heart of a party: it runs the turns, the mini-games and the prizes."],
-        ["Une carte, du verre et une torche de redstone au-dessus de lingots d'or et d'un coffre, sur 3 lingots de fer. Le cœur d'une partie : il enchaîne les tours, les mini-jeux et les gains."]))
+  desc=(["Map, glass, redstone torch, gold ingots, chest and iron ingots.",
+         "The heart of a party: turns, mini-games and prizes."],
+        ["Carte, verre, torche de redstone, lingots d'or, coffre et lingots de fer.",
+         "Le cœur d'une partie : tours, mini-jeux et gains."]))
 
 q("dashboard", 2.75, -0.25, C(), deps=["controller"], rewards=T1(), icon="steveparty:party_controller",
   title=("The dashboard", "Le tableau de bord"),
-  desc=(["Right-click it: five tabs (Status, Players, Program, Prizes, Settings). The Status tab lists what is missing before the \"Start the party\" button lights up. A \"!\" on a tab shows what to fix."],
-        ["Clic droit : cinq onglets (État, Joueurs, Programme, Gains, Réglages). L'onglet État liste ce qui manque avant que « Lancer la partie » s'allume. Un « ! » sur un onglet montre quoi régler."]))
+  desc=(["Right-click: six tabs (Status, Players, Program, Gains, Storage, Settings).",
+         "Status lists what is missing before \"Start the party\" lights up; a \"!\" marks the tab to fix."],
+        ["Clic droit : six onglets (État, Joueurs, Programme, Gains, Stockage, Réglages).",
+         "État liste ce qui manque avant que « Lancer la partie » s'allume ; un « ! » marque l'onglet à régler."]))
 
 q("bank", 7.75, 1.25, C(), deps=["dashboard"], rewards=T1(), icon="minecraft:chest",
-  title=("Fill the bank", "Remplir la banque"),
-  desc=(["Nothing comes from nothing: the controller creates no coins and no stars. The Bank button of the Prizes tab opens its own 27 slots (hoppers work too); fill them with the party's coins and stars. Prizes, sold stars, coin faces, pots and spaces without a chest are paid from there, and fines go back there.",
-         "An Inventory Cartridge next to the Bank button adds its linked chests."],
-        ["Rien ne naît de rien : le contrôleur ne crée ni pièce ni étoile. Le bouton Banque de l'onglet Gains ouvre ses 27 emplacements (les entonnoirs marchent aussi) ; remplissez-les des pièces et étoiles de la partie. Les gains, les étoiles vendues, les faces Pièces, les pots et les cases sans coffre sont payés de là, et les amendes y retournent.",
-         "Une Cartouche d'inventaire à côté du bouton Banque y ajoute ses coffres liés."]))
+  title=("Fill the storage", "Remplir le stockage"),
+  desc=(["The controller creates nothing: put the party's Coins and Party Stars in its Storage tab (hoppers work too).",
+         "Prizes, stars for sale and spaces without a chest are paid from it; what the party takes goes back there.",
+         "Chests linked to it with the Tile Linker Brush pay after its own slots."],
+        ["Le contrôleur ne crée rien : mettez les Pièces et Party Stars de la partie dans son onglet Stockage (les entonnoirs marchent aussi).",
+         "Gains, étoiles à vendre et cases sans coffre sont payés de là ; ce que la partie prend y retourne.",
+         "Les coffres qui lui sont liés au Pinceau lieur paient après ses propres cases."]))
 
 q("currency", 9.25, 1.25, C(), deps=["bank"], rewards=T1(), icon="minecraft:gold_nugget",
   title=("Your own currency", "Votre propre monnaie"),
-  desc=(["Above the columns of the Prizes tab: the item used as the Coin (Coin by default) and as the Star (Party Star by default). Click with any item to use it instead, gold nuggets or diamonds for example (nothing is taken); empty hand for the default. Messages, menus and spaces then name your items."],
-        ["Au-dessus des colonnes de l'onglet Gains : l'objet qui sert de Pièce (la Pièce par défaut) et d'Étoile (la Party Star par défaut). Cliquez avec n'importe quel objet pour le remplacer, des pépites d'or ou des diamants par exemple (rien n'est pris) ; main vide pour revenir au défaut. Messages, menus et cases nomment alors vos objets."]))
+  desc=(["Gains tab, above the columns: the item used as Coin and as Star. Click with any item to use it instead (nothing is taken), empty hand for the default.",
+         "Messages and menus then name your items: \"5 × Gold Nugget\"."],
+        ["Onglet Gains, au-dessus des colonnes : l'objet qui sert de Pièce et d'Étoile. Cliquez avec n'importe quel objet pour l'adopter (rien n'est pris), main vide pour revenir au défaut.",
+         "Messages et menus nomment alors vos objets : « 5 × Pépite d'or »."]))
 
 q("first_party", 6, -0.75, C(), deps=["dashboard", "pawns.bind"], rewards=MILESTONE(), icon="minecraft:firework_rocket",
   shape="hexagon", size=1.25,
   title=("Let's party!", "Que la fête commence !"),
-  desc=(["Pawns bound to start spaces, then \"Start the party\" (or a redstone pulse). Everyone rolls for the order, then each round is one turn per pawn and a mini-game. Stars first, then coins, decide the winner."],
-        ["Des pions liés aux cases de départ, puis « Lancer la partie » (ou une impulsion redstone). Chacun lance un dé pour l'ordre, puis chaque manche = un tour par pion et un mini-jeu. Les étoiles, puis les pièces, désignent le gagnant."]))
+  desc=(["Pawns on start spaces, then \"Start the party\" (or a redstone pulse). Everyone rolls for the order; each round is one turn per pawn and a mini-game.",
+         "Most Party Stars wins, then most Coins."],
+        ["Des pions sur les cases de départ, puis « Lancer la partie » (ou une impulsion redstone). Chacun lance pour l'ordre ; chaque manche = un tour par pion et un mini-jeu.",
+         "Le plus de Party Stars gagne, puis le plus de Pièces."]))
 
 q("hud", 8.25, -0.5, C(), deps=["first_party"], rewards=T0(), optional=True, icon="minecraft:painting",
   title=("Arrange the HUD", "Disposer l'interface"),
@@ -596,18 +642,26 @@ q("hud", 8.25, -0.5, C(), deps=["first_party"], rewards=T0(), optional=True, ico
         ["Pendant une partie, la bande des tours, les annonces et le tableau des scores s'affichent. Touche M (ou /partyhud) pour les déplacer, H pour les masquer."]))
 
 q("step", 4, -1.5, I("step_controller"), deps=["controller"], rewards=T2(),
-  desc=(["An hourglass: right-click stands it up (Next) or lays it on its side (Replay). A redstone pulse on Next skips what the party waits for: a turn not rolled yet, a waiting bell, the practice round; during a mini-game it ends it with the podiums' places. On Replay, the player plays again after this turn, or the round starts again.",
-         "Link it with the Tile Linker Brush to any part of a game (space, Party Controller, Mini-game Controller, podium...), even far away; otherwise it drives the nearest party within 64 blocks."],
-        ["Un sablier : clic droit pour le dresser (Suivant) ou le coucher (Rejouer). Une impulsion redstone sur Suivant passe ce que la partie attend : un tour pas encore lancé, une cloche qui retient, la manche d'essai ; pendant un mini-jeu, elle le termine avec les places des podiums. Sur Rejouer, le joueur rejoue après ce tour, ou la manche recommence.",
-         "Reliez-le au Pinceau lieur à n'importe quel élément d'une partie (case, Party Controller, Contrôleur de mini-jeu, podium...), même très loin ; sinon il pilote la partie la plus proche à 64 blocs."]))
+  desc=(["An hourglass. Right-click: standing (Next) or on its side (Replay).",
+         "Next + a pulse: skips what the party waits for (a turn not rolled, a bell, the practice round); in a mini-game, ends it with the podiums' places.",
+         "Replay + a pulse: the player plays again, or the round restarts.",
+         "Link it to any part of a game with the Tile Linker Brush; otherwise it drives the nearest party (64 blocks)."],
+        ["Un sablier. Clic droit : debout (Suivant) ou couché (Rejouer).",
+         "Suivant + une impulsion : passe ce que la partie attend (tour pas lancé, cloche, manche d'essai) ; en mini-jeu, le termine avec les places des podiums.",
+         "Rejouer + une impulsion : le joueur rejoue, ou la manche recommence.",
+         "Reliez-le au Pinceau lieur à un élément d'une partie ; sinon il pilote la partie la plus proche (64 blocs)."]))
 
 q("bell", 4, -4, I("party_bell"), deps=["controller"], rewards=T2(),
-  desc=(["Right-click to choose a moment (party start, turn start, die rolled, mini-game end...): it sends a redstone pulse then, and a comparator reads a value (die result, pawn rank...). In wait mode (Wrench) the party freezes until the bell gets a signal."],
-        ["Clic droit pour choisir un moment (début de partie, début de tour, dé lancé, fin de mini-jeu...) : elle envoie alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang du pion...). En mode attente (Clé), la partie se fige jusqu'à ce qu'elle reçoive un signal."]))
+  desc=(["Right-click: pick a moment (party start, turn start, die rolled, mini-game end...). It pulses then, and a comparator reads a value (die result, rank...).",
+         "Wait mode (Wrench): the party freezes until the bell gets a signal."],
+        ["Clic droit : choisissez un moment (début de partie, de tour, dé lancé, fin de mini-jeu...). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...).",
+         "Mode attente (Clé) : la partie se fige jusqu'à ce qu'elle reçoive un signal."]))
 
 q("piggy", 4, -2.75, I("piggy_bank"), deps=["controller", "board.inventory"], rewards=T2(),
-  desc=(["A ceramic pig with an Inventory Cartridge: each redstone pulse gives (or takes) its items to a target: the player of the turn, the mini-game winners, everyone, or the nearest player. All-or-nothing mode can sell a star for coins."],
-        ["Un cochon en céramique avec une Cartouche d'inventaire : chaque impulsion donne (ou prend) ses objets à une cible : le joueur du tour, les gagnants du mini-jeu, tout le monde ou le plus proche. En mode « tous les objets », c'est tout ou rien : de quoi vendre une étoile contre des pièces."]))
+  desc=(["A ceramic pig with an Inventory Cartridge. Each pulse gives (or takes) its items: player of the turn, mini-game winners, everyone or the nearest.",
+         "All-or-nothing mode: sell a Party Star for Coins."],
+        ["Un cochon en céramique avec une Cartouche d'inventaire. Chaque impulsion donne (ou prend) ses objets : joueur du tour, gagnants du mini-jeu, tout le monde ou le plus proche.",
+         "Mode tout ou rien : de quoi vendre une Party Star contre des Pièces."]))
 
 CARDS = [
     ("turns", "blue", ["Every pawn plays once."], ["Chaque pion joue une fois."]),
@@ -621,32 +675,40 @@ CARDS = [
 ]
 for i, (card, stud, en, fr) in enumerate(CARDS):
     q("card_" + card, 1.5 + i * 1.35, 2.5, I("party_card_" + card, 4), deps=["dashboard"], rewards=T1(),
-      desc=([f"A {EN_COLOR[stud]} plastic stud + paper + redstone: 4 cards. " + en[0],
-             "Cards go in the 24 slots of the Program tab and are read left to right."],
-            [f"Un plot en plastique {FR_COLOR[stud]} + papier + redstone : 4 cartes. " + fr[0],
-             "Les cartes se posent dans les 24 emplacements de l'onglet Programme et se lisent de gauche à droite."]))
+      desc=([f"A {EN_COLOR[stud]} plastic stud + paper + redstone: 4 cards.", en[0],
+             "Program tab: 24 slots, read left to right."],
+            [f"Un plot en plastique {FR_COLOR[stud]} + papier + redstone : 4 cartes.", fr[0],
+             "Onglet Programme : 24 emplacements, lus de gauche à droite."]))
 
 q("program", 6.75, 5, C(), deps=["card_turns", "card_minigame", "card_sequence_start", "card_repeat"], rewards=MILESTONE(),
   icon="steveparty:party_card_repeat", shape="hexagon", size=1.25,
   title=("Write a program", "Écrire un programme"),
-  desc=(["Build your own party: for example Sequence Start, Turns, Repeat x3, Sequence Start, Mini-game, Repeat x2. Without cards, the party plays the number of rounds set in Settings."],
-        ["Écrivez votre propre partie : par exemple Début de séquence, Tour de jeu, Répéter x3, Début de séquence, Mini-jeu, Répéter x2. Sans carte, la partie joue le nombre de manches réglé dans les Réglages."]))
+  desc=(["Write your own party, for example: Sequence Start, Turns, Repeat x3, Sequence Start, Mini-game, Repeat x2.",
+         "No cards: the number of rounds set in Settings."],
+        ["Écrivez votre propre partie, par exemple : Début de séquence, Tour de jeu, Répéter x3, Début de séquence, Mini-jeu, Répéter x2.",
+         "Sans carte : le nombre de manches des Réglages."]))
 
-q("trap", 8.25, -2, I("powerup_trap"), deps=["first_party", "welcome.coin"], rewards=T1(),
-  desc=(["A Coin, a stone pressure plate and string, shapeless. A power-up: during your turn, before rolling, right-click to set it on the space where your pawn stands. Blank, it steals 10 coins; sneak + right-click to choose what it does (coins, steps back, a lost turn, an item) and sign it.",
-         "The next pawn of another player that stops there springs it, for you."],
-        ["Une Pièce, une plaque de pression en pierre et de la ficelle, sans forme. Un bonus : pendant votre tour, avant de lancer, clic droit pour le poser sur la case où se tient votre pion. Vierge, il vole 10 pièces ; accroupi + clic droit pour choisir ce qu'il fait (pièces, recul, tour perdu, un objet) et le signer.",
-         "Le prochain pion d'un autre joueur qui s'y arrête le déclenche, à votre profit."]))
+q("trap", 9.25, -3.5, I("powerup_trap"), deps=["first_party", "welcome.coin"], rewards=T1(),
+  desc=(["Coin + stone pressure plate + string. On your turn, before rolling, right-click: it sits on your pawn's space.",
+         "Blank, it steals 10 Coins. Sneak + right-click: choose its effect (Coins, steps back, a lost turn, an item) and sign it.",
+         "Another player's pawn that stops there springs it, for you."],
+        ["Pièce + plaque de pression en pierre + ficelle. Pendant votre tour, avant de lancer, clic droit : il se pose sur la case de votre pion.",
+         "Vierge, il vole 10 Pièces. Accroupi + clic droit : choisissez son effet (Pièces, recul, tour perdu, un objet) et signez-le.",
+         "Le pion d'un autre joueur qui s'y arrête le déclenche, à votre profit."]))
 
-q("star_space", 6, -2.75, I("star_cartridge"), deps=["controller", "mulas.power_star"], rewards=T2(),
-  desc=(["Cartridge + Party Star. At the start of a party, the party's star lands on one of the Star spaces, under a golden beam. A Mula waits there with the star and plays with it (on the space's Spawn Bubble, if linked). Its menu: the price (20 coins by default), sold on landing or in passing."],
-        ["Cartouche + Party Star. Au début d'une partie, l'étoile de la partie se pose sur l'une des cases Étoile, sous un faisceau doré. Une Mula y attend avec l'étoile et joue avec (sur la Bulle d'apparition de la case, si elle est reliée). Son menu : le prix (20 pièces par défaut), vendue à l'arrêt ou au passage."]))
+q("star_space", 7, -3.75, I("star_cartridge"), deps=["controller", "mulas.power_star"], rewards=T2(),
+  desc=(["Cartridge + Party Star. At the start of a party, the star lands on one Star space, under a golden beam, with a Mula playing with it.",
+         "Its menu: the price (20 Coins by default), sold on landing or in passing."],
+        ["Cartouche + Party Star. En début de partie, l'étoile se pose sur une case Étoile, sous un faisceau doré, avec une Mula qui joue avec.",
+         "Son menu : le prix (20 Pièces par défaut), vendue à l'arrêt ou au passage."]))
 
-q("buy_star", 7.5, -3.75, C(), deps=["star_space", "first_party"], rewards=MILESTONE(), icon="steveparty:party_star",
+q("buy_star", 9, -5.25, C(), deps=["star_space", "first_party"], rewards=MILESTONE(), icon="steveparty:party_star",
   shape="hexagon", size=1.25,
   title=("Catch a star!", "Attrapez une étoile !"),
-  desc=(["Reach the star during a party and buy it ([Buy] in the chat): the price goes to the bank, a star from the bank goes to you. The Mula dances, throws you the star and vanishes; the star may move on to another Star space."],
-        ["Atteignez l'étoile pendant une partie et achetez-la ([Acheter] dans le chat) : le prix part à la banque, une étoile de la banque vient à vous. La Mula danse, vous lance l'étoile et disparaît ; l'étoile peut partir sur une autre case Étoile."]))
+  desc=(["Reach the star and buy it ([Buy] in the chat): the price goes to the storage, a star comes out of it for you.",
+         "The Mula throws it to you; the star may move on to another Star space."],
+        ["Atteignez l'étoile et achetez-la ([Acheter] dans le chat) : le prix va au stockage, une étoile en sort pour vous.",
+         "La Mula vous la lance ; l'étoile peut partir sur une autre case Étoile."]))
 
 done("done", 10.5, -2, ["first_party", "step", "bell", "piggy", "program", "bank", "currency", "buy_star"],
      ("Party host", "Maître de cérémonie"),
@@ -662,32 +724,36 @@ chapter("minigames", "board_game", "steveparty:mini_game_page",
          ["Pages, tuyaux, podiums et arènes : créez vos propres mini-jeux."]))
 
 q("page", 0, 0, I("mini_game_page", 4), deps=["board.cartridge"], rewards=T2(), size=1.25,
-  desc=(["A Cartridge surrounded by 4 paper: 4 Mini-Game Pages. A page IS a mini-game: its title, rules, image, formats, pipes, results and zone."],
-        ["Une Cartouche entourée de 4 papiers : 4 Pages de mini-jeu. Une page EST un mini-jeu : son titre, ses règles, son image, ses formats, ses tuyaux, ses résultats et sa zone."]))
+  desc=(["A Cartridge in 4 paper: 4 Mini-Game Pages. A page IS a mini-game: title, rules, image, formats, pipes, results and zone."],
+        ["Une Cartouche entre 4 papiers : 4 Pages de mini-jeu. Une page EST un mini-jeu : titre, règles, image, formats, tuyaux, résultats et zone."]))
 
 q("write_page", 5.75, -4.5, C(), deps=["page"], rewards=T1(), icon="minecraft:writable_book",
   title=("Write the page", "Écrire la page"),
-  desc=(["Right-click in the air with the page: the editor opens. Give it a title, a description (bold, italic, colours, 400 characters) and an image (PNG or JPEG dropped on the window). The image shows on the big card when the mini-game is drawn."],
-        ["Clic droit dans le vide avec la page : l'éditeur s'ouvre. Donnez-lui un titre, une description (gras, italique, couleurs, 400 caractères) et une image (PNG ou JPEG déposé sur la fenêtre). L'image s'affiche sur la grande carte quand le mini-jeu est tiré."]))
+  desc=(["Right-click in the air with the page: the editor. A title, a description (400 characters, with colours) and an image (drop a PNG or JPEG on the window), shown when the mini-game is drawn."],
+        ["Clic droit dans le vide avec la page : l'éditeur. Un titre, une description (400 caractères, en couleurs) et une image (déposez un PNG ou un JPEG sur la fenêtre), affichée quand le mini-jeu est tiré."]))
 
 q("formats", 9.5, -4.75, C(), deps=["write_page"], rewards=T1(), icon="minecraft:white_banner",
   title=("Formats", "Formats"),
-  desc=(["Formats tab: team games (2 to 4 sides, \"1 vs all\", \"2 vs 2\"...), free-for-all or all together. In a party only a page whose format fits the teams on the board can be drawn. Team A is the players on positive spaces, team B those on negative ones."],
-        ["Onglet Formats : jeux en équipes (2 à 4 camps, « 1 contre tous », « 2 contre 2 »...), chacun pour soi ou tous ensemble. En partie, seule une page dont un format convient aux équipes du plateau peut être tirée. L'équipe A, ce sont les joueurs sur une case positive, l'équipe B ceux sur une case négative."]))
+  desc=(["Teams (2 to 4 sides, \"1 vs all\", \"2 vs 2\"...), free-for-all or all together. A page is drawn only if one of its formats fits the board's teams.",
+         "Team A: players on positive spaces. Team B: on negative ones."],
+        ["Équipes (2 à 4 camps, « 1 contre tous », « 2 contre 2 »...), chacun pour soi ou tous ensemble. Une page n'est tirée que si l'un de ses formats convient aux équipes du plateau.",
+         "Équipe A : joueurs sur une case positive. Équipe B : sur une case négative."]))
 
 q("zone", 8.5, -4, C(), deps=["write_page"], rewards=T1(), icon="minecraft:structure_void",
   title=("Draw the zone", "Tracer la zone"),
-  desc=(["\"Draw the zone\" in the editor, then click two corners (128 blocks per side at most). With the Restore option, each round plays apart in the zone with an empty round inventory, and the arena is put back as built at the end."],
-        ["« Tracer la zone » dans l'éditeur, puis cliquez deux coins (128 blocs par côté au plus). Avec l'option Restaurer, chaque manche se joue à part dans la zone, avec un inventaire de manche vide, et l'arène est remise comme construite à la fin."]))
+  desc=(["\"Draw the zone\" in the editor, then click two corners (128 blocks per side at most).",
+         "Restore option: each round plays apart, with an empty inventory, and the arena is rebuilt at the end."],
+        ["« Tracer la zone » dans l'éditeur, puis cliquez deux coins (128 blocs par côté au plus).",
+         "Option Restaurer : chaque manche se joue à part, inventaire vide, et l'arène est reconstruite à la fin."]))
 
 q("linked_copy", 4, -4.5, C(), deps=["write_page"], rewards=T0(), optional=True, icon="minecraft:paper",
   title=("Linked copies", "Copies liées"),
-  desc=(["Page + paper at the crafting table (or the Copy button) makes a linked copy: editing one edits them all. Handy to link pipes and podiums far apart."],
-        ["Page + papier à l'établi (ou le bouton Copier) donnent une copie liée : modifier l'une modifie toutes les autres. Pratique pour lier tuyaux et podiums éloignés."]))
+  desc=(["Page + paper (or the Copy button): a linked copy, edit one and they all change. Handy for pipes and podiums far apart."],
+        ["Page + papier (ou le bouton Copier) : une copie liée, modifier l'une modifie toutes les autres. Pratique pour des tuyaux et podiums éloignés."]))
 
 q("catalogue", 7.75, -3, I("mini_games_catalogue"), deps=["page", "party.controller"], rewards=T2(),
-  desc=(["Book and quill + map + clock + the \"otherside\" disc, shapeless. Holds 91 pages. Put it in the Party Controller: the roulette draws its mini-games."],
-        ["Livre et plume + carte + horloge + disque « otherside », sans forme. Contient 91 pages. Posez-le dans le Party Controller : la roulette y tire les mini-jeux."]))
+  desc=(["Book and quill + map + clock + the \"otherside\" disc. Holds 91 pages. In the Party Controller, the roulette draws its mini-games."],
+        ["Livre et plume + carte + horloge + disque « otherside ». Contient 91 pages. Dans le Party Controller, la roulette y tire les mini-jeux."]))
 
 # Pipe roles
 ROLE_PIPES = [
@@ -709,13 +775,17 @@ for i, (pipe, en_role, fr_role) in enumerate(ROLE_PIPES):
 q("link_pipes", 5.25, 5.25, C(), deps=["role_green_pipe", "role_blue_pipe", "role_red_pipe"], dep_req="one_completed",
   rewards=T2(), icon="steveparty:green_pipe",
   title=("Link the pipes", "Lier les tuyaux"),
-  desc=(["Page in hand, click a pipe mouth to link it (click again to unlink); linked pipes glow while you hold the page. When the mini-game starts, each player comes out of a pipe of their role."],
-        ["Page en main, cliquez l'embouchure d'un tuyau pour le lier (re-clic pour le délier) ; les tuyaux liés brillent tant que vous tenez la page. Au départ du mini-jeu, chaque joueur sort d'un tuyau de son rôle."]))
+  desc=(["Page in hand, click a pipe mouth to link it (again to unlink); linked pipes glow while you hold the page.",
+         "When the mini-game starts, each player comes out of a pipe of their role."],
+        ["Page en main, cliquez l'embouchure d'un tuyau pour le lier (re-clic pour le délier) ; les tuyaux liés brillent tant que vous tenez la page.",
+         "Au départ du mini-jeu, chaque joueur sort d'un tuyau de son rôle."]))
 
 # Podiums
 q("podium", 4.5, 0, I("podium"), deps=["page"], rewards=T2(),
-  desc=(["Gold, a heavy pressure plate, redstone and quartz blocks. Podiums record who won: the highest column is first place. Sneak on one or right-click it to take it. Link podiums to the page by clicking them with it."],
-        ["De l'or, une plaque de pression lourde, de la redstone et des blocs de quartz. Les podiums retiennent qui a gagné : la colonne la plus haute est la 1re place. Accroupissez-vous dessus ou clic droit pour le prendre. Liez-les à la page en cliquant dessus avec elle."]))
+  desc=(["Gold, a heavy pressure plate, redstone and quartz blocks. Podiums record the winners: the highest column is 1st.",
+         "Sneak on one or right-click it to take it. Click podiums with the page to link them."],
+        ["Or, plaque de pression lourde, redstone et blocs de quartz. Les podiums retiennent les gagnants : la colonne la plus haute est 1re.",
+         "Accroupissez-vous dessus ou clic droit pour le prendre. Cliquez les podiums avec la page pour les lier."]))
 
 # The chapter's milestone gathers 10 arrows: its prerequisites stand on an arc around it.
 for metal, en_m, fr_m, x, y in [("gold", "a gold ingot", "un lingot d'or", 7, -2),
@@ -727,32 +797,44 @@ for metal, en_m, fr_m, x, y in [("gold", "a gold ingot", "un lingot d'or", 7, -2
 
 q("results", 7, 2, C(), deps=["podium"], rewards=T1(), icon="steveparty:gold_podium",
   title=("Results", "Résultats"),
-  desc=(["The Results tab of the page lists what ends the mini-game: linked podiums, goal pole bases (counters) and Step Controllers. A pulse on a podium, set with the Wrench, can register the nearest player or reset the group."],
-        ["L'onglet Résultats de la page liste ce qui termine le mini-jeu : podiums liés, socles de mât d'arrivée (compteurs) et Contrôleurs de pas. Une impulsion sur un podium, réglé à la Clé, peut inscrire le joueur le plus proche ou vider le groupe."]))
+  desc=(["The page's Results tab lists what ends the mini-game: linked podiums, goal pole bases and Step Controllers.",
+         "A podium set with the Wrench can register the nearest player, or reset the group, on a pulse."],
+        ["L'onglet Résultats de la page liste ce qui termine le mini-jeu : podiums liés, socles de mât d'arrivée et Contrôleurs de pas.",
+         "Un podium réglé à la Clé peut, sur une impulsion, inscrire le joueur le plus proche ou vider le groupe."]))
 
 q("mg_controller", 5, 2.5, I("mini_game_controller"), deps=["page", "copper_pipe"], rewards=T2(),
-  desc=(["Paper, glass and a redstone torch over gold ingots and any mini-game pipe, on 3 iron ingots. Placed in the arena, it holds the mini-game's page. Its lamp is red (idle), orange (trial round) or green (playing). A comparator reads its state."],
-        ["Du papier, du verre et une torche de redstone au-dessus de lingots d'or et d'un tuyau de mini-jeu (n'importe lequel), sur 3 lingots de fer. Posé dans l'arène, il reçoit la page du mini-jeu. Sa lampe est rouge (repos), orange (manche d'essai) ou verte (en jeu). Un comparateur lit son état."]))
+  desc=(["Paper, glass, redstone torch, gold ingots, any mini-game pipe and iron ingots. In the arena, it holds the mini-game's page.",
+         "Lamp: red (idle), orange (practice round), green (playing). A comparator reads it."],
+        ["Papier, verre, torche de redstone, lingots d'or, un tuyau de mini-jeu et lingots de fer. Dans l'arène, il reçoit la page du mini-jeu.",
+         "Lampe : rouge (repos), orange (manche d'essai), verte (en jeu). Un comparateur la lit."]))
 
-q("remote", 6.5, 4.25, I("mini_game_remote"), deps=["mg_controller"], rewards=T1(),
-  desc=(["A redstone torch, gold nuggets, a glass pane and a stone button. Sneak + click a Mini-game Controller to link it: out of a party it plays or stops that mini-game from afar; in a party it says whether you are ready for the real round."],
-        ["Une torche de redstone, des pépites d'or, une vitre et un bouton en pierre. Accroupi + clic sur un Contrôleur de mini-jeu pour la lier : hors partie, elle lance ou arrête ce mini-jeu à distance ; en partie, elle dit si vous êtes prêt pour la vraie manche."]))
+q("remote", 6, 3.75, I("mini_game_remote"), deps=["mg_controller"], rewards=T1(),
+  desc=(["Redstone torch, gold nuggets, glass pane, stone button. Sneak + click a Mini-game Controller to link it.",
+         "Out of a party: plays or stops that mini-game from afar. In a party: tells you're ready for the real round."],
+        ["Torche de redstone, pépites d'or, vitre, bouton en pierre. Accroupi + clic sur un Contrôleur de mini-jeu pour la lier.",
+         "Hors partie : lance ou arrête ce mini-jeu à distance. En partie : dit que vous êtes prêt pour la vraie manche."]))
 
 q("test_run", 7.75, 3.25, C(), deps=["mg_controller", "link_pipes"], rewards=MILESTONE(), icon="steveparty:mini_game_controller",
   shape="hexagon", size=1.25,
   title=("Test run", "Partie d'essai"),
-  desc=(["Press \"Play\" on the Mini-Game Controller (or \"Test\" in the page editor): everyone within 5 blocks of a linked pipe plays, without a party. Results show what each place would earn, nothing is paid, and everyone comes back."],
-        ["Appuyez sur « Jouer » sur le Contrôleur de mini-jeu (ou « Tester » dans l'éditeur de page) : tous les joueurs à 5 blocs d'un tuyau lié jouent, sans partie. Les résultats montrent ce que vaudrait chaque place, rien n'est payé, et tout le monde revient."]))
+  desc=(["\"Play\" on the Mini-game Controller (or \"Test\" in the page editor): everyone within 5 blocks of a linked pipe plays, out of a party.",
+         "Results show what each place would earn; nothing is paid, everyone comes back."],
+        ["« Jouer » sur le Contrôleur de mini-jeu (ou « Tester » dans l'éditeur de page) : tous les joueurs à 5 blocs d'un tuyau lié jouent, hors partie.",
+         "Les résultats montrent ce que vaudrait chaque place ; rien n'est payé, tout le monde revient."]))
 
-q("trial", 8.75, 4.25, C(), deps=["test_run", "party.first_party"], rewards=T2(), icon="minecraft:lime_dye",
+q("trial", 9.25, 3.5, C(), deps=["test_run", "party.first_party"], rewards=T2(), icon="minecraft:lime_dye",
   title=("Ready? Press Y", "Prêt ? Touche Y"),
-  desc=(["In a party, a mini-game whose page is in a controller starts with a trial round, for nothing. Each player presses Y (or the Ready button) when ready; when everyone is, the real round starts and pays prizes."],
-        ["En partie, un mini-jeu dont la page est dans un contrôleur commence par une manche d'essai, pour du beurre. Chaque joueur appuie sur Y (ou le bouton Prêt) quand il est prêt ; quand tout le monde l'est, la vraie manche commence et paie les gains."]))
+  desc=(["In a party, a mini-game with its controller starts with a practice round, for nothing.",
+         "Press Y (or Ready) when you are; once everyone is, the real round starts and pays."],
+        ["En partie, un mini-jeu qui a son contrôleur commence par une manche d'essai, pour du beurre.",
+         "Touche Y (ou Prêt) quand vous l'êtes ; quand tout le monde l'est, la vraie manche commence et paie."]))
 
 # Mini-game pipes
 q("copper_pipe", 10, 4.75, I("copper_minigame_pipe"), deps=["link_pipes"], rewards=T2(),
-  desc=(["6 copper ingots around a paper. Click it with a page: it becomes the entrance to that mini-game outside a party, within 100 blocks. Coloured pipes linked to it send each player to their role."],
-        ["6 lingots de cuivre autour d'un papier. Cliquez-le avec une page : il devient l'entrée de ce mini-jeu hors partie, à 100 blocs. Les tuyaux de couleur reliés à lui envoient chaque joueur vers son rôle."]))
+  desc=(["6 copper ingots around a paper. Click it with a page: the entrance to that mini-game out of a party, within 100 blocks.",
+         "Coloured pipes linked to it send each player to their role."],
+        ["6 lingots de cuivre autour d'un papier. Cliquez-le avec une page : l'entrée de ce mini-jeu hors partie, à 100 blocs.",
+         "Les tuyaux de couleur reliés envoient chaque joueur vers son rôle."]))
 
 q("iron_pipe", 11.25, 5.25, I("iron_minigame_pipe"), deps=["copper_pipe", "mulas.power_star"], rewards=T3(),
   desc=(["6 iron ingots, a Party Star and the copper mini-game pipe. Reaches the whole dimension."],
@@ -777,35 +859,37 @@ chapter("finish", "board_game", "steveparty:goal_pole",
          ["Sautez au sommet, marquez, et regardez le drapeau descendre."]))
 
 q("base", 0, 0, I("goal_pole_base"), deps=["welcome.done"], rewards=T2(), size=1.25,
-  desc=(["Bricks, a sculk sensor, iron and redstone. The base counts the points of the poles stacked on it. Set it up with the Wrench."],
-        ["Des briques, un capteur sculk, du fer et de la redstone. Le socle compte les points des mâts empilés dessus. Il se règle à la Clé."]))
+  desc=(["Bricks, sculk sensor, iron and redstone. It counts the points of the poles stacked on it. Set it with the Wrench."],
+        ["Briques, capteur sculk, fer et redstone. Il compte les points des mâts empilés dessus. Il se règle à la Clé."]))
 
 q("pole", 2, 0.625, I("goal_pole"), deps=["base"], rewards=T1(),
   desc=(["A gold ingot over two iron bars, in a column. Stack as many segments as you like on the base."],
         ["Un lingot d'or sur deux barreaux de fer, en colonne. Empilez autant de segments que vous voulez sur le socle."]))
 
 q("flag", 4, -0.625, I("flag"), deps=["pole"], rewards=T1(),
-  desc=(["Three wool: the colour of the wool makes the flag's (mixed like leather armour). Right-click a segment to hang it; it slides down when the goal is reached. Dye it again in the grid."],
-        ["Trois laines : la couleur de la laine fait celle du drapeau (mélangée comme le cuir). Clic droit sur un segment pour l'accrocher ; il descend quand le but est atteint. Reteignez-le dans la grille."]))
+  desc=(["Three wool: the flag takes their colour (mixed like leather). Right-click a segment to hang it; it slides down when the goal is reached."],
+        ["Trois laines : le drapeau prend leur couleur (mélangée comme le cuir). Clic droit sur un segment pour l'accrocher ; il descend quand le but est atteint."]))
 
 q("one_up", 4, 0.625, A("main/pole/top"), deps=["pole"], rewards=T2(), icon="minecraft:golden_apple",
   title=("Extra Life!", "Vie bonus !"),
-  desc=(["Land on top of a pole: \"+1 ♥\", an extra life: a golden heart for 10 s, no fall damage, and you stand upside down. Each landing scores a point for the base."],
-        ["Atterrissez au sommet d'un mât : « +1 ♥ », une vie bonus : un cœur doré pendant 10 s, aucun dégât de chute, et vous voilà tête en bas. Chaque arrivée marque un point pour le socle."]))
+  desc=(["Land on top of a pole: \"+1 ♥\", a golden heart for 10 s, no fall damage, and you stand upside down. Each landing scores a point."],
+        ["Atterrissez au sommet d'un mât : « +1 ♥ », un cœur doré pendant 10 s, aucun dégât de chute, et vous voilà tête en bas. Chaque arrivée marque un point."]))
 
 q("goal", 4, 1.875, C(), deps=["pole", "board.wrench"], rewards=T1(), icon="minecraft:target",
   title=("Set a goal", "Régler un but"),
-  desc=(["Wrench on a segment: the pole lights up when the total is at least (or exactly, or less than) a value. \"Goal: per player\" gives each player who reaches it the highest free podium place."],
-        ["Clé sur un segment : le mât s'allume quand le total atteint (ou égale, ou reste sous) une valeur. « But : par joueur » donne à chaque joueur qui l'atteint la plus haute place libre des podiums."]))
+  desc=(["Wrench on a segment: the pole lights up when the total reaches (or equals, or stays under) a value.",
+         "\"Goal: per player\": each player who reaches it gets the highest free podium place."],
+        ["Clé sur un segment : le mât s'allume quand le total atteint (ou égale, ou reste sous) une valeur.",
+         "« But : par joueur » : chaque joueur qui l'atteint prend la plus haute place libre des podiums."]))
 
 q("criterion", 5.75, 2.75, C(), deps=["goal"], rewards=T1(), optional=True, icon="minecraft:redstone",
   title=("Count anything", "Tout compter"),
-  desc=(["The base can count a scoreboard criterion instead of landings: jumps, deaths, kills... For example 10 jumps, goal per player, and podiums next to the base."],
-        ["Le socle peut compter un critère de scoreboard au lieu des arrivées : sauts, morts, éliminations... Par exemple 10 sauts, but par joueur, et des podiums contre le socle."]))
+  desc=(["The base can count a scoreboard criterion instead: jumps, deaths, kills... For example 10 jumps, goal per player, podiums by the base."],
+        ["Le socle peut compter un critère de scoreboard à la place : sauts, morts, éliminations... Par exemple 10 sauts, but par joueur, podiums contre le socle."]))
 
 q("shoes", 4, -1.875, I("triple_jump_shoes"), deps=["base"], rewards=T2(),
-  desc=(["Leather boots + rabbit's foot + 2 slime balls, shapeless. Chain jumps within 1.5 s: the second is 1.5 times higher, the third twice as high. Made for poles."],
-        ["Bottes en cuir + patte de lapin + 2 boules de slime, sans forme. Sauts enchaînés à moins de 1,5 s : le 2e est 1,5 fois plus haut, le 3e deux fois. Parfaits pour les mâts."]))
+  desc=(["Leather boots + rabbit's foot + 2 slime balls. Chain jumps within 1.5 s: the 2nd is 1.5 times higher, the 3rd twice as high."],
+        ["Bottes en cuir + patte de lapin + 2 boules de slime. Sauts enchaînés en 1,5 s : le 2e est 1,5 fois plus haut, le 3e deux fois."]))
 
 done("done", 7, 0, ["one_up", "flag", "goal", "shoes"],
      ("Goal!", "But !"),
@@ -821,44 +905,58 @@ chapter("shops", "commerce", "steveparty:trading_stall",
          ["Un villageois caché dans un carton vend les offres de vos étals."]))
 
 q("villager_block", 0, 0, I("villager_block", how="own"), deps=["welcome.done"], rewards=T2(), size=1.25,
-  desc=(["A downward piston extending onto an adult villager's head squashes it into a block that keeps the villager inside, alive, with about 70 reactions. Break it by hand (it begs) to pick it up; a sticky piston lets it out."],
-        ["Un piston tourné vers le bas qui s'étend sur la tête d'un villageois adulte l'écrase en un bloc qui garde le villageois dedans, vivant, avec environ 70 réactions. Cassez-le à la main (il supplie) pour le ramasser ; un piston collant le fait ressortir."]))
+  desc=(["A piston pushing down on an adult villager's head squashes it into a block, alive inside (about 70 reactions).",
+         "Break it by hand (it begs) to pick it up; a sticky piston lets it out."],
+        ["Un piston qui s'étend sur la tête d'un villageois adulte l'écrase en un bloc, vivant dedans (environ 70 réactions).",
+         "Cassez-le à la main (il supplie) pour le ramasser ; un piston collant le fait ressortir."]))
 
 q("trader", 2, 0, C(), deps=["villager_block"], rewards=T3(), icon="steveparty:boxed_trader_spawn_egg",
   title=("The fall", "La chute"),
-  desc=(["Place the Villager Block on the block to imitate, then fall on it from high enough (12 blocks on dirt or hay, 16 on stone, 30 on iron): a Boxed Trader appears, disguised as that block. Tick this quest once you have made one."],
-        ["Posez le Bloc de villageois sur le bloc à imiter, puis tombez dessus d'assez haut (12 blocs sur terre ou foin, 16 sur pierre, 30 sur fer) : un Marchand en carton apparaît, déguisé en ce bloc. Cochez la quête une fois le vôtre créé."]))
+  desc=(["Place the Villager Block on the block to imitate, then fall on it from high enough (12 blocks on dirt or hay, 16 on stone, 30 on iron): a Boxed Trader disguised as that block.",
+         "Tick once you have one."],
+        ["Posez le Bloc de villageois sur le bloc à imiter, puis tombez dessus d'assez haut (12 blocs sur terre ou foin, 16 sur pierre, 30 sur fer) : un Marchand en carton déguisé en ce bloc.",
+         "Cochez une fois le vôtre créé."]))
 
 q("stall", 4, -1.25, I("trading_stall"), deps=["trader"], rewards=T1(),
-  desc=(["Two carpets over two barrels; the carpets give the awning's colours. Each column is an offer (9 max): the goods on top, prices 1 and 2 below. The goods are only a model: the sale takes the same item from the linked chests."],
-        ["Deux tapis au-dessus de deux tonneaux ; les tapis donnent les couleurs de l'auvent. Chaque colonne est une offre (9 max) : la marchandise en haut, les prix 1 et 2 dessous. La marchandise n'est qu'un modèle : la vente prend le même objet dans les coffres liés."]))
+  desc=(["Two carpets over two barrels (the carpets colour the awning).",
+         "One column per offer, 9 at most: the goods on top, prices 1 and 2 below. The goods are a model: the sale takes them from the linked chests."],
+        ["Deux tapis sur deux tonneaux (les tapis colorent l'auvent).",
+         "Une colonne par offre, 9 au plus : la marchandise en haut, les prix 1 et 2 dessous. La marchandise n'est qu'un modèle : la vente la prend dans les coffres liés."]))
 
 q("register", 4, 0, I("cash_register"), deps=["trader"], rewards=T1(),
-  desc=(["Stone buttons, gold, a chest and iron. Payments go into the linked registers; each sale sends a redstone pulse. Mine it with an iron pickaxe."],
-        ["Des boutons en pierre, de l'or, un coffre et du fer. Les paiements arrivent dans les caisses liées ; chaque vente envoie une impulsion redstone. Se récupère avec une pioche en fer."]))
+  desc=(["Stone buttons, gold, chest and iron. Payments land in the linked registers; each sale sends a redstone pulse."],
+        ["Boutons en pierre, or, coffre et fer. Les paiements arrivent dans les caisses liées ; chaque vente envoie une impulsion redstone."]))
 
 q("key", 4, 1.25, I("shopkeeper_key"), deps=["trader"], rewards=T1(),
-  desc=(["A star fragment (any colour), a gold ingot and a gold nugget, in a column. Right-click the trader to link it (the first to do so owns it), then each block: stall, stock chests, registers."],
-        ["Un fragment d'étoile (n'importe quelle couleur), un lingot d'or et une pépite d'or, en colonne. Clic droit sur le marchand pour la lier (le premier devient propriétaire), puis sur chaque bloc : étal, coffres de stock, caisses."]))
+  desc=(["A star fragment, a gold ingot and a gold nugget, in a column. Right-click the trader to link it (the first to link it owns it), then each block: stall, stock chests, registers."],
+        ["Un fragment d'étoile, un lingot d'or et une pépite d'or, en colonne. Clic droit sur le marchand pour la lier (le premier à le faire en devient propriétaire), puis sur chaque bloc : étal, coffres de stock, caisses."]))
 
 q("open_shop", 6, 0, C(), deps=["stall", "register", "key"], rewards=MILESTONE(), icon="minecraft:emerald",
   shape="hexagon", size=1.25,
   title=("Open for business", "Ouvert !"),
-  desc=(["Trader, stall, a stock chest and a register, all linked with the key; an offer on the stall and stock in the chest. Customers right-click the trader: its cardboard screen shows the offers as cards (price → item; red when you can't pay, crossed out when sold out). The owner's shop is protected."],
-        ["Marchand, étal, un coffre de stock et une caisse, tous liés avec la clé ; une offre sur l'étal et du stock dans le coffre. Les clients font clic droit sur le marchand : son écran en carton montre les offres en cartes (prix → objet ; en rouge si on ne peut pas payer, barrée si épuisée). La boutique du propriétaire est protégée."]))
+  desc=(["Trader, stall, a stock chest and a register, all linked with the key; an offer on the stall, stock in the chest.",
+         "Customers right-click the trader: offers as cards (red: can't pay, crossed out: sold out). The owner's shop is protected."],
+        ["Marchand, étal, un coffre de stock et une caisse, tous liés avec la clé ; une offre sur l'étal, du stock dans le coffre.",
+         "Les clients font clic droit sur le marchand : les offres en cartes (rouge : trop cher, barrée : épuisée). La boutique du propriétaire est protégée."]))
 
 q("shop_stop", 7.75, -1.25, C(), deps=["board.shop"], rewards=T2(), icon="steveparty:shop_cartridge",
   title=("Shop stop", "Halte boutique"),
-  desc=(["In a party, a pawn stops on a Shop space: its own Boxed Trader pops out, with its stall. Its player right-clicks the trader (or clicks [Open the shop] in the chat) and buys up to the cartridge's limit (1 by default); the turn waits for the purchases. Payments go to the bank."],
-        ["En partie, un pion s'arrête sur une case Boutique : son propre Marchand en carton surgit, avec son étal. Son joueur fait clic droit sur le marchand (ou clique [Ouvrir la boutique] dans le chat) et achète jusqu'à la limite de la cartouche (1 par défaut) ; le tour attend la fin des achats. Les paiements vont à la banque."]))
+  desc=(["In a party, a pawn stopping on a Shop space brings out its own Boxed Trader. Right-click it (or [Open the shop] in the chat) and buy, up to the cartridge's limit (1 by default).",
+         "Payments go to the Party Controller's storage."],
+        ["En partie, un pion qui s'arrête sur une case Boutique fait surgir son propre Marchand en carton. Clic droit dessus (ou [Ouvrir la boutique] dans le chat) et achetez, jusqu'à la limite de la cartouche (1 par défaut).",
+         "Les paiements vont au stockage du Party Controller."]))
 
 q("bandana", 2, 2.25, I("bandana", how="own"), deps=["trader"], rewards=T1(),
-  desc=(["Shears on an open trader that wears its bandana: it falls, and the trader hides for 20 s. Wear it on your head: traders ignore you. Give one back to a bald trader to change its colour."],
-        ["Des cisailles sur un marchand ouvert qui porte son bandana : il tombe, et le marchand se cache 20 s. Portez-le sur la tête : les marchands vous ignorent. Rendez-en un à un marchand chauve pour changer sa couleur."]))
+  desc=(["Shears on an open trader wearing its bandana: it falls, the trader hides for 20 s.",
+         "Wear it: traders ignore you. Give one to a bald trader to change its colour."],
+        ["Des cisailles sur un marchand ouvert qui porte son bandana : il tombe, le marchand se cache 20 s.",
+         "Portez-le : les marchands vous ignorent. Rendez-en un à un marchand chauve pour changer sa couleur."]))
 
 q("costume", 4, 2.75, I("box_costume", how="own"), deps=["bandana"], rewards=T2(),
-  desc=(["Shears again on a trader that has already lost its bandana: you steal the look of its box. Wear it as a chestplate; sneak to hide inside: stand still 2 s and you become a real block."],
-        ["Encore des cisailles sur un marchand qui a déjà perdu son bandana : vous lui volez l'apparence de sa boîte. Portez-la comme un plastron ; accroupi, vous vous cachez dedans : immobile 2 s, vous devenez un vrai bloc."]))
+  desc=(["Shears again on a trader without its bandana: you steal the look of its box.",
+         "Wear it as a chestplate; sneak and stand still 2 s: you become a real block."],
+        ["Encore des cisailles sur un marchand sans bandana : vous lui volez l'apparence de sa boîte.",
+         "Portez-la en plastron ; accroupi et immobile 2 s : vous devenez un vrai bloc."]))
 
 done("done", 9.5, 0.25, ["shop_stop", "open_shop", "costume"],
      ("Shopkeeper", "Commerçant"),
@@ -875,32 +973,40 @@ chapter("mulas", "stars", "steveparty:party_star",
 
 q("find", 0, 2, O("steveparty:mula"), deps=["welcome.done"], rewards=T3(), icon="steveparty:mula_spawn_egg", size=1.25,
   title=("A Mula!", "Une Mula !"),
-  desc=(["Mulas fall from the sky on shooting-star nights (Ephemeride), mostly at full moon: follow the direction of the first wave of stars, 150 to 600 blocks away. Look at a Mula to complete this quest."],
-        ["Les Mulas tombent du ciel les nuits d'étoiles filantes (Éphéméride), surtout à la pleine lune : suivez la direction de la première vague d'étoiles, à 150 à 600 blocs. Regardez une Mula pour valider la quête."]))
+  desc=(["Mulas fall from the sky on shooting-star nights (Ephemeride), mostly at full moon: follow the first wave of stars, 150 to 600 blocks away.",
+         "Look at one to complete this quest."],
+        ["Les Mulas tombent du ciel les nuits d'étoiles filantes (Éphéméride), surtout à la pleine lune : suivez la première vague d'étoiles, à 150 à 600 blocs.",
+         "Regardez-en une pour valider la quête."]))
 
 q("ephemeride", 0, 6.75, C(), deps=["welcome.done"], rewards=T2(), icon="minecraft:clock",
   title=("Shooting-star night", "Nuit d'étoiles filantes"),
-  desc=(["At dusk, a full moon has a 25% chance of an Ephemeride: 6 waves of low shooting stars over each player, then a group of 3 to 5 Mulas lands where they went. A Dice Forge at full power guarantees it every full moon."],
-        ["Au crépuscule, une pleine lune a 25 % de chances d'apporter une Éphéméride : 6 vagues d'étoiles filantes basses au-dessus de chaque joueur, puis un groupe de 3 à 5 Mulas descend là où elles sont allées. Une Forge à dés au niveau maximal la garantit à chaque pleine lune."]))
+  desc=(["At dusk, a full moon has a 25% chance of an Ephemeride: 6 waves of shooting stars, then 3 to 5 Mulas land where they went.",
+         "A Dice Forge at max level brings one every full moon."],
+        ["Au crépuscule, une pleine lune a 25 % de chances d'apporter une Éphéméride : 6 vagues d'étoiles filantes, puis 3 à 5 Mulas descendent là où elles sont allées.",
+         "Une Forge à dés au niveau maximal en amène une à chaque pleine lune."]))
 
 q("telescope", 2, 6.75, I("telescope"), deps=["ephemeride"], rewards=T2(),
-  desc=(["A spyglass on a copper ingot, over 3 sticks. At night, under a clear sky, look into it: the scroll wheel replays past shooting-star nights within 1000 blocks. Keep a star in the sights to light a guide star above the Mulas."],
-        ["Une longue-vue sur un lingot de cuivre, au-dessus de 3 bâtons. La nuit, ciel dégagé, regardez dedans : la molette rejoue les nuits d'étoiles filantes passées, à 1000 blocs. Gardez une étoile dans le viseur pour allumer une étoile guide au-dessus des Mulas."]))
+  desc=(["A spyglass on a copper ingot, over 3 sticks.",
+         "At night, clear sky: the scroll wheel replays past shooting-star nights within 1000 blocks. Keep a star in the sights: a guide star lights up above the Mulas."],
+        ["Une longue-vue sur un lingot de cuivre, au-dessus de 3 bâtons.",
+         "La nuit, ciel dégagé : la molette rejoue les nuits d'étoiles filantes passées, à 1000 blocs. Gardez une étoile dans le viseur : une étoile guide s'allume au-dessus des Mulas."]))
 
 q("feed", 2, 2, A("stars/feed"), deps=["find"], rewards=T1(), icon="minecraft:cooked_cod",
   title=("Snack time", "À table !"),
-  desc=(["A Mula eats only edible food of its colour: blue = cod, red = apples, berries, salmon and raw meat, green = melon, yellow = golden food, bread and honey, purple = chorus and beetroot, black = dried kelp, cookies, stews and steak. The tooltip tells \"Mula food\"."],
-        ["Une Mula ne mange que la nourriture de sa couleur : bleu = morue, rouge = pommes, baies, saumon et viande crue, vert = pastèque, jaune = nourriture dorée, pain et miel, violet = chorus et betterave, noir = algue séchée, cookies, ragoûts et steak. L'infobulle indique « Nourriture de Mula »."]))
+  desc=(["A Mula only eats food of its colour (the tooltip says \"Mula food\"):",
+         "blue: cod · red: apples, berries, salmon, raw meat · green: melon · yellow: golden food, bread, honey · purple: chorus, beetroot · black: dried kelp, cookies, stews, steak"],
+        ["Une Mula ne mange que la nourriture de sa couleur (l'infobulle indique « Nourriture de Mula ») :",
+         "bleu : morue · rouge : pommes, baies, saumon, viande crue · vert : pastèque · jaune : nourriture dorée, pain, miel · violet : chorus, betterave · noir : algue séchée, cookies, ragoûts, steak"]))
 
 q("burst", 4, 1.25, C(), deps=["feed"], rewards=T2(), icon="minecraft:firework_star", shape="hexagon", size=1.25,
   title=("Pop!", "Pop !"),
-  desc=(["Fed to 40, the Mula grows three times bigger and bursts: 64 star fragments of its colour (a black one: 1). It flies away as a shooting star and is reborn 100 to 400 blocks away."],
-        ["Nourrie jusqu'à 40, la Mula grossit trois fois et éclate : 64 fragments d'étoile de sa couleur (une noire : 1). Elle part en étoile filante et renaît 100 à 400 blocs plus loin."]))
+  desc=(["Fed to 40, the Mula swells and bursts: 64 star fragments of its colour (black: 1). It flies off as a shooting star and is reborn 100 to 400 blocks away."],
+        ["Nourrie jusqu'à 40, la Mula enfle et éclate : 64 fragments d'étoile de sa couleur (noire : 1). Elle part en étoile filante et renaît 100 à 400 blocs plus loin."]))
 
 q("tame", 4, 5.5, A("stars/tame"), deps=["feed"], rewards=T2(), icon="steveparty:yellow_star_fragment",
   title=("Best friend", "Meilleure amie"),
-  desc=(["Right-click a wild Mula with a star fragment of its own colour: 1 chance in 3. Tamed, it floats above you like a balloon and orbits your head when you stand still."],
-        ["Clic droit sur une Mula sauvage avec un fragment d'étoile de sa couleur : 1 chance sur 3. Apprivoisée, elle flotte au-dessus de vous comme un ballon et tourne autour de votre tête quand vous restez immobile."]))
+  desc=(["Right-click a wild Mula with a star fragment of its colour: 1 chance in 3. Tamed, it floats above you like a balloon."],
+        ["Clic droit sur une Mula sauvage avec un fragment d'étoile de sa couleur : 1 chance sur 3. Apprivoisée, elle flotte au-dessus de vous comme un ballon."]))
 
 q("balloon", 6, 4.5, C(), deps=["tame"], rewards=T1(), optional=True, icon="minecraft:lead",
   title=("Up, up and away", "Envol en laisse"),
@@ -936,14 +1042,16 @@ for c, deps, en_mix, fr_mix, x, y in MIXES:
             [f"Mélangez les fragments comme des colorants : {fr_mix}. On récupère autant de fragments qu'on en a mis."]))
 
 q("frag_block", 10, 6, I("blue_star_fragments_block"), deps=["frag_blue"], rewards=T1(),
-  desc=(["9 fragments of one colour: a glowing, glass-like block of animated plasma (16 colours, 12 variants each). The black one is a starry night. It attracts curious Mulas."],
-        ["9 fragments d'une couleur : un bloc lumineux, translucide, de plasma animé (16 couleurs, 12 variantes chacune). Le noir est une nuit étoilée. Il attire les Mulas curieuses."]))
+  desc=(["9 fragments of one colour: a glowing block of animated plasma (black: a starry night). It attracts curious Mulas."],
+        ["9 fragments d'une couleur : un bloc lumineux de plasma animé (noir : une nuit étoilée). Il attire les Mulas curieuses."]))
 
 # Key kept from the Power Star days: quest ids derive from keys, renaming it would reset players' progress.
 q("power_star", 10, -1.75, I("party_star"), deps=["frag_blue", "frag_green", "frag_yellow", "frag_red", "frag_purple"],
   rewards=[XP(100), COINS(5)], shape="hexagon", size=1.25,
-  desc=(["One fragment each of blue, green, yellow, red and purple (or 5 black fragments), shapeless. Always shining. It is the default Star of a party, and goes into the Star Cartridge, the Lapis Crystal Ball, the Dice Forge and the iron and golden mini-game pipes."],
-        ["Un fragment de chaque : bleu, vert, jaune, rouge et violet (ou 5 fragments noirs), sans forme. Toujours brillante. C'est l'Étoile par défaut d'une partie, et elle entre dans la Cartouche Étoile, la Boule de cristal en lapis, la Forge à dés et les tuyaux de mini-jeu en fer et en or."]))
+  desc=(["One fragment each of blue, green, yellow, red and purple (or 5 black ones).",
+         "The default Star of a party. It also goes into the Star Cartridge, the Lapis Crystal Ball, the Dice Forge and the iron and golden mini-game pipes."],
+        ["Un fragment de chaque : bleu, vert, jaune, rouge et violet (ou 5 noirs).",
+         "L'Étoile par défaut d'une partie. Elle entre aussi dans la Cartouche Étoile, la Boule de cristal en lapis, la Forge à dés et les tuyaux de mini-jeu en fer et en or."]))
 
 q("luck", 4, -0.25, A("stars/luck_potion"), deps=["burst"], rewards=T1(), optional=True, icon="minecraft:potion",
   title=("Potion of Luck", "Potion de chance"),
@@ -965,38 +1073,46 @@ chapter("forge", "stars", "steveparty:dice_forge",
          ["Gravez des dés sur mesure, et offrez une maison aux Mulas."]))
 
 q("core", 0, 1.25, I("gravity_core"), deps=["mulas.frag_blue"], rewards=T3(), size=1.25,
-  desc=(["Crying obsidian, 4 star fragments of any colour and a heavy core. Placed, it pulls everything within 8 blocks into orbit (no fall damage inside; full iron armour or heavier resists). It also powers the Dice Forge."],
-        ["Obsidienne pleureuse, 4 fragments d'étoile de n'importe quelle couleur et un noyau lourd. Posé, il attire tout à 8 blocs en orbite (pas de dégâts de chute dans le champ ; une armure complète en fer ou plus lourde résiste). Il alimente aussi la Forge à dés."]))
+  desc=(["Crying obsidian, 4 star fragments and a heavy core.",
+         "Placed, it pulls everything within 8 blocks into orbit (no fall damage; full iron armour or heavier resists). It also powers the Dice Forge."],
+        ["Obsidienne pleureuse, 4 fragments d'étoile et un noyau lourd.",
+         "Posé, il met en orbite tout ce qui est à 8 blocs (pas de dégâts de chute ; une armure complète en fer ou plus lourde résiste). Il alimente aussi la Forge à dés."]))
 
 q("forge", 0, -1.25, I("dice_forge"), deps=["mulas.power_star"], rewards=T3(), size=1.25,
-  desc=(["A Party Star on top, obsidian, a blast furnace and a netherite ingot. It engraves dice with the faces and weights you choose, in a loop, by hand, hoppers or redstone."],
-        ["Une Party Star en haut, de l'obsidienne, un haut fourneau et un lingot de netherite. Elle grave des dés avec les faces et les poids que vous choisissez, en boucle, à la main, par entonnoirs ou à la redstone."]))
+  desc=(["A Party Star, obsidian, a blast furnace and a netherite ingot. It engraves dice with the faces and weights you choose, by hand, hoppers or redstone."],
+        ["Une Party Star, de l'obsidienne, un haut fourneau et un lingot de netherite. Elle grave des dés aux faces et poids de votre choix, à la main, par entonnoirs ou à la redstone."]))
 
 q("ignite", 2, 0, A("stars/ignition"), deps=["core", "forge"], rewards=T2(), icon="steveparty:gravity_core",
   title=("Ignite the forge", "Allumer la forge"),
-  desc=(["Right-click the forge with the Gravity Core: it sinks in, then rises and floats above the forge. Sneak + right-click empty-handed takes it back. Hitting the floating core makes it explode (and it is lost)."],
-        ["Clic droit sur la forge avec le Noyau de gravité : il s'enfonce, puis s'élève et flotte au-dessus. Accroupi + clic droit à mains vides pour le reprendre. Frapper le noyau en l'air le fait exploser (et il est perdu)."]))
+  desc=(["Right-click the forge with the Gravity Core: it sinks in, then floats above. Sneak + right-click empty-handed: take it back.",
+         "Hit the floating core and it explodes (lost)."],
+        ["Clic droit sur la forge avec le Noyau de gravité : il s'enfonce, puis flotte au-dessus. Accroupi + clic droit main vide : le reprendre.",
+         "Frappez le noyau en l'air et il explose (perdu)."]))
 
 q("forged", 4, -1.5, C(), deps=["ignite", "dice.blank"], rewards=MILESTONE(), icon="steveparty:default_dice",
   shape="hexagon", size=1.25,
   title=("Your own die", "Votre propre dé"),
-  desc=(["Fill the ring with 1 to 12 faces (the stack size is the weight), the 5 fragment slots with 5 different colours (black can repeat and is never used up), and blank faces. Click the arrow between the blank faces and the die: FORGE! One die every 5 s."],
-        ["Remplissez l'anneau de 1 à 12 faces (la taille de la pile est le poids), les 5 emplacements de fragments de 5 couleurs différentes (le noir peut se répéter et n'est jamais consommé), et des faces vierges. Cliquez la flèche entre les faces vierges et le dé : FORGER ! Un dé toutes les 5 s."]))
+  desc=(["The ring: 1 to 12 faces (stack size = weight). The 5 fragment slots: 5 different colours (black can repeat and is never used up). Plus blank faces.",
+         "Click the arrow: FORGE! One die every 5 s."],
+        ["L'anneau : 1 à 12 faces (taille de la pile = poids). Les 5 emplacements de fragments : 5 couleurs différentes (le noir peut se répéter et n'est jamais consommé). Plus des faces vierges.",
+         "Cliquez la flèche : FORGER ! Un dé toutes les 5 s."]))
 
 q("automate", 5.75, -2.75, C(), deps=["forged"], rewards=T1(), optional=True, icon="minecraft:hopper",
   title=("Dice factory", "Usine à dés"),
-  desc=(["Hoppers on top and sides fill the forge, a hopper below takes the dice out. Powered by redstone, it restarts on its own once restocked. A comparator reads the output."],
-        ["Des entonnoirs dessus et sur les côtés remplissent la forge, un entonnoir dessous sort les dés. Alimentée en redstone, elle repart seule une fois réapprovisionnée. Un comparateur lit la sortie."]))
+  desc=(["Hoppers on top and sides fill it, a hopper below takes the dice out. With redstone power it restarts by itself once restocked."],
+        ["Des entonnoirs dessus et sur les côtés la remplissent, un entonnoir dessous sort les dés. Alimentée en redstone, elle repart seule une fois réapprovisionnée."]))
 
 q("max_level", 4, 0, C(), deps=["ignite"], rewards=T2(), icon="steveparty:black_star_fragment",
   title=("Highest orbit", "Orbite maximale"),
-  desc=(["The core climbs with the fragments in the forge: 320 fragments (5 full stacks, or 5 black ones, each black counts as 64) lift it 16 blocks up. A forge at max level guarantees an Ephemeride every full moon."],
-        ["Le noyau monte avec les fragments présents : 320 fragments (5 piles pleines, ou 5 noirs, chaque noir compte pour 64) le hissent à 16 blocs. Une forge au niveau maximal garantit une Éphéméride à chaque pleine lune."]))
+  desc=(["The core climbs with the fragments in the forge: 320 (5 full stacks, or 5 black ones worth 64 each) lift it 16 blocks.",
+         "Max level: an Ephemeride every full moon."],
+        ["Le noyau monte avec les fragments présents : 320 (5 piles pleines, ou 5 noirs qui valent 64 chacun) le hissent à 16 blocs.",
+         "Niveau maximal : une Éphéméride à chaque pleine lune."]))
 
 q("dance", 4, 1.5, C(), deps=["ignite", "mulas.find"], rewards=T2(), icon="steveparty:mula_spawn_egg",
   title=("Mula dance hall", "Le bal des Mulas"),
-  desc=(["Any Mula within 16 blocks of a lit forge moves in and dances around the core: 10 dances of 26 s each, in rings of up to 12. A full Mula that bursts at home lands back 2 to 4 blocks from the forge."],
-        ["Toute Mula à moins de 16 blocs d'une forge allumée s'y installe et danse autour du noyau : 10 danses de 26 s, en anneaux de 12 au plus. Une Mula pleine qui éclate à la maison retombe à 2 à 4 blocs de la forge."]))
+  desc=(["Mulas within 16 blocks of a lit forge move in and dance around the core, in rings of up to 12. A Mula that bursts at home lands back by the forge."],
+        ["Les Mulas à 16 blocs d'une forge allumée s'y installent et dansent autour du noyau, en anneaux de 12 au plus. Une Mula qui éclate à la maison retombe près de la forge."]))
 
 q("merry", 2, 2.5, C(), deps=["core"], rewards=T0(), optional=True, icon="minecraft:saddle",
   title=("Merry-go-round", "Manège"),
@@ -1019,8 +1135,10 @@ chapter("magpies", "creatures", "steveparty:magpie_nest",
 q("find", 0, 0, O("steveparty:wild_magpie"), deps=["welcome.done"], rewards=[XP(25), IT("minecraft:wheat_seeds", 8)],
   icon="steveparty:magpie_spawn_egg", size=1.25,
   title=("A Magpie!", "Une pie !"),
-  desc=(["Wild magpies live in forests, taigas and the cherry grove, 1 to 3 together, by day. They hop from perch to perch (fences, walls, logs, chains) and fly off when you come within 6 blocks. Six colours, depending on the forest. Look at one to complete this quest."],
-        ["Les pies sauvages vivent dans les forêts, les taïgas et le bosquet de cerisiers, par 1 à 3, le jour. Elles sautent de perchoir en perchoir (barrières, murets, bûches, chaînes) et s'envolent quand on approche à moins de 6 blocs. Six couleurs, selon la forêt. Regardez-en une pour valider la quête."]))
+  desc=(["Forests, taigas and cherry groves, by day, 1 to 3 together. Six colours, one per forest. They hop from perch to perch and fly off within 6 blocks.",
+         "Look at one to complete this quest."],
+        ["Forêts, taïgas et bosquets de cerisiers, le jour, par 1 à 3. Six couleurs, selon la forêt. Elles sautent de perchoir en perchoir et s'envolent à moins de 6 blocs.",
+         "Regardez-en une pour valider la quête."]))
 
 q("seeds", 2, -1, C(), deps=["find"], rewards=T1(), icon="minecraft:wheat_seeds",
   title=("Seed charmer", "Charmeur de pies"),
@@ -1029,32 +1147,40 @@ q("seeds", 2, -1, C(), deps=["find"], rewards=T1(), icon="minecraft:wheat_seeds"
 
 q("chick", 4, -1, C(), deps=["seeds"], rewards=T2(), icon="minecraft:egg",
   title=("A chick!", "Un poussin !"),
-  desc=(["Feed seeds to two wild magpies within 8 blocks of each other: they fall in love and a chick hatches, of one parent's colour. In a nest it sits inside and sleeps there at night; it grows up in 20 minutes (seeds make it faster)."],
-        ["Donnez des graines à deux pies sauvages à moins de 8 blocs l'une de l'autre : elles tombent amoureuses et un poussin naît, de la couleur de l'un des parents. Dans un nid, il reste assis dedans et y dort la nuit ; il grandit en 20 minutes (les graines l'accélèrent)."]))
+  desc=(["Seeds to two wild magpies within 8 blocks of each other: a chick hatches, of one parent's colour.",
+         "In a nest it sits and sleeps there; it grows up in 20 minutes (seeds speed it up)."],
+        ["Des graines à deux pies sauvages à moins de 8 blocs l'une de l'autre : un poussin naît, de la couleur d'un parent.",
+         "Dans un nid, il s'assoit et y dort ; il grandit en 20 minutes (les graines l'accélèrent)."]))
 
 q("nest", 2, 1, I("magpie_nest"), deps=["find"], rewards=T2(),
-  desc=(["3 sticks + 1 feather, shapeless (magpies drop feathers). A nest of woven twigs: 27 slots of up to 256 coins or shiny items each. Right-click to put the stack in (sneak: one), empty hand to take the last one back. Hoppers fill and empty it, a comparator reads it, and a pile of coins rises from it."],
-        ["3 bâtons + 1 plume, sans forme (les pies lâchent des plumes). Un nid de brindilles tressées : 27 emplacements de 256 pièces ou objets brillants chacun. Clic droit pour y mettre la pile (accroupi : un seul), main vide pour reprendre le dernier. Les entonnoirs le remplissent et le vident, un comparateur le lit, et une pile de pièces monte du nid."]))
+  desc=(["3 sticks + 1 feather (magpies drop feathers). 27 slots of up to 256 Coins or shiny items each.",
+         "Right-click: put the stack in (sneak: one); empty hand: take the last one back. Hoppers and comparators work."],
+        ["3 bâtons + 1 plume (les pies lâchent des plumes). 27 emplacements de 256 Pièces ou objets brillants chacun.",
+         "Clic droit : y mettre la pile (accroupi : un seul) ; main vide : reprendre le dernier. Entonnoirs et comparateurs marchent."]))
 
-q("shiny", 4, 1, C(), deps=["nest"], rewards=T1(), icon="minecraft:gold_nugget",
+q("shiny", 4, 2.25, C(), deps=["nest"], rewards=T1(), icon="minecraft:gold_nugget",
   title=("Thief of shiny things", "Voleuse de trésors"),
-  desc=(["By day, a magpie picks up a shiny item lying on the ground within 12 blocks (gold, iron, copper, diamond, emerald, lapis, redstone, amethyst, coins...) and carries it to its nest; without a nest it adopts the nearest one. At night it sleeps in a free nest."],
-        ["Le jour, une pie ramasse un objet brillant posé au sol à 12 blocs au plus (or, fer, cuivre, diamant, émeraude, lapis, redstone, améthyste, pièces...) et le rapporte à son nid ; sans nid, elle adopte le plus proche. La nuit, elle dort dans un nid libre."]))
+  desc=(["By day, a magpie picks up a shiny item lying within 12 blocks (gold, iron, diamond, emerald, Coins...) and carries it to its nest. At night it sleeps in a free nest."],
+        ["Le jour, une pie ramasse un objet brillant posé à 12 blocs au plus (or, fer, diamant, émeraude, Pièces...) et le rapporte à son nid. La nuit, elle dort dans un nid libre."]))
 
 q("tree_nest", 0, 2.5, C(), deps=["find"], rewards=T1(), optional=True, icon="minecraft:oak_leaves",
   title=("Nest hunting", "Chasse aux nids"),
-  desc=(["In their forests, a nest sometimes sits on a treetop: often empty, sometimes with a few nuggets or coins, and 1 to 3 magpies live in it. It never rots with the leaves."],
-        ["Dans leurs forêts, un nid se trouve parfois sur la cime d'un arbre : souvent vide, parfois avec quelques pépites ou pièces, et 1 à 3 pies y vivent. Il ne pourrit pas avec les feuilles."]))
+  desc=(["In their forests, a nest sometimes tops a tree: often empty, sometimes with a few nuggets or Coins, home to 1 to 3 magpies."],
+        ["Dans leurs forêts, un nid coiffe parfois un arbre : souvent vide, parfois avec quelques pépites ou Pièces, et 1 à 3 pies y vivent."]))
 
 q("pot", 6, 1, I("pot_cartridge"), deps=["nest", "board.cartridge"], rewards=T2(),
-  desc=(["Cartridge + Magpie Nest, shapeless. A Common Pot space, the colour of straw. Click a Magpie Nest with the cartridge (or paint from the space to it with the Tile Linker Brush) to link it: that nest IS the pot."],
-        ["Cartouche + Nid de pie, sans forme. Une case Pot commun, couleur paille. Cliquez un Nid de pie avec la cartouche (ou peignez de la case jusqu'à lui au Pinceau lieur) pour le relier : ce nid EST le pot."]))
+  desc=(["Cartridge + Magpie Nest. A straw-coloured Common Pot space.",
+         "Click a Magpie Nest with the cartridge (or paint from the space to it with the Tile Linker Brush): that nest IS the pot."],
+        ["Cartouche + Nid de pie. Une case Pot commun, couleur paille.",
+         "Cliquez un Nid de pie avec la cartouche (ou peignez de la case jusqu'à lui au Pinceau lieur) : ce nid EST le pot."]))
 
 q("pot_game", 8, 0, C(), deps=["pot", "party.first_party"], rewards=MILESTONE(), icon="steveparty:pot_cartridge",
   shape="hexagon", size=1.25,
   title=("The Common Pot", "Le Pot commun"),
-  desc=(["A magpie comes to live on the linked nest. Every pawn that passes the space stakes coins (1 by default; less if its player has less), the magpie fetches them, and the pawn that stops there wins the whole nest. Its menu: stake, base (taken from the space's storage or the bank, never created) and cap. At the end of the party the nest's coins go back to that storage."],
-        ["Une pie vient vivre sur le nid relié. Chaque pion qui passe sur la case mise des pièces (1 par défaut ; moins si son joueur en a moins), la pie va les chercher, et le pion qui s'y arrête remporte tout le nid. Son menu : mise, base (prise au stockage de la case ou à la banque, jamais créée) et plafond. À la fin de la partie, les pièces du nid retournent à ce stockage."]))
+  desc=(["A magpie moves onto the linked nest. Each pawn passing the space stakes Coins (1 by default), the magpie fetches them; the pawn that stops there wins the whole nest.",
+         "Menu: stake, base (from the space's storage or the Party Controller's, never created) and cap."],
+        ["Une pie s'installe sur le nid relié. Chaque pion qui passe mise des Pièces (1 par défaut), la pie va les chercher ; le pion qui s'y arrête rafle tout le nid.",
+         "Menu : mise, base (prise au stockage de la case ou du Party Controller, jamais créée) et plafond."]))
 
 done("done", 10.5, 0, ["chick", "shiny", "pot_game"],
      ("Bird watcher", "Ornithologue"),
@@ -1072,12 +1198,16 @@ chapter("glandouille", "creatures", "steveparty:acorn",
 q("find", 0, 0, O("steveparty:glandouille"), deps=["welcome.done"], rewards=[XP(25), IT("minecraft:bone_meal", 4)],
   icon="steveparty:glandouille_spawn_egg", size=1.25,
   title=("Grumpy acorn", "Gland grognon"),
-  desc=(["Slackorns live under trees, 2 to 4 together: green young ones, mossy old ones in old taigas, frosty ones in snowy taigas that slide like curling stones. Come within 4 blocks: it stamps twice and charges. It never hurts: it shoves, and stuns a player for 2 s. Look at one to complete this quest."],
-        ["Les Glandouilles vivent sous les arbres, par 2 à 4 : des jeunes verts, des vieux moussus dans les vieilles taïgas, des glacés dans les taïgas enneigées qui glissent comme des palets de curling. Approchez à moins de 4 blocs : il tape deux fois du pied et charge. Il ne blesse jamais : il bouscule, et étourdit un joueur 2 s. Regardez-en un pour valider la quête."]))
+  desc=(["Under trees, 2 to 4 together: green young ones, mossy old ones (old taigas), frosty ones (snowy taigas) that slide like curling stones.",
+         "Come within 4 blocks: it charges. It never hurts, it shoves and stuns for 2 s. Look at one to complete this quest."],
+        ["Sous les arbres, par 2 à 4 : des jeunes verts, des vieux moussus (vieilles taïgas), des glacés (taïgas enneigées) qui glissent comme des palets de curling.",
+         "Approchez à moins de 4 blocs : il charge. Il ne blesse jamais, il bouscule et étourdit 2 s. Regardez-en un pour valider la quête."]))
 
 q("acorn", 2, -1, I("acorn", how="own"), deps=["find"], rewards=T1(),
-  desc=(["Hits do no harm. Jump on its cap: squeak! It flattens and you bounce; the second squash finishes it (the third for a mossy one) and it drops 1 or 2 acorns. Bone meal on a Slackorn can also give one, at most once a minute."],
-        ["Les coups ne lui font rien. Sautez sur son chapeau : pouic ! Il s'aplatit et vous rebondissez ; le deuxième écrasement l'achève (le troisième pour un moussu) et il lâche 1 ou 2 glands. La poudre d'os sur un Glandouille peut aussi en donner un, au plus une fois par minute."]))
+  desc=(["Hits do nothing. Jump on its cap: squeak! The second squash finishes it (the third for a mossy one): 1 or 2 acorns.",
+         "Bone meal on a Slackorn can also give one, once a minute at most."],
+        ["Les coups ne lui font rien. Sautez sur son chapeau : pouic ! Le deuxième écrasement l'achève (le troisième pour un moussu) : 1 ou 2 glands.",
+         "La poudre d'os sur un Glandouille peut aussi en donner un, une fois par minute au plus."]))
 
 q("plant", 4, -1, C(), deps=["acorn"], rewards=T1(), icon="minecraft:farmland",
   title=("Plant an acorn", "Planter un gland"),
@@ -1086,16 +1216,20 @@ q("plant", 4, -1, C(), deps=["acorn"], rewards=T1(), icon="minecraft:farmland",
 
 q("tower", 2, 1, C(), deps=["find"], rewards=T2(), icon="steveparty:glandouille_spawn_egg",
   title=("Slackorn tower", "Tour de Glandouilles"),
-  desc=(["Two calm Slackorns that meet climb on each other, up to 5. Right-click one empty-handed to carry it with those above, right-click another to stack them, left-click to throw the bottom one. Hit one in the middle of a tower: it flies off like a missile."],
-        ["Deux Glandouilles calmes qui se croisent grimpent l'un sur l'autre, jusqu'à 5. Clic droit main vide sur l'un pour le porter avec ceux du dessus, clic droit sur un autre pour les empiler, clic gauche pour lancer celui du bas. Frappez-en un au milieu d'une tour : il part comme un missile."]))
+  desc=(["Two calm Slackorns that meet climb on each other, up to 5.",
+         "Empty hand: right-click one to carry it (with those above), right-click another to stack, left-click to throw. Hit one mid-tower: it flies off like a missile."],
+        ["Deux Glandouilles calmes qui se croisent grimpent l'un sur l'autre, jusqu'à 5.",
+         "Main vide : clic droit sur l'un pour le porter (avec ceux du dessus), clic droit sur un autre pour empiler, clic gauche pour lancer. Frappez-en un au milieu d'une tour : il part comme un missile."]))
 
 q("hat", 0, 2.5, I("acorn_hat", how="own"), deps=["find"], rewards=T1(), optional=True,
-  desc=(["Very rarely, a violent knock sends its cap flying. Without it, the Slackorn is shy and looks for it. Wear the cap, or right-click its owner with it to give it back."],
-        ["Très rarement, un choc violent fait s'envoler son chapeau. Sans lui, le Glandouille est timide et le cherche. Portez le chapeau, ou faites clic droit sur son propriétaire avec pour le lui rendre."]))
+  desc=(["Very rarely, a violent knock sends its cap flying; without it, the Slackorn turns shy. Wear the cap, or right-click its owner with it to give it back."],
+        ["Très rarement, un choc violent fait s'envoler son chapeau ; sans lui, le Glandouille devient timide. Portez-le, ou clic droit sur son propriétaire pour le lui rendre."]))
 
 q("cartridge", 6, 0, I("glandouille_cartridge"), deps=["acorn", "board.cartridge"], rewards=T2(),
-  desc=(["Cartridge + acorn, shapeless. On the board, a tower of Slackorns pushes the pawn that stops there forward or back along the path (its menu: the distance and the tower's height), with every pawn the tower meets. Each pawn met knocks a Slackorn off the tower; with none left, the tower stops."],
-        ["Cartouche + gland, sans forme. Sur le plateau, une tour de Glandouilles pousse le pion qui s'y arrête en avant ou en arrière sur le chemin (son menu : la distance et la hauteur de la tour), avec chaque pion que la tour rencontre. Chaque pion rencontré fait tomber un Glandouille ; quand il n'en reste plus, la tour s'arrête."]))
+  desc=(["Cartridge + acorn. A tower of Slackorns pushes the pawn that stops here along the path (menu: distance, height), with every pawn it meets.",
+         "Each pawn met knocks one Slackorn off; none left, the tower stops."],
+        ["Cartouche + gland. Une tour de Glandouilles pousse le pion qui s'y arrête sur le chemin (menu : distance, hauteur), avec chaque pion rencontré.",
+         "Chaque pion rencontré fait tomber un Glandouille ; quand il n'en reste plus, la tour s'arrête."]))
 
 done("done", 8.5, 0, ["plant", "tower", "cartridge"],
      ("Acorn keeper", "Gardien des glands"),
@@ -1113,13 +1247,17 @@ chapter("mistigri", "creatures", "steveparty:mistigri_cartridge",
 q("summon", 0, 0, O("steveparty:mistigri"), deps=["welcome.done", "dice.default_dice"], rewards=[XP(50), IT("minecraft:cod", 4)],
   icon="steveparty:mistigri_spawn_egg", size=1.25,
   title=("A stroke of bad luck", "Un coup de malchance"),
-  desc=(["Find a black cat in or within 16 blocks of a witch hut. Right-click it with any die of the mod: the die is thrown above it. If it lands on 1 (or 0), the cat swells into a Mistigri. Any other result: it just hisses. Look at a Mistigri to complete this quest."],
-        ["Trouvez un chat noir dans une cabane de sorcière ou à 16 blocs au plus. Clic droit dessus avec n'importe quel dé du mod : le dé est lancé au-dessus de lui. S'il tombe sur 1 (ou 0), le chat enfle et devient un Mistigri. Tout autre résultat : il crache seulement. Regardez un Mistigri pour valider la quête."]))
+  desc=(["A black cat in or near a witch hut (16 blocks). Right-click it with any die of the mod: a 1 (or 0) and it swells into a Mistigri; anything else, it hisses.",
+         "Look at a Mistigri to complete this quest."],
+        ["Un chat noir dans une cabane de sorcière ou à 16 blocs. Clic droit dessus avec n'importe quel dé du mod : un 1 (ou 0) et il enfle en Mistigri ; sinon, il crache.",
+         "Regardez un Mistigri pour valider la quête."]))
 
 q("bad_luck", 2, -1.25, C(), deps=["summon"], rewards=T1(), icon="minecraft:fermented_spider_eye",
   title=("Don't cross its path", "Ne croisez pas son chemin"),
-  desc=(["Walking in front of it gives Bad Luck for 1 minute; hitting it, 2 minutes (it gets angry, but never fights). It knocks items off item frames and naps on chests, which won't open until you wake it with raw fish."],
-        ["Passer devant lui donne Malchance pendant 1 minute ; le frapper, 2 minutes (il se fâche, mais ne se bat jamais). Il fait tomber les objets des cadres et fait la sieste sur les coffres, qui ne s'ouvrent plus tant qu'on ne le réveille pas avec du poisson cru."]))
+  desc=(["Walk in front of it: Bad Luck for 1 minute; hit it: 2 minutes (it gets angry, never fights).",
+         "It knocks items off item frames and naps on chests, which stay shut until raw fish wakes it."],
+        ["Passer devant lui : Malchance 1 minute ; le frapper : 2 minutes (il se fâche, sans jamais se battre).",
+         "Il fait tomber les objets des cadres et dort sur les coffres, fermés jusqu'à ce qu'un poisson cru le réveille."]))
 
 q("acorn_play", 2, 1.25, C(), deps=["summon", "glandouille.acorn"], rewards=T0(), optional=True, icon="steveparty:acorn",
   title=("Ball of yarn", "Pelote de laine"),
@@ -1128,19 +1266,25 @@ q("acorn_play", 2, 1.25, C(), deps=["summon", "glandouille.acorn"], rewards=T0()
 
 q("tame", 4, -1.25, C(), deps=["summon"], rewards=T2(), icon="minecraft:cod",
   title=("A lucky cat", "Un chat porte-bonheur"),
-  desc=(["Give it raw cod or salmon, one at a time: it takes 6 to 10. Tamed, it follows you everywhere, gives you Luck within 16 blocks, and monsters within 10 blocks of it miss one hit in three. Empty hand: sit or stand."],
-        ["Donnez-lui de la morue ou du saumon crus, un par un : il en faut 6 à 10. Apprivoisé, il vous suit partout, vous donne Chance à 16 blocs, et les monstres à 10 blocs de lui ratent un coup sur trois. Main vide : assis ou debout."]))
+  desc=(["Raw cod or salmon, one at a time: 6 to 10 of them.",
+         "Tamed, it follows you, gives you Luck within 16 blocks, and monsters near it miss one hit in three. Empty hand: sit or stand."],
+        ["De la morue ou du saumon crus, un par un : il en faut 6 à 10.",
+         "Apprivoisé, il vous suit, vous donne Chance à 16 blocs, et les monstres près de lui ratent un coup sur trois. Main vide : assis ou debout."]))
 
 q("cartridge", 4, 1.25, I("mistigri_cartridge"), deps=["summon", "board.cartridge"], rewards=T2(),
-  desc=(["Cartridge + the Mistigri's Die, shapeless. Its loot when it dies: a die with the cursed 1, 2 and 3, twice each. In a party, a pawn that stops on its space brings out the Mistigri, which rolls on its back and juggles its loaded die: the whole party watches a roulette of sentences, then one falls."],
-        ["Cartouche + le Dé du Mistigri, sans forme. Son butin quand il meurt : un dé aux 1, 2 et 3 maudits, deux fois chacun. En partie, un pion qui s'arrête sur sa case fait venir le Mistigri, qui se roule sur le dos et jongle avec son dé pipé : toute la partie voit une roulette de sentences, puis l'une tombe."]))
+  desc=(["Cartridge + the Mistigri's Die (its loot).",
+         "In a party, the pawn stopping here brings out the Mistigri: it juggles its loaded die, the whole party watches a roulette of sentences, then one falls."],
+        ["Cartouche + Dé du Mistigri (son butin).",
+         "En partie, le pion qui s'y arrête fait venir le Mistigri : il jongle avec son dé pipé, toute la partie regarde la roulette des sentences, puis l'une tombe."]))
 
 q("sentences", 6, 1.25, C(), deps=["cartridge"], rewards=T2(), icon="minecraft:writable_book",
   title=("Write the sentences", "Écrire les sentences"),
-  desc=(["Right-click in the air with the cartridge: its list of sentences (12 at most). Each one has a type (steal, redistribute, step back, cursed die, mercy), a target (who lands there, 1st, last, everyone, the others, richest, poorest, random), a number and a weight. \"On the roulette\" sets how many are drawn at each stop.",
-         "Nothing is created: fines go to the party's bank, mercy comes from it."],
-        ["Clic droit dans le vide avec la cartouche : sa liste de sentences (12 au plus). Chacune a un type (vol, redistribution, recul, dé maudit, pitié), une cible (qui tombe ici, 1er, dernier, tout le monde, les autres, plus riche, plus pauvre, au hasard), un nombre et un poids. « Sur la roulette » règle combien sont tirées à chaque arrêt.",
-         "Rien n'est créé : les amendes vont à la banque de la partie, la pitié en vient."]))
+  desc=(["Right-click in the air with the cartridge: up to 12 sentences.",
+         "Each one: a kind (Theft, Redistribute, Move back, Cursed die, Pity), a target (who lands here, 1st, last, richest, everyone...), a number and a weight.",
+         "Nothing is created: thefts go to the party's storage, pity comes out of it."],
+        ["Clic droit dans le vide avec la cartouche : jusqu'à 12 sentences.",
+         "Chacune : un type (Vol, Redistribue, Recul, Dé maudit, Pitié), une cible (qui tombe ici, 1er, dernier, plus riche, tout le monde...), un nombre et un poids.",
+         "Rien n'est créé : les vols vont au stockage de la partie, la pitié en sort."]))
 
 done("done", 8.5, 0, ["bad_luck", "tame", "sentences"],
      ("Black cat", "Chat noir"),
@@ -1158,30 +1302,40 @@ chapter("frousseux", "creatures", "steveparty:frousseux_cartridge",
 q("find", 0, 0, O("steveparty:frousseux"), deps=["welcome.done"], rewards=[XP(25), IT("minecraft:flint_and_steel", 1)],
   icon="steveparty:frousseux_spawn_egg", size=1.25,
   title=("A light in the dark", "Une lueur dans le noir"),
-  desc=(["Wicklings float in dark Overworld caves, alone or in pairs: a wax ghost with a candle flame in one of 17 colours. Its light is real, and no monster comes within 8 blocks of it. Stare at it: it hides its eyes. Look at one to complete this quest."],
-        ["Les Frousseux flottent dans les grottes sombres de l'Overworld, seuls ou à deux : un fantôme de cire avec une flamme de bougie, en 17 couleurs. Sa lumière est réelle, et aucun monstre n'approche à moins de 8 blocs. Fixez-le : il se cache les yeux. Regardez-en un pour valider la quête."]))
+  desc=(["Dark Overworld caves, alone or in pairs: a wax ghost with a candle flame (17 colours). Its light is real, and no monster comes within 8 blocks.",
+         "Look at one to complete this quest."],
+        ["Grottes sombres de l'Overworld, seuls ou à deux : un fantôme de cire à flamme de bougie (17 couleurs). Sa lumière est réelle, et aucun monstre n'approche à moins de 8 blocs.",
+         "Regardez-en un pour valider la quête."]))
 
 q("thief", 2, -1.25, C(), deps=["find"], rewards=T1(), icon="minecraft:torch",
   title=("Stop, thief!", "Au voleur !"),
-  desc=(["A wild Wickling steals one shiny item from a player within 2 blocks and runs off giggling. With another player nearby, it flies the item to them and drops it at their feet! A torch or a lantern in hand protects you. Melee hits do nothing (it vanishes and reappears); projectiles work."],
-        ["Un Frousseux sauvage vole un objet brillant à un joueur à moins de 2 blocs et s'enfuit en ricanant. Avec un autre joueur près de là, il lui apporte l'objet et le lui laisse tomber aux pieds ! Une torche ou une lanterne en main vous protège. Les coups au corps à corps ne font rien (il disparaît et réapparaît) ; les projectiles, si."]))
+  desc=(["A wild Wickling steals a shiny item from a player within 2 blocks and runs off giggling, sometimes to drop it at another player's feet.",
+         "A torch or lantern in hand protects you. Melee does nothing; projectiles do."],
+        ["Un Frousseux sauvage vole un objet brillant à un joueur à moins de 2 blocs et s'enfuit en ricanant, parfois pour le lâcher aux pieds d'un autre joueur.",
+         "Une torche ou une lanterne en main vous protège. Le corps à corps ne fait rien ; les projectiles, si."]))
 
 q("tame", 2, 1.25, C(), deps=["find"], rewards=T2(), icon="minecraft:flint_and_steel",
   title=("Rekindle the flame", "Raviver la flamme"),
-  desc=(["Flint and steel on a wild Wickling: the first strike makes it give back what it stole, then each strike has 1 chance in 3 to tame it. Tamed, it follows you as a lamp: in front of you in the light, at your shoulder in the dark, where your crosshair goes through it. Flint and steel also heals it."],
-        ["Un briquet sur un Frousseux sauvage : le premier coup lui fait rendre ce qu'il a volé, puis chaque coup a 1 chance sur 3 de l'apprivoiser. Apprivoisé, il vous suit comme une lampe : devant vous à la lumière, à votre épaule dans le noir, où votre viseur passe à travers lui. Le briquet le soigne aussi."]))
+  desc=(["Flint and steel on a wild Wickling: the first strike makes it give back its loot, then 1 chance in 3 per strike to tame it.",
+         "Tamed, it follows you as a lamp. Flint and steel heals it."],
+        ["Un briquet sur un Frousseux sauvage : le premier coup lui fait rendre son butin, puis 1 chance sur 3 par coup de l'apprivoiser.",
+         "Apprivoisé, il vous suit comme une lampe. Le briquet le soigne."]))
 
 q("holder", 4, 1.25, I("frousseux_candle_holder", how="own"), deps=["tame"], rewards=T1(),
-  desc=(["Sneak + right-click your Wickling empty-handed: it sits. Again: it falls asleep and becomes a candle holder block that gives light and keeps everything (colour, name, health). Right-click it empty-handed to wake it up. Broken, it drops as an item: a Wickling is never lost."],
-        ["Accroupi + clic droit main vide sur votre Frousseux : il s'assoit. Encore une fois : il s'endort et devient un bougeoir, un bloc qui éclaire et garde tout (couleur, nom, vie). Clic droit main vide dessus pour le réveiller. Cassé, il tombe en objet : un Frousseux n'est jamais perdu."]))
+  desc=(["Sneak + right-click your Wickling empty-handed: it sits; again: it falls asleep as a candle holder that gives light and keeps everything. Empty hand: wake it up.",
+         "Broken, it drops as an item: a Wickling is never lost."],
+        ["Accroupi + clic droit main vide sur votre Frousseux : il s'assoit ; encore : il s'endort en bougeoir, un bloc qui éclaire et garde tout. Main vide : le réveiller.",
+         "Cassé, il tombe en objet : un Frousseux n'est jamais perdu."]))
 
 q("saucer", 6, 1.25, I("candle_saucer"), deps=["holder"], rewards=T0(), optional=True,
-  desc=(["5 gold nuggets: a Candle Saucer. A candle holder + the saucer at the crafting table: the holder sits on its saucer. Alone in the grid, it comes off again, nothing lost."],
-        ["5 pépites d'or : une Soucoupe à bougie. Un bougeoir + la soucoupe à l'établi : le bougeoir se pose sur sa soucoupe. Seul dans la grille, il en ressort, rien de perdu."]))
+  desc=(["5 gold nuggets. Candle holder + saucer: it sits on its saucer. Alone in the grid, it comes off again."],
+        ["5 pépites d'or. Bougeoir + soucoupe : il se pose sur sa soucoupe. Seul dans la grille, il en ressort."]))
 
 q("cartridge", 4, -1.25, I("frousseux_cartridge"), deps=["thief", "board.cartridge"], rewards=T2(),
-  desc=(["Cartridge + candle, shapeless. In a party, a pawn that stops there brings out a Wickling: its player picks a victim, the Wickling flies off to rob them (coins or stars, set in its menu) and brings the loot back. With the defence on, the victim has 7 seconds to hit it: each hit gives some back."],
-        ["Cartouche + bougie, sans forme. En partie, un pion qui s'y arrête fait venir un Frousseux : son joueur choisit une victime, le Frousseux file la voler (pièces ou étoiles, réglé dans son menu) et rapporte le butin. Avec la défense, la victime a 7 secondes pour le frapper : chaque coup en rend une partie."]))
+  desc=(["Cartridge + candle. In a party, the pawn stopping here brings out a Wickling: its player picks a victim, the Wickling robs them (Coins or Party Stars) and brings the loot back.",
+         "With the defence on, the victim has 7 s to hit it: each hit gives some back."],
+        ["Cartouche + bougie. En partie, le pion qui s'y arrête fait venir un Frousseux : son joueur choisit une victime, le Frousseux la vole (Pièces ou Party Stars) et rapporte le butin.",
+         "Avec la défense, la victime a 7 s pour le frapper : chaque coup en rend une partie."]))
 
 done("done", 8.5, 0, ["holder", "cartridge"],
      ("Candlelight", "À la bougie"),
@@ -1199,23 +1353,29 @@ chapter("boomcart", "creatures", "minecraft:tnt_minecart",
 q("find", 0, 0, O("steveparty:boomcart"), deps=["welcome.done"], rewards=[XP(25), IT("minecraft:firework_rocket", 3)],
   icon="steveparty:boomcart_spawn_egg", size=1.25,
   title=("A living minecart", "Un wagonnet vivant"),
-  desc=(["Boomcarts roll in abandoned mineshafts (rarely) and the dark caves around them, always alone. On rails they follow the track like a minecart. Grumpy: it roars when you come within 3 blocks. Look at one to complete this quest."],
-        ["Les Pétaroules roulent dans les puits de mine abandonnés (rarement) et les grottes sombres autour, toujours seuls. Sur des rails, ils suivent la voie comme un wagonnet. Grognon : il rugit quand on approche à moins de 3 blocs. Regardez-en un pour valider la quête."]))
+  desc=(["Abandoned mineshafts (rarely) and the dark caves around, always alone. On rails, it follows the track. It roars when you come within 3 blocks.",
+         "Look at one to complete this quest."],
+        ["Puits de mine abandonnés (rarement) et grottes sombres autour, toujours seul. Sur des rails, il suit la voie. Il rugit quand on approche à moins de 3 blocs.",
+         "Regardez-en un pour valider la quête."]))
 
 q("load", 2, -1, C(), deps=["find"], rewards=T1(), icon="minecraft:firework_rocket",
   title=("Feed it", "Nourris-le"),
-  desc=(["Right-click it with TNT or a firework rocket: it swallows the new load and gives back the old one. Hold one within 5 blocks: it opens its mouth wide. A Boomcart loaded by a player never despawns."],
-        ["Clic droit dessus avec de la TNT ou une fusée : il engloutit la nouvelle charge et rend l'ancienne. Tenez-en une à moins de 5 blocs : il ouvre grand la gueule. Un Pétaroule chargé par un joueur ne disparaît plus."]))
+  desc=(["Right-click it with TNT or a firework rocket: it swallows the new load and spits out the old one. Loaded by a player, it never despawns."],
+        ["Clic droit dessus avec de la TNT ou une fusée : il avale la nouvelle charge et recrache l'ancienne. Chargé par un joueur, il ne disparaît plus."]))
 
 q("hot_potato", 4, -1, C(), deps=["load"], rewards=T2(), icon="minecraft:flint_and_steel",
   title=("Hot potato", "Patate chaude"),
-  desc=(["Flint and steel on it: its fuse burns for 8 s, it panics and rushes at the nearest other player. Another player relights it to send it elsewhere (+3 s, then +2, then +1, then no more). Loaded with a rocket, it bursts into fireworks that hurt nobody; with TNT, it is a real explosion."],
-        ["Un briquet dessus : sa mèche brûle 8 s, il panique et fonce sur le joueur le plus proche, un autre que vous. Un autre joueur le rallume pour l'envoyer ailleurs (+3 s, puis +2, puis +1, puis plus rien). Chargé d'une fusée, il éclate en feu d'artifice sans blesser personne ; avec de la TNT, c'est une vraie explosion."]))
+  desc=(["Flint and steel: an 8 s fuse, and it rushes at the nearest other player. Relight it to send it elsewhere (+3 s, +2, +1, then no more).",
+         "Rocket load: harmless fireworks. TNT: a real explosion."],
+        ["Un briquet : mèche de 8 s, et il fonce sur le joueur le plus proche, un autre que vous. Rallumez-le pour l'envoyer ailleurs (+3 s, +2, +1, puis plus rien).",
+         "Chargé d'une fusée : un feu d'artifice sans danger. De TNT : une vraie explosion."]))
 
 q("board", 2, 1, C(), deps=["find", "board.advance"], rewards=T2(), icon="steveparty:advance_back_cartridge",
   title=("Advance or back", "Avancer ou reculer"),
-  desc=(["On an Advance / Back space, a Boomcart hologram rolls out (from the space's Spawn Bubble, if linked): forward, it explodes behind the pawn and launches it from space to space; backward, it rams it. Only a show: no block broken, nobody hurt."],
-        ["Sur une case Avancer / Reculer, un Pétaroule hologramme sort (de la Bulle d'apparition de la case, si elle est reliée) : en avant, il explose derrière le pion et le propulse de case en case ; en arrière, il le percute. Rien qu'un spectacle : aucun bloc cassé, personne de blessé."]))
+  desc=(["On an Advance / Back space, a Boomcart hologram rolls out (from the space's Spawn Bubble, if linked): forward, it blasts the pawn ahead; back, it rams it.",
+         "Only a show: nothing broken, nobody hurt."],
+        ["Sur une case Avancer / Reculer, un Pétaroule hologramme sort (de la Bulle d'apparition de la case, si elle est reliée) : en avant, il propulse le pion ; en arrière, il le percute.",
+         "Rien qu'un spectacle : rien de cassé, personne de blessé."]))
 
 done("done", 6, 0, ["hot_potato", "board"],
      ("Demolition crew", "Artificier"),
@@ -1233,27 +1393,37 @@ chapter("trichaudron", "creatures", "steveparty:trichaudron_cartridge",
 q("find", 0, 0, O("steveparty:trichaudron"), deps=["welcome.done"], rewards=[XP(50), IT("minecraft:bucket", 2)],
   icon="steveparty:trichaudron_spawn_egg", size=1.25,
   title=("Three heads, one cauldron", "Trois têtes, un chaudron"),
-  desc=(["In the Nether wastes, basalt deltas and soul sand valleys, by the lava or swimming in it: rare and alone. Neutral unless you hit it. Near a bastion it may carry piglins, and then it hunts players. Look at one to complete this quest."],
-        ["Dans les Terres du Nether, les deltas de basalte et les vallées de sable des âmes, au bord de la lave ou en train d'y nager : rare et seul. Neutre tant qu'on ne le frappe pas. Près d'un bastion, il peut porter des piglins, et alors il chasse les joueurs. Regardez-en un pour valider la quête."]))
+  desc=(["Nether wastes, basalt deltas, soul sand valleys, by the lava or in it: rare and alone. Neutral unless hit; near a bastion it may carry piglins and hunt players.",
+         "Look at one to complete this quest."],
+        ["Terres du Nether, deltas de basalte, vallées de sable des âmes, au bord de la lave ou dedans : rare et seul. Neutre tant qu'on ne le frappe pas ; près d'un bastion, il peut porter des piglins et chasser les joueurs.",
+         "Regardez-en un pour valider la quête."]))
 
 q("shield", 2, -1.25, C(), deps=["find"], rewards=T1(), icon="minecraft:shield",
   title=("Raise your shield", "Levez le bouclier"),
-  desc=(["Each head is a turret: it charges, then spits a jet of scalding steam up to 30 blocks. Its aim freezes just before it fires: step aside. A shield raised towards the jet stops it completely. Each jet costs it a bucket of lava."],
-        ["Chaque tête est une tourelle : elle se charge, puis crache un jet de vapeur brûlante jusqu'à 30 blocs. Sa visée se fige juste avant le tir : faites un pas de côté. Un bouclier levé vers le jet l'arrête complètement. Chaque jet lui coûte un seau de lave."]))
+  desc=(["Each head charges, then spits scalding steam up to 30 blocks. Its aim freezes just before: step aside, or raise a shield towards it.",
+         "Each jet costs it a bucket of lava."],
+        ["Chaque tête se charge, puis crache de la vapeur brûlante jusqu'à 30 blocs. Sa visée se fige juste avant : faites un pas de côté, ou levez un bouclier vers elle.",
+         "Chaque jet lui coûte un seau de lave."]))
 
 q("tame", 2, 1.25, C(), deps=["find"], rewards=T2(), icon="minecraft:lava_bucket",
   title=("Drain and tame", "Vider et apprivoiser"),
-  desc=(["Right-click it with empty buckets: 1 bucket of lava each (up to 27), without angering it. Only someone who emptied it can tame it: mount it empty-handed. It yields (70% when empty, never when full, +10% per failed try) or throws you off."],
-        ["Clic droit dessus avec des seaux vides : 1 seau de lave à chaque fois (jusqu'à 27), sans le fâcher. Seul quelqu'un qui l'a vidé peut l'apprivoiser : montez dessus main vide. Il cède (70 % vide, jamais plein, +10 % par essai raté) ou vous éjecte."]))
+  desc=(["Empty buckets on it: 1 lava bucket each (up to 27), no anger. Only someone who drained it can tame it: mount it empty-handed.",
+         "It yields (70% empty, never full, +10% per failed try) or throws you off."],
+        ["Des seaux vides dessus : 1 seau de lave à chaque fois (jusqu'à 27), sans le fâcher. Seul un joueur qui l'a vidé peut l'apprivoiser : montez dessus main vide.",
+         "Il cède (70 % vide, jamais plein, +10 % par essai raté) ou vous éjecte."]))
 
 q("ride", 4, 1.25, C(), deps=["tame"], rewards=T2(), icon="minecraft:saddle",
   title=("Three riders", "Trois cavaliers"),
-  desc=(["Saddle it in its screen, like a horse. Up to 3 players sit on the rim, each holding a head: everyone's keys add up. Lava is its fuel (click with a lava bucket while riding). Click to make your head spit; hold Jump for a steam-powered leap."],
-        ["Sellez-le dans son écran, comme un cheval. Jusqu'à 3 joueurs s'assoient sur le rebord, chacun tient une tête : les touches de tous s'additionnent. La lave est son carburant (clic avec un seau de lave, monté). Cliquez pour que votre tête crache ; maintenez Saut pour un bond propulsé par la vapeur."]))
+  desc=(["Saddle it in its screen. Up to 3 riders, one head each: everyone's keys add up.",
+         "Lava is its fuel (lava bucket while riding). Click: your head spits. Hold Jump: a steam leap."],
+        ["Sellez-le dans son écran. Jusqu'à 3 cavaliers, une tête chacun : les touches de tous s'additionnent.",
+         "La lave est son carburant (seau de lave, monté). Clic : votre tête crache. Saut maintenu : un bond à vapeur."]))
 
 q("cartridge", 4, -1.25, I("trichaudron_cartridge"), deps=["find", "board.inventory"], rewards=T2(),
-  desc=(["Inventory Cartridge + lava bucket, shapeless (the bucket comes back). In a party, a pawn that stops there brings out a Tricauldron with one head per prize (1 to 5), taken from the linked chests or the bank. The player hits a head, blind by default, and that head spits its prize at them."],
-        ["Cartouche d'inventaire + seau de lave, sans forme (le seau est rendu). En partie, un pion qui s'y arrête fait surgir un Trichaudron avec une tête par lot (1 à 5), pris dans les coffres liés ou la banque. Le joueur frappe une tête, à l'aveugle par défaut, et cette tête lui crache son lot."]))
+  desc=(["Inventory Cartridge + lava bucket (the bucket comes back).",
+         "In a party, the pawn stopping here brings out a Tricauldron, one head per prize (1 to 5), from the linked chests or the storage. The player hits a head, blind by default: it spits its prize."],
+        ["Cartouche d'inventaire + seau de lave (le seau est rendu).",
+         "En partie, le pion qui s'y arrête fait surgir un Trichaudron, une tête par lot (1 à 5), pris dans les coffres liés ou le stockage. Le joueur frappe une tête, à l'aveugle par défaut : elle lui crache son lot."]))
 
 done("done", 6.5, 0, ["shield", "ride", "cartridge"],
      ("Lava rider", "Cavalier de lave"),
@@ -1269,8 +1439,10 @@ chapter("plastic", "decoration", "steveparty:red_plastic_block",
          ["Des blocs façon jouet en 16 couleurs, qui flottent."]))
 
 q("block", 0, 0, I("red_plastic_block", 4), deps=["welcome.pellets"], rewards=[XP(15), IT("plastic_pellets", 4)], size=1.25,
-  desc=(["4 plastic pellets + 1 dye, shapeless: 4 blocks of the dye's colour. 8 blocks around a dye recolour them. Neighbours of the same colour merge into one piece (up to 4x2x4)."],
-        ["4 granulés de plastique + 1 colorant, sans forme : 4 blocs de la couleur du colorant. 8 blocs autour d'un colorant les reteignent. Les voisins de même couleur fusionnent en une seule pièce (jusqu'à 4x2x4)."]))
+  desc=(["4 plastic pellets + 1 dye: 4 blocks of its colour. 8 blocks around a dye: recoloured.",
+         "Neighbours of the same colour merge into one piece (up to 4x2x4)."],
+        ["4 granulés de plastique + 1 colorant : 4 blocs de sa couleur. 8 blocs autour d'un colorant : reteints.",
+         "Les voisins de même couleur fusionnent en une pièce (jusqu'à 4x2x4)."]))
 
 q("stud", 3.5, -2.375, I("blue_plastic_stud", 4), deps=["block"], rewards=T1(),
   desc=(["One plastic block gives 4 studs of its colour (4 studs in a square give the block back). A small piece on floor, wall or ceiling that needs no support."],
@@ -1298,8 +1470,8 @@ q("fence", 3.5, -3.75, I("orange_plastic_fence", 3), deps=["stick"], rewards=T1(
 
 q("float", 3.5, 2.625, C(), deps=["block"], rewards=T2(), icon="minecraft:soul_sand",
   title=("It floats!", "Ça flotte !"),
-  desc=(["A plastic block in still water rises to the surface, carrying whatever stands on it. Over soul sand, a bubble column sends it up fast (an elevator); over magma, down. A chain anchors it."],
-        ["Un bloc de plastique dans l'eau calme remonte à la surface, en emportant ce qui est dessus. Au-dessus du sable des âmes, une colonne de bulles le fait monter vite (un ascenseur) ; au-dessus du magma, descendre. Une chaîne l'ancre."]))
+  desc=(["Plastic in still water rises to the surface, carrying what stands on it. Over soul sand, a bubble column is an elevator; over magma, down. A chain anchors it."],
+        ["Le plastique dans l'eau calme remonte à la surface, avec ce qui est dessus. Sur du sable des âmes, une colonne de bulles fait ascenseur ; sur du magma, il descend. Une chaîne l'ancre."]))
 
 q("break", 1.25, 3.5, C(), deps=["block", "board.wrench"], rewards=T0(), optional=True, icon="steveparty:wrench",
   title=("Quick clean-up", "Démontage express"),
@@ -1307,8 +1479,10 @@ q("break", 1.25, 3.5, C(), deps=["block", "board.wrench"], rewards=T0(), optiona
         ["La Clé casse tout bloc de plastique d'un coup, même sous l'eau. Les cisailles sont rapides aussi."]))
 
 q("hop_switch", 3.5, 3.875, I("hop_switch"), deps=["block", "board.cartridge"], rewards=T2(),
-  desc=(["Blue concrete, a stone pressure plate, a clock, iron and redstone. Give it a Cartridge whose destinations are blocks: jump on it and they vanish, appear or toggle for a set time (clock to change it). Plastic is switchable by default."],
-        ["Béton bleu, plaque de pression en pierre, horloge, fer et redstone. Donnez-lui une Cartouche dont les destinations sont des blocs : sautez dessus et ils disparaissent, apparaissent ou basculent pour une durée réglable (horloge). Le plastique est basculable par défaut."]))
+  desc=(["Blue concrete, stone pressure plate, clock, iron and redstone.",
+         "Give it a Cartridge whose destinations are blocks: jump on it and they vanish, appear or toggle for a while (clock: the time). Plastic toggles by default."],
+        ["Béton bleu, plaque de pression en pierre, horloge, fer et redstone.",
+         "Donnez-lui une Cartouche dont les destinations sont des blocs : sautez dessus et ils disparaissent, apparaissent ou basculent un moment (horloge : la durée). Le plastique bascule par défaut."]))
 
 done("done", 6.25, 0, ["stud", "slab", "stairs", "wall", "fence", "float", "hop_switch"],
      ("Toy box", "Coffre à jouets"),
@@ -1324,8 +1498,8 @@ chapter("pipes", "decoration", "steveparty:lime_pipe",
          ["Des tuyaux de voyage : on entre par une embouchure, on ressort par une autre."]))
 
 q("pipe", 0, 0, I("lime_pipe", 6), deps=["plastic.block"], rewards=T1(), size=1.25,
-  desc=(["6 plastic blocks of one colour in two columns: 6 opaque pipes (16 colours). A pipe placed against another (or in front of its mouth) connects to it."],
-        ["6 blocs de plastique d'une couleur en deux colonnes : 6 tuyaux opaques (16 couleurs). Un tuyau posé contre un autre (ou devant son embouchure) s'y raccorde."]))
+  desc=(["6 plastic blocks of one colour in two columns: 6 pipes (16 colours). A pipe placed against another (or before its mouth) connects to it."],
+        ["6 blocs de plastique d'une couleur en deux colonnes : 6 tuyaux (16 couleurs). Un tuyau posé contre un autre (ou devant son embouchure) s'y raccorde."]))
 
 q("windowed", 2, -1.5, I("cyan_windowed_pipe", 6), deps=["pipe"], rewards=T1(),
   desc=(["4 plastic blocks and 2 glass: 6 windowed pipes, with a continuous window along the tube."],
@@ -1341,13 +1515,13 @@ q("stained", 4, 0, I("magenta_stained_glass_pipe", 6), deps=["glass"], rewards=T
 
 q("travel", 2, 1.5, A("workshop/pipes/travel"), deps=["pipe"], rewards=T2(), icon="minecraft:slime_ball",
   title=("Whoosh!", "Fiouuu !"),
-  desc=(["Right-click a mouth, sneak in front of it, or fall into it: you rush through the pipe and come out of another end of the network, at random. Mobs, pawns and items go through too."],
-        ["Clic droit sur une embouchure, accroupissez-vous devant, ou tombez dedans : vous filez dans le tuyau et ressortez par une autre extrémité du réseau, au hasard. Mobs, pions et objets passent aussi."]))
+  desc=(["Right-click a mouth, sneak in front of it, or fall in: you rush through and come out at another end of the network, at random. Mobs, pawns and items too."],
+        ["Clic droit sur une embouchure, accroupi devant, ou en tombant dedans : vous filez et ressortez à une autre extrémité du réseau, au hasard. Mobs, pions et objets aussi."]))
 
 q("dead_end", 4, 1.5, C(), deps=["travel"], rewards=T2(), icon="minecraft:ender_eye",
   title=("Warp", "Téléportation"),
-  desc=(["A pipe that ends inside a solid block is a dead end: it warps you to the nearest mouth of the same colour within 100 blocks. Opaque and windowed pipes of one colour count as one colour."],
-        ["Un tuyau qui rentre dans un bloc solide est un bout bouché : il vous téléporte vers l'embouchure la plus proche de la même couleur, à moins de 100 blocs. Tuyaux opaques et à hublot d'une même couleur comptent comme une seule couleur."]))
+  desc=(["A pipe that ends in a solid block warps you to the nearest mouth of its colour within 100 blocks (opaque and windowed count as one colour)."],
+        ["Un tuyau qui finit dans un bloc solide vous téléporte vers l'embouchure la plus proche de sa couleur, à 100 blocs (opaque et à hublot comptent comme une couleur)."]))
 
 q("attach", 1, 3, C(), deps=["pipe", "board.wrench"], rewards=T0(), optional=True, icon="steveparty:wrench",
   title=("Pipe fittings", "Fixations"),
@@ -1368,32 +1542,42 @@ chapter("bubbles", "decoration", "steveparty:bubbler",
          ["Des bulles de savon qu'on pilote, et les Bulles d'apparition du plateau."]))
 
 q("bubbler", 0, 0, I("bubbler"), deps=["welcome.pellets"], rewards=[XP(25), IT("minecraft:snowball", 8)], size=1.25,
-  desc=(["4 plastic pellets around a water bucket and redstone (the bucket comes back empty). Walk onto it: you are closed in a soap bubble that rises 30 blocks (2 per level of redstone signal), then floats. Sneak to walk over it without being caught. Mobs and dropped items get bubbled too."],
-        ["4 granulés de plastique autour d'un seau d'eau et de redstone (le seau est rendu vide). Marchez dessus : vous voilà dans une bulle de savon qui monte de 30 blocs (2 par niveau de signal redstone), puis flotte. Accroupi, on passe dessus sans être pris. Les mobs et les objets lâchés aussi."]))
+  desc=(["4 plastic pellets, a water bucket and redstone (the bucket comes back).",
+         "Walk onto it: a soap bubble lifts you 30 blocks (2 per redstone level), then floats. Sneak to cross it. Mobs and items get bubbled too."],
+        ["4 granulés de plastique, un seau d'eau et de la redstone (le seau est rendu).",
+         "Marchez dessus : une bulle de savon vous monte de 30 blocs (2 par niveau de redstone), puis flotte. Accroupi, on passe dessus. Mobs et objets aussi."]))
 
 q("steer", 2, -1, C(), deps=["bubbler"], rewards=T2(), icon="minecraft:feather",
   title=("Bubble pilot", "Pilote de bulle"),
-  desc=(["Hold Jump to charge a puff, release: the bubble blows towards where you look. WASD drifts it slowly. Puffs chained too fast stretch it (it swells, turns pink and creaks) until it pops. Attack or sneak to get out: you fall slowly."],
-        ["Maintenez Saut pour charger un souffle, relâchez : la bulle file là où vous regardez. ZQSD la font dériver lentement. Des souffles trop rapprochés la tendent (elle gonfle, rosit et grince) jusqu'à ce qu'elle éclate. Frappez ou accroupissez-vous pour sortir : vous tombez en douceur."]))
+  desc=(["Hold Jump to charge a puff, release: the bubble blows where you look. WASD drifts it.",
+         "Puffs too close together stretch it until it pops. Attack or sneak to get out: you fall slowly."],
+        ["Maintenez Saut pour charger un souffle, relâchez : la bulle file là où vous regardez. ZQSD la font dériver.",
+         "Des souffles trop rapprochés la tendent jusqu'à l'éclatement. Frappez ou accroupissez-vous pour sortir : vous tombez en douceur."]))
 
 q("merge", 4, -1, C(), deps=["steer"], rewards=T1(), optional=True, icon="minecraft:slime_ball",
   title=("Two in a bubble", "À deux dans la bulle"),
-  desc=(["Two occupied bubbles that touch merge into a bigger one (8 passengers at most). Steering is shared: everyone's keys count, and opposite pushes cancel out."],
-        ["Deux bulles occupées qui se touchent fusionnent en une plus grosse (8 passagers au plus). Le pilotage est partagé : les touches de chacun comptent, et des poussées opposées s'annulent."]))
+  desc=(["Two occupied bubbles that touch merge (8 passengers at most). Everyone steers: opposite pushes cancel out."],
+        ["Deux bulles occupées qui se touchent fusionnent (8 passagers au plus). Tout le monde pilote : les poussées opposées s'annulent."]))
 
 q("cannon", 2, 1, C(), deps=["bubbler"], rewards=T1(), optional=True, icon="minecraft:snowball",
   title=("Bubble cannon", "Canon à bulles"),
-  desc=(["Outside the Bubbler's column, a bubble pops on a block, a mob, an arrow, or after 15 s without moving. A snowball pushes it instead: a dispenser firing snowballs makes a bubble cannon. A Silk Touch tool pushes it without ever popping it."],
-        ["Hors de la colonne du Bulleur, une bulle éclate contre un bloc, un mob, une flèche, ou après 15 s immobile. Une boule de neige la pousse au lieu de l'éclater : un distributeur de boules de neige fait un canon à bulles. Un outil Toucher de soie la pousse sans jamais l'éclater."]))
+  desc=(["Outside the Bubbler's column, a bubble pops on a block, a mob, an arrow, or after 15 s still.",
+         "A snowball pushes it: a dispenser of snowballs is a bubble cannon. Silk Touch pushes it without popping it."],
+        ["Hors de la colonne du Bulleur, une bulle éclate contre un bloc, un mob, une flèche, ou après 15 s immobile.",
+         "Une boule de neige la pousse : un distributeur de boules de neige fait un canon à bulles. Toucher de soie la pousse sans l'éclater."]))
 
-q("bubbled", 4, 1, C(), deps=["steer"], rewards=T1(), optional=True, icon="minecraft:arrow",
+q("bubbled", 4.5, 1.5, C(), deps=["steer"], rewards=T1(), optional=True, icon="minecraft:arrow",
   title=("Bubbled!", "Bullé !"),
-  desc=(["Shoot or throw something from inside a bubble (arrow, snowball, potion...): it leaves a sparkly trail, and the creature it hits is trapped in a bubble of its own."],
-        ["Tirez ou lancez quelque chose depuis l'intérieur d'une bulle (flèche, boule de neige, potion...) : il laisse une traînée irisée, et la créature touchée se retrouve dans sa propre bulle."]))
+  desc=(["Shoot or throw from inside a bubble (arrow, snowball, potion...): a sparkly trail, and the creature hit gets a bubble of its own."],
+        ["Tirez ou lancez depuis une bulle (flèche, boule de neige, potion...) : une traînée irisée, et la créature touchée a sa propre bulle."]))
 
 q("spawn_bubble", 0, 2.5, I("spawn_marker"), deps=["bubbler", "board.link"], rewards=T2(),
-  desc=(["A glass block over a Bubbler at the crafting table. It tells where the creature of a space appears (Boxed Trader, Boomcart, Mula, Wickling, Slackorn, Mistigri, Tricauldron) and which way it faces: link it with the Tile Linker Brush, from the space to the bubble. Wrench: \"Always visible\" (the creature lives on the board during a party) and height; sneak + Wrench turns it."],
-        ["Un bloc de verre au-dessus d'un Bulleur, à l'établi. Elle dit où apparaît la créature d'une case (Marchand en carton, Pétaroule, Mula, Frousseux, Glandouille, Mistigri, Trichaudron) et vers où elle regarde : reliez-la au Pinceau lieur, de la case vers la bulle. Clé : « Toujours visible » (la créature habite le plateau pendant une partie) et hauteur ; accroupi + Clé pour la tourner."]))
+  desc=(["A glass block over a Bubbler.",
+         "It shows where the creature of a space appears and where it faces: link it with the Tile Linker Brush, from the space to the bubble.",
+         "Wrench: \"Always visible\" and height. Sneak + Wrench: turn it."],
+        ["Un bloc de verre au-dessus d'un Bulleur.",
+         "Elle montre où apparaît la créature d'une case et vers où elle regarde : reliez-la au Pinceau lieur, de la case vers la bulle.",
+         "Clé : « Toujours visible » et hauteur. Accroupi + Clé : la tourner."]))
 
 done("done", 6.5, 0, ["steer", "spawn_bubble"],
      ("Bubble blower", "Souffleur de bulles"),
@@ -1409,12 +1593,14 @@ chapter("signs", "decoration", "steveparty:stencil",
          ["Découpez un motif 16x16, puis peignez-le ou gravez-le partout."]))
 
 q("stencil", 0, 0, I("stencil", 2), deps=["welcome.done"], rewards=T1(), size=1.25,
-  desc=(["4 iron nuggets around a paper: 2 blank stencils. Structure chests sometimes hold stencils with one of 50 built-in patterns. A cut stencil + blank ones copy it."],
-        ["4 pépites de fer autour d'un papier : 2 pochoirs vierges. Les coffres de structures contiennent parfois des pochoirs à l'un des 50 motifs intégrés. Un pochoir découpé + des vierges le copient."]))
+  desc=(["4 iron nuggets around a paper: 2 blank stencils. Structure chests may hold one of 50 built-in patterns. A cut stencil + blank ones: copies."],
+        ["4 pépites de fer autour d'un papier : 2 pochoirs vierges. Les coffres de structures peuvent en cacher un des 50 motifs intégrés. Un pochoir découpé + des vierges : des copies."]))
 
 q("maker", -3.75, 0.75, I("stencil_maker"), deps=["stencil"], rewards=T2(),
-  desc=(["Iron ingots, a smooth stone slab and an iron block. Insert a stencil and open the editor: left-click cuts a pixel, right-click fills it. Your library keeps up to 128 patterns, and learns every pattern you carry."],
-        ["Des lingots de fer, une dalle de pierre lisse et un bloc de fer. Insérez un pochoir et ouvrez l'éditeur : clic gauche découpe un pixel, clic droit le bouche. Votre bibliothèque garde jusqu'à 128 motifs, et apprend tous ceux que vous portez."]))
+  desc=(["Iron ingots, a smooth stone slab and an iron block. Insert a stencil and open the editor: left-click cuts a pixel, right-click fills it.",
+         "Your library keeps 128 patterns and learns those you carry."],
+        ["Lingots de fer, dalle de pierre lisse et bloc de fer. Insérez un pochoir et ouvrez l'éditeur : clic gauche découpe un pixel, clic droit le bouche.",
+         "Votre bibliothèque garde 128 motifs et apprend ceux que vous portez."]))
 
 q("cut", -3.75, 2.5, C(), deps=["maker"], rewards=T1(), icon="minecraft:shears",
   title=("Cut a pattern", "Découper un motif"),
@@ -1423,8 +1609,10 @@ q("cut", -3.75, 2.5, C(), deps=["maker"], rewards=T1(), icon="minecraft:shears",
 
 q("paint", 2.25, 0, C(), deps=["stencil"], rewards=T1(), icon="minecraft:red_dye",
   title=("Paint a wall", "Peindre un mur"),
-  desc=(["Stencil in one hand, dye in the other, right-click a sign or the full face of any block: the pattern is painted (1 dye; the stencil is never used up). On a wall, the paint can only be wiped with a wet sponge or a brush."],
-        ["Pochoir dans une main, colorant dans l'autre, clic droit sur un panneau ou la face pleine de n'importe quel bloc : le motif est peint (1 colorant ; le pochoir n'est jamais consommé). Sur un mur, la peinture ne part qu'à l'éponge mouillée ou au pinceau."]))
+  desc=(["Stencil in one hand, dye in the other, right-click a sign or any full block face: the pattern is painted (1 dye, the stencil stays).",
+         "On a wall, only a wet sponge or a brush wipes it off."],
+        ["Pochoir dans une main, colorant dans l'autre, clic droit sur un panneau ou une face pleine : le motif est peint (1 colorant, le pochoir reste).",
+         "Sur un mur, seuls l'éponge mouillée ou le pinceau l'effacent."]))
 
 q("glow", 4, 0, C(), deps=["paint"], rewards=T0(), optional=True, icon="minecraft:glow_ink_sac",
   title=("Glow in the dark", "Ça brille la nuit"),
@@ -1432,13 +1620,15 @@ q("glow", 4, 0, C(), deps=["paint"], rewards=T0(), optional=True, icon="minecraf
         ["Une poche d'encre luisante sur un motif peint le fait briller la nuit ; une éponge sèche l'éteint."]))
 
 q("hammer", 3.75, 2.5, I("stencil_gun"), deps=["stencil"], rewards=T2(),
-  desc=(["Leather, planks, a stencil and a stick. Loads 9 stencils and 9 dyes (sneak + right-click). Sneak + scroll picks the stencil or the colour (G switches), right-click stamps it, signs, walls, tiles and podiums included."],
-        ["Du cuir, des planches, un pochoir et un bâton. Il charge 9 pochoirs et 9 colorants (accroupi + clic droit). Accroupi + molette choisit le pochoir ou la couleur (G pour basculer), clic droit tamponne, panneaux, murs, tuiles et podiums compris."]))
+  desc=(["Leather, planks, a stencil and a stick. Loads 9 stencils and 9 dyes (sneak + right-click).",
+         "Sneak + scroll: stencil or colour (G switches). Right-click stamps signs, walls, tiles and podiums."],
+        ["Cuir, planches, pochoir et bâton. Il charge 9 pochoirs et 9 colorants (accroupi + clic droit).",
+         "Accroupi + molette : pochoir ou couleur (G pour basculer). Clic droit : tamponne panneaux, murs, tuiles et podiums."]))
 
 q("stamp_tile", 5.25, 2.5, A("workshop/signs/stencil_hammer"), deps=["hammer", "board.tile"], rewards=T1(), optional=True, icon="steveparty:tile",
   title=("Stamp a tile", "Tamponner une tuile"),
-  desc=(["Stamp a board tile: it takes the dye's colour with the pattern drawn darker. With a cartridge inside, the cartridge keeps the look. A wet sponge wipes it."],
-        ["Tamponnez une case du plateau : elle prend la couleur de la teinture, motif plus foncé. Avec une cartouche dedans, c'est la cartouche qui garde le look. L'éponge mouillée l'efface."]))
+  desc=(["Stamp a board tile: it takes the dye's colour, the pattern darker (with a cartridge inside, the cartridge keeps the look). A wet sponge wipes it."],
+        ["Tamponnez une case du plateau : elle prend la couleur de la teinture, motif plus foncé (avec une cartouche dedans, c'est elle qui garde le look). L'éponge mouillée l'efface."]))
 
 SIGNS = [
     ("easel_sign", ["Planks and sticks (PPP / PPP / S S): 2 easel signs, in any wood, modded ones included. Stands on the ground."],
@@ -1527,8 +1717,10 @@ q("looting_box", 0, 0, I("looting_box"), deps=["welcome.done"], rewards=T2(), si
 
 q("bonk", 2, 0, C(), deps=["looting_box", "board.inventory"], rewards=T2(), icon="minecraft:gold_ingot",
   title=("Bonk!", "Bonk !"),
-  desc=(["Put an Inventory Cartridge linked to a chest in it (Wrench), hang it with 2 or 3 blocks of air below, and hit it with your head while jumping: it drops items from the chest. 2 hits, then 3 s to recharge."],
-        ["Mettez-y une Cartouche d'inventaire liée à un coffre (Clé), suspendez-la avec 2 ou 3 blocs d'air dessous, et frappez-la de la tête en sautant : elle lâche des objets du coffre. 2 coups, puis 3 s de recharge."]))
+  desc=(["Put an Inventory Cartridge linked to a chest in it (Wrench), hang it with 2 or 3 blocks of air below, then jump and hit it with your head: it drops the chest's items.",
+         "2 hits, then 3 s to recharge."],
+        ["Mettez-y une Cartouche d'inventaire liée à un coffre (Clé), suspendez-la avec 2 ou 3 blocs d'air dessous, puis sautez et frappez-la de la tête : elle lâche les objets du coffre.",
+         "2 coups, puis 3 s de recharge."]))
 
 q("plunger", 0, 2.25, I("plunger"), deps=["welcome.done"], rewards=T1(), size=1.25,
   desc=(["A stick, a slime ball and a bowl. Right-click a mob to mute it; again to give its voice back."],
@@ -1536,8 +1728,8 @@ q("plunger", 0, 2.25, I("plunger"), deps=["welcome.done"], rewards=T1(), size=1.
 
 q("squishy", 2, 3.5, C(), deps=["shops.villager_block"], rewards=T1(), optional=True, icon="steveparty:villager_block",
   title=("Squishy friend", "Ami tout plat"),
-  desc=(["The Villager Block reacts to everything: stare at it, jump in front of it, show it emeralds, play a jukebox nearby... About 70 reactions to discover."],
-        ["Le Bloc de villageois réagit à tout : fixez-le, sautez devant lui, montrez-lui des émeraudes, jouez un disque à côté... Environ 70 réactions à découvrir."]))
+  desc=(["The Villager Block reacts to everything: stare at it, jump, show it emeralds, play a disc nearby... About 70 reactions to find."],
+        ["Le Bloc de villageois réagit à tout : fixez-le, sautez, montrez-lui des émeraudes, jouez un disque à côté... Environ 70 réactions à découvrir."]))
 
 done("done", 4.25, 1.125, ["bonk", "plunger"],
      ("Odds and ends", "Bric-à-brac"),
@@ -1801,10 +1993,9 @@ def build():
             sub = qq["sub"]
             hows = {t.get("how") for t in qq["tasks"]}
             if not sub and "craft" in hows:
-                sub = ("Craft it: items you already own do not count",
-                       "À fabriquer : les objets déjà possédés ne comptent pas")
+                sub = ("Craft it (owned ones don't count)", "À fabriquer (ceux déjà possédés ne comptent pas)")
             elif not sub and "consume" in hows:
-                sub = ("Hand the items in: click the task", "Remettez les objets : cliquez sur la tâche")
+                sub = ("Click the task to hand them in", "Cliquez sur la tâche pour les remettre")
             if sub:
                 tr("quest", qid, "quest_subtitle", *sub)
             if qq["desc"]:

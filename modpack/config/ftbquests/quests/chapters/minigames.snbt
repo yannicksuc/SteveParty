@@ -847,8 +847,8 @@
 					type: "item"
 				}
 			]
-			x: 6.5d
-			y: 4.25d
+			x: 6.0d
+			y: 3.75d
 		}
 		{
 			dependencies: [
@@ -929,8 +929,8 @@
 					type: "checkmark"
 				}
 			]
-			x: 8.75d
-			y: 4.25d
+			x: 9.25d
+			y: 3.5d
 		}
 		{
 			dependencies: [
