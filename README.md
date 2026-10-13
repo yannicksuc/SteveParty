@@ -99,8 +99,8 @@ CurseForge; the tag sets the version. The one-time setup (repo variables and tok
 
 ## Special thanks
 
-A big thank you to everyone who joined the playtest of October 6, 2026, broke the boards, raced the mini-games and
-sent their feedback:
+A big thank you to everyone who joined the playtests, broke the boards, raced the mini-games and sent their
+feedback:
 
 \_Gabyyx · aryah\_ · aZealys\_ · Cyllu · Darkvodou · DeusVoult · le\_toad\_jaune · Maxence\_YT · MissRuby · MlleEko ·
 Neijul · Nihyl · PTsamael · Sraferr · starpiou · taurasus · TitePhantome · Vestygo · Wivers\_
