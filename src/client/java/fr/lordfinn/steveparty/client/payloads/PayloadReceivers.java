@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.client.gui.party.PartyHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.renderer.GoalPolePopupRenderer;
 import fr.lordfinn.steveparty.client.screens.DicePickScreen;
+import fr.lordfinn.steveparty.client.screens.TeleportLinkChoiceScreen;
 import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
 import fr.lordfinn.steveparty.client.screens.TrapSetupScreen;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
@@ -84,6 +85,8 @@ public class PayloadReceivers {
 
         // A dice prompt (Choice / Lucky / Reroll / swap picker), or its end
         ClientPayloads.receive(DicePromptPayload.ID, (payload, context) -> DicePickScreen.onPayload(context.client(), payload));
+        // The brush painted from a Teleport tile: « TP » or « link »
+        ClientPayloads.receive(TeleportLinkChoicePayload.ID, (payload, context) -> TeleportLinkChoiceScreen.onPayload(context.client(), payload));
         ClientPayloads.receive(DiceRevealPayload.ID, (payload, context) -> DiceRevealHud.onPayload(payload));
         ClientPayloads.receive(OutcomeRoulettePayload.ID, (payload, context) -> OutcomeRouletteHud.onPayload(payload));
         ClientPayloads.receive(SixSevenPayload.ID, (payload, context) -> SixSevenClient.onPayload(payload));

@@ -7,10 +7,12 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockE
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.TeleportSettingsComponent;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
 import fr.lordfinn.steveparty.service.MarkerResidents;
 import fr.lordfinn.steveparty.utils.Argb;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +27,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -75,6 +78,11 @@ public final class CartridgeLinks {
     static final List<BrushLinks.Provider> PROVIDERS = List.of(
             (world, holder, held, out) -> {
                 if (BrushLinks.isBoardHolder(holder)) out.add(new BoardPaths((CartridgeContainerBlockEntity) holder, held.slot()));
+            },
+            (world, holder, held, out) -> {
+                if (!(holder instanceof BoardSpaceBlockEntity)) return;
+                BrushLinks.Held teleport = BrushLinks.withRole(world, holder, held, stack -> stack.getItem() instanceof TeleportCartridgeItem);
+                if (teleport != null) out.add(new TeleportTargets(teleport));
             },
             (world, holder, held, out) -> {
                 if (holder instanceof HopSwitchBlockEntity && BrushLinks.isCartridge(held.cartridge())) out.add(new Switches(held));
@@ -139,6 +147,73 @@ public final class CartridgeLinks {
         @Override
         public boolean drawnByBoardView() {
             return container instanceof BoardSpaceBlockEntity;
+        }
+    }
+
+    // ---------------------------------------------------------------- TP links
+
+    /**
+     * The TP links of a Teleport tile: the board spaces (of any kind) a token landing on it is sent to (see
+     * {@link fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport}). Painted from a Teleport tile to a board
+     * space it has no link to, the brush asks « TP » or « link » (a path, {@link BoardPaths}); painted over again, erased.
+     */
+    public record TeleportTargets(BrushLinks.Held held) implements BrushLinkable {
+        @Override
+        public BlockPos holder() {
+            return held.pos();
+        }
+
+        @Override
+        public int color() {
+            return TeleportCartridgeItem.settings(held.cartridge()).network().color();
+        }
+
+        @Override
+        public boolean accepts(World world, BlockPos target) {
+            return !target.equals(holder()) && BoardLinks.container(world, target) instanceof BoardSpaceBlockEntity
+                    && targets(world).size() < TeleportSettingsComponent.MAX_TARGETS;
+        }
+
+        @Override
+        public List<BlockPos> targets(World world) {
+            return TeleportCartridgeItem.settings(held.cartridge()).targets();
+        }
+
+        @Override
+        public boolean link(ServerPlayerEntity player, ServerWorld world, BlockPos target) {
+            if (linked(world, target) || !accepts(world, target)) return false;
+            List<BlockPos> after = new ArrayList<>(targets(world));
+            after.add(target.toImmutable());
+            set(player, after);
+            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.teleport", BoardText.pos(holder()), BoardText.pos(target)));
+            world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.35f, 1.4f);
+            BoardLinks.trail(world, holder(), target, color());
+            return true;
+        }
+
+        @Override
+        public boolean unlink(ServerPlayerEntity player, ServerWorld world, BlockPos target) {
+            if (!linked(world, target)) return false;
+            List<BlockPos> after = new ArrayList<>(targets(world));
+            after.remove(target);
+            set(player, after);
+            TileLinkerBrush.erased(player, world, holder(), target);
+            BoardLinks.trail(world, holder(), target, BoardLinks.CUT_COLOR);
+            return true;
+        }
+
+        private void set(ServerPlayerEntity player, List<BlockPos> after) {
+            ItemStack cartridge = held.cartridge();
+            TeleportSettingsComponent settings = TeleportCartridgeItem.settings(cartridge);
+            cartridge.set(ModComponents.TELEPORT_SETTINGS, settings.withTargets(after));
+            held.sync().run();
+            LinkHistory.record(player, new LinkHistory.TeleportChange(held.pos(), held.slot(), settings.targets(), List.copyOf(after)));
+        }
+
+        /** Drawn by the board view (its arcs). */
+        @Override
+        public boolean drawnByBoardView() {
+            return true;
         }
     }
 

@@ -6,6 +6,8 @@ import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
+import fr.lordfinn.steveparty.components.TeleportSettingsComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.service.MarkerMobs;
@@ -44,7 +46,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, TeleportChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -125,6 +127,20 @@ public final class LinkHistory {
             GlobalPos value = undo ? before : after;
             if (value == null) cartridge.remove(ModComponents.POT_NEST);
             else cartridge.set(ModComponents.POT_NEST, value);
+            held.sync().run();
+            return true;
+        }
+    }
+
+    /** The TP links of a Teleport Cartridge (see {@link CartridgeLinks.TeleportTargets}), {@code before} → {@code after}. */
+    public record TeleportChange(BlockPos pos, int slot, List<BlockPos> before, List<BlockPos> after) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            BrushLinks.Held held = BrushLinks.held(world, pos, slot);
+            if (held == null || !(held.cartridge().getItem() instanceof TeleportCartridgeItem)) return false;
+            TeleportSettingsComponent settings = TeleportCartridgeItem.settings(held.cartridge());
+            if (!settings.targets().equals(undo ? after : before)) return false;
+            held.cartridge().set(ModComponents.TELEPORT_SETTINGS, settings.withTargets(undo ? before : after));
             held.sync().run();
             return true;
         }

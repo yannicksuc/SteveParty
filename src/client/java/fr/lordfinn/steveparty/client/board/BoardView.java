@@ -209,7 +209,14 @@ public final class BoardView {
                 Box bounds = new Box(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z).expand(0.5);
                 drawnEdges.add(new DrawnEdge(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z, color, followed, bounds, edge.to()));
             }
-            if (node.teleportNetwork() != null) {
+            if (node.teleportNetwork() != null && !node.teleportTargets().isEmpty()) {
+                // Its TP links: an arc to each tile it sends to
+                for (BlockPos target : built.teleportPartners(node.pos())) {
+                    Vec3d to = anchors.computeIfAbsent(target, pos -> BrushOverlay.anchor(world, pos));
+                    drawnArcs.add(new DrawnArc(new WorldDraw.Arc(from, to, arcHeight(from.distanceTo(to))),
+                            0xE0000000 | node.teleportNetwork().color()));
+                }
+            } else if (node.teleportNetwork() != null) {
                 // Each tile of a network to the next one (the last back to the first when they are 3 or more)
                 List<BlockPos> network = built.teleportNetworkOf(node.pos());
                 int index = network.indexOf(node.pos());

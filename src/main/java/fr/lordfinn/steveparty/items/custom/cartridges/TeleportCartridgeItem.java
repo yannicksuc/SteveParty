@@ -84,8 +84,10 @@ public class TeleportCartridgeItem extends CartridgeItem {
         if (context.pos() == null) return List.of(new InfoModule.Line(Text.translatable(K + "hand_hint"), InfoModule.Tone.SOFT));
         int partners = TileTeleport.partners(context.world(), context.pos()).size();
         if (partners == 0) return List.of(new InfoModule.Line(Text.translatable(K + "alone"), InfoModule.Tone.BAD));
-        return List.of(new InfoModule.Line(partners == 1 ? Text.translatable(K + "partners.one")
-                : Text.translatable(K + "partners", partners), InfoModule.Tone.GOOD));
+        // Its TP links painted with the brush, else its network's tiles
+        String kind = TileTeleport.settings(context.stack()).targets().isEmpty() ? "partners" : "targets";
+        return List.of(new InfoModule.Line(partners == 1 ? Text.translatable(K + kind + ".one")
+                : Text.translatable(K + kind, partners), InfoModule.Tone.GOOD));
     }
 
     @Override
