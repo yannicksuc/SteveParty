@@ -221,7 +221,8 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             info.line(mode == 1 ? TileInfo.Glyph.ALL : mode == 2 ? TileInfo.Glyph.CYCLE : TileInfo.Glyph.DICE,
                     TileInfo.value(TileInfo.line(mode == 1 ? "inventory.all" : mode == 2 ? "inventory.cycle" : "inventory.random")));
         }
-        PartyResources source = CartridgeTransfers.source(world, stack, space.getPos());
+        // What it will use, party running or not
+        PartyResources source = CartridgeContainers.shownSourceFor(stack, world, space.getPos());
         PartyResources linked = source.isNone() ? null : source;
         boolean listed = items.size() <= LISTED, gives = false;
         for (ItemStack item : items) {

@@ -51,9 +51,9 @@ public final class ShopStock {
         return stock;
     }
 
-    /** Where its sales come from: the board space's source ({@link CartridgeContainers#sourceFor}), the shop's own. */
+    /** Where its sales come from, party running or not ({@link CartridgeContainers#shownSourceFor}). */
     private static PartyResources source(ItemStack cartridge, World world, @Nullable BlockPos holder) {
-        return CartridgeContainers.sourceFor(cartridge, world, holder);
+        return CartridgeContainers.shownSourceFor(cartridge, world, holder);
     }
 
     /** How many times {@code source} can give {@code sold} (as many as that each time). */

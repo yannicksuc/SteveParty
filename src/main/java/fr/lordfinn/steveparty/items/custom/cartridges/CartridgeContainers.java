@@ -162,12 +162,24 @@ public final class CartridgeContainers {
 
     /**
      * Where the cartridge of the board space at {@code space} takes and puts its items now: its own linked containers,
-     * in order ({@link #available}: they really give and take); with none linked, its board's Party Controller through
-     * its one source ({@link PartyResources#of(PartyControllerEntity)}: its bank, or its infinite storage), so that a
-     * board needs no chest per space: the same storage its menu, its tile info and its shop show, party running or not;
-     * none without a controller (nothing is ever made from nothing). {@code space} null: its own only.
+     * in order ({@link #available}: they really give and take); with none linked, the party running on its board
+     * through its one source ({@link PartyResources#of(PartyControllerEntity)}: its bank, or its infinite storage), so
+     * that a board needs no chest per space; outside a party, none (the space gives nothing: nothing is ever made from
+     * nothing). {@code space} null: its own only.
      */
     public static PartyResources sourceFor(ItemStack stack, World world, @Nullable BlockPos space) {
+        if (!isEmpty(stack) || space == null) return PartyResources.of(available(stack, world));
+        if (world.isClient) return PartyResources.NONE;
+        return PartyResources.of(PartyControllerEntity.getPartyOfBoardSpace(world, space,
+                PartyControllerEntity.BOARD_NEARBY_RADIUS, false).orElse(null));
+    }
+
+    /**
+     * What the cartridge of the board space at {@code space} will use, as its tile info, its menu and its shop show
+     * it, party running or not: its own containers, else its board's Party Controller ({@link #partyBankOf}: its bank
+     * or its infinite storage), the same one {@link #sourceFor} uses once the party runs.
+     */
+    public static PartyResources shownSourceFor(ItemStack stack, World world, @Nullable BlockPos space) {
         if (!isEmpty(stack) || space == null) return PartyResources.of(available(stack, world));
         return PartyResources.of(partyBankOf(stack, world, space));
     }

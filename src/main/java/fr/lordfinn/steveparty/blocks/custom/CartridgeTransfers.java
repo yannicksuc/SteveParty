@@ -43,7 +43,7 @@ public final class CartridgeTransfers {
 
     /**
      * Where the cartridge of the board space at {@code space} takes and puts its items: its own containers, or without
-     * any its board's Party Controller (see {@link CartridgeContainers#sourceFor}); {@link PartyResources#NONE} for
+     * any the party running on its board (see {@link CartridgeContainers#sourceFor}); {@link PartyResources#NONE} for
      * none.
      */
     public static PartyResources source(World world, ItemStack cartridge, @Nullable BlockPos space) {
