@@ -24,7 +24,10 @@ import net.minecraft.entity.passive.CowEntity;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.entity.projectile.thrown.PotionEntity;
 import net.minecraft.entity.projectile.thrown.SnowballEntity;
+import net.minecraft.component.type.PotionContentsComponent;
+import net.minecraft.potion.Potions;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKeys;
@@ -348,6 +351,31 @@ public class BubblerGameTests implements SteveGameTest {
         context.assertFalse(rider.hasVehicle(), "its rider is out");
         TestPlayers.remove(context, rider);
         context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_potion", tickLimit = 80)
+    public void aSplashPotionPopsItAndReachesItsRider(TestContext context) {
+        clear(context, 0, 1, 0, 14, 7, 6);
+        // a pig inside (a test player is never hurt: his join invulnerability never wears off)
+        PigEntity rider = context.spawnEntity(EntityType.PIG, new BlockPos(6, 1, 3));
+        BubbleEntity bubble = BubbleEntity.enclose(context.getWorld(), rider, context.getAbsolutePos(new BlockPos(6, 1, 3)), 1);
+        context.assertTrue(bubble != null && rider.getVehicle() == bubble, "the pig rides its bubble");
+        context.waitAndRun(30, () -> {
+            float health = rider.getHealth();
+            Vec3d center = bubble.center();
+            PotionEntity potion = new PotionEntity(context.getWorld(), center.x - 4, center.y, center.z);
+            potion.setItem(PotionContentsComponent.createStack(Items.SPLASH_POTION, Potions.HARMING));
+            potion.setVelocity(1.0, 0, 0);
+            potion.setNoGravity(true);
+            context.getWorld().spawnEntity(potion);
+            context.waitAndRun(10, () -> {
+                context.assertTrue(bubble.isRemoved(), "a potion from outside pops it");
+                context.assertFalse(rider.hasVehicle(), "its rider is out");
+                context.assertTrue(rider.getHealth() < health, "and hurt by it: " + rider.getHealth() + " / " + health);
+                rider.discard();
+                context.complete();
+            });
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_snowball_flight", tickLimit = 80)

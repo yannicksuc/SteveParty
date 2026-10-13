@@ -72,7 +72,8 @@ import java.util.function.Function;
  *     fast strain it: {@link #strainedPuff}), bumping into a block (a wall, the floor, a
  *     ceiling) or touching a mob, a player, a boat... ({@link #popsOnTouch}; not in its first moments, rising from its
  *     Bubbler), an arrow or any projectile from outside but a snowball (a snowball pushes it its way; what its riders
- *     shoot from inside flies out through it, {@link #letsOut}), a hit by luck ({@link BubbleRiding#HIT_POP_CHANCE}; never with a Silk Touch
+ *     shoot from inside flies out through it, {@link #letsOut}), a splash or lingering potion bursting on or near it
+ *     ({@link #splashedBy}: its riders take the splash), a hit by luck ({@link BubbleRiding#HIT_POP_CHANCE}; never with a Silk Touch
  *     tool, a hit only pushes it then), anything else that hurts, left still too long ({@link #getStillTicks}: 15 s
  *     without moving, never while it travels), crossing the border of a mini-game zone, or nothing left in it. Its
  *     riders fall slowly then ({@link #fallSlowly}); its item drops.</li>
@@ -763,6 +764,26 @@ public class BubbleEntity extends Entity implements Leashable {
         }
         pop();
         return true;
+    }
+
+    /**
+     * A splash or lingering potion bursting at {@code potion}'s position: the bubbles it bursts on or near (within
+     * {@link BubbleRiding#SPLASH_REACH} of their film) pop, but the one it was thrown from (it flies out through it), so
+     * that their riders take the splash.
+     */
+    public static void splashedBy(ServerWorld world, ProjectileEntity potion) {
+        Vec3d at = potion.getPos();
+        double reach = BubbleRiding.SPLASH_REACH;
+        for (BubbleEntity bubble : world.getEntitiesByClass(BubbleEntity.class, new Box(at, at).expand(reach + 4), b -> !b.isRemoved())) {
+            Box film = bubble.getBoundingBox();
+            double dx = Math.max(0, Math.max(film.minX - at.x, at.x - film.maxX));
+            double dy = Math.max(0, Math.max(film.minY - at.y, at.y - film.maxY));
+            double dz = Math.max(0, Math.max(film.minZ - at.z, at.z - film.maxZ));
+            if (dx * dx + dy * dy + dz * dz > reach * reach) continue;
+            Entity owner = potion.getOwner();
+            if (owner != null && owner.getRootVehicle() == bubble) continue;
+            bubble.pop();
+        }
     }
 
     /** It pops: a soft pop and droplets, its riders out falling slowly, its item dropped. */

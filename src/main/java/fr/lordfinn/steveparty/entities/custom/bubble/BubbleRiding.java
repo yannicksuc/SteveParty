@@ -82,6 +82,8 @@ public final class BubbleRiding {
     /** A hit's push and a snowball's (blocks a tick, before the bubble's weight), and a hit's chance to pop it (never with Silk Touch). */
     public static final double HIT_PUSH = 0.45, SNOWBALL_PUSH = 0.5;
     public static final float HIT_POP_CHANCE = 0.25f;
+    /** How near its film a splash or lingering potion bursting pops it (blocks). */
+    public static final double SPLASH_REACH = 2;
     /**
      * On a lead: how far it floats from its holder freely (blocks); beyond, the speed it is pulled at (this share of the
      * gap a tick, at most this fast, blocks a tick), and how much of the way to that speed it gets a tick.

@@ -67,6 +67,7 @@
     "ZoneBubblePickupMixin",
     "ZoneBubblePistonHandlerMixin",
     "ZoneBubbleProjectileMixin",
+    "PotionEntityBubbleMixin",
     "ProjectileEntityBubbleMixin",
     "LivingEntityBubbledImmunityMixin",
     "ZoneBubblePlayerEntityMixin",
