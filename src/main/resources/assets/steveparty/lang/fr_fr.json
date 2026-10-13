@@ -3408,7 +3408,7 @@
   "hud.steveparty.tile_info.spawn_marker.on_landing": "Mob : dans la bulle %s",
   "hud.steveparty.tile_info.spawn_marker.resident": "Mob : vit dans la bulle %s",
   "hud.steveparty.tile_info.party_bank": "Stockage du Party Controller",
-  "hud.steveparty.tile_info.party_bank.infinite": "Stockage infini du Party Controller",
+  "hud.steveparty.tile_info.party_bank.infinite": "Stockage infini",
   "gui.steveparty.spawn_marker.title": "Bulle d'apparition",
   "gui.steveparty.spawn_marker.when": "Son mob apparaît",
   "gui.steveparty.spawn_marker.on_landing": "À l'arrivée",

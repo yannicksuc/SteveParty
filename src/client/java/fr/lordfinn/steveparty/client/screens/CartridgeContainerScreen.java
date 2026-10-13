@@ -298,13 +298,18 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
         return null;
     }
 
+    /** The veil over that ghost (ARGB): its slot's own colour, see-through. */
+    protected int emptySlotVeil() {
+        return PartyGui.GHOST_VEIL;
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         ItemStack ghost = emptySlotGhost();
         if (ghost != null && !handler.slots.isEmpty() && !handler.slots.getFirst().hasStack()) {
             Slot slot = handler.slots.getFirst();
-            PartyGui.ghostItem(context, ghost, x + slot.x, y + slot.y, null);
+            PartyGui.ghostItem(context, ghost, x + slot.x, y + slot.y, null, emptySlotVeil());
         }
         if (panel != null) CartridgePanel.drawGhostMarks(context, handler.slots, x, y);
         if (!hasPipette()) return;

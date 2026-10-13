@@ -81,10 +81,10 @@ public class TeleportLinkChoiceScreen extends Screen {
         int hovered = buttonAt(mouseX, mouseY);
         for (int i = 0; i < 2; i++) {
             int[] b = at(i);
-            PartyGui.Theme theme = i == 0 ? PartyGui.BUTTON_SELECTED : PartyGui.BUTTON;
-            PartyGui.button(context, b[0], b[1], BUTTON_W, BUTTON_H, i == hovered ? theme.brighter() : theme, false);
-            context.drawItem(i == 0 ? teleportIcon : linkIcon, b[0] + (BUTTON_W - 16) / 2, b[1] + 4);
-            UiText.centered(context, textRenderer, Text.translatable(KEY + (i == 0 ? "teleport" : "link")), b[0], b[1] + 23,
+            // Neither is picked beforehand
+            PartyGui.button(context, b[0], b[1], BUTTON_W, BUTTON_H, i == hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON, false);
+            context.drawItem(i == 0 ? teleportIcon : linkIcon, b[0] + (BUTTON_W - 16) / 2, b[1] + 5);
+            UiText.centered(context, textRenderer, Text.translatable(KEY + (i == 0 ? "teleport" : "link")), b[0], b[1] + 24,
                     BUTTON_W, PartyGui.TEXT_DARK, false);
         }
         if (hovered >= 0) {

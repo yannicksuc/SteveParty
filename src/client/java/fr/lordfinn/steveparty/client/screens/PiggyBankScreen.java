@@ -38,6 +38,12 @@ public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHan
 
     private static final ItemStack GHOST = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
 
+    /** Under its slot's pink. */
+    @Override
+    protected int emptySlotVeil() {
+        return 0x99E2769C;
+    }
+
     @Override
     public Identifier getTexture() {
         return TEXTURE;

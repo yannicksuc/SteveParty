@@ -87,6 +87,6 @@ public class ShopBoardSpaceBehavior extends ABoardSpaceBehavior {
             info.item(sold);
         }
         // No container of its own: the party's bank
-        if (CartridgeContainers.partyBankOf(stack, world, space.getPos()) != null) info.line(TileInfo.value(TileInfo.line("party_bank")));
+        TileInfo.partyBank(info, CartridgeContainers.partyBankOf(stack, world, space.getPos()));
     }
 }

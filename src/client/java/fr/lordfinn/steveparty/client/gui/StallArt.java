@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopStock;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStallScreenHandler;
+import fr.lordfinn.steveparty.utils.InfiniteMark;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
@@ -33,7 +34,9 @@ public final class StallArt {
     private static final int BOTTOM_FROM = 70;
     /** Where a column's stock is written: on its arrow's shaft. */
     public static final int STOCK_Y = 41;
-    private static final int STOCK = 0xFFFFFFFF, STOCK_OUT = 0xFFFF5555, STOCK_INFINITE = 0xFFFFD34A;
+    private static final int STOCK = 0xFFFFFFFF, STOCK_OUT = 0xFFFF5555, STOCK_INFINITE = InfiniteMark.COLOR;
+    /** A ghost in a slot of the stall: under its slot's brown, see-through. */
+    private static final int SLOT_VEIL = 0x99805125;
     private static final String SLOT_KEY = "gui.steveparty.trading_stall.slot.";
     private static final String SHOP_KEY = "gui.steveparty.shop_stall.";
 
@@ -106,7 +109,7 @@ public final class StallArt {
                                      ItemStack sold, int x, int y) {
         if (!price.isEmpty() || !secondPrice.isEmpty() || sold.isEmpty()) return;
         ItemStack base = TradingStallBlockEntity.basePrice(sold);
-        if (!base.isEmpty()) PartyGui.ghostItem(context, base, x, y, font);
+        if (!base.isEmpty()) PartyGui.ghostItem(context, base, x, y, font, SLOT_VEIL);
     }
 
     /** Column {@code column}'s stock on its arrow: white, red when sold out, gold « ∞ »; nothing without an offer or a storage. */

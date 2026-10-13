@@ -3408,7 +3408,7 @@
   "hud.steveparty.tile_info.spawn_marker.on_landing": "Mob: in the bubble %s",
   "hud.steveparty.tile_info.spawn_marker.resident": "Mob: lives in the bubble %s",
   "hud.steveparty.tile_info.party_bank": "Party Controller's storage",
-  "hud.steveparty.tile_info.party_bank.infinite": "Party Controller's infinite storage",
+  "hud.steveparty.tile_info.party_bank.infinite": "Infinite storage",
   "gui.steveparty.spawn_marker.title": "Spawn Bubble",
   "gui.steveparty.spawn_marker.when": "Its mob shows",
   "gui.steveparty.spawn_marker.on_landing": "On landing",

@@ -1,12 +1,16 @@
 package fr.lordfinn.steveparty.board;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.utils.InfiniteMark;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextCodecs;
 import net.minecraft.text.TextColor;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -128,6 +132,16 @@ public record TileInfo(Text title, int accent, List<Line> lines, List<ItemStack>
     public static MutableText rgb(Object value, int rgb) {
         MutableText text = value instanceof Text t ? t.copy() : Text.literal(String.valueOf(value));
         return text.styled(style -> style.withColor(TextColor.fromRgb(rgb)));
+    }
+
+    /**
+     * The line of a cartridge without a chest of its own: it uses its board's Party Controller (null: none, nothing
+     * said), its infinite storage marked with the gold « ∞ » (see {@link InfiniteMark}).
+     */
+    public static void partyBank(Builder info, @Nullable PartyControllerEntity controller) {
+        if (controller == null) return;
+        info.line(new ItemStack(Items.CHEST), controller.isInfiniteBank()
+                ? InfiniteMark.before(value(line("party_bank.infinite"))) : value(line("party_bank")));
     }
 
     /** {@code hud.steveparty.tile_info.<key>} with its arguments. */

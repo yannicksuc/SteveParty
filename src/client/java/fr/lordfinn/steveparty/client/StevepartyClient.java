@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
 import fr.lordfinn.steveparty.client.blockentity.FrousseuxCandleHolderRenderer;
+import fr.lordfinn.steveparty.client.blockentity.PartyControllerInfinityRenderer;
 import fr.lordfinn.steveparty.client.blockentity.PodiumRenderer;
 import fr.lordfinn.steveparty.client.blockentity.StencilCanvasBlockEntityRenderer;
 import fr.lordfinn.steveparty.client.blockentity.VillagerBlockEntityRenderer;
@@ -411,6 +412,7 @@ public class StevepartyClient implements ClientModInitializer {
         TileStampTooltipComponent.register();
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.PARTY_CONTROLLER_ENTITY, PartyControllerInfinityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.EASEL_SIGN_ENTITY, StencilCanvasBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_CANVAS, StencilCanvasBlockEntityRenderer::new);
         // Stencil signs: turned models with see-through texels (stripped logs, pebbles...)

@@ -30,6 +30,12 @@ public class LootingBoxScreen extends CartridgeContainerScreen<LootingBoxScreenH
 
     private static final ItemStack GHOST = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
 
+    /** Under its slot's gold. */
+    @Override
+    protected int emptySlotVeil() {
+        return 0x99E2A700;
+    }
+
     @Override
     public Identifier getTexture() {
         return TEXTURE;
