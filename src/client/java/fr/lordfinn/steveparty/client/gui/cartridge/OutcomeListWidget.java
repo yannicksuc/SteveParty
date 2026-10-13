@@ -408,7 +408,11 @@ final class OutcomeListWidget {
                 boolean chosen = outcome != null && outcome.target() == target;
                 PartyGui.Theme theme = chosen ? PartyGui.BUTTON_SELECTED : !hit.active ? DIM : hot ? DARK.brighter() : DARK;
                 PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, theme, chosen);
-                if (chosen) context.fill(hit.x + 2, hit.y + 2, hit.x + hit.w - 2, hit.y + hit.h - 2, 0xFF5A4410);
+                if (chosen) {
+                    // A bright gold ring (the dark gold one hardly showed on the grey), the white figures on a dark inside
+                    context.fill(hit.x + 1, hit.y + 1, hit.x + hit.w - 1, hit.y + hit.h - 1, GOLD);
+                    context.fill(hit.x + 2, hit.y + 2, hit.x + hit.w - 2, hit.y + hit.h - 2, 0xFF5A4410);
+                }
                 MistigriIcons.target(context, target, hit.x + (hit.w - MistigriIcons.SIZE) / 2, hit.y + (hit.h - MistigriIcons.SIZE) / 2, !hit.active && !chosen);
             }
             case AMOUNT_DOWN, WEIGHT_DOWN, DRAWS_DOWN -> step(context, hit, "-", hot);
