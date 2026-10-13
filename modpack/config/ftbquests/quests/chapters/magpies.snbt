@@ -218,7 +218,7 @@
 				}
 			]
 			x: 4.0d
-			y: 1.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [

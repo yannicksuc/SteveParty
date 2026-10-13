@@ -597,7 +597,7 @@
 				}
 			]
 			x: 4.5d
-			y: 0.75d
+			y: 0.875d
 		}
 		{
 			dependencies: [
@@ -640,7 +640,7 @@
 				}
 			]
 			x: 0.125d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -683,7 +683,7 @@
 				}
 			]
 			x: 1.375d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -726,7 +726,7 @@
 				}
 			]
 			x: 2.625d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -769,7 +769,7 @@
 				}
 			]
 			x: 3.875d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -812,7 +812,7 @@
 				}
 			]
 			x: 5.125d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -855,7 +855,7 @@
 				}
 			]
 			x: 6.375d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -898,7 +898,7 @@
 				}
 			]
 			x: 7.625d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -941,7 +941,7 @@
 				}
 			]
 			x: 8.875d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -984,7 +984,7 @@
 				}
 			]
 			x: 10.125d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -1080,8 +1080,8 @@
 			shape: "gear"
 			size: 2.0d
 			tasks: [ ]
-			x: 12.25d
-			y: 0.0d
+			x: 12.375d
+			y: 2.0d
 		}
 	]
 }
