@@ -87,6 +87,12 @@ public class MiniGamePageItem extends Item {
         if ((world.getTime() + slot) % 20 != 0) return;
         // Pages no longer keep positions of their own: the pipes are on the page's content
         if (stack.contains(ModComponents.DESTINATIONS_COMPONENT)) stack.remove(ModComponents.DESTINATIONS_COMPONENT);
+        // In the hand of who builds with it: no link left to a block that is gone (it could not be clicked off)
+        UUID id = MiniGamePages.idOf(stack);
+        if (id != null && entity instanceof PlayerEntity player && (player.getMainHandStack() == stack || player.getOffHandStack() == stack)
+                && MiniGamePages.canEdit(player)) {
+            MiniGamePages.purgeDeadLinks(world.getServer(), id);
+        }
         MiniGamePages.refresh(world.getServer(), stack);
     }
 

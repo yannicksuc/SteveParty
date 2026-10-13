@@ -1,12 +1,18 @@
 package fr.lordfinn.steveparty.minigame;
 
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
+import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
+import fr.lordfinn.steveparty.blocks.custom.StepControllerBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
@@ -24,6 +30,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * The mini-game pages of a server: the one place to read and change what a page says.
@@ -203,6 +210,40 @@ public final class MiniGamePages {
         links.remove(index);
         update(server, data.withPipeLinks(links));
         return true;
+    }
+
+    /**
+     * Forgets the links of the page to blocks that are gone: a pipe link where there is no pipe any more, a podium,
+     * goal pole base or step controller link where there is none of them. Only where it can be seen now (a loaded
+     * chunk), never while the page's mini-game is played nor in a round's zone (put back as built at its end).
+     *
+     * @return true if a link was forgotten
+     */
+    public static boolean purgeDeadLinks(MinecraftServer server, UUID id) {
+        MiniGamePageData data = find(server, id).orElse(null);
+        if (data == null || MiniGameSession.playing(List.of(id)) != null) return false;
+        List<MiniGamePipeLink> pipes = new ArrayList<>(data.pipeLinks());
+        boolean pipesGone = pipes.removeIf(link -> gone(server, link.mouth(), state -> state.getBlock() instanceof PipeBlock));
+        List<MiniGamePodiumLink> podiums = new ArrayList<>(data.podiumLinks());
+        boolean podiumsGone = podiums.removeIf(link -> gone(server, link.pos(), state -> switch (link.kind()) {
+            case PODIUM -> state.getBlock() instanceof PodiumBlock;
+            case COUNTER -> state.getBlock() instanceof GoalPoleBaseBlock;
+            case STEP_CONTROLLER -> state.getBlock() instanceof StepControllerBlock;
+        }));
+        if (!pipesGone && !podiumsGone) return false;
+        MiniGamePageData purged = data;
+        if (pipesGone) purged = purged.withPipeLinks(pipes);
+        if (podiumsGone) purged = purged.withPodiumLinks(podiums);
+        update(server, purged);
+        return true;
+    }
+
+    /** Whether the block at {@code pos} is seen not to be what {@code alive} wants (unknown: not gone). */
+    private static boolean gone(MinecraftServer server, GlobalPos pos, Predicate<BlockState> alive) {
+        ServerWorld world = server.getWorld(pos.dimension());
+        BlockPos at = pos.pos();
+        if (world == null || !world.isChunkLoaded(at.getX() >> 4, at.getZ() >> 4) || ZoneBubbles.of(world, at) != null) return false;
+        return !alive.test(world.getBlockState(at));
     }
 
     /** The pages the pipe at {@code mouth} is linked to, with its role in each. */
