@@ -1,0 +1,271 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "trichaudron"
+	group: "7AE3C601DC58F421"
+	icon: {
+		id: "steveparty:trichaudron_cartridge"
+	}
+	id: "3DFE53E2B3C777E3"
+	images: [ ]
+	order_index: 5
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			icon: {
+				id: "steveparty:trichaudron_spawn_egg"
+			}
+			id: "6044441CFBBF75EE"
+			rewards: [
+				{
+					id: "1DF1C600206E37E1"
+					type: "xp"
+					xp: 50
+				}
+				{
+					count: 2
+					id: "76C65E9CD850FA6A"
+					item: {
+						count: 1
+						id: "minecraft:bucket"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "36638D36301A9CC8"
+					silent: true
+					type: "command"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					id: "0BA25662EB400C91"
+					observation_type: "entity_type"
+					timer: 20L
+					to_observe: "steveparty:trichaudron"
+					type: "observation"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"6044441CFBBF75EE"
+			]
+			icon: {
+				id: "minecraft:shield"
+			}
+			id: "0A6FCAD1E1458EE5"
+			rewards: [
+				{
+					id: "304E5E346B02D23A"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "597FD6AA83403930"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "4A3AA894673B5056"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "6DF1A87426011550"
+					type: "checkmark"
+				}
+			]
+			x: 2.0d
+			y: -1.25d
+		}
+		{
+			dependencies: [
+				"6044441CFBBF75EE"
+			]
+			icon: {
+				id: "minecraft:lava_bucket"
+			}
+			id: "422060BE55D3D1D7"
+			rewards: [
+				{
+					id: "26B6B0AAA0EC09C7"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "39820AA9CA977AB6"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "00A35A08A49B02F3"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "3ABECF061BF53144"
+					type: "checkmark"
+				}
+			]
+			x: 2.0d
+			y: 1.25d
+		}
+		{
+			dependencies: [
+				"422060BE55D3D1D7"
+			]
+			icon: {
+				id: "minecraft:saddle"
+			}
+			id: "2EE9B60E92035305"
+			rewards: [
+				{
+					id: "482379ED6F3B7954"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "3123DEE76DF1F38F"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "0C509B3E365C85DD"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "43E5F42A09BCD679"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 1.25d
+		}
+		{
+			dependencies: [
+				"6044441CFBBF75EE"
+				"2E754E69CDD7EF1A"
+			]
+			id: "263C5F0A947E29AD"
+			rewards: [
+				{
+					id: "387FEEC005F2D459"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "73B6A58BFF35CB26"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "45850CEF2CE86688"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "175FF90E1EE43CA3"
+					item: {
+						count: 1
+						id: "steveparty:trichaudron_cartridge"
+					}
+					only_from_crafting: true
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: -1.25d
+		}
+		{
+			dependencies: [
+				"0A6FCAD1E1458EE5"
+				"2EE9B60E92035305"
+				"263C5F0A947E29AD"
+			]
+			icon: {
+				id: "steveparty:trichaudron_spawn_egg"
+			}
+			id: "71C9296D907886EF"
+			rewards: [
+				{
+					id: "0D7BA5B7C789C3ED"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "055C8D7ABA865F15"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "341613B9C5550C15"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "5F467FE18D56C93B"
+					silent: true
+					type: "command"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [ ]
+			x: 6.5d
+			y: 0.0d
+		}
+	]
+}

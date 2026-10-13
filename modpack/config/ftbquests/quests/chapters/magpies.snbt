@@ -1,0 +1,394 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "magpies"
+	group: "7AE3C601DC58F421"
+	icon: {
+		id: "steveparty:magpie_nest"
+	}
+	id: "3C301572B4DB69D9"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			icon: {
+				id: "steveparty:magpie_spawn_egg"
+			}
+			id: "63B4933358A5ED3D"
+			rewards: [
+				{
+					id: "035DAB0DD4E2F44C"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 8
+					id: "7BDA090047107690"
+					item: {
+						count: 1
+						id: "minecraft:wheat_seeds"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3FB00526C2C1A0DA"
+					silent: true
+					type: "command"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					id: "7AC0E2340FE6CE64"
+					observation_type: "entity_type"
+					timer: 20L
+					to_observe: "steveparty:wild_magpie"
+					type: "observation"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"63B4933358A5ED3D"
+			]
+			icon: {
+				id: "minecraft:wheat_seeds"
+			}
+			id: "5E498DCFAA8D5873"
+			rewards: [
+				{
+					id: "30AE1DA817768826"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "311C46C4789042A4"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "2880D39CE2168398"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "606E5B0869575C3C"
+					type: "checkmark"
+				}
+			]
+			x: 2.0d
+			y: -1.0d
+		}
+		{
+			dependencies: [
+				"5E498DCFAA8D5873"
+			]
+			icon: {
+				id: "minecraft:egg"
+			}
+			id: "6E17301AB8D3AB20"
+			rewards: [
+				{
+					id: "6BF807E6567457F2"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "508E29E30BE29105"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "4DAECA0CC1BF4B40"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "39A2BE43600C3825"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: -1.0d
+		}
+		{
+			dependencies: [
+				"63B4933358A5ED3D"
+			]
+			id: "2CE0BF8C6935F2C0"
+			rewards: [
+				{
+					id: "082FED7670F66E02"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "434799017117BB2C"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3627B7CACA2616D2"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "5DB1ABEF268CE768"
+					item: {
+						count: 1
+						id: "steveparty:magpie_nest"
+					}
+					only_from_crafting: true
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 1.0d
+		}
+		{
+			dependencies: [
+				"2CE0BF8C6935F2C0"
+			]
+			icon: {
+				id: "minecraft:gold_nugget"
+			}
+			id: "71053C5ABE278389"
+			rewards: [
+				{
+					id: "75E7EAADE5392218"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "78368E272B09B79B"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3EEA6C01C1372B1B"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "38FCCCEF24BF1C76"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 1.0d
+		}
+		{
+			dependencies: [
+				"63B4933358A5ED3D"
+			]
+			icon: {
+				id: "minecraft:oak_leaves"
+			}
+			id: "0AFB2E5299CBC290"
+			optional: true
+			rewards: [
+				{
+					id: "3445F203793AAAE3"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "7D18E7B5DA05D6DB"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "354E4AF949CCF21B"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "2D525EFB581751F4"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"2CE0BF8C6935F2C0"
+				"71CC2E37EF714902"
+			]
+			id: "2843C6B391C3BB10"
+			rewards: [
+				{
+					id: "3923A06771813237"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "61823D1FE84F45D7"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "1D48FEBF369E7407"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "1A9C6638B5502DE6"
+					item: {
+						count: 1
+						id: "steveparty:pot_cartridge"
+					}
+					only_from_crafting: true
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: 1.0d
+		}
+		{
+			dependencies: [
+				"2843C6B391C3BB10"
+				"564863446D9C8AC2"
+			]
+			icon: {
+				id: "steveparty:pot_cartridge"
+			}
+			id: "73EEF7997DCDB74C"
+			rewards: [
+				{
+					id: "496ED043324CE75E"
+					type: "xp"
+					xp: 50
+				}
+				{
+					id: "23D202E113B51E60"
+					table_id: 2301134424961554321L
+					type: "random"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3F5E63EAC3ECE438"
+					silent: true
+					type: "command"
+				}
+			]
+			shape: "hexagon"
+			size: 1.25d
+			tasks: [
+				{
+					id: "0D512A9C0B0E42CB"
+					type: "checkmark"
+				}
+			]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"6E17301AB8D3AB20"
+				"71053C5ABE278389"
+				"73EEF7997DCDB74C"
+			]
+			icon: {
+				id: "steveparty:magpie_spawn_egg"
+			}
+			id: "0BF6FB84D3C83852"
+			rewards: [
+				{
+					id: "77015324571AA2C3"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "43DAD77234541080"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "48D5384D5F0C8B98"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "606C8211CDEC3883"
+					silent: true
+					type: "command"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [ ]
+			x: 10.5d
+			y: 0.0d
+		}
+	]
+}

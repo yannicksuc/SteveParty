@@ -8,7 +8,7 @@
 	}
 	id: "7F034F1578D84F43"
 	images: [ ]
-	order_index: 3
+	order_index: 4
 	quest_links: [ ]
 	quests: [
 		{
@@ -30,6 +30,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "551D21FF1733E124"
+					silent: true
+					type: "command"
+				}
 			]
 			size: 1.25d
 			tasks: [
@@ -40,11 +48,12 @@
 						count: 1
 						id: "steveparty:polished_orange_terracotta"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 0.0d
-			y: 0.0d
+			x: 0.625d
+			y: -4.5d
 		}
 		{
 			dependencies: [
@@ -65,6 +74,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "775F9215468E5167"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -74,11 +91,12 @@
 						count: 1
 						id: "steveparty:polished_orange_terracotta_bricks"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 2.0d
-			y: 0.0d
+			x: 5.0d
+			y: -4.5d
 		}
 		{
 			dependencies: [
@@ -91,6 +109,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "195E17B6ED41E073"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -100,11 +126,12 @@
 						count: 1
 						id: "steveparty:orange_polished_terracotta_stairs"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 4.0d
-			y: -0.75d
+			x: 0.0d
+			y: -2.25d
 		}
 		{
 			dependencies: [
@@ -117,6 +144,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "02EDE9360588167A"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -126,11 +161,12 @@
 						count: 1
 						id: "steveparty:orange_polished_terracotta_bricks_stairs"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 4.0d
-			y: 0.75d
+			x: 3.75d
+			y: -2.25d
 		}
 		{
 			dependencies: [
@@ -143,6 +179,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "6A3ABA129B0B4DF4"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -152,11 +196,12 @@
 						count: 1
 						id: "steveparty:orange_polished_terracotta_slab"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 5.5d
-			y: -0.75d
+			x: 1.25d
+			y: -2.25d
 		}
 		{
 			dependencies: [
@@ -169,6 +214,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "4BB97DA0838E4716"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -178,11 +231,12 @@
 						count: 1
 						id: "steveparty:orange_polished_terracotta_bricks_slab"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 5.5d
-			y: 0.75d
+			x: 5.0d
+			y: -2.25d
 		}
 		{
 			dependencies: [
@@ -195,6 +249,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "231BB8BECD10064F"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -204,11 +266,12 @@
 						count: 1
 						id: "steveparty:orange_polished_terracotta_wall"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 7.0d
-			y: -0.75d
+			x: 2.5d
+			y: -2.25d
 		}
 		{
 			dependencies: [
@@ -221,6 +284,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "2F502C4E2FEB00A2"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -230,11 +301,12 @@
 						count: 1
 						id: "steveparty:orange_polished_terracotta_bricks_wall"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 7.0d
-			y: 0.75d
+			x: 6.25d
+			y: -2.25d
 		}
 		{
 			dependencies: [
@@ -255,6 +327,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "78730E5C13F15BD0"
+					silent: true
+					type: "command"
+				}
 			]
 			size: 1.25d
 			tasks: [
@@ -265,11 +345,12 @@
 						count: 1
 						id: "steveparty:polished_light_blue_concrete"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 0.0d
-			y: 3.5d
+			x: 0.625d
+			y: 4.5d
 		}
 		{
 			dependencies: [
@@ -290,6 +371,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "55F97956EBBEDE26"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -299,11 +388,12 @@
 						count: 1
 						id: "steveparty:polished_light_blue_concrete_bricks"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 2.0d
-			y: 3.5d
+			x: 5.0d
+			y: 4.5d
 		}
 		{
 			dependencies: [
@@ -316,6 +406,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "2B4C8A82EA6EABFB"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -325,11 +423,12 @@
 						count: 1
 						id: "steveparty:light_blue_polished_concrete_stairs"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 4.0d
-			y: 2.75d
+			x: 0.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -342,6 +441,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "7B9B5C296A184DCD"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -351,11 +458,12 @@
 						count: 1
 						id: "steveparty:light_blue_polished_concrete_bricks_stairs"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 4.0d
-			y: 4.25d
+			x: 3.75d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -368,6 +476,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "629182DEE18302EE"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -377,11 +493,12 @@
 						count: 1
 						id: "steveparty:light_blue_polished_concrete_slab"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 5.5d
-			y: 2.75d
+			x: 1.25d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -394,6 +511,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "1EF814528E9ED258"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -403,11 +528,12 @@
 						count: 1
 						id: "steveparty:light_blue_polished_concrete_bricks_slab"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 5.5d
-			y: 4.25d
+			x: 5.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -420,6 +546,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "0659035C480EC5BA"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -429,11 +563,12 @@
 						count: 1
 						id: "steveparty:light_blue_polished_concrete_wall"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 7.0d
-			y: 2.75d
+			x: 2.5d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -446,6 +581,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "517814B6398CDDC0"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -455,11 +598,12 @@
 						count: 1
 						id: "steveparty:light_blue_polished_concrete_bricks_wall"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 7.0d
-			y: 4.25d
+			x: 6.25d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -480,6 +624,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "2C31AA4C7C63AD75"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -489,11 +641,12 @@
 						count: 1
 						id: "steveparty:polished_terracotta_tiles"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 9.0d
-			y: 0.0d
+			x: -1.25d
+			y: -2.25d
 		}
 		{
 			dependencies: [
@@ -514,6 +667,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "288DCF888B1A1BE5"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -523,11 +684,12 @@
 						count: 1
 						id: "steveparty:polished_concrete_tiles"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 9.0d
-			y: 3.5d
+			x: -1.25d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -570,17 +732,20 @@
 					table_id: 6010736241247292296L
 					type: "random"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "6CDAAB36C4F98BEE"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "gear"
 			size: 2.0d
-			tasks: [
-				{
-					id: "1574414DAA618444"
-					type: "checkmark"
-				}
-			]
-			x: 11.5d
-			y: 1.75d
+			tasks: [ ]
+			x: 2.5d
+			y: 0.0d
 		}
 	]
 }

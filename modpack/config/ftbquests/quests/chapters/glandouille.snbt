@@ -1,0 +1,313 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "glandouille"
+	group: "7AE3C601DC58F421"
+	icon: {
+		id: "steveparty:acorn"
+	}
+	id: "6CAC87F451708F44"
+	images: [ ]
+	order_index: 1
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			icon: {
+				id: "steveparty:glandouille_spawn_egg"
+			}
+			id: "1844358FDF98C72B"
+			rewards: [
+				{
+					id: "4DC2F038D90E5FC4"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 4
+					id: "280D95EF6EA58582"
+					item: {
+						count: 1
+						id: "minecraft:bone_meal"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "021AD592E6D044C7"
+					silent: true
+					type: "command"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					id: "3FEFEE9AE5CD0C27"
+					observation_type: "entity_type"
+					timer: 20L
+					to_observe: "steveparty:glandouille"
+					type: "observation"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"1844358FDF98C72B"
+			]
+			id: "1C32C1531E31974E"
+			rewards: [
+				{
+					id: "0C119EE77351B6D6"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "303636A66B24A0BA"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3E5A18A80A29231F"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "3A1466E3287166A5"
+					item: {
+						count: 1
+						id: "steveparty:acorn"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -1.0d
+		}
+		{
+			dependencies: [
+				"1C32C1531E31974E"
+			]
+			icon: {
+				id: "minecraft:farmland"
+			}
+			id: "60C92A51C5BD85F6"
+			rewards: [
+				{
+					id: "07F310710FD039FA"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "75954FAEA090978A"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "4E67C30BE565E595"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "2F738D563E00F5A4"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: -1.0d
+		}
+		{
+			dependencies: [
+				"1844358FDF98C72B"
+			]
+			icon: {
+				id: "steveparty:glandouille_spawn_egg"
+			}
+			id: "12D10278EDD127AE"
+			rewards: [
+				{
+					id: "2BA0BB4A43FFBA67"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "0B076EAEA49F415F"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "73DF77E303558271"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "6467D39CD21837E5"
+					type: "checkmark"
+				}
+			]
+			x: 2.0d
+			y: 1.0d
+		}
+		{
+			dependencies: [
+				"1844358FDF98C72B"
+			]
+			id: "54F196A1821033FE"
+			optional: true
+			rewards: [
+				{
+					id: "3D69A4C7839A341A"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "5F1A93720FB37683"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "5A747F461015D3BF"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "764C0263D7D3685A"
+					item: {
+						count: 1
+						id: "steveparty:acorn_hat"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"1C32C1531E31974E"
+				"71CC2E37EF714902"
+			]
+			id: "67A3F4DF1F5ABD68"
+			rewards: [
+				{
+					id: "366E178E92CABBA8"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "2D5064AC8F89C689"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "648B13BF7D5D2961"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "6E5D1B45325EB34A"
+					item: {
+						count: 1
+						id: "steveparty:glandouille_cartridge"
+					}
+					only_from_crafting: true
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"60C92A51C5BD85F6"
+				"12D10278EDD127AE"
+				"67A3F4DF1F5ABD68"
+			]
+			icon: {
+				id: "steveparty:acorn"
+			}
+			id: "29342BD8BA7FCED5"
+			rewards: [
+				{
+					id: "2E8B5ADF5606FF7D"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "562C10D4968F93D0"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "0C160E3207A0C028"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3341A8507380475E"
+					silent: true
+					type: "command"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [ ]
+			x: 8.5d
+			y: 0.0d
+		}
+	]
+}

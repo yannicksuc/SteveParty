@@ -13,7 +13,7 @@
 	quests: [
 		{
 			dependencies: [
-				"5E174C6DCB411FC0"
+				"123B0FCCF856E8AB"
 			]
 			id: "1661B4C0B973F8ED"
 			rewards: [
@@ -31,7 +31,16 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "231330B434DD9FAD"
+					silent: true
+					type: "command"
+				}
 			]
+			size: 1.25d
 			tasks: [
 				{
 					id: "31D10938E552DF32"
@@ -39,15 +48,16 @@
 						count: 1
 						id: "steveparty:gravity_core"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 0.0d
-			y: 0.0d
+			y: 1.25d
 		}
 		{
 			dependencies: [
-				"085FCFBD2E80A60F"
+				"49297133DC9D18C2"
 			]
 			id: "42C4E05F055ED63B"
 			rewards: [
@@ -65,8 +75,16 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "6276ABDCB93ABFDC"
+					silent: true
+					type: "command"
+				}
 			]
-			size: 1.5d
+			size: 1.25d
 			tasks: [
 				{
 					id: "746BDF273C2F9C72"
@@ -74,11 +92,12 @@
 						count: 1
 						id: "steveparty:dice_forge"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 0.0d
-			y: -2.5d
+			y: -1.25d
 		}
 		{
 			dependencies: [
@@ -104,15 +123,25 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "73EFD30ED4EB41E7"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
+					advancement: "steveparty:stars/ignition"
+					criterion: ""
 					id: "59AE4812BE419E18"
-					type: "checkmark"
+					type: "advancement"
 				}
 			]
 			x: 2.0d
-			y: -1.25d
+			y: 0.0d
 		}
 		{
 			dependencies: [
@@ -134,6 +163,14 @@
 					table_id: 2301134424961554321L
 					type: "random"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "6BC9CF32269CB0BA"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "hexagon"
 			size: 1.25d
@@ -144,7 +181,7 @@
 				}
 			]
 			x: 4.0d
-			y: -1.25d
+			y: -1.5d
 		}
 		{
 			dependencies: [
@@ -169,6 +206,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "4BCB76FEB4F0A14B"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -176,8 +221,8 @@
 					type: "checkmark"
 				}
 			]
-			x: 6.0d
-			y: -2.5d
+			x: 5.75d
+			y: -2.75d
 		}
 		{
 			dependencies: [
@@ -202,6 +247,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "0BDCB819643BF501"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -210,7 +263,7 @@
 				}
 			]
 			x: 4.0d
-			y: 1.0d
+			y: 0.0d
 		}
 		{
 			dependencies: [
@@ -236,6 +289,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "491182F846680B50"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -243,8 +304,8 @@
 					type: "checkmark"
 				}
 			]
-			x: 6.0d
-			y: 1.0d
+			x: 4.0d
+			y: 1.5d
 		}
 		{
 			dependencies: [
@@ -261,6 +322,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "36CBC586C9F5F14C"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -269,7 +338,7 @@
 				}
 			]
 			x: 2.0d
-			y: 1.25d
+			y: 2.5d
 		}
 		{
 			dependencies: [
@@ -301,17 +370,20 @@
 					table_id: 6010736241247292296L
 					type: "random"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "05178E033011D3BE"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "gear"
 			size: 2.0d
-			tasks: [
-				{
-					id: "69BE46A58AA8682D"
-					type: "checkmark"
-				}
-			]
-			x: 8.0d
-			y: -0.5d
+			tasks: [ ]
+			x: 6.5d
+			y: 0.0d
 		}
 	]
 }

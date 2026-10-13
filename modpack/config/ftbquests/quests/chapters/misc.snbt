@@ -8,7 +8,7 @@
 	}
 	id: "3243C179234B96AF"
 	images: [ ]
-	order_index: 4
+	order_index: 5
 	quest_links: [ ]
 	quests: [
 		{
@@ -31,6 +31,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "57515A905B838D2E"
+					silent: true
+					type: "command"
+				}
 			]
 			size: 1.25d
 			tasks: [
@@ -40,6 +48,7 @@
 						count: 1
 						id: "steveparty:looting_box"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
@@ -70,6 +79,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "42D8FB12599A0EAE"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -99,7 +116,16 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "1F59393C26CB9C70"
+					silent: true
+					type: "command"
+				}
 			]
+			size: 1.25d
 			tasks: [
 				{
 					id: "5141EFB87E590A9F"
@@ -107,11 +133,12 @@
 						count: 1
 						id: "steveparty:plunger"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
 			x: 0.0d
-			y: 2.0d
+			y: 2.25d
 		}
 		{
 			dependencies: [
@@ -136,6 +163,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3FE59455CFAB57BD"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -144,7 +179,7 @@
 				}
 			]
 			x: 2.0d
-			y: 2.0d
+			y: 3.5d
 		}
 		{
 			dependencies: [
@@ -175,17 +210,20 @@
 					table_id: 6010736241247292296L
 					type: "random"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "7266E47E8DD8A7E1"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "gear"
 			size: 2.0d
-			tasks: [
-				{
-					id: "5201730A6B7D5364"
-					type: "checkmark"
-				}
-			]
-			x: 4.5d
-			y: 1.0d
+			tasks: [ ]
+			x: 4.25d
+			y: 1.125d
 		}
 	]
 }

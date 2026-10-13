@@ -30,6 +30,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "78059E37D0FFBD8B"
+					silent: true
+					type: "command"
+				}
 			]
 			size: 1.25d
 			tasks: [
@@ -40,6 +48,7 @@
 						count: 1
 						id: "steveparty:lime_pipe"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
@@ -65,6 +74,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "2BF4FE44263A2215"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -74,6 +91,7 @@
 						count: 1
 						id: "steveparty:cyan_windowed_pipe"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
@@ -99,6 +117,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "3EE6A2E5CB016333"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -108,6 +134,7 @@
 						count: 1
 						id: "steveparty:glass_pipe"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
@@ -133,6 +160,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "62C35DF3BA5A9548"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -142,11 +177,12 @@
 						count: 1
 						id: "steveparty:magenta_stained_glass_pipe"
 					}
+					only_from_crafting: true
 					type: "item"
 				}
 			]
-			x: 2.0d
-			y: 1.5d
+			x: 4.0d
+			y: 0.0d
 		}
 		{
 			dependencies: [
@@ -171,15 +207,25 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "1E78DBEC846B963E"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
+					advancement: "steveparty:workshop/pipes/travel"
+					criterion: ""
 					id: "0F420F22E81F8585"
-					type: "checkmark"
+					type: "advancement"
 				}
 			]
-			x: 4.0d
-			y: 0.0d
+			x: 2.0d
+			y: 1.5d
 		}
 		{
 			dependencies: [
@@ -204,6 +250,14 @@
 					}
 					type: "item"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "5A00BF1945A8DA85"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -211,8 +265,8 @@
 					type: "checkmark"
 				}
 			]
-			x: 6.0d
-			y: 0.0d
+			x: 4.0d
+			y: 1.5d
 		}
 		{
 			dependencies: [
@@ -230,6 +284,14 @@
 					type: "xp"
 					xp: 10
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "5F79701FD009C92D"
+					silent: true
+					type: "command"
+				}
 			]
 			tasks: [
 				{
@@ -237,8 +299,8 @@
 					type: "checkmark"
 				}
 			]
-			x: 4.0d
-			y: 2.0d
+			x: 1.0d
+			y: 3.0d
 		}
 		{
 			dependencies: [
@@ -270,16 +332,19 @@
 					table_id: 6010736241247292296L
 					type: "random"
 				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "104B6C7451770F41"
+					silent: true
+					type: "command"
+				}
 			]
 			shape: "gear"
 			size: 2.0d
-			tasks: [
-				{
-					id: "5E4A7605F4D83A7B"
-					type: "checkmark"
-				}
-			]
-			x: 8.0d
+			tasks: [ ]
+			x: 6.25d
 			y: 0.0d
 		}
 	]

@@ -20,6 +20,12 @@
 		}
 		{
 			icon: {
+				id: "steveparty:magpie_nest"
+			}
+			id: "7AE3C601DC58F421"
+		}
+		{
+			icon: {
 				id: "steveparty:red_plastic_block"
 			}
 			id: "64160321E5CDD4E4"

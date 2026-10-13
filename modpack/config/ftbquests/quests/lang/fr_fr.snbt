@@ -11,8 +11,20 @@
 		"Gravez des dés sur mesure, et offrez une maison aux Mulas."
 	]
 	chapter.0EECA9B86DA7992A.title: "Forge à dés"
+	chapter.1D02C1C8CA264695.chapter_subtitle: [
+		"Des bulles de savon qu'on pilote, et les Bulles d'apparition du plateau."
+	]
+	chapter.1D02C1C8CA264695.title: "Bulles"
+	chapter.1E0F7E79363BE53E.chapter_subtitle: [
+		"De petits fantômes-bougies des grottes : voleurs d'objets brillants, puis lampes qui vous suivent."
+	]
+	chapter.1E0F7E79363BE53E.title: "Frousseux"
+	chapter.20802D17BC960CF2.chapter_subtitle: [
+		"Le gros chat noir de la malchance, et les sentences de son dé pipé."
+	]
+	chapter.20802D17BC960CF2.title: "Mistigri"
 	chapter.27D1C0A527E638AD.chapter_subtitle: [
-		"Le Contrôleur de fête enchaîne les tours, les mini-jeux et les gains."
+		"Le Party Controller enchaîne les tours, les mini-jeux et les gains."
 	]
 	chapter.27D1C0A527E638AD.title: "Mener une partie"
 	chapter.29E775242F126236.chapter_subtitle: [
@@ -35,6 +47,14 @@
 		"Un villageois caché dans un carton vend les offres de vos étals."
 	]
 	chapter.386B56372B494AA4.title: "Boutiques"
+	chapter.3C301572B4DB69D9.chapter_subtitle: [
+		"Des oiseaux des forêts qui adorent ce qui brille, leurs nids, et le Pot commun qu'ils gardent."
+	]
+	chapter.3C301572B4DB69D9.title: "Pies"
+	chapter.3DFE53E2B3C777E3.chapter_subtitle: [
+		"Une énorme tortue du Nether à trois têtes, une cuve de lave sur le dos."
+	]
+	chapter.3DFE53E2B3C777E3.title: "Trichaudrons"
 	chapter.4D82FDE861677663.chapter_subtitle: [
 		"Pages, tuyaux, podiums et arènes : créez vos propres mini-jeux."
 	]
@@ -43,14 +63,22 @@
 		"Construisez un jeu de plateau dans Minecraft et jouez-y entre amis."
 	]
 	chapter.5136274B67A19584.title: "Bienvenue"
+	chapter.523ED47A069318CD.chapter_subtitle: [
+		"Un wagonnet vivant et grognon, chargé de TNT ou de fusées."
+	]
+	chapter.523ED47A069318CD.title: "Pétaroules"
 	chapter.5BC7CD484E8C4C6D.chapter_subtitle: [
-		"Tuiles, cartouches et Clé : construisez le parcours de vos pions."
+		"Cartouches, tuiles et Pinceau lieur : construisez le parcours de vos pions."
 	]
 	chapter.5BC7CD484E8C4C6D.title: "Le plateau"
 	chapter.69138B1BDF728BC8.chapter_subtitle: [
 		"Des blocs façon jouet en 16 couleurs, qui flottent."
 	]
 	chapter.69138B1BDF728BC8.title: "Plastique"
+	chapter.6CAC87F451708F44.chapter_subtitle: [
+		"Des glands grognons qui bousculent, s'empilent en tours et font pouic."
+	]
+	chapter.6CAC87F451708F44.title: "Glandouilles"
 	chapter.6D6E3AE0E24B2C6E.chapter_subtitle: [
 		"Sautez au sommet, marquez, et regardez le drapeau descendre."
 	]
@@ -63,58 +91,92 @@
 	chapter_group.60AFE736E3EC9353.title: "Étoiles"
 	chapter_group.64160321E5CDD4E4.title: "Décoration"
 	chapter_group.7821141F991152DB.title: "Le jeu de plateau"
+	chapter_group.7AE3C601DC58F421.title: "Créatures"
 	file.0000000000000001.title: "Steve Party Maker"
 	quest.0043BA5760434BEE.quest_desc: [
 		"Pendant une partie, la bande des tours, les annonces et le tableau des scores s'affichent. Touche M (ou /partyhud) pour les déplacer, H pour les masquer."
 	]
 	quest.0043BA5760434BEE.title: "Disposer l'interface"
+	quest.007DDEF3BCF692E9.quest_desc: [
+		"Une Face de dé vierge dans une croix de 4 pépites d'or : un Module de dé vierge, la base de tous les modules."
+	]
+	quest.007DDEF3BCF692E9.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.007DDEF3BCF692E9.title: "Module de dé vierge"
+	quest.01961EB8EB0F1B32.quest_desc: [
+		"Atteignez l'étoile pendant une partie et achetez-la ([Acheter] dans le chat) : le prix part à la banque, une étoile de la banque vient à vous. La Mula danse, vous lance l'étoile et disparaît ; l'étoile peut partir sur une autre case Étoile."
+	]
+	quest.01961EB8EB0F1B32.title: "Attrapez une étoile !"
+	quest.01A45DFBA3953647.quest_desc: [
+		"Au-dessus des colonnes de l'onglet Gains : l'objet qui sert de Pièce (la Pièce par défaut) et d'Étoile (la Party Star par défaut). Cliquez avec n'importe quel objet pour le remplacer, des pépites d'or ou des diamants par exemple (rien n'est pris) ; main vide pour revenir au défaut. Messages, menus et cases nomment alors vos objets."
+	]
+	quest.01A45DFBA3953647.title: "Votre propre monnaie"
 	quest.01C543D5464F2458.quest_desc: [
 		"Un plot en plastique violet + papier + redstone : 4 cartes. Rejoue les cartes depuis le dernier Début de séquence, autant de fois qu'il y a de cartes dans sa pile."
 		"Les cartes se posent dans les 24 emplacements de l'onglet Programme et se lisent de gauche à droite."
 	]
+	quest.01C543D5464F2458.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.01C543D5464F2458.title: "Carte de partie : Répéter"
 	quest.02559E197888FCA2.quest_desc: [
 		"Mélangez les fragments comme des colorants : rouge + bleu + jaune. On récupère autant de fragments qu'on en a mis."
 	]
+	quest.02559E197888FCA2.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.02559E197888FCA2.title: "Fragment d'étoile blanc"
 	quest.030135F1CA2F65E1.quest_desc: [
 		"Clic droit pour choisir un moment (début de partie, début de tour, dé lancé, fin de mini-jeu...) : elle envoie alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang du pion...). En mode attente (Clé), la partie se fige jusqu'à ce qu'elle reçoive un signal."
 	]
+	quest.030135F1CA2F65E1.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.030135F1CA2F65E1.title: "Cloche de partie"
 	quest.042DD30AE9744165.quest_desc: [
 		"Vos mini-jeux sont écrits, liés et testés. Que la roulette tourne !"
 	]
 	quest.042DD30AE9744165.title: "Créateur de jeux"
-	quest.04F1186B64C11C43.quest_desc: [
-		"Face vierge + crochet. Pendant ce déplacement, le pion ignore les cases Stop et les haltes boutique."
+	quest.04AA8B34045AEB8D.quest_desc: [
+		"Cartouche + Party Star. Au début d'une partie, l'étoile de la partie se pose sur l'une des cases Étoile, sous un faisceau doré. Une Mula y attend avec l'étoile et joue avec (sur la Bulle d'apparition de la case, si elle est reliée). Son menu : le prix (20 pièces par défaut), vendue à l'arrêt ou au passage."
 	]
+	quest.04AA8B34045AEB8D.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.04AA8B34045AEB8D.title: "Cartouche Étoile"
+	quest.04C5B29930D85A91.quest_desc: [
+		"Sur une case Avancer / Reculer, un Pétaroule hologramme sort (de la Bulle d'apparition de la case, si elle est reliée) : en avant, il explose derrière le pion et le propulse de case en case ; en arrière, il le percute. Rien qu'un spectacle : aucun bloc cassé, personne de blessé."
+	]
+	quest.04C5B29930D85A91.title: "Avancer ou reculer"
+	quest.04F1186B64C11C43.quest_desc: [
+		"Un Module de dé vierge entouré de 7 fragments d'étoile jaunes, avec un crochet au-dessus. Pendant ce déplacement, le pion ignore les cases Stop et les haltes boutique."
+	]
+	quest.04F1186B64C11C43.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.04F1186B64C11C43.title: "Module de dé : Passe-partout"
 	quest.0530BAFFB80A6149.quest_desc: [
-		"Posez le Bloc de villageois sur le bloc à imiter, puis tombez dessus d'assez haut (12 blocs sur terre ou foin, 16 sur pierre, 30 sur fer) : un Marchand en carton apparaît, déguisé en ce bloc. Regardez-en un pour valider la quête."
+		"Posez le Bloc de villageois sur le bloc à imiter, puis tombez dessus d'assez haut (12 blocs sur terre ou foin, 16 sur pierre, 30 sur fer) : un Marchand en carton apparaît, déguisé en ce bloc. Cochez la quête une fois le vôtre créé."
 	]
 	quest.0530BAFFB80A6149.title: "La chute"
 	quest.0582B9C6A4DD1764.quest_desc: [
 		"Deux blocs de terre cuite polie de couleurs différentes en damier dans une grille 2x2 : 4 carrelages, chaque face en damier 2x2. Inversez les couleurs pour le damier décalé."
 	]
+	quest.0582B9C6A4DD1764.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.0582B9C6A4DD1764.title: "Carrelage en terre cuite polie"
 	quest.05A3BC086CC7390E.quest_desc: [
 		"4 blocs polis en carré : 4 briques biseautées. Chaque brique a sa nuance, et un grand mur ne se répète jamais."
 	]
+	quest.05A3BC086CC7390E.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.05A3BC086CC7390E.title: "Briques de terre cuite polie orange"
 	quest.05F0B762268E85CD.quest_desc: [
-		"Trois tapis au-dessus de granulés de plastique et d'une plaque de pression légère : 2 Tuiles."
-		"Une Tuile est une case du plateau et compte comme un pas. Elle reçoit une seule cartouche, qui lui donne son rôle. Elle se pose dans 8 directions, sur les dalles, les tapis et même sur les escaliers, dont elle suit la pente."
+		"4 dalles de plastique blanc autour d'une plaque de pression lourde, et une cartouche au milieu de la ligne du bas : 1 Tuile, qui contient déjà cette cartouche."
+		"Une Tuile est une case du plateau et compte comme un pas. Elle se pose dans 8 directions, sur les dalles, les tapis et même sur les escaliers, dont elle suit la pente."
 	]
+	quest.05F0B762268E85CD.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.05F0B762268E85CD.title: "Tuile"
+	quest.0656F36FB9B9B08E.quest_desc: [
+		"Les Frousseux flottent dans les grottes sombres de l'Overworld, seuls ou à deux : un fantôme de cire avec une flamme de bougie, en 17 couleurs. Sa lumière est réelle, et aucun monstre n'approche à moins de 8 blocs. Fixez-le : il se cache les yeux. Regardez-en un pour valider la quête."
+	]
+	quest.0656F36FB9B9B08E.title: "Une lueur dans le noir"
 	quest.06ACFD0AAF8EF257.quest_desc: [
 		"Page + papier à l'établi (ou le bouton Copier) donnent une copie liée : modifier l'une modifie toutes les autres. Pratique pour lier tuyaux et podiums éloignés."
 	]
 	quest.06ACFD0AAF8EF257.title: "Copies liées"
 	quest.06ED662D95913D40.quest_desc: [
-		"Clé en mode Tracé : clic droit de case en case (ou maintenez le clic en balayant) pour les relier. Chaque nouvelle case reçoit automatiquement une Cartouche de votre inventaire et se tourne vers la suivante."
-		"Clic gauche dans le vide pour annuler, accroupi + clic gauche pour rétablir."
+		"Maintenez le clic droit avec le pinceau et balayez les tuiles dans l'ordre où les pions les parcourront : chacune est reliée à la suivante. Une tuile sans cartouche reçoit une Cartouche de votre inventaire."
+		"Repeignez un lien dans le même sens pour l'effacer. Le clic gauche ouvre la roue du pinceau : annuler, rétablir, modes de liaison."
 	]
-	quest.06ED662D95913D40.title: "Tracer le chemin"
+	quest.06ED662D95913D40.title: "Peindre le chemin"
 	quest.07380C5346B9F4F8.quest_desc: [
 		"Tailleur de pierre : une face vierge devient n'importe quel nombre de 0 à 10. Toute face redevient vierge de la même façon."
 	]
@@ -122,22 +184,26 @@
 	quest.07635CE1A88BD949.quest_desc: [
 		"4 terres cuites orange en carré : 4 blocs polis (17 couleurs pour la terre cuite, 16 pour le béton). Le tailleur de pierre fait toutes les formes directement depuis le bloc vanilla."
 	]
+	quest.07635CE1A88BD949.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.07635CE1A88BD949.title: "Terre cuite polie orange"
+	quest.07EC74793C559519.quest_desc: [
+		"La malchance invoquée, apprivoisée et mise en jeu."
+	]
+	quest.07EC74793C559519.title: "Chat noir"
 	quest.081AE2BEE25879DB.quest_desc: [
 		"Mélangez les fragments comme des colorants : rouge + jaune. On récupère autant de fragments qu'on en a mis."
 	]
+	quest.081AE2BEE25879DB.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.081AE2BEE25879DB.title: "Fragment d'étoile orange"
-	quest.085FCFBD2E80A60F.quest_desc: [
-		"Un fragment de chaque : bleu, vert, jaune, rouge et violet (ou 5 fragments noirs), sans forme. Toujours brillante. C'est l'Étoile par défaut d'une partie, et elle entre dans la Forge à dés et les tuyaux de mini-jeu en fer et en or."
-	]
-	quest.085FCFBD2E80A60F.title: "Étoile de fête"
 	quest.08D5A8D740C540DC.quest_desc: [
 		"Mélangez les fragments comme des colorants : bleu + blanc. On récupère autant de fragments qu'on en a mis."
 	]
+	quest.08D5A8D740C540DC.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.08D5A8D740C540DC.title: "Fragment d'étoile bleu clair"
 	quest.09204066F2CD4A79.quest_desc: [
 		"Une pépite d'or donne une Pièce (sans forme). La Pièce est la monnaie par défaut d'une partie : les mini-jeux en rapportent et les boutiques peuvent vendre contre elle."
 	]
+	quest.09204066F2CD4A79.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.09204066F2CD4A79.title: "Pièce"
 	quest.09C8D40C342871A4.quest_desc: [
 		"Écrivez votre propre partie : par exemple Début de séquence, Tour de jeu, Répéter x3, Début de séquence, Mini-jeu, Répéter x2. Sans carte, la partie joue le nombre de manches réglé dans les Réglages."
@@ -147,6 +213,14 @@
 		"Une poche d'encre luisante sur un motif peint le fait briller la nuit ; une éponge sèche l'éteint."
 	]
 	quest.0A07E78ECC5CEBD1.title: "Ça brille la nuit"
+	quest.0A6FCAD1E1458EE5.quest_desc: [
+		"Chaque tête est une tourelle : elle se charge, puis crache un jet de vapeur brûlante jusqu'à 30 blocs. Sa visée se fige juste avant le tir : faites un pas de côté. Un bouclier levé vers le jet l'arrête complètement. Chaque jet lui coûte un seau de lave."
+	]
+	quest.0A6FCAD1E1458EE5.title: "Levez le bouclier"
+	quest.0AFB2E5299CBC290.quest_desc: [
+		"Dans leurs forêts, un nid se trouve parfois sur la cime d'un arbre : souvent vide, parfois avec quelques pépites ou pièces, et 1 à 3 pies y vivent. Il ne pourrit pas avec les feuilles."
+	]
+	quest.0AFB2E5299CBC290.title: "Chasse aux nids"
 	quest.0B48C321AB91B3F5.quest_desc: [
 		"Toute Mula à moins de 16 blocs d'une forge allumée s'y installe et danse autour du noyau : 10 danses de 26 s, en anneaux de 12 au plus. Une Mula pleine qui éclate à la maison retombe à 2 à 4 blocs de la forge."
 	]
@@ -154,64 +228,103 @@
 	quest.0B763A1CFE251521.quest_desc: [
 		"Deux Dés par défaut, sans forme. Deux dés liés : 2 à 20. Se redécoupe en deux."
 	]
+	quest.0B763A1CFE251521.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.0B763A1CFE251521.title: "Dé double"
+	quest.0BE71A5E881EDA13.quest_desc: [
+		"Un briquet dessus : sa mèche brûle 8 s, il panique et fonce sur le joueur le plus proche, un autre que vous. Un autre joueur le rallume pour l'envoyer ailleurs (+3 s, puis +2, puis +1, puis plus rien). Chargé d'une fusée, il éclate en feu d'artifice sans blesser personne ; avec de la TNT, c'est une vraie explosion."
+	]
+	quest.0BE71A5E881EDA13.title: "Patate chaude"
+	quest.0BF6FB84D3C83852.quest_desc: [
+		"Des pies charmées, un poussin né et un pot qui grossit sur le plateau."
+	]
+	quest.0BF6FB84D3C83852.title: "Ornithologue"
 	quest.0CE8734A07EDA523.quest_desc: [
 		"De l'or, une plaque de pression lourde, de la redstone et des blocs de quartz. Les podiums retiennent qui a gagné : la colonne la plus haute est la 1re place. Accroupissez-vous dessus ou clic droit pour le prendre. Liez-les à la page en cliquant dessus avec elle."
 	]
+	quest.0CE8734A07EDA523.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.0CE8734A07EDA523.title: "Podium"
 	quest.0D2D7E4E7239F684.quest_desc: [
 		"« Tracer la zone » dans l'éditeur, puis cliquez deux coins (128 blocs par côté au plus). Avec l'option Restaurer, chaque manche se joue à part dans la zone, avec un inventaire de manche vide, et l'arène est remise comme construite à la fin."
 	]
 	quest.0D2D7E4E7239F684.title: "Tracer la zone"
+	quest.0D3B9E427A996C6C.quest_desc: [
+		"Cartouche + Clé de portail. Un portail se dresse sur chaque sortie verrouillée de la case : un pion a besoin d'une Clé de portail (consommée) pour passer. Sans clé : attendre, refaire le déplacement pour prendre un autre chemin, ou retourner au départ. « Ouvert » garde le portail ouvert quelques tours, ou pour toujours."
+	]
+	quest.0D3B9E427A996C6C.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.0D3B9E427A996C6C.title: "Cartouche Portail à clé"
 	quest.0D7BD49CCA0CD53D.quest_desc: [
 		"3 blocs en ligne : 6 dalles (ou le tailleur de pierre). Dalles, escaliers et murets ne flottent pas et coupent les colonnes de bulles."
 	]
+	quest.0D7BD49CCA0CD53D.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.0D7BD49CCA0CD53D.title: "Dalle en plastique jaune"
 	quest.0DEA2F4B09B1E78E.quest_desc: [
 		"Éclats de prismarine, vitres bleu clair et un coffre : 4 Points de déclenchement. Un cube de verre flottant que le pion traverse sans dépenser de pas : virages, bifurcations et détours gratuits. Son rôle ne se déclenche jamais à l'arrivée, sauf Stop et Boutique."
 	]
+	quest.0DEA2F4B09B1E78E.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.0DEA2F4B09B1E78E.title: "Point de déclenchement"
 	quest.0E8F42A3F191C38B.quest_desc: [
-		"Cartouche + piston. Le pion qui s'y arrête repart de 1 à 6 cases en avant (vert) ou en arrière (rose). Accroupi + molette, cartouche en main, règle le nombre et le sens."
+		"Cartouche + piston. Le pion qui s'y arrête repart de 1 à 6 cases en avant (vert) ou en arrière (rose) : un Pétaroule arrive, explose derrière lui ou le percute. Accroupi + molette, cartouche en main, règle le nombre et le sens."
 	]
+	quest.0E8F42A3F191C38B.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.0E8F42A3F191C38B.title: "Cartouche Avancer / Reculer"
 	quest.0ED330980267EDAF.quest_desc: [
 		"Vous avez les bases. Ensuite : construire un plateau (Le jeu de plateau), puis explorer les autres chapitres dans l'ordre que vous voulez."
 	]
 	quest.0ED330980267EDAF.title: "Prêt pour la fête"
+	quest.0F50802FC9CCED0C.quest_desc: [
+		"Un bâton, de la redstone et une plume, en diagonale. Le pinceau peint les liens entre les cases et montre le plateau tant que vous le tenez."
+	]
+	quest.0F50802FC9CCED0C.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.0F50802FC9CCED0C.title: "Pinceau lieur de tuiles"
+	quest.0FA4F07B394DBDE0.quest_desc: [
+		"Maintenez Saut pour charger un souffle, relâchez : la bulle file là où vous regardez. ZQSD la font dériver lentement. Des souffles trop rapprochés la tendent (elle gonfle, rosit et grince) jusqu'à ce qu'elle éclate. Frappez ou accroupissez-vous pour sortir : vous tombez en douceur."
+	]
+	quest.0FA4F07B394DBDE0.title: "Pilote de bulle"
 	quest.0FC0569B81622F76.quest_desc: [
 		"Mélangez les fragments comme des colorants : vert + blanc. On récupère autant de fragments qu'on en a mis."
 	]
+	quest.0FC0569B81622F76.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.0FC0569B81622F76.title: "Fragment d'étoile vert clair"
 	quest.101F5B0C2C547670.quest_desc: [
-		"Clic droit pour choisir son mode : étape suivante, recommencer l'étape, étape précédente. Une impulsion redstone l'applique à la partie la plus proche (64 blocs), ou à un mini-jeu s'il est lié à sa page."
+		"Un sablier : clic droit pour le dresser (Suivant) ou le coucher (Rejouer). Une impulsion redstone sur Suivant passe ce que la partie attend : un tour pas encore lancé, une cloche qui retient, la manche d'essai ; pendant un mini-jeu, elle le termine avec les places des podiums. Sur Rejouer, le joueur rejoue après ce tour, ou la manche recommence."
+		"Reliez-le au Pinceau lieur à n'importe quel élément d'une partie (case, Party Controller, Contrôleur de mini-jeu, podium...), même très loin ; sinon il pilote la partie la plus proche à 64 blocs."
 	]
+	quest.101F5B0C2C547670.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.101F5B0C2C547670.title: "Contrôleur de pas"
 	quest.10373F304237AA4E.quest_desc: [
 		"6 blocs en escalier : 4 escaliers."
 	]
+	quest.10373F304237AA4E.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.10373F304237AA4E.title: "Escalier en béton poli bleu clair"
 	quest.10428E9FDADB4DDF.quest_desc: [
 		"Un plot en plastique rose + papier + redstone : 4 cartes. La carte Répéter suivante reprend d'ici."
 		"Les cartes se posent dans les 24 emplacements de l'onglet Programme et se lisent de gauche à droite."
 	]
+	quest.10428E9FDADB4DDF.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.10428E9FDADB4DDF.title: "Carte de partie : Début de séquence"
 	quest.10458D4F11AF735B.quest_desc: [
 		"3 blocs en ligne : 6 dalles."
 	]
+	quest.10458D4F11AF735B.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.10458D4F11AF735B.title: "Dalle en béton poli bleu clair"
 	quest.104F2426E5EBE598.quest_desc: [
-		"Le contrôleur ne crée ni pièce ni étoile : il paie les gains des mini-jeux depuis des coffres. Mettez une Cartouche d'inventaire liée à un coffre dans la case banque de l'onglet Gains, et remplissez le coffre des pièces et étoiles de la partie (Étoiles de fête par défaut)."
+		"Rien ne naît de rien : le contrôleur ne crée ni pièce ni étoile. Le bouton Banque de l'onglet Gains ouvre ses 27 emplacements (les entonnoirs marchent aussi) ; remplissez-les des pièces et étoiles de la partie. Les gains, les étoiles vendues, les faces Pièces, les pots et les cases sans coffre sont payés de là, et les amendes y retournent."
+		"Une Cartouche d'inventaire à côté du bouton Banque y ajoute ses coffres liés."
 	]
-	quest.104F2426E5EBE598.title: "Le coffre des gains"
+	quest.104F2426E5EBE598.title: "Remplir la banque"
 	quest.114B635016EE5B45.quest_desc: [
 		"4 blocs d'une couleur et 2 bâtons en plastique : 3 barrières. Elles se relient entre elles et portent les panneaux routiers."
 	]
+	quest.114B635016EE5B45.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.114B635016EE5B45.title: "Barrière en plastique orange"
 	quest.123B0FCCF856E8AB.quest_desc: [
 		"Lâché par une Mula bleu quand elle éclate."
 	]
 	quest.123B0FCCF856E8AB.title: "Fragment d'étoile bleu"
+	quest.12D10278EDD127AE.quest_desc: [
+		"Deux Glandouilles calmes qui se croisent grimpent l'un sur l'autre, jusqu'à 5. Clic droit main vide sur l'un pour le porter avec ceux du dessus, clic droit sur un autre pour les empiler, clic gauche pour lancer celui du bas. Frappez-en un au milieu d'une tour : il part comme un missile."
+	]
+	quest.12D10278EDD127AE.title: "Tour de Glandouilles"
 	quest.12DD5B229D31EBED.quest_desc: [
 		"Mettez deux cartouches différentes dans une Tuile avancée et alimentez-la : la case change de rôle, de couleur et de destinations avec le signal. Un comparateur ou un compteur redstone fait des cases qui changent à chaque tour."
 	]
@@ -221,41 +334,67 @@
 	]
 	quest.12EC9CFFA8E18C18.title: "Plombier"
 	quest.137ABC52300C1CE9.quest_desc: [
-		"Remplissez l'anneau de 1 à 12 faces (la taille de la pile est le poids), les 4 emplacements de fragments de 4 couleurs différentes (le noir n'est jamais consommé), et des faces vierges. Cliquez le noyau : FORGER ! Un dé toutes les 5 s."
+		"Remplissez l'anneau de 1 à 12 faces (la taille de la pile est le poids), les 5 emplacements de fragments de 5 couleurs différentes (le noir peut se répéter et n'est jamais consommé), et des faces vierges. Cliquez la flèche entre les faces vierges et le dé : FORGER ! Un dé toutes les 5 s."
 	]
 	quest.137ABC52300C1CE9.title: "Votre propre dé"
 	quest.13E6F42BB1F3D4AC.quest_desc: [
-		"Une Étoile de fête entourée de 4 blocs de lapis-lazuli. Son seul usage : la tête de la Baguette de pions."
+		"Une Party Star entourée de 4 blocs de lapis-lazuli (l'étoile : voir Mulas et étoiles). Son seul usage : la tête de la Baguette de pions."
 	]
+	quest.13E6F42BB1F3D4AC.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.13E6F42BB1F3D4AC.title: "Boule de cristal en lapis"
 	quest.13F7D62B117D88BF.quest_desc: [
 		"Un enchantement trésor, uniquement pour la baguette : dans les coffres de manoir, ou lâché par les évocateurs et illusionnistes tués par un joueur. Il permet de redimensionner le pion de n'importe qui et d'exclure n'importe quel pion d'une partie, comme un arbitre."
 	]
 	quest.13F7D62B117D88BF.title: "Maître du jeu"
+	quest.140D4DEEA26370A8.quest_desc: [
+		"Accroupi + clic droit main vide sur votre Frousseux : il s'assoit. Encore une fois : il s'endort et devient un bougeoir, un bloc qui éclaire et garde tout (couleur, nom, vie). Clic droit main vide dessus pour le réveiller. Cassé, il tombe en objet : un Frousseux n'est jamais perdu."
+	]
+	quest.140D4DEEA26370A8.title: "Bougeoir de Frousseux"
 	quest.1447F66898AC91E0.quest_desc: [
 		"Mélangez les fragments comme des colorants : rouge + vert (ou orange + noir). On récupère autant de fragments qu'on en a mis."
 	]
+	quest.1447F66898AC91E0.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.1447F66898AC91E0.title: "Fragment d'étoile marron"
 	quest.1569C7FE3FB27DB1.quest_desc: [
 		"Posez votre pion sur une case de départ : il s'y lie, flotte et regarde le joueur le plus proche. Clic droit main vide sur la case pour en devenir propriétaire. Seuls les pions liés entrent dans une partie."
 	]
 	quest.1569C7FE3FB27DB1.title: "Prendre sa place"
 	quest.1661B4C0B973F8ED.quest_desc: [
-		"Obsidienne pleureuse, 4 fragments d'étoile noirs et un noyau lourd. Posé, il attire tout à 8 blocs en orbite (pas de dégâts de chute dans le champ ; une armure complète en netherite résiste). Il alimente aussi la Forge à dés."
+		"Obsidienne pleureuse, 4 fragments d'étoile de n'importe quelle couleur et un noyau lourd. Posé, il attire tout à 8 blocs en orbite (pas de dégâts de chute dans le champ ; une armure complète en fer ou plus lourde résiste). Il alimente aussi la Forge à dés."
 	]
+	quest.1661B4C0B973F8ED.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.1661B4C0B973F8ED.title: "Noyau de gravité"
 	quest.169B6F8AE6D4D572.quest_desc: [
 		"Bottes en cuir + patte de lapin + 2 boules de slime, sans forme. Sauts enchaînés à moins de 1,5 s : le 2e est 1,5 fois plus haut, le 3e deux fois. Parfaits pour les mâts."
 	]
+	quest.169B6F8AE6D4D572.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.169B6F8AE6D4D572.title: "Chaussures de triple saut"
 	quest.174373BB4245951D.quest_desc: [
 		"6 briques en escalier : 4 escaliers."
 	]
+	quest.174373BB4245951D.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.174373BB4245951D.title: "Escalier en briques de terre cuite polie orange"
+	quest.1844358FDF98C72B.quest_desc: [
+		"Les Glandouilles vivent sous les arbres, par 2 à 4 : des jeunes verts, des vieux moussus dans les vieilles taïgas, des glacés dans les taïgas enneigées qui glissent comme des palets de curling. Approchez à moins de 4 blocs : il tape deux fois du pied et charge. Il ne blesse jamais : il bouscule, et étourdit un joueur 2 s. Regardez-en un pour valider la quête."
+	]
+	quest.1844358FDF98C72B.title: "Gland grognon"
+	quest.186792E8E005709E.quest_desc: [
+		"Hors de la colonne du Bulleur, une bulle éclate contre un bloc, un mob, une flèche, ou après 15 s immobile. Une boule de neige la pousse au lieu de l'éclater : un distributeur de boules de neige fait un canon à bulles. Un outil Toucher de soie la pousse sans jamais l'éclater."
+	]
+	quest.186792E8E005709E.title: "Canon à bulles"
+	quest.18BCF0FF3DA0DC75.quest_desc: [
+		"4 granulés de plastique autour d'un seau d'eau et de redstone (le seau est rendu vide). Marchez dessus : vous voilà dans une bulle de savon qui monte de 30 blocs (2 par niveau de signal redstone), puis flotte. Accroupi, on passe dessus sans être pris. Les mobs et les objets lâchés aussi."
+	]
+	quest.18BCF0FF3DA0DC75.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.18BCF0FF3DA0DC75.title: "Bulleur"
 	quest.18EC779BAD8C3C13.quest_desc: [
-		"Tailleur de pierre : 1 Tuile donne 2 petites tuiles (1x1). Quatre tuiles standard en carré 2x2 donnent une grande tuile (exactement 2x2 blocs). L'infobulle et l'icône indiquent la taille."
+		"Tailleur de pierre : 1 Tuile donne 2 petites tuiles (1x1) ; 2 petites redonnent une tuile standard à l'établi. Quatre tuiles standard en carré 2x2 donnent une grande tuile (exactement 2x2 blocs)."
 	]
 	quest.18EC779BAD8C3C13.title: "Petites et grandes tuiles"
+	quest.194C00CE411FD0CE.quest_desc: [
+		"Les Pétaroules roulent dans les puits de mine abandonnés (rarement) et les grottes sombres autour, toujours seuls. Sur des rails, ils suivent la voie comme un wagonnet. Grognon : il rugit quand on approche à moins de 3 blocs. Regardez-en un pour valider la quête."
+	]
+	quest.194C00CE411FD0CE.title: "Un wagonnet vivant"
 	quest.19A1A7E217DE13A3.quest_desc: [
 		"Les petits plus du mod, tous trouvés."
 	]
@@ -271,22 +410,40 @@
 	quest.19DDB0C5335E0D86.quest_desc: [
 		"Une Cartouche entourée de 4 papiers : 4 Pages de mini-jeu. Une page EST un mini-jeu : son titre, ses règles, son image, ses formats, ses tuyaux, ses résultats et sa zone."
 	]
+	quest.19DDB0C5335E0D86.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.19DDB0C5335E0D86.title: "Page de mini-jeu"
+	quest.1AE45F8A8581A1AD.quest_desc: [
+		"Nourri, allumé, refilé, et explosif sur le plateau."
+	]
+	quest.1AE45F8A8581A1AD.title: "Artificier"
 	quest.1BEF46FC4ACE5F48.quest_desc: [
 		"6 blocs de plastique de la couleur en deux colonnes : 6 tuyaux. Lié à une page, un tuyau de cette couleur a le rôle « Sortie »."
 	]
+	quest.1BEF46FC4ACE5F48.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.1BEF46FC4ACE5F48.title: "Tuyau jaune : Sortie"
+	quest.1C32C1531E31974E.quest_desc: [
+		"Les coups ne lui font rien. Sautez sur son chapeau : pouic ! Il s'aplatit et vous rebondissez ; le deuxième écrasement l'achève (le troisième pour un moussu) et il lâche 1 ou 2 glands. La poudre d'os sur un Glandouille peut aussi en donner un, au plus une fois par minute."
+	]
+	quest.1C32C1531E31974E.title: "Gland"
+	quest.1DDCEBDE63F41C2D.quest_desc: [
+		"Cartouche + le Dé du Mistigri, sans forme. Son butin quand il meurt : un dé aux 1, 2 et 3 maudits, deux fois chacun. En partie, un pion qui s'arrête sur sa case fait venir le Mistigri, qui se roule sur le dos et jongle avec son dé pipé : toute la partie voit une roulette de sentences, puis l'une tombe."
+	]
+	quest.1DDCEBDE63F41C2D.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.1DDCEBDE63F41C2D.title: "Cartouche Mistigri"
 	quest.1E5F2B0FBCFDA39D.quest_desc: [
 		"Face vierge + perle de l'Ender. Le pion du lanceur échange sa place avec celui d'un autre joueur, à son choix."
 	]
+	quest.1E5F2B0FBCFDA39D.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.1E5F2B0FBCFDA39D.title: "Face de dé Échange"
 	quest.1E702253EDB71ED3.quest_desc: [
 		"4 blocs polis en carré : 4 briques biseautées. Chaque brique a sa nuance, et un grand mur ne se répète jamais."
 	]
+	quest.1E702253EDB71ED3.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.1E702253EDB71ED3.title: "Briques de béton poli bleu clair"
 	quest.1EE3A5D49F8077F1.quest_desc: [
 		"6 blocs de plastique de la couleur en deux colonnes : 6 tuyaux. Lié à une page, un tuyau de cette couleur a le rôle « Équipe A »."
 	]
+	quest.1EE3A5D49F8077F1.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.1EE3A5D49F8077F1.title: "Tuyau bleu : Équipe A"
 	quest.1F2DCDEC85464F26.quest_desc: [
 		"Steve Party Maker transforme Minecraft en jeu de plateau : construisez un plateau de tuiles, transformez n'importe quel mob en pion, lancez les dés, jouez des mini-jeux et collectionnez les étoiles."
@@ -299,6 +456,7 @@
 	quest.1FAB526747142277.quest_desc: [
 		"Un Podium + un lingot de fer, sans forme. Seulement une apparence : c'est la hauteur de la colonne qui donne la place."
 	]
+	quest.1FAB526747142277.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.1FAB526747142277.title: "Podium d'argent"
 	quest.1FD5DF613F9840F0.quest_desc: [
 		"Mettez-y une Cartouche d'inventaire liée à un coffre (Clé), suspendez-la avec 2 ou 3 blocs d'air dessous, et frappez-la de la tête en sautant : elle lâche des objets du coffre. 2 coups, puis 3 s de recharge."
@@ -307,6 +465,7 @@
 	quest.203C683BC60BB2EA.quest_desc: [
 		"Des lingots d'or, de la terre cuite polie, un coffre et un éclat d'améthyste."
 	]
+	quest.203C683BC60BB2EA.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.203C683BC60BB2EA.title: "Boîte à butin"
 	quest.2059FF1EE20FE13D.quest_desc: [
 		"Onglet Formats : jeux en équipes (2 à 4 camps, « 1 contre tous », « 2 contre 2 »...), chacun pour soi ou tous ensemble. En partie, seule une page dont un format convient aux équipes du plateau peut être tirée. L'équipe A, ce sont les joueurs sur une case positive, l'équipe B ceux sur une case négative."
@@ -315,18 +474,22 @@
 	quest.209EEA42C80532A7.quest_desc: [
 		"Deux lignes de 3 : 6 murets."
 	]
+	quest.209EEA42C80532A7.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.209EEA42C80532A7.title: "Muret en briques de terre cuite polie orange"
 	quest.2107B23BC93CF590.quest_desc: [
 		"6 blocs de plastique de la couleur en deux colonnes : 6 tuyaux. Lié à une page, un tuyau de cette couleur a le rôle « Équipe B ». Les tuyaux violets et orange sont les équipes C et D."
 	]
+	quest.2107B23BC93CF590.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.2107B23BC93CF590.title: "Tuyau rouge : Équipe B"
 	quest.226EA47348D44FE3.quest_desc: [
-		"Module vierge + éclat d'écho. Le dé devient un bonus : utilisé une fois, à la place de ton lancer (tout autre dé revient à son lanceur)."
+		"Un Module de dé vierge entouré de 7 fragments d'étoile violets, avec un éclat d'écho au-dessus. Le dé devient un bonus : utilisé une fois, à la place de votre lancer (tout autre dé revient à son lanceur)."
 	]
+	quest.226EA47348D44FE3.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.226EA47348D44FE3.title: "Module bonus"
 	quest.2275C38C50DEE4C0.quest_desc: [
 		"Mélangez les fragments comme des colorants : gris + blanc. On récupère autant de fragments qu'on en a mis."
 	]
+	quest.2275C38C50DEE4C0.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.2275C38C50DEE4C0.title: "Fragment d'étoile gris clair"
 	quest.23960C8EFFCAEE1A.quest_desc: [
 		"Le socle peut compter un critère de scoreboard au lieu des arrivées : sauts, morts, éliminations... Par exemple 10 sauts, but par joueur, et des podiums contre le socle."
@@ -335,10 +498,12 @@
 	quest.23B52C759DD360F3.quest_desc: [
 		"6 verres : 6 tuyaux transparents. Lié à une page de mini-jeu, un tuyau en verre est pour les spectateurs."
 	]
+	quest.23B52C759DD360F3.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.23B52C759DD360F3.title: "Tuyau en verre"
 	quest.24109299821DBF96.quest_desc: [
 		"Mélangez les fragments comme des colorants : rouge + blanc. On récupère autant de fragments qu'on en a mis."
 	]
+	quest.24109299821DBF96.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.24109299821DBF96.title: "Fragment d'étoile rose"
 	quest.2512D1E030566DA6.quest_desc: [
 		"Lâché par une Mula vert quand elle éclate."
@@ -348,16 +513,26 @@
 		"Faites une case bleue (bonus) et une rouge (malus). Elles comptent : en partie, la couleur de la case sous chaque pion forme les équipes des mini-jeux."
 	]
 	quest.257DAAA6F776BD7D.title: "Bonus et malus"
+	quest.258F95E4E3F8CB04.quest_desc: [
+		"Clic droit dessus avec de la TNT ou une fusée : il engloutit la nouvelle charge et rend l'ancienne. Tenez-en une à moins de 5 blocs : il ouvre grand la gueule. Un Pétaroule chargé par un joueur ne disparaît plus."
+	]
+	quest.258F95E4E3F8CB04.title: "Nourris-le"
 	quest.25F6A5B53D501ECE.quest_desc: [
 		"Un piston tourné vers le bas qui s'étend sur la tête d'un villageois adulte l'écrase en un bloc qui garde le villageois dedans, vivant, avec environ 70 réactions. Cassez-le à la main (il supplie) pour le ramasser ; un piston collant le fait ressortir."
 	]
 	quest.25F6A5B53D501ECE.title: "Bloc de villageois"
-	quest.267711A12D93A0B2.quest_desc: [
-		"Une Tuile avec un comparateur, des lingots d'or et un coffre. Elle contient 16 cartouches : la puissance redstone reçue choisit l'active (puissance 0 = emplacement 1, puissance 1 = emplacement 2...)."
+	quest.263C5F0A947E29AD.quest_desc: [
+		"Cartouche d'inventaire + seau de lave, sans forme (le seau est rendu). En partie, un pion qui s'y arrête fait surgir un Trichaudron avec une tête par lot (1 à 5), pris dans les coffres liés ou la banque. Le joueur frappe une tête, à l'aveugle par défaut, et cette tête lui crache son lot."
 	]
+	quest.263C5F0A947E29AD.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.263C5F0A947E29AD.title: "Cartouche Trichaudron"
+	quest.267711A12D93A0B2.quest_desc: [
+		"2 dalles de plastique jaune, une plaque de pression légère, un coffre piégé et 2 cartouches : une Tuile avancée qui les contient. Elle en prend 16 : la puissance redstone reçue choisit l'active (puissance 0 = emplacement 1, puissance 1 = emplacement 2...)."
+	]
+	quest.267711A12D93A0B2.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.267711A12D93A0B2.title: "Tuile avancée"
 	quest.26EF608BF2CC42FA.quest_desc: [
-		"Clic droit : le dé part au-dessus du mob le plus proche (accroupi : du joueur le plus proche) et tourne. Frappez-le pour l'arrêter. Le résultat s'affiche dans le chat."
+		"Clic droit : le dé part au-dessus du mob le plus proche (accroupi : du joueur le plus proche) et tourne. Frappez-le pour l'arrêter. Le résultat s'affiche au-dessus de la barre d'inventaire."
 	]
 	quest.26EF608BF2CC42FA.title: "Lancez-le !"
 	quest.272DDEDA8986AF7E.quest_desc: [
@@ -372,35 +547,64 @@
 		"Un plot en plastique vert clair + papier + redstone : 4 cartes. Un mini-jeu du catalogue."
 		"Les cartes se posent dans les 24 emplacements de l'onglet Programme et se lisent de gauche à droite."
 	]
+	quest.27B5092765B1742F.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.27B5092765B1742F.title: "Carte de partie : Mini-jeu"
 	quest.27E0EE1DE702627E.quest_desc: [
 		"Trois Dés par défaut, ou un Dé double + un Dé par défaut. Trois dés liés : 3 à 30."
 	]
+	quest.27E0EE1DE702627E.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.27E0EE1DE702627E.title: "Dé triple"
 	quest.280705EA919A80DA.quest_desc: [
 		"Un cochon en céramique avec une Cartouche d'inventaire : chaque impulsion donne (ou prend) ses objets à une cible : le joueur du tour, les gagnants du mini-jeu, tout le monde ou le plus proche. En mode « tous les objets », c'est tout ou rien : de quoi vendre une étoile contre des pièces."
 	]
+	quest.280705EA919A80DA.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.280705EA919A80DA.title: "Tirelire"
-	quest.2ABA40709E3044BA.quest_desc: [
-		"Du fer, du verre, des pieds de champignon, du papier et de la redstone. Posé dans l'arène, il reçoit la page du mini-jeu. Sa lampe est rouge (repos), orange (manche d'essai) ou verte (en jeu). Un comparateur lit son état."
+	quest.2843C6B391C3BB10.quest_desc: [
+		"Cartouche + Nid de pie, sans forme. Une case Pot commun, couleur paille. Cliquez un Nid de pie avec la cartouche (ou peignez de la case jusqu'à lui au Pinceau lieur) pour le relier : ce nid EST le pot."
 	]
+	quest.2843C6B391C3BB10.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.2843C6B391C3BB10.title: "Cartouche Pot commun"
+	quest.29342BD8BA7FCED5.quest_desc: [
+		"Écrasés, plantés, empilés et mis sur le plateau."
+	]
+	quest.29342BD8BA7FCED5.title: "Gardien des glands"
+	quest.2AB220E13F0C50C3.quest_desc: [
+		"Lancez un gland à 12 blocs de lui au plus : il oublie tout, même sa colère, et joue avec pendant 30 s à une minute."
+	]
+	quest.2AB220E13F0C50C3.title: "Pelote de laine"
+	quest.2ABA40709E3044BA.quest_desc: [
+		"Du papier, du verre et une torche de redstone au-dessus de lingots d'or et d'un tuyau de mini-jeu (n'importe lequel), sur 3 lingots de fer. Posé dans l'arène, il reçoit la page du mini-jeu. Sa lampe est rouge (repos), orange (manche d'essai) ou verte (en jeu). Un comparateur lit son état."
+	]
+	quest.2ABA40709E3044BA.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.2ABA40709E3044BA.title: "Contrôleur de mini-jeu"
 	quest.2B3995C665E08E2E.quest_desc: [
 		"Vous savez mener une partie entière, et la piloter à la redstone."
 	]
 	quest.2B3995C665E08E2E.title: "Maître de cérémonie"
+	quest.2B5EA72645901420.quest_desc: [
+		"Deux bulles occupées qui se touchent fusionnent en une plus grosse (8 passagers au plus). Le pilotage est partagé : les touches de chacun comptent, et des poussées opposées s'annulent."
+	]
+	quest.2B5EA72645901420.title: "À deux dans la bulle"
 	quest.2BAA43480CA56926.quest_desc: [
 		"Un lingot d'or sur deux barreaux de fer, en colonne. Empilez autant de segments que vous voulez sur le socle."
 	]
+	quest.2BAA43480CA56926.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.2BAA43480CA56926.title: "Mât d'arrivée"
 	quest.2BD1848C751D2C08.quest_desc: [
 		"Boule de cristal en lapis, bloc d'or et bâton de Blaze, en colonne. Une baguette dorée à orbe de lapis."
 	]
+	quest.2BD1848C751D2C08.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.2BD1848C751D2C08.title: "Baguette de pions"
 	quest.2CC4E00732BE3C9B.quest_desc: [
-		"Livre et plume + carte + horloge + disque « otherside », sans forme. Contient 91 pages. Posez-le dans le Contrôleur de fête : la roulette y tire les mini-jeux."
+		"Livre et plume + carte + horloge + disque « otherside », sans forme. Contient 91 pages. Posez-le dans le Party Controller : la roulette y tire les mini-jeux."
 	]
+	quest.2CC4E00732BE3C9B.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.2CC4E00732BE3C9B.title: "Catalogue de mini-jeux"
+	quest.2CE0BF8C6935F2C0.quest_desc: [
+		"3 bâtons + 1 plume, sans forme (les pies lâchent des plumes). Un nid de brindilles tressées : 27 emplacements de 256 pièces ou objets brillants chacun. Clic droit pour y mettre la pile (accroupi : un seul), main vide pour reprendre le dernier. Les entonnoirs le remplissent et le vident, un comparateur le lit, et une pile de pièces monte du nid."
+	]
+	quest.2CE0BF8C6935F2C0.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.2CE0BF8C6935F2C0.title: "Nid de pie"
 	quest.2D64151C55086784.quest_desc: [
 		"Vous avez construit, joué et collectionné tout ce que Steve Party Maker propose. Merci d'avoir joué la bêta !"
 	]
@@ -409,11 +613,17 @@
 	quest.2E1EFBCB9519EEE1.quest_desc: [
 		"6 blocs de plastique d'une couleur en deux colonnes : 6 tuyaux opaques (16 couleurs). Un tuyau posé contre un autre (ou devant son embouchure) s'y raccorde."
 	]
+	quest.2E1EFBCB9519EEE1.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.2E1EFBCB9519EEE1.title: "Tuyau vert clair"
 	quest.2E754E69CDD7EF1A.quest_desc: [
-		"Cartouche + coffre. Elle retient jusqu'à 8 coffres (clic droit dessus) et donne ou prend des objets : objets positifs = case bonus (bleue), négatifs = case malus (rouge), vide = case objet (orange). La molette règle les quantités."
+		"Cartouche + coffre. Elle retient jusqu'à 8 coffres (clic droit dessus) et donne ou prend des objets : objets positifs = case bonus (bleue), négatifs = case malus (rouge), vide = case objet (orange). La molette règle les quantités. Sans coffre, en partie, elle puise dans la banque du Party Controller."
 	]
+	quest.2E754E69CDD7EF1A.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.2E754E69CDD7EF1A.title: "Cartouche d'inventaire"
+	quest.2EE9B60E92035305.quest_desc: [
+		"Sellez-le dans son écran, comme un cheval. Jusqu'à 3 joueurs s'assoient sur le rebord, chacun tient une tête : les touches de tous s'additionnent. La lave est son carburant (clic avec un seau de lave, monté). Cliquez pour que votre tête crache ; maintenez Saut pour un bond propulsé par la vapeur."
+	]
+	quest.2EE9B60E92035305.title: "Trois cavaliers"
 	quest.2EF12416B1262A81.quest_desc: [
 		"Clic droit sur un mob avec la baguette (ou lancez-lui une flammèche), puis dessinez un cercle autour de lui à la souris. Sur le guide : pion d'un bloc ; deux fois plus grand : 2 blocs ; plus petit : jusqu'à 0,25."
 		"Le mob devient une figurine immobile, muette et invulnérable, dont vous êtes le propriétaire."
@@ -428,12 +638,14 @@
 	]
 	quest.2F86298582A1E025.title: "Collectionneur de dés"
 	quest.3015D9B1FF57C11A.quest_desc: [
-		"Face vierge + œil d'araignée fermenté. Un module négatif : le pion recule, et les pièces gagnées sont perdues."
+		"Un Module de dé vierge entouré de 7 fragments d'étoile rouges, avec un œil d'araignée fermenté au-dessus. Un module négatif : le pion recule, et les pièces gagnées sont perdues."
 	]
+	quest.3015D9B1FF57C11A.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.3015D9B1FF57C11A.title: "Module de dé : Inversé"
 	quest.308B809C31445486.quest_desc: [
 		"3 briques en ligne : 6 dalles."
 	]
+	quest.308B809C31445486.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.308B809C31445486.title: "Dalle en briques de terre cuite polie orange"
 	quest.30B76A9DDAC3BA6B.quest_desc: [
 		"Au crépuscule, une pleine lune a 25 % de chances d'apporter une Éphéméride : 6 vagues d'étoiles filantes basses au-dessus de chaque joueur, puis un groupe de 3 à 5 Mulas descend là où elles sont allées. Une Forge à dés au niveau maximal la garantit à chaque pleine lune."
@@ -442,27 +654,33 @@
 	quest.30E06C6BD698E571.quest_desc: [
 		"9 fragments d'une couleur : un bloc lumineux, translucide, de plasma animé (16 couleurs, 12 variantes chacune). Le noir est une nuit étoilée. Il attire les Mulas curieuses."
 	]
+	quest.30E06C6BD698E571.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.30E06C6BD698E571.title: "Bloc de fragments d'étoile bleus"
 	quest.33F2B84D658F752B.quest_desc: [
-		"Cartouche + émeraude + pépite d'or. Un pion qui s'y arrête (ou qui passe un Point de déclenchement qui la porte) ouvre à son joueur la boutique du Marchand en carton le plus proche. Voir le chapitre Boutiques."
+		"Une Cartouche d'inventaire + un bandana volé à un Marchand en carton (voir Boutiques). Un pion qui s'y arrête (ou qui passe un Point de déclenchement qui la porte) fait sortir un Marchand en carton pour son joueur. Ses offres (9 au plus) se règlent dans le petit étal de la cartouche ; la marchandise vient de ses coffres liés, sinon de la banque du Party Controller."
 	]
+	quest.33F2B84D658F752B.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.33F2B84D658F752B.title: "Cartouche Boutique"
 	quest.345F2775C4F5745A.quest_desc: [
 		"Des boutons en pierre, de l'or, un coffre et du fer. Les paiements arrivent dans les caisses liées ; chaque vente envoie une impulsion redstone. Se récupère avec une pioche en fer."
 	]
+	quest.345F2775C4F5745A.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.345F2775C4F5745A.title: "Caisse enregistreuse"
 	quest.346595A5E4D15B1C.quest_desc: [
 		"9 planches identiques : 2 grands panneaux en bois, sur poteau, suspendus ou à plat."
 	]
+	quest.346595A5E4D15B1C.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.346595A5E4D15B1C.title: "Grand panneau en bois"
 	quest.3476803BD17DBC9E.quest_desc: [
 		"Un plot en plastique orange + papier + redstone : 4 cartes. Fait sonner les Cloches réglées sur Événement ; le canal est la taille de la pile."
 		"Les cartes se posent dans les 24 emplacements de l'onglet Programme et se lisent de gauche à droite."
 	]
+	quest.3476803BD17DBC9E.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.3476803BD17DBC9E.title: "Carte de partie : Événement"
 	quest.35120B4602A51333.quest_desc: [
 		"Deux lignes de 3 : 6 murets."
 	]
+	quest.35120B4602A51333.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.35120B4602A51333.title: "Muret en terre cuite polie orange"
 	quest.35237C08B4821CCD.quest_desc: [
 		"Des entonnoirs dessus et sur les côtés remplissent la forge, un entonnoir dessous sort les dés. Alimentée en redstone, elle repart seule une fois réapprovisionnée. Un comparateur lit la sortie."
@@ -475,14 +693,16 @@
 	quest.366E43B34F9C7D7E.quest_desc: [
 		"Planches et bâtons (PPP / PPP / S S) : 2 chevalets, dans n'importe quel bois, mods compris. Se pose au sol."
 	]
+	quest.366E43B34F9C7D7E.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.366E43B34F9C7D7E.title: "Chevalet"
 	quest.3817AA11E5F4EFA0.quest_desc: [
 		"Votre ligne d'arrivée est prête : sautez, marquez, gagnez."
 	]
 	quest.3817AA11E5F4EFA0.title: "But !"
 	quest.385B95560FE8A09B.quest_desc: [
-		"Cartouche + teinture vert clair. Une case de départ : un pion posé dessus s'y lie, flotte et lui donne sa couleur. Le Contrôleur de fête ne prend que les pions liés à une case de départ."
+		"Cartouche + teinture vert clair. Une case de départ : un pion posé dessus s'y lie, flotte et lui donne sa couleur. Le Party Controller ne prend que les pions liés à une case de départ."
 	]
+	quest.385B95560FE8A09B.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.385B95560FE8A09B.title: "Cartouche de départ"
 	quest.38DC8F88EE22AE2C.quest_desc: [
 		"Un tuyau qui rentre dans un bloc solide est un bout bouché : il vous téléporte vers l'embouchure la plus proche de la même couleur, à moins de 100 blocs. Tuyaux opaques et à hublot d'une même couleur comptent comme une seule couleur."
@@ -491,30 +711,53 @@
 	quest.3B5CBE11E9AEFBBE.quest_desc: [
 		"6 blocs de plastique de la couleur en deux colonnes : 6 tuyaux. Lié à une page, un tuyau de cette couleur a le rôle « Entrée »."
 	]
+	quest.3B5CBE11E9AEFBBE.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.3B5CBE11E9AEFBBE.title: "Tuyau noir : Entrée"
 	quest.3E137565F331C99C.quest_desc: [
 		"6 verres teintés d'une couleur : 6 tuyaux en verre teinté (16 couleurs)."
 	]
+	quest.3E137565F331C99C.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.3E137565F331C99C.title: "Tuyau en verre teinté magenta"
+	quest.3F2D0BF6F9D5D9F1.quest_desc: [
+		"Un Module de dé vierge entouré de 7 fragments d'étoile roses, avec de la TNT au-dessus. Le dé explose en disparaissant : il blesse et repousse tout le monde autour, lanceur compris."
+	]
+	quest.3F2D0BF6F9D5D9F1.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.3F2D0BF6F9D5D9F1.title: "Module de dé : Pétard"
 	quest.3F4EF27EE42BEC9C.quest_desc: [
 		"Face vierge + Pièce : une face Pièces +1 (tailleur de pierre pour +2 à +10). Au lieu d'avancer, le lanceur gagne autant de pièces de la partie."
 	]
+	quest.3F4EF27EE42BEC9C.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.3F4EF27EE42BEC9C.title: "Face de dé Pièces +1"
+	quest.3F68A81D8A5CA07D.quest_desc: [
+		"Une torche de redstone, des pépites d'or, une vitre et un bouton en pierre. Accroupi + clic sur un Contrôleur de mini-jeu pour la lier : hors partie, elle lance ou arrête ce mini-jeu à distance ; en partie, elle dit si vous êtes prêt pour la vraie manche."
+	]
+	quest.3F68A81D8A5CA07D.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.3F68A81D8A5CA07D.title: "Télécommande de mini-jeu"
 	quest.405FC7652C003313.quest_desc: [
 		"Des dés sur mesure, un noyau au plus haut et des Mulas qui dansent autour."
 	]
 	quest.405FC7652C003313.title: "Maître forgeron"
+	quest.40EEE1A3FDE98A1B.quest_desc: [
+		"Passer devant lui donne Malchance pendant 1 minute ; le frapper, 2 minutes (il se fâche, mais ne se bat jamais). Il fait tomber les objets des cadres et fait la sieste sur les coffres, qui ne s'ouvrent plus tant qu'on ne le réveille pas avec du poisson cru."
+	]
+	quest.40EEE1A3FDE98A1B.title: "Ne croisez pas son chemin"
 	quest.42057F6E6F797B1D.quest_desc: [
 		"Atterrissez au sommet d'un mât : « +1 ♥ », une vie bonus : un cœur doré pendant 10 s, aucun dégât de chute, et vous voilà tête en bas. Chaque arrivée marque un point pour le socle."
 	]
 	quest.42057F6E6F797B1D.title: "Vie bonus !"
+	quest.422060BE55D3D1D7.quest_desc: [
+		"Clic droit dessus avec des seaux vides : 1 seau de lave à chaque fois (jusqu'à 27), sans le fâcher. Seul quelqu'un qui l'a vidé peut l'apprivoiser : montez dessus main vide. Il cède (70 % vide, jamais plein, +10 % par essai raté) ou vous éjecte."
+	]
+	quest.422060BE55D3D1D7.title: "Vider et apprivoiser"
 	quest.423032099703F693.quest_desc: [
 		"Un bloc de plastique au-dessus de granulés de plastique : 2 panneaux routiers de la couleur du bloc. La Clé change la plaque : ronde, carrée, losange, triangle, étoile, cœur. Sans poteau, il flotte."
 	]
+	quest.423032099703F693.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.423032099703F693.title: "Panneau routier en plastique"
 	quest.42C4E05F055ED63B.quest_desc: [
-		"Une Étoile de fête en haut, de l'obsidienne, un haut fourneau et un lingot de netherite. Elle grave des dés avec les faces et les poids que vous choisissez, en boucle, à la main, par entonnoirs ou à la redstone."
+		"Une Party Star en haut, de l'obsidienne, un haut fourneau et un lingot de netherite. Elle grave des dés avec les faces et les poids que vous choisissez, en boucle, à la main, par entonnoirs ou à la redstone."
 	]
+	quest.42C4E05F055ED63B.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.42C4E05F055ED63B.title: "Forge à dés"
 	quest.42D5C0FDC568C5B3.quest_desc: [
 		"Votre pion attend sur sa case de départ. À vous les dés !"
@@ -524,6 +767,7 @@
 		"De l'or, une torche de redstone, un coffre et un éclat d'améthyste. Donnez-lui une cartouche dont les destinations sont les cases à piloter : sa redstone remplace la leur (un levier change tout un plateau)."
 		"Un comparateur dessus capte ce qui se passe sur ses cases : 14 bonus, 13 malus, 10 Stop, 8 Téléportation, 1 un pion passe..."
 	]
+	quest.43758D7B5C5F556E.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.43758D7B5C5F556E.title: "Routeur redstone de cases"
 	quest.44A6CEA198F3D329.quest_desc: [
 		"Toutes les recettes du mod se lisent dans un visualiseur de recettes (REI ou EMI) si le pack en a un : il montre aussi chaque tuile avec sa cartouche."
@@ -537,19 +781,35 @@
 	quest.476FD02CC564638E.quest_desc: [
 		"3 blocs en ligne : 6 dalles."
 	]
+	quest.476FD02CC564638E.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.476FD02CC564638E.title: "Dalle en terre cuite polie orange"
+	quest.480DEBADCC26795B.quest_desc: [
+		"Cartouche + bougie, sans forme. En partie, un pion qui s'y arrête fait venir un Frousseux : son joueur choisit une victime, le Frousseux file la voler (pièces ou étoiles, réglé dans son menu) et rapporte le butin. Avec la défense, la victime a 7 secondes pour le frapper : chaque coup en rend une partie."
+	]
+	quest.480DEBADCC26795B.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.480DEBADCC26795B.title: "Cartouche Frousseux"
 	quest.486B21C664042E3A.quest_desc: [
 		"Un fragment d'étoile (n'importe quelle couleur), un lingot d'or et une pépite d'or, en colonne. Clic droit sur le marchand pour la lier (le premier devient propriétaire), puis sur chaque bloc : étal, coffres de stock, caisses."
 	]
+	quest.486B21C664042E3A.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.486B21C664042E3A.title: "Clé du Marchand"
 	quest.48EDC9CAA41959B9.quest_desc: [
 		"Lâché par une Mula violet quand elle éclate."
 	]
 	quest.48EDC9CAA41959B9.title: "Fragment d'étoile violet"
+	quest.49297133DC9D18C2.quest_desc: [
+		"Un fragment de chaque : bleu, vert, jaune, rouge et violet (ou 5 fragments noirs), sans forme. Toujours brillante. C'est l'Étoile par défaut d'une partie, et elle entre dans la Cartouche Étoile, la Boule de cristal en lapis, la Forge à dés et les tuyaux de mini-jeu en fer et en or."
+	]
+	quest.49297133DC9D18C2.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.49297133DC9D18C2.title: "Party Star"
 	quest.4973F5A913628816.quest_desc: [
 		"Clic droit sur une Mula sauvage avec un fragment d'étoile de sa couleur : 1 chance sur 3. Apprivoisée, elle flotte au-dessus de vous comme un ballon et tourne autour de votre tête quand vous restez immobile."
 	]
 	quest.4973F5A913628816.title: "Meilleure amie"
+	quest.49A1A95AD39CC7A6.quest_desc: [
+		"Une teinture sur une tuile colore sa cartouche ; sur un Point de déclenchement, tout le cube. Une poche d'encre luisante fait briller la tuile ou le cube en pleine lumière, une poche d'encre l'éteint. Une éponge enlève la teinture. L'objet de la tuile garde tout."
+	]
+	quest.49A1A95AD39CC7A6.title: "Couleurs et lueur"
 	quest.49C4BD610323C14F.quest_desc: [
 		"Un Noyau de gravité posé ne monte pas et ne peut pas exploser : une attraction fixe et sûre. Manège à poules, ramasse-objets..."
 	]
@@ -557,7 +817,7 @@
 	quest.4A7A5955A37DF6B0.quest_desc: [
 		"Clic droit sur une embouchure, accroupissez-vous devant, ou tombez dedans : vous filez dans le tuyau et ressortez par une autre extrémité du réseau, au hasard. Mobs, pions et objets passent aussi."
 	]
-	quest.4A7A5955A37DF6B0.title: "Wahoo !"
+	quest.4A7A5955A37DF6B0.title: "Fiouuu !"
 	quest.4A9446B6E9669567.quest_desc: [
 		"Clic droit : cinq onglets (État, Joueurs, Programme, Gains, Réglages). L'onglet État liste ce qui manque avant que « Lancer la partie » s'allume. Un « ! » sur un onglet montre quoi régler."
 	]
@@ -571,7 +831,7 @@
 	]
 	quest.4BD97BC245ABD3F0.title: "Peindre un mur"
 	quest.4BE7B23596D212E5.quest_desc: [
-		"Les 16 couleurs de fragments d'étoile, et votre propre Étoile de fête."
+		"Les 16 couleurs de fragments d'étoile, et votre propre Party Star."
 	]
 	quest.4BE7B23596D212E5.title: "Collectionneur d'étoiles"
 	quest.4C1ED42CA5A03E7A.quest_desc: [
@@ -583,16 +843,18 @@
 	]
 	quest.4C6E654F6972F00F.title: "Poser un module"
 	quest.4D740A8C8B416C56.quest_desc: [
-		"Face vierge + œil de l'Ender. Aux embranchements, le pion choisit tout seul, au hasard."
+		"Un Module de dé vierge entouré de 7 fragments d'étoile magenta, avec un œil de l'Ender au-dessus. Aux embranchements, le pion choisit tout seul, au hasard."
 	]
+	quest.4D740A8C8B416C56.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.4D740A8C8B416C56.title: "Module de dé : Tête chercheuse"
 	quest.4DC6FEBAF30A3370.quest_desc: [
 		"Votre boutique est ouverte, sur le plateau comme ailleurs."
 	]
 	quest.4DC6FEBAF30A3370.title: "Commerçant"
 	quest.4E3F2C32016B79DF.quest_desc: [
-		"Face vierge + charge de vent. Stop ou encore : après le résultat, gardez-le ou relancez, une fois par module."
+		"Un Module de dé vierge entouré de 7 fragments d'étoile orange, avec une charge de vent au-dessus. Stop ou encore : après le résultat, gardez-le ou relancez, une fois par module."
 	]
+	quest.4E3F2C32016B79DF.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.4E3F2C32016B79DF.title: "Module de dé : Relance"
 	quest.4F2AF3CC87A16DDE.quest_desc: [
 		"Appuyez sur « Jouer » sur le Contrôleur de mini-jeu (ou « Tester » dans l'éditeur de page) : tous les joueurs à 5 blocs d'un tuyau lié jouent, sans partie. Les résultats montrent ce que vaudrait chaque place, rien n'est payé, et tout le monde revient."
@@ -610,14 +872,19 @@
 		"Nourrie jusqu'à 40, la Mula grossit trois fois et éclate : 64 fragments d'étoile de sa couleur (une noire : 1). Elle part en étoile filante et renaît 100 à 400 blocs plus loin."
 	]
 	quest.51391531ACB06CD3.title: "Pop !"
+	quest.5146A65C1CB8AC6A.quest_desc: [
+		"Tirez ou lancez quelque chose depuis l'intérieur d'une bulle (flèche, boule de neige, potion...) : il laisse une traînée irisée, et la créature touchée se retrouve dans sa propre bulle."
+	]
+	quest.5146A65C1CB8AC6A.title: "Bullé !"
 	quest.51CDCA2A7EA71CA8.quest_desc: [
-		"Clé en main, le plateau apparaît : chevrons le long des liens, numéros de pas, « ? » aux bifurcations, « ! » aux impasses."
-		"Clic de Clé sur un Contrôleur de fête (ou /steveparty board check) : la liste des problèmes du plateau."
+		"Pinceau en main, le plateau apparaît : chevrons le long des liens, numéros de pas, « ? » aux bifurcations, « ! » aux impasses."
+		"Clic de Clé sur un Party Controller (ou /steveparty board check) : la liste des problèmes du plateau."
 	]
 	quest.51CDCA2A7EA71CA8.title: "Vue du plateau et diagnostic"
 	quest.51F269AB8B964D99.quest_desc: [
 		"Une croix de 5 planches : 2 panneaux. Pochoir + hache découpent la planche suivant le motif : une silhouette."
 	]
+	quest.51F269AB8B964D99.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.51F269AB8B964D99.title: "Panneau en bois découpé"
 	quest.52B016C6225E8428.quest_desc: [
 		"Tamponnez une case du plateau : elle prend la couleur de la teinture, motif plus foncé. Avec une cartouche dedans, c'est la cartouche qui garde le look. L'éponge mouillée l'efface."
@@ -626,15 +893,22 @@
 	quest.5322A5CC09B4DADC.quest_desc: [
 		"Deux tapis au-dessus de deux tonneaux ; les tapis donnent les couleurs de l'auvent. Chaque colonne est une offre (9 max) : la marchandise en haut, les prix 1 et 2 dessous. La marchandise n'est qu'un modèle : la vente prend le même objet dans les coffres liés."
 	]
+	quest.5322A5CC09B4DADC.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5322A5CC09B4DADC.title: "Étal du marchand"
 	quest.5392461055ABAF56.quest_desc: [
 		"Des lingots de fer, une dalle de pierre lisse et un bloc de fer. Insérez un pochoir et ouvrez l'éditeur : clic gauche découpe un pixel, clic droit le bouche. Votre bibliothèque garde jusqu'à 128 motifs, et apprend tous ceux que vous portez."
 	]
+	quest.5392461055ABAF56.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5392461055ABAF56.title: "Fabrique de pochoirs"
 	quest.540F65F4778F3FD7.quest_desc: [
 		"Béton bleu, plaque de pression en pierre, horloge, fer et redstone. Donnez-lui une Cartouche dont les destinations sont des blocs : sautez dessus et ils disparaissent, apparaissent ou basculent pour une durée réglable (horloge). Le plastique est basculable par défaut."
 	]
+	quest.540F65F4778F3FD7.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.540F65F4778F3FD7.title: "Interrupteur sauteur"
+	quest.54F196A1821033FE.quest_desc: [
+		"Très rarement, un choc violent fait s'envoler son chapeau. Sans lui, le Glandouille est timide et le cherche. Portez le chapeau, ou faites clic droit sur son propriétaire avec pour le lui rendre."
+	]
+	quest.54F196A1821033FE.title: "Chapeau de gland"
 	quest.55428C54977D8D69.quest_desc: [
 		"La Clé casse tout bloc de plastique d'un coup, même sous l'eau. Les cisailles sont rapides aussi."
 	]
@@ -647,62 +921,99 @@
 		"Des pions liés aux cases de départ, puis « Lancer la partie » (ou une impulsion redstone). Chacun lance un dé pour l'ordre, puis chaque manche = un tour par pion et un mini-jeu. Les étoiles, puis les pièces, désignent le gagnant."
 	]
 	quest.564863446D9C8AC2.title: "Que la fête commence !"
+	quest.56D37AB8E45CB7CF.quest_desc: [
+		"Une Pièce, une plaque de pression en pierre et de la ficelle, sans forme. Un bonus : pendant votre tour, avant de lancer, clic droit pour le poser sur la case où se tient votre pion. Vierge, il vole 10 pièces ; accroupi + clic droit pour choisir ce qu'il fait (pièces, recul, tour perdu, un objet) et le signer."
+		"Le prochain pion d'un autre joueur qui s'y arrête le déclenche, à votre profit."
+	]
+	quest.56D37AB8E45CB7CF.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.56D37AB8E45CB7CF.title: "Piège"
 	quest.5738F405CD1ABF02.quest_desc: [
 		"Des briques, un capteur sculk, du fer et de la redstone. Le socle compte les points des mâts empilés dessus. Il se règle à la Clé."
 	]
+	quest.5738F405CD1ABF02.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5738F405CD1ABF02.title: "Socle de mât d'arrivée"
 	quest.57714CCCE52A3BB1.quest_desc: [
 		"Un bloc de plastique donne 4 plots de sa couleur (4 plots en carré redonnent le bloc). Une petite pièce au sol, au mur ou au plafond, sans support."
 	]
+	quest.57714CCCE52A3BB1.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.57714CCCE52A3BB1.title: "Plot en plastique bleu"
 	quest.57CE1899FD49EB32.quest_desc: [
 		"Une longue-vue sur un lingot de cuivre, au-dessus de 3 bâtons. La nuit, ciel dégagé, regardez dedans : la molette rejoue les nuits d'étoiles filantes passées, à 1000 blocs. Gardez une étoile dans le viseur pour allumer une étoile guide au-dessus des Mulas."
 	]
+	quest.57CE1899FD49EB32.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.57CE1899FD49EB32.title: "Télescope"
 	quest.5806AB33C242D3BE.quest_desc: [
 		"Du cuir, des planches, un pochoir et un bâton. Il charge 9 pochoirs et 9 colorants (accroupi + clic droit). Accroupi + molette choisit le pochoir ou la couleur (G pour basculer), clic droit tamponne, panneaux, murs, tuiles et podiums compris."
 	]
+	quest.5806AB33C242D3BE.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5806AB33C242D3BE.title: "Marteau à pochoirs"
 	quest.58AD4044E1C5BEBD.quest_desc: [
 		"4 roches identiques (pierre, granite, ardoise des abîmes, grès...) : 1 pierre gravée. Le pochoir creuse vraiment le motif ; côte à côte, leurs sommets se soudent en un linteau."
 	]
+	quest.58AD4044E1C5BEBD.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.58AD4044E1C5BEBD.title: "Pierre gravée"
+	quest.597CC5EE9AFD84E4.quest_desc: [
+		"Du cuir, de la poudre de pierre lumineuse et un lingot de cuivre. Porté lampe allumée (G), il montre tout le plateau en permanence, les détails des cases proches et les chiffres exacts de celle que vous regardez."
+	]
+	quest.597CC5EE9AFD84E4.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.597CC5EE9AFD84E4.title: "Casque d'explorateur"
 	quest.598F31A259B60ADB.quest_desc: [
 		"Les deux familles dans toutes les formes, et les carrelages en damier."
 	]
 	quest.598F31A259B60ADB.title: "Maître bâtisseur"
 	quest.59BCFCAF6BA910B4.quest_desc: [
-		"6 lingots de fer, une Étoile de fête et le tuyau de mini-jeu en cuivre. Atteint toute la dimension."
+		"6 lingots de fer, une Party Star et le tuyau de mini-jeu en cuivre. Atteint toute la dimension."
 	]
+	quest.59BCFCAF6BA910B4.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.59BCFCAF6BA910B4.title: "Tuyau de mini-jeu en fer"
+	quest.5A1C048043D2611F.quest_desc: [
+		"Un bloc de verre au-dessus d'un Bulleur, à l'établi. Elle dit où apparaît la créature d'une case (Marchand en carton, Pétaroule, Mula, Frousseux, Glandouille, Mistigri, Trichaudron) et vers où elle regarde : reliez-la au Pinceau lieur, de la case vers la bulle. Clé : « Toujours visible » (la créature habite le plateau pendant une partie) et hauteur ; accroupi + Clé pour la tourner."
+	]
+	quest.5A1C048043D2611F.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.5A1C048043D2611F.title: "Bulle d'apparition"
+	quest.5A220F1629768E53.quest_desc: [
+		"Donnez-lui de la morue ou du saumon crus, un par un : il en faut 6 à 10. Apprivoisé, il vous suit partout, vous donne Chance à 16 blocs, et les monstres à 10 blocs de lui ratent un coup sur trois. Main vide : assis ou debout."
+	]
+	quest.5A220F1629768E53.title: "Un chat porte-bonheur"
 	quest.5A7CE62676D0F450.quest_desc: [
 		"Un Podium + un lingot d'or, sans forme. Seulement une apparence : c'est la hauteur de la colonne qui donne la place."
 	]
+	quest.5A7CE62676D0F450.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5A7CE62676D0F450.title: "Podium d'or"
 	quest.5B4767F40E06F23E.quest_desc: [
 		"Mélangez les fragments comme des colorants : noir + blanc. On récupère autant de fragments qu'on en a mis."
 	]
+	quest.5B4767F40E06F23E.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5B4767F40E06F23E.title: "Fragment d'étoile gris"
 	quest.5B628A39A4C798B1.quest_desc: [
 		"Pareil avec deux couleurs de béton poli. Toutes les paires de couleurs marchent ; l'objet garde ses couleurs dans son nom."
 	]
+	quest.5B628A39A4C798B1.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5B628A39A4C798B1.title: "Carrelage en béton poli"
 	quest.5C4295392DE2E5D1.quest_desc: [
 		"6 lingots de cuivre autour d'un papier. Cliquez-le avec une page : il devient l'entrée de ce mini-jeu hors partie, à 100 blocs. Les tuyaux de couleur reliés à lui envoient chaque joueur vers son rôle."
 	]
+	quest.5C4295392DE2E5D1.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5C4295392DE2E5D1.title: "Tuyau de mini-jeu en cuivre"
 	quest.5C6EDA264FC2653D.quest_desc: [
 		"6 blocs en escalier : 4 escaliers."
 	]
+	quest.5C6EDA264FC2653D.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5C6EDA264FC2653D.title: "Escalier en terre cuite polie orange"
 	quest.5DA080B1E3CBDCA8.quest_desc: [
 		"6 blocs de plastique de la couleur en deux colonnes : 6 tuyaux. Lié à une page, un tuyau de cette couleur a le rôle « Joueurs »."
 	]
+	quest.5DA080B1E3CBDCA8.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5DA080B1E3CBDCA8.title: "Tuyau vert : Joueurs"
 	quest.5DD0CA51D02BCCC0.quest_desc: [
 		"Un bâton, une boule de slime et un bol. Clic droit sur un mob pour le rendre muet ; encore une fois pour lui rendre sa voix."
 	]
+	quest.5DD0CA51D02BCCC0.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5DD0CA51D02BCCC0.title: "Ventouse"
+	quest.5DF43B3F6C9F0DC0.quest_desc: [
+		"Un Frousseux sauvage vole un objet brillant à un joueur à moins de 2 blocs et s'enfuit en ricanant. Avec un autre joueur près de là, il lui apporte l'objet et le lui laisse tomber aux pieds ! Une torche ou une lanterne en main vous protège. Les coups au corps à corps ne font rien (il disparaît et réapparaît) ; les projectiles, si."
+	]
+	quest.5DF43B3F6C9F0DC0.title: "Au voleur !"
 	quest.5E174C6DCB411FC0.quest_desc: [
 		"Lâché par une Mula noir quand elle éclate (un seul, et les Mulas noires sont rares)."
 	]
@@ -710,7 +1021,12 @@
 	quest.5E38267B9B2C3CF9.quest_desc: [
 		"4 bétons bleu clair en carré : 4 blocs polis (17 couleurs pour la terre cuite, 16 pour le béton). Le tailleur de pierre fait toutes les formes directement depuis le bloc vanilla."
 	]
+	quest.5E38267B9B2C3CF9.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5E38267B9B2C3CF9.title: "Béton poli bleu clair"
+	quest.5E498DCFAA8D5873.quest_desc: [
+		"Tenez des graines, n'importe lesquelles : les pies à 10 blocs ne fuient plus, viennent à vous par petits sauts et vous suivent. Les poussins aussi."
+	]
+	quest.5E498DCFAA8D5873.title: "Charmeur de pies"
 	quest.5E623F55BBE37FE9.quest_desc: [
 		"Encore des cisailles sur un marchand qui a déjà perdu son bandana : vous lui volez l'apparence de sa boîte. Portez-la comme un plastron ; accroupi, vous vous cachez dedans : immobile 2 s, vous devenez un vrai bloc."
 	]
@@ -723,47 +1039,89 @@
 	quest.5F62DDBD464BC0DA.quest_desc: [
 		"6 briques en escalier : 4 escaliers."
 	]
+	quest.5F62DDBD464BC0DA.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.5F62DDBD464BC0DA.title: "Escalier en briques de béton poli bleu clair"
 	quest.5FECE4CA8D043161.quest_desc: [
-		"Marchand, étal, un coffre de stock et une caisse, tous liés avec la clé ; une offre sur l'étal et du stock dans le coffre. Les clients font clic droit sur le marchand et achètent. La boutique du propriétaire est protégée."
+		"Marchand, étal, un coffre de stock et une caisse, tous liés avec la clé ; une offre sur l'étal et du stock dans le coffre. Les clients font clic droit sur le marchand : son écran en carton montre les offres en cartes (prix → objet ; en rouge si on ne peut pas payer, barrée si épuisée). La boutique du propriétaire est protégée."
 	]
 	quest.5FECE4CA8D043161.title: "Ouvert !"
+	quest.6044441CFBBF75EE.quest_desc: [
+		"Dans les Terres du Nether, les deltas de basalte et les vallées de sable des âmes, au bord de la lave ou en train d'y nager : rare et seul. Neutre tant qu'on ne le frappe pas. Près d'un bastion, il peut porter des piglins, et alors il chasse les joueurs. Regardez-en un pour valider la quête."
+	]
+	quest.6044441CFBBF75EE.title: "Trois têtes, un chaudron"
+	quest.609D01D79D635986.quest_desc: [
+		"5 pépites d'or : une Soucoupe à bougie. Un bougeoir + la soucoupe à l'établi : le bougeoir se pose sur sa soucoupe. Seul dans la grille, il en ressort, rien de perdu."
+	]
+	quest.609D01D79D635986.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.609D01D79D635986.title: "Soucoupe à bougie"
+	quest.60C92A51C5BD85F6.quest_desc: [
+		"Plantez un gland sur de la terre labourée : il pousse en 4 étapes comme une culture, puis éclot tout seul en jeune Glandouille endormi. La poudre d'os l'accélère."
+	]
+	quest.60C92A51C5BD85F6.title: "Planter un gland"
+	quest.615172E117B614F4.quest_desc: [
+		"Un lingot d'or + un éclat d'améthyste, sans forme. Elle ouvre une fois les portails des cases Portail à clé. Vendez-la en boutique, mettez-la dans un coffre de gains ou un Trichaudron : comme n'importe quel objet."
+	]
+	quest.615172E117B614F4.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.615172E117B614F4.title: "Clé de portail"
 	quest.61DD313CE6A35BC2.quest_desc: [
 		"Dessinez votre propre motif 16x16 sur la grille (retourner, pivoter, inverser, annuler...) et enregistrez-le sur le pochoir."
 	]
 	quest.61DD313CE6A35BC2.title: "Découper un motif"
 	quest.620A5C7BA9429AD1.quest_desc: [
-		"Tuiles, points de déclenchement, toutes les cartouches et une boucle fermée : votre plateau attend ses pions."
+		"Tuiles, points de déclenchement, les principales cartouches et une boucle fermée : votre plateau attend ses pions."
 	]
 	quest.620A5C7BA9429AD1.title: "Bâtisseur de plateau"
 	quest.6305DEBDCAB9BBA0.quest_desc: [
-		"Face vierge + horloge. Le dé tourne lentement ; son lanceur le frappe pour l'arrêter sur la face affichée."
+		"Un Module de dé vierge entouré de 7 fragments d'étoile bleu clair, avec une horloge au-dessus. Le dé tourne lentement ; son lanceur le frappe pour l'arrêter sur la face affichée."
 	]
+	quest.6305DEBDCAB9BBA0.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.6305DEBDCAB9BBA0.title: "Module de dé : Lent"
 	quest.639372715E2D9036.quest_desc: [
 		"Posez deux cases Téléportation de la même couleur sur un plateau. Une teinture sur la case (violet, vert, orange, bleu...) change son réseau. Une case seule de sa couleur n'envoie personne."
 	]
 	quest.639372715E2D9036.title: "Un réseau de téléportation"
+	quest.63B4933358A5ED3D.quest_desc: [
+		"Les pies sauvages vivent dans les forêts, les taïgas et le bosquet de cerisiers, par 1 à 3, le jour. Elles sautent de perchoir en perchoir (barrières, murets, bûches, chaînes) et s'envolent quand on approche à moins de 6 blocs. Six couleurs, selon la forêt. Regardez-en une pour valider la quête."
+	]
+	quest.63B4933358A5ED3D.title: "Une pie !"
 	quest.63E7493B3F8C4B36.quest_desc: [
 		"6 blocs de plastique de la couleur en deux colonnes : 6 tuyaux. Lié à une page, un tuyau de cette couleur a le rôle « Spectateurs »."
 	]
+	quest.63E7493B3F8C4B36.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.63E7493B3F8C4B36.title: "Tuyau blanc : Spectateurs"
 	quest.653CF6E9C6766795.quest_desc: [
 		"4 blocs de plastique et 2 verres : 6 tuyaux à hublot, avec une vitre continue le long du tube."
 	]
+	quest.653CF6E9C6766795.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.653CF6E9C6766795.title: "Tuyau à hublot cyan"
+	quest.6544C5A9787AD7A1.quest_desc: [
+		"Trouvez un chat noir dans une cabane de sorcière ou à 16 blocs au plus. Clic droit dessus avec n'importe quel dé du mod : le dé est lancé au-dessus de lui. S'il tombe sur 1 (ou 0), le chat enfle et devient un Mistigri. Tout autre résultat : il crache seulement. Regardez un Mistigri pour valider la quête."
+	]
+	quest.6544C5A9787AD7A1.title: "Un coup de malchance"
 	quest.65FD4DC5FA855317.quest_desc: [
 		"Lancez près d'un de vos pions posé sur un plateau relié : il avance du résultat, case par case. À un embranchement, clic droit main vide sur une flèche pour choisir."
 	]
 	quest.65FD4DC5FA855317.title: "Faire avancer un pion"
+	quest.67A3F4DF1F5ABD68.quest_desc: [
+		"Cartouche + gland, sans forme. Sur le plateau, une tour de Glandouilles pousse le pion qui s'y arrête en avant ou en arrière sur le chemin (son menu : la distance et la hauteur de la tour), avec chaque pion que la tour rencontre. Chaque pion rencontré fait tomber un Glandouille ; quand il n'en reste plus, la tour s'arrête."
+	]
+	quest.67A3F4DF1F5ABD68.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.67A3F4DF1F5ABD68.title: "Cartouche Glandouille"
 	quest.680DFFB134E7498D.quest_desc: [
 		"2 lingots de fer et 2 quartz du Nether en carré : 4 Faces de dé vierges. Toute face part d'une vierge (tailleur de pierre), et la Forge à dés en consomme."
 	]
+	quest.680DFFB134E7498D.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.680DFFB134E7498D.title: "Face de dé vierge"
 	quest.68FDB8B9B18F5221.quest_desc: [
-		"De la redstone et un lingot de fer. La Clé relie les cases (modes Tracé, Éditer, Couper : R ou accroupi + molette), montre le plateau et ses problèmes, ouvre les blocs à cartouches accroupi + clic droit, et casse tout bloc de plastique d'un coup."
+		"De la redstone et un lingot de fer. Le clic droit ouvre une tuile, un Point de déclenchement ou un routeur, sans s'accroupir ; une autre cartouche en main secondaire échange celle de la tuile, liens gardés. Elle règle aussi podiums, mâts et Bulles d'apparition, et casse tout bloc de plastique d'un coup."
 	]
+	quest.68FDB8B9B18F5221.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.68FDB8B9B18F5221.title: "Clé"
+	quest.69316CAE3341B411.quest_desc: [
+		"Clic droit dans le vide avec la cartouche : sa liste de sentences (12 au plus). Chacune a un type (vol, redistribution, recul, dé maudit, pitié), une cible (qui tombe ici, 1er, dernier, tout le monde, les autres, plus riche, plus pauvre, au hasard), un nombre et un poids. « Sur la roulette » règle combien sont tirées à chaque arrêt."
+		"Rien n'est créé : les amendes vont à la banque de la partie, la pitié en vient."
+	]
+	quest.69316CAE3341B411.title: "Écrire les sentences"
 	quest.69911E8F52BE5816.quest_desc: [
 		"La nuit, des Mulas tenues en laisse peuvent vous emporter comme des ballons : une grosse, deux à moitié pleines ou trois de n'importe quelle taille. Vous redescendez en douceur au lever du jour."
 	]
@@ -773,21 +1131,29 @@
 	]
 	quest.6A47B29FC1D81DDA.title: "Face de dé premium 10"
 	quest.6AD835CCA129C2DD.quest_desc: [
-		"4 granulés de plastique + 1 colorant + 1 éclat d'améthyste, sans forme : 4 blocs de la couleur du colorant. 8 blocs autour d'un colorant les reteignent. Les voisins de même couleur fusionnent en une seule pièce (jusqu'à 4x2x4)."
+		"4 granulés de plastique + 1 colorant, sans forme : 4 blocs de la couleur du colorant. 8 blocs autour d'un colorant les reteignent. Les voisins de même couleur fusionnent en une seule pièce (jusqu'à 4x2x4)."
 	]
+	quest.6AD835CCA129C2DD.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.6AD835CCA129C2DD.title: "Bloc de plastique rouge"
 	quest.6B5FF43F4D5E73E2.quest_desc: [
-		"Des granulés de plastique autour d'une boîte de Shulker. Clic droit sur votre pion avec un Jeton vide pour le ranger, clic droit sur un bloc pour le reposer : la façon de déplacer un pion à la main."
+		"5 granulés de plastique et un coffre. Clic droit sur votre pion avec un Jeton vide pour le ranger, clic droit sur un bloc pour le reposer : la façon de déplacer un pion à la main."
 	]
-	quest.6B5FF43F4D5E73E2.title: "Jeton"
+	quest.6B5FF43F4D5E73E2.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.6B5FF43F4D5E73E2.title: "Pion"
 	quest.6C63BD50698F0417.quest_desc: [
 		"Deux lignes de 3 : 6 murets."
 	]
+	quest.6C63BD50698F0417.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.6C63BD50698F0417.title: "Muret en briques de béton poli bleu clair"
 	quest.6D8D21CED52BF7F8.quest_desc: [
 		"Mélangez les fragments comme des colorants : bleu + vert. On récupère autant de fragments qu'on en a mis."
 	]
+	quest.6D8D21CED52BF7F8.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.6D8D21CED52BF7F8.title: "Fragment d'étoile cyan"
+	quest.6E17301AB8D3AB20.quest_desc: [
+		"Donnez des graines à deux pies sauvages à moins de 8 blocs l'une de l'autre : elles tombent amoureuses et un poussin naît, de la couleur de l'un des parents. Dans un nid, il reste assis dedans et y dort la nuit ; il grandit en 20 minutes (les graines l'accélèrent)."
+	]
+	quest.6E17301AB8D3AB20.title: "Un poussin !"
 	quest.6E22696E6BCB0E7C.quest_desc: [
 		"Les faces maudites (1 à 3) portent un crâne violet. Pour l'instant, elles comptent comme des nombres normaux."
 	]
@@ -795,108 +1161,146 @@
 	quest.6E614CCC831846DA.quest_desc: [
 		"Un Podium + un lingot de cuivre, sans forme. Seulement une apparence : c'est la hauteur de la colonne qui donne la place."
 	]
+	quest.6E614CCC831846DA.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.6E614CCC831846DA.title: "Podium de bronze"
 	quest.6EF85DD450A37FB8.quest_desc: [
 		"Page en main, cliquez l'embouchure d'un tuyau pour le lier (re-clic pour le délier) ; les tuyaux liés brillent tant que vous tenez la page. Au départ du mini-jeu, chaque joueur sort d'un tuyau de son rôle."
 	]
 	quest.6EF85DD450A37FB8.title: "Lier les tuyaux"
 	quest.6F216B6287815B35.quest_desc: [
-		"Carte, verre teinté, torche de redstone, pieds de champignon, un fabricateur, du fer et de la redstone. Le cœur d'une partie."
+		"Une carte, du verre et une torche de redstone au-dessus de lingots d'or et d'un coffre, sur 3 lingots de fer. Le cœur d'une partie : il enchaîne les tours, les mini-jeux et les gains."
 	]
-	quest.6F216B6287815B35.title: "Contrôleur de fête"
+	quest.6F216B6287815B35.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.6F216B6287815B35.title: "Party Controller"
 	quest.6FC6A979673D9964.quest_desc: [
 		"Mélangez les fragments comme des colorants : violet + rose. On récupère autant de fragments qu'on en a mis."
 	]
+	quest.6FC6A979673D9964.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.6FC6A979673D9964.title: "Fragment d'étoile magenta"
 	quest.6FE0D77A51E3FB74.quest_desc: [
 		"6 blocs en escalier : 4 escaliers. Les formes alignées de même couleur raccordent aussi leurs textures."
 	]
+	quest.6FE0D77A51E3FB74.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.6FE0D77A51E3FB74.title: "Escalier en plastique vert"
 	quest.7025AE0D120A1991.quest_desc: [
 		"Un bloc de plastique dans l'eau calme remonte à la surface, en emportant ce qui est dessus. Au-dessus du sable des âmes, une colonne de bulles le fait monter vite (un ascenseur) ; au-dessus du magma, descendre. Une chaîne l'ancre."
 	]
 	quest.7025AE0D120A1991.title: "Ça flotte !"
+	quest.71053C5ABE278389.quest_desc: [
+		"Le jour, une pie ramasse un objet brillant posé au sol à 12 blocs au plus (or, fer, cuivre, diamant, émeraude, lapis, redstone, améthyste, pièces...) et le rapporte à son nid ; sans nid, elle adopte le plus proche. La nuit, elle dort dans un nid libre."
+	]
+	quest.71053C5ABE278389.title: "Voleuse de trésors"
+	quest.712A530A271BB07F.quest_desc: [
+		"Montées, pilotées, fusionnées, et posées sur le plateau."
+	]
+	quest.712A530A271BB07F.title: "Souffleur de bulles"
+	quest.71B10B23BE563B45.quest_desc: [
+		"Un voleur devenu lampe, et un cambriolage sur le plateau."
+	]
+	quest.71B10B23BE563B45.title: "À la bougie"
+	quest.71C9296D907886EF.quest_desc: [
+		"Esquivé, vidé, apprivoisé, monté, et mis sur le plateau."
+	]
+	quest.71C9296D907886EF.title: "Cavalier de lave"
 	quest.71CC2E37EF714902.quest_desc: [
 		"2 redstone, 2 papier et 2 granulés de plastique. Une cartouche donne à une case son rôle et ses destinations. La Cartouche simple n'a pas de rôle : c'est juste un chemin."
-		"Clic droit sur un bloc avec elle pour ajouter une destination ; clic droit dans le vide pour ouvrir son menu. Toutes les autres cartouches, c'est elle plus un ingrédient."
+		"Clic droit dans le vide avec elle pour ouvrir son menu. Toutes les autres cartouches, c'est elle plus un ingrédient."
 	]
+	quest.71CC2E37EF714902.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.71CC2E37EF714902.title: "Cartouche"
 	quest.722DDCFD99F1743D.quest_desc: [
 		"Face vierge + œil d'araignée : une face Dette -1 (tailleur de pierre pour -2 à -10). Le lanceur perd autant de pièces, jamais plus que ce qu'il a."
 	]
+	quest.722DDCFD99F1743D.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.722DDCFD99F1743D.title: "Face de dé Dette −1"
 	quest.734C85BCB3D708BB.quest_desc: [
 		"4 pépites de fer autour d'un papier : 2 pochoirs vierges. Les coffres de structures contiennent parfois des pochoirs à l'un des 50 motifs intégrés. Un pochoir découpé + des vierges le copient."
 	]
+	quest.734C85BCB3D708BB.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.734C85BCB3D708BB.title: "Pochoir"
 	quest.736773478A5996A7.quest_desc: [
 		"Cartouche + répéteur. Le joueur dont le pion s'y arrête rejoue aussitôt, et récupère son dé. Un seul tour en plus."
 	]
+	quest.736773478A5996A7.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.736773478A5996A7.title: "Cartouche Rejouer"
+	quest.73EEF7997DCDB74C.quest_desc: [
+		"Une pie vient vivre sur le nid relié. Chaque pion qui passe sur la case mise des pièces (1 par défaut ; moins si son joueur en a moins), la pie va les chercher, et le pion qui s'y arrête remporte tout le nid. Son menu : mise, base (prise au stockage de la case ou à la banque, jamais créée) et plafond. À la fin de la partie, les pièces du nid retournent à ce stockage."
+	]
+	quest.73EEF7997DCDB74C.title: "Le Pot commun"
 	quest.7474041B576499AF.quest_desc: [
 		"Faites cuire de la canne à sucre au four. Les granulés de plastique entrent dans presque tout : tuiles, cartouches, jetons et tous les blocs de plastique."
 	]
+	quest.7474041B576499AF.quest_subtitle: "Remettez les objets : cliquez sur la tâche"
 	quest.7474041B576499AF.title: "Granulés de plastique"
 	quest.74A69E19FF0BCA86.quest_desc: [
 		"3 briques en ligne : 6 dalles."
 	]
+	quest.74A69E19FF0BCA86.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.74A69E19FF0BCA86.title: "Dalle en briques de béton poli bleu clair"
 	quest.75B73EB45B67D1C0.quest_desc: [
 		"Les Mulas tombent du ciel les nuits d'étoiles filantes (Éphéméride), surtout à la pleine lune : suivez la direction de la première vague d'étoiles, à 150 à 600 blocs. Regardez une Mula pour valider la quête."
 	]
 	quest.75B73EB45B67D1C0.title: "Une Mula !"
 	quest.75D850169554760C.quest_desc: [
-		"Recliquez la première case pour fermer la boucle : confettis ! Une boucle avec une case départ suffit pour une partie."
+		"Repeignez jusqu'à la première tuile pour fermer la boucle. Une boucle avec une case départ suffit pour une partie."
 		"Plusieurs liens depuis une case font un embranchement : le joueur choisit. Aucun lien : un cul-de-sac."
 	]
 	quest.75D850169554760C.title: "Fermer la boucle"
 	quest.778C3F69BBD69981.quest_desc: [
 		"Deux lignes de 3 : 6 murets."
 	]
+	quest.778C3F69BBD69981.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.778C3F69BBD69981.title: "Muret en béton poli bleu clair"
 	quest.77D47E2D75956F53.quest_desc: [
-		"4 lingots d'or, un œil de l'Ender, 2 Étoiles de fête et le tuyau de mini-jeu en fer. Atteint toutes les dimensions."
+		"4 lingots d'or, un œil de l'Ender, 2 Party Stars et le tuyau de mini-jeu en fer. Atteint toutes les dimensions."
 	]
+	quest.77D47E2D75956F53.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.77D47E2D75956F53.title: "Tuyau de mini-jeu en or"
 	quest.77FE553DBC59E8E9.quest_desc: [
 		"Trois laines : la couleur de la laine fait celle du drapeau (mélangée comme le cuir). Clic droit sur un segment pour l'accrocher ; il descend quand le but est atteint. Reteignez-le dans la grille."
 	]
+	quest.77FE553DBC59E8E9.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.77FE553DBC59E8E9.title: "Drapeau"
 	quest.78060E8B8175066C.quest_desc: [
-		"Face vierge + boussole. Le lanceur choisit la face."
+		"Un Module de dé vierge entouré de 7 fragments d'étoile bleus, avec une boussole au-dessus. Le lanceur choisit la face."
 	]
+	quest.78060E8B8175066C.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.78060E8B8175066C.title: "Module de dé : Au choix"
 	quest.785AA345B1B2CC7F.quest_desc: [
-		"Face vierge + patte de lapin. Un lancer de plus par module (jusqu'à 5) : gardez le meilleur."
+		"Un Module de dé vierge entouré de 7 fragments d'étoile verts, avec une patte de lapin au-dessus. Un lancer de plus par module (jusqu'à 5) : gardez le meilleur."
 	]
+	quest.785AA345B1B2CC7F.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.785AA345B1B2CC7F.title: "Module de dé : Chanceux"
 	quest.78C9F801227DBCA8.quest_desc: [
 		"Cartouche + teinture rouge. Un pion qui atteint une case Stop y termine son déplacement, quels que soient ses pas restants. Marche aussi sur un Point de déclenchement."
 	]
+	quest.78C9F801227DBCA8.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.78C9F801227DBCA8.title: "Cartouche Stop"
 	quest.79E5CE07E2521CF7.quest_desc: [
 		"Des cisailles sur un marchand ouvert qui porte son bandana : il tombe, et le marchand se cache 20 s. Portez-le sur la tête : les marchands vous ignorent. Rendez-en un à un marchand chauve pour changer sa couleur."
 	]
 	quest.79E5CE07E2521CF7.title: "Bandana"
 	quest.79EBF22157E78E6D.quest_desc: [
-		"Le noyau monte avec les fragments présents : 256 fragments (4 piles pleines, ou 4 noirs, chaque noir compte pour 64) le hissent à 16 blocs. Une forge au niveau maximal garantit une Éphéméride à chaque pleine lune."
+		"Le noyau monte avec les fragments présents : 320 fragments (5 piles pleines, ou 5 noirs, chaque noir compte pour 64) le hissent à 16 blocs. Une forge au niveau maximal garantit une Éphéméride à chaque pleine lune."
 	]
 	quest.79EBF22157E78E6D.title: "Orbite maximale"
 	quest.7A67F524EE372745.quest_desc: [
-		"Posez une Cartouche Boutique sur votre plateau à moins de 32 blocs du marchand : un pion qui s'y arrête ouvre la boutique à son joueur, où qu'il soit. Le tour attend la fin des achats."
+		"En partie, un pion s'arrête sur une case Boutique : son propre Marchand en carton surgit, avec son étal. Son joueur fait clic droit sur le marchand (ou clique [Ouvrir la boutique] dans le chat) et achète jusqu'à la limite de la cartouche (1 par défaut) ; le tour attend la fin des achats. Les paiements vont à la banque."
 	]
 	quest.7A67F524EE372745.title: "Halte boutique"
 	quest.7B61B7E9D8BEF2E8.quest_desc: [
 		"Deux blocs de plastique (n'importe quelle couleur) l'un sur l'autre : 4 bâtons. Les barrières en plastique en sont faites."
 	]
+	quest.7B61B7E9D8BEF2E8.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.7B61B7E9D8BEF2E8.title: "Bâton en plastique"
 	quest.7CD8704D1E8BE3C5.quest_desc: [
 		"Un plot en plastique bleu + papier + redstone : 4 cartes. Chaque pion joue une fois."
 		"Les cartes se posent dans les 24 emplacements de l'onglet Programme et se lisent de gauche à droite."
 	]
+	quest.7CD8704D1E8BE3C5.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.7CD8704D1E8BE3C5.title: "Carte de partie : Tour de jeu"
 	quest.7CE9B67A9BE1ED07.quest_desc: [
-		"Une Mula ne mange que la nourriture de sa couleur : bleu = morue, rouge = pommes et viande rouge, vert = pastèque, jaune = nourriture dorée et pain, violet = chorus et betterave, noir = cookies, ragoûts et steak. L'infobulle indique « Nourriture de Mula »."
+		"Une Mula ne mange que la nourriture de sa couleur : bleu = morue, rouge = pommes, baies, saumon et viande crue, vert = pastèque, jaune = nourriture dorée, pain et miel, violet = chorus et betterave, noir = algue séchée, cookies, ragoûts et steak. L'infobulle indique « Nourriture de Mula »."
 	]
 	quest.7CE9B67A9BE1ED07.title: "À table !"
 	quest.7D674A4D41A2C9AB.quest_desc: [
@@ -914,19 +1318,30 @@
 	quest.7E305E47E151BDCF.quest_desc: [
 		"Deux lignes de 3 blocs : 6 murets."
 	]
+	quest.7E305E47E151BDCF.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.7E305E47E151BDCF.title: "Muret en plastique violet"
 	quest.7E41138FB7521482.quest_desc: [
-		"8 lingots de fer autour d'une charge de vent. Donne 1 à 10."
+		"Donne 1 à 10. Les deux premiers viennent avec la quête Tuile (et le coffre de départ du hub) ; les suivants sortent de la forge à dés."
 	]
-	quest.7E41138FB7521482.title: "Dé par défaut"
+	quest.7E41138FB7521482.title: "Dé simple"
 	quest.7F2770DE1C7C8D45.quest_desc: [
 		"Cartouche + perle de l'Ender. Un pion qui s'y arrête est envoyé sur une autre case Téléportation du même réseau de couleur (violet, vert, orange ou bleu)."
 	]
+	quest.7F2770DE1C7C8D45.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
 	quest.7F2770DE1C7C8D45.title: "Cartouche Téléportation"
+	quest.7F5DEAD5FEF3AA2C.quest_desc: [
+		"Un briquet sur un Frousseux sauvage : le premier coup lui fait rendre ce qu'il a volé, puis chaque coup a 1 chance sur 3 de l'apprivoiser. Apprivoisé, il vous suit comme une lampe : devant vous à la lumière, à votre épaule dans le noir, où votre viseur passe à travers lui. Le briquet le soigne aussi."
+	]
+	quest.7F5DEAD5FEF3AA2C.title: "Raviver la flamme"
 	quest.7FA9DC98F4753074.quest_desc: [
 		"Clic droit sur la forge avec le Noyau de gravité : il s'enfonce, puis s'élève et flotte au-dessus. Accroupi + clic droit à mains vides pour le reprendre. Frapper le noyau en l'air le fait exploser (et il est perdu)."
 	]
 	quest.7FA9DC98F4753074.title: "Allumer la forge"
+	quest.7FEC43F982FF3CC8.quest_desc: [
+		"Cartouche + barreaux de fer. Un mur sur le chemin : un pion qui arrive avec des pas restants ne passe que si son lancer remplit la condition (7 ou plus par défaut, ou un double, un triple) ; sinon il s'arrête ici. En mode Barrière, chaque tour est un nouvel essai jusqu'à ce qu'il passe."
+	]
+	quest.7FEC43F982FF3CC8.quest_subtitle: "À fabriquer : les objets déjà possédés ne comptent pas"
+	quest.7FEC43F982FF3CC8.title: "Cartouche Obstacle à seuil"
 	reward_table.1FEF45914C419791.title: "Cotillons"
 	reward_table.536A6CC3E21C8B88.title: "Coffre étoilé"
 }
