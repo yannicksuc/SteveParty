@@ -293,9 +293,19 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
         if (!pipetteOn) super.drawMouseoverTooltip(context, x, y);
     }
 
+    /** What its cartridge slot (slot 0) takes, ghosted in it while it is empty; null: nothing shown. */
+    protected @Nullable ItemStack emptySlotGhost() {
+        return null;
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
+        ItemStack ghost = emptySlotGhost();
+        if (ghost != null && !handler.slots.isEmpty() && !handler.slots.getFirst().hasStack()) {
+            Slot slot = handler.slots.getFirst();
+            PartyGui.ghostItem(context, ghost, x + slot.x, y + slot.y, null);
+        }
         if (panel != null) CartridgePanel.drawGhostMarks(context, handler.slots, x, y);
         if (!hasPipette()) return;
         drawPipetteButton(context, mouseX, mouseY);

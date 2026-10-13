@@ -1,9 +1,11 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.LootingBoxScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -19,6 +21,14 @@ public class LootingBoxScreen extends CartridgeContainerScreen<LootingBoxScreenH
         super.render(context, mouseX, mouseY, delta);
         drawTooltips(context, mouseX, mouseY);
     }
+
+    /** Its empty slot shows the Inventory Cartridge it takes. */
+    @Override
+    protected ItemStack emptySlotGhost() {
+        return GHOST;
+    }
+
+    private static final ItemStack GHOST = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
 
     @Override
     public Identifier getTexture() {
