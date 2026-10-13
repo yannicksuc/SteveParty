@@ -21,7 +21,7 @@ BOOK = MAIN / "resources" / "data" / "steveparty" / "modonomicon" / "books" / "g
 ADV = MAIN / "resources" / "data" / "steveparty" / "advancement" / "guide"
 LANG = MAIN / "resources" / "assets" / "steveparty_guide" / "lang"
 VANILLA_OK = {"minecraft:clock", "minecraft:armor_stand", "minecraft:enchanted_book", "minecraft:barrier",
-              "minecraft:glow_ink_sac", "minecraft:book"}
+              "minecraft:glow_ink_sac", "minecraft:book", "minecraft:spyglass"}
 RECIPE_TYPES = {
     # steveparty:tile_shaped is a ShapedRecipe subclass (TileShapedRecipe): drawn like a shaped recipe
     "modonomicon:crafting_recipe": {"minecraft:crafting_shaped", "minecraft:crafting_shapeless", "steveparty:tile_shaped"},

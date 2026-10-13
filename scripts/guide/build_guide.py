@@ -4,8 +4,9 @@
 The book only loads when Modonomicon is installed (the data under data/steveparty/modonomicon is ignored
 otherwise). The advancements are plain vanilla advancements, without rewards.
 
-Source of truth for the guide: edit the content below, then run
-    python scripts/guide/build_guide.py
+OUT OF DATE: the book JSON and the steveparty_guide lang files have since been edited directly and are now the
+source of truth. Running this script reverts them to an older book (old Step Controller modes, no Creatures
+tab...). Edit the JSON and lang files, then run
     python scripts/guide/check_guide.py
 
 Output:
