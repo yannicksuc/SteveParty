@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
 import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResults;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -41,6 +42,8 @@ public class EndPartyStep extends PartyStep {
         if (!(partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)) return;
 
         PartyAdvancements.partyEnded(partyControllerEntity, serverWorld);
+        // Who won: the ranking on the results card and in the chat (never two winners)
+        PartyResults.announce(partyControllerEntity, serverWorld);
         // Release every token of the party so they are no longer considered in game
         // (the tokens that are not loaded are released as soon as they are loaded again)
         Set<UUID> allTokens = new LinkedHashSet<>(partyControllerEntity.getPartyData().getTokens());

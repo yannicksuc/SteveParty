@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.advancement;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResults;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
@@ -48,22 +49,17 @@ public final class PartyAdvancements {
     public static void partyEnded(PartyControllerEntity party, ServerWorld world) {
         PartyData data = party.getPartyData();
         int rounds = data.getRoundAt(data.getStepIndex());
-        List<PartyLiveData.Standing> standings = new ArrayList<>();
-        for (UUID token : data.getTokens()) standings.add(PartyLiveData.standingOf(party, world, token));
-        int[] ranks = PartyLiveData.ranks(standings);
-        int worst = 0;
+        // The final ranking (ties broken by the start roll: one winner)
+        List<PartyResults.Place> places = PartyResults.ranking(party, world);
+        int worst = places.size();
         Map<UUID, Integer> best = new LinkedHashMap<>();
-        for (int i = 0; i < ranks.length; i++) {
-            worst = Math.max(worst, ranks[i]);
-            int rank = ranks[i];
-            standings.get(i).owner().ifPresent(owner -> best.merge(owner, rank, Math::min));
-        }
+        for (PartyResults.Place place : places) if (place.owner() != null) best.merge(place.owner(), place.place(), Math::min);
         MinecraftServer server = world.getServer();
         for (Map.Entry<UUID, Integer> entry : best.entrySet()) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
             if (player == null) continue;
             ModCriteria.fire(player, "party_finished", rounds);
-            if (standings.size() < 2) continue;
+            if (places.size() < 2) continue;
             int rank = entry.getValue();
             ModCriteria.fire(player, "party_rank", rank);
             if (rank == worst && rank != 1) ModCriteria.fire(player, "party_last");
