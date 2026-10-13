@@ -65,29 +65,47 @@ public final class PartyControllers {
     }
 
     /**
-     * The party of the board space at {@code pos}: the loaded controller whose board holds it, else the closest one
-     * within {@code fallbackRadius} blocks; only a running party (or one standing on its end if {@code includeEnded}).
+     * The party of the board space at {@code pos}: the controller of its board ({@link #ofBoard}), its party running
+     * (or standing on its end if {@code includeEnded}).
      */
     static Optional<PartyControllerEntity> ofBoardSpace(World world, BlockPos pos, int fallbackRadius, boolean includeEnded) {
-        PartyControllerEntity owner = BOARD_SPACES.get(GlobalPos.create(world.getRegistryKey(), pos));
-        if (owner != null && !owner.isRemoved() && owner.getWorld() == world) {
-            boolean steppable = owner.getPartyData().isStarted() || (includeEnded && owner.getPartyData().isAtEnd());
-            return steppable ? Optional.of(owner) : Optional.empty();
-        }
-        return closestSteppable(world, pos, fallbackRadius, includeEnded);
+        return ofBoard(world, pos, fallbackRadius)
+                .filter(entity -> entity.getPartyData().isStarted() || (includeEnded && entity.getPartyData().isAtEnd()));
     }
 
     /**
-     * The controller of the board holding the board space at {@code pos}, whether its party runs or not: the loaded
-     * controller whose board holds it, else the closest one within {@code fallbackRadius} blocks.
+     * The controller of the board holding the board space at {@code pos}, whether its party runs or not, the one place
+     * it is decided (its bank, its party, its infinite storage): a controller whose board holds it, a running party's
+     * first (two controllers may remember the same tiles), its board read again if no remembered board holds it (start
+     * tiles just linked, tiles just placed); else the closest one within {@code fallbackRadius} blocks, a running party's
+     * first.
      */
     static Optional<PartyControllerEntity> ofBoard(World world, BlockPos pos, int fallbackRadius) {
-        PartyControllerEntity owner = BOARD_SPACES.get(GlobalPos.create(world.getRegistryKey(), pos));
-        if (owner != null && !owner.isRemoved() && owner.getWorld() == world) return Optional.of(owner);
-        return ACTIVE.values().stream()
-                .filter(entity -> !entity.isRemoved() && entity.getWorld() == world)
+        List<PartyControllerEntity> here = ACTIVE.values().stream()
+                .filter(entity -> !entity.isRemoved() && entity.getWorld() == world).toList();
+        if (here.isEmpty()) return Optional.empty();
+        PartyControllerEntity indexed = BOARD_SPACES.get(GlobalPos.create(world.getRegistryKey(), pos));
+        if (indexed != null && (indexed.isRemoved() || indexed.getWorld() != world)) indexed = null;
+        Optional<PartyControllerEntity> running = here.stream()
+                .filter(entity -> entity.getPartyData().isStarted() && entity.rememberedBoardSpaces().contains(pos))
+                .min(closestTo(pos));
+        if (running.isPresent()) return running;
+        if (indexed != null) return Optional.of(indexed);
+        if (world instanceof ServerWorld serverWorld) {
+            Optional<PartyControllerEntity> reaching = here.stream()
+                    .filter(entity -> entity.board(serverWorld).contains(pos))
+                    .min(Comparator.<PartyControllerEntity, Boolean>comparing(entity -> !entity.getPartyData().isStarted())
+                            .thenComparing(closestTo(pos)));
+            if (reaching.isPresent()) return reaching;
+        }
+        return here.stream()
                 .filter(entity -> fallbackRadius <= 0 || entity.getPos().getSquaredDistance(pos) < (double) fallbackRadius * fallbackRadius)
-                .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos)));
+                .min(Comparator.<PartyControllerEntity, Boolean>comparing(entity -> !entity.getPartyData().isStarted())
+                        .thenComparing(closestTo(pos)));
+    }
+
+    private static Comparator<PartyControllerEntity> closestTo(BlockPos pos) {
+        return Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos));
     }
 
     /** Snapshot of the loaded server-side controllers (safe to iterate while steps change). */

@@ -137,7 +137,7 @@ public class TrichaudronTileBehavior extends MobTileBehavior {
         }
         info.line(TileInfo.good(TileInfo.line("trichaudron.prizes", prizes.size())));
         // No chest of its own: the party's bank
-        if (CartridgeContainers.partyBankOf(stack, world, space.getPos()) != null) info.line(TileInfo.value(TileInfo.line("party_bank")));
+        TileInfo.partyBank(info, CartridgeContainers.partyBankOf(stack, world, space.getPos()));
         for (ItemStack prize : prizes) info.item(prize);
     }
 }

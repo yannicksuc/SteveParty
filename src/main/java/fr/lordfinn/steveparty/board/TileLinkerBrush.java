@@ -8,11 +8,14 @@ import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.payloads.custom.TeleportLinkChoicePayload;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -269,6 +272,14 @@ public final class TileLinkerBrush {
             world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS, 0.5f, 1.2f);
             return;
         }
+        // From a Teleport tile to a board space it has no link to: « TP » or « link », the player picks
+        if (teleportChoice(world, level(brush), from, pos) != null) {
+            stroke.start = null;
+            BrushLinks.Held held = BrushLinks.holder(world, from, POWERED);
+            if (held != null && !held.canEdit(player)) cannotEdit(player, from);
+            else askTeleportOrLink(player, world, from, pos);
+            return;
+        }
         if (isPath(world, brush, from, pos)) {
             if (from.equals(stroke.start)) giveCartridge(player, brush, world, from);
             giveCartridge(player, brush, world, pos);
@@ -277,6 +288,59 @@ public final class TileLinkerBrush {
         WrenchActions.recorded(player, world, brush, () -> {
             setAnchor(brush, world, pos);
             link(player, brush, world, from, pos);
+        });
+    }
+
+    // ---------------------------------------------------------------- « TP » or « link »
+
+    /** The choice asked of each player: from that Teleport tile to that board space, at that level, asked then. */
+    private record TeleportAsk(RegistryKey<World> world, BlockPos from, BlockPos to, int level, long asked) {
+    }
+
+    private static final Map<UUID, TeleportAsk> TELEPORT_ASKS = ServerMemory.forgetOnStop(new HashMap<>());
+    /** How long an answer is waited for (ticks). */
+    private static final int TELEPORT_ASK_TICKS = 20 * 60;
+
+    /**
+     * Reaching {@code to} from the Teleport tile {@code from} (the slot of {@code level}), which has no link to it of
+     * either kind: its TP links, which may take it (the player picks between a TP and a path); null otherwise.
+     */
+    public static @Nullable CartridgeLinks.TeleportTargets teleportChoice(World world, int level, BlockPos from, BlockPos to) {
+        List<BrushLinkable> kinds = BrushLinks.of(world, from, level);
+        if (!(BrushLinks.kindFor(kinds, world, to) instanceof CartridgeLinks.BoardPaths paths) || paths.linked(world, to)) return null;
+        for (BrushLinkable kind : kinds) {
+            if (kind instanceof CartridgeLinks.TeleportTargets teleport && teleport.accepts(world, to)) return teleport;
+        }
+        return null;
+    }
+
+    /** Asks {@code player} whether {@code from} sends tokens to {@code to} (« TP ») or a path joins them (« link »). */
+    private static void askTeleportOrLink(ServerPlayerEntity player, ServerWorld world, BlockPos from, BlockPos to) {
+        TELEPORT_ASKS.put(player.getUuid(), new TeleportAsk(world.getRegistryKey(), from.toImmutable(), to.toImmutable(),
+                level(player.getMainHandStack()), world.getTime()));
+        STROKES.remove(player.getUuid());
+        world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS, 0.5f, 1.2f);
+        ServerPlayNetworking.send(player, new TeleportLinkChoicePayload(from.toImmutable(), to.toImmutable(), false));
+    }
+
+    /**
+     * The player's answer to the choice asked ({@code teleport}: « TP », else « link »), for the same tiles: the link
+     * made with the brush still in hand, recorded for undo. Anything else (no question, an old one, other tiles) is
+     * ignored.
+     */
+    public static void answerTeleportOrLink(ServerPlayerEntity player, BlockPos from, BlockPos to, boolean teleport) {
+        TeleportAsk ask = TELEPORT_ASKS.remove(player.getUuid());
+        ServerWorld world = player.getServerWorld();
+        ItemStack brush = player.getMainHandStack();
+        if (ask == null || !ask.world().equals(world.getRegistryKey()) || !ask.from().equals(from) || !ask.to().equals(to)
+                || world.getTime() - ask.asked() > TELEPORT_ASK_TICKS || world.getTime() < ask.asked() || !isBrush(brush)) return;
+        CartridgeLinks.TeleportTargets tp = teleportChoice(world, ask.level(), from, to);
+        if (tp == null) return;
+        BrushLinkable kind = teleport ? tp : BrushLinks.kindFor(BrushLinks.of(world, from, ask.level()), world, to);
+        if (kind == null) return;
+        WrenchActions.recorded(player, world, brush, () -> {
+            setAnchor(brush, world, to);
+            toggle(player, world, from, kind, to);
         });
     }
 

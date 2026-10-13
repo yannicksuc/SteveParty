@@ -5,10 +5,12 @@ import fr.lordfinn.steveparty.blocks.custom.PiggyBankBlockEntity.Target;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.PiggyBankScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -26,6 +28,20 @@ public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHan
 
     public PiggyBankScreen(PiggyBankScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title, 136);
+    }
+
+    /** Its empty slot shows the Inventory Cartridge it takes. */
+    @Override
+    protected ItemStack emptySlotGhost() {
+        return GHOST;
+    }
+
+    private static final ItemStack GHOST = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
+
+    /** Under its slot's pink. */
+    @Override
+    protected int emptySlotVeil() {
+        return 0x99E2769C;
     }
 
     @Override

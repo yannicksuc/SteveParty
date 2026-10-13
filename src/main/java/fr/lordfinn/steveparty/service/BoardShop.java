@@ -21,10 +21,10 @@ import java.util.List;
  * The shop of a Shop Cartridge's space, as its summoned merchant sells it (see {@link ShopStops}): the offers set in the
  * cartridge's menu ({@link ShopCartridgeItem#offers}), each sale taken from its stock, each payment put in its till.
  * <ul>
- *     <li>stock: the cartridge's linked containers, or without any the bank of the party running on its board
- *     ({@link CartridgeContainers#sourceFor}: the party's source, its Party Controller's bank);</li>
- *     <li>till: the bank of the party running on its board; outside a party, the cartridge's containers. What does not
- *     fit is dropped at the merchant (never lost).</li>
+ *     <li>stock: the cartridge's linked containers, or without any the party running on its board
+ *     ({@link CartridgeContainers#sourceFor}: its Party Controller's bank, or its infinite storage);</li>
+ *     <li>till: the bank of the party running on its board (an infinite storage takes all); outside a party, the
+ *     cartridge's containers. What does not fit is dropped at the merchant (never lost).</li>
  * </ul>
  * An offer whose item is not in the stock is sold out (the merchant disables it). Nothing is ever made from nothing.
  * The cartridge is read again at each use (it may be changed while the shop is open).
@@ -79,6 +79,13 @@ public final class BoardShop {
     public @Nullable PartyControllerEntity party() {
         return PartyControllerEntity.getPartyOfBoardSpace(world, space,
                 PartyControllerEntity.BOARD_NEARBY_RADIUS, false).orElse(null);
+    }
+
+    /** Whether {@code sold} is in the stock it will sell from, party running or not (its tile info). */
+    public boolean shownInStock(ItemStack sold) {
+        ItemStack cartridge = cartridge();
+        return sold.isEmpty() || !cartridge.isEmpty()
+                && CartridgeContainers.shownSourceFor(cartridge, world, space).canTake(sold, sold.getCount());
     }
 
     /** {@code payment} (emptied) goes to its till; what does not fit is dropped at {@code dropAt}. */

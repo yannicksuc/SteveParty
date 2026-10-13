@@ -81,12 +81,12 @@ public class ShopBoardSpaceBehavior extends ABoardSpaceBehavior {
             if (!offer.getSecondPrice().isEmpty())
                 price = TileInfo.line("shop.price_and", price, offer.getSecondPrice().getCount(), offer.getSecondPrice().getName());
             Text item = sold.getCount() > 1 ? TileInfo.line("shop.many", sold.getName(), sold.getCount()) : sold.getName();
-            boolean soldOut = !shop.inStock(sold);
+            boolean soldOut = !shop.shownInStock(sold);
             info.line(offer.getFirstPrice(), soldOut ? TileInfo.dim(TileInfo.line("shop.sold_out", price, item))
                     : TileInfo.line("shop.offer", price, item));
             info.item(sold);
         }
         // No container of its own: the party's bank
-        if (CartridgeContainers.partyBankOf(stack, world, space.getPos()) != null) info.line(TileInfo.value(TileInfo.line("party_bank")));
+        TileInfo.partyBank(info, CartridgeContainers.partyBankOf(stack, world, space.getPos()));
     }
 }

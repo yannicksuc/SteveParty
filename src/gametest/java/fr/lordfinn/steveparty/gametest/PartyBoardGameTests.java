@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
+import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBoard;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -10,6 +12,7 @@ import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.service.BoardShop;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
@@ -54,6 +57,8 @@ public class PartyBoardGameTests implements SteveGameTest {
         space(context, MIDDLE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), END);
         space(context, END, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), START);
         space(context, LONE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), null);
+        // Its start tile linked (with the brush): the start tiles of the tests running around are not its own
+        controller.setStartLinks(List.of(context.getAbsolutePos(START)));
 
         PartyBoard.Snapshot board = controller.board(context.getWorld(), true);
         for (BlockPos pos : List.of(START, MIDDLE, END))
@@ -139,6 +144,53 @@ public class PartyBoardGameTests implements SteveGameTest {
         context.assertEquals(controller.findStartTokens(context.getWorld()), List.of(away.getUuid()), "back on its start: it plays");
         away.discard();
         context.setBlockState(CONTROLLER, Blocks.AIR);
+        context.complete();
+    }
+
+    /**
+     * A Party Controller's infinite storage, its party not started yet: the cartridges of its board without a chest of
+     * their own (an Inventory space, a Shop space) all show it (they use it once the party runs); off, its real bank. A
+     * die sells at its base price, a power-up at its own.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_board_infinite")
+    public void theInfiniteStorageServesEveryCartridgeOfItsBoard(TestContext context) {
+        TestBoards.floor(context, 9);
+        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
+        ItemStack start = new ItemStack(ModItems.TILE_BEHAVIOR_START);
+        start.set(ModComponents.TB_START_BOUND_ENTITY, UUID.randomUUID().toString());
+        space(context, START, start, MIDDLE);
+        space(context, MIDDLE, new ItemStack(ModItems.INVENTORY_CARTRIDGE), END);
+        space(context, END, new ItemStack(ModItems.SHOP_CARTRIDGE), START);
+        controller.setInfiniteBank(true);
+
+        var world = context.getWorld();
+        BlockPos middle = context.getAbsolutePos(MIDDLE), end = context.getAbsolutePos(END);
+        ItemStack inventory = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
+        context.assertTrue(CartridgeContainers.shownSourceFor(inventory, world, middle).isUnlimited(),
+                "an Inventory space of its board, no party yet: shows the infinite storage");
+        context.assertTrue(CartridgeTransfers.source(world, inventory, middle).isNone(), "but gives nothing outside a party");
+        BoardShop shop = new BoardShop(world, end);
+        context.assertTrue(shop.shownInStock(new ItemStack(ModItems.DOUBLE_DICE)), "its shop: shown never sold out");
+        context.assertTrue(!shop.inStock(new ItemStack(ModItems.DOUBLE_DICE)), "but sells nothing outside a party");
+        controller.setInfiniteBank(false);
+        context.assertTrue(!shop.shownInStock(new ItemStack(ModItems.DOUBLE_DICE)), "off: its real bank, empty");
+
+        // Its party running: they use it
+        controller.setInfiniteBank(true);
+        PigEntity pig = TestBoards.token(context, START.up(), null);
+        PartyControllerEntity party = TestBoards.party(context, CONTROLLER, 1, pig.getUuid());
+        context.assertTrue(party == controller, "its party");
+        context.assertTrue(CartridgeTransfers.source(world, inventory, middle).isUnlimited(), "in game: the infinite storage");
+        context.assertTrue(shop.inStock(new ItemStack(ModItems.DOUBLE_DICE)) && shop.party() == controller, "in game: its shop sells, its till");
+
+        context.assertEquals(TradingStallBlockEntity.basePrice(new ItemStack(ModItems.DOUBLE_DICE)).getCount(), 10, "a double die: 10 coins");
+        context.assertTrue(TradingStallBlockEntity.offerOf(ItemStack.EMPTY, ItemStack.EMPTY, new ItemStack(ModItems.TRIPLE_DICE)) != null,
+                "a die without a price is sold");
+        context.assertTrue(TradingStallBlockEntity.basePrice(new ItemStack(Blocks.DIRT)).isEmpty(), "dirt: no base price");
+        // Nothing left for the boards of the tests around (a start tile would join their controller's board)
+        for (BlockPos pos : List.of(START, MIDDLE, END, CONTROLLER)) context.setBlockState(pos, Blocks.AIR);
+        pig.discard();
         context.complete();
     }
 }

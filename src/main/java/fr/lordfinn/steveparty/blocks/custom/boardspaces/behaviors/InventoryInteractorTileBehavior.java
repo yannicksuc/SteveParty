@@ -221,7 +221,8 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             info.line(mode == 1 ? TileInfo.Glyph.ALL : mode == 2 ? TileInfo.Glyph.CYCLE : TileInfo.Glyph.DICE,
                     TileInfo.value(TileInfo.line(mode == 1 ? "inventory.all" : mode == 2 ? "inventory.cycle" : "inventory.random")));
         }
-        PartyResources source = CartridgeTransfers.source(world, stack, space.getPos());
+        // What it will use, party running or not
+        PartyResources source = CartridgeContainers.shownSourceFor(stack, world, space.getPos());
         PartyResources linked = source.isNone() ? null : source;
         boolean listed = items.size() <= LISTED, gives = false;
         for (ItemStack item : items) {
@@ -243,8 +244,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         }
         if (gives && linked == null) info.line(new ItemStack(Items.CHEST), TileInfo.bad(TileInfo.line("inventory.no_chest")));
         // No chest of its own: the party's bank
-        if (CartridgeContainers.partyBankOf(stack, world, space.getPos()) != null)
-            info.line(new ItemStack(Items.CHEST), TileInfo.value(TileInfo.line(source.isUnlimited() ? "party_bank.infinite" : "party_bank")));
+        TileInfo.partyBank(info, CartridgeContainers.partyBankOf(stack, world, space.getPos()));
     }
 
     /** Up to this many items, each is a line; more circle the space. */

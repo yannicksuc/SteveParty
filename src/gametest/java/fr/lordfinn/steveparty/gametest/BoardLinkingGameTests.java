@@ -256,6 +256,15 @@ public class BoardLinkingGameTests implements SteveGameTest {
         boardSpace(context, from).setStack(0, cartridge);
     }
 
+    /** A copy of a tile's cartridge put back in that tile keeps its links but the one to the tile itself (no fork). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aCartridgePlacedInItsOwnTileDropsItsLinkToIt(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1));
+        link(context, t.get(0), t.get(0), t.get(1));
+        context.assertEquals(BoardLinks.links(boardSpace(context, t.get(0)), 0), List.of(t.get(1)), "only the link to the other tile");
+        context.complete();
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void boardGraphNumbersTheSpacesAndFindsTheProblems(TestContext context) {
         List<BlockPos> t = smallBoard(context);

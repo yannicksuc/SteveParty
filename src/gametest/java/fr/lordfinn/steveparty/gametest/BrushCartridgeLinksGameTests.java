@@ -90,6 +90,9 @@ public class BrushCartridgeLinksGameTests implements SteveGameTest {
         withPlayer(context, true, player -> {
             ItemStack brush = brush(player);
             paint(player, brush, context, teleport, next);
+            context.assertEquals(BoardLinks.links(cartridge(context, teleport)), List.of(), "TP or link? asked first");
+            // « Link » picked
+            TileLinkerBrush.answerTeleportOrLink(player, teleport, next, false);
             context.assertTrue(cartridge(context, teleport).isOf(ModItems.TELEPORT_CARTRIDGE), "the Teleport Cartridge is kept");
             context.assertEquals(BoardLinks.links(cartridge(context, teleport)), List.of(next), "linked to the next tile");
             paint(player, brush, context, teleport, next);

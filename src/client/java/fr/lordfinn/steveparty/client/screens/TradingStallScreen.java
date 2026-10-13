@@ -9,6 +9,8 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.slot.Slot;
+import fr.lordfinn.steveparty.client.gui.StallArt;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -45,6 +47,11 @@ public class TradingStallScreen extends HandledScreen<TradingStallScreenHandler>
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
+        for (int column = 0; column < 9; column++) {
+            Slot price = handler.slots.get(column);
+            StallArt.drawBasePrice(context, textRenderer, price.getStack(), handler.slots.get(column + 9).getStack(),
+                    handler.slots.get(column + 18).getStack(), x + price.x, y + price.y);
+        }
         this.drawMouseoverTooltip(context, mouseX, mouseY);
         // An empty slot of the stall says what it takes
         if (focusedSlot != null && !focusedSlot.hasStack() && handler.getCursorStack().isEmpty()

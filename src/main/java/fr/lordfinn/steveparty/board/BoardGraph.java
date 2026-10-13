@@ -58,9 +58,12 @@ public final class BoardGraph {
      * @param cartridges    number of cartridges it holds
      * @param inventoryIssue for an inventory tile: its chest is missing (null: fine or not an inventory tile)
      * @param teleportNetwork for a teleport tile (its active cartridge): its network, null for any other board space
+     * @param teleportTargets for a teleport tile: its TP links (the board spaces it sends to instead of its network's
+     *                        tiles), empty for none
      */
     public record Node(BlockPos pos, boolean step, boolean start, int cartridges, boolean hasStartToken,
-                       @Nullable InventoryIssue inventoryIssue, List<Edge> edges, @Nullable TeleportNetwork teleportNetwork) {
+                       @Nullable InventoryIssue inventoryIssue, List<Edge> edges, @Nullable TeleportNetwork teleportNetwork,
+                       List<BlockPos> teleportTargets) {
 
         public long boardSpaceLinks() {
             return edges.stream().filter(e -> e.target() != Target.BROKEN).count();
@@ -171,10 +174,11 @@ public final class BoardGraph {
         }
         ItemStack activeCartridge = boardSpace.getStack(active);
         boolean hasToken = start && activeCartridge.get(ModComponents.TB_START_BOUND_ENTITY) != null;
-        TeleportNetwork network = activeCartridge.getItem() instanceof TeleportCartridgeItem
-                ? TeleportCartridgeItem.settings(activeCartridge).network() : null;
+        boolean teleport = activeCartridge.getItem() instanceof TeleportCartridgeItem;
+        TeleportNetwork network = teleport ? TeleportCartridgeItem.settings(activeCartridge).network() : null;
+        List<BlockPos> teleportTargets = teleport ? TeleportCartridgeItem.settings(activeCartridge).targets() : List.of();
         return new Node(pos, ABoardSpaceBlock.countsAsStep(state.getBlock()), start, cartridges, hasToken,
-                inventoryIssue(world, activeCartridge), edges, network);
+                inventoryIssue(world, activeCartridge), edges, network, teleportTargets);
     }
 
     private static @Nullable InventoryIssue inventoryIssue(World world, ItemStack cartridge) {
@@ -206,6 +210,10 @@ public final class BoardGraph {
             for (Edge edge : node.edges()) {
                 if (nodes.containsKey(edge.to())) union(parent, node.pos(), edge.to());
             }
+            // A TP link joins its two tiles' boards too
+            for (BlockPos to : node.teleportTargets()) {
+                if (nodes.containsKey(to)) union(parent, node.pos(), to);
+            }
         }
         Map<BlockPos, Map<TeleportNetwork, List<BlockPos>>> networks = new HashMap<>();
         for (Node node : nodes.values()) {
@@ -233,10 +241,15 @@ public final class BoardGraph {
     }
 
     /**
-     * The other teleport tiles of {@code pos}'s network on its board (loaded, in the graph's stable order): where a
-     * token landing on it may be sent. Empty for a tile alone in its network, or no teleport tile.
+     * Where a token landing on the teleport tile at {@code pos} may be sent (loaded board spaces, in a stable order):
+     * its TP links if it has any, else the other teleport tiles of its network on its board. Empty for a tile alone
+     * in its network without TP links, or no teleport tile.
      */
     public List<BlockPos> teleportPartners(BlockPos pos) {
+        Node node = nodes.get(pos);
+        if (node != null && !node.teleportTargets().isEmpty()) {
+            return node.teleportTargets().stream().filter(to -> !to.equals(pos) && nodes.containsKey(to)).toList();
+        }
         List<BlockPos> group = teleportGroups.get(pos);
         if (group == null || group.size() < 2) return List.of();
         List<BlockPos> partners = new ArrayList<>(group);

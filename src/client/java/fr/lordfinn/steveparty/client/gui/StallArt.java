@@ -1,10 +1,12 @@
 package fr.lordfinn.steveparty.client.gui;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopStock;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStallScreenHandler;
+import fr.lordfinn.steveparty.utils.InfiniteMark;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
@@ -32,7 +34,9 @@ public final class StallArt {
     private static final int BOTTOM_FROM = 70;
     /** Where a column's stock is written: on its arrow's shaft. */
     public static final int STOCK_Y = 41;
-    private static final int STOCK = 0xFFFFFFFF, STOCK_OUT = 0xFFFF5555, STOCK_INFINITE = 0xFFFFD34A;
+    private static final int STOCK = 0xFFFFFFFF, STOCK_OUT = 0xFFFF5555, STOCK_INFINITE = InfiniteMark.COLOR;
+    /** A ghost in a slot of the stall: under its slot's brown, see-through. */
+    private static final int SLOT_VEIL = 0x99805125;
     private static final String SLOT_KEY = "gui.steveparty.trading_stall.slot.";
     private static final String SHOP_KEY = "gui.steveparty.shop_stall.";
 
@@ -87,6 +91,25 @@ public final class StallArt {
             context.drawItem(stack, x + slotX(i), y + slotY(i));
             context.drawItemInSlot(font, stack, x + slotX(i), y + slotY(i));
         }
+    }
+
+    /** The base prices of the offers' columns left without a price, ghosted in their price slot (a stall's order). */
+    public static void drawBasePrices(DrawContext context, TextRenderer font, List<ItemStack> slots, int x, int y) {
+        for (int column = 0; column < ShopCartridgeItem.OFFERS && column + 2 * ShopCartridgeItem.OFFERS < slots.size(); column++) {
+            drawBasePrice(context, font, slots.get(column), slots.get(column + ShopCartridgeItem.OFFERS),
+                    slots.get(column + 2 * ShopCartridgeItem.OFFERS), x + slotX(column), y + slotY(column));
+        }
+    }
+
+    /**
+     * The price {@code sold} would sell at with its two price slots left empty ({@link TradingStallBlockEntity#basePrice}),
+     * ghosted in its (empty) price slot at ({@code x}, {@code y}); nothing when a price is set or it has none.
+     */
+    public static void drawBasePrice(DrawContext context, TextRenderer font, ItemStack price, ItemStack secondPrice,
+                                     ItemStack sold, int x, int y) {
+        if (!price.isEmpty() || !secondPrice.isEmpty() || sold.isEmpty()) return;
+        ItemStack base = TradingStallBlockEntity.basePrice(sold);
+        if (!base.isEmpty()) PartyGui.ghostItem(context, base, x, y, font, SLOT_VEIL);
     }
 
     /** Column {@code column}'s stock on its arrow: white, red when sold out, gold « ∞ »; nothing without an offer or a storage. */

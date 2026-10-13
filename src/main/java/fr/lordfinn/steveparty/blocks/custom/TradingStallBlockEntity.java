@@ -3,6 +3,9 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.DefaultDiceItem;
+import fr.lordfinn.steveparty.items.custom.DoubleDiceItem;
+import fr.lordfinn.steveparty.items.custom.TripleDiceItem;
 import fr.lordfinn.steveparty.items.custom.PowerUpItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import net.minecraft.block.BlockState;
@@ -124,20 +127,31 @@ public class TradingStallBlockEntity extends SyncedBlockEntity implements NamedS
 
     /**
      * The offer of one column of a stall (also of a Shop Cartridge's menu): {@code sold} for {@code firstPrice}, plus
-     * {@code secondPrice} if any (a lone second price is the first one); a power-up without a price sells at its
-     * default price, in the mod's coins. Null when something is missing.
+     * {@code secondPrice} if any (a lone second price is the first one); a power-up or a die without a price sells at
+     * its {@link #basePrice}, in the mod's coins. Null when something is missing.
      */
     public static @Nullable ExactTradeOffer offerOf(ItemStack firstPrice, ItemStack secondPrice, ItemStack sold) {
         if (firstPrice.isEmpty() && !secondPrice.isEmpty()) {
             firstPrice = secondPrice;
             secondPrice = ItemStack.EMPTY;
         }
-        if (firstPrice.isEmpty() && sold.getItem() instanceof PowerUpItem powerUp) {
-            firstPrice = new ItemStack(ModItems.COIN, powerUp.powerUp().defaultPrice());
-        }
+        if (firstPrice.isEmpty()) firstPrice = basePrice(sold);
         if (firstPrice.isEmpty() || sold.isEmpty() || firstPrice.getItem() instanceof AirBlockItem
                 || sold.getItem() instanceof AirBlockItem) return null;
         return new ExactTradeOffer(firstPrice, secondPrice, sold.copy());
+    }
+
+    /**
+     * What {@code sold} costs on a stall whose two price slots are left empty, in the mod's coins: a power-up its
+     * default price, a die by how many it throws (one 5, double 10, triple 20); empty for anything else (no offer).
+     */
+    public static ItemStack basePrice(ItemStack sold) {
+        int coins = 0;
+        if (sold.getItem() instanceof PowerUpItem powerUp) coins = powerUp.powerUp().defaultPrice();
+        else if (sold.getItem() instanceof TripleDiceItem) coins = 20;
+        else if (sold.getItem() instanceof DoubleDiceItem) coins = 10;
+        else if (sold.getItem() instanceof DefaultDiceItem) coins = 5;
+        return coins <= 0 ? ItemStack.EMPTY : new ItemStack(ModItems.COIN, coins);
     }
 
     /**

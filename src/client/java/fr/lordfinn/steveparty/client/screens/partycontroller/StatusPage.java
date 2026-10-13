@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.Blocker;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.Phase;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
+import fr.lordfinn.steveparty.utils.InfiniteMark;
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
@@ -300,7 +301,7 @@ public final class StatusPage {
         Text skipped = StoragePage.skipped(bank);
         return switch (bank.state()) {
             case NONE -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.none"), bankHint, Page.STORAGE);
-            case INFINITE -> new Check(Check.INFO, Text.translatable(KEY + "check.bank.infinite"), bankHint, Page.STORAGE);
+            case INFINITE -> new Check(Check.INFO, InfiniteMark.beforeOnDark(Text.translatable(KEY + "check.bank.infinite")), bankHint, Page.STORAGE);
             case MISSING -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.missing").append(skipped), bankHint, Page.STORAGE);
             case SHORT -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.short", bank.coins(), coin, bank.stars(), star).append(skipped),
                     bankHint, Page.STORAGE);

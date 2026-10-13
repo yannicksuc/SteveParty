@@ -30,6 +30,8 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
+import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
@@ -311,6 +313,58 @@ public class TileTeleportGameTests implements SteveGameTest {
         BoardGraph graph = BoardGraph.collect(context.getWorld(), box(context));
         context.assertEquals(graph.teleportPartners(context.getAbsolutePos(PATH.get(0))), List.of(v2, v4), "the board's violet tiles");
         context.assertTrue(graph.isTeleportAlone(graph.node(context.getAbsolutePos(new BlockPos(1, 1, 6)))), "the other board's one is alone");
+        context.complete();
+    }
+
+    /**
+     * Painted with the brush from a Teleport tile to a board space it has no link to, the player picks « TP » or
+     * « link »: a TP link sends the tokens there (any board space, even on a board no path joins), instead of its
+     * network's tiles; a link is a plain path. Painted over again: erased; undone like any link.
+     */
+    @GameTest(batchId = "tile_teleport", templateName = EMPTY_STRUCTURE)
+    public void theBrushPaintsTpLinksOrPaths(TestContext context) {
+        List<BoardSpaceBlockEntity> tiles = path(context, teleport(TeleportNetwork.VIOLET), plain(), teleport(TeleportNetwork.VIOLET));
+        BoardSpaceBlockEntity island = tile(context, new BlockPos(1, 1, 6), plain());
+        BoardSpaceBlockEntity other = tile(context, new BlockPos(3, 1, 6), plain());
+        var world = context.getWorld();
+        BlockPos from = tiles.get(0).getPos(), to = island.getPos();
+        ServerPlayerEntity player = TestPlayers.mock(context);
+        try {
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TILE_LINKER_BRUSH));
+            ItemStack brush = player.getMainHandStack();
+            context.assertTrue(TileLinkerBrush.teleportChoice(world, TileLinkerBrush.POWERED, from, to) != null, "a choice asked");
+            context.assertTrue(TileLinkerBrush.teleportChoice(world, TileLinkerBrush.POWERED, tiles.get(1).getPos(), to) == null,
+                    "from a plain tile: no choice");
+            TileLinkerBrush.paint(player, brush, world, from);
+            TileLinkerBrush.paint(player, brush, world, to);
+            context.assertTrue(BoardLinks.links(tiles.get(0), 0).equals(List.of(tiles.get(1).getPos())), "nothing linked before the answer");
+            TileLinkerBrush.answerTeleportOrLink(player, from, to, true);
+            context.assertEquals(TileTeleport.settings(tiles.get(0).getActiveCartridgeItemStack()).targets(), List.of(to), "TP link written");
+            context.assertEquals(TileTeleport.pick(world, tiles.get(0), tiles.get(0).getActiveCartridgeItemStack()), to,
+                    "sent to the TP link, not to the violet tile of its board");
+            context.assertTrue(TileLinkerBrush.teleportChoice(world, TileLinkerBrush.POWERED, from, to) == null, "linked: no choice again");
+            TileLinkerBrush.answerTeleportOrLink(player, from, to, false);
+            context.assertTrue(!BoardLinks.links(tiles.get(0), 0).contains(to), "an answer is used once");
+
+            // « link »: a path
+            TileLinkerBrush.endStroke(player);
+            TileLinkerBrush.paint(player, brush, world, from);
+            TileLinkerBrush.paint(player, brush, world, other.getPos());
+            TileLinkerBrush.answerTeleportOrLink(player, from, other.getPos(), false);
+            context.assertTrue(BoardLinks.links(tiles.get(0), 0).contains(other.getPos()), "a path");
+            context.assertEquals(TileTeleport.settings(tiles.get(0).getActiveCartridgeItemStack()).targets(), List.of(to), "no TP link added");
+
+            // Painted over again: the TP link erased, then undone
+            TileLinkerBrush.endStroke(player);
+            TileLinkerBrush.paint(player, brush, world, from);
+            TileLinkerBrush.paint(player, brush, world, to);
+            TileLinkerBrush.endStroke(player);
+            context.assertTrue(TileTeleport.settings(tiles.get(0).getActiveCartridgeItemStack()).targets().isEmpty(), "erased");
+            context.assertTrue(TileLinkerBrush.undo(player, brush, true), "undone");
+            context.assertEquals(TileTeleport.settings(tiles.get(0).getActiveCartridgeItemStack()).targets(), List.of(to), "back after undo");
+        } finally {
+            TestPlayers.remove(context, player);
+        }
         context.complete();
     }
 

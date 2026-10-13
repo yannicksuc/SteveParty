@@ -80,8 +80,11 @@ public class BoxedTraderEntityRenderer extends GeoEntityRenderer<BoxedTraderEnti
         matrices.pop();
     }
 
-    /** The summoned merchant's own stall: a Trading Stall facing south (front toward +Z, his way once turned). */
-    private static final BlockState STALL = ModBlocks.TRADING_STALL.getDefaultState().with(HorizontalFacingBlock.FACING, Direction.SOUTH);
+    /**
+     * The summoned merchant's own stall: a Trading Stall facing north once turned his way, so its drawers face him
+     * (his side) and its counter faces whoever comes to buy.
+     */
+    private static final BlockState STALL = ModBlocks.TRADING_STALL.getDefaultState().with(HorizontalFacingBlock.FACING, Direction.NORTH);
 
     @Override
     public Identifier getTextureLocation(BoxedTraderEntity animatable) {
