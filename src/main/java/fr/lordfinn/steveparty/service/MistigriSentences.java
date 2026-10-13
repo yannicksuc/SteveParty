@@ -59,7 +59,7 @@ import static fr.lordfinn.steveparty.service.BoardSequences.yawToward;
  * <p>
  * A move back is walked once he is gone (the token's turn goes on until it lands: AdvanceBackMoves); every other
  * sentence ends the turn. Coins and stars are only moved, never made: what he takes goes into the party's bank, what he
- * gives comes out of it, the common pot passes them from player to player. He and his die are board actors:
+ * gives comes out of it, a redistribution passes them from player to player. He and his die are board actors:
  * invulnerable, never saved, always removed at the end ({@link BoardActors}), whatever ends it (party over, server
  * stopping). Server thread only.
  */
@@ -247,7 +247,7 @@ public final class MistigriSentences {
     /**
      * Passes {@code outcome} now on the players it aims at (a move back is the show's: not here). Coins and stars are
      * only ever moved: taken into the party's bank, given out of it (as many as it holds), or passed from player to
-     * player through the common pot; never made from nothing, never more than a player holds.
+     * player through a redistribution; never made from nothing, never more than a player holds.
      *
      * @return what it did, for the chat (null: nothing to add)
      */

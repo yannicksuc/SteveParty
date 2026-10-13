@@ -48,6 +48,12 @@ public class FrousseuxGameTests implements SteveGameTest {
      */
     private static final String THEFT = "frousseux_theft";
 
+    /** Beyond the template: the courier tests' floor is 20 x 20, the Frousseux flying across it (else frozen at a chunk edge). */
+    @Override
+    public int landAround() {
+        return 13;
+    }
+
     private static FrousseuxEntity frousseux(TestContext context, BlockPos at) {
         FrousseuxEntity one = context.spawnEntity(ModEntities.FROUSSEUX, at);
         one.setAiDisabled(true);

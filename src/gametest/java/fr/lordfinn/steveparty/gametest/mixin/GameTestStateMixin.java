@@ -1,0 +1,74 @@
+package fr.lordfinn.steveparty.gametest.mixin;
+
+import com.mojang.logging.LogUtils;
+import net.minecraft.test.GameTestState;
+import org.slf4j.Logger;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Why a test failed, written in the console. An ended test runs none of its tasks left. A test's tasks scheduled while its tasks run wait until they are all run:
+ * the timed tasks' map, growing while it is walked, crashed the test server (fastutil's iterator lost, "wrapped is
+ * null").
+ */
+@Mixin(GameTestState.class)
+public abstract class GameTestStateMixin {
+    @Unique
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    @Unique
+    private boolean steveparty$ticking;
+    @Unique
+    private final List<Map.Entry<Long, Runnable>> steveparty$scheduled = new ArrayList<>();
+
+    @Shadow
+    public abstract String getTemplatePath();
+
+    @Shadow
+    public abstract boolean isCompleted();
+
+    @Shadow
+    public abstract void runAtTick(long tick, Runnable runnable);
+
+    @Inject(method = "tickTests", at = @At("HEAD"))
+    private void steveparty$startTicking(CallbackInfo ci) {
+        steveparty$ticking = true;
+    }
+
+    @Inject(method = "tickTests", at = @At("RETURN"))
+    private void steveparty$stopTicking(CallbackInfo ci) {
+        steveparty$ticking = false;
+        List<Map.Entry<Long, Runnable>> scheduled = List.copyOf(steveparty$scheduled);
+        steveparty$scheduled.clear();
+        for (Map.Entry<Long, Runnable> task : scheduled) runAtTick(task.getKey(), task.getValue());
+    }
+
+    /** A test that has ended (passed in one of this tick's tasks) runs none of its tasks left. */
+    @ModifyVariable(method = "runAtTick", at = @At("HEAD"), argsOnly = true)
+    private Runnable steveparty$notOnceEnded(Runnable runnable) {
+        return () -> {
+            if (!isCompleted()) runnable.run();
+        };
+    }
+
+    @Inject(method = "runAtTick", at = @At("HEAD"), cancellable = true)
+    private void steveparty$laterWhileTicking(long tick, Runnable runnable, CallbackInfo ci) {
+        if (!steveparty$ticking) return;
+        steveparty$scheduled.add(Map.entry(tick, runnable));
+        ci.cancel();
+    }
+
+    @Inject(method = "fail", at = @At("HEAD"))
+    private void steveparty$sayWhy(Throwable throwable, CallbackInfo ci) {
+        LOGGER.error("{} failed: {}", getTemplatePath(), throwable.getMessage());
+    }
+}

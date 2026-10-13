@@ -964,6 +964,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         setNoGravity(true);
         setVelocity(flyDir.x * FLIGHT_SPEED, thrown ? flyDir.y * FLIGHT_SPEED : 0.08, flyDir.z * FLIGHT_SPEED);
         this.velocityModified = true;
+        // what a landing on its first tick reads (else the last flight's, or none: taken for a grazing landing)
+        this.flightVelocity = getVelocity();
         setMood(Mood.FLYING, flightTicks);
         playSound(ModSounds.GLANDOUILLE_FLICK, 1f, 1f);
     }
@@ -1000,7 +1002,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
             playSound(ModSounds.GLANDOUILLE_RAM, 1f, 1.2f);
         }
         if (flown % 2 == 0) world.spawnParticles(ParticleTypes.CLOUD, getX(), getY() + 0.3, getZ(), 1, 0, 0, 0, 0);
-        boolean landed = flown > 2 && (this.horizontalCollision || this.verticalCollision || isOnGround());
+        // thrown down (at the floor a few blocks ahead), it lands where it meets the ground, not 2 ticks of flight further
+        boolean landed = (flown > 2 || thrown && flyDir.y < 0) && (this.horizontalCollision || this.verticalCollision || isOnGround());
         // a thrown frosty one coming down at a grazing angle onto the ground slides on, like a curling stone
         if (landed && thrown && getVariant() == GlandouilleVariant.FROSTY && isOnGround() && !this.horizontalCollision
                 && grazing(flightVelocity)) {

@@ -50,4 +50,18 @@ public class MistigriCartridgeItem extends CartridgeItem implements MobSpawnCart
     protected void appendState(ItemStack stack, Tooltips tips) {
         if (MistigriOutcomes.of(stack).drawCount() == 0) tips.warn(Text.translatable("tooltip.steveparty.mistigri_cartridge.none"));
     }
+
+    /** Behind Shift: its sentences as the roulette writes them, likeliest first, each with its chance at a landing. */
+    @Override
+    protected void appendMore(ItemStack stack, Tooltips.More more) {
+        MistigriOutcomes outcomes = MistigriOutcomes.of(stack);
+        double[] chances = outcomes.chances();
+        java.util.List<Integer> rows = new java.util.ArrayList<>();
+        for (int row = 0; row < chances.length; row++) if (chances[row] > 0) rows.add(row);
+        rows.sort(java.util.Comparator.comparingDouble(row -> -chances[row]));
+        for (int row : rows) {
+            more.detail(Text.literal(Math.round(100 * chances[row]) + "% ").formatted(net.minecraft.util.Formatting.GRAY)
+                    .append(outcomes.get(row).text()));
+        }
+    }
 }

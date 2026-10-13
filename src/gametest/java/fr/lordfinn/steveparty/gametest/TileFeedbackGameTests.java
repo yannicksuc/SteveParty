@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.custom.cartridges.FrousseuxCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem;
@@ -71,7 +72,7 @@ public class TileFeedbackGameTests implements SteveGameTest {
             if (absolute.contains(event.tile())) played.add(event);
         };
         TileFeedback.LISTENERS.add(listener);
-        context.addFinalTask(() -> TileFeedback.LISTENERS.remove(listener));
+        TestCleanup.atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return played;
     }
 

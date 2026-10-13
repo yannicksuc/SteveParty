@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -36,6 +37,8 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,11 +71,12 @@ public class ReplayTileGameTests implements SteveGameTest {
 
     private static List<Played> record(TestContext context) {
         List<Played> played = new ArrayList<>();
+        Box area = context.getTestBox().expand(1);
         Consumer<Played> listener = event -> {
-            if (event.kind() == Kind.LAND) played.add(event);
+            if (event.kind() == Kind.LAND && area.contains(Vec3d.ofCenter(event.tile()))) played.add(event);
         };
         TileFeedback.LISTENERS.add(listener);
-        context.addFinalTask(() -> TileFeedback.LISTENERS.remove(listener));
+        TestCleanup.atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return played;
     }
 
@@ -186,7 +190,7 @@ public class ReplayTileGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theSpentDieComesBackAndTheReplayIsSaved(TestContext context) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
-        context.addFinalTask(() -> TestPlayers.remove(context, player));
+        TestCleanup.atEnd(context, () -> TestPlayers.remove(context, player));
         BlockPos pos = new BlockPos(2, 1, 2);
         BoardSpaceBlockEntity tile = placeTile(context, pos, new ItemStack(ModItems.REPLAY_CARTRIDGE));
         PigEntity token = spawnToken(context, pos, player.getUuid());

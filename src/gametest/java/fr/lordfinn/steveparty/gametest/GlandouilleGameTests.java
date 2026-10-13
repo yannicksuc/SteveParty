@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
+import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The Glandouille: it never hurts (it shoves), stomps flatten then finish it (the mossy one takes one more), towers
@@ -353,7 +354,7 @@ public class GlandouilleGameTests implements SteveGameTest {
     }
 
     /** A carrier hit by anyone drops the stack on the ground in front of him, still stacked. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
     public void aHitCarrierDropsTheStack(TestContext context) {
         TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
@@ -362,14 +363,16 @@ public class GlandouilleGameTests implements SteveGameTest {
         PigEntity pig = context.spawnMob(EntityType.PIG, new BlockPos(1, 1, 5));
         members.getFirst().setAiDisabled(true);
         context.assertTrue(GlandouilleTowers.pickUp(player, members.getFirst()), "carried");
-        context.waitAndRun(2, () -> {
+        // a player who just joined can't be hurt for 3 s (60 ticks), the mock player too: hit after that
+        context.waitAndRun(61, () -> {
             player.damage(context.getWorld().getDamageSources().mobAttack(pig), 1f);
             context.assertTrue(GlandouilleTowers.carried(player) == null, "dropped");
             GlandouilleEntity bottom = members.getFirst();
             context.assertTrue(bottom.getVehicle() == null, "on its own feet");
             context.assertEquals(GlandouilleTowers.height(bottom), 2, "still stacked");
             context.waitAndRun(10, () -> {
-                context.assertTrue(bottom.isOnGround(), "on the ground");
+                // without AI it never moves (its on-ground flag is never updated): the ground is at his feet
+                context.assertTrue(Math.abs(bottom.getY() - player.getY()) < 1.0E-3, "on the ground: " + (bottom.getY() - player.getY()));
                 context.assertTrue(bottom.getX() - player.getX() > 0.3 && horizontal(bottom.getPos(), player.getPos()) < 1.2,
                         "in front of him: " + (bottom.getX() - player.getX()));
                 context.complete();
@@ -709,13 +712,19 @@ public class GlandouilleGameTests implements SteveGameTest {
             double[] highest = {start.y};
             a.onHit(player, player);
             context.assertTrue(b.getVehicle() == a && c.getVehicle() == b, "still stacked when hit");
+            // only noted on the way, checked at the end: a passed test removes its entities, and a tick's tasks run in
+            // no set order, so a check run after the last one would see the tower taken apart
+            boolean[] stacked = {true};
+            double[] apart = {0};
             context.runAtEveryTick(() -> {
                 highest[0] = Math.max(highest[0], a.getY());
-                context.assertTrue(b.getVehicle() == a && c.getVehicle() == b, "still stacked on the way");
-                context.assertTrue(horizontal(c.getPos(), a.getPos()) < 0.05, "the top one right above the bottom one");
+                stacked[0] &= b.getVehicle() == a && c.getVehicle() == b;
+                apart[0] = Math.max(apart[0], horizontal(c.getPos(), a.getPos()));
             });
             // before it stomps and charges back at the hitter (it holds a grudge)
             context.waitAndRun(14, () -> {
+                context.assertTrue(stacked[0], "still stacked on the way");
+                context.assertTrue(apart[0] < 0.05, "the top one right above the bottom one: " + apart[0]);
                 context.assertTrue(a.getX() - start.x > 0.5, "the tower went along the blow: " + (a.getX() - start.x));
                 context.assertTrue(highest[0] - start.y > 0.1, "thrown up a little: " + (highest[0] - start.y));
                 context.assertTrue(a.isOnGround(), "landed");
@@ -738,7 +747,8 @@ public class GlandouilleGameTests implements SteveGameTest {
             double[] highest = {start.y};
             a.onHit(player, player);
             context.runAtEveryTick(() -> highest[0] = Math.max(highest[0], a.getY()));
-            context.waitAndRun(30, () -> {
+            // before it stomps and charges back at the hitter (it holds a grudge)
+            context.waitAndRun(14, () -> {
                 context.assertTrue(a.getX() - start.x > 0.3, "pushed along: " + (a.getX() - start.x));
                 context.assertTrue(highest[0] - start.y < 0.01, "not thrown up: " + (highest[0] - start.y));
                 context.assertEquals(GlandouilleTowers.height(a), 3, "still a tower of 3");
@@ -754,6 +764,7 @@ public class GlandouilleGameTests implements SteveGameTest {
         TestBoards.floor(context, 8);
         List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(1, 1, 3));
         GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2);
+        a.setAiDisabled(true); // left to itself, the tower of 2 goes for a stroll before the check
         GlandouilleEntity lone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 6));
         ServerPlayerEntity player = player(context, new BlockPos(0, 1, 3), -90f); // facing +x
         context.waitAndRun(2, () -> {
@@ -762,11 +773,11 @@ public class GlandouilleGameTests implements SteveGameTest {
             lone.onHit(player, player);
             context.assertEquals(b.getMood(), Mood.FLYING, "b flies out alone");
             context.assertTrue(lone.getVelocity().x > 0.1, "a lone one is pushed as before: " + lone.getVelocity());
-            context.waitAndRun(40, () -> {
+            // as soon as c is back (b, holding a grudge, may come back later on)
+            when(context, () -> c.getVehicle() == a, 40, "c back on a", () -> {
                 context.assertTrue(b.getVehicle() == null && !GlandouilleTowers.hasRider(b), "b alone");
-                context.assertTrue(c.getVehicle() == a, "c back on a");
                 context.assertEquals(GlandouilleTowers.height(a), 2, "a tower of 2");
-                context.assertTrue(horizontal(a.getPos(), aStart) < 0.05, "a not pushed");
+                context.assertTrue(horizontal(a.getPos(), aStart) < 0.05, "a not pushed: " + a.getPos().subtract(aStart) + " " + a.getMood());
                 context.complete();
             });
         });
@@ -982,6 +993,10 @@ public class GlandouilleGameTests implements SteveGameTest {
         GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 3));
         ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 90f);
         frosty.startSlide(new Vec3d(0.6, 0, 0));
+        // it slides on and on (bouncing): once it has dazed him, it is taken away, or it would come back and daze him again
+        context.runAtEveryTick(() -> {
+            if (player.hasStatusEffect(ModEffects.DAZED)) frosty.discard();
+        });
         assertDazed(context, player);
     }
 
@@ -1006,6 +1021,7 @@ public class GlandouilleGameTests implements SteveGameTest {
      * not hurt, then free again.
      */
     private static void assertDazed(TestContext context, ServerPlayerEntity player) {
+        lives(context, player);
         float health = player.getHealth();
         context.waitAndRun(30, () -> {
             StatusEffectInstance dazed = player.getStatusEffect(ModEffects.DAZED);
@@ -1016,12 +1032,22 @@ public class GlandouilleGameTests implements SteveGameTest {
             context.assertTrue(player.getVelocity().horizontalLengthSquared() < 1.0E-6, "rooted to the spot, not thrown");
             context.assertEquals(player.getHealth(), health, "not hurt");
             context.waitAndRun(DazedEffect.TICKS + 5, () -> {
-                context.assertFalse(player.hasStatusEffect(ModEffects.DAZED), "free again");
+                context.assertFalse(player.hasStatusEffect(ModEffects.DAZED), "free again: " + player.getStatusEffect(ModEffects.DAZED));
                 context.assertTrue(player.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) > 0.05, "walks again");
                 context.assertEquals(player.getHealth(), health, "never hurt");
                 context.complete();
             });
         });
+    }
+
+    /**
+     * The mock player lives no life of its own (no client ticks it, it never moves): its effects run out only if its
+     * own tick runs, and nothing would ever slow down the nudges of a Glandouille stopped against it, so it is not nudged
+     * (a blow would still show).
+     */
+    private static void lives(TestContext context, ServerPlayerEntity player) {
+        player.noClip = true;
+        context.runAtEveryTick(player::baseTick);
     }
 
     // ---------------------------------------------------------------- variants
@@ -1343,17 +1369,24 @@ public class GlandouilleGameTests implements SteveGameTest {
         return stack;
     }
 
+    /**
+     * The Glandouilles this test's board space brings. Every show's are heard, and the tests around it run at the same
+     * time: only those that appear on this test's land.
+     */
     private static List<GlandouilleEntity> spawned(TestContext context) {
         List<GlandouilleEntity> list = new ArrayList<>();
-        Consumer<GlandouilleEntity> listener = list::add;
+        Box land = context.getTestBox();
+        Consumer<GlandouilleEntity> listener = one -> {
+            if (land.contains(one.getPos())) list.add(one);
+        };
         GlandouillePushes.SPAWN_LISTENERS.add(listener);
         atEnd(context, () -> GlandouillePushes.SPAWN_LISTENERS.remove(listener));
         return list;
     }
 
+    /** The Glandouilles on this test's land (not the ones of the tests running next to it). */
     private static List<GlandouilleEntity> around(TestContext context) {
-        return context.getWorld().getEntitiesByClass(GlandouilleEntity.class,
-                new Box(context.getAbsolutePos(BlockPos.ORIGIN)).expand(10), e -> true);
+        return context.getWorld().getEntitiesByClass(GlandouilleEntity.class, context.getTestBox(), e -> true);
     }
 
     /** A cartridge without destination (0 spaces): nothing happens, no Glandouille. */

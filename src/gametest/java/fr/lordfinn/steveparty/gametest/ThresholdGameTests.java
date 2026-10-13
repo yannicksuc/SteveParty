@@ -37,15 +37,17 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+
+import static fr.lordfinn.steveparty.gametest.kit.TestCleanup.atEnd;
 
 /**
  * The Threshold obstacle Cartridge: every condition, a token stopped (its steps lost, a landing) or getting over, the
@@ -53,9 +55,13 @@ import java.util.function.Consumer;
  */
 public class ThresholdGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(0, 1, 7);
-    /** Board spaces 2 blocks apart along x. */
+    /**
+     * Board spaces 2 blocks apart: along x on z = 1, then back along x on z = 3. All within the test's 8 x 8 template:
+     * a space beyond it stands between the tests or in the next test's template (blanked when that one is set up), in
+     * a chunk that may not tick entities.
+     */
     private static final List<BlockPos> PATH = List.of(new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1),
-            new BlockPos(7, 1, 1), new BlockPos(9, 1, 1), new BlockPos(11, 1, 1), new BlockPos(13, 1, 1));
+            new BlockPos(7, 1, 1), new BlockPos(7, 1, 3), new BlockPos(5, 1, 3), new BlockPos(3, 1, 3));
 
     private static void space(TestContext context, BlockPos pos, Block block, ItemStack cartridge, BlockPos... to) {
         context.setBlockState(pos.down(), Blocks.STONE);
@@ -105,23 +111,12 @@ public class ThresholdGameTests implements SteveGameTest {
         return controller;
     }
 
-    /** What to undo when the test ends (a test has one final task: they are run together). */
-    private static final Map<TestContext, List<Runnable>> AT_END = new WeakHashMap<>();
-
-    static void atEnd(TestContext context, Runnable task) {
-        List<Runnable> tasks = AT_END.get(context);
-        if (tasks == null) {
-            List<Runnable> created = new ArrayList<>();
-            AT_END.put(context, created);
-            context.addFinalTask(() -> created.forEach(Runnable::run));
-            tasks = created;
-        }
-        tasks.add(task);
-    }
-
     private static List<Played> record(TestContext context) {
         List<Played> played = new ArrayList<>();
-        Consumer<Played> listener = played::add;
+        Box area = context.getTestBox().expand(1);
+        Consumer<Played> listener = event -> {
+            if (area.contains(Vec3d.ofCenter(event.tile()))) played.add(event);
+        };
         TileFeedback.LISTENERS.add(listener);
         atEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return played;

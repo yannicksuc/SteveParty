@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
@@ -132,7 +133,7 @@ public class DiceGameTests implements SteveGameTest {
         player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, pitch);
         player.setSneaking(sneaking);
         player.setStackInHand(Hand.MAIN_HAND, stack);
-        context.addFinalTask(() -> {
+        TestCleanup.atEnd(context, () -> {
             diceOf(context, player).forEach(DiceEntity::discard);
             TestPlayers.remove(context, player);
         });

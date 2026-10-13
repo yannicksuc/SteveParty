@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.gui.cartridge;
 
 import fr.lordfinn.steveparty.client.gui.HitArea;
+import net.minecraft.client.render.DiffuseLighting;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.components.MistigriOutcomes;
@@ -15,6 +16,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
@@ -43,14 +45,22 @@ import java.util.function.IntConsumer;
 final class OutcomeListWidget {
     private static final int ROW_H = OutcomeListModule.ROW_H;
     /**
-     * The open row's grid, {@link #GRID_W} wide, every line of it the same width, centred under the row: the kinds as one
-     * segmented bar (buttons {@link #KIND_B} square sharing their 1-pixel edges: 7 × 17 + 1), the targets as touching
-     * buttons ({@link #TARGET_B} wide: 8 × 15), the figures (amount and #/% on the left, the weight on the right edge).
+     * The open row's grid, in the rows' column grid ({@link #gridW}): every line of it the same width, the kinds as one
+     * segmented bar (buttons {@link #KIND_B} high sharing their 1-pixel edges), the targets as touching buttons
+     * ({@link #TARGET_B} high), both spread evenly over the width, the figures (amount and #/% on the left edge, the
+     * weight on the right edge). A column narrower than {@link #GRID_W} wraps them at their least sizes.
      * {@link #ED_GAP} between the lines, above the first and under the last.
      */
-    private static final int GRID_W = 120, KIND_PITCH = 17, ED_GAP = 3, SIGN_GAP = 2, GROUP_GAP = 3;
-    private static final int KIND_B = 18, KIND_GAP = KIND_PITCH - KIND_B, TARGET_B = 15, GAP = 0, NUM_H = 13, STEP_W = 11, VALUE_W = 25, MODE_W = 11, WEIGHT_W = 15, DRAWS_W = 27;
-    private static final int DELETE_W = 11, SCROLLBAR = 4, SCROLL_STEP = 9;
+    private static final int GRID_W = 120, KIND_PITCH = 17, ED_GAP = 4, SIGN_GAP = 2, GROUP_GAP = 4;
+    /**
+     * A row: {@link #PAD} on each side (the gold bar of an open row in it), the kind's icon, {@link #ICON_GAP}, who,
+     * {@link #TEXT_GAP}, the amount; on the right the chance, {@link #TEXT_GAP}, the delete button. Everything centred
+     * on the row's height: the 21 pixels centre the 7-pixel capitals, the 11-pixel pictogram and button exactly; the
+     * 16-pixel item sits 2 above, 3 under (an item's drawing keeps its own margin).
+     */
+    private static final int PAD = 4, ICON_GAP = 4, TEXT_GAP = 6, LIST_PAD = OutcomeListModule.LIST_PAD;
+    private static final int KIND_B = 18, KIND_GAP = KIND_PITCH - KIND_B, TARGET_B = 17, TARGET_MIN_W = 15, GAP = 0, NUM_H = 13, STEP_W = 11, VALUE_W = 25, MODE_W = 11, WEIGHT_W = 15, DRAWS_W = 27;
+    private static final int DELETE_W = 11, SCROLLBAR = 4, SCROLL_STEP = 7;
     private static final long SETTLE_MS = 1500;
     // Colours: the shell's
     private static final int OUTLINE = 0xFF0E0E0E, BOX = 0xFF2C2C2C, ROW_A = 0xFF363636, ROW_B = 0xFF323232,
@@ -135,15 +145,18 @@ final class OutcomeListWidget {
         return bw - 2 - (bar ? SCROLLBAR : 0);
     }
 
-    /** The open row's grid width in a row {@code iw} wide: {@link #GRID_W}, less in a narrow column (its lines wrap). */
+    /**
+     * The open row's grid width in a row {@code iw} wide: from the rows' content (where the kind's icon starts, 3 pixels
+     * in) to the delete button's right edge (2 pixels from the row's end). Its lines are stretched to it.
+     */
     private static int gridW(int iw) {
-        return Math.min(GRID_W, iw - 4);
+        return iw - 2 * PAD;
     }
 
     /** A row's editor height (its row {@code iw} wide): the palettes (wrapped when narrow), the figures, the gaps. */
     private int editorH(Outcome outcome, int iw) {
         int w = gridW(iw);
-        int kinds = rows(Kind.values().length, KIND_B, KIND_GAP, w), targets = rows(Target.values().length, TARGET_B, GAP, w);
+        int kinds = rows(Kind.values().length, KIND_B, KIND_GAP, w), targets = rows(Target.values().length, TARGET_MIN_W, GAP, w);
         return ED_GAP + kinds * KIND_B + (kinds - 1) * (ED_GAP) + ED_GAP + targets * TARGET_B + (targets - 1) * ED_GAP + ED_GAP
                 + (figuresWrap(outcome, w) ? 2 * NUM_H + ED_GAP : NUM_H) + ED_GAP;
     }
@@ -171,7 +184,7 @@ final class OutcomeListWidget {
 
     /** The « Delete? » row: whether its buttons go under the question. */
     private boolean confirmWraps(int w) {
-        return 4 + font.getWidth(Text.translatable(K + "delete.confirm")) + 6 + buttonW(K + "yes") + 2 + buttonW(K + "no") + 3 > w;
+        return PAD + font.getWidth(Text.translatable(K + "delete.confirm")) + TEXT_GAP + buttonW(K + "yes") + 2 + buttonW(K + "no") + PAD > w;
     }
 
     /** A text button: its ink and 5 pixels each side (the same room left and right). */
@@ -202,7 +215,7 @@ final class OutcomeListWidget {
         bw = w;
         hits.clear();
         blocks.clear();
-        int view = OutcomeListModule.LIST_H - 2;
+        int view = OutcomeListModule.LIST_H - 2 - 2 * LIST_PAD;
         boolean bar = contentH(outcomes, innerW(false)) > view;
         int iw = innerW(bar), content = contentH(outcomes, iw);
         scrollMax = Math.max(0, content - view);
@@ -216,7 +229,7 @@ final class OutcomeListWidget {
         }
         scroll = Math.clamp(scroll, 0, scrollMax);
 
-        int x0 = bx + 1, y = by + 1 - scroll;
+        int x0 = bx + 1, y = by + 1 + LIST_PAD - scroll;
         for (int row = 0; row < outcomes.size(); row++) {
             Outcome outcome = outcomes.get(row);
             int h = blockH(outcomes, row, iw);
@@ -224,16 +237,16 @@ final class OutcomeListWidget {
             if (row == confirm) {
                 int yes = buttonW(K + "yes"), no = buttonW(K + "no");
                 int line = confirmWraps(iw) ? y + ROW_H - 2 : y + (ROW_H - NUM_H) / 2;
-                hits.add(new Hit(x0 + iw - 3 - no, line, no, NUM_H, Part.NO, row, 0, editable));
-                hits.add(new Hit(x0 + iw - 3 - no - 2 - yes, line, yes, NUM_H, Part.YES, row, 0, editable));
+                hits.add(new Hit(x0 + iw - PAD - no, line, no, NUM_H, Part.NO, row, 0, editable));
+                hits.add(new Hit(x0 + iw - PAD - no - 2 - yes, line, yes, NUM_H, Part.YES, row, 0, editable));
             } else {
-                hits.add(new Hit(x0 + iw - 2 - DELETE_W, y + (ROW_H - DELETE_W) / 2, DELETE_W, DELETE_W, Part.DELETE, row, 0, editable));
+                hits.add(new Hit(x0 + iw - PAD - DELETE_W, y + (ROW_H - DELETE_W) / 2, DELETE_W, DELETE_W, Part.DELETE, row, 0, editable));
                 hits.add(new Hit(x0, y, iw, ROW_H, Part.ROW, row, 0, editable));
             }
             if (row == open && row != confirm) {
                 // Centred between the gold bar (2 pixels) and the row's right end (the delete button's right edge)
-                int gw = gridW(iw), left = x0 + 2 + (iw - 4 - gw) / 2;
-                layoutEditor(outcome, row, left, y + ROW_H + ED_GAP, gw);
+                // In the rows' column grid: under the kind's icon, to the delete button's right edge
+                layoutEditor(outcome, row, x0 + PAD, y + ROW_H + ED_GAP, gridW(iw));
             }
             y += h;
         }
@@ -254,18 +267,31 @@ final class OutcomeListWidget {
 
     private void layoutEditor(Outcome outcome, int row, int x, int y, int w) {
         int perRow = perRow(KIND_B, KIND_GAP, w);
+        int kinds = Kind.values().length, targets = Target.values().length;
         for (Kind kind : Kind.values()) {
             int i = kind.ordinal();
-            hits.add(new Hit(x + i % perRow * KIND_PITCH, y + i / perRow * (KIND_B + ED_GAP), KIND_B, KIND_B, Part.KIND, row, i, editable));
+            if (perRow >= kinds) {
+                // One segmented bar across the whole width: the edges shared, the widths spread evenly (a pixel apart at most)
+                int from = x + Math.round(i * (w - 1) / (float) kinds), to = x + Math.round((i + 1) * (w - 1) / (float) kinds);
+                hits.add(new Hit(from, y, to - from + 1, KIND_B, Part.KIND, row, i, editable));
+            } else {
+                hits.add(new Hit(x + i % perRow * KIND_PITCH, y + i / perRow * (KIND_B + ED_GAP), KIND_B, KIND_B, Part.KIND, row, i, editable));
+            }
         }
         y += rows(Kind.values().length, KIND_B, KIND_GAP, w) * (KIND_B + ED_GAP);
-        perRow = perRow(TARGET_B, GAP, w);
+        perRow = perRow(TARGET_MIN_W, GAP, w);
         for (Target target : Target.values()) {
             int i = target.ordinal();
             boolean allowed = outcome.kind().anyTarget || target == Target.LANDED;
-            hits.add(new Hit(x + i % perRow * TARGET_B, y + i / perRow * (TARGET_B + ED_GAP), TARGET_B, TARGET_B, Part.TARGET, row, i, editable && allowed));
+            if (perRow >= targets) {
+                // Touching buttons across the whole width, the widths spread evenly
+                int from = x + Math.round(i * w / (float) targets), to = x + Math.round((i + 1) * w / (float) targets);
+                hits.add(new Hit(from, y, to - from, TARGET_B, Part.TARGET, row, i, editable && allowed));
+            } else {
+                hits.add(new Hit(x + i % perRow * TARGET_MIN_W, y + i / perRow * (TARGET_B + ED_GAP), TARGET_MIN_W, TARGET_B, Part.TARGET, row, i, editable && allowed));
+            }
         }
-        y += rows(Target.values().length, TARGET_B, GAP, w) * (TARGET_B + ED_GAP);
+        y += rows(Target.values().length, TARGET_MIN_W, GAP, w) * (TARGET_B + ED_GAP);
         Kind kind = outcome.kind();
         if (kind.hasAmount()) {
             int min = outcome.percent() ? 5 : kind.min, max = outcome.percent() ? 100 : kind.max;
@@ -296,8 +322,8 @@ final class OutcomeListWidget {
         int bh = OutcomeListModule.LIST_H;
         context.fill(bx, by, bx + bw, by + bh, OUTLINE);
         context.fill(bx + 1, by + 1, bx + bw - 1, by + bh - 1, BOX);
-        context.enableScissor(bx + 1, by + 1, bx + bw - 1, by + bh - 1);
-        boolean inBox = HitArea.contains(mouseX, mouseY, bx + 1, by + 1, bw - 2, bh - 2);
+        context.enableScissor(bx + 1, by + 1 + LIST_PAD, bx + bw - 1, by + bh - 1 - LIST_PAD);
+        boolean inBox = HitArea.contains(mouseX, mouseY, bx + 1, by + 1 + LIST_PAD, bw - 2, bh - 2 - 2 * LIST_PAD);
         int iw = innerW(scrollMax > 0);
         for (Block block : blocks) {
             if (block.y + block.h < by || block.y > by + bh) continue;
@@ -333,7 +359,7 @@ final class OutcomeListWidget {
             context.fill(x0, y, x0 + iw, y + block.h, CONFIRM);
             context.fill(x0, y, x0 + 2, y + block.h, 0xFFD9283B);
             Text question = Text.translatable(K + "delete.confirm");
-            UiText.line(context, font, question, x0 + 5, y + (ROW_H - ButtonGlyphs.CAP_H) / 2, iw - 8, 0xFFFFD0D0, false);
+            UiText.line(context, font, question, x0 + PAD, y + (ROW_H - ButtonGlyphs.CAP_H) / 2, iw - 2 * PAD, 0xFFFFD0D0, false);
             return;
         }
         boolean hovered = editable && HitArea.contains(mouseX, mouseY, x0, y, iw, ROW_H);
@@ -345,19 +371,21 @@ final class OutcomeListWidget {
         }
         boolean off = outcome.weight() == 0;
         // Its kind, who, how much
-        context.drawItem(icon(outcome.kind()), x0 + 3, y);
+        int iy = y + (ROW_H - 16) / 2;
+        flatItem(context, icon(outcome.kind()), x0 + PAD, iy);
         context.getMatrices().push();
         context.getMatrices().translate(0, 0, 200);
-        MistigriIcons.badge(context, outcome.kind(), x0 + 3, y);
-        if (off) context.fill(x0 + 3, y, x0 + 19, y + 16, 0x9A2C2C2C);
+        MistigriIcons.badge(context, outcome.kind(), x0 + PAD, iy);
+        if (off) context.fill(x0 + PAD, iy, x0 + PAD + 16, iy + 16, 0x9A2C2C2C);
         context.getMatrices().pop();
-        MistigriIcons.target(context, outcome.target(), x0 + 21, y + (ROW_H - MistigriIcons.SIZE) / 2, off);
+        int whoX = x0 + PAD + 16 + ICON_GAP;
+        MistigriIcons.target(context, outcome.target(), whoX, y + (ROW_H - MistigriIcons.SIZE) / 2, off);
         int chanceW = font.getWidth("100%");
-        int textX = x0 + 21 + MistigriIcons.SIZE + 4, room = iw - (textX - x0) - DELETE_W - 4 - chanceW - 4;
+        int textX = whoX + MistigriIcons.SIZE + TEXT_GAP, room = x0 + iw - PAD - DELETE_W - TEXT_GAP - chanceW - TEXT_GAP - textX;
         UiText.line(context, font, amount(outcome), textX, y + (ROW_H - ButtonGlyphs.CAP_H) / 2, room, off ? OFF : amountColor(outcome.kind()), false);
         // Its chance at a landing
         String chance = off ? "–" : Math.round(100 * (row < chances.length ? chances[row] : 0)) + "%";
-        int cx = x0 + iw - 2 - DELETE_W - 4 - font.getWidth(chance);
+        int cx = x0 + iw - PAD - DELETE_W - TEXT_GAP - font.getWidth(chance);
         UiText.line(context, font, chance, cx, y + (ROW_H - ButtonGlyphs.CAP_H) / 2, font.getWidth(chance), off ? OFF : SOFT, false);
     }
 
@@ -396,11 +424,18 @@ final class OutcomeListWidget {
             case KIND -> {
                 Kind kind = Kind.values()[hit.value];
                 boolean chosen = outcome != null && outcome.kind() == kind;
-                PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, chosen ? PartyGui.BUTTON_SELECTED : hot ? DARK.brighter() : DARK, chosen);
-                context.drawItem(icon(kind), hit.x + 1, hit.y + 1);
+                if (chosen) {
+                    // A bright gold ring (its edges over its neighbours'), a dark inside: the item stays readable
+                    context.fill(hit.x, hit.y, hit.x + hit.w, hit.y + hit.h, GOLD);
+                    context.fill(hit.x + 1, hit.y + 1, hit.x + hit.w - 1, hit.y + hit.h - 1, 0xFF5A4410);
+                } else {
+                    PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, hot ? DARK.brighter() : DARK, false);
+                }
+                int ix = hit.x + (hit.w - 16) / 2, iy = hit.y + (hit.h - 16) / 2;
+                flatItem(context, icon(kind), ix, iy);
                 context.getMatrices().push();
                 context.getMatrices().translate(0, 0, 200);
-                MistigriIcons.badge(context, kind, hit.x + 1, hit.y + 1);
+                MistigriIcons.badge(context, kind, ix, iy);
                 context.getMatrices().pop();
             }
             case TARGET -> {
@@ -457,6 +492,18 @@ final class OutcomeListWidget {
 
     private static final ItemStack[] ICONS = new ItemStack[Kind.values().length];
 
+    /**
+     * An item lit flat, like a sprite: a 3D model (the Party Star) is otherwise lit from the side as in a slot, its
+     * faces dulled to grey next to the flat coin.
+     */
+    private static void flatItem(DrawContext context, ItemStack stack, int x, int y) {
+        context.draw();
+        DiffuseLighting.disableGuiDepthLighting();
+        context.drawItem(stack, x, y);
+        context.draw();
+        DiffuseLighting.enableGuiDepthLighting();
+    }
+
     /** A kind's icon in the default currencies (the cartridge is not tied to a party here). */
     private static ItemStack icon(Kind kind) {
         if (ICONS[kind.ordinal()] == null) ICONS[kind.ordinal()] = kind.icon(PartyCurrency.COIN.defaultStack(), PartyCurrency.STAR.defaultStack());
@@ -504,10 +551,13 @@ final class OutcomeListWidget {
         switch (hit.part) {
             case ROW -> {
                 if (outcome == null) return null;
+                // The sentence as the roulette writes it, its target in its colour; then its chance and the click
                 lines.add(outcome.text());
-                if (outcome.weight() == 0) lines.add(Text.translatable(K + "never").formatted(Formatting.GRAY));
-                else lines.add(Text.translatable(K + "chance", Math.round(100 * chances[hit.row])).formatted(Formatting.GRAY));
-                if (editable) lines.add(Text.translatable(open == hit.row ? K + "row.close" : K + "row.open").formatted(Formatting.YELLOW));
+                MutableText second = outcome.weight() == 0 ? Text.translatable(K + "never").formatted(Formatting.GRAY)
+                        : Text.translatable(K + "chance", Math.round(100 * chances[hit.row])).formatted(Formatting.GRAY);
+                if (editable) second.append(Text.literal(" · ").formatted(Formatting.DARK_GRAY))
+                        .append(Text.translatable(open == hit.row ? K + "row.close" : K + "row.open").formatted(Formatting.YELLOW));
+                lines.add(second);
             }
             case DELETE -> lines.add(Text.translatable(K + "delete"));
             case KIND -> {
@@ -549,7 +599,7 @@ final class OutcomeListWidget {
 
     /** The hit box under the mouse: in the box only where it is shown. */
     private @Nullable Hit hitAt(double mouseX, double mouseY) {
-        boolean inBox = HitArea.contains(mouseX, mouseY, bx + 1, by + 1, bw - 2, OutcomeListModule.LIST_H - 2);
+        boolean inBox = HitArea.contains(mouseX, mouseY, bx + 1, by + 1 + LIST_PAD, bw - 2, OutcomeListModule.LIST_H - 2 - 2 * LIST_PAD);
         // The buttons before the row under them (added after them)
         for (Hit hit : hits) {
             if (hit.part == Part.ROW) continue;

@@ -5,7 +5,10 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "ServerChunkManagerTestInvoker",
-    "ServerWorldTestAccessor"
+    "ServerWorldTestAccessor",
+    "GameTestStateMixin",
+    "ServerPlayerEntityTestAccessor",
+    "TestContextAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -15,6 +15,8 @@ import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.gametest.kit.TestBoards;
+import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
+import fr.lordfinn.steveparty.gametest.mixin.TestContextAccessor;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import net.minecraft.block.Blocks;
@@ -57,6 +59,18 @@ public class CoreGameTests implements SteveGameTest {
         context.waitAndRun(5, () -> {
             context.assertTrue(first.get(), "first task ran");
             context.assertTrue(second.get(), "task scheduled from a task ran");
+            context.complete();
+        });
+    }
+
+    /** A cleanup waits for the end of the test: the test goes on running its later checks (it used to end at once). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aCleanupWaitsForTheEndOfTheTest(TestContext context) {
+        AtomicBoolean cleaned = new AtomicBoolean();
+        TestCleanup.atEnd(context, () -> cleaned.set(true));
+        context.waitAndRun(5, () -> {
+            context.assertFalse(((TestContextAccessor) context).steveparty$test().isCompleted(), "the test still running");
+            context.assertFalse(cleaned.get(), "nothing cleaned up yet");
             context.complete();
         });
     }

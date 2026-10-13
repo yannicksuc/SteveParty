@@ -254,7 +254,8 @@ public class DiceRollGameTests implements SteveGameTest {
                 assertOn(context, b, PATH.get(2), "b did not move");
                 context.assertTrue(!PartyLiveData.capture(controller, context.getWorld()).effect().swapWith().isEmpty(), "the HUD: who it swapped with");
                 when(context, turnEnded(controller), 100, "the turn ends", () -> {
-                    context.assertTrue(played.stream().noneMatch(event -> event.kind() == Kind.LAND), "no landing");
+                    // On its own tiles: the tests of the batch running beside it land on theirs
+                    context.assertTrue(PATH.subList(0, 6).stream().noneMatch(tile -> played(played, context, Kind.LAND, tile)), "no landing");
                     context.assertEquals(controller.getPartyData().getStepIndex(), 2, "the next turn");
                     context.complete();
                 });
@@ -262,8 +263,11 @@ public class DiceRollGameTests implements SteveGameTest {
         });
     }
 
-    /** Outside a party: the tokens nearby; without an answer, a random one. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH)
+    /**
+     * Outside a party: the tokens nearby; without an answer, a random one. (In a batch of its own: the tokens of the
+     * tests beside it would be nearby too.)
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "dice_rolls_swap_nearby")
     public void swapTimesOutToARandomTokenNearby(TestContext context) {
         path(context, 6, -1, null);
         ServerPlayerEntity player = player(context);
