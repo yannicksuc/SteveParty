@@ -323,6 +323,12 @@ public final class StatusPage {
         Row row = rowAt(mouseX, mouseY, data);
         if (row == null || row.hint() == null) return null;
         List<Text> lines = new ArrayList<>();
+        // A line cut at its box: whole here (its own scrolling tooltip gives way to this one)
+        int textWidth = row.step() == null ? row.w() : CW - 12;
+        if (dashboard.font().getWidth(row.text()) > textWidth) lines.add(row.text().copy().formatted(Formatting.WHITE));
+        if (row.action() != null && row.actionLines() == 1 && dashboard.font().getWidth(row.action()) > CW - 12) {
+            lines.add(row.action().copy().formatted(Formatting.WHITE));
+        }
         lines.add(row.hint().copy().formatted(Formatting.GRAY));
         if (row.target() != null)
             lines.add(Text.translatable(KEY + "check.go", DashboardTabs.name(row.target())).formatted(Formatting.YELLOW));

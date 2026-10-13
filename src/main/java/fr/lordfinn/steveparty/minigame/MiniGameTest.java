@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMemberships;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
@@ -21,6 +22,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
@@ -29,11 +33,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -51,7 +55,9 @@ import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
  *     orange, teams A to D; white or glass, a spectator. Entry and exit pipes recruit nobody. The test is played in
  *     the way to play ticked on the page that fits the most of them (each of its teams needs a player, and their number
  *     must be within the page's); those near a pipe that way does not use are left out, and told so. Whoever started
- *     it without standing near a pipe only watches.</li>
+ *     it without standing near a pipe only watches. Only the players of the starter's party are taken (those of no
+ *     party when he is in none): a test never pulls in someone busy elsewhere. Each one taken is told so in the chat,
+ *     with a button to leave ({@code /steveparty leave}, {@link #leave}).</li>
  *     <li><b>How it goes</b>: like the mini-game step of a party ({@code MiniGamePartyStep}): the podiums of the page
  *     are emptied and its counters put back to 0, its card is shown with a countdown, the players come out of the
  *     pipes of their role, the spectators out of the spectators pipes. While it is played it is the
@@ -73,7 +79,6 @@ import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
 public final class MiniGameTest implements MiniGameSession {
     public static final double RECRUIT_RADIUS = 10;
     public static final int COUNTDOWN_SECONDS = 3;
-    private static final int EMERGE_GAP_TICKS = 8;
     private static final int WATCH_INTERVAL_TICKS = 20;
 
     public enum Phase { COUNTDOWN, PLAYING, FINISHED }
@@ -162,11 +167,22 @@ public final class MiniGameTest implements MiniGameSession {
 
     /** The players near the pipes of a page, each with the role of the nearest pipe, by name. */
     public static Map<UUID, MiniGamePipeRole> recruit(MinecraftServer server, MiniGamePageData page) {
+        return recruit(server, page, null);
+    }
+
+    /**
+     * The players near the pipes of a page, each with the role of the nearest pipe, by name; with a {@code starter},
+     * only those of his party (those of no party when he is in none).
+     */
+    public static Map<UUID, MiniGamePipeRole> recruit(MinecraftServer server, MiniGamePageData page, @Nullable ServerPlayerEntity starter) {
         List<ServerPlayerEntity> near = new ArrayList<>(server.getPlayerManager().getPlayerList());
         near.sort(Comparator.comparing(player -> player.getGameProfile().getName()));
+        PartyMemberships memberships = PartyMemberships.get(server);
+        Object party = starter == null ? null : memberships.of(starter.getUuid());
         Map<UUID, MiniGamePipeRole> recruits = new LinkedHashMap<>();
         for (ServerPlayerEntity player : near) {
             if (player.isSpectator() || !player.isAlive() || MiniGamePipes.isInParty(player.getUuid())) continue;
+            if (starter != null && !Objects.equals(party, memberships.of(player.getUuid()))) continue;
             MiniGamePipeRole role = null;
             double best = RECRUIT_RADIUS * RECRUIT_RADIUS;
             for (MiniGamePipeLink link : page.pipeLinks()) {
@@ -271,10 +287,15 @@ public final class MiniGameTest implements MiniGameSession {
 
     /** Whether the page can be tested now, and with whom. */
     public static Plan check(MinecraftServer server, UUID pageId) {
+        return check(server, pageId, null);
+    }
+
+    /** Whether the page can be tested now by {@code starter} (see {@link #recruit}), and with whom. */
+    public static Plan check(MinecraftServer server, UUID pageId, @Nullable ServerPlayerEntity starter) {
         if (TESTS.containsKey(pageId)) return new Plan(Status.RUNNING, List.of());
         if (PartyControllerEntity.getPartyPlayingPage(List.of(pageId)).isPresent()) return new Plan(Status.PARTY_PLAYING, List.of());
         MiniGamePageData page = MiniGamePages.get(server, pageId);
-        Plan plan = plan(page, recruit(server, page));
+        Plan plan = plan(page, recruit(server, page, starter));
         Status zone = plan.status() == Status.READY ? Status.ofZone(MiniGameArena.check(server, pageId)) : null;
         return zone == null ? plan : new Plan(zone, plan.spectators());
     }
@@ -287,12 +308,28 @@ public final class MiniGameTest implements MiniGameSession {
      * @return {@link Status#READY} if it started, else why not
      */
     public static Status start(MinecraftServer server, UUID pageId, @Nullable ServerPlayerEntity starter, int countdownSeconds) {
-        Plan plan = check(server, pageId);
+        Plan plan = check(server, pageId, starter);
         if (plan.status() != Status.READY) return plan.status();
         MiniGameTest test = new MiniGameTest(server, pageId, plan, starter);
         TESTS.put(pageId, test);
         test.begin(plan, countdownSeconds);
         return Status.READY;
+    }
+
+    /**
+     * {@code player} leaves the test he plays or watches, if any ({@code /steveparty leave}): what he owns given back,
+     * back where he stood when it started. The test goes on without him; without any player left, it stops.
+     *
+     * @return true if he was in one
+     */
+    public static boolean leave(UUID player) {
+        for (MiniGameTest test : new ArrayList<>(TESTS.values())) {
+            if (!test.closed && (test.players.contains(player) || test.spectators.contains(player))) {
+                test.drop(player);
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Stops the test of a page, if any (its button, or a party about to play the page). @return true if one was stopped */
@@ -325,8 +362,8 @@ public final class MiniGameTest implements MiniGameSession {
         this.pageId = pageId;
         this.format = plan.format();
         this.disposition = plan.teams();
-        this.players = List.copyOf(plan.players());
-        this.spectators = List.copyOf(plan.spectators());
+        this.players = new ArrayList<>(plan.players());
+        this.spectators = new ArrayList<>(plan.spectators());
         this.observer = starter == null || players.contains(starter.getUuid()) || spectators.contains(starter.getUuid()) ? null : starter.getUuid();
     }
 
@@ -430,12 +467,43 @@ public final class MiniGameTest implements MiniGameSession {
             if (player != null) player.sendMessage(Text.translatable("message.steveparty.minigame.test.ignored", role.text(), formatName())
                     .formatted(Formatting.GOLD), false);
         });
-        // Away in this mini-game from now on (nobody in two mini-games at once): free pipes, the linked pipes closed
+        // Away in this mini-game from now on (nobody in two mini-games at once): free pipes, the linked pipes closed,
+        // the chip at the top of the screen
         for (UUID uuid : returns.keySet()) MiniGamePipes.enterParty(uuid, pageId, () -> !closed);
-        send(new MiniGamePagePayloads.TestLabel(true, page().title()));
-        MessageUtils.sendToPlayers(audience(), Text.translatable("message.steveparty.minigame.test.start", players.size(), formatName())
-                .formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
+        Text start = Text.translatable("message.steveparty.minigame.test.start" + (players.size() == 1 ? ".one" : ""), players.size(), formatName())
+                .formatted(Formatting.GOLD);
+        for (ServerPlayerEntity player : audience()) {
+            // Those taken in it can leave it from the chat
+            player.sendMessage(returns.containsKey(player.getUuid()) ? start.copy().append("\n").append(leaveButton()) : start, false);
+        }
         countdown(countdownSeconds);
+    }
+
+    /** « [Leave the mini-game] », running {@code /steveparty leave}. */
+    public static MutableText leaveButton() {
+        return Text.translatable("message.steveparty.minigame.leave_button")
+                .styled(style -> style.withColor(Formatting.RED).withUnderline(true)
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/steveparty leave"))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("message.steveparty.minigame.leave_hover"))));
+    }
+
+    /** {@code uuid} leaves the test before its end (see {@link #leave}). */
+    private void drop(UUID uuid) {
+        players.remove(uuid);
+        spectators.remove(uuid);
+        MiniGamePipes.leaveParty(uuid);
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+        if (player != null) {
+            MiniGameFreeze.release(player);
+            arena.leave(player);
+            if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Preview.ID)) {
+                ServerPlayNetworking.send(player, new MiniGamePagePayloads.Preview(false, MiniGamePageData.empty(MiniGamePageData.NO_ID), 0, 0));
+            }
+        }
+        MiniGameReturns.Return back = returns.remove(uuid);
+        if (back != null) MiniGameReturns.bringBack(server, uuid, back);
+        if (players.isEmpty()) stop();
+        else onPodiumsChanged();
     }
 
     /** The card of the mini-game with its countdown, then the departure: as in a party. */
@@ -472,24 +540,25 @@ public final class MiniGameTest implements MiniGameSession {
             return;
         }
         phase = Phase.PLAYING;
-        Map<MiniGamePipeLink, Integer> queues = new HashMap<>();
+        // Everyone out at once (those who share a pipe too), the players standing still for the countdown
+        List<ServerPlayerEntity> out = new ArrayList<>();
         pipes.forEach((uuid, link) -> {
-            int wait = queues.merge(link, 1, Integer::sum) - 1;
-            if (wait == 0) comeOut(link, uuid);
-            else later(wait * EMERGE_GAP_TICKS, () -> comeOut(link, uuid));
+            ServerPlayerEntity player = comeOut(link, uuid);
+            if (player != null && players.contains(uuid)) out.add(player);
         });
         MiniGamePartyStep.announceStart(page.title(), page, audience());
+        MiniGameFreeze.start(server, out, audience(), page.title(), () -> !closed && phase == Phase.PLAYING);
     }
 
-    private void comeOut(MiniGamePipeLink link, UUID uuid) {
+    /** @return the player if he comes out of the pipe, else null */
+    private @Nullable ServerPlayerEntity comeOut(MiniGamePipeLink link, UUID uuid) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-        // Its turn at the pipe came after the results: it would come out in an arena put back as built, with what it owns
-        if (phase != Phase.PLAYING) return;
-        if (player != null && !MiniGamePipes.emergeInRound(server, link, player, pageId)) {
-            // No pipe to come out of any more: it stays where it is, with what it owns
-            arena.leave(player);
-            player.sendMessage(Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED), false);
-        }
+        if (player == null) return null;
+        if (MiniGamePipes.emergeInRound(server, link, player, pageId)) return player;
+        // No pipe to come out of any more: it stays where it is, with what it owns
+        arena.leave(player);
+        player.sendMessage(Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED), false);
+        return null;
     }
 
     /** Those of {@code uuids} who are connected and have a pipe to come out of. */
@@ -569,7 +638,6 @@ public final class MiniGameTest implements MiniGameSession {
     /** The test is over: everyone still away goes back where it stood when it started. */
     private void close() {
         if (closed) return;
-        send(new MiniGamePagePayloads.TestLabel(false, ""));
         closed = true;
         phase = Phase.FINISHED;
         tasks.forEach(Steveparty.SCHEDULER::cancel);

@@ -1,10 +1,13 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGameIntroShot;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
@@ -15,8 +18,10 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePagesState;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
+import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -412,6 +417,48 @@ public class MiniGamePageGameTests implements SteveGameTest {
         context.assertEquals(MiniGamePageImages.inspect(transparent).format(), MiniGamePageImages.Format.PNG, "and stays a PNG");
         context.assertTrue(MiniGamePageImages.decode(transparent) != null, "what was written can be read back");
         context.complete();
+    }
+
+    /**
+     * A page forgets its links to blocks that are gone (playtest 2, #15): a pipe or a podium broken, they could not be
+     * clicked off any more. The links to blocks still there stay.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void linksToBlocksGoneArePurged(TestContext context) {
+        MinecraftServer server = context.getWorld().getServer();
+        UUID id = UUID.randomUUID();
+        MiniGamePages.update(server, MiniGamePageData.empty(id).withTexts("Purge", ""));
+        BlockPos kept = new BlockPos(1, 2, 1), broken = new BlockPos(3, 2, 1), podium = new BlockPos(5, 1, 1);
+        context.setBlockState(kept, ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][13].getDefaultState());
+        context.setBlockState(broken, ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][13].getDefaultState());
+        context.setBlockState(podium, ModBlocks.GOLD_PODIUM.getDefaultState());
+        GlobalPos keptAt = global(context, kept), brokenAt = global(context, broken), podiumAt = global(context, podium);
+        MiniGamePages.toggleLink(server, id, keptAt, Direction.UP, MiniGamePipeRole.PLAYERS);
+        MiniGamePages.toggleLink(server, id, brokenAt, Direction.UP, MiniGamePipeRole.PLAYERS);
+        MiniGamePages.addPodiumLink(server, id, new MiniGamePodiumLink(podiumAt, MiniGamePodiumLink.Kind.PODIUM));
+        context.assertTrue(!MiniGamePages.purgeDeadLinks(server, id), "every block is there: nothing forgotten");
+        context.setBlockState(broken, Blocks.AIR);
+        context.setBlockState(podium, Blocks.STONE);
+        context.assertTrue(MiniGamePages.purgeDeadLinks(server, id), "two blocks are gone");
+        MiniGamePageData page = MiniGamePages.get(server, id);
+        context.assertEquals(page.pipeLinks().stream().map(MiniGamePipeLink::mouth).toList(), List.of(keptAt), "the pipe still there stays linked");
+        context.assertTrue(page.podiumLinks().isEmpty(), "the podium gone is forgotten");
+        context.complete();
+    }
+
+    /** The page opens on any block but those it links or goes in (playtest 2, #18): it used to open only in the air. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void thePageOpensOnAnyBlockButItsOwn(TestContext context) {
+        context.assertTrue(MiniGamePageItem.actsOn(ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][13].getDefaultState()), "a pipe: linked");
+        context.assertTrue(MiniGamePageItem.actsOn(ModBlocks.GOLD_PODIUM.getDefaultState()), "a podium: linked");
+        context.assertTrue(MiniGamePageItem.actsOn(ModBlocks.MINI_GAME_CONTROLLER.getDefaultState()), "a Mini-game Controller: the page goes in");
+        context.assertTrue(!MiniGamePageItem.actsOn(Blocks.STONE.getDefaultState()) && !MiniGamePageItem.actsOn(Blocks.GRASS_BLOCK.getDefaultState()),
+                "any other block: the editor opens");
+        context.complete();
+    }
+
+    private static GlobalPos global(TestContext context, BlockPos relative) {
+        return GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(relative));
     }
 
     /** The server checks what it is sent (weight, size, format), stores it with the sender's name, and serves it back. */

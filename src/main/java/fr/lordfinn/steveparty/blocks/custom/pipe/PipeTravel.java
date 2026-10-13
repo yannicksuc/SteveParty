@@ -7,8 +7,13 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
@@ -163,11 +168,24 @@ public final class PipeTravel {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> !isTravelling(entity)
                 || !(source.isOf(DamageTypes.IN_WALL) || source.isOf(DamageTypes.FALL) || source.isOf(DamageTypes.FLY_INTO_WALL)
                 || source.isOf(DamageTypes.CRAMMING)));
+        // Leaving the server inside a pipe: out of it first, never saved riding a carrier (he would come back in it)
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> leavePipe(handler.player));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             ENTRIES.clear();
             BARRED.clear();
             PASSAGES.clear();
         });
+    }
+
+    /** A player leaving the server while in a pipe: out of the pipe he is in (a free side of it), else where he is. */
+    private static void leavePipe(ServerPlayerEntity player) {
+        if (!(player.getVehicle() instanceof PipeCarrierEntity carrier) || !(player.getWorld() instanceof ServerWorld world)) return;
+        PASSAGES.remove(carrier.getUuid());
+        BlockPos here = BlockPos.ofFloored(carrier.getPos());
+        if (PipeBlock.isPipe(world.getBlockState(here)) && ejectFrom(world, carrier, player, here)) return;
+        carrier.setDismountAt(carrier.getPos());
+        player.stopRiding();
+        carrier.discard();
     }
 
     public static boolean isTravelling(Entity entity) {
@@ -233,12 +251,13 @@ public final class PipeTravel {
 
     /**
      * {@code entity} goes into the mouth of the pipe at {@code mouth} opening on {@code opening}, at the end of the
-     * tick, at {@code speed} (at least {@link #BASE_SPEED}).
+     * tick, at {@code speed} (at least {@link #BASE_SPEED}). A mouth {@link #closed} by a block takes nothing in.
      *
      * @return false if it cannot travel
      */
     public static boolean enter(ServerWorld world, BlockPos mouth, Direction opening, Entity entity, double speed) {
-        if (!canTravel(world, entity) || PipeShape.mouth(world.getBlockState(mouth), opening) == null) return false;
+        if (!canTravel(world, entity) || PipeShape.mouth(world.getBlockState(mouth), opening) == null
+                || closed(world, new PipeNetworks.End(mouth, opening, false))) return false;
         // Not straight back into the mouth it just came out of
         Bar bar = BARRED.get(entity);
         if (bar != null && bar.mouth.equals(mouth) && bar.opening == opening && world.getTime() - bar.since < COOLDOWN) return false;
@@ -333,7 +352,7 @@ public final class PipeTravel {
         if (PipeShape.mouth(state, Direction.UP) == null || !entity.getBoundingBox().expand(0, 0.01, 0).intersects(hollow(pos, Direction.UP))
                 || barred(entity, pos, Direction.UP)) return false;
         double speed = Math.max(-entity.getVelocity().y, Math.sqrt(2 * 0.08 * fallDistance));
-        if (entity instanceof PlayerEntity && speed < FAST_ENTRY && !entity.isSneaking()) return false;
+        if (entity instanceof PlayerEntity player && speed < FAST_ENTRY && (!entity.isSneaking() || configuring(player))) return false;
         if (!enter(world, pos, Direction.UP, entity, speed)) return false;
         entity.fallDistance = 0;
         return true;
@@ -375,9 +394,20 @@ public final class PipeTravel {
         return launched && entity.getY() >= bar.height - 1.5;
     }
 
-    /** A sneaking player: in the mouth it stands in, or the one it looks at up close. */
+    /**
+     * A player with a Mini-game Page or a Wrench in hand is setting pipes up: sneaking (to click a pipe without opening
+     * anything) does not take him in. Falling fast, running in or clicking with an empty hand still does.
+     */
+    public static boolean configuring(PlayerEntity player) {
+        for (ItemStack held : List.of(player.getMainHandStack(), player.getOffHandStack())) {
+            if (held.getItem() instanceof MiniGamePageItem || held.getItem() instanceof WrenchItem) return true;
+        }
+        return false;
+    }
+
+    /** A sneaking player: in the mouth it stands in, or the one it looks at up close (not while {@link #configuring}). */
     private static void sneak(ServerWorld world, ServerPlayerEntity player) {
-        if (!canTravel(world, player)) return;
+        if (!canTravel(world, player) || configuring(player)) return;
         BlockPos feet = BlockPos.ofFloored(player.getX(), player.getY() + 0.01, player.getZ());
         BlockState under = world.getBlockState(feet);
         if (PipeShape.mouth(under, Direction.UP) != null && player.getBoundingBox().expand(0, 0.01, 0).intersects(hollow(feet, Direction.UP))) {
@@ -644,6 +674,16 @@ public final class PipeTravel {
         return near == null ? null : new Destination(world, near);
     }
 
+    /**
+     * The mouth is shut by the block in front of it: a block whose side against the mouth is whole (a full block, a
+     * piston, its head pushed against it, a slab lying on an upward mouth). Nothing goes in by it.
+     */
+    public static boolean closed(ServerWorld world, PipeNetworks.End end) {
+        BlockPos front = end.pos().offset(end.dir());
+        VoxelShape shape = world.getBlockState(front).getCollisionShape(world, front);
+        return !shape.isEmpty() && Block.isFaceFullSquare(shape, end.dir().getOpposite());
+    }
+
     /** A block in front of the mouth (nothing can come out). */
     public static boolean blocked(ServerWorld world, PipeNetworks.End end) {
         BlockPos front = end.pos().offset(end.dir());
@@ -678,23 +718,28 @@ public final class PipeTravel {
      * @return false if there is no such mouth, or the traveller can't be brought there
      */
     public static boolean emerge(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed) {
+        return emerge(world, mouth, traveller, speed, null);
+    }
+
+    /** @param yaw where a player comes out looking (level), null: where he looked */
+    public static boolean emerge(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed, @Nullable Float yaw) {
         if (traveller.isRemoved() || PipeShape.mouth(world.getBlockState(mouth.pos()), mouth.dir()) == null) return false;
-        if (!ZoneBorder.ACTIVE) return bringOut(world, mouth, traveller, speed);
+        if (!ZoneBorder.ACTIVE) return bringOut(world, mouth, traveller, speed, yaw);
         // A mini-game zone in session: only its players come out in it, and none of them comes out elsewhere while
         // it plays there; for who may, the trip is the mod's own and passes the border
         if (!ZoneBubbles.mayArrive(traveller, world, mouth.pos())) return false;
         boolean[] out = new boolean[1];
-        ZoneBubbles.unguarded(() -> out[0] = bringOut(world, mouth, traveller, speed));
+        ZoneBubbles.unguarded(() -> out[0] = bringOut(world, mouth, traveller, speed, yaw));
         return out[0];
     }
 
-    private static boolean bringOut(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed) {
+    private static boolean bringOut(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed, @Nullable Float yaw) {
         if (traveller.hasVehicle()) traveller.stopRiding();
         Vec3d center = Vec3d.ofCenter(mouth.pos());
         double feet = center.y - traveller.getHeight() / 2;
-        if (traveller.getWorld() != world) {
+        if (traveller.getWorld() != world || (yaw != null && traveller instanceof ServerPlayerEntity)) {
             if (!(traveller instanceof ServerPlayerEntity player)) return false;
-            player.teleport(world, center.x, feet, center.z, Set.of(), player.getYaw(), player.getPitch());
+            player.teleport(world, center.x, feet, center.z, Set.of(), yaw != null ? yaw : player.getYaw(), yaw != null ? 0 : player.getPitch());
             if (player.getWorld() != world) return false;
         } else {
             traveller.requestTeleport(center.x, feet, center.z);

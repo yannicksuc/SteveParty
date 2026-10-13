@@ -62,6 +62,7 @@ import fr.lordfinn.steveparty.loot.RandomStencilPatternLootFunction;
 import fr.lordfinn.steveparty.minigame.MiniGameAdventure;
 import fr.lordfinn.steveparty.minigame.MiniGameArena;
 import fr.lordfinn.steveparty.minigame.MiniGameControllers;
+import fr.lordfinn.steveparty.minigame.MiniGameFreeze;
 import fr.lordfinn.steveparty.minigame.MiniGameNameColors;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
@@ -163,6 +164,7 @@ public class Steveparty implements ModInitializer {
         MiniGameNameColors.initialize();
         Podiums.initialize();
         MiniGameTest.initialize();
+        MiniGameFreeze.initialize();
         PartyChunkHolds.initialize();
         InventoryCartridgeItem.initialize();
         ZoneBubbles.initialize();

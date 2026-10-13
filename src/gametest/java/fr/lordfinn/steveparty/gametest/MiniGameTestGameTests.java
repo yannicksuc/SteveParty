@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMemberships;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -164,6 +165,21 @@ public class MiniGameTestGameTests implements SteveGameTest {
             context.assertEquals(recruits.keySet(), expected.keySet(), "who is within 10 blocks of an arrival pipe");
             for (UUID uuid : expected.keySet()) context.assertEquals(recruits.get(uuid), expected.get(uuid), "each takes the role of the nearest pipe");
             context.assertTrue(MiniGameTest.recruit(server, MiniGamePages.get(server, page(context, yellow))).isEmpty(), "an exit pipe recruits nobody");
+            // Started by someone: only those of his party are taken, never someone busy in another one (playtest 2, #9)
+            PartyMemberships memberships = PartyMemberships.get(server);
+            GlobalPos elsewhere = global(context, new BlockPos(0, 40, 0));
+            try {
+                memberships.follow(b.getUuid(), elsewhere);
+                Map<UUID, MiniGamePipeRole> byG = MiniGameTest.recruit(server, MiniGamePages.get(server, id), g);
+                context.assertTrue(byG.containsKey(g.getUuid()) && byG.containsKey(w.getUuid()) && !byG.containsKey(b.getUuid()),
+                        "someone in a party is not pulled into a test started out of it");
+                memberships.follow(g.getUuid(), elsewhere);
+                context.assertEquals(MiniGameTest.recruit(server, MiniGamePages.get(server, id), g).keySet(), Set.of(g.getUuid(), b.getUuid()),
+                        "started from a party: only its players");
+            } finally {
+                memberships.forget(b.getUuid());
+                memberships.forget(g.getUuid());
+            }
             // Someone already in a mini-game is not recruited
             MiniGamePipes.enterParty(g.getUuid(), id, () -> true);
             context.assertTrue(!MiniGameTest.recruit(server, MiniGamePages.get(server, id)).containsKey(g.getUuid()), "nobody in two mini-games at once");
@@ -304,6 +320,34 @@ public class MiniGameTestGameTests implements SteveGameTest {
             }
             context.complete();
         });
+    }
+
+    /**
+     * {@code /steveparty leave} takes a player out of a test (playtest 2, #9): back where he stood, out of the
+     * mini-game, the test going on without him; the last player leaving stops it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_test_leave", tickLimit = 200)
+    public void aPlayerLeavesATest(TestContext context) {
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 0.5, 1, 1.5);
+        MinecraftServer server = context.getWorld().getServer();
+        UUID id = page(context, green);
+        Vec3d start1 = p1.getPos();
+        try {
+            alone(context, p1, p2);
+            context.assertEquals(MiniGameTest.start(server, id, p1, 0), Status.READY, "the test starts");
+            MiniGameTest test = MiniGameTest.of(id);
+            context.assertTrue(test != null && MiniGamePipes.isInParty(p1.getUuid()), "p1 plays it");
+            context.assertTrue(MiniGameTest.leave(p1.getUuid()), "p1 leaves it");
+            context.assertTrue(!MiniGamePipes.isInParty(p1.getUuid()) && at(p1, start1), "out of the mini-game, back where he stood");
+            context.assertTrue(MiniGameTest.of(id) == test && test.participants().equals(List.of(p2.getUuid())), "the test goes on without him");
+            context.assertTrue(!MiniGameTest.leave(p1.getUuid()), "he is in none any more");
+            context.assertTrue(MiniGameTest.leave(p2.getUuid()) && MiniGameTest.of(id) == null, "the last player leaving stops it");
+            context.assertTrue(!MiniGamePipes.isInParty(p2.getUuid()), "and he is out of it too");
+        } finally {
+            cleanUp(context, id, p1, p2);
+        }
+        context.complete();
     }
 
     /**

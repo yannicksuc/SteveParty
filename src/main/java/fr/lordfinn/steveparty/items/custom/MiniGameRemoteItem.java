@@ -141,7 +141,7 @@ public class MiniGameRemoteItem extends Item {
             ModSounds.playSelect(player.getWorld(), player.getBlockPos());
             return true;
         }
-        MiniGameTest.Status status = MiniGameTest.check(player.server, page).status();
+        MiniGameTest.Status status = MiniGameTest.check(player.server, page, player).status();
         Text why = SAID.contains(status) ? Text.translatable("gui.steveparty.mini_game_controller.status." + status.name().toLowerCase(Locale.ROOT))
                 : Text.translatable(KEY + "cannot");
         player.sendMessage(why.copy().formatted(Formatting.RED), true);

@@ -235,20 +235,47 @@ public class PipeGameTests implements SteveGameTest {
         });
     }
 
-    /** Sneaking in front of a mouth, looking at it, close: in. Not looking at it: nothing. */
+    /**
+     * Sneaking in front of a mouth, looking at it, close: in. Not looking at it: nothing. With a Mini-game Page in hand
+     * (setting the pipe up), nothing either (playtest 2, #16).
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void sneakingInFrontOfAMouthGoesIn(TestContext context) {
         straightRun(context, 1, 4, 2, 2);
+        straightRun(context, 1, 4, 2, 8);
         // Eyes level with the pipe, looking east at the west mouth
         ServerPlayerEntity player = player(context, new Vec3d(0.4, 2.5 - 1.27, 2.5), -90);
         ServerPlayerEntity away = player(context, new Vec3d(0.4, 2.5 - 1.27, 5.5), 90);
+        ServerPlayerEntity builder = player(context, new Vec3d(0.4, 2.5 - 1.27, 8.5), -90);
+        builder.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.MINI_GAME_PAGE));
         player.setSneaking(true);
         away.setSneaking(true);
+        builder.setSneaking(true);
         context.waitAndRun(3, () -> {
             context.assertTrue(player.getVehicle() instanceof PipeCarrierEntity, "the sneaking player facing the mouth went in");
             context.assertTrue(!away.hasVehicle(), "the one looking away did not");
+            context.assertTrue(!builder.hasVehicle(), "the one with a Mini-game Page in hand did not");
             context.complete();
         });
+    }
+
+    /**
+     * A block against a mouth shuts it (playtest 2, #17): nothing goes in by it, a click, a sneak or a run alike. A
+     * block that does not cover it (a fence post) leaves it open.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aBlockInFrontShutsTheMouth(TestContext context) {
+        straightRun(context, 2, 4, 2, 2);
+        ServerWorld world = context.getWorld();
+        BlockPos mouth = context.getAbsolutePos(new BlockPos(2, 2, 2));
+        ServerPlayerEntity player = player(context, new Vec3d(0.4, 2.5 - 1.27, 2.5), -90);
+        context.setBlockState(new BlockPos(1, 2, 2), Blocks.STONE);
+        context.assertTrue(!PipeTravel.enter(world, mouth, Direction.WEST, player, 1), "a stone against the mouth: shut");
+        context.setBlockState(new BlockPos(1, 2, 2), Blocks.OAK_FENCE);
+        context.assertTrue(!PipeTravel.closed(world, new PipeNetworks.End(mouth, Direction.WEST, false)), "a fence post does not cover it");
+        context.setBlockState(new BlockPos(1, 2, 2), Blocks.AIR);
+        context.assertTrue(PipeTravel.enter(world, mouth, Direction.WEST, player, 1), "nothing in front: open");
+        context.complete();
     }
 
     /** Landing fast in an upward mouth: in, without fall damage. Flying fast into a side mouth: in, no damage. */

@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameArena;
+import fr.lordfinn.steveparty.minigame.MiniGameFreeze;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
@@ -20,7 +20,6 @@ import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -31,12 +30,7 @@ import java.util.UUID;
  * has one, see {@link MiniGameArena}), and back where they stood before it once it is over.
  */
 final class MiniGameDeparture {
-    /** Ticks between two players coming out of the same pipe. */
-    private static final int EMERGE_GAP_TICKS = 8;
-
     private final MiniGamePartyStep step;
-    /** The players still waiting for their turn to come out of a pipe. */
-    private final List<UUID> emergeTasks = new ArrayList<>();
     /**
      * The zone of the mini-game, round after round: each practice round and the real round are played in a bubble
      * of their own when the page has a zone ({@link MiniGameArena}). Not saved: a round a server restart
@@ -60,11 +54,6 @@ final class MiniGameDeparture {
         unprotectedTold = false;
     }
 
-    void cancelEmerges() {
-        emergeTasks.forEach(Steveparty.SCHEDULER::cancel);
-        emergeTasks.clear();
-    }
-
     /** The round is over: what everyone owns and the zone are given back, a departure waiting for its zone is called off. */
     void endRound() {
         departures++;
@@ -78,12 +67,12 @@ final class MiniGameDeparture {
 
     /**
      * Everyone leaves for the mini-game: every participant comes out of a pipe of its role, the audience out of the
-     * spectators pipes (see {@link MiniGamePipes#distribute}). Those who share a pipe come out one after the other.
+     * spectators pipes (see {@link MiniGamePipes#distribute}), all at once (those who share a pipe too); then the
+     * players stand still for the countdown of {@link MiniGameFreeze}.
      *
      * @param round {@link MiniGamePartyStep.Phase#PRACTICE} or {@link MiniGamePartyStep.Phase#PLAYING}
      */
     void sendOut(PartyControllerEntity controller, MiniGamePartyStep.Phase round) {
-        cancelEmerges();
         // The round before (a practice round the vote stopped, or one started again): what everyone owns and the
         // zone are given back before anything else
         arena.end();
@@ -117,7 +106,6 @@ final class MiniGameDeparture {
             List<UUID> spectators = controller.getInterestedPlayersEntities().stream().map(ServerPlayerEntity::getUuid)
                     .filter(uuid -> !step.participants.contains(uuid)).toList();
             Map<UUID, MiniGamePipeLink> pipes = page == null ? Map.of() : MiniGamePipes.distribute(page, teams, order, spectators, new Random());
-            Map<MiniGamePipeLink, Integer> queues = new HashMap<>();
             for (UUID uuid : order) {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
                 if (player != null && !pipes.containsKey(uuid)) {
@@ -126,25 +114,19 @@ final class MiniGameDeparture {
                 }
             }
             if (page != null) beginInZone(controller, server, page, pipes);
+            List<ServerPlayerEntity> out = new ArrayList<>();
             pipes.forEach((uuid, link) -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
                 if (player == null) return;
                 step.returnPositions.putIfAbsent(uuid, MiniGameReturns.Return.of(player));
                 seat(controller, uuid);
-                int wait = queues.merge(link, 1, Integer::sum) - 1;
-                if (wait == 0) {
-                    comeOut(server, link, uuid, page == null ? null : page.id());
-                } else {
-                    UUID task = UUID.randomUUID();
-                    emergeTasks.add(task);
-                    Steveparty.SCHEDULER.schedule(task, wait * EMERGE_GAP_TICKS, () -> {
-                        emergeTasks.remove(task);
-                        if (step.isStillActive(controller)) comeOut(server, link, uuid, page == null ? null : page.id());
-                    });
-                }
+                if (comeOut(server, link, uuid, page == null ? null : page.id()) && step.participants.contains(uuid)) out.add(player);
             });
             step.screens.announce(controller, page, !toldInChat);
             toldInChat = true;
+            // Everyone is out at once: the players stand still for the countdown, then « Go! »
+            MiniGameFreeze.start(server, out, step.screens.previewAudience(controller), step.screens.startName(controller, page),
+                    () -> step.isStillActive(controller) && step.isOnArena() && !step.practiceOver);
         }
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
@@ -176,17 +158,16 @@ final class MiniGameDeparture {
         MiniGamePipes.enterParty(uuid, page == null ? MiniGamePageData.NO_ID : page, () -> step.isStillActive(controller));
     }
 
-    private void comeOut(MinecraftServer server, MiniGamePipeLink link, UUID uuid, @Nullable UUID pageId) {
+    /** @return true if {@code uuid} comes out of the pipe */
+    private boolean comeOut(MinecraftServer server, MiniGamePipeLink link, UUID uuid, @Nullable UUID pageId) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-        // Its turn at the pipe came after the round's end (its results read): it would come out in an arena put back
-        // as built, with what it owns
-        if (player == null || !step.isOnArena() || step.practiceOver) return;
-        if (!MiniGamePipes.emergeInRound(server, link, player, pageId)) {
-            // No pipe to come out of any more: it stays where it is, with what it owns
-            arena.leave(player);
-            MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED),
-                    MessageUtils.MessageType.CHAT);
-        }
+        if (player == null || !step.isOnArena() || step.practiceOver) return false;
+        if (MiniGamePipes.emergeInRound(server, link, player, pageId)) return true;
+        // No pipe to come out of any more: it stays where it is, with what it owns
+        arena.leave(player);
+        MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED),
+                MessageUtils.MessageType.CHAT);
+        return false;
     }
 
     /** {@code uuid} left the party: out of the arena with what he owns, back where he stood before the mini-game. */
@@ -195,7 +176,10 @@ final class MiniGameDeparture {
         MinecraftServer server = controller.getWorld() == null ? null : controller.getWorld().getServer();
         if (server == null) return;
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-        if (player != null) arena.leave(player);
+        if (player != null) {
+            MiniGameFreeze.release(player);
+            arena.leave(player);
+        }
         MiniGameReturns.Return back = step.returnPositions.remove(uuid);
         if (back != null) MiniGameReturns.bringBack(server, uuid, back);
     }

@@ -264,7 +264,6 @@ public class MiniGamePartyStep extends PartyStep {
         super.end(partyControllerEntity);
         roulette.cancel();
         cancelFlow();
-        departure.cancelEmerges();
         screens.hidePreview(partyControllerEntity);
         screens.hidePractice(partyControllerEntity);
         // A round stopped before its results: what everyone owns and the zone are given back first
