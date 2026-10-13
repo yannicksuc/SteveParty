@@ -25,8 +25,8 @@ import java.util.List;
  * The end of a party's mini-game, in the style of the mini-game card ({@link MiniGameCardHud}): the results card, in
  * the middle of the screen for a few seconds, a line per player (per team in a team mini-game) with its place, and
  * what the party paid for it (the coins and the stars, with their items). The results of a mini-game played out of a
- * party, or of a party's practice round, say that nothing was paid; while a mini-game is played out of a party, a chip
- * at the top of the screen says so (« Out of a party: ... »).
+ * party, or of a party's practice round, say that nothing was paid; while the player is in a mini-game's round, a chip
+ * at the top of the screen says which (« Mini-game: ... »).
  */
 public final class MiniGameResultsHud {
     private static final int WIDTH = 210, PAD = 7, ROW = 14, CHIP = 24;
@@ -52,7 +52,7 @@ public final class MiniGameResultsHud {
         shownAt = PartyHud.now();
     }
 
-    /** A test of a mini-game is being played ({@code title}: its page's, empty for none), or is over (null). */
+    /** The player is in a mini-game's round ({@code title}: its page's, empty for none), or no more (null). */
     public static void test(@Nullable String title) {
         testTitle = title;
     }
@@ -84,14 +84,20 @@ public final class MiniGameResultsHud {
         drawResults(context, results, alpha, (1 - in) * -10 + (1 - out) * -6);
     }
 
-    /** « Test of the mini-game: ... », on a chip at the top of the screen. */
+    /**
+     * « Mini-game: ... », on a chip at the top of the screen (under the party's notice or turn bar when they are there),
+     * for as long as the player is in a mini-game's round. The practice round's chip says it already.
+     */
     private static void drawTestLabel(DrawContext context, String title) {
+        if (MiniGamePracticeHud.practice() != null) return;
         TextRenderer font = HudDraw.font();
         Text name = title.isEmpty() ? Text.translatable("item.steveparty.mini_game_page") : Text.literal(title);
-        Text text = Text.translatable("hud.steveparty.minigame.test", name);
+        Text text = Text.translatable("hud.steveparty.minigame.in", name);
         // One line at most the screen's width - 40: a longer one scrolls in the chip
         int textWidth = Math.min(font.getWidth(text), context.getScaledWindowWidth() - 40);
-        int width = textWidth + 14, x = (context.getScaledWindowWidth() - width) / 2, y = 6;
+        float[] spot = PartyHud.practiceSpot(context.getScaledWindowWidth());
+        int width = textWidth + 14, y = Math.round(spot[1]);
+        int x = Math.clamp(Math.round(spot[0] - width / 2f), 2, Math.max(2, context.getScaledWindowWidth() - width - 2));
         HudDraw.plate(context, Plate.ORANGE, x, y, width, 15, 1);
         HudDraw.text(context, text, x + 7, y + 4, textWidth, HudDraw.TEXT, 1);
     }

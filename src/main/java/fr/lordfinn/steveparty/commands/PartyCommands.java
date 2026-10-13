@@ -7,6 +7,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLeave;
+import fr.lordfinn.steveparty.minigame.MiniGameTest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.service.ShopStops;
@@ -127,8 +128,14 @@ public class PartyCommands {
 
     private static int leave(ServerCommandSource source) throws CommandSyntaxException {
         ServerPlayerEntity player = source.getPlayerOrThrow();
+        // A mini-game played out of a party first: what he owns given back, back where he stood
+        boolean leftTest = MiniGameTest.leave(player.getUuid());
         List<GlobalPos> left = PartyLeave.leave(source.getServer(), player.getUuid());
         if (left.isEmpty()) {
+            if (leftTest) {
+                source.sendFeedback(() -> Text.translatable("command.steveparty.leave.mini_game"), false);
+                return 1;
+            }
             source.sendFeedback(() -> Text.translatableWithFallback("command.steveparty.leave.none",
                     "You are in no party."), false);
             return 0;

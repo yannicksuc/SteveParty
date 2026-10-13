@@ -8,7 +8,10 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -96,6 +99,7 @@ public final class MiniGamePipes {
     private static final Map<UUID, Map<MiniGamePipeRole, Integer>> NEXT_ARRIVAL = new HashMap<>();
     /** When each player was last told a linked pipe is closed during his round (server ticks). */
     private static final Map<UUID, Integer> WARNED = new HashMap<>();
+    private static @Nullable MinecraftServer server;
 
     private MiniGamePipes() {
     }
@@ -104,7 +108,14 @@ public final class MiniGamePipes {
         PipeTravel.registerGate(MiniGamePipes::passage);
         // A page in a pipe's slot (a mini-game pipe): where its capped end sends
         PipeDestinationProvider.register(ModItems.MINI_GAME_PAGE, PageRoute::new);
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+        ServerLifecycleEvents.SERVER_STARTED.register(started -> server = started);
+        // Back during his round: the chip saying which mini-game he is in comes back
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, joined) -> {
+            UUID round = roundOf(handler.player.getUuid());
+            if (round != null) label(handler.player.getUuid(), round);
+        });
+        ServerLifecycleEvents.SERVER_STOPPED.register(stopped -> {
+            server = null;
             CAME_BY.clear();
             IN_PARTY.clear();
             NEXT_ARRIVAL.clear();
@@ -247,10 +258,11 @@ public final class MiniGamePipes {
      */
     public static void enterParty(UUID player, UUID page, BooleanSupplier stillOn) {
         IN_PARTY.put(player, new Seat(page, stillOn));
+        label(player, page);
     }
 
     public static void leaveParty(UUID player) {
-        IN_PARTY.remove(player);
+        if (IN_PARTY.remove(player) != null) label(player, null);
         MiniGameNameColors.restore(player);
     }
 
@@ -259,9 +271,21 @@ public final class MiniGamePipes {
         if (seat != null && !seat.stillOn().getAsBoolean()) {
             IN_PARTY.remove(player);
             MiniGameNameColors.restore(player);
+            label(player, null);
             return false;
         }
         return seat != null;
+    }
+
+    /**
+     * The chip at the top of {@code player}'s screen saying which mini-game he is in (« Mini-game: ... »), for as long as
+     * he is in its round; {@code page} null takes it away.
+     */
+    private static void label(UUID player, @Nullable UUID page) {
+        ServerPlayerEntity online = server == null ? null : server.getPlayerManager().getPlayer(player);
+        if (online == null || !ServerPlayNetworking.canSend(online, MiniGamePagePayloads.TestLabel.ID)) return;
+        String title = page == null ? "" : MiniGamePages.get(server, page).title();
+        ServerPlayNetworking.send(online, new MiniGamePagePayloads.TestLabel(page != null, title));
     }
 
     /** The page of the round {@code player} is in, null for none. */

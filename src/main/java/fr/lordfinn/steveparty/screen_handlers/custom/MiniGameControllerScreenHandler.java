@@ -173,7 +173,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
                 if (step.getReady().contains(player.getUuid())) flags |= FLAG_READY;
             }
         } else if (page != null) {
-            MiniGameTest.Plan plan = MiniGameTest.check(server, page);
+            MiniGameTest.Plan plan = MiniGameTest.check(server, page, player instanceof ServerPlayerEntity viewer ? viewer : null);
             state = switch (plan.status()) {
                 case READY -> State.READY;
                 case RUNNING -> State.RUNNING;

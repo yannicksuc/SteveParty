@@ -180,7 +180,7 @@ public final class MiniGamePageNetworking {
     /** The editor asks whether its page can be tested now (the state of its « Test » button). */
     public static void testQuery(ServerPlayerEntity player, TestQuery payload) {
         if (!payload.page().equals(MiniGamePages.idOf(player.getStackInHand(payload.hand())))) return;
-        send(player, testStatus(payload.page(), MiniGameTest.check(player.server, payload.page())));
+        send(player, testStatus(payload.page(), MiniGameTest.check(player.server, payload.page(), player)));
     }
 
     /**
@@ -196,7 +196,7 @@ public final class MiniGamePageNetworking {
             return MiniGameTest.Status.RUNNING;
         }
         MiniGameTest.Status status = MiniGameTest.start(player.server, payload.page(), player, MiniGameTest.COUNTDOWN_SECONDS);
-        if (status != MiniGameTest.Status.READY) send(player, testStatus(payload.page(), MiniGameTest.check(player.server, payload.page())));
+        if (status != MiniGameTest.Status.READY) send(player, testStatus(payload.page(), MiniGameTest.check(player.server, payload.page(), player)));
         return status;
     }
 
