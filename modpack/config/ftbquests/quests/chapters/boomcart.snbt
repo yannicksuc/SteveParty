@@ -16,51 +16,6 @@
 				"0ED330980267EDAF"
 			]
 			icon: {
-				id: "steveparty:boomcart_spawn_egg"
-			}
-			id: "194C00CE411FD0CE"
-			rewards: [
-				{
-					id: "185D5C7B78686E48"
-					type: "xp"
-					xp: 25
-				}
-				{
-					count: 3
-					id: "4A6BF423ABC29777"
-					item: {
-						count: 1
-						id: "minecraft:firework_rocket"
-					}
-					type: "item"
-				}
-				{
-					auto: "invisible"
-					command: "/scoreboard players add {p} steveparty_quests 1"
-					elevate_perms: true
-					id: "06BFAC14F1C71EE8"
-					silent: true
-					type: "command"
-				}
-			]
-			size: 1.25d
-			tasks: [
-				{
-					id: "1770F2144C3A5359"
-					observation_type: "entity_type"
-					timer: 20L
-					to_observe: "steveparty:boomcart"
-					type: "observation"
-				}
-			]
-			x: 0.0d
-			y: 0.0d
-		}
-		{
-			dependencies: [
-				"194C00CE411FD0CE"
-			]
-			icon: {
 				id: "minecraft:firework_rocket"
 			}
 			id: "258F95E4E3F8CB04"
@@ -139,7 +94,7 @@
 		}
 		{
 			dependencies: [
-				"194C00CE411FD0CE"
+				"0ED330980267EDAF"
 				"0E8F42A3F191C38B"
 			]
 			icon: {

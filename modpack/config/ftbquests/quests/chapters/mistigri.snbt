@@ -17,51 +17,6 @@
 				"7E41138FB7521482"
 			]
 			icon: {
-				id: "steveparty:mistigri_spawn_egg"
-			}
-			id: "6544C5A9787AD7A1"
-			rewards: [
-				{
-					id: "099BF651B8A02088"
-					type: "xp"
-					xp: 50
-				}
-				{
-					count: 4
-					id: "46E2BB1651CDEE7C"
-					item: {
-						count: 1
-						id: "minecraft:cod"
-					}
-					type: "item"
-				}
-				{
-					auto: "invisible"
-					command: "/scoreboard players add {p} steveparty_quests 1"
-					elevate_perms: true
-					id: "05CF8A61D05BC196"
-					silent: true
-					type: "command"
-				}
-			]
-			size: 1.25d
-			tasks: [
-				{
-					id: "3DC64718E135F548"
-					observation_type: "entity_type"
-					timer: 20L
-					to_observe: "steveparty:mistigri"
-					type: "observation"
-				}
-			]
-			x: 0.0d
-			y: 0.0d
-		}
-		{
-			dependencies: [
-				"6544C5A9787AD7A1"
-			]
-			icon: {
 				id: "minecraft:fermented_spider_eye"
 			}
 			id: "40EEE1A3FDE98A1B"
@@ -99,7 +54,8 @@
 		}
 		{
 			dependencies: [
-				"6544C5A9787AD7A1"
+				"0ED330980267EDAF"
+				"7E41138FB7521482"
 				"1C32C1531E31974E"
 			]
 			icon: {
@@ -133,7 +89,8 @@
 		}
 		{
 			dependencies: [
-				"6544C5A9787AD7A1"
+				"0ED330980267EDAF"
+				"7E41138FB7521482"
 			]
 			icon: {
 				id: "minecraft:cod"
@@ -174,7 +131,8 @@
 		}
 		{
 			dependencies: [
-				"6544C5A9787AD7A1"
+				"0ED330980267EDAF"
+				"7E41138FB7521482"
 				"71CC2E37EF714902"
 			]
 			id: "1DDCEBDE63F41C2D"

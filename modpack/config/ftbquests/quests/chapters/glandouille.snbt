@@ -15,51 +15,6 @@
 			dependencies: [
 				"0ED330980267EDAF"
 			]
-			icon: {
-				id: "steveparty:glandouille_spawn_egg"
-			}
-			id: "1844358FDF98C72B"
-			rewards: [
-				{
-					id: "4DC2F038D90E5FC4"
-					type: "xp"
-					xp: 25
-				}
-				{
-					count: 4
-					id: "280D95EF6EA58582"
-					item: {
-						count: 1
-						id: "minecraft:bone_meal"
-					}
-					type: "item"
-				}
-				{
-					auto: "invisible"
-					command: "/scoreboard players add {p} steveparty_quests 1"
-					elevate_perms: true
-					id: "021AD592E6D044C7"
-					silent: true
-					type: "command"
-				}
-			]
-			size: 1.25d
-			tasks: [
-				{
-					id: "3FEFEE9AE5CD0C27"
-					observation_type: "entity_type"
-					timer: 20L
-					to_observe: "steveparty:glandouille"
-					type: "observation"
-				}
-			]
-			x: 0.0d
-			y: 0.0d
-		}
-		{
-			dependencies: [
-				"1844358FDF98C72B"
-			]
 			id: "1C32C1531E31974E"
 			rewards: [
 				{
@@ -139,7 +94,7 @@
 		}
 		{
 			dependencies: [
-				"1844358FDF98C72B"
+				"0ED330980267EDAF"
 			]
 			icon: {
 				id: "steveparty:glandouille_spawn_egg"
@@ -180,7 +135,7 @@
 		}
 		{
 			dependencies: [
-				"1844358FDF98C72B"
+				"0ED330980267EDAF"
 			]
 			id: "54F196A1821033FE"
 			optional: true

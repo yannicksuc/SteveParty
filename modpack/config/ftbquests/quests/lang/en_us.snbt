@@ -172,11 +172,6 @@
 	]
 	quest.05F0B762268E85CD.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.05F0B762268E85CD.title: "Tile"
-	quest.0656F36FB9B9B08E.quest_desc: [
-		"Dark Overworld caves, alone or in pairs: a wax ghost with a candle flame (17 colours). Its light is real, and no monster comes within 8 blocks."
-		"Look at one to complete this quest."
-	]
-	quest.0656F36FB9B9B08E.title: "A light in the dark"
 	quest.06ACFD0AAF8EF257.quest_desc: [
 		"Page + paper (or the Copy button): a linked copy, edit one and they all change. Handy for pipes and podiums far apart."
 	]
@@ -403,11 +398,6 @@
 	]
 	quest.174373BB4245951D.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.174373BB4245951D.title: "Polished Orange Terracotta Brick Stairs"
-	quest.1844358FDF98C72B.quest_desc: [
-		"Under trees, 2 to 4 together: green young ones, mossy old ones (old taigas), frosty ones (snowy taigas) that slide like curling stones."
-		"Come within 4 blocks: it charges. It never hurts, it shoves and stuns for 2 s. Look at one to complete this quest."
-	]
-	quest.1844358FDF98C72B.title: "Grumpy acorn"
 	quest.186792E8E005709E.quest_desc: [
 		"Outside the Bubbler's column, a bubble pops on a block, a mob, an arrow, or after 15 s still."
 		"A snowball pushes it: a dispenser of snowballs is a bubble cannon. Silk Touch pushes it without popping it."
@@ -424,11 +414,6 @@
 		"4 Tiles in a 2x2 square: 1 large tile (2x2 blocks)."
 	]
 	quest.18EC779BAD8C3C13.title: "Small and large tiles"
-	quest.194C00CE411FD0CE.quest_desc: [
-		"Abandoned mineshafts (rarely) and the dark caves around, always alone. On rails, it follows the track. It roars when you come within 3 blocks."
-		"Look at one to complete this quest."
-	]
-	quest.194C00CE411FD0CE.title: "A living minecart"
 	quest.19A1A7E217DE13A3.quest_desc: [
 		"The little extras of the mod, all found."
 	]
@@ -1129,11 +1114,6 @@
 		"Customers right-click the trader: offers as cards (red: can't pay, crossed out: sold out). The owner's shop is protected."
 	]
 	quest.5FECE4CA8D043161.title: "Open for business"
-	quest.6044441CFBBF75EE.quest_desc: [
-		"Nether wastes, basalt deltas, soul sand valleys, by the lava or in it: rare and alone. Neutral unless hit; near a bastion it may carry piglins and hunt players."
-		"Look at one to complete this quest."
-	]
-	quest.6044441CFBBF75EE.title: "Three heads, one cauldron"
 	quest.609D01D79D635986.quest_desc: [
 		"5 gold nuggets. Candle holder + saucer: it sits on its saucer. Alone in the grid, it comes off again."
 	]
@@ -1166,11 +1146,6 @@
 		"Two Teleport spaces of the same colour on one board. A dye on the space changes its network; a lone colour sends nobody anywhere."
 	]
 	quest.639372715E2D9036.title: "A teleport network"
-	quest.63B4933358A5ED3D.quest_desc: [
-		"Forests, taigas and cherry groves, by day, 1 to 3 together. Six colours, one per forest. They hop from perch to perch and fly off within 6 blocks."
-		"Look at one to complete this quest."
-	]
-	quest.63B4933358A5ED3D.title: "A Magpie!"
 	quest.63E7493B3F8C4B36.quest_desc: [
 		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Spectators\"."
 	]
@@ -1181,11 +1156,6 @@
 	]
 	quest.653CF6E9C6766795.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.653CF6E9C6766795.title: "Cyan Windowed Pipe"
-	quest.6544C5A9787AD7A1.quest_desc: [
-		"A black cat in or near a witch hut (16 blocks). Right-click it with any die of the mod: a 1 (or 0) and it swells into a Mistigri; anything else, it hisses."
-		"Look at a Mistigri to complete this quest."
-	]
-	quest.6544C5A9787AD7A1.title: "A stroke of bad luck"
 	quest.65FD4DC5FA855317.quest_desc: [
 		"Roll near your pawn on a linked board: it walks the result. At a fork, right-click an arrow empty-handed."
 	]
@@ -1335,11 +1305,6 @@
 	]
 	quest.74A69E19FF0BCA86.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.74A69E19FF0BCA86.title: "Polished Light Blue Concrete Brick Slab"
-	quest.75B73EB45B67D1C0.quest_desc: [
-		"Mulas fall from the sky on shooting-star nights (Ephemeride), mostly at full moon: follow the first wave of stars, 150 to 600 blocks away."
-		"Look at one to complete this quest."
-	]
-	quest.75B73EB45B67D1C0.title: "A Mula!"
 	quest.75D850169554760C.quest_desc: [
 		"Paint back to the first tile: a loop with a Start space is all a party needs."
 		"Several links from a tile: a fork, the player chooses. No link: a dead end."

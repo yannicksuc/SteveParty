@@ -268,7 +268,7 @@
 		{
 			dependencies: [
 				"7FA9DC98F4753074"
-				"75B73EB45B67D1C0"
+				"0ED330980267EDAF"
 			]
 			icon: {
 				id: "steveparty:mula_spawn_egg"
