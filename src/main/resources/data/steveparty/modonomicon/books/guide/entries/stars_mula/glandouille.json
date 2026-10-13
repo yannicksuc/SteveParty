@@ -12,34 +12,47 @@
   "show_when_any_parent_unlocked": false,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.glandouille.page0.text",
-      "title": "book.steveparty.guide.creatures.glandouille.page0.title"
+      "type": "modonomicon:entity",
+      "entity_id": "steveparty:glandouille",
+      "name": "book.steveparty.guide.creatures.glandouille.page0.title",
+      "text": "book.steveparty.guide.creatures.glandouille.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.glandouille.page1.text",
-      "title": "book.steveparty.guide.creatures.glandouille.page1.title"
+      "title": "book.steveparty.guide.creatures.glandouille.page1.title",
+      "text": "book.steveparty.guide.creatures.glandouille.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.glandouille.page2.text",
-      "title": "book.steveparty.guide.creatures.glandouille.page2.title"
+      "title": "book.steveparty.guide.creatures.glandouille.page2.title",
+      "text": "book.steveparty.guide.creatures.glandouille.page2.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.glandouille.page3.text",
-      "title": "book.steveparty.guide.creatures.glandouille.page3.title"
+      "title": "book.steveparty.guide.creatures.glandouille.page3.title",
+      "text": "book.steveparty.guide.creatures.glandouille.page3.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.glandouille.page4.text",
-      "title": "book.steveparty.guide.creatures.glandouille.page4.title"
+      "title": "book.steveparty.guide.creatures.glandouille.page4.title",
+      "text": "book.steveparty.guide.creatures.glandouille.page4.text"
+    },
+    {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:glandouille_cartridge"
+      },
+      "title": "book.steveparty.guide.creatures.glandouille.page5.title",
+      "text": "book.steveparty.guide.creatures.glandouille.page5.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.creatures.glandouille.page6.title",
+      "text": "book.steveparty.guide.creatures.glandouille.page6.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
-      "recipe_id_1": "steveparty:glandouille_cartridge",
-      "text": "book.steveparty.guide.creatures.glandouille.page5.text"
+      "recipe_id_1": "steveparty:glandouille_cartridge"
     }
   ]
 }

@@ -13,19 +13,26 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.boomcart.page0.text",
-      "title": "book.steveparty.guide.creatures.boomcart.page0.title"
+      "type": "modonomicon:entity",
+      "entity_id": "steveparty:boomcart",
+      "scale": 0.6,
+      "name": "book.steveparty.guide.creatures.boomcart.page0.title",
+      "text": "book.steveparty.guide.creatures.boomcart.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.boomcart.page1.text",
-      "title": "book.steveparty.guide.creatures.boomcart.page1.title"
+      "title": "book.steveparty.guide.creatures.boomcart.page1.title",
+      "text": "book.steveparty.guide.creatures.boomcart.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.boomcart.page2.text",
-      "title": "book.steveparty.guide.creatures.boomcart.page2.title"
+      "title": "book.steveparty.guide.creatures.boomcart.page2.title",
+      "text": "book.steveparty.guide.creatures.boomcart.page2.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.creatures.boomcart.page3.title",
+      "text": "book.steveparty.guide.creatures.boomcart.page3.text"
     }
   ]
 }

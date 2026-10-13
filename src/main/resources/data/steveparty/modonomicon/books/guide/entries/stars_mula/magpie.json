@@ -13,24 +13,28 @@
   "background_u_index": 1,
   "pages": [
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.magpie.page0.text",
-      "title": "book.steveparty.guide.creatures.magpie.page0.title"
+      "type": "modonomicon:entity",
+      "entity_id": "steveparty:wild_magpie",
+      "name": "book.steveparty.guide.creatures.magpie.page0.title",
+      "text": "book.steveparty.guide.creatures.magpie.page0.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.magpie.page1.text",
-      "title": "book.steveparty.guide.creatures.magpie.page1.title"
+      "title": "book.steveparty.guide.creatures.magpie.page1.title",
+      "text": "book.steveparty.guide.creatures.magpie.page1.text"
     },
     {
       "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.magpie.page2.text",
-      "title": "book.steveparty.guide.creatures.magpie.page2.title"
+      "title": "book.steveparty.guide.creatures.magpie.page2.title",
+      "text": "book.steveparty.guide.creatures.magpie.page2.text"
     },
     {
-      "type": "modonomicon:text",
-      "text": "book.steveparty.guide.creatures.magpie.page3.text",
-      "title": "book.steveparty.guide.creatures.magpie.page3.title"
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:magpie_nest"
+      },
+      "title": "book.steveparty.guide.creatures.magpie.page3.title",
+      "text": "book.steveparty.guide.creatures.magpie.page3.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
