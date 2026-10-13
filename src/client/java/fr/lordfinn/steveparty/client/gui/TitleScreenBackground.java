@@ -35,9 +35,10 @@ public final class TitleScreenBackground {
     /** Back to front: texture, size, offset in the frame (the PNGs are cropped to their opaque bounds), depth (0..1). */
     private static final Layer[] LAYERS = {
             new Layer("sky", 1920, 1080, 0, 0, 0.05f),
-            new Layer("crowd", 1920, 514, 0, 563, 0.2f),
-            new Layer("heroes", 1892, 1041, 0, 39, 0.4f),
-            new Layer("foreground", 1920, 395, 0, 685, 0.75f),
+            new Layer("back", 1287, 518, 633, 561, 0.15f),
+            new Layer("sides", 1920, 510, 0, 95, 0.3f),
+            new Layer("row", 1791, 779, 0, 301, 0.5f),
+            new Layer("front", 1920, 325, 0, 755, 0.75f),
     };
 
     private static final Identifier LOGO = Steveparty.id("textures/gui/title/logo.png");
