@@ -424,13 +424,8 @@ final class OutcomeListWidget {
             case KIND -> {
                 Kind kind = Kind.values()[hit.value];
                 boolean chosen = outcome != null && outcome.kind() == kind;
-                if (chosen) {
-                    // A bright gold ring (its edges over its neighbours'), a dark inside: the item stays readable
-                    context.fill(hit.x, hit.y, hit.x + hit.w, hit.y + hit.h, GOLD);
-                    context.fill(hit.x + 1, hit.y + 1, hit.x + hit.w - 1, hit.y + hit.h - 1, 0xFF5A4410);
-                } else {
-                    PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, hot ? DARK.brighter() : DARK, false);
-                }
+                if (chosen) chosen(context, hit, true);
+                else PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, hot ? DARK.brighter() : DARK, false);
                 int ix = hit.x + (hit.w - 16) / 2, iy = hit.y + (hit.h - 16) / 2;
                 flatItem(context, icon(kind), ix, iy);
                 context.getMatrices().push();
@@ -441,13 +436,8 @@ final class OutcomeListWidget {
             case TARGET -> {
                 Target target = Target.values()[hit.value];
                 boolean chosen = outcome != null && outcome.target() == target;
-                PartyGui.Theme theme = chosen ? PartyGui.BUTTON_SELECTED : !hit.active ? DIM : hot ? DARK.brighter() : DARK;
-                PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, theme, chosen);
-                if (chosen) {
-                    // A bright gold ring (the dark gold one hardly showed on the grey), the white figures on a dark inside
-                    context.fill(hit.x + 1, hit.y + 1, hit.x + hit.w - 1, hit.y + hit.h - 1, GOLD);
-                    context.fill(hit.x + 2, hit.y + 2, hit.x + hit.w - 2, hit.y + hit.h - 2, 0xFF5A4410);
-                }
+                if (chosen) chosen(context, hit, true);
+                else PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, !hit.active ? DIM : hot ? DARK.brighter() : DARK, false);
                 MistigriIcons.target(context, target, hit.x + (hit.w - MistigriIcons.SIZE) / 2, hit.y + (hit.h - MistigriIcons.SIZE) / 2, !hit.active && !chosen);
             }
             case AMOUNT_DOWN, WEIGHT_DOWN, DRAWS_DOWN -> step(context, hit, "-", hot);
@@ -460,7 +450,8 @@ final class OutcomeListWidget {
             }
             case NUMBER, PERCENT -> {
                 boolean chosen = outcome != null && outcome.percent() == (hit.part == Part.PERCENT);
-                PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, chosen ? PartyGui.BUTTON_SELECTED : hot ? DARK.brighter() : DARK, chosen);
+                if (chosen) chosen(context, hit, false);
+                else PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, hot ? DARK.brighter() : DARK, false);
                 ButtonGlyphs.text(context, font, hit.part == Part.PERCENT ? "%" : "#", hit.x, hit.y, hit.w, hit.h, chosen ? 0xFF3B2600 : TEXT);
             }
             case ADD -> {
@@ -491,6 +482,21 @@ final class OutcomeListWidget {
     }
 
     private static final ItemStack[] ICONS = new ItemStack[Kind.values().length];
+    /** The chosen toggle: the gold button with a white outline (the dark gold one hardly showed on the grey). */
+    private static final PartyGui.Theme CHOSEN = new PartyGui.Theme(0xFFFFFFFF, PartyGui.BUTTON_SELECTED.highlight(),
+            PartyGui.BUTTON_SELECTED.body(), PartyGui.BUTTON_SELECTED.shadow());
+    /** The plate under a chosen toggle's icon: dark, so that a gold coin or the white figures read on the gold. */
+    private static final int CHOSEN_PLATE = 0xFF4A3810;
+
+    /**
+     * The one look of a chosen toggle in the open row (kinds, targets, # / %): the gold button, pressed, its outline
+     * white; under an icon ({@code plate}) a dark plate inside its gold edge. Its content stays where it is when not
+     * chosen.
+     */
+    private static void chosen(DrawContext context, Hit hit, boolean plate) {
+        PartyGui.button(context, hit.x, hit.y, hit.w, hit.h, CHOSEN, true);
+        if (plate) context.fill(hit.x + 2, hit.y + 2, hit.x + hit.w - 2, hit.y + hit.h - 2, CHOSEN_PLATE);
+    }
 
     /**
      * An item lit flat, like a sprite: a 3D model (the Party Star) is otherwise lit from the side as in a slot, its
