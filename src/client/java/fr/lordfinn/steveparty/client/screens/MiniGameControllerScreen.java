@@ -63,7 +63,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     private static final Ramp KNOB = Ramp.of(0x2f3a55, 0xffffff, 0xffffff, 0xdfe6ea);
     private static final int SURFACE = 0xFFF4FAFF, SURFACE_EDGE = 0xFFDBE9F8;
     private static final int SCREEN = 0xFF14181B, SCREEN_EDGE = 0xFF0B0D10;
-    private static final int SLOT_BODY = 0xFFC6D8F0, SLOT_EDGE = 0xFF5A6F9A, SLOT_LOW = 0xFFFFFFFF;
+    private static final int SLOT_BODY = 0xFFC6D8F0, SLOT_EDGE = 0xFF5A6F9A;
     private static final int INK = 0xFF2F3A55, INK_GHOST = 0xFF7A8AA8, INK_RED = 0xFFB3202A;
     private static final int SCREEN_TITLE = 0xFFFFD24A, SCREEN_SOFT = 0xFF9E9CC8;
     private static final int WAVE = 0xFFC6D8F0, WAVE_LOW = 0xFFADC2DE;
@@ -219,7 +219,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         }
         ConsolePaint.inset(context, x + SX, y + SY, 81, 46, SCREEN, SCREEN_EDGE, SLOT_EDGE);
         // Every slot: the console's
-        for (Slot slot : handler.slots) ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, SLOT_BODY, SLOT_EDGE, SLOT_LOW);
+        for (Slot slot : handler.slots) PartyGui.slot(context, x + slot.x, y + slot.y, SLOT_BODY, SLOT_EDGE);
         // Its two own slots show, faded, the item they take while they are empty
         ghost(context, SLOT_PAGE, ModItems.MINI_GAME_PAGE);
         // Row 2: the zone's pictogram where row 1 has its slot, so that both labels line up
