@@ -7,6 +7,8 @@ import com.mojang.authlib.properties.PropertyMap;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -246,12 +248,14 @@ public final class DiceRollEffects {
             if (coins > 0) {
                 // Doubled by the Double Coins power-up of the roller's turn: the extra comes from the bank too
                 int wanted = PowerUpService.coinsGained(roller, coins);
-                applied = PartyResources.of(party.get()).take(coin, wanted);
+                PartyResources bank = PartyResources.of(party.get());
+                applied = bank.take(coin, wanted);
                 bankShort = applied < wanted;
                 InventoryUtils.giveOrDrop(player, coin, applied);
+                TurnJournal.moved(party.get(), JournalPlace.of(bank), JournalPlace.player(player), coin, applied);
             } else if (coins < 0) {
                 int lost = InventoryUtils.take(player.getInventory(), coin, -coins);
-                PartyResources.deposit(party.get(), coin.copyWithCount(lost));
+                PartyResources.deposit(party.get(), coin.copyWithCount(lost), JournalPlace.player(player));
                 applied = -lost;
                 if (lost > 0 && InventoryUtils.count(player.getInventory(), coin) == 0) ModCriteria.fire(player, "dice_broke", lost);
             }

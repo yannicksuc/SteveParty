@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.service;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -96,6 +98,7 @@ public final class KeyGates {
         if (round < 0) return true; // no party to count its rounds
         if (round - opened < KeyGateCartridgeItem.stayOpen(gate)) return true;
         // Its rounds are over: it closes again (the clients see it closed)
+        if (!space.getWorld().isClient) TurnJournal.space(space);
         BoardRuleCartridgeItem.putState(gate, KeyGateCartridgeItem.OPENED, null);
         if (!space.getWorld().isClient) space.update();
         return false;
@@ -296,7 +299,7 @@ public final class KeyGates {
         for (int slot = 0; slot < player.getInventory().size(); slot++) {
             ItemStack stack = player.getInventory().getStack(slot);
             if (!stack.isIn(KEYS)) continue;
-            if (!player.isInCreativeMode()) PartyResources.giveBackUsed(party, stack.split(1), player);
+            if (!player.isInCreativeMode()) PartyResources.giveBackUsed(party, stack.split(1), player, JournalPlace.player(player));
             player.getInventory().markDirty();
             return true;
         }
@@ -310,6 +313,7 @@ public final class KeyGates {
         int stay = KeyGateCartridgeItem.stayOpen(gate);
         if (stay > 0) {
             int round = currentRound(token);
+            TurnJournal.space(space);
             BoardRuleCartridgeItem.putState(gate, KeyGateCartridgeItem.OPENED, stay >= KeyGateCartridgeItem.FOREVER ? -1 : Math.max(0, round));
             space.update();
         }

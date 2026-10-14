@@ -4,6 +4,8 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.dice.CursedRolls;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -266,17 +268,19 @@ public final class MistigriSentences {
                 for (ServerPlayerEntity each : aimed) {
                     int held = InventoryUtils.count(each.getInventory(), currency);
                     int taken = InventoryUtils.take(each.getInventory(), currency, outcome.count(held));
-                    PartyResources.deposit(party, currency.copyWithCount(taken)); // into the party's bank, never lost
+                    PartyResources.deposit(party, currency.copyWithCount(taken), JournalPlace.player(each)); // into the party's bank, never lost
                     deltas.merge(each, -taken, Integer::sum);
                 }
             }
             case SHARE_COINS, SHARE_STARS -> {
                 int pot = 0;
+                Map<JournalPlace, Integer> paidIn = new LinkedHashMap<>(), dealtOut = new LinkedHashMap<>();
                 for (ServerPlayerEntity each : aimed) {
                     int held = InventoryUtils.count(each.getInventory(), currency);
                     int taken = InventoryUtils.take(each.getInventory(), currency, outcome.count(held));
                     pot += taken;
                     deltas.merge(each, -taken, Integer::sum);
+                    paidIn.merge(JournalPlace.player(each), taken, Integer::sum);
                 }
                 // Dealt out to those who put nothing in (everyone when all did), the poorest first, as evenly as it goes
                 List<ServerPlayerEntity> takers = new ArrayList<>(players(world, party));
@@ -288,13 +292,17 @@ public final class MistigriSentences {
                     int share = pot / left + (pot % left > 0 ? 1 : 0);
                     InventoryUtils.giveOrDrop(takers.get(k), currency, share);
                     deltas.merge(takers.get(k), share, Integer::sum);
+                    dealtOut.merge(JournalPlace.player(takers.get(k)), share, Integer::sum);
                     pot -= share;
                 }
+                TurnJournal.shared(party, currency, paidIn, dealtOut);
             }
             case PITY -> {
                 for (ServerPlayerEntity each : aimed) {
-                    int given = PartyResources.of(party).take(coin, outcome.amount()); // out of the bank: never made up
+                    PartyResources bank = PartyResources.of(party);
+                    int given = bank.take(coin, outcome.amount()); // out of the bank: never made up
                     InventoryUtils.giveOrDrop(each, coin, given);
+                    TurnJournal.moved(party, JournalPlace.of(bank), JournalPlace.player(each), coin, given);
                     deltas.merge(each, given, Integer::sum);
                 }
             }

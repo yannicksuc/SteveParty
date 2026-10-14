@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.powerups.effects;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
@@ -211,6 +213,7 @@ public final class TrapEffect {
                 ItemStack coin = controller.getCurrency(PartyCurrency.COIN);
                 amount = InventoryUtils.take(victim.getInventory(), coin, trap.effect().amount());
                 if (amount > 0) InventoryUtils.giveOrDrop(setter, coin, amount);
+                TurnJournal.moved(controller, JournalPlace.player(victim), JournalPlace.player(setter), coin, amount);
                 message = amount > 0 ? Text.translatable(key, victimName, setterName, amount, coin.getName())
                         : Text.translatable(key + ".empty", victimName, setterName, coin.getName());
             }
@@ -227,7 +230,10 @@ public final class TrapEffect {
             default -> {
                 ItemStack stolen = stealItem(world, victim, controller);
                 amount = stolen.isEmpty() ? 0 : 1;
-                if (!stolen.isEmpty()) setter.getInventory().offerOrDrop(stolen);
+                if (!stolen.isEmpty()) {
+                    TurnJournal.moved(controller, JournalPlace.player(victim), JournalPlace.player(setter), stolen, stolen.getCount());
+                    setter.getInventory().offerOrDrop(stolen);
+                }
                 message = stolen.isEmpty() ? Text.translatable(key + ".empty", victimName, setterName)
                         : Text.translatable(key, victimName, setterName, stolen.toHoverableText());
             }

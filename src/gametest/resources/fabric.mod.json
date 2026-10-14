@@ -16,6 +16,7 @@
       "fr.lordfinn.steveparty.gametest.AdvanceBackGameTests",
       "fr.lordfinn.steveparty.gametest.ReplayTileGameTests",
       "fr.lordfinn.steveparty.gametest.StepControllerGameTests",
+      "fr.lordfinn.steveparty.gametest.TurnJournalGameTests",
       "fr.lordfinn.steveparty.gametest.GlandouilleGameTests",
       "fr.lordfinn.steveparty.gametest.BoomcartGameTests",
       "fr.lordfinn.steveparty.gametest.WildMagpieGameTests",

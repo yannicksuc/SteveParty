@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.powerups.effects;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.powerups.PowerUp;
@@ -247,6 +249,7 @@ public final class ThiefBellEffect {
         int wanted = variant == Variant.GOLDEN ? 1 : random.nextBetween(MIN_COINS, MAX_COINS);
         int taken = held <= 0 ? 0 : InventoryUtils.take(target.getInventory(), template, Math.min(wanted, held));
         if (taken > 0) InventoryUtils.giveOrDrop(thief, template, taken);
+        TurnJournal.moved(party, JournalPlace.player(target), JournalPlace.player(thief), template, taken);
         Result result = new Result(taken > 0 ? Outcome.STOLEN : Outcome.NOTHING, variant, thief.getUuid(), target.getUuid(), taken);
         announce(party, thief, target, result);
         return result;

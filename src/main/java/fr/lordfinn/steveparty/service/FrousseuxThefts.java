@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.dice.DicePrompts;
@@ -469,6 +471,7 @@ public final class FrousseuxThefts {
             int given = carried;
             carried = 0;
             InventoryUtils.giveOrDrop(recipient, template, given);
+            if (victimId != null) TurnJournal.moved(party, JournalPlace.player(victimId), JournalPlace.player(recipient), template, given);
             actor.setBoardCarried(ItemStack.EMPTY);
             actor.boardItemFlight(recipient, template.copyWithCount(Math.min(given, template.getMaxCount())), false);
             face(recipient.getEyePos());
@@ -548,7 +551,9 @@ public final class FrousseuxThefts {
             while (left > 0) {
                 int count = Math.min(left, template.getMaxCount());
                 left -= count;
-                world.spawnEntity(new ItemEntity(world, at.x, at.y, at.z, template.copyWithCount(count)));
+                ItemEntity dropped = new ItemEntity(world, at.x, at.y, at.z, template.copyWithCount(count));
+                world.spawnEntity(dropped);
+                if (victimId != null) TurnJournal.moved(party, JournalPlace.player(victimId), JournalPlace.dropped(dropped), template, count);
             }
         }
 
@@ -560,6 +565,7 @@ public final class FrousseuxThefts {
                 if (to == null) to = player(victimId);
                 if (to != null) {
                     InventoryUtils.giveOrDrop(to, template(), carried);
+                    if (victimId != null) TurnJournal.moved(party, JournalPlace.player(victimId), JournalPlace.player(to), template(), carried);
                     carried = 0;
                 } else {
                     dropLoot();

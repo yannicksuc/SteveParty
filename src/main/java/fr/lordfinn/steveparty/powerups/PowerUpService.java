@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.powerups;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.dice.DiceModules;
@@ -164,7 +165,7 @@ public final class PowerUpService {
         if (player.isInCreativeMode()) return;
         ItemStack stack = find(player, hand, use);
         if (stack == null) return;
-        PartyResources.giveBackUsed(use.controller(), stack.split(1), player);
+        PartyResources.giveBackUsed(use.controller(), stack.split(1), player, JournalPlace.player(player));
     }
 
     /** The item used (same components: a signed Trap is not an unsigned one), in that hand or anywhere. */

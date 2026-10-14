@@ -24,6 +24,8 @@ import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
@@ -39,7 +41,8 @@ import java.util.UUID;
 
 /**
  * The Step Controller: a rising edge of redstone moves a party on, by its mode (see {@link StepPulse}: « next », the
- * party stops waiting for what it waits for; « replay », the step is played again). What it drives:
+ * party stops waiting for what it waits for; « replay », the step is played again, a turn undone first; « previous », back
+ * to the turn before). What it drives:
  * <ul>
  *     <li>linked with the Tile Linker Brush to an element of a party ({@link #getLink}, see
  *     {@link fr.lordfinn.steveparty.board.StepControllerLinks}): a board space or any block of a board (its board's
@@ -57,6 +60,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
     protected static final RawAnimation UP = RawAnimation.begin().thenLoop("up");
     protected static final RawAnimation SIDE = RawAnimation.begin().thenLoop("side");
+    protected static final RawAnimation DOWN = RawAnimation.begin().thenLoop("down");
     protected static final RawAnimation ACTIVATED = RawAnimation.begin().thenPlay("powered");
     public static final int RANGE = 64;
     private static final int CHECK_TICKS = 20;
@@ -105,7 +109,11 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
         controllerRegistrar.add(new AnimationController<>(this, "idle", 0, state -> state.setAndContinue(IDLE)));
         controllerRegistrar.add(new AnimationController<>(this, "mode", 5,
-                state -> state.setAndContinue(mode == StepPulse.Mode.REPLAY ? SIDE : UP)));
+                state -> state.setAndContinue(switch (mode) {
+                    case NEXT -> UP;
+                    case REPLAY -> SIDE;
+                    case PREVIOUS -> DOWN;
+                })));
         controllerRegistrar.add(new AnimationController<>(this, "activation", 5, this::activationAnimController));
     }
 
@@ -258,11 +266,17 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         serverWorld.updateComparators(this.pos, getCachedState().getBlock());
     }
 
-    /** A click: the other mode (« next » up, « replay » sideways). */
+    /** A click: the next mode (« next » up, « replay » sideways, « previous » down). */
     public void cycleMode() {
+        cycleMode(null);
+    }
+
+    /** {@link #cycleMode()}, said to {@code player} over his hotbar. */
+    public void cycleMode(@Nullable PlayerEntity player) {
         if (this.world == null) return;
         mode = mode.cycle();
         this.world.playSound(null, this.getPos(), SoundEvents.BLOCK_COPPER_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0F, 2.0F);
+        if (player != null) player.sendMessage(Text.translatable(mode.translationKey()), true);
         markDirty();
         syncToClients();
     }

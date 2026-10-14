@@ -159,6 +159,18 @@ public final class DevClientCommands {
                                     client.onResolutionChanged();
                                     return 1;
                                 })))
+                        // The game's language (a code: fr_fr, en_us...), resources reloaded
+                        .then(ClientCommandManager.literal("lang")
+                                .then(ClientCommandManager.argument("code", StringArgumentType.word()).executes(context -> {
+                                    var client = context.getSource().getClient();
+                                    String code = StringArgumentType.getString(context, "code");
+                                    client.send(() -> {
+                                        client.getLanguageManager().setLanguage(code);
+                                        client.options.language = code;
+                                        client.reloadResources();
+                                    });
+                                    return 1;
+                                })))
                         // The token spell screen open: a circle drawn with the mouse, its radius a share (percent) of
                         // the biggest circle, as a hand would (a point every 3 window pixels, a little more than a turn)
                         .then(ClientCommandManager.literal("circle")

@@ -305,6 +305,19 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         return stack;
     }
 
+    /** How many more things like {@code kind} it takes: coins as {@link #coinRoom}, anything else its slots' room. */
+    public int room(ItemStack kind) {
+        return isCoin(kind) ? coinRoom(kind) : slotRoom(kind);
+    }
+
+    /** Server: puts back up to {@code count} things like {@code kind}, as far as {@link #room} lets in. @return how many went in */
+    public int putBack(ItemStack kind, int count) {
+        if (isCoin(kind)) return addCoins(kind, count);
+        int room = Math.min(Math.max(0, count), slotRoom(kind));
+        if (room <= 0) return 0;
+        return room - putTreasure(kind.copyWithCount(room)).getCount();
+    }
+
     /** How many more coins like {@code coin} it takes (its slots' room, and a linked pot's cap). */
     public int coinRoom(ItemStack coin) {
         int room = slotRoom(coin);

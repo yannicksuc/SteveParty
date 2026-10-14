@@ -588,7 +588,7 @@ public final class MiniGameTest implements MiniGameSession {
 
     @Override
     public boolean step(StepPulse.Mode mode) {
-        if (phase != Phase.PLAYING || closed) return false;
+        if (phase != Phase.PLAYING || closed || mode == StepPulse.Mode.PREVIOUS) return false;
         if (mode == StepPulse.Mode.NEXT) finish();
         else replay();
         return true;

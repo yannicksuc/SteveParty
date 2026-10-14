@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
@@ -10,6 +12,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -70,9 +73,12 @@ public final class BoardShop {
         return sold.isEmpty() || stock().canTake(sold, sold.getCount());
     }
 
-    /** {@code sold} is sold: taken from its stock, in order. */
-    public void take(ItemStack sold) {
-        if (!sold.isEmpty()) stock().take(sold, sold.getCount());
+    /** {@code sold} is sold to {@code buyer}: taken from its stock, in order (written in the party's turn journal). */
+    public void take(ItemStack sold, @Nullable PlayerEntity buyer) {
+        if (sold.isEmpty()) return;
+        PartyResources stock = stock();
+        int taken = stock.take(sold, sold.getCount());
+        if (buyer != null) TurnJournal.moved(party(), JournalPlace.of(stock), JournalPlace.player(buyer.getUuid()), sold, taken);
     }
 
     /** The party running on its board, whose bank is its till; null outside a party. */
@@ -88,12 +94,20 @@ public final class BoardShop {
                 && CartridgeContainers.shownSourceFor(cartridge, world, space).canTake(sold, sold.getCount());
     }
 
-    /** {@code payment} (emptied) goes to its till; what does not fit is dropped at {@code dropAt}. */
-    public void pay(ItemStack payment, Vec3d dropAt) {
+    /**
+     * {@code payment} (emptied) of {@code buyer} goes to its till; what does not fit is dropped at {@code dropAt}. In a
+     * party, written in its turn journal.
+     */
+    public void pay(ItemStack payment, Vec3d dropAt, @Nullable PlayerEntity buyer) {
         if (payment.isEmpty()) return;
         PartyControllerEntity party = party();
-        if (party != null) PartyResources.of(party).give(payment);
-        else {
+        ItemStack kind = payment.copyWithCount(1);
+        JournalPlace from = buyer == null ? JournalPlace.GONE : JournalPlace.player(buyer.getUuid());
+        if (party != null) {
+            PartyResources till = PartyResources.of(party);
+            int paid = till.give(payment);
+            if (buyer != null) TurnJournal.moved(party, from, JournalPlace.of(till), kind, paid);
+        } else {
             ItemStack cartridge = cartridge();
             if (!cartridge.isEmpty()) {
                 List<Inventory> containers = CartridgeContainers.available(cartridge, world);
@@ -104,6 +118,7 @@ public final class BoardShop {
             ItemEntity dropped = new ItemEntity(world, dropAt.x, dropAt.y, dropAt.z, payment.copyAndEmpty());
             dropped.setToDefaultPickupDelay();
             world.spawnEntity(dropped);
+            if (buyer != null) TurnJournal.moved(party, from, JournalPlace.dropped(dropped), kind, dropped.getStack().getCount());
         }
     }
 }

@@ -6,6 +6,8 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.dice.OneThrowPerRoll;
@@ -35,7 +37,6 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 public class TokenTurnPartyStep extends PartyStep {
@@ -227,6 +228,11 @@ public class TokenTurnPartyStep extends PartyStep {
         return hasRolled() || OneThrowPerRoll.inFlight(thrown);
     }
 
+    /** Whether a die thrown for this turn's roll is still rolling. */
+    public boolean isRollInFlight() {
+        return OneThrowPerRoll.inFlight(thrown);
+    }
+
     @Override
     public void onDieThrown(UUID player, DiceEntity lead) {
         if (status == Status.IN_PROGRESS && (owner == null || owner.equals(player)) && !hasRolled()) thrown = lead;
@@ -318,8 +324,11 @@ public class TokenTurnPartyStep extends PartyStep {
         partyData.getSteps().add(partyData.getStepIndex() + 1, extra);
         if (!spentDie.isEmpty() && owner != null && partyControllerEntity.getWorld() instanceof ServerWorld world) {
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(owner);
-            if (player != null && !player.isInCreativeMode() && PartyResources.of(partyControllerEntity).take(spentDie, 1) == 1)
+            PartyResources storage = PartyResources.of(partyControllerEntity);
+            if (player != null && !player.isInCreativeMode() && storage.take(spentDie, 1) == 1) {
                 player.getInventory().offerOrDrop(spentDie.copy());
+                TurnJournal.moved(partyControllerEntity, JournalPlace.of(storage), JournalPlace.player(player), spentDie, 1);
+            }
         }
         spentDie = ItemStack.EMPTY;
         partyControllerEntity.markDirty();
@@ -368,27 +377,6 @@ public class TokenTurnPartyStep extends PartyStep {
                     MessageUtils.MessageType.CHAT);
         }
         partyControllerEntity.nextStep();
-        return true;
-    }
-
-    /**
-     * A Step Controller replays this turn: its player plays once more right after it, as on a Replay tile
-     * ({@link #grantReplay}).
-     *
-     * @return false if this turn gives no extra one (it is already one, or one follows it already)
-     */
-    public boolean replay(PartyControllerEntity partyControllerEntity) {
-        List<PartyStep> steps = partyControllerEntity.getPartyData().getSteps();
-        int next = partyControllerEntity.getPartyData().getStepIndex() + 1;
-        if (next < steps.size() && steps.get(next) instanceof TokenTurnPartyStep extra && extra.replay
-                && Objects.equals(extra.tokenUUID, tokenUUID)) return false;
-        if (grantReplay(partyControllerEntity) == null) return false;
-        if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
-            MessageUtils.sendToPlayers(partyControllerEntity.getPartyAudience(),
-                    Text.translatable("message.steveparty.tile_landed.replay", getTokenDisplayName(serverWorld)).formatted(Formatting.GOLD),
-                    MessageUtils.MessageType.CHAT);
-            partyControllerEntity.sendPacketToInterestedPlayers();
-        }
         return true;
     }
 

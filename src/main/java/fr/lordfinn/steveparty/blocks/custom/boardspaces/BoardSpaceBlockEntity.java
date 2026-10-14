@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.board.BoardPerf;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.TileStampComponent;
@@ -36,7 +37,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.lordfinn.steveparty.powerups.effects.TrapKind;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.registry.Registries;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
@@ -476,6 +480,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     /** Shows (or, with null, takes off) a Trap on this space; saved and sent to the clients. */
     public void setTrapMark(@Nullable TrapMark mark) {
         if (Objects.equals(mark, trapMark)) return;
+        TurnJournal.space(this);
         this.trapMark = mark;
         super.markDirty();
         syncToClients();
@@ -534,6 +539,59 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         }
         if (world != null && world.isClient && !Objects.equals(shownColor, getActiveCartridgeItemStack().get(ModComponents.COLOR)))
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_LISTENERS);
+    }
+
+    /**
+     * What a party may change on it, for the turn journal: its Trap mark, its « in turn » counters and the state its
+     * cartridges remember ({@link ModComponents#BOARD_CARTRIDGE_STATE}). Never its items.
+     */
+    public NbtCompound journalState() {
+        NbtCompound nbt = new NbtCompound();
+        if (trapMark != null) TrapMark.CODEC.encodeStart(NbtOps.INSTANCE, trapMark).ifSuccess(element -> nbt.put(TRAP_KEY, element));
+        NbtCompound cycles = new NbtCompound();
+        cycleIndexes.forEach((slot, index) -> cycles.putInt(Integer.toString(slot), index));
+        nbt.put(CYCLE_INDEXES_KEY, cycles);
+        NbtList slots = new NbtList();
+        for (int slot = 0; slot < size(); slot++) {
+            ItemStack stack = getStack(slot);
+            if (stack.isEmpty()) continue;
+            NbtCompound entry = new NbtCompound();
+            entry.putInt("Slot", slot);
+            entry.putString("Item", Registries.ITEM.getId(stack.getItem()).toString());
+            NbtCompound state = new NbtCompound();
+            stack.getOrDefault(ModComponents.BOARD_CARTRIDGE_STATE, Map.<String, Integer>of()).forEach(state::putInt);
+            entry.put("State", state);
+            slots.add(entry);
+        }
+        nbt.put("Slots", slots);
+        return nbt;
+    }
+
+    /** Puts back a {@link #journalState}: on each slot still holding the same item, its remembered state. */
+    public void restoreJournalState(NbtCompound nbt) {
+        trapMark = nbt.contains(TRAP_KEY) ? TrapMark.CODEC.parse(NbtOps.INSTANCE, nbt.get(TRAP_KEY)).result().orElse(null) : null;
+        cycleIndexes.clear();
+        NbtCompound cycles = nbt.getCompound(CYCLE_INDEXES_KEY);
+        for (String key : cycles.getKeys()) {
+            try {
+                cycleIndexes.put(Integer.parseInt(key), cycles.getInt(key));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        for (NbtElement element : nbt.getList("Slots", NbtElement.COMPOUND_TYPE)) {
+            NbtCompound entry = (NbtCompound) element;
+            int slot = entry.getInt("Slot");
+            if (slot < 0 || slot >= size()) continue;
+            ItemStack stack = getStack(slot);
+            if (stack.isEmpty() || !Registries.ITEM.getId(stack.getItem()).toString().equals(entry.getString("Item"))) continue;
+            NbtCompound state = entry.getCompound("State");
+            Map<String, Integer> values = new HashMap<>();
+            for (String key : state.getKeys()) values.put(key, state.getInt(key));
+            if (values.isEmpty()) stack.remove(ModComponents.BOARD_CARTRIDGE_STATE);
+            else stack.set(ModComponents.BOARD_CARTRIDGE_STATE, Map.copyOf(values));
+        }
+        super.markDirty();
+        syncToClients();
     }
 
     public static List<BoardSpaceDestination> getDestinationsStatus(List<BlockPos> blockPosList, World world) {
@@ -612,6 +670,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     public void setCycleIndex(int i) {
         if (this.world != null) {
+            TurnJournal.space(this);
             cycleIndexes.put(getActiveSlot(), i);
             super.markDirty();
         }

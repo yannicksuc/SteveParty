@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
 import fr.lordfinn.steveparty.api.event.PartyEvents;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalFrame;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -41,9 +42,18 @@ final class PartyFlow {
         resumeDone = false;
     }
 
-    /** A party starts: nothing to resume. */
+    /** A party starts: nothing to resume, nothing to undo. */
     void started() {
         resumeDone = true;
+        controller.getJournal().clear();
+    }
+
+    /**
+     * The party was put back by its turn journal (see {@link PartyRewind}) as it stood when the step at {@code stepIndex}
+     * started: that step starts again, without the bells of a transition (they rang the first time).
+     */
+    void restart(int stepIndex) {
+        startStep(stepIndex);
     }
 
     /**
@@ -177,6 +187,9 @@ final class PartyFlow {
         partyData.setStepIndex(stepIndex);
         PartyStep currentStep = partyData.getCurrentStep();
         if (currentStep != null) {
+            // The turn journal keeps the party as it stands before the step does anything
+            if (currentStep instanceof TokenTurnPartyStep) controller.getJournal().open(controller, JournalFrame.Kind.TURN, stepIndex);
+            else if (currentStep instanceof MiniGamePartyStep) controller.getJournal().open(controller, JournalFrame.Kind.MINI_GAME, stepIndex);
             // Told first: a step may end within its start (and the next one start)
             PartyEvents.STEP_STARTED.invoker().onStepStarted(controller, currentStep, stepIndex);
             currentStep.start(controller);

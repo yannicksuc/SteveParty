@@ -5,6 +5,9 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.PartyJournal;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
@@ -75,6 +78,10 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private static final String START_LINKS = "StartLinks";
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
+    /** What the game did during the last steps, to replay or go back (see PartyJournal): saved, server only. */
+    private final PartyJournal journal = new PartyJournal();
+    /** Set while its data is written for the clients: the journal is left out (never sent, and not written for nothing). */
+    private boolean forClients;
     /**
      * How far from the controller the board is looked at while no start tile is linked to it (to tell there is a board
      * but no start), and the brush suggests start tiles to link; its board is where the paths from its linked start
@@ -313,6 +320,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         if (launcher != null) nbt.putUuid("Launcher", launcher);
         program.writeNbt(nbt, wrapper);
         if (!bankItems.isEmpty()) nbt.put(BANK_ITEMS, Inventories.writeNbt(new NbtCompound(), bankItems.getHeldStacks(), wrapper));
+        if (!forClients) journal.writeNbt(nbt, wrapper);
     }
 
     @Override
@@ -352,13 +360,20 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         // A controller saved before it had its own bank: an empty one (its linked chests are kept)
         bankItems.getHeldStacks().clear();
         if (nbt.contains(BANK_ITEMS)) Inventories.readNbt(nbt.getCompound(BANK_ITEMS), bankItems.getHeldStacks(), wrapper);
+        journal.readNbt(nbt, wrapper);
         flow.loaded();
     }
 
     /** What the clients get: everything saved but the traps (Trap power-up): the board spaces show them. */
     @Override
     public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        NbtCompound nbt = super.toInitialChunkDataNbt(registries);
+        forClients = true;
+        NbtCompound nbt;
+        try {
+            nbt = super.toInitialChunkDataNbt(registries);
+        } finally {
+            forClients = false;
+        }
         nbt.remove(TrapState.NBT_KEY);
         nbt.remove(BANK_ITEMS);
         nbt.remove("Board");
@@ -463,6 +478,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             if (taken < amount) full = false;
             paid[currency == PartyCurrency.STAR ? 1 : 0] = taken;
             InventoryUtils.giveOrDrop(player, template, taken);
+            TurnJournal.moved(this, JournalPlace.of(bank), JournalPlace.player(player), template, taken);
         }
         return new Paid(paid[0], paid[1], full);
     }
@@ -997,6 +1013,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         Text tokenName = getTokenDisplayName(serverWorld, tokenUUID);
 
         partyData.removeToken(tokenUUID);
+        // The turns kept by the journal still count it in: nothing before this can be gone back to
+        journal.clear();
         int stepIndex = partyData.getStepIndex();
         PartyStep currentStep = partyData.getCurrentStep();
         boolean isItsTurn = currentStep instanceof TokenTurnPartyStep turn && tokenUUID.equals(turn.getTokenUUID())
@@ -1152,6 +1170,16 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         return partyData;
     }
 
+    /** The turn journal of its party (see {@link PartyJournal}). */
+    public PartyJournal getJournal() {
+        return journal;
+    }
+
+    /** Its turn journal changed: saved, nothing to tell the clients (they never get it). */
+    public void journalChanged() {
+        super.markDirty();
+    }
+
     public void setPartyData(PartyData partyData) {
         this.partyData = partyData;
         markDirty();
@@ -1172,6 +1200,11 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
 
     public void nextStep() {
         flow.nextStep();
+    }
+
+    /** Its course, for the turn journal's rewinds (see PartyRewind). */
+    PartyFlow flow() {
+        return flow;
     }
 
     /**

@@ -24,6 +24,20 @@ public final class InventoryUtils {
         return count;
     }
 
+    /** How many items like the template the inventory still takes (its stacks like it, then its empty slots). */
+    public static int room(@Nullable Inventory inventory, ItemStack template) {
+        if (inventory == null || template.isEmpty()) return 0;
+        long room = 0;
+        int max = Math.min(inventory.getMaxCount(template), template.getMaxCount());
+        for (int slot = 0; slot < inventory.size(); slot++) {
+            ItemStack stack = inventory.getStack(slot);
+            if (!inventory.isValid(slot, template)) continue;
+            if (stack.isEmpty()) room += max;
+            else if (ItemStack.areItemsAndComponentsEqual(template, stack)) room += Math.max(0, max - stack.getCount());
+        }
+        return (int) Math.min(Integer.MAX_VALUE, room);
+    }
+
     /**
      * Takes up to {@code amount} items matching the template out of the inventory.
      *
