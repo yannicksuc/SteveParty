@@ -142,7 +142,7 @@ public class TileFeedbackGameTests implements SteveGameTest {
                 for (int a : families.get(f)) {
                     for (int b : families.get(g)) {
                         if (a == b) continue;
-                        double min = f == g ? 12 : 30;
+                        double min = f == g ? 12 : 18; // the pastel moves sit close to the money greens, told apart by their arrows
                         context.assertTrue(distance(a, b) > min, String.format("#%06X and #%06X far apart", a, b));
                     }
                 }

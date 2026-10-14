@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui.cartridge;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
@@ -886,7 +887,9 @@ public final class CartridgePanel {
 
     // ------------------------------------------------------------------ the chosen ghost slot's editor
 
-    private static final int GIVE = 0xFF46AE2E, TAKE = 0xFFD9283B, EDIT_H = 16;
+    // The sides in their tile's colours: Gives as a Bonus tile (blue), Takes as a Malus tile (red)
+    private static final int GIVE = 0xFF000000 | InventoryInteractorTileBehavior.GOOD_COLOR,
+            TAKE = 0xFF000000 | InventoryInteractorTileBehavior.BAD_COLOR, EDIT_H = 16;
     /** The slots: darker than the shell's screen, sunk in it by their darkness only (the ground of the editor's boxes). */
     private static final int WELL = BODY;
     /** The editor's parts: give, take, −, +, empty the slot, the quantity's box. */
@@ -1417,7 +1420,7 @@ public final class CartridgePanel {
         else ButtonGlyphs.left(context, bx, ry, ROW_BUTTON, ROW_BUTTON, color);
     }
 
-    /** A side's button chosen (Gives green, Takes red): also the frame of the slots of that side. */
+    /** A side's button chosen (Gives blue, Takes red): also the frame of the slots of that side. */
     private static PartyGui.Theme sideTheme(int color) {
         return new PartyGui.Theme(Argb.darken(color, 0.6F), Argb.lighten(color, 0.4F), color, Argb.darken(color, 0.35F));
     }
