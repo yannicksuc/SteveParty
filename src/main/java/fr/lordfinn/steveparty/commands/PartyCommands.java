@@ -105,6 +105,8 @@ public class PartyCommands {
                                 .executes(context -> stop(context.getSource(), null))
                                 .then(argument("controller", BlockPosArgumentType.blockPos())
                                         .executes(context -> stop(context.getSource(), getPos(context)))))));
+        // /leave: the same as /steveparty leave, shorter to type
+        dispatcher.register(literal("leave").executes(context -> leave(context.getSource())));
     }
 
     private static int stop(ServerCommandSource source, @Nullable BlockPos controllerPos) {

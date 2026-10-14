@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud;
+import fr.lordfinn.steveparty.client.gui.party.MiniGameRoundHud;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud;
 import fr.lordfinn.steveparty.client.payloads.ClientPayloads;
 import fr.lordfinn.steveparty.client.screens.MiniGamePageEditorScreen;
@@ -103,7 +104,8 @@ public final class MiniGamePageClient {
                 MiniGameCardHud.hide();
             }
         });
-        ClientPayloads.receive(MiniGamePagePayloads.TestLabel.ID, (payload, context) -> MiniGameResultsHud.test(payload.show() ? payload.title() : null));
+        ClientPayloads.receive(MiniGamePagePayloads.RoundCard.ID, (payload, context) -> MiniGameRoundHud.show(payload));
+        ClientPayloads.receive(MiniGamePagePayloads.StartVote.ID, (payload, context) -> MiniGameRoundHud.vote(payload));
         ClientPayloads.receive(MiniGamePagePayloads.Practice.ID, (payload, context) -> MiniGamePracticeHud.show(payload));
         ClientPayloads.receive(MiniGamePagePayloads.TestStatus.ID, (payload, context) -> {
             if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor)
@@ -123,6 +125,7 @@ public final class MiniGamePageClient {
         MiniGameCardHud.clear();
         MiniGameResultsHud.clear();
         MiniGamePracticeHud.clear();
+        MiniGameRoundHud.clear();
     }
 
     // ------------------------------------------------------------------ content

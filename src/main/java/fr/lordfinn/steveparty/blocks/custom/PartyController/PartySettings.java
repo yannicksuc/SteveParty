@@ -35,6 +35,11 @@ public final class PartySettings {
     private boolean returnOldCartridge;
     /** A practice round before each mini-game whose page has a Mini-game Controller (Settings page). */
     private boolean practiceRound = true;
+    /**
+     * « Fast party » (Settings page): a die stops by itself {@value fr.lordfinn.steveparty.dice.FastDice#STOP_SECONDS} seconds after
+     * reaching its pawn, the mini-games start without reading time and with a shorter countdown.
+     */
+    private boolean fastParty;
     /** The power-ups a player may carry during a party, dice carrying the Power-up module included (0: no limit). */
     private int maxPowerUps = PowerUpLimit.DEFAULT;
     /** Only the allowed dice may be thrown during a party (Settings page); off: every die. */
@@ -59,6 +64,7 @@ public final class PartySettings {
         nbt.putBoolean("BankInternal", true);
         if (returnOldCartridge) nbt.putBoolean("ReturnBankCartridge", true);
         nbt.putBoolean("PracticeRound", practiceRound);
+        if (fastParty) nbt.putBoolean("FastParty", true);
         nbt.putInt("MaxPowerUps", maxPowerUps);
         nbt.putBoolean("RestrictDice", restrictDice);
         if (infiniteBank) nbt.putBoolean("InfiniteBank", true);
@@ -78,6 +84,7 @@ public final class PartySettings {
         returnOldCartridge = nbt.getBoolean("ReturnBankCartridge") || (!nbt.getBoolean("BankInternal") && !saved.isEmpty());
         bank = saved.getItem() instanceof InventoryCartridgeItem ? saved.copyWithCount(1) : newBank();
         practiceRound = !nbt.contains("PracticeRound") || nbt.getBoolean("PracticeRound");
+        fastParty = nbt.getBoolean("FastParty");
         maxPowerUps = nbt.contains("MaxPowerUps")
                 ? Math.clamp(nbt.getInt("MaxPowerUps"), 0, PowerUpLimit.MAX)
                 : PowerUpLimit.DEFAULT;
@@ -151,6 +158,17 @@ public final class PartySettings {
     boolean setPracticeRound(boolean practiceRound) {
         if (this.practiceRound == practiceRound) return false;
         this.practiceRound = practiceRound;
+        return true;
+    }
+
+    public boolean isFastParty() {
+        return fastParty;
+    }
+
+    /** @return true if it changed */
+    boolean setFastParty(boolean fastParty) {
+        if (this.fastParty == fastParty) return false;
+        this.fastParty = fastParty;
         return true;
     }
 

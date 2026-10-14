@@ -300,6 +300,7 @@ public class StevepartyClient implements ClientModInitializer {
         MiniGameCardHud.initialize();
         MiniGameResultsHud.initialize();
         MiniGamePracticeHud.initialize();
+        fr.lordfinn.steveparty.client.gui.party.MiniGameRoundHud.initialize();
         PageZoneClient.initialize();
         InventoryCartridgeClient.initialize();
         CartridgeClickGuard.initialize();

@@ -374,4 +374,115 @@ public class DiceGameTests implements SteveGameTest {
         his.discard();
         context.complete();
     }
+
+    // ---------------------------------------------------------------- in a party
+
+    /** His pawn {@code pawnPos} (relative) playing a party: the party's controller at (0, 1, 0). */
+    private static PigEntity pawnInParty(TestContext context, ServerPlayerEntity owner, BlockPos pawnPos) {
+        PigEntity pawn = fr.lordfinn.steveparty.gametest.kit.TestBoards.token(context, pawnPos, owner.getUuid());
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity party =
+                fr.lordfinn.steveparty.gametest.kit.TestBoards.party(context, new BlockPos(0, 1, 0), 1, pawn.getUuid());
+        TestCleanup.atEnd(context, () -> {
+            party.stopParty(null);
+            pawn.discard();
+        });
+        return pawn;
+    }
+
+    /** In a party the die goes around the thrower's pawn, never a mob standing closer. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
+    public void inAPartyTheDieGoesAroundHisPawn(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new ItemStack(ModItems.DEFAULT_DICE), -20, false);
+        PigEntity closer = context.spawnEntity(EntityType.PIG, new BlockPos(4, 2, 5));
+        PigEntity his = pawnInParty(context, player, new BlockPos(1, 2, 1));
+        player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
+        context.assertEquals(diceOf(context, player).getFirst().getTarget().orElse(null), his.getUuid(), "his pawn, not the closer pig");
+        closer.discard();
+        context.complete();
+    }
+
+    /** A fast party: the die stops by itself 5 seconds after reaching his pawn; a classic party's goes on rolling. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 260, batchId = "dice_throws")
+    public void inAFastPartyTheDieStopsByItself(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new ItemStack(ModItems.DEFAULT_DICE), -20, false);
+        PigEntity his = pawnInParty(context, player, new BlockPos(3, 2, 5));
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity party =
+                (fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity) context.getWorld().getBlockEntity(context.getAbsolutePos(new BlockPos(0, 1, 0)));
+        party.setFastParty(true);
+        his.setAiDisabled(true);
+        player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        int[] arrivedAt = {-1};
+        TestWait.everyTick(context, () -> {
+            if (arrivedAt[0] < 0 && fr.lordfinn.steveparty.dice.FastDice.arrived(dice, his)) arrivedAt[0] = (int) context.getTick();
+        });
+        context.waitAndRun(60 + 20 * fr.lordfinn.steveparty.dice.FastDice.STOP_SECONDS + 40, () -> {
+            context.assertTrue(arrivedAt[0] >= 0, "the die reached his pawn");
+            context.assertTrue(dice.isRollFinished() || dice.isRemoved() || dice.sequence().phase() != DiceRollSequence.Phase.ROLLING,
+                    "it stopped by itself");
+            context.complete();
+        });
+    }
+
+    /** A classic party: the die rolls until its player stops it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 260, batchId = "dice_throws")
+    public void inAClassicPartyTheDieWaitsForItsPlayer(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new ItemStack(ModItems.DEFAULT_DICE), -20, false);
+        PigEntity his = pawnInParty(context, player, new BlockPos(3, 2, 5));
+        his.setAiDisabled(true);
+        player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        context.waitAndRun(60 + 20 * fr.lordfinn.steveparty.dice.FastDice.STOP_SECONDS + 40, () -> {
+            context.assertTrue(!dice.isRemoved() && dice.sequence().phase() == DiceRollSequence.Phase.ROLLING, "still rolling");
+            context.complete();
+        });
+    }
+
+    /** In a party, sneaking: the die stays above the thrower's own head. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
+    public void inAPartySneakingKeepsTheDieAboveHisHead(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new ItemStack(ModItems.DEFAULT_DICE), -20, true);
+        pawnInParty(context, player, new BlockPos(1, 2, 1));
+        player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
+        context.assertEquals(diceOf(context, player).getFirst().getTarget().orElse(null), player.getUuid(), "above his own head");
+        context.complete();
+    }
+
+    /** In a party, his pawn more than 30 blocks away: the die stays above his own head. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
+    @fr.lordfinn.steveparty.gametest.kit.LandAround(48)
+    public void inAPartyAFarPawnKeepsTheDieAboveHisHead(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new ItemStack(ModItems.DEFAULT_DICE), -20, false);
+        context.setBlockState(new BlockPos(4, 1, 40), Blocks.STONE);
+        pawnInParty(context, player, new BlockPos(4, 2, 40));
+        PigEntity closer = context.spawnEntity(EntityType.PIG, new BlockPos(4, 2, 6));
+        player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
+        context.assertEquals(diceOf(context, player).getFirst().getTarget().orElse(null), player.getUuid(), "above his own head, not a pig");
+        closer.discard();
+        context.complete();
+    }
+
+    /** In a party, his pawn not loaded (missing): the die stays above his own head. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
+    public void inAPartyAMissingPawnKeepsTheDieAboveHisHead(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new ItemStack(ModItems.DEFAULT_DICE), -20, false);
+        context.setBlockState(new BlockPos(0, 0, 0), Blocks.STONE);
+        context.setBlockState(new BlockPos(0, 1, 0), fr.lordfinn.steveparty.blocks.ModBlocks.PARTY_CONTROLLER);
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity party = context.getBlockEntity(new BlockPos(0, 1, 0));
+        UUID gone = UUID.randomUUID();
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData data = new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData();
+        data.addToken(gone);
+        data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep());
+        data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(gone, player.getUuid()));
+        data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep(new java.util.ArrayList<>(List.of(gone))));
+        party.setPartyData(data);
+        party.nextStep();
+        party.nextStep();
+        TestCleanup.atEnd(context, () -> party.stopParty(null));
+        PigEntity closer = context.spawnEntity(EntityType.PIG, new BlockPos(4, 2, 6));
+        player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
+        context.assertEquals(diceOf(context, player).getFirst().getTarget().orElse(null), player.getUuid(), "above his own head, not a pig");
+        closer.discard();
+        context.complete();
+    }
 }

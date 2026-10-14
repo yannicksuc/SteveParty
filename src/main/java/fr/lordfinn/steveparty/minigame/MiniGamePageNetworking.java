@@ -73,7 +73,7 @@ public final class MiniGamePageNetworking {
         Payloads.c2s(PodiumUnlink.ID, PodiumUnlink.CODEC, MiniGamePageNetworking::podiumUnlink);
         Payloads.c2s(TestQuery.ID, TestQuery.CODEC, MiniGamePageNetworking::testQuery);
         Payloads.c2s(TestAction.ID, TestAction.CODEC, MiniGamePageNetworking::testAction);
-        Payloads.c2s(Ready.ID, Ready.CODEC, (player, payload) -> MiniGamePartyStep.toggleReady(player));
+        Payloads.c2s(Ready.ID, Ready.CODEC, (player, payload) -> MiniGameReady.press(player));
         Payloads.c2s(Request.ID, Request.CODEC, (player, payload) ->
                 send(player, new Data(MiniGamePages.get(player.server, payload.page()))));
         Payloads.c2s(ImageRequest.ID, ImageRequest.CODEC, (player, payload) -> sendImage(player, payload.hash()));

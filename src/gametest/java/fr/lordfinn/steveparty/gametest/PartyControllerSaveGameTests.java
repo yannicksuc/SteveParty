@@ -101,6 +101,7 @@ public class PartyControllerSaveGameTests implements SteveGameTest {
         nbt.put("BankCartridge", bank.encode(registries));
         nbt.putBoolean("BankInternal", true);
         nbt.putBoolean("PracticeRound", false);
+        nbt.putBoolean("FastParty", true);
         nbt.putInt("MaxPowerUps", 2);
         nbt.putBoolean("RestrictDice", true);
         NbtList dice = new NbtList();

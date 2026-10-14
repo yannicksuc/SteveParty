@@ -27,7 +27,7 @@ import static fr.lordfinn.steveparty.client.screens.partycontroller.DashboardSty
 import static fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.*;
 
 /**
- * The Settings tab: the rounds, the practice round, the power-ups a player may carry, « Restrict dice » (a switch, a
+ * The Settings tab: the rounds, the practice round and the fast party, the power-ups a player may carry, « Restrict dice » (a switch, a
  * row of ghost slots, its toggle opening a panel of all of them over the other settings; the places after the first
  * free one greyed, all of them while the switch is off).
  */
@@ -36,6 +36,8 @@ public final class SettingsPage {
     private static final int SETTINGS_Y = CY + 18, SETTINGS_ROW = 22;
     /** The « Restrict dice » row (the 4th): its switch, its slots, the toggle of its panel. */
     private static final int DICE_Y = SETTINGS_Y + 3 * SETTINGS_ROW, DICE_TOGGLE_X = CX + CW - STEP, DICE_SWITCH_X = DICE_ROW_X - 1 - 4 - 24;
+    /** The 2nd row holds two switches: the practice round on its left half, the fast party on its right half. */
+    private static final int HALF = CW / 2, PRACTICE_SWITCH_X = CX + HALF - 8 - 24, FAST_X = CX + HALF + 8, FAST_SWITCH_X = CX + CW - 24;
 
     private final Dashboard dashboard;
     private final DashboardPainter paint;
@@ -79,13 +81,15 @@ public final class SettingsPage {
         plus.active = editable && data.roundsSetting() < PartyControllerEntity.MAX_ROUNDS;
         minus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.less") : why));
         plus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.more") : why));
-        // A practice round before each mini-game: a switch, its state on its left (at most in the 72 px its label leaves)
-        Text state = Text.translatable(KEY + (data.practiceRound() ? "settings.practice.on" : "settings.practice.off"));
-        int width = Math.min(dashboard.font().getWidth(state) - 1 + 4 + 24, 68);
-        DashboardSwitch practice = dashboard.add(new DashboardSwitch(dashboard, x + CX + CW - width, y + SETTINGS_Y + SETTINGS_ROW, width, BTN_H,
-                state, data.practiceRound(), BUTTON_PRACTICE));
+        // A practice round before each mini-game, and the fast party: two switches on one row (the switch shows its state)
+        DashboardSwitch practice = dashboard.add(new DashboardSwitch(dashboard, x + PRACTICE_SWITCH_X, y + SETTINGS_Y + SETTINGS_ROW, 24, BTN_H,
+                Text.empty(), data.practiceRound(), BUTTON_PRACTICE));
         practice.active = data.canEdit();
         practice.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.practice.tooltip") : Text.translatable(KEY + "locked")));
+        DashboardSwitch fast = dashboard.add(new DashboardSwitch(dashboard, x + FAST_SWITCH_X, y + SETTINGS_Y + SETTINGS_ROW, 24, BTN_H,
+                Text.empty(), data.fastParty(), BUTTON_FAST_PARTY));
+        fast.active = data.canEdit();
+        fast.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.fast.tooltip") : Text.translatable(KEY + "locked")));
         // The power-ups a player may carry (0: no limit)
         int limitY = y + SETTINGS_Y + 2 * SETTINGS_ROW + 1;
         ConsoleButton fewer = dashboard.add(new ConsoleButton(sx, limitY, STEP, STEP, Text.literal("-"), ConsoleButton.Kind.SCREEN, null,
@@ -146,7 +150,8 @@ public final class SettingsPage {
             int fieldX = CX + CW - 68 + 18;
             ConsolePaint.inset(context, fieldX, SETTINGS_Y + 1, 31, 15, SLOT_BODY, SLOT_EDGE, SLOT_LOW);
             paint.centred(context, Integer.toString(data.roundsSetting()), fieldX, 32, SETTINGS_Y + 5, WHITE);
-            paint.line(context, Text.translatable(KEY + "settings.practice"), CX, SETTINGS_Y + SETTINGS_ROW + 5, room, WHITE);
+            paint.line(context, Text.translatable(KEY + "settings.practice"), CX, SETTINGS_Y + SETTINGS_ROW + 5, PRACTICE_SWITCH_X - 4 - CX, WHITE);
+            paint.line(context, Text.translatable(KEY + "settings.fast"), FAST_X, SETTINGS_Y + SETTINGS_ROW + 5, FAST_SWITCH_X - 4 - FAST_X, WHITE);
             int limitY = SETTINGS_Y + 2 * SETTINGS_ROW;
             paint.line(context, Text.translatable(KEY + "settings.max_powerups"), CX, limitY + 5, room, WHITE);
             String limit = data.maxPowerUps() <= 0 ? "∞" : Integer.toString(data.maxPowerUps());
@@ -183,8 +188,14 @@ public final class SettingsPage {
 
     /** The label of a setting under the mouse: what it does; null when the mouse is elsewhere. */
     public @Nullable List<Text> labelTooltip(int mx, int my) {
-        if (mx < CX || mx >= CX + CW - 72) return null;
         int row = Math.floorDiv(my - SETTINGS_Y, SETTINGS_ROW);
+        // The row of the two switches: the label under the mouse
+        if (row == 1 && !handler().isDiceOpen() && my >= SETTINGS_Y && my < SETTINGS_Y + SETTINGS_ROW + 18) {
+            if (mx >= CX && mx < PRACTICE_SWITCH_X - 2) return List.of(Text.translatable(KEY + "settings.practice.tooltip").formatted(Formatting.GRAY));
+            if (mx >= FAST_X && mx < FAST_SWITCH_X - 2) return List.of(Text.translatable(KEY + "settings.fast.tooltip").formatted(Formatting.GRAY));
+            return null;
+        }
+        if (mx < CX || mx >= CX + CW - 72) return null;
         if (my >= SETTINGS_Y && row >= (handler().isDiceOpen() ? 3 : 0) && row < 4 && my < SETTINGS_Y + row * SETTINGS_ROW + 18
                 && (row < 3 || mx < DICE_SWITCH_X - 2)) {
             String key = row == 0 ? "settings.rounds" : row == 1 ? "settings.practice" : row == 2 ? "settings.max_powerups" : "settings.allowed_dice";

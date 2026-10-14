@@ -142,9 +142,13 @@ public class DefaultDiceItem extends Item {
     protected void configureDiceEntity(DiceEntity diceEntity, PlayerEntity player, Hand hand) {
         diceEntity.setVelocity(throwVelocity(player));
         diceEntity.setOwner(player.getUuid());
-        MobEntity ownPawn = aimedAt == null && !player.isSneaking() && player.getWorld() instanceof ServerWorld world
+        ServerWorld world = player.getWorld() instanceof ServerWorld server ? server : null;
+        // In a party: his pawn, else (sneaking, pawn missing or far away) above his own head
+        LivingEntity inParty = aimedAt == null && world != null ? DiceTargets.inParty(world, player) : null;
+        MobEntity ownPawn = aimedAt == null && inParty == null && !player.isSneaking() && world != null
                 ? DiceTargets.ownPawn(world, player, diceEntity.getPos()) : null;
         if (aimedAt != null && aimedAt.isAlive()) diceEntity.setTargetEntity(aimedAt);
+        else if (inParty != null) diceEntity.setTargetEntity(inParty);
         else if (ownPawn != null) diceEntity.setTargetEntity(ownPawn);
         else diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
         diceEntity.setItemReference(player.getStackInHand(hand).copyWithCount(1));

@@ -95,6 +95,8 @@ public final class MiniGamePipes {
     }
 
     private static final Map<UUID, Seat> IN_PARTY = new HashMap<>();
+    /** The card at the top of the screen of each player in a round (see {@link MiniGameRoundCards}). */
+    private static final Map<UUID, MiniGamePagePayloads.RoundCard> CARDS = new HashMap<>();
     /** The next pipe of each role a mini-game pipe sends to, by page. */
     private static final Map<UUID, Map<MiniGamePipeRole, Integer>> NEXT_ARRIVAL = new HashMap<>();
     /** When each player was last told a linked pipe is closed during his round (server ticks). */
@@ -118,6 +120,7 @@ public final class MiniGamePipes {
             server = null;
             CAME_BY.clear();
             IN_PARTY.clear();
+            CARDS.clear();
             NEXT_ARRIVAL.clear();
             WARNED.clear();
         });
@@ -286,11 +289,18 @@ public final class MiniGamePipes {
      * says the round is over (a party controller broken while it was played).
      */
     public static void enterParty(UUID player, UUID page, BooleanSupplier stillOn) {
+        enterParty(player, page, stillOn, null);
+    }
+
+    /** @param card his card at the top of the screen (null: the one he has, else the page's name and objective alone) */
+    public static void enterParty(UUID player, UUID page, BooleanSupplier stillOn, MiniGamePagePayloads.@Nullable RoundCard card) {
         IN_PARTY.put(player, new Seat(page, stillOn));
+        if (card != null) CARDS.put(player, card);
         label(player, page);
     }
 
     public static void leaveParty(UUID player) {
+        CARDS.remove(player);
         if (IN_PARTY.remove(player) != null) label(player, null);
         MiniGameNameColors.restore(player);
     }
@@ -299,6 +309,7 @@ public final class MiniGamePipes {
         Seat seat = IN_PARTY.get(player);
         if (seat != null && !seat.stillOn().getAsBoolean()) {
             IN_PARTY.remove(player);
+            CARDS.remove(player);
             MiniGameNameColors.restore(player);
             label(player, null);
             return false;
@@ -306,15 +317,24 @@ public final class MiniGamePipes {
         return seat != null;
     }
 
+    /** The card of the round {@code player} is in (its name, objective, his team...), null for none. */
+    public static MiniGamePagePayloads.@Nullable RoundCard cardOf(UUID player) {
+        UUID page = roundOf(player);
+        if (page == null) return null;
+        MiniGamePagePayloads.RoundCard card = CARDS.get(player);
+        return card != null ? card : server == null ? null : MiniGameRoundCards.bare(MiniGamePages.get(server, page));
+    }
+
     /**
-     * The chip at the top of {@code player}'s screen saying which mini-game he is in (« Mini-game: ... »), for as long as
-     * he is in its round; {@code page} null takes it away.
+     * The card at the top of {@code player}'s screen saying which mini-game he is in, what to do, his team, for as long
+     * as he is in its round ({@link MiniGameRoundCards}); {@code page} null takes it away.
      */
     private static void label(UUID player, @Nullable UUID page) {
         ServerPlayerEntity online = server == null ? null : server.getPlayerManager().getPlayer(player);
-        if (online == null || !ServerPlayNetworking.canSend(online, MiniGamePagePayloads.TestLabel.ID)) return;
-        String title = page == null ? "" : MiniGamePages.get(server, page).title();
-        ServerPlayNetworking.send(online, new MiniGamePagePayloads.TestLabel(page != null, title));
+        if (online == null || !ServerPlayNetworking.canSend(online, MiniGamePagePayloads.RoundCard.ID)) return;
+        MiniGamePagePayloads.RoundCard card = page == null ? MiniGamePagePayloads.RoundCard.HIDDEN : CARDS.get(player);
+        if (card == null) card = MiniGameRoundCards.bare(MiniGamePages.get(server, page));
+        ServerPlayNetworking.send(online, card);
     }
 
     /** The page of the round {@code player} is in, null for none. */

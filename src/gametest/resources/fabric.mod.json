@@ -47,6 +47,7 @@
       "fr.lordfinn.steveparty.gametest.TileDyeGameTests",
       "fr.lordfinn.steveparty.gametest.CoreGameTests",
       "fr.lordfinn.steveparty.gametest.PartyLeaveGameTests",
+      "fr.lordfinn.steveparty.gametest.MiniGameStartGameTests",
       "fr.lordfinn.steveparty.gametest.PartyDataPayloadGameTests",
       "fr.lordfinn.steveparty.gametest.PartyResultsGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpProtectionGameTests",

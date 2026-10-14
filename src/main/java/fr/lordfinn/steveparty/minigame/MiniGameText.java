@@ -69,6 +69,59 @@ public final class MiniGameText {
     }
 
     /**
+     * The sentences of {@code markup}, each still in markup and starting with the codes in force where it starts (a
+     * colour set in a sentence goes on in the next ones): cut after « . », « ! », « ? » or « … » followed by a space,
+     * and at the line breaks. Blank sentences are left out.
+     */
+    public static List<String> sentences(String markup) {
+        List<String> sentences = new ArrayList<>();
+        StringBuilder sentence = new StringBuilder();
+        // The codes in force: a colour (or a reset) and the styles after it
+        StringBuilder active = new StringBuilder();
+        for (int i = 0; i < markup.length(); i++) {
+            char c = markup.charAt(i);
+            if (c == '&' && i + 1 < markup.length()) {
+                char next = markup.charAt(i + 1);
+                Formatting formatting = next == '&' ? null : code(next);
+                sentence.append(c).append(next);
+                i++;
+                if (formatting != null) {
+                    if (formatting == Formatting.RESET || formatting.isColor()) active.setLength(0);
+                    if (formatting != Formatting.RESET) active.append('&').append(next);
+                }
+                continue;
+            }
+            if (c == '\n') {
+                flush(sentences, sentence, active);
+                continue;
+            }
+            // No space at the start of a sentence
+            if (c == ' ' && sentence.toString().contentEquals(active)) continue;
+            sentence.append(c);
+            boolean end = c == '.' || c == '!' || c == '?' || c == '…';
+            if (end && (i + 1 >= markup.length() || markup.charAt(i + 1) == ' ')) {
+                // « ... », « ?! »: the whole run of marks ends the sentence
+                flush(sentences, sentence, active);
+            }
+        }
+        flush(sentences, sentence, active);
+        return sentences;
+    }
+
+    private static void flush(List<String> sentences, StringBuilder sentence, CharSequence active) {
+        String text = sentence.toString().strip();
+        if (!strip(text).isBlank()) sentences.add(text);
+        sentence.setLength(0);
+        sentence.append(active);
+    }
+
+    /** How long a player needs to read {@code markup} in the chat, in ticks: from 2 to 8 seconds by its length. */
+    public static int readingTicks(String markup) {
+        int letters = strip(markup).strip().length();
+        return Math.clamp(20 + Math.round(letters * 1.6f), 40, 160);
+    }
+
+    /**
      * Cuts a text in lines of about {@code width} characters, at the spaces (a word longer than a line stays whole);
      * its own line breaks are kept.
      */

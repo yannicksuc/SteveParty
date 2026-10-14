@@ -115,14 +115,6 @@ final class MiniGameScreens {
 
     // ---------------------------------------------------------------- the start
 
-    /**
-     * The mini-game starts: in the chat its title and, when it has one, its description, for the players and the
-     * audience; on the screen its title over the countdown of {@link MiniGameFreeze} (see {@link MiniGameDeparture}).
-     */
-    void announce(PartyControllerEntity controller, @Nullable MiniGamePageData page, boolean inChat) {
-        announceStart(startName(controller, page), page, previewAudience(controller), inChat);
-    }
-
     /** The name the mini-game is announced by: its page's title, else its item's name, else none (empty). */
     String startName(PartyControllerEntity controller, @Nullable MiniGamePageData page) {
         ItemStack stack = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);

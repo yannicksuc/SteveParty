@@ -40,7 +40,8 @@ public final class MiniGamePracticeHud {
                 InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_Y, "category.steveparty"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (readyKey.wasPressed()) {
-                if (client.currentScreen == null && isVoter()) toggleReady();
+                // Before a round starts (its description told), or during a practice round
+                if (client.currentScreen == null && (isVoter() || MiniGameRoundHud.canVote())) toggleReady();
             }
         });
         HudRenderCallback.EVENT.register(MiniGamePracticeHud::render);
@@ -87,7 +88,8 @@ public final class MiniGamePracticeHud {
 
     private static void render(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (practice == null || client.options.hudHidden || client.getDebugHud().shouldShowDebugHud()) return;
+        // The start's vote is on screen: the practice chip waits for « Go! »
+        if (practice == null || MiniGameRoundHud.isVoteShown() || client.options.hudHidden || client.getDebugHud().shouldShowDebugHud()) return;
         TextRenderer font = HudDraw.font();
         int screenWidth = context.getScaledWindowWidth();
         boolean voter = isVoter(), ready = isReady();

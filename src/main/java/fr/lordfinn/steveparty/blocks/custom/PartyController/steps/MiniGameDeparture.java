@@ -9,6 +9,8 @@ import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import fr.lordfinn.steveparty.minigame.MiniGameReturns;
+import fr.lordfinn.steveparty.minigame.MiniGameRoundCards;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -43,6 +45,8 @@ final class MiniGameDeparture {
     private boolean toldInChat;
     /** The players were told why this mini-game is played without the protection of its zone. Not saved. */
     private boolean unprotectedTold;
+    /** The players were told how the practice round's vote works. Not saved. */
+    private boolean practiceTold;
 
     MiniGameDeparture(MiniGamePartyStep step) {
         this.step = step;
@@ -52,6 +56,7 @@ final class MiniGameDeparture {
     void reset() {
         toldInChat = false;
         unprotectedTold = false;
+        practiceTold = false;
     }
 
     /** The round is over: what everyone owns and the zone are given back, a departure waiting for its zone is called off. */
@@ -119,14 +124,19 @@ final class MiniGameDeparture {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
                 if (player == null) return;
                 step.returnPositions.putIfAbsent(uuid, MiniGameReturns.Return.of(player));
-                seat(controller, uuid);
+                seat(controller, uuid, page == null ? null : MiniGameRoundCards.of(page, teams, pipes, step.participants, uuid));
                 if (comeOut(server, link, uuid, page == null ? null : page.id()) && step.participants.contains(uuid)) out.add(player);
             });
-            step.screens.announce(controller, page, !toldInChat);
+            // Everyone is out at once: the players stand still while the chat tells the mini-game (the first time), then
+            // for the countdown, then « Go! »
+            MiniGameFreeze.Pace pace = toldInChat ? MiniGameFreeze.Pace.AGAIN : MiniGameFreeze.Pace.FIRST;
+            if (controller.isFastParty()) pace = pace.fast();
             toldInChat = true;
-            // Everyone is out at once: the players stand still for the countdown, then « Go! »
-            MiniGameFreeze.start(server, out, step.screens.previewAudience(controller), step.screens.startName(controller, page),
-                    () -> step.isStillActive(controller) && step.isOnArena() && !step.practiceOver);
+            // The first practice round: at « Go! », how to say one is ready
+            Runnable onGo = round == MiniGamePartyStep.Phase.PRACTICE && !practiceTold ? () -> step.tellPractice(controller) : null;
+            if (round == MiniGamePartyStep.Phase.PRACTICE) practiceTold = true;
+            MiniGameFreeze.start(server, out, step.screens.previewAudience(controller), step.screens.startName(controller, page), page, pace,
+                    () -> step.isStillActive(controller) && step.isOnArena() && !step.practiceOver, onGo);
         }
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
@@ -154,8 +164,13 @@ final class MiniGameDeparture {
 
     /** {@code uuid} is away in this mini-game (free pipes, the linked pipes closed) for as long as it is this party's step. */
     void seat(PartyControllerEntity controller, UUID uuid) {
+        seat(controller, uuid, null);
+    }
+
+    /** @param card his card at the top of the screen (null: the one he has) */
+    void seat(PartyControllerEntity controller, UUID uuid, MiniGamePagePayloads.@Nullable RoundCard card) {
         UUID page = MiniGamePages.idOf(MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
-        MiniGamePipes.enterParty(uuid, page == null ? MiniGamePageData.NO_ID : page, () -> step.isStillActive(controller));
+        MiniGamePipes.enterParty(uuid, page == null ? MiniGamePageData.NO_ID : page, () -> step.isStillActive(controller), card);
     }
 
     /** @return true if {@code uuid} comes out of the pipe */
