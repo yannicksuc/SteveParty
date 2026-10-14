@@ -43,7 +43,7 @@ import java.util.Set;
  * paths of a party board game: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
  * start on a green one), forks get a gold « ? », dead ends a red « ! » and spaces no start leads to an orange « ! »,
- * gently pulsing. The teleport tiles of a network are no paths: dashed arcs in the network's colour with sparkles riding
+ * gently pulsing. A link of a space to itself is kept but ignored here (no arrow, no fork, no new branch colour). The teleport tiles of a network are no paths: dashed arcs in the network's colour with sparkles riding
  * them join them one to the next (a teleport tile alone in its network gets a purple « ! »). Only the holder sees it (client side); the links come from the block entity data the server already
  * sends, no packet needed.
  * <p>
@@ -198,7 +198,7 @@ public final class BoardView {
         for (BoardGraph.Node node : built.nodes()) {
             Vec3d from = anchors.computeIfAbsent(node.pos(), pos -> BrushOverlay.anchor(world, pos));
             for (BoardGraph.Edge edge : node.edges()) {
-                if (!shownAtLevel(world, edge, level)) continue;
+                if (isSelf(edge) || !shownAtLevel(world, edge, level)) continue;
                 Vec3d to = anchors.computeIfAbsent(edge.to(), pos -> BrushOverlay.anchor(world, pos));
                 // A level picked: its links as if powered that much, in the colour of redstone at that power
                 boolean followed = level != TileLinkerBrush.POWERED || edge.active();
@@ -236,11 +236,14 @@ public final class BoardView {
             } else if (distance != null) {
                 number = Text.literal(Integer.toString(distance));
             }
-            boolean deadEnd = built.isDeadEnd(node), notReached = built.isUnreachable(node);
+            // A link of a space to itself is kept but not shown: it neither makes a fork nor saves a dead end
+            boolean deadEnd = node.edges().stream().noneMatch(e -> !isSelf(e) && e.target() != BoardGraph.Target.BROKEN);
+            boolean fork = node.edges().stream().filter(e -> !isSelf(e) && e.active() && e.target() != BoardGraph.Target.BROKEN).count() >= 2;
+            boolean notReached = built.isUnreachable(node);
             if (deadEnd) deadEnds++;
             if (notReached) unreachable++;
             boolean alone = !node.start() && distance == null && hasStart;
-            Label label = new Label(from, number, plate, deadEnd, notReached, built.isFork(node), alone);
+            Label label = new Label(from, number, plate, deadEnd, notReached, fork, alone);
             label.teleportAlone = built.isTeleportAlone(node);
             builtLabels.add(label);
             if (world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space) {
@@ -292,7 +295,9 @@ public final class BoardView {
             BoardGraph.Node node = graph.node(queue.poll());
             if (node == null) continue;
             int color = nodeColor.get(node.pos());
-            List<BoardGraph.Edge> ways = node.edges().stream().filter(e -> e.active() && e.target() != BoardGraph.Target.BROKEN).toList();
+            // A link to itself opens no branch: the other way keeps the path's colour
+            List<BoardGraph.Edge> ways = node.edges().stream()
+                    .filter(e -> !isSelf(e) && e.active() && e.target() != BoardGraph.Target.BROKEN).toList();
             for (int i = 0; i < ways.size(); i++) {
                 BoardGraph.Edge edge = ways.get(i);
                 int edgeColor = i == 0 ? color : next++;
@@ -304,6 +309,11 @@ public final class BoardView {
             }
         }
         return result;
+    }
+
+    /** A link of a board space to itself: stored, never drawn nor counted (see the view's javadoc). */
+    private static boolean isSelf(BoardGraph.Edge edge) {
+        return edge.to().equals(edge.from());
     }
 
     private static int color(BoardGraph.Edge edge, Map<BoardGraph.Edge, Integer> colors) {
