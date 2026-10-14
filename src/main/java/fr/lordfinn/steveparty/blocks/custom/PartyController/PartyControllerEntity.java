@@ -127,6 +127,12 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      * when there is any, they are its only start tiles; none: the ones within {@link #START_TILES_SEARCH_RADIUS} blocks.
      */
     private final List<BlockPos> startLinks = new ArrayList<>();
+    /** The Finish spaces linked to it with the brush: where the pawns gather once its party is over (PartyEnding). */
+    private final List<BlockPos> arrivalLinks = new ArrayList<>();
+    /** The podiums linked to it with the brush (the bottom of a column of each group): the pawns of the best places stand on them. */
+    private final List<BlockPos> podiumLinks = new ArrayList<>();
+    /** The ranking of its last party, shown over its podiums until the next one starts. */
+    private final List<PartyResults.Place> endResults = new ArrayList<>();
     /** Its own storage, {@link #BANK_SIZE} slots (see {@link PartyBank}): saved, never sent to the clients. */
     private final SimpleInventory bankItems = new SimpleInventory(BANK_SIZE) {
         @Override
@@ -291,6 +297,13 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         tokenHomes.writeNbt(nbt);
         boardMemory.writeNbt(nbt);
         if (!startLinks.isEmpty()) nbt.putLongArray(START_LINKS, startLinks.stream().mapToLong(BlockPos::asLong).toArray());
+        if (!arrivalLinks.isEmpty()) nbt.putLongArray("ArrivalLinks", arrivalLinks.stream().mapToLong(BlockPos::asLong).toArray());
+        if (!podiumLinks.isEmpty()) nbt.putLongArray("PodiumLinks", podiumLinks.stream().mapToLong(BlockPos::asLong).toArray());
+        if (!endResults.isEmpty()) {
+            NbtList resultsNbt = new NbtList();
+            endResults.forEach(place -> resultsNbt.add(place.toNbt()));
+            nbt.put("EndResults", resultsNbt);
+        }
         if (!lastWinners.isEmpty()) {
             NbtList winnersNbt = new NbtList();
             lastWinners.forEach(uuid -> winnersNbt.add(NbtString.of(uuid.toString())));
@@ -319,6 +332,12 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         boardMemory.readNbt(nbt);
         startLinks.clear();
         for (long linked : nbt.getLongArray(START_LINKS)) startLinks.add(BlockPos.fromLong(linked));
+        arrivalLinks.clear();
+        for (long linked : nbt.getLongArray("ArrivalLinks")) arrivalLinks.add(BlockPos.fromLong(linked));
+        podiumLinks.clear();
+        for (long linked : nbt.getLongArray("PodiumLinks")) podiumLinks.add(BlockPos.fromLong(linked));
+        endResults.clear();
+        nbt.getList("EndResults", NbtElement.COMPOUND_TYPE).forEach(element -> endResults.add(PartyResults.Place.fromNbt((NbtCompound) element)));
         board = null;
         lastWinners.clear();
         nbt.getList("LastWinners", NbtElement.STRING_TYPE).forEach(element -> {
@@ -653,6 +672,47 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         markDirty();
     }
 
+    /** The Finish spaces linked to it with the brush, in their order. */
+    public List<BlockPos> getArrivalLinks() {
+        return Collections.unmodifiableList(arrivalLinks);
+    }
+
+    /** Sets the Finish spaces linked to it; saved and sent to the clients. */
+    public void setArrivalLinks(List<BlockPos> links) {
+        if (arrivalLinks.equals(links)) return;
+        arrivalLinks.clear();
+        for (BlockPos linked : links) arrivalLinks.add(linked.toImmutable());
+        markDirty();
+    }
+
+    /** The podiums linked to it with the brush (a column's bottom each), in their order. */
+    public List<BlockPos> getPodiumLinks() {
+        return Collections.unmodifiableList(podiumLinks);
+    }
+
+    public void setPodiumLinks(List<BlockPos> links) {
+        if (podiumLinks.equals(links)) return;
+        podiumLinks.clear();
+        for (BlockPos linked : links) podiumLinks.add(linked.toImmutable());
+        markDirty();
+    }
+
+    /** The ranking of its last party (shown over its podiums), empty while a party runs or before the first. */
+    public List<PartyResults.Place> getEndResults() {
+        return Collections.unmodifiableList(endResults);
+    }
+
+    void setEndResults(List<PartyResults.Place> places) {
+        endResults.clear();
+        endResults.addAll(places);
+        markDirty();
+    }
+
+    /** The pawns it set aside (on its arrival spaces, its podiums, an End space). */
+    public PartyParking getParking() {
+        return tokenHomes.parking();
+    }
+
     /** Where the tokens of its party started and stand (none without a party). */
     private List<BlockPos> partySpaces(ServerWorld world) {
         List<BlockPos> spaces = new ArrayList<>();
@@ -762,6 +822,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         // The winners of a previous party win nothing in this one (Piggy Banks, bells)
         lastWinners.clear();
         launcher = null;
+        endResults.clear();
         getTokenFromStartTiles(serverWorld);
         // Each pawn its own colour (two reds could not be told apart on the HUD)
         PartyColors.makeUnique(serverWorld, partyData.getTokens());

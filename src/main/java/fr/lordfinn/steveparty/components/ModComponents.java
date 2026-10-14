@@ -236,6 +236,13 @@ public class ModComponents {
     public static final ComponentType<BlockState> BOX_BLOCK =
             registerComponent("box-block", BlockState.CODEC);
 
+    /**
+     * The pipe an End party card is linked to (a right click on it): where the players come out once the party is
+     * over, its mouth and the side it opens on.
+     */
+    public static final ComponentType<fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe> END_PIPE =
+            registerComponent("end-pipe", fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe.CODEC);
+
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();

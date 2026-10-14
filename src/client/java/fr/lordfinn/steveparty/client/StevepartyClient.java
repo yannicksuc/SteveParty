@@ -275,6 +275,7 @@ public class StevepartyClient implements ClientModInitializer {
         SixSevenClient.initialize();
         BrushClient.initialize();
         TileInfoClient.initialize();
+        fr.lordfinn.steveparty.client.board.EndPanel.initialize();
         NestInfoClient.initialize();
         PiggyBankInfoClient.initialize();
         TileOutline.initialize();

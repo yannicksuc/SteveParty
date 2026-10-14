@@ -51,6 +51,7 @@ public final class ControllerStartLinks {
     static void show(ServerWorld world, BlockPos pos) {
         if (!(world.getBlockEntity(pos) instanceof PartyControllerEntity controller)) return;
         for (BlockPos start : controller.getStartLinks()) BoardLinks.trail(world, pos, start, COLOR);
+        ControllerEndLinks.show(world, controller);
     }
 
     /** The players told how to link the start tiles of a controller, by controller (once a server run). */

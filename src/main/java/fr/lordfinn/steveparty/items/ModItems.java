@@ -232,6 +232,7 @@ public class ModItems {
     public static final Item PARTY_CARD_EVENT = registerCard(PartyCardItem.CardType.EVENT);
     public static final Item PARTY_CARD_REPEAT = registerCard(PartyCardItem.CardType.REPEAT);
     public static final Item PARTY_CARD_SEQUENCE_START = registerCard(PartyCardItem.CardType.SEQUENCE_START);
+    public static final Item PARTY_CARD_END = registerCard(PartyCardItem.CardType.END);
 
 
     /**
@@ -290,6 +291,7 @@ public class ModItems {
             case EVENT -> PARTY_CARD_EVENT;
             case REPEAT -> PARTY_CARD_REPEAT;
             case SEQUENCE_START -> PARTY_CARD_SEQUENCE_START;
+            case END -> PARTY_CARD_END;
             case CUSTOM -> net.minecraft.item.Items.AIR;
         };
     }

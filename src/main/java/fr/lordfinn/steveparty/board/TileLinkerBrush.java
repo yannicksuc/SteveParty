@@ -251,7 +251,7 @@ public final class TileLinkerBrush {
         // From a Party Controller, the tiles the look crosses on the way to a start tile: skipped (no path from them)
         if (fromKind == null && from != null && world.getBlockEntity(from) instanceof PartyControllerEntity
                 && BrushLinks.reverse(world, from, pos) == null && BoardLinks.container(world, pos) != null) return;
-        if (fromKind instanceof ControllerStartLinks.Starts) {
+        if (fromKind instanceof ControllerStartLinks.Starts || fromKind instanceof ControllerEndLinks.Arrivals) {
             // From a Party Controller to its start tiles: each once a stroke, the stroke goes on from the controller
             if (!stroke.cells.add(pos.toImmutable())) return;
             stroke.start = null;
@@ -259,7 +259,8 @@ public final class TileLinkerBrush {
             return;
         }
         // From a start tile to a Party Controller: the stroke goes on from the controller, that start tile done
-        if (from != null && ControllerStartLinks.reverse(world, from, pos) != null) stroke.cells.add(from);
+        if (from != null && (ControllerStartLinks.reverse(world, from, pos) != null || ControllerEndLinks.reverse(world, from, pos) != null))
+            stroke.cells.add(from);
         stroke.last = pos.toImmutable();
         BrushLinks.Held origin = from == null ? null : BrushLinks.holder(world, from, level(brush));
         if (origin == null) {

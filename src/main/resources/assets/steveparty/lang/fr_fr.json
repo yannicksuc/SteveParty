@@ -3495,5 +3495,12 @@
   "message.steveparty.end_space.next.wait_for_all": "Les autres continuent : la partie s'arrête quand tous sont arrivés.",
   "hud.steveparty.tile_info.role.tile_end": "Arrivée",
   "hud.steveparty.tile_info.end.ending": "Ensuite : %s",
-  "hud.steveparty.tile_info.end.ranking": "Classement : %s"
+  "hud.steveparty.tile_info.end.ranking": "Classement : %s",
+  "item.steveparty.party_card_end": "Carte de partie : Fin",
+  "item.steveparty.party_card_end.tooltip": "La fin de la partie : un tuyau d'où sortent les joueurs",
+  "tooltip.steveparty.party_card_end.pipe": "Tuyau",
+  "tooltip.steveparty.party_card_end.program": "Dans l'onglet Programme du Party Controller : la fin de sa partie",
+  "tooltip.steveparty.party_card_end.use": "sur un tuyau : les joueurs en sortent à la fin de la partie",
+  "message.steveparty.party_card_end.pipe.linked": "Tuyau lié : (%d, %d, %d), les joueurs en sortent à la fin",
+  "hud.steveparty.party_end.title": "Fin de la partie"
 }
