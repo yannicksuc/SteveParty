@@ -754,7 +754,7 @@ public final class TileStampTextures {
             Map.entry(BoardSpaceType.TILE_MISTIGRI, new Pictogram("mistigri", MISTIGRI, SMALL_MISTIGRI, MISTIGRI_SHADES)),
             Map.entry(BoardSpaceType.TILE_TRICHAUDRON, new Pictogram("trichaudron", TRICHAUDRON, SMALL_TRICHAUDRON, TRICHAUDRON_SHADES)),
             Map.entry(BoardSpaceType.TILE_END, new Pictogram("end", END, SMALL_END, END_SHADES)),
-            Map.entry(BoardSpaceType.TILE_EVENT, new Pictogram("event", EVENT, SMALL_EVENT, EVENT_SHADES)),
+            Map.entry(BoardSpaceType.TILE_EVENT, new Pictogram("event", EVENT, SMALL_EVENT, EVENT_SHADES, KEEP)),
             Map.entry(BoardSpaceType.TILE_MINIGAME, new Pictogram("minigame", MINIGAME, SMALL_MINIGAME, MINIGAME_SHADES)));
 
     /**
