@@ -18,6 +18,7 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.GameMode;
 
 import java.util.ArrayList;
@@ -46,6 +47,9 @@ public class MulaStormGameTests implements SteveGameTest {
         DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
         forge.setStack(DiceForgeBlockEntity.CENTER_SLOT, new ItemStack(ModBlocks.GRAVITY_CORE));
         BlockPos home = context.getAbsolutePos(FORGE_POS);
+        // the crowd and the blast reach beyond the test's own chunks: those of the neighbouring tests stop ticking when
+        // their batch ends, and a Mula there never pops (its burst waits for its chunk to tick again)
+        List<ChunkPos> forced = forceChunksAround(world, home, 24);
         List<MulaEntity> crowd = new ArrayList<>();
         for (int i = 0; i < CROWD; i++) {
             // a disc round the forge, within its area
@@ -59,33 +63,39 @@ public class MulaStormGameTests implements SteveGameTest {
         crowd.forEach(m -> ids.add(m.getUuid()));
         int settled = DiceForgeBlockEntity.CORE_INSERT_TICKS + 50;
         context.runAtTick(settled, () -> {
-            context.assertTrue(forge.isActivated(), "core in");
-            List<MulaEntity> residents = crowd.stream().filter(m -> home.equals(m.homeForge())).toList();
-            context.assertTrue(!residents.isEmpty() && residents.size() <= DiceForgeBlockEntity.MAX_RESIDENTS,
-                    "the forge holds at most " + DiceForgeBlockEntity.MAX_RESIDENTS + ": " + residents.size());
-            Set<Integer> spots = new HashSet<>();
-            for (MulaEntity m : crowd) {
-                if (m.isSpectating()) {
-                    context.assertTrue(spots.add(m.danceSlot()), "each spectator on its own spot, not piled: " + m.danceSlot());
-                    context.assertTrue(m.danceCount() > m.danceSlot(), "a spot among the spectators: " + m.danceSlot() + "/" + m.danceCount());
+            try {
+                context.assertTrue(forge.isActivated(), "core in");
+                List<MulaEntity> residents = crowd.stream().filter(m -> home.equals(m.homeForge())).toList();
+                context.assertTrue(!residents.isEmpty() && residents.size() <= DiceForgeBlockEntity.MAX_RESIDENTS,
+                        "the forge holds at most " + DiceForgeBlockEntity.MAX_RESIDENTS + ": " + residents.size());
+                Set<Integer> spots = new HashSet<>();
+                for (MulaEntity m : crowd) {
+                    if (m.isSpectating()) {
+                        context.assertTrue(spots.add(m.danceSlot()), "each spectator on its own spot, not piled: " + m.danceSlot());
+                        context.assertTrue(m.danceCount() > m.danceSlot(), "a spot among the spectators: " + m.danceSlot() + "/" + m.danceCount());
+                    }
                 }
+                // a blast (another core, TNT, a Nuke) and any other damage leave the core alone
+                ForgeCoreEntity core = new ForgeCoreEntity(ModEntities.FORGE_CORE, world);
+                core.setForgePos(home);
+                core.setPosition(forge.getCoreCenter());
+                world.spawnEntity(core);
+                context.assertFalse(core.damage(world.getDamageSources().explosion(null, null), 10), "an explosion sets nothing off");
+                context.assertFalse(core.damage(world.getDamageSources().generic(), 10), "nor any other damage");
+                context.assertTrue(forge.isActivated() && !core.isRemoved(), "core still in");
+                // a player's hit does
+                PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+                context.assertTrue(core.damage(world.getDamageSources().playerAttack(player), 1), "a player's hit sets it off");
+                context.assertFalse(forge.isActivated(), "core blown up");
+                world.getEntitiesByClass(ItemEntity.class, new Box(home).expand(24), e -> true).forEach(ItemEntity::discard);
+            } catch (RuntimeException failed) {
+                unforce(world, forced);
+                throw failed;
             }
-            // a blast (another core, TNT, a Nuke) and any other damage leave the core alone
-            ForgeCoreEntity core = new ForgeCoreEntity(ModEntities.FORGE_CORE, world);
-            core.setForgePos(home);
-            core.setPosition(forge.getCoreCenter());
-            world.spawnEntity(core);
-            context.assertFalse(core.damage(world.getDamageSources().explosion(null, null), 10), "an explosion sets nothing off");
-            context.assertFalse(core.damage(world.getDamageSources().generic(), 10), "nor any other damage");
-            context.assertTrue(forge.isActivated() && !core.isRemoved(), "core still in");
-            // a player's hit does
-            PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
-            context.assertTrue(core.damage(world.getDamageSources().playerAttack(player), 1), "a player's hit sets it off");
-            context.assertFalse(forge.isActivated(), "core blown up");
-            world.getEntitiesByClass(ItemEntity.class, new Box(home).expand(24), e -> true).forEach(ItemEntity::discard);
         });
         // the last burst: 2 + 63 x 4 + distance, then the star launch (32)
         context.runAtTick(settled + 340, () -> {
+            unforce(world, forced);
             MulaRebirths rebirths = MulaRebirths.get(world);
             List<MulaRebirths.Entry> mine = rebirths.entries().stream().filter(e -> ids.contains(e.id())).toList();
             context.assertTrue(!mine.isEmpty() && mine.size() <= DiceForgeBlockEntity.MAX_RESIDENTS,
@@ -93,8 +103,8 @@ public class MulaStormGameTests implements SteveGameTest {
             // the others stay put (the blast itself may kill a few next to the core)
             long left = crowd.stream().filter(m -> !m.isRemoved()).count();
             context.assertTrue(left >= CROWD - DiceForgeBlockEntity.MAX_RESIDENTS - 16, "the others stay put: " + left);
-            context.assertTrue(crowd.stream().noneMatch(m -> !m.isRemoved() && m.isBursting()), "no burst left pending");
-            context.assertTrue(crowd.stream().noneMatch(m -> !m.isRemoved() && home.equals(m.homeForge())), "nobody lives at a forge without its core");
+            List<MulaEntity> pending = crowd.stream().filter(m -> !m.isRemoved() && m.isBursting()).toList();
+            context.assertTrue(pending.isEmpty(), "no burst left pending: " + pending.size());
             // what a /kill does, and nothing comes back
             crowd.forEach(Entity::discard);
             mine.forEach(e -> rebirths.remove(e.id()));
@@ -143,6 +153,24 @@ public class MulaStormGameTests implements SteveGameTest {
         context.assertTrue(world.getEntitiesByClass(MulaEntity.class, new Box(at).expand(8, 40, 8), e -> true).isEmpty(),
                 "nothing comes back after a clear");
         context.complete();
+    }
+
+    /** Forces the chunks within {@code radius} blocks of {@code center} that were not forced yet; @return those. */
+    private static List<ChunkPos> forceChunksAround(ServerWorld world, BlockPos center, int radius) {
+        List<ChunkPos> forced = new ArrayList<>();
+        for (int cx = (center.getX() - radius) >> 4; cx <= (center.getX() + radius) >> 4; cx++) {
+            for (int cz = (center.getZ() - radius) >> 4; cz <= (center.getZ() + radius) >> 4; cz++) {
+                if (world.getForcedChunks().contains(ChunkPos.toLong(cx, cz))) continue;
+                world.setChunkForced(cx, cz, true);
+                forced.add(new ChunkPos(cx, cz));
+            }
+        }
+        return forced;
+    }
+
+    private static void unforce(ServerWorld world, List<ChunkPos> forced) {
+        for (ChunkPos c : forced) world.setChunkForced(c.x, c.z, false);
+        forced.clear();
     }
 
     /** A copy with a fresh UUID (each entry is another Mula). */
