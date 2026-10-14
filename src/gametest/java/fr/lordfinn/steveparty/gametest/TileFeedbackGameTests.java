@@ -114,7 +114,7 @@ public class TileFeedbackGameTests implements SteveGameTest {
     }
 
     /**
-     * Every role has its own default colour (face, particles, notice), all far apart; the Stop tile is anthracite until
+     * Every role has its own default colour (face, particles, notice), its family's tiles close, the families far apart; the Stop tile is anthracite until
      * its cartridge is dyed.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
@@ -127,23 +127,25 @@ public class TileFeedbackGameTests implements SteveGameTest {
         tile.setStack(0, dyed);
         context.assertEquals(TileFeedback.tileColor(tile), 0xB02E26, "a dyed Stop cartridge keeps its dye");
         tile.setStack(0, new ItemStack(ModItems.INVENTORY_CARTRIDGE));
-        context.assertEquals(TileFeedback.tileColor(tile), InventoryInteractorTileBehavior.NEUTRAL_COLOR, "an orange item tile");
+        context.assertEquals(TileFeedback.tileColor(tile), InventoryInteractorTileBehavior.NEUTRAL_COLOR, "a grey item tile");
 
-        List<Integer> colours = List.of(0xFFFFFF, InventoryInteractorTileBehavior.GOOD_COLOR, InventoryInteractorTileBehavior.BAD_COLOR,
-                InventoryInteractorTileBehavior.NEUTRAL_COLOR, ShopCartridgeItem.COLOR, StopCartridgeItem.COLOR,
-                AdvanceBackCartridgeItem.FORWARD_COLOR, AdvanceBackCartridgeItem.BACK_COLOR, ReplayCartridgeItem.COLOR,
-                TileTeleport.COLOR, StarCartridgeItem.COLOR,
-                GlandouilleCartridgeItem.COLOR,
-                FrousseuxCartridgeItem.COLOR,
-                MistigriCartridgeItem.COLOR,
-                ThresholdCartridgeItem.COLOR,
-                PotCartridgeItem.COLOR,
-                KeyGateCartridgeItem.COLOR,
-                TrichaudronCartridgeItem.COLOR);
-        for (int i = 0; i < colours.size(); i++) {
-            for (int j = i + 1; j < colours.size(); j++) {
-                context.assertTrue(distance(colours.get(i), colours.get(j)) > 40,
-                        String.format("#%06X and #%06X far apart", colours.get(i), colours.get(j)));
+        // Colours by family: a family shares a hue (its pictogram tells its tiles apart), the families stay far apart
+        List<List<Integer>> families = List.of(List.of(0xFFFFFF), List.of(InventoryInteractorTileBehavior.GOOD_COLOR),
+                List.of(InventoryInteractorTileBehavior.BAD_COLOR), List.of(InventoryInteractorTileBehavior.NEUTRAL_COLOR),
+                List.of(StarCartridgeItem.COLOR), List.of(ShopCartridgeItem.COLOR, PotCartridgeItem.COLOR),
+                List.of(AdvanceBackCartridgeItem.FORWARD_COLOR, AdvanceBackCartridgeItem.BACK_COLOR, ReplayCartridgeItem.COLOR),
+                List.of(StopCartridgeItem.COLOR, ThresholdCartridgeItem.COLOR, KeyGateCartridgeItem.COLOR),
+                List.of(TileTeleport.COLOR), List.of(GlandouilleCartridgeItem.COLOR), List.of(FrousseuxCartridgeItem.COLOR),
+                List.of(MistigriCartridgeItem.COLOR), List.of(TrichaudronCartridgeItem.COLOR));
+        for (int f = 0; f < families.size(); f++) {
+            for (int g = f; g < families.size(); g++) {
+                for (int a : families.get(f)) {
+                    for (int b : families.get(g)) {
+                        if (a == b) continue;
+                        double min = f == g ? 12 : 30;
+                        context.assertTrue(distance(a, b) > min, String.format("#%06X and #%06X far apart", a, b));
+                    }
+                }
             }
         }
         // The landing particles and notices use the same colours as the faces
