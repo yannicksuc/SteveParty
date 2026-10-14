@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.board.CartridgeLinks;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
+import fr.lordfinn.steveparty.client.utils.WorldView;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -120,10 +121,10 @@ final class BrushTrail {
 
     static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(BrushTrail::tick);
-        WorldRenderEvents.LAST.register(BrushTrail::render);
+        WorldRenderEvents.LAST.register(context -> WorldView.draw(context, () -> render(context)));
         // Last of the world, after the see-through blocks (stained glass, ice...) even composited apart (Fabulous
         // graphics): the paint writes its depth only after its colour, see paint()
-        WorldRenderEvents.LAST.register(BrushTrail::renderPaint);
+        WorldRenderEvents.LAST.register(context -> WorldView.draw(context, () -> renderPaint(context)));
     }
 
     /** Whether the local player is painting: the brush held in use. */
@@ -376,7 +377,9 @@ final class BrushTrail {
      */
     private static void paint(VertexConsumerProvider.Immediate consumers, MatrixStack.Entry entry, Vec3d cam, float now) {
         if (DABS.isEmpty()) return;
-        // The colour, then its depth alone: blocks drawn after (Sodium's see-through ones) stay under the paint
+        // The colour, then its depth alone: blocks drawn after (Sodium's see-through ones) stay under the paint. Each
+        // layer drawn at once with draw(), not draw(layer): a shader pack's batched buffers ignore that one, the paint
+        // left there would be drawn later, out of the world's view (see WorldView)
         for (boolean depth : new boolean[]{false, true}) for (int step = 0; step < DRY_STEPS; step++) {
             RenderLayer streakLayer = depth ? PaintLayers.depth(STREAK_TEXTURES[step]) : PaintLayers.paint(STREAK_TEXTURES[step]);
             VertexConsumer streaks = consumers.getBuffer(streakLayer);
@@ -385,7 +388,7 @@ final class BrushTrail {
                     strip(streaks, entry, cam, DABS.get(i - 1), DABS.get(i), side(i - 1), side(i));
                 }
             }
-            consumers.draw(streakLayer);
+            consumers.draw();
             RenderLayer dabLayer = depth ? PaintLayers.depth(DAB_TEXTURES[step]) : PaintLayers.paint(DAB_TEXTURES[step]);
             VertexConsumer dabs = consumers.getBuffer(dabLayer);
             for (int i = 0; i < DABS.size(); i++) {
@@ -394,7 +397,7 @@ final class BrushTrail {
                 Vec3d direction = dab.drop ? axes(dab.normal)[0] : direction(i);
                 dab(dabs, entry, cam, dab, direction, dab.drop ? dab.width : dab.width * 1.15);
             }
-            consumers.draw(dabLayer);
+            consumers.draw();
         }
     }
 

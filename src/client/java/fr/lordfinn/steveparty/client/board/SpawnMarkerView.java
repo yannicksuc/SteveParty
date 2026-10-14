@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.board.ExplorerHelmet;
 import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.client.utils.WorldView;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -58,7 +59,7 @@ public final class SpawnMarkerView {
                 client.setScreen(new SpawnMarkerScreen(pos, marker));
         };
         ClientTickEvents.END_CLIENT_TICK.register(SpawnMarkerView::tick);
-        WorldRenderEvents.LAST.register(SpawnMarkerView::render);
+        WorldRenderEvents.LAST.register(context -> WorldView.draw(context, () -> render(context)));
     }
 
     /** Whether {@code player} sees the labels: a board tool or a cartridge in hand, or a lit Explorer's Helmet on. */
