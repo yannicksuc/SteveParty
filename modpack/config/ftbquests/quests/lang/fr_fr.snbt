@@ -268,11 +268,11 @@
 	quest.0D7BD49CCA0CD53D.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
 	quest.0D7BD49CCA0CD53D.title: "Dalle en plastique jaune"
 	quest.0DEA2F4B09B1E78E.quest_desc: [
-		"Éclats de prismarine + vitres bleu clair + coffre : 4 Points de déclenchement."
+		"Éclats de prismarine + vitres bleu clair + coffre : 4 Checkpoints."
 		"Les pions le traversent sans dépenser de pas : virages, bifurcations et détours gratuits. Son rôle ne joue jamais, sauf Stop et Boutique."
 	]
 	quest.0DEA2F4B09B1E78E.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
-	quest.0DEA2F4B09B1E78E.title: "Point de déclenchement"
+	quest.0DEA2F4B09B1E78E.title: "Checkpoint"
 	quest.0E8F42A3F191C38B.quest_desc: [
 		"Cartouche + piston. Le pion qui s'y arrête repart de 1 à 6 cases, en avant (vert) ou en arrière (rose), poussé par un Pétaroule."
 		"Accroupi + molette, cartouche en main : nombre et sens."
@@ -695,7 +695,7 @@
 	quest.30E06C6BD698E571.title: "Bloc de fragments d'étoile bleus"
 	quest.33F2B84D658F752B.quest_desc: [
 		"Cartouche d'inventaire + un bandana volé à un Marchand en carton (voir Boutiques)."
-		"Un pion qui s'y arrête (ou passe un Point de déclenchement qui la porte) fait sortir un Marchand en carton. 9 offres au plus, réglées dans l'étal de la cartouche ; la marchandise vient de ses coffres, sinon du stockage du Party Controller."
+		"Un pion qui s'y arrête (ou passe un Checkpoint qui la porte) fait sortir un Marchand en carton. 9 offres au plus, réglées dans l'étal de la cartouche ; la marchandise vient de ses coffres, sinon du stockage du Party Controller."
 	]
 	quest.33F2B84D658F752B.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
 	quest.33F2B84D658F752B.title: "Cartouche Boutique"
@@ -854,7 +854,7 @@
 	]
 	quest.4973F5A913628816.title: "Meilleure amie"
 	quest.49A1A95AD39CC7A6.quest_desc: [
-		"Teinture : colore la cartouche (sur un Point de déclenchement, tout le cube)."
+		"Teinture : colore la cartouche (sur un Checkpoint, tout le cube)."
 		"Poche d'encre luisante : il brille. Poche d'encre : éteint. Éponge : plus de teinture."
 	]
 	quest.49A1A95AD39CC7A6.title: "Couleurs et lueur"
@@ -1133,7 +1133,7 @@
 	]
 	quest.61DD313CE6A35BC2.title: "Découper un motif"
 	quest.620A5C7BA9429AD1.quest_desc: [
-		"Tuiles, points de déclenchement, les principales cartouches et une boucle fermée : votre plateau attend ses pions."
+		"Tuiles, checkpoints, les principales cartouches et une boucle fermée : votre plateau attend ses pions."
 	]
 	quest.620A5C7BA9429AD1.title: "Bâtisseur de plateau"
 	quest.6305DEBDCAB9BBA0.quest_desc: [
@@ -1173,7 +1173,7 @@
 	quest.680DFFB134E7498D.title: "Face de dé vierge"
 	quest.68FDB8B9B18F5221.quest_desc: [
 		"Redstone + lingot de fer."
-		"Clic droit : ouvre tuiles, Points de déclenchement et routeurs. Une cartouche en main secondaire remplace celle de la tuile, liens gardés."
+		"Clic droit : ouvre tuiles, Checkpoints et routeurs. Une cartouche en main secondaire remplace celle de la tuile, liens gardés."
 		"Elle règle aussi podiums, mâts et Bulles d'apparition, et casse le plastique d'un coup."
 	]
 	quest.68FDB8B9B18F5221.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
@@ -1338,7 +1338,7 @@
 	quest.785AA345B1B2CC7F.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
 	quest.785AA345B1B2CC7F.title: "Module de dé : Chanceux"
 	quest.78C9F801227DBCA8.quest_desc: [
-		"Cartouche + teinture rouge. Un pion qui l'atteint s'y arrête, quels que soient ses pas restants. Marche aussi sur un Point de déclenchement."
+		"Cartouche + teinture rouge. Un pion qui l'atteint s'y arrête, quels que soient ses pas restants. Marche aussi sur un Checkpoint."
 	]
 	quest.78C9F801227DBCA8.quest_subtitle: "À fabriquer (ceux déjà possédés ne comptent pas)"
 	quest.78C9F801227DBCA8.title: "Cartouche Stop"
