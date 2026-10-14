@@ -3,12 +3,15 @@ package fr.lordfinn.steveparty.client.items;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.client.blockentity.TileBlockEntityRenderer;
 import fr.lordfinn.steveparty.client.utils.TileColors;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.items.custom.TileBlockItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -17,6 +20,7 @@ import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -24,7 +28,8 @@ import java.util.List;
 
 /**
  * The face of a tile item, as the placed tile would show it (TileBlockEntityRenderer's faces): its cartridge's role
- * pictogram in its colour, or a stamped look (the cartridge's, else the tile's own), white and neutral when empty. A
+ * pictogram in its colour, or a stamped look (the cartridge's, else the tile's own), white and neutral when empty; an
+ * Item Cartridge never set up shows its three signs in turn. A
  * tile holding several cartridges shows each in turn ({@link TileContents#CYCLE_MS}, in slot order).
  * <p>
  * Drawn in the item model's own space right after the model (ItemRendererTileFaceMixin): in the GUI, in hand, dropped
@@ -78,7 +83,23 @@ public final class TileItemFace {
         }
     }
 
+    /** How long a generic item tile's preview shows each of its signs (neutral, gain, loss). */
+    private static final long SIGN_MS = 1500;
+    private static final ABoardSpaceBehavior.Status[] SIGNS = {
+            ABoardSpaceBehavior.Status.NEUTRAL, ABoardSpaceBehavior.Status.GOOD, ABoardSpaceBehavior.Status.BAD};
+
     private static @Nullable Identifier face(ItemStack tile, ItemStack cartridge, boolean small) {
+        // An Item Cartridge never set up on a tile (crafting, recipe viewers): its three signs in turn, each its colour
+        if (cartridge.getItem() instanceof InventoryCartridgeItem && !cartridge.contains(ModComponents.COLOR)
+                && cartridge.get(ModComponents.TILE_STAMP) == null) {
+            ABoardSpaceBehavior.Status sign = SIGNS[(int) (Util.getMeasuringTimeMs() / SIGN_MS % SIGNS.length)];
+            int color = switch (sign) {
+                case GOOD -> InventoryInteractorTileBehavior.GOOD_COLOR;
+                case BAD -> InventoryInteractorTileBehavior.BAD_COLOR;
+                default -> InventoryInteractorTileBehavior.NEUTRAL_COLOR;
+            };
+            return TileBlockEntityRenderer.inventoryFace(sign, color, small);
+        }
         BoardSpaceType type = cartridge.getItem() instanceof CartridgeItem item ? item.getBoardSpaceType() : BoardSpaceType.DEFAULT;
         int color = cartridge.isEmpty() ? TileColors.WHITE : cartridge.getOrDefault(ModComponents.COLOR, TileColors.WHITE);
         // As on a placed tile: the cartridge's look prevails, the tile's own shows while it holds none

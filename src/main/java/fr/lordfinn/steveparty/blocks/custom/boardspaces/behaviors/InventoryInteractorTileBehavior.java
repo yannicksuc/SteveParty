@@ -264,11 +264,22 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             color = BAD_COLOR;
         else if (status == Status.GOOD)
             color = GOOD_COLOR;
-        setColor(boardSpaceBlockEntity, color);
+        // Its sign changed: the clients get the cartridge itself too (its face goes by what it gives or takes)
+        if (setColor(boardSpaceBlockEntity, color) && boardSpaceBlockEntity.getWorld() instanceof ServerWorld)
+            boardSpaceBlockEntity.update();
     }
 
     @Override
     public Status getStatus(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
+        return statusOf(stack);
+    }
+
+    /**
+     * Gain or loss by the sign of what the cartridge {@code stack} gives or takes (neutral when empty): what its colour
+     * and its face show. The face goes by this, never by the colour (a colour constant may change, a saved or synced
+     * colour may be an older one).
+     */
+    public static Status statusOf(ItemStack stack) {
         Status status = Status.NEUTRAL;
         InventoryComponent inventory = stack.get(INVENTORY_COMPONENT);
         if (inventory != null) {
