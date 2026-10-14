@@ -46,11 +46,13 @@ final class StartTileStatue {
     /** The statue's size (a player's height times this). */
     private static final float STATUE_SCALE = 0.3f;
     /** The plate's text: block per text pixel at most, the widest the plate gets (blocks, on a standard tile). */
-    private static final float TEXT_SCALE = 1f / 60f, MAX_WIDTH = 1.9f;
+    private static final float TEXT_SCALE = 1f / 60f, MAX_WIDTH = 1.6f;
+    /** A longer player name is cut (« … »): the plate stays small and its text big enough. */
+    private static final int MAX_NAME = 12;
     private static final double TEXT_DISTANCE = 24;
     /** Text pixels: around the text on the plate, the rack's lip under it. */
-    private static final float PAD_X = 4, PAD_Y = 2.5f, LIP = 2;
-    private static final int WOOD = 0xFF7A4E2A, WOOD_DARK = 0xFF5A3720, CREAM = 0xFFF1E2C0, CREAM_EDGE = 0xFFCDB68B, INK = 0xFF3B2A1A;
+    private static final float PAD_X = 4, PAD_Y = 3, LIP = 2;
+    private static final int WOOD = 0xFF9A6A3C, WOOD_DARK = 0xFF6B4426, WOOD_SHADOW = 0xFF3A2414, CREAM = 0xFFF1E2C0, CREAM_EDGE = 0xFFCDB68B, INK = 0xFF3B2A1A;
     /** The plate leans back toward the statue (degrees). */
     private static final float LEAN = 25;
     private static final PlayerPawnPose[] POSES = Arrays.stream(PlayerPawnPose.values()).filter(PlayerPawnPose::podium)
@@ -70,7 +72,7 @@ final class StartTileStatue {
         Vector3f front = front(dir);
         float yaw = -dir * 45f;
         // The statue on the back half of the pedestal, the plate on its front edge (the pedestal: 12 px, 9 px forward)
-        Vector4f statue = at(onSupport, front, 6.5f / 16 * size, 3f / 16);
+        Vector4f statue = at(onSupport, front, 5f / 16 * size, 3f / 16);
         Vector4f plate = at(onSupport, front, 14.5f / 16 * size, 3f / 16);
 
         SkinTextures skin = owner != null ? SkinUtils.getSkinTextures(owner) : DefaultSkinHelper.getSkinTextures(new UUID(0, 0));
@@ -116,11 +118,12 @@ final class StartTileStatue {
         VertexConsumer fill = consumers.getBuffer(RenderLayer.getTextBackground());
         // The rack: a wooden lip along the bottom, its back behind the plate
         quad(fill, matrix, -w / 2 - 1, -h - 1, w / 2 + 1, LIP, -0.6f, WOOD_DARK, light);
-        quad(fill, matrix, -w / 2 - 1, -LIP, w / 2 + 1, LIP, 0.6f, WOOD, light);
-        // The cream plate, a darker edge at its bottom and right (a letter tile's bevel)
+        quad(fill, matrix, -w / 2 - 1, -LIP, w / 2 + 1, LIP - 1, 0.6f, WOOD, light);
+        quad(fill, matrix, -w / 2 - 1, LIP - 1, w / 2 + 1, LIP, 0.6f, WOOD_SHADOW, light);
+        // The cream plate, a darker edge at its bottom (a letter tile's bevel)
         quad(fill, matrix, -w / 2, -h, w / 2, -LIP, -0.3f, CREAM_EDGE, light);
-        quad(fill, matrix, -w / 2, -h, w / 2 - 1, -LIP - 1, -0.2f, CREAM, light);
-        font.draw(text, -textWidth / 2f, -h + PAD_Y + 0.5f - LIP / 2, INK, false, matrix, consumers,
+        quad(fill, matrix, -w / 2, -h, w / 2, -LIP - 1, -0.2f, CREAM, light);
+        font.draw(text, -textWidth / 2f, -h + PAD_Y - LIP / 2f + 1, INK, false, matrix, consumers,
                 TextRenderer.TextLayerType.POLYGON_OFFSET, 0, light);
         matrices.pop();
     }
@@ -142,6 +145,7 @@ final class StartTileStatue {
         if (owner == null) return Text.translatable("block.steveparty.start_plaque.free");
         String name = cartridge.get(ModComponents.TB_START_OWNER_NAME);
         if (name == null || name.isEmpty()) name = onlineName(owner);
+        if (name.length() > MAX_NAME) name = name.substring(0, MAX_NAME - 1) + "…";
         int number = number(entity.getPos());
         return number > 0 ? Text.translatable("block.steveparty.start_plaque.owned", number, name)
                 : Text.translatable("block.steveparty.start_plaque.owned_no_number", name);

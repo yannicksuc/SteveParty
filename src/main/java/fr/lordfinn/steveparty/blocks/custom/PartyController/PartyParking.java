@@ -34,8 +34,10 @@ public final class PartyParking {
     /** Smaller when sharing a space: a modifier never saved (put again on load by the tick). */
     static final Identifier SMALL = Steveparty.id("parked_small");
     static final double SMALL_SCALE = 0.5;
+    /** The widest a pawn sharing a space gets (blocks). */
+    private static final double MAX_WIDTH = 0.45;
     /** Around the middle of the space, the pawns sharing it (blocks): wider the more they are. */
-    private static final double RADIUS = 0.42, RADIUS_STEP = 0.06, MAX_RADIUS = 0.75;
+    private static final double RADIUS = 0.5, RADIUS_STEP = 0.06, MAX_RADIUS = 0.8;
     /** A full turn in this many ticks: slow. */
     private static final double TURN_TICKS = 240;
     /** Taken this far from its space, a pawn is no longer parked (blocks). */
@@ -125,10 +127,13 @@ public final class PartyParking {
         mob.setHeadYaw(mob.getYaw());
     }
 
+    /** Small: half its size, and never wider than {@link #MAX_WIDTH} (a big pawn too fits beside the others). */
     static void shrink(MobEntity mob) {
         EntityAttributeInstance scale = mob.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
         if (scale == null || scale.getModifier(SMALL) != null) return;
-        scale.addTemporaryModifier(new EntityAttributeModifier(SMALL, SMALL_SCALE - 1, EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        double own = mob.getWidth() / Math.max(1.0E-3, mob.getScale());
+        double factor = Math.min(SMALL_SCALE, MAX_WIDTH / Math.max(1.0E-3, own));
+        scale.addTemporaryModifier(new EntityAttributeModifier(SMALL, factor - 1, EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
         mob.calculateDimensions();
     }
 

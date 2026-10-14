@@ -45,11 +45,11 @@ public final class EndPanel {
     /** Text pixel size near by (block); it grows with the distance, up to {@link #MAX_GROW} times. */
     private static final float SCALE = 1f / 40f, MAX_GROW = 3f;
     /** Over the podiums' tops, room for the pawns standing on them (blocks). */
-    private static final double ABOVE = 2.2;
+    private static final double ABOVE = 1.6;
     /** The podium columns looked for around a linked one (the client has no podium groups). */
     private static final int MAX_COLUMNS = 16;
-    private static final int TITLE_COLOR = 0xFF7A5200, RULE = 0x553F3F3F;
-    private static final int[] PLACE_COLORS = {0xFFB8860B, 0xFF6E6E6E, 0xFF9A5B2E};
+    private static final int TITLE_COLOR = 0xFF5C3A00, RULE = 0x553F3F3F;
+    private static final int[] PLACE_COLORS = {0xFF8A5A00, 0xFF4A4A4A, 0xFF7A3E14};
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
 
     private EndPanel() {
@@ -125,10 +125,10 @@ public final class EndPanel {
             starWidth = Math.max(starWidth, font.getWidth(String.valueOf(place.stars())));
             coinWidth = Math.max(coinWidth, font.getWidth(String.valueOf(place.coins())));
         }
-        int rowWidth = placeWidth + GAP * 2 + nameWidth + COLUMN_GAP + ICON + 1 + starWidth + COLUMN_GAP + ICON + 1 + coinWidth;
+        int rowWidth = placeWidth + GAP * 2 + nameWidth + COLUMN_GAP + ICON + 2 + starWidth + COLUMN_GAP + ICON + 2 + coinWidth;
         int titleWidth = Math.round(font.getWidth(title) * TITLE_SCALE);
         int width = Math.max(rowWidth, titleWidth) + 2 * PAD;
-        int height = PAD + TITLE_HEIGHT + PAD / 2 + 4 + places.size() * ROW + PAD - 3;
+        int height = PAD + TITLE_HEIGHT + PAD / 2 + 4 + (places.size() - 1) * ROW + 8 + PAD;
         matrices.push();
         matrices.translate(bottom.x - camera.getPos().x, bottom.y + height * scale / 2 - camera.getPos().y, bottom.z - camera.getPos().z);
         matrices.multiply(camera.getRotation());
@@ -174,9 +174,9 @@ public final class EndPanel {
                 matrices, consumers, world, 0);
         matrices.pop();
         String text = String.valueOf(value);
-        float textX = x + ICON + 1 + width - font.getWidth(text);
+        float textX = x + ICON + 2 + width - font.getWidth(text);
         font.draw(text, textX, y, WorldDraw.PLATE_TEXT, false, matrices.peek().getPositionMatrix(), consumers,
                 TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
-        return x + ICON + 1 + width;
+        return x + ICON + 2 + width;
     }
 }
