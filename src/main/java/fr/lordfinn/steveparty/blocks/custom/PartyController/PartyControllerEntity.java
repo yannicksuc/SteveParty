@@ -799,6 +799,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         TrapEffect.clearAll(this);
         partyData.reset();
         tokenHomes.startFrom(tokens);
+        // Every pawn of the party starts on its own start tile
+        PartyTokenHomes.placeOnStarts(serverWorld, tokens);
         for (UUID tokenUUID : tokens.keySet()) partyData.addToken(tokenUUID);
     }
 

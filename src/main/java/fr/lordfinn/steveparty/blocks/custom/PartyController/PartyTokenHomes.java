@@ -101,6 +101,16 @@ public final class PartyTokenHomes {
         tiles.keySet().forEach(tokensToSendHome::remove);
     }
 
+    /**
+     * The party starts: each of its tokens is put on its start tile, still, as if it had never left it (a pawn floating
+     * a little off its tile, pushed, or bobbing beside it, starts from the right place). A token not loaded stays where it is.
+     */
+    static void placeOnStarts(ServerWorld serverWorld, Map<UUID, BlockPos> tiles) {
+        tiles.forEach((token, tile) -> {
+            if (serverWorld.getEntity(token) instanceof MobEntity mob && serverWorld.isChunkLoaded(tile)) place(serverWorld, mob, tile);
+        });
+    }
+
     /** The start tiles of the running party (a copy). */
     Map<UUID, BlockPos> startTiles() {
         return new LinkedHashMap<>(startTiles);
