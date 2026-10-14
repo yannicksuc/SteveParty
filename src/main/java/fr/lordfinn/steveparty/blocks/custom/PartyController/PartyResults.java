@@ -52,10 +52,23 @@ public final class PartyResults {
         }
         List<PartyLiveData.Standing> sorted = new ArrayList<>(players.values());
         sorted.sort(Comparator.comparingInt(PartyLiveData.Standing::stars).thenComparingInt(PartyLiveData.Standing::coins).reversed());
+        // Ranked by arrival (an End space): who arrived first, in their order, then the others by stars
+        int arrived = 0;
+        if (controller.getPartyData().getEndRanking() == fr.lordfinn.steveparty.items.custom.cartridges.EndCartridgeItem.Ranking.ARRIVAL.ordinal()) {
+            List<PartyLiveData.Standing> first = new ArrayList<>();
+            for (UUID token : controller.getPartyData().getArrivals()) {
+                for (PartyLiveData.Standing standing : sorted) {
+                    if (standing.token().equals(token) && !first.contains(standing)) first.add(standing);
+                }
+            }
+            sorted.removeAll(first);
+            sorted.addAll(0, first);
+            arrived = first.size();
+        }
         List<Place> places = new ArrayList<>(sorted.size());
         for (int i = 0; i < sorted.size(); i++) {
             PartyLiveData.Standing standing = sorted.get(i);
-            boolean tied = i > 0 && same(sorted.get(i - 1), standing) || i + 1 < sorted.size() && same(sorted.get(i + 1), standing);
+            boolean tied = i >= arrived && (i > arrived && same(sorted.get(i - 1), standing) || i + 1 < sorted.size() && same(sorted.get(i + 1), standing));
             String name = standing.ownerName().isEmpty() ? standing.tokenName() : standing.ownerName();
             places.add(new Place(i + 1, standing.owner().orElse(null), name, standing.stars(), standing.coins(), tied));
         }

@@ -41,6 +41,10 @@ public class PartyData {
     private final Map<UUID, Integer> badLandings = new HashMap<>();
     /** What each pawn did during this party (end infographic, bonus awards): saved, see PartyStats. */
     private final PartyStats stats = new PartyStats();
+    /** The pawns that reached an End space, in their order of arrival (saved, see PartyEndRules). */
+    private final List<UUID> arrivals = new ArrayList<>();
+    /** How the End space reached ranks the party (an EndCartridgeItem ranking), -1: no End space reached, by stars. */
+    private int endRanking = -1;
 
     // Constructor
     public PartyData() {
@@ -88,6 +92,14 @@ public class PartyData {
         thresholdGates.readNbt(nbt);
         trichaudronWon.readNbt(nbt);
         stats.readNbt(nbt);
+        arrivals.clear();
+        nbt.getList("Arrivals", 8).forEach(token -> {
+            try {
+                arrivals.add(UUID.fromString(token.asString()));
+            } catch (IllegalArgumentException ignored) {
+            }
+        });
+        endRanking = nbt.contains("EndRanking") ? nbt.getInt("EndRanking") : -1;
         skippedTokens.clear();
         nbt.getList("SkippedTokens", 8).forEach(token -> {
             try {
@@ -123,6 +135,12 @@ public class PartyData {
         thresholdGates.writeNbt(nbt);
         trichaudronWon.writeNbt(nbt);
         stats.writeNbt(nbt);
+        if (!arrivals.isEmpty()) {
+            NbtList arrivalsNbt = new NbtList();
+            arrivals.forEach(uuid -> arrivalsNbt.add(NbtString.of(uuid.toString())));
+            nbt.put("Arrivals", arrivalsNbt);
+        }
+        if (endRanking >= 0) nbt.putInt("EndRanking", endRanking);
         if (!skippedTokens.isEmpty()) {
             NbtList skippedNbt = new NbtList();
             skippedTokens.forEach(uuid -> skippedNbt.add(NbtString.of(uuid.toString())));
@@ -232,6 +250,22 @@ public class PartyData {
         this.trichaudronWon.reset();
         this.badLandings.clear();
         this.stats.clear();
+        this.arrivals.clear();
+        this.endRanking = -1;
+    }
+
+    /** The pawns that reached an End space, in their order of arrival (live list). */
+    public List<UUID> getArrivals() {
+        return arrivals;
+    }
+
+    /** How the End space reached ranks the party, -1 for none reached (by stars). */
+    public int getEndRanking() {
+        return endRanking;
+    }
+
+    public void setEndRanking(int endRanking) {
+        this.endRanking = endRanking;
     }
 
     /** What each pawn did during this party (kept after its end, until the next one starts). */

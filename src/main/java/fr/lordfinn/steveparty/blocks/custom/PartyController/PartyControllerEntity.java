@@ -629,7 +629,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         long now = world.getTime();
         if (board != null && !fresh && now - boardScanTime < BOARD_SCAN_INTERVAL && now >= boardScanTime) return board;
         Set<BlockPos> before = Set.copyOf(boardMemory.spaces());
-        board = PartyBoard.scan(world, pos, boardMemory, partySpaces(world), startLinks);
+        board = PartyBoard.scan(world, pos, boardMemory, partySpaces(world), startLinks, tokenHomes.parking().parked().keySet());
         boardScanTime = now;
         boardMemory.update(board);
         if (!before.equals(boardMemory.spaces())) {
@@ -718,6 +718,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         if (tokenHomes.hasPending() && serverWorld.getTime() % 20 == 0 && tokenHomes.processPending(serverWorld))
             markDirty();
         if (serverWorld.getTime() % 20 == 0) syncChunkHold();
+        if (tokenHomes.parking().tick(serverWorld)) saveOnly();
         if (serverWorld.getTime() % LIVE_SYNC_INTERVAL_TICKS == 0)
             syncLiveData(serverWorld);
         flow.tick(serverWorld);
@@ -799,8 +800,9 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         TrapEffect.clearAll(this);
         partyData.reset();
         tokenHomes.startFrom(tokens);
-        // Every pawn of the party starts on its own start tile
+        // Every pawn of the party starts on its own start tile (those set aside by the last party too)
         PartyTokenHomes.placeOnStarts(serverWorld, tokens);
+        tokenHomes.parking().unparkAll(serverWorld);
         for (UUID tokenUUID : tokens.keySet()) partyData.addToken(tokenUUID);
     }
 

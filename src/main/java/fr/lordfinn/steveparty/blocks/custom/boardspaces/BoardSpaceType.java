@@ -53,7 +53,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Portail à clé »: gates on some exits, opened by a Gate Key (see KeyGateTileBehavior). */
     TILE_KEY_GATE("tile_key_gate", KeyGateTileBehavior::new),
     /** « Trichaudron »: the Trichaudron's three heads each hold a hidden prize, a slow die picks one (see TrichaudronTileBehavior). */
-    TILE_TRICHAUDRON("tile_trichaudron", TrichaudronTileBehavior::new);
+    TILE_TRICHAUDRON("tile_trichaudron", TrichaudronTileBehavior::new),
+    /** « Fin »: the finish of the board, a pawn reaching it stops and the party heads for its end (see EndTileBehavior). */
+    TILE_END("tile_end", fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.EndTileBehavior::new);
 
     private final String name;
     private final Supplier<ABoardSpaceBehavior> behavior;

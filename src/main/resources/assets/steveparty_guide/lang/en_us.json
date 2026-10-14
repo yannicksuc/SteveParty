@@ -687,5 +687,11 @@
   "book.steveparty.guide.stars_mula.telescope.page0.title": "Telescope",
   "book.steveparty.guide.stars_mula.telescope.page1.text": "At night, clear sky, [#](9A6A00)right-click[#]() it.\n\n- [#](9A6A00)Scroll[#](): a night\n- Keep a shooting star in the sight\n- A [#](2E7D32)**guide star**[#]() shows where the Mulas fell",
   "book.steveparty.guide.stars_mula.telescope.page1.title": "Finding Mulas",
-  "book.steveparty.guide.tooltip": "Build a board, run a party, tame a Mula."
+  "book.steveparty.guide.tooltip": "Build a board, run a party, tame a Mula.",
+  "book.steveparty.guide.cartridges.end.name": "Finish",
+  "book.steveparty.guide.cartridges.end.description": "The finish line of the board",
+  "book.steveparty.guide.cartridges.end.page0.title": "Finish",
+  "book.steveparty.guide.cartridges.end.page0.text": "A pawn reaching it [#](D94F70)**stops**[#]() and the party heads for its **end**.\n\nThen: the turn played out, a stop, one last turn, or the arrived ones [#](D94F70)**wait**[#]() for all.",
+  "book.steveparty.guide.cartridges.end.page1.title": "Gathering",
+  "book.steveparty.guide.cartridges.end.page1.text": "**Tile Linker Brush**: from the Party Controller to a Finish space.\n\nOnce the party is over, the pawns gather there; several on one space turn round, small."
 }
