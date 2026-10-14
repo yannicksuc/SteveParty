@@ -237,6 +237,11 @@ public final class TileStampTextures {
 
     // ---------------------------------------------------------------- the Stop face
 
+    /** A dark colour (TileColors#isDark): the Stop face's own rule. */
+    private static final float DARK = 100f;
+    /** A near-black colour, the only one on which a painted pictogram's ink turns over: the drawing wins elsewhere. */
+    private static final float NEAR_BLACK = 45f;
+
     /** Light ink of a pictogram on a dark colour (the Stop anthracite): its lightest shade but one. */
     private static final float LIGHT_INK = -0.8f;
 
@@ -278,7 +283,7 @@ public final class TileStampTextures {
             "...####..."};
 
     /** On a dark colour: a light disc and a dark bar. */
-    private static final DarkInk STOP_DARK_INK = new DarkInk(true, Map.of(FEATURE, LIGHT_INK, NUMBER, FEATURE));
+    private static final DarkInk STOP_DARK_INK = new DarkInk(true, Map.of(FEATURE, LIGHT_INK, NUMBER, FEATURE), DARK);
 
     /**
      * The blank face with {@code glyph} centred on it: '#' painted {@code ink}, 'o' painted {@code counter}. Glyphs
@@ -343,7 +348,7 @@ public final class TileStampTextures {
     }
 
     /** On a dark colour: the arrow in light ink. */
-    private static final DarkInk REPLAY_DARK_INK = new DarkInk(true, Map.of(FEATURE, LIGHT_INK));
+    private static final DarkInk REPLAY_DARK_INK = new DarkInk(true, Map.of(FEATURE, LIGHT_INK), NEAR_BLACK);
 
     // ---------------------------------------------------------------- the Shop face
 
@@ -731,14 +736,15 @@ public final class TileStampTextures {
     }
 
     /**
-     * How a pictogram's ink turns on a dark colour: its shades listed in {@code swaps} become their pair, the others
-     * are turned over (dark ↔ light) when {@code invert}, kept otherwise. The bevel is kept as it is.
+     * How a pictogram's ink turns on a colour darker than {@code below} (luminance 0-255): its shades listed in
+     * {@code swaps} become their pair, its other dark shades turn light when {@code invert}; light ink is kept.
+     * The bevel is kept as it is.
      */
-    private record DarkInk(boolean invert, Map<Float, Float> swaps) {
+    private record DarkInk(boolean invert, Map<Float, Float> swaps, float below) {
     }
 
-    private static final DarkInk INVERT = new DarkInk(true, Map.of());
-    private static final DarkInk KEEP = new DarkInk(false, Map.of());
+    private static final DarkInk INVERT = new DarkInk(true, Map.of(), NEAR_BLACK);
+    private static final DarkInk KEEP = new DarkInk(false, Map.of(), 0f);
 
     /** The roles whose face is a pictogram in the ramp of their tile's colour (the others are drawn their own way). */
     private static final Map<BoardSpaceType, Pictogram> PICTOGRAMS = Map.ofEntries(
@@ -754,7 +760,7 @@ public final class TileStampTextures {
             Map.entry(BoardSpaceType.TILE_MISTIGRI, new Pictogram("mistigri", MISTIGRI, SMALL_MISTIGRI, MISTIGRI_SHADES)),
             Map.entry(BoardSpaceType.TILE_TRICHAUDRON, new Pictogram("trichaudron", TRICHAUDRON, SMALL_TRICHAUDRON, TRICHAUDRON_SHADES)),
             Map.entry(BoardSpaceType.TILE_END, new Pictogram("end", END, SMALL_END, END_SHADES)),
-            Map.entry(BoardSpaceType.TILE_EVENT, new Pictogram("event", EVENT, SMALL_EVENT, EVENT_SHADES, KEEP)),
+            Map.entry(BoardSpaceType.TILE_EVENT, new Pictogram("event", EVENT, SMALL_EVENT, EVENT_SHADES)),
             Map.entry(BoardSpaceType.TILE_MINIGAME, new Pictogram("minigame", MINIGAME, SMALL_MINIGAME, MINIGAME_SHADES)));
 
     /**
@@ -767,8 +773,9 @@ public final class TileStampTextures {
         return TEXTURES.get(new Key(pictogram.id(), rgb, small), key -> {
             float[] values = paintedValues(pictogram.id(), small);
             if (values == null) values = glyphValues(small ? pictogram.small() : pictogram.big(), small, pictogram.shades());
-            // On a dark colour (the Mistigri's black, the Stop anthracite), the pictogram in light ink
-            if (TileColors.isDark(rgb)) darkInk(values, frame(small), pictogram.darkInk());
+            // On a near-black colour (the Mistigri's black; the Stop face from anthracite on), the pictogram in light ink:
+            // on the others the drawing wins
+            if (luminance(rgb) < pictogram.darkInk().below()) darkInk(values, frame(small), pictogram.darkInk());
             return register(values, rgb, small);
         });
     }
@@ -839,7 +846,8 @@ public final class TileStampTextures {
                 if (Math.abs(values[i] - swap.getKey()) <= GREY_STEP) swapped = swap.getValue();
             }
             if (swapped != null) values[i] = swapped;
-            else if (ink.invert()) values[i] = -values[i];
+            // Only the dark ink turns light: light ink already shows on a dark colour
+            else if (ink.invert() && values[i] > 0) values[i] = -values[i];
         }
     }
 
