@@ -37,7 +37,7 @@
   "block.steveparty.step_controller.mode.replay": "Replay",
   "block.steveparty.step_controller.mode.previous": "Previous",
   "block.steveparty.step_controller.mode": "%s: %s",
-  "block.steveparty.step_controller.hint.none": "no party in reach",
+  "block.steveparty.step_controller.hint.none": "no linked party",
   "block.steveparty.step_controller.hint.nothing": "nothing to do now",
   "block.steveparty.step_controller.hint.previous.none": "no turn to undo",
   "block.steveparty.step_controller.hint.previous.one": "1 turn back possible",

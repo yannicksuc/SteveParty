@@ -37,7 +37,7 @@
   "block.steveparty.step_controller.mode.replay": "Rejouer",
   "block.steveparty.step_controller.mode.previous": "Précédent",
   "block.steveparty.step_controller.mode": "%s : %s",
-  "block.steveparty.step_controller.hint.none": "aucune partie à portée",
+  "block.steveparty.step_controller.hint.none": "aucune partie liée",
   "block.steveparty.step_controller.hint.nothing": "rien à faire pour l'instant",
   "block.steveparty.step_controller.hint.previous.none": "aucun tour à annuler",
   "block.steveparty.step_controller.hint.previous.one": "1 tour possible",
