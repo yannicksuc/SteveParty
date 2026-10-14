@@ -14,4 +14,14 @@ public interface PartyCard {
      * @param count the size of its stack (its number: an event card's channel...)
      */
     void addSteps(PartyCardContext context, int count);
+
+    /**
+     * Adds the steps of one card to the party, the card itself at hand (what it was set to: an event card's pipes...).
+     * By default, {@link #addSteps(PartyCardContext, int)} with its number.
+     *
+     * @param card the card's stack in the program
+     */
+    default void addSteps(PartyCardContext context, int count, net.minecraft.item.ItemStack card) {
+        addSteps(context, count);
+    }
 }

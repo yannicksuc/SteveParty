@@ -388,6 +388,10 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.KEY_GATE_CARTRIDGE, ModItems.GATE_KEY);
         // A banner (the checkered flag): the End
         offerCartridge(ModItems.END_CARTRIDGE, Ingredient.fromTag(net.minecraft.registry.tag.ItemTags.BANNERS));
+        // A clock (its hourglass): the Event
+        offerCartridge(ModItems.EVENT_CARTRIDGE, Items.CLOCK);
+        // A Mini-game party card: the Mini-game
+        offerCartridge(ModItems.MINIGAME_CARTRIDGE, ModItems.PARTY_CARD_MINIGAME);
         // An Inventory Cartridge (its prizes) and a lava bucket (its tank; the bucket comes back): the Trichaudron
         ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.TRICHAUDRON_CARTRIDGE)
                 .input(ModItems.INVENTORY_CARTRIDGE)

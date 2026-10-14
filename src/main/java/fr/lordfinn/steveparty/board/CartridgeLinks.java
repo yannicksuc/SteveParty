@@ -2,6 +2,12 @@ package fr.lordfinn.steveparty.board;
 
 import fr.lordfinn.steveparty.blocks.custom.HopSwitchBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.EventTimeOut;
+import fr.lordfinn.steveparty.items.custom.cartridges.EventCartridgeItem;
+import fr.lordfinn.steveparty.minigame.MiniGamePipes;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.math.Direction;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
@@ -40,6 +46,7 @@ import java.util.List;
  *     Piggy Bank, the Party Controller's bank), at most {@link CartridgeContainers#MAX};</li>
  *     <li>{@link SpawnPoint}: the Spawn Marker of a mob space's cartridge, where its mob appears (one at most);</li>
  *     <li>{@link PotNest}: the Magpie Nest of a Common pot cartridge, the pot itself (one at most).</li>
+ *     <li>{@link EventPipes}: the pipes of an Event Cartridge, the players come out of them for the event.</li>
  * </ul>
  * The target decides: a board space is a destination, a container a container, a Spawn Marker the spawn point; a
  * target the cartridge takes nothing of is refused with a word (see TileLinkerBrush). The containers and the spawn
@@ -96,6 +103,11 @@ public final class CartridgeLinks {
                 if (!BrushLinks.usesContainers(holder)) return;
                 BrushLinks.Held containers = BrushLinks.withRole(world, holder, held, BrushLinks::isInventoryCartridge);
                 if (containers != null) out.add(new Containers(containers));
+            },
+            (world, holder, held, out) -> {
+                if (!(holder instanceof BoardSpaceBlockEntity)) return;
+                BrushLinks.Held event = BrushLinks.withRole(world, holder, held, stack -> stack.getItem() instanceof EventCartridgeItem);
+                if (event != null) out.add(new EventPipes(event));
             },
             (world, holder, held, out) -> {
                 if (!(holder instanceof BoardSpaceBlockEntity)) return;
@@ -216,6 +228,76 @@ public final class CartridgeLinks {
         @Override
         public boolean drawnByBoardView() {
             return true;
+        }
+    }
+
+    // ---------------------------------------------------------------- Event pipes
+
+    /**
+     * The pipes of an Event Cartridge: the players come out of them for the event, one pipe after the other (see
+     * EventTimeOut), at most {@link EventTimeOut#MAX_PIPES}. The mouth is the side of the pipe looked at.
+     */
+    public record EventPipes(BrushLinks.Held held) implements BrushLinkable {
+        /** Colour of the links to an event's pipes: its tile's violet. */
+        public static final int COLOR = EventCartridgeItem.COLOR;
+
+        @Override
+        public BlockPos holder() {
+            return held.pos();
+        }
+
+        @Override
+        public int color() {
+            return COLOR;
+        }
+
+        @Override
+        public boolean accepts(World world, BlockPos target) {
+            return MiniGamePipes.linkable(world.getBlockState(target)) && targets(world).size() < EventTimeOut.MAX_PIPES;
+        }
+
+        @Override
+        public List<BlockPos> targets(World world) {
+            List<BlockPos> pipes = new ArrayList<>();
+            for (EndPipe pipe : EventTimeOut.pipes(held.cartridge()))
+                if (pipe.mouth().dimension().equals(world.getRegistryKey())) pipes.add(pipe.mouth().pos());
+            return pipes;
+        }
+
+        @Override
+        public boolean link(ServerPlayerEntity player, ServerWorld world, BlockPos target) {
+            if (linked(world, target) || !accepts(world, target)) return false;
+            Direction opening = MiniGamePipes.mouthOf(world.getBlockState(target), target, player.getEyePos());
+            if (opening == null) {
+                player.sendMessage(Text.translatable("message.steveparty.mini_game_page.pipe.no_mouth").formatted(Formatting.RED), true);
+                return false;
+            }
+            List<EndPipe> after = new ArrayList<>(EventTimeOut.pipes(held.cartridge()));
+            after.add(new EndPipe(GlobalPos.create(world.getRegistryKey(), target.toImmutable()), opening));
+            set(player, after);
+            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.event_pipe", BoardText.pos(holder()), BoardText.pos(target)));
+            world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.PLAYERS, 0.45f, 1.4f);
+            BoardLinks.trail(world, holder(), target, COLOR);
+            return true;
+        }
+
+        @Override
+        public boolean unlink(ServerPlayerEntity player, ServerWorld world, BlockPos target) {
+            if (!linked(world, target)) return false;
+            List<EndPipe> after = new ArrayList<>(EventTimeOut.pipes(held.cartridge()));
+            after.removeIf(pipe -> pipe.mouth().dimension().equals(world.getRegistryKey()) && pipe.mouth().pos().equals(target));
+            set(player, after);
+            TileLinkerBrush.erased(player, world, holder(), target);
+            BoardLinks.trail(world, holder(), target, BoardLinks.CUT_COLOR);
+            return true;
+        }
+
+        private void set(ServerPlayerEntity player, List<EndPipe> after) {
+            ItemStack cartridge = held.cartridge();
+            List<EndPipe> before = EventTimeOut.pipes(cartridge);
+            EventTimeOut.setPipes(cartridge, after);
+            held.sync().run();
+            LinkHistory.record(player, new LinkHistory.EventPipesChange(held.pos(), held.slot(), before, List.copyOf(after)));
         }
     }
 

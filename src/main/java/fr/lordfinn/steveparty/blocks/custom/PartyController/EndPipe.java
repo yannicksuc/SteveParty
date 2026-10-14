@@ -6,8 +6,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
 
 /**
- * The pipe an End party card is linked to: its mouth (with its dimension) and the side it opens on. The players come
- * out of it once the party is over (see PartyEnding).
+ * A pipe mouth the players of a party come out of (with its dimension) and the side it opens on: the pipe of an End
+ * party card, once the party is over (see PartyEnding); the pipes of an event, for its time out (see EventTimeOut).
  */
 public record EndPipe(GlobalPos mouth, Direction opening) {
     public static final Codec<EndPipe> CODEC = RecordCodecBuilder.create(instance -> instance.group(

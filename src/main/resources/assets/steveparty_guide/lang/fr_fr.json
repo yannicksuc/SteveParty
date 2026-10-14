@@ -693,5 +693,17 @@
   "book.steveparty.guide.cartridges.end.page0.title": "Arrivée",
   "book.steveparty.guide.cartridges.end.page0.text": "Un pion qui l'atteint [#](D94F70)**s'arrête**[#]() et la partie file vers sa **fin**.\n\nEnsuite : fin de la manche, arrêt, un dernier tour, ou les arrivés [#](D94F70)**attendent**[#]() les autres.",
   "book.steveparty.guide.cartridges.end.page1.title": "Rassemblement",
-  "book.steveparty.guide.cartridges.end.page1.text": "**Pinceau lieur** : du Contrôleur de Party vers une case Arrivée.\n\nLa partie finie, les pions s'y rassemblent ; à plusieurs, ils tournent en petit."
+  "book.steveparty.guide.cartridges.end.page1.text": "**Pinceau lieur** : du Contrôleur de Party vers une case Arrivée.\n\nLa partie finie, les pions s'y rassemblent ; à plusieurs, ils tournent en petit.",
+  "book.steveparty.guide.cartridges.event.name": "Évènement",
+  "book.steveparty.guide.cartridges.event.description": "Un temps mort pour ta redstone",
+  "book.steveparty.guide.cartridges.event.page0.title": "Évènement",
+  "book.steveparty.guide.cartridges.event.page0.text": "Un pion qui s'y arrête lance un [#](9B6BE0)**temps mort**[#]().\n\nLes Cloches de partie **Évènement** sonnent : ta redstone et tes commandes prennent la main.",
+  "book.steveparty.guide.cartridges.event.page1.title": "Tuyaux et sablier",
+  "book.steveparty.guide.cartridges.event.page1.text": "**Pinceau lieur** : de la case vers des tuyaux, les joueurs en sortent.\n\nFin au [#](9B6BE0)**sablier**[#](), par une cloche en attente ou un Contrôleur de pas : tout le monde revient.",
+  "book.steveparty.guide.cartridges.minigame.name": "Mini-jeu",
+  "book.steveparty.guide.cartridges.minigame.description": "Un mini-jeu après le tour",
+  "book.steveparty.guide.cartridges.minigame.page0.title": "Mini-jeu",
+  "book.steveparty.guide.cartridges.minigame.page0.text": "Un pion qui s'y arrête lance un [#](F08A24)**mini-jeu**[#]() juste après son tour, tiré du catalogue.",
+  "book.steveparty.guide.cartridges.minigame.page1.title": "Modes",
+  "book.steveparty.guide.cartridges.minigame.page1.text": "- [#](F08A24)**VS**[#]() : son joueur contre tous les autres\n- **Chacun** : chacun pour soi\n- **Choix** : son joueur choisit dans le chat"
 }

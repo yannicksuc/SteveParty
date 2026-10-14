@@ -4,8 +4,10 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.api.party.PartyCard;
 import fr.lordfinn.steveparty.api.party.PartyCardContext;
 import fr.lordfinn.steveparty.api.party.PartyCards;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.EventTimeOut;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.PartyCardItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -93,7 +95,7 @@ public class BasicGameGeneratorStep extends PartyStep {
         PartyCardContext context = new PartyCardContext(world, partyData);
         for (ExpandedCard card : expand(program, partyData.getNbTurn())) {
             PartyCard playing = PartyCards.get(card.card());
-            if (playing != null) playing.addSteps(context, card.count());
+            if (playing != null) playing.addSteps(context, card.count(), card.stack());
             else if (card.type() == PartyCardItem.CardType.CUSTOM)
                 Steveparty.LOGGER.warn("Party card {} is not registered: it plays nothing", card.card());
         }
@@ -128,7 +130,7 @@ public class BasicGameGeneratorStep extends PartyStep {
             if (!(stack.getItem() instanceof PartyCardItem cardItem)) continue;
             // The End card plays nothing: how the party ends (see PartyEnding)
             if (cardItem.getCardType() == PartyCardItem.CardType.END) continue;
-            ExpandedCard card = new ExpandedCard(cardItem.getCardType(), stack.getCount(), cardItem.getCardId());
+            ExpandedCard card = new ExpandedCard(cardItem.getCardType(), stack.getCount(), cardItem.getCardId(), stack);
             if (card.type() == PartyCardItem.CardType.SEQUENCE_START) {
                 // What is before it was played once, and stays out of the next loop
                 group.clear();
@@ -151,10 +153,26 @@ public class BasicGameGeneratorStep extends PartyStep {
      * A card of the expanded program.
      *
      * @param card what it plays (see PartyCards): the id of its type for Steve Party's cards
+     * @param stack the card in the program (empty for a card of the default party)
      */
-    public record ExpandedCard(PartyCardItem.CardType type, int count, Identifier card) {
+    public record ExpandedCard(PartyCardItem.CardType type, int count, Identifier card, ItemStack stack) {
         public ExpandedCard(PartyCardItem.CardType type, int count) {
             this(type, count, Steveparty.id(type.getName()));
+        }
+
+        public ExpandedCard(PartyCardItem.CardType type, int count, Identifier card) {
+            this(type, count, card, ItemStack.EMPTY);
+        }
+
+        /** The same card: its kind, number and id (the stack it came from is left out). */
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof ExpandedCard card && type == card.type && count == card.count && this.card.equals(card.card);
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(type, count, card);
         }
     }
 
@@ -178,8 +196,19 @@ public class BasicGameGeneratorStep extends PartyStep {
         });
         PartyCards.register(Steveparty.id(PartyCardItem.CardType.MINIGAME.getName()),
                 (context, count) -> context.addStep(new MiniGamePartyStep(new ArrayList<>(context.tokens()))));
-        PartyCards.register(Steveparty.id(PartyCardItem.CardType.EVENT.getName()),
-                (context, count) -> context.addStep(EventPartyStep.eventCard(Math.min(count, 15))));
+        PartyCards.register(Steveparty.id(PartyCardItem.CardType.EVENT.getName()), new PartyCard() {
+            @Override
+            public void addSteps(PartyCardContext context, int count) {
+                context.addStep(EventPartyStep.eventCard(Math.min(count, 15)));
+            }
+
+            /** Its pipes and its hourglass (see EventTimeOut). */
+            @Override
+            public void addSteps(PartyCardContext context, int count, ItemStack card) {
+                context.addStep(EventPartyStep.eventCard(Math.min(count, 15), EventTimeOut.pipes(card),
+                        card.getOrDefault(ModComponents.EVENT_SECONDS, 0)));
+            }
+        });
     }
 
     /**

@@ -16,6 +16,8 @@
     "steveparty:pot_cartridge",
     "steveparty:key_gate_cartridge",
     "steveparty:trichaudron_cartridge",
-    "steveparty:end_cartridge"
+    "steveparty:end_cartridge",
+    "steveparty:event_cartridge",
+    "steveparty:minigame_cartridge"
   ]
 }

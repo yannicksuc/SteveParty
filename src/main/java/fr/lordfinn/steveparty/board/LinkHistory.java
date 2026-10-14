@@ -51,7 +51,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange, PageLinksChange, PipePageChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange, PageLinksChange, PipePageChange, EventPipesChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -146,6 +146,20 @@ public final class LinkHistory {
             TeleportSettingsComponent settings = TeleportCartridgeItem.settings(held.cartridge());
             if (!settings.targets().equals(undo ? after : before)) return false;
             held.cartridge().set(ModComponents.TELEPORT_SETTINGS, settings.withTargets(undo ? before : after));
+            held.sync().run();
+            return true;
+        }
+    }
+
+    /** The pipes of an Event Cartridge (see {@link CartridgeLinks.EventPipes}), {@code before} → {@code after}. */
+    public record EventPipesChange(BlockPos pos, int slot, List<fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe> before,
+                                   List<fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe> after) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            BrushLinks.Held held = BrushLinks.held(world, pos, slot);
+            if (held == null || !(held.cartridge().getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.EventCartridgeItem)) return false;
+            if (!fr.lordfinn.steveparty.blocks.custom.PartyController.EventTimeOut.pipes(held.cartridge()).equals(undo ? after : before)) return false;
+            fr.lordfinn.steveparty.blocks.custom.PartyController.EventTimeOut.setPipes(held.cartridge(), undo ? before : after);
             held.sync().run();
             return true;
         }

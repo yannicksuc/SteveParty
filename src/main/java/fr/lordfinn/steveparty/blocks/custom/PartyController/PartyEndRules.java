@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
@@ -101,7 +100,7 @@ public final class PartyEndRules {
         int rank = data.getCurrentStep() instanceof TokenTurnPartyStep turn ? data.getTokenRank(turn.getTokenUUID()) : 0;
         while (from < end) {
             PartyStep step = steps.get(from);
-            if (step instanceof EventPartyStep event && event.isTransition()) {
+            if (step.isInterlude()) {
                 from++;
                 continue;
             }

@@ -246,6 +246,14 @@ public class ModComponents {
     public static final ComponentType<fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe> END_PIPE =
             registerComponent("end-pipe", fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe.CODEC);
 
+    /** The pipes of an Event card or an Event Cartridge: the players come out of them for the event (see EventTimeOut). */
+    public static final ComponentType<java.util.List<fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe>> EVENT_PIPES =
+            registerComponent("event-pipes", fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe.CODEC.listOf());
+
+    /** The hourglass of an Event card, in seconds (0 or none: no hourglass, see EventTimeOut#DURATIONS). */
+    public static final ComponentType<Integer> EVENT_SECONDS =
+            registerComponent("event-seconds", com.mojang.serialization.Codec.INT);
+
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();

@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
 import fr.lordfinn.steveparty.powerups.effects.TrapState;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepFactory;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
@@ -331,7 +330,7 @@ public class PartyData {
         PartyStep previous = null;
         for (int i = 0; i <= index && i < steps.size(); i++) {
             PartyStep step = steps.get(i);
-            if (step instanceof EventPartyStep event && event.isTransition()) continue;
+            if (step.isInterlude()) continue;
             if (step.getType() == PartyStepType.TOKEN_TURN && (previous == null || previous.getType() != PartyStepType.TOKEN_TURN))
                 round++;
             previous = step;
@@ -344,7 +343,7 @@ public class PartyData {
         if (index < 0 || index >= steps.size() || steps.get(index).getType() != PartyStepType.TOKEN_TURN) return false;
         for (int i = index - 1; i >= 0; i--) {
             PartyStep step = steps.get(i);
-            if (step instanceof EventPartyStep event && event.isTransition()) continue;
+            if (step.isInterlude()) continue;
             return step.getType() != PartyStepType.TOKEN_TURN;
         }
         return true;

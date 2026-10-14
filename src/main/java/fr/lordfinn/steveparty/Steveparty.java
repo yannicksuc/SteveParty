@@ -169,6 +169,7 @@ public class Steveparty implements ModInitializer {
         MiniGameTest.initialize();
         MiniGameFreeze.initialize();
         fr.lordfinn.steveparty.minigame.MiniGameReady.initialize();
+        fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGameModeChoice.initialize();
         PartyChunkHolds.initialize();
         InventoryCartridgeItem.initialize();
         ZoneBubbles.initialize();
