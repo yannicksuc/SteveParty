@@ -1410,8 +1410,8 @@ public final class CartridgePanel {
                 // Where the game draws the count: its shadow in the side's dark colour over the grey one, then the count
                 String text = Integer.toString(count);
                 int tx = sx + 19 - 2 - textRenderer.getWidth(text), ty = sy + 6 + 3;
-                context.drawText(textRenderer, text, tx + 1, ty + 1, theme.outline(), false);
-                context.drawText(textRenderer, text, tx, ty, 0xFFFFFFFF, false);
+                UiText.line(context, textRenderer, text, tx + 1, ty + 1, textRenderer.getWidth(text), theme.outline(), false);
+                UiText.line(context, textRenderer, text, tx, ty, textRenderer.getWidth(text), 0xFFFFFFFF, false);
             }
             context.getMatrices().pop();
         }
