@@ -8,7 +8,7 @@ import java.util.List;
 /** Rejouer / Roll Again: the tile gives the token's owner another turn (see ReplayBoardSpaceBehavior). */
 public class ReplayCartridgeItem extends CartridgeItem {
     /** The face of a Replay tile (cyan), unless its cartridge is dyed. */
-    public static final int COLOR = 0x24EAC8;
+    public static final int COLOR = 0x6078AB;
 
     private static final List<CartridgeModule> MODULES = List.of(
             description("replay_cartridge", 3), colorModule(COLOR));

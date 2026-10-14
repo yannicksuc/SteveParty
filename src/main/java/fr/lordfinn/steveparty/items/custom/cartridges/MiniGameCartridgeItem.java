@@ -30,7 +30,7 @@ import java.util.UUID;
  */
 public class MiniGameCartridgeItem extends BoardRuleCartridgeItem {
     /** Its tile's orange. */
-    public static final int COLOR = 0x762BC3;
+    public static final int COLOR = 0x7516CA;
     public static final String FORMATS = "formats", OPPONENT = "opponent";
     /** The formats of the menu, in its order ({@link MiniGameMode#DUEL}: the 1 v 1, its opponent picked or drawn). */
     public static final List<MiniGameMode> FORMAT_LIST = List.of(MiniGameMode.DUEL, MiniGameMode.VS, MiniGameMode.FFA, MiniGameMode.TEAMS);

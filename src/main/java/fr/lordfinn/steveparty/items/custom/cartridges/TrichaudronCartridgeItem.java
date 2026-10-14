@@ -41,7 +41,7 @@ import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
  */
 public class TrichaudronCartridgeItem extends CartridgeItem implements ContainerCartridge, MobSpawnCartridge {
     /** Its tile's colour: a dark magma crust. */
-    public static final int COLOR = 0xEE5D06;
+    public static final int COLOR = 0xF06D1E;
     /** The most prizes on offer (its menu's slots). */
     public static final int PRIZES = 5;
 

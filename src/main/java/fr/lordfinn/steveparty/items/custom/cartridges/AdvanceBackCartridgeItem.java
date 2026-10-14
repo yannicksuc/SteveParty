@@ -32,8 +32,8 @@ public class AdvanceBackCartridgeItem extends CartridgeItem implements SneakScro
     public static final int MAX_STEPS = 6;
     public static final int DEFAULT_STEPS = 3;
     /** The tile's colours (face, sides, landing particles): green forward, pink-magenta back. */
-    public static final int FORWARD_COLOR = 0x2FCAC8;
-    public static final int BACK_COLOR = 0x26B5CF;
+    public static final int FORWARD_COLOR = 0x61CE65;
+    public static final int BACK_COLOR = 0xED6466;
 
     private static final String K = MENU_KEY + "advance.";
     private static final List<CartridgeModule> MODULES = List.of(
