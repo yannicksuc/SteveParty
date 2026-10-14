@@ -88,7 +88,6 @@ public final class WrenchActions {
             if (!isRepeat(player, pos, world.getTime())
                     && world.getBlockEntity(pos) instanceof fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller) {
                 player.openHandledScreen(controller);
-                ControllerStartLinks.dashboardOpened(player, controller);
             }
             return ActionResult.SUCCESS;
         }
@@ -128,8 +127,22 @@ public final class WrenchActions {
 
     /** The action bar message of an action (also its label in the undo history). */
     public static void say(ServerPlayerEntity player, Text text) {
-        LAST_LABELS.put(player.getUuid(), text);
-        player.sendMessage(text, true);
+        say(player, text, text);
+    }
+
+    /**
+     * An action labelled {@code label} in the undo history (with its positions), the action bar only saying
+     * {@code shown} (a link painted: the arrow in the world already shows where).
+     */
+    public static void say(ServerPlayerEntity player, Text label, Text shown) {
+        LAST_LABELS.put(player.getUuid(), label);
+        player.sendMessage(shown, true);
+    }
+
+    /** The action bar word of a link painted (green) or erased (gold). */
+    public static Text linkWord(boolean linked) {
+        return Text.translatable(linked ? "message.steveparty.tile_linker_brush.linked.short" : "message.steveparty.tile_linker_brush.erased.short")
+                .formatted(linked ? Formatting.GREEN : Formatting.GOLD);
     }
 
     private static final Map<UUID, Text> LAST_WARNINGS = ServerMemory.forgetOnStop(new HashMap<>());
@@ -313,7 +326,7 @@ public final class WrenchActions {
             if (!addLink(player, serverWorld, anchor, anchorContainer, slot, pos)) return;
             BrushTutorialSteps.pathLinked(player, serverWorld, anchor);
             TileLinkerBrush.setAnchor(brush, world, pos);
-            say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(anchor), BoardText.pos(pos)));
+            say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(anchor), BoardText.pos(pos)), linkWord(true));
             playChainSound(world, player, 3);
         });
     }

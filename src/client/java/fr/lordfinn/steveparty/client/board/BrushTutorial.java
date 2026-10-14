@@ -67,7 +67,6 @@ public final class BrushTutorial {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
                 ClientCommandManager.literal("brushtutorial").then(ClientCommandManager.literal("reset").executes(context -> {
                     reset();
-                    context.getSource().sendFeedback(Text.translatable(KEY + "reset"));
                     return 1;
                 }))));
     }
@@ -182,6 +181,11 @@ public final class BrushTutorial {
 
     private static boolean done(Step step) {
         return step == Step.TILES ? tileLinks() >= TILE_LINKS : "done".equals(get(step));
+    }
+
+    /** Whether a toast of the tutorial is shown (the brush's HUD then leaves its controls out). */
+    static boolean showing() {
+        return toast != null && !toast.hidden();
     }
 
     /** Every step done: the tutorial is over for this player. */

@@ -299,7 +299,12 @@ final class BrushOverlay {
 
     /** The 12 edges of the box (min, max), thin see-through boxes in {@code rgb}: a ghost block's outline. */
     static void edges(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d min, Vec3d max, int rgb, float alpha) {
-        double w = DASH_WIDTH / 2;
+        edges(matrices, consumers, camera, min, max, rgb, alpha, DASH_WIDTH);
+    }
+
+    /** The 12 edges of the box, {@code width} thick. */
+    static void edges(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d min, Vec3d max, int rgb, float alpha, double width) {
+        double w = width / 2;
         double[] xs = {min.x, max.x}, ys = {min.y, max.y}, zs = {min.z, max.z};
         for (double y : ys) for (double z : zs) WorldDraw.box(matrices, consumers, camera, new Vec3d(min.x - w, y - w, z - w), new Vec3d(max.x + w, y + w, z + w), rgb, alpha);
         for (double x : xs) for (double z : zs) WorldDraw.box(matrices, consumers, camera, new Vec3d(x - w, min.y + w, z - w), new Vec3d(x + w, max.y - w, z + w), rgb, alpha);

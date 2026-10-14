@@ -52,18 +52,6 @@ public final class ControllerStartLinks {
         for (BlockPos start : controller.getStartLinks()) BoardLinks.trail(world, pos, start, COLOR);
     }
 
-    /** The players told how to link the start tiles of a controller, by controller (once a server run). */
-    private static final Set<String> TOLD = ServerMemory.forgetOnStop(new HashSet<>());
-
-    /**
-     * The dashboard of {@code controller} opened by {@code player}: with no start tile linked and no party running,
-     * told once (in the chat) how to link them, if they may edit it.
-     */
-    public static void dashboardOpened(ServerPlayerEntity player, PartyControllerEntity controller) {
-        if (!controller.getStartLinks().isEmpty() || controller.getPartyData().isStarted() || !controller.canEdit(player)) return;
-        if (TOLD.add(player.getUuid() + "@" + controller.getPos().asLong())) player.sendMessage(howToLink(player), false);
-    }
-
     /** What the Wrench's board check adds about the start tiles of {@code controller}. */
     public static Text status(ServerPlayerEntity player, PartyControllerEntity controller) {
         int linked = controller.getStartLinks().size();
@@ -130,7 +118,7 @@ public final class ControllerStartLinks {
             List<BlockPos> links = new ArrayList<>(controller.getStartLinks());
             links.add(start);
             set(player, links);
-            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(holder()), BoardText.pos(start)));
+            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(holder()), BoardText.pos(start)), WrenchActions.linkWord(true));
             world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.45f, 1.5f);
             BoardLinks.trail(world, holder(), start, COLOR);
             return true;
@@ -144,8 +132,6 @@ public final class ControllerStartLinks {
             set(player, links);
             TileLinkerBrush.erased(player, world, holder(), start);
             BoardLinks.trail(world, holder(), start, BoardLinks.CUT_COLOR);
-            // The last one gone: no start any more, said how to link them
-            if (links.isEmpty()) player.sendMessage(howToLink(player), false);
             return true;
         }
 

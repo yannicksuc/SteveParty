@@ -112,8 +112,6 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
         } else if (world.getBlockEntity(pos) instanceof PartyControllerEntity entity) {
             // The dashboard: the party, its players, its mini-games, its settings (and following it)
             player.openHandledScreen(entity);
-            if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer)
-                fr.lordfinn.steveparty.board.ControllerStartLinks.dashboardOpened(serverPlayer, entity);
         }
 
         return ActionResult.SUCCESS;

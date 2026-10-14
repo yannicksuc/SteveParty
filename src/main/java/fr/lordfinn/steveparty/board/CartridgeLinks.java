@@ -132,7 +132,7 @@ public final class CartridgeLinks {
         public boolean link(ServerPlayerEntity player, ServerWorld world, BlockPos target) {
             BlockPos from = holder();
             if (!WrenchActions.addLink(player, world, from, container, slot, target)) return false;
-            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(from), BoardText.pos(target)));
+            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(from), BoardText.pos(target)), WrenchActions.linkWord(true));
             world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.45f, 1.2f);
             return true;
         }

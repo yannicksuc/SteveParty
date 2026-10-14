@@ -449,13 +449,13 @@ public final class TileLinkerBrush {
         WrenchActions.recorded(player, world, brush, () -> {
             if (!WrenchActions.addLink(player, world, from, origin, slot, cell)) return;
             BrushTutorialSteps.pathLinked(player, world, from);
-            say(player, Text.translatable("message.steveparty.tile_linker_brush.blob", BoardText.pos(from), BoardText.pos(cell)));
+            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.blob", BoardText.pos(from), BoardText.pos(cell)), WrenchActions.linkWord(true));
             world.playSound(null, surface.getBlockPos(), SoundEvents.ENTITY_SLIME_SQUISH, SoundCategory.PLAYERS, 0.7f, 0.8f);
         });
     }
 
     static void erased(ServerPlayerEntity player, ServerWorld world, BlockPos from, BlockPos to) {
-        say(player, Text.translatable("message.steveparty.tile_linker_brush.erased", BoardText.pos(from), BoardText.pos(to)));
+        WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.erased", BoardText.pos(from), BoardText.pos(to)), WrenchActions.linkWord(false));
         world.playSound(null, player.getBlockPos(), ModSounds.CANCEL_SOUND_EVENT, SoundCategory.PLAYERS, 0.6f, 1f);
     }
 

@@ -16,7 +16,15 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -53,16 +61,21 @@ import java.util.Set;
  */
 final class BrushSuggestions {
     /** The grey of the suggestions, and how see-through their arrows are. */
-    private static final int GREY = 0xC8C8C8, ARROW_ALPHA = 0xB0;
+    private static final int GREY = 0xC8C8C8, ARROW_ALPHA = 0xD0;
     /** A tile suggests the nearest tile this far at most. */
     private static final double TILE_RANGE = 12;
     /** The Party Controller suggests start tiles this far at most, and chests this far. */
     private static final double START_RANGE = PartyControllerEntity.START_TILES_SEARCH_RADIUS, CHEST_RANGE = 8;
     private static final int REFRESH_TICKS = 20;
+    /** The ghost bubble stands this far beside its tile (blocks, centre to centre): a block clear of it. */
+    private static final double BUBBLE_SIDE = 1.5;
+    /** The ghost bubble's outline: a darker lavender, 2 pixels thick. */
+    private static final int BUBBLE_EDGE = 0x8A6FD1;
+    private static final double BUBBLE_EDGE_WIDTH = 2 / 16.0;
 
     /** A ghost link from a block to another, and the ghost blocks drawn at their end. */
-    private record Suggestion(List<Vec3d[]> links, @Nullable BlockPos chest, @Nullable Vec3d bubble, @Nullable Vec3d bubbleFrom) {
-        static final Suggestion NONE = new Suggestion(List.of(), null, null, null);
+    private record Suggestion(List<Vec3d[]> links, @Nullable BlockPos chest, Direction chestFacing, @Nullable Vec3d bubble, @Nullable Vec3d bubbleFrom) {
+        static final Suggestion NONE = new Suggestion(List.of(), null, Direction.SOUTH, null, null);
     }
 
     private static Suggestion current = Suggestion.NONE;
@@ -109,7 +122,7 @@ final class BrushSuggestions {
             BlockPos tile = nearestFreeTile(world, space.getPos());
             if (tile != null) links.add(new Vec3d[]{from, BrushOverlay.anchor(world, tile)});
         }
-        return new Suggestion(links, null, bubble, bubble == null ? null : from);
+        return new Suggestion(links, null, Direction.SOUTH, bubble, bubble == null ? null : from);
     }
 
     /**
@@ -159,7 +172,10 @@ final class BrushSuggestions {
                 if (ghostChest != null) links.add(new Vec3d[]{from, Vec3d.ofCenter(ghostChest)});
             }
         }
-        return new Suggestion(links, ghostChest, null, null);
+        // The ghost chest opens toward the controller
+        Direction facing = ghostChest == null ? Direction.SOUTH
+                : Direction.getFacing(pos.getX() - ghostChest.getX(), 0, pos.getZ() - ghostChest.getZ());
+        return new Suggestion(links, ghostChest, facing, null, null);
     }
 
     /** Whether the controller's bank (an Inventory Cartridge, as the clients see it) links no container. */
@@ -229,8 +245,9 @@ final class BrushSuggestions {
         }
         if (way == null || way.horizontalLengthSquared() < 1.0E-4) way = new Vec3d(0, 0, -1);
         Vec3d forward = new Vec3d(way.x, 0, way.z).normalize();
-        // Facing the way it goes, its right hand: (-z, x)
-        return stand.add(-forward.z, 0, forward.x);
+        // Facing the way it goes, its right hand: (-z, x), a block clear of the tile, standing on the ground of its cell
+        Vec3d side = stand.add(-forward.z * BUBBLE_SIDE, 0, forward.x * BUBBLE_SIDE);
+        return new Vec3d(side.x, pos.getY(), side.z);
     }
 
     // ---------------------------------------------------------------- drawing
@@ -244,18 +261,38 @@ final class BrushSuggestions {
         int arrows = ((int) (ARROW_ALPHA * pulse) << 24) | GREY;
         for (Vec3d[] link : suggestion.links()) WorldDraw.path(matrices, consumers, camera, link[0], link[1], arrows, 0.4, 0.45, phase, 0.3, 0);
         if (suggestion.chest() != null) {
-            // A chest's box (14/16 high, 1/16 in), see-through grey, its edges a little stronger
-            Vec3d min = Vec3d.of(suggestion.chest()).add(1 / 16.0, 0, 1 / 16.0), max = min.add(14 / 16.0, 14 / 16.0, 14 / 16.0);
-            WorldDraw.box(matrices, consumers, camera, min, max, GREY, 0.3f * pulse);
-            BrushOverlay.edges(matrices, consumers, camera, min, max, GREY, 0.85f * pulse);
+            ghostChest(matrices, consumers, camera, suggestion.chest(), suggestion.chestFacing(), CHEST_ALPHA * pulse);
         }
         if (suggestion.bubble() != null) {
             // A Spawn Bubble's ghost: its iridescent colours, see-through, a dotted grey link to it
             Vec3d at = suggestion.bubble();
             Vec3d min = at.add(-0.4, 0.05, -0.4), max = at.add(0.4, 0.85, 0.4);
             WorldDraw.box(matrices, consumers, camera, min, max, CartridgeLinks.SPAWN_MIDDLE, 0.35f * pulse);
-            BrushOverlay.edges(matrices, consumers, camera, min, max, CartridgeLinks.SPAWN_FAR, 0.9f * pulse);
+            BrushOverlay.edges(matrices, consumers, camera, min, max, BUBBLE_EDGE, 0.9f * pulse, BUBBLE_EDGE_WIDTH);
             WorldDraw.dotted(matrices, consumers, camera, suggestion.bubbleFrom(), at.add(0, 0.45, 0), 0.6f * pulse, t -> GREY);
         }
+    }
+
+    /** How see-through the ghost chest is (its model, greyed). */
+    private static final float CHEST_ALPHA = 0.45f;
+    private static final Identifier CHEST_TEXTURE = Identifier.ofVanilla("textures/entity/chest/normal.png");
+
+    /**
+     * A ghost chest: the vanilla chest model (closed), see-through and greyed, at {@code pos}, opening toward
+     * {@code facing}. Translucent entity layer, drawn in the overlay's pass with the other ghosts.
+     */
+    private static void ghostChest(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, BlockPos pos, Direction facing, float alpha) {
+        ModelPart model = MinecraftClient.getInstance().getEntityModelLoader().getModelPart(EntityModelLayers.CHEST);
+        VertexConsumer consumer = consumers.getBuffer(RenderLayer.getEntityTranslucent(CHEST_TEXTURE));
+        Vec3d cam = camera.getPos();
+        int color = ((int) (alpha * 255) << 24) | GREY;
+        matrices.push();
+        matrices.translate(pos.getX() - cam.x + 0.5, pos.getY() - cam.y + 0.5, pos.getZ() - cam.z + 0.5);
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-facing.asRotation()));
+        matrices.translate(-0.5, -0.5, -0.5);
+        for (String part : new String[]{"bottom", "lid", "lock"}) {
+            model.getChild(part).render(matrices, consumer, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, color);
+        }
+        matrices.pop();
     }
 }

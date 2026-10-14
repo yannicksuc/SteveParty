@@ -363,13 +363,15 @@ public final class BoardView {
     private static void labels(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Label label, float scale, double time) {
         double plate = 16 * scale; // a plate's height in blocks
         Vec3d top = label.anchor.add(0, 0.25 + plate / 2, 0);
+        // The markers keep a 2 px gap to the number's plate, pulsing included (one row: left, number, right)
+        double gap = 2 * scale, beside = (label.number == null ? 16 : WorldDraw.plateWidth(label.number)) * scale / 2 + 8 * 1.08 * scale + gap;
         if (label.number != null) {
             WorldDraw.plateLabel(matrices, consumers, camera, top, label.number, label.numberPlate, WorldDraw.PLATE_TEXT, scale);
         }
         if (label.deadEnd || label.unreachable) {
             // Gently pulsing, never flashing
             float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
-            Vec3d at = label.alone ? top : top.add(0, plate * 1.05, 0);
+            Vec3d at = label.alone ? top : top.add(0, plate / 2 + 8 * 1.08 * scale + gap, 0);
             WorldDraw.plateLabel(matrices, consumers, camera, at, WARNING,
                     label.deadEnd ? WorldDraw.Plate.RED : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale * pulse);
         }
@@ -377,14 +379,14 @@ public final class BoardView {
             // A teleport tile alone in its network: to the left of the number
             float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
             Vector3f right = new Vector3f(1, 0, 0).rotate(camera.getRotation());
-            Vec3d beside = top.subtract(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);
-            WorldDraw.plateLabel(matrices, consumers, camera, beside, WARNING, WorldDraw.Plate.PURPLE, WorldDraw.PLATE_TEXT, scale * pulse);
+            Vec3d left = top.subtract(right.x() * beside, right.y() * beside, right.z() * beside);
+            WorldDraw.plateLabel(matrices, consumers, camera, left, WARNING, WorldDraw.Plate.PURPLE, WorldDraw.PLATE_TEXT, scale * pulse);
         }
         if (label.fork) {
             // The junction marker, beside the number (to the right as seen from the camera)
             Vector3f right = new Vector3f(1, 0, 0).rotate(camera.getRotation());
-            Vec3d beside = top.add(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);
-            WorldDraw.plateLabel(matrices, consumers, camera, beside, FORK, WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, scale);
+            Vec3d at = top.add(right.x() * beside, right.y() * beside, right.z() * beside);
+            WorldDraw.plateLabel(matrices, consumers, camera, at, FORK, WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, scale);
         }
         if (label.shop) {
             // Above the other plates of the space: « Shop », orange « Shop ? » while it has no offer
