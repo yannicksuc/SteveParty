@@ -43,6 +43,7 @@ import java.util.function.Consumer;
  */
 public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     private static final Identifier WAX = Steveparty.id("textures/entity/frousseux_wax.png");
+    private static final Identifier BABY_WAX = Steveparty.id("textures/entity/frousseux_baby_wax.png");
     /** Its flame's animated textures (the same frames): the flame, then its heart and wick; the candle holder's too. */
     public static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
     public static final Identifier CORE = Steveparty.id("textures/entity/frousseux_flame_core.png");
@@ -86,6 +87,11 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
      */
     private static RenderLayer shell(FrousseuxEntity frousseux, Identifier texture) {
         return frousseux.isFaded() ? FrousseuxGhostLayers.noCull(texture) : RenderLayer.getEntityTranslucent(texture);
+    }
+
+    /** Its pool's texture: a baby's own. */
+    private static Identifier wax(FrousseuxEntity frousseux) {
+        return frousseux.isBaby() ? BABY_WAX : WAX;
     }
 
     /** Draws what these layers hold now, when the buffers can (vanilla's): their place in the order is now. */
@@ -146,7 +152,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                            int packedLight, int packedOverlay) {
             // see-through wax as the rest, two-sided: from inside the hollow body it closes the top, which hides the
             // flame (drawn after it) by depth
-            RenderLayer layer = shell(frousseux, WAX);
+            RenderLayer layer = shell(frousseux, wax(frousseux));
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, packedLight, packedOverlay, withAlpha(0xFF000000 | frousseux.getColor().accent, frousseux.bodyAlpha(partialTick)));
         }
@@ -219,7 +225,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             // grouping layers its own way) the flame went out before the wax, which covered it, and the heart under
             // the flame (a blue flame without its white heart). Same as the candle holder (FrousseuxCandleHolderRenderer)
             flush(bufferSource, getRenderer().getRenderType(frousseux, getTextureResource(frousseux), bufferSource, partialTick),
-                    shell(frousseux, getTextureResource(frousseux)), shell(frousseux, WAX));
+                    shell(frousseux, getTextureResource(frousseux)), shell(frousseux, wax(frousseux)));
             AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta): GeckoLib animates it
             RenderLayer layer = RenderLayer.getBeaconBeam(FLAME, true);
             drawNow(layer, consumer -> getRenderer().reRender(bakedModel, poseStack, any -> consumer, frousseux, layer, consumer,

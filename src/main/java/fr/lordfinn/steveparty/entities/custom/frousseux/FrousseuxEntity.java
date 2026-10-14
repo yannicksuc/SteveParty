@@ -90,7 +90,8 @@ import java.util.function.ToIntFunction;
  *     player near ({@link FrousseuxCourier}): it flies off to them instead and drops it at their feet. Killed, it
  *     drops it; tamed, it gives it back.</li>
  *     <li><b>Tamed</b> ({@link #getOwner()}): it follows its owner about, lighting the way, out of their sight line
- *     and their crosshair ({@link FrousseuxCompanion}); never steals; turns into a candle holder on its owner's word.</li>
+ *     and their crosshair ({@link FrousseuxCompanion}); never steals; turns into a candle holder on its owner's word.
+ *     Two tamed ones lit with a flint and steel at full health have a baby ({@link FrousseuxBreeding}).</li>
  * </ul>
  * The board's Frousseux ({@link #isBoardActor()}) do none of the above: invulnerable, moved by the board, never
  * saved, no light.
@@ -170,6 +171,9 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** An item flying: 0 none; id + 1 of whom it flies from (stolen); -(id + 1) of whom it flies to (given back). */
     private static final TrackedData<Integer> ITEM_FLIGHT =
             DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** A baby (FrousseuxBreeding): half the size, its own little model. */
+    private static final TrackedData<Boolean> BABY =
+            DataTracker.registerData(FrousseuxEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
     private static final RawAnimation MOVE = RawAnimation.begin().thenLoop("move");
@@ -204,6 +208,10 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     /** Given away and still flying to its receiver: it lands at their feet when the flight ends. */
     private ItemStack gift = ItemStack.EMPTY;
     private @Nullable Entity giftTo;
+    /** Lit for a mate (FrousseuxBreeding), this many ticks more; resting after a baby, this many; a baby, growing up. */
+    private int loveTicks;
+    private int breedCooldown;
+    private int growTicks;
 
     public FrousseuxEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -225,6 +233,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     protected void initGoals() {
         this.goalSelector.add(1, new FrousseuxFlight.Flee(this));
         this.goalSelector.add(1, new FrousseuxFlight.Deliver(this));
+        this.goalSelector.add(1, new FrousseuxBreeding.MateGoal(this));
         this.goalSelector.add(2, new FrousseuxCompanion.Follow(this));
         this.goalSelector.add(5, new FrousseuxFlight.Wander(this));
         // where it looks, wild or tamed (still or following): at a player close by (its owner, mostly), else about it
@@ -252,11 +261,13 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         builder.add(LIT_MODE, false);
         builder.add(SHOWN_ITEM, ItemStack.EMPTY);
         builder.add(ITEM_FLIGHT, 0);
+        builder.add(BABY, false);
     }
 
     @Override
     public void onTrackedDataSet(TrackedData<?> data) {
         super.onTrackedDataSet(data);
+        if (BABY.equals(data)) calculateDimensions();
         if (ITEM_FLIGHT.equals(data) && getWorld().isClient) {
             itemFlightStart = this.dataTracker.get(ITEM_FLIGHT) != 0 ? age : Integer.MIN_VALUE;
         }
@@ -286,6 +297,61 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
     private void updateFlameStage() {
         byte stage = (byte) Flame.of(getHealth(), getMaxHealth()).ordinal();
         if (this.dataTracker.get(FLAME_STAGE) != stage) this.dataTracker.set(FLAME_STAGE, stage);
+    }
+
+    // ---------------------------------------------------------------- love and babies (FrousseuxBreeding)
+
+    @Override
+    public boolean isBaby() {
+        return this.dataTracker.get(BABY);
+    }
+
+    /** A baby grows up in FrousseuxBreeding#GROW_TICKS; not a baby, at once. */
+    @Override
+    public void setBaby(boolean baby) {
+        setGrowTicks(baby ? FrousseuxBreeding.GROW_TICKS : 0);
+    }
+
+    /** A baby for this many ticks more (0: grown up). */
+    public void setGrowTicks(int ticks) {
+        growTicks = Math.max(0, ticks);
+        if (isBaby() != growTicks > 0) this.dataTracker.set(BABY, growTicks > 0);
+    }
+
+    /** Lit for a mate: tamed, grown up, not the board's, still looking for one. */
+    public boolean isInLove() {
+        return loveTicks > 0 && isAlive() && isTamed() && !isBaby() && !boardActor;
+    }
+
+    /** Can be lit for a mate: tamed, grown up, at full health, not resting after a baby, not lit already. */
+    public boolean canFallInLove() {
+        return isAlive() && isTamed() && !isBaby() && !boardActor && breedCooldown <= 0 && loveTicks <= 0
+                && getHealth() >= getMaxHealth();
+    }
+
+    /** Lit with a flint and steel at full health: it looks for a mate (hearts). False if it can't now. */
+    public boolean fallInLove() {
+        if (!canFallInLove()) return false;
+        loveTicks = FrousseuxBreeding.LOVE_TICKS;
+        if (getWorld() instanceof ServerWorld world) {
+            world.spawnParticles(ParticleTypes.HEART, getX(), getBodyY(0.9), getZ(), 4, 0.2, 0.15, 0.2, 0.02);
+        }
+        return true;
+    }
+
+    /** It had a baby: no longer lit, resting a while. */
+    void bred() {
+        loveTicks = 0;
+        breedCooldown = FrousseuxBreeding.COOLDOWN_TICKS;
+    }
+
+    private void tickLove(ServerWorld world) {
+        if (breedCooldown > 0) breedCooldown--;
+        if (growTicks > 0) setGrowTicks(growTicks - 1);
+        if (loveTicks > 0) {
+            loveTicks--;
+            if (loveTicks % 10 == 0) world.spawnParticles(ParticleTypes.HEART, getX(), getBodyY(0.9), getZ(), 1, 0.2, 0.1, 0.2, 0);
+        }
     }
 
     /** Hiding its eyes: a player is looking at it. */
@@ -509,6 +575,7 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         }
         if (dodgeCooldown > 0) dodgeCooldown--;
         if (stealCooldown > 0) stealCooldown--;
+        tickLove(world);
         tickItemFlight();
         if (courierTo != null) tickCourier(world);
         if (fleeTicks > 0) {
@@ -962,7 +1029,15 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         if (boardActor || !isAlive()) return super.interactMob(player, hand);
         if (stack.isOf(Items.FLINT_AND_STEEL)) {
             boolean hurt = getHealth() < getMaxHealth();
-            if (isTamed() && !hurt) return ActionResult.PASS;
+            if (isTamed() && !hurt) { // at full health: lit for a mate (FrousseuxBreeding)
+                if (!canFallInLove()) return ActionResult.PASS;
+                if (getWorld() instanceof ServerWorld world) {
+                    fallInLove();
+                    world.playSound(null, getX(), getY(), getZ(), SoundEvents.ITEM_FLINTANDSTEEL_USE, SoundCategory.NEUTRAL, 1.0f, 1.2f);
+                }
+                stack.damage(1, player, LivingEntity.getSlotForHand(hand));
+                return ActionResult.success(getWorld().isClient);
+            }
             if (getWorld() instanceof ServerWorld world) {
                 if (!isTamed()) strikeToTame(world, player);
                 if (hurt) relight(world);
@@ -972,11 +1047,9 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
             stack.damage(1, player, LivingEntity.getSlotForHand(hand));
             return ActionResult.success(getWorld().isClient);
         }
+        // Two states, one click each: following, a click makes it a candle holder; a click on that wakes it, following
         if (hand == Hand.MAIN_HAND && stack.isEmpty() && isTamed() && isOwner(player)) {
-            if (getWorld() instanceof ServerWorld world) {
-                if (player.isSneaking()) FrousseuxCompanion.toCandleHolder(this, world, player);
-                else follow(world);
-            }
+            if (getWorld() instanceof ServerWorld world) FrousseuxCompanion.toCandleHolder(this, world, player);
             return ActionResult.success(getWorld().isClient);
         }
         return super.interactMob(player, hand);
@@ -1006,14 +1079,6 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
             world.spawnParticles(ParticleTypes.HEART, getX(), getBodyY(0.8), getZ(), 7, 0.25, 0.2, 0.25, 0.02);
         }
         laugh();
-    }
-
-    /** Follows its owner (again): a happy little flicker. */
-    public void follow(ServerWorld world) {
-        flight.stop();
-        getNavigation().stop();
-        world.spawnParticles(ParticleTypes.WAX_OFF, getX(), getBodyY(0.5), getZ(), 4, 0.25, 0.2, 0.25, 0.5);
-        playSound(ModSounds.FROUSSEUX_AMBIENT, 0.6f, 1.2f);
     }
 
     /** Its flame relit: health back, sparks and a little flare. */
@@ -1084,6 +1149,9 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
         ItemStack carried = stolen.isEmpty() ? gift : stolen; // a gift still flying is saved as still carried
         if (!carried.isEmpty()) nbt.put("Stolen", carried.encode(getRegistryManager()));
         if (stealCooldown > 0) nbt.putInt("StealCooldown", stealCooldown);
+        if (growTicks > 0) nbt.putInt("GrowTicks", growTicks);
+        if (loveTicks > 0) nbt.putInt("InLove", loveTicks);
+        if (breedCooldown > 0) nbt.putInt("BreedCooldown", breedCooldown);
         if (!robbed.isEmpty()) {
             NbtList list = new NbtList();
             long now = getWorld().getTime();
@@ -1111,6 +1179,9 @@ public class FrousseuxEntity extends PathAwareEntity implements GeoEntity, Follo
                 ? ItemStack.fromNbt(getRegistryManager(), nbt.get("Stolen")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
         this.dataTracker.set(SHOWN_ITEM, stolen.copy());
         stealCooldown = nbt.getInt("StealCooldown");
+        setGrowTicks(nbt.getInt("GrowTicks"));
+        loveTicks = nbt.getInt("InLove");
+        breedCooldown = nbt.getInt("BreedCooldown");
         robbed.clear();
         for (NbtElement element : nbt.getList("Robbed", NbtElement.COMPOUND_TYPE)) {
             NbtCompound entry = (NbtCompound) element;
