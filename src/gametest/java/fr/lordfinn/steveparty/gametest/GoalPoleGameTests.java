@@ -1162,7 +1162,7 @@ public class GoalPoleGameTests implements SteveGameTest {
     public void aBrokenPoleComesBackWithoutItsFlag(TestContext context) {
         ServerWorld world = context.getWorld();
         PlayerEntity player = builder(context);
-        context.setBlockState(BASE, Blocks.STONE);
+        context.setBlockState(BASE, base());
         placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE);
         poleEntity(context, BASE.up()).setFlagColor(FlagItem.dyeColor(DyeColor.BLUE));
         world.breakBlock(context.getAbsolutePos(BASE.up()), true);
