@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -15,12 +16,14 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.passive.CowEntity;
+import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -32,7 +35,7 @@ import java.util.List;
  * The Parachute: held, it opens after a fall and folds on landing (worn by one an opening), a use in the air opens or
  * folds it (folded by hand, it stays so until landing), an elytra wins; on a mob, packed until it falls, open it
  * brakes the fall to a slow descent, the mob lands unhurt and the parachute drops worn by one; a removed mob drops it;
- * never on a boss; dyed stripes; repaired with wool or string.
+ * never on a boss nor on a pawn (one found there drops); dyed stripes; repaired with wool or string.
  */
 public class ParachuteGameTests implements SteveGameTest {
     /** A survival test player in the air at {@code at} (relative), holding a parachute. */
@@ -169,6 +172,29 @@ public class ParachuteGameTests implements SteveGameTest {
         context.assertFalse(Parachutes.canCarry(wither), "never on a boss");
         context.assertFalse(Parachutes.canCarry(player), "a player holds his own");
         wither.discard();
+        TestPlayers.remove(context, player);
+        context.complete();
+    }
+
+    /** A pawn never takes one (the use does nothing); one found on a pawn (an old save) drops as it was. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "parachute_pawn")
+    public void neverOnAPawnOneFoundThereDrops(TestContext context) {
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
+        ItemStack held = new ItemStack(ModItems.PARACHUTE);
+        player.setStackInHand(Hand.MAIN_HAND, held);
+        PigEntity pawn = context.spawnEntity(EntityType.PIG, new BlockPos(2, 1, 2));
+        ((TokenizedEntityInterface) pawn).steveparty$setTokenized(true);
+        context.assertTrue(Parachutes.isPawn(pawn) && !Parachutes.canCarry(pawn), "a pawn: never");
+        context.assertTrue(held.useOnEntity(player, pawn, Hand.MAIN_HAND) == ActionResult.FAIL, "the use does nothing");
+        context.assertTrue(Parachutes.get(pawn) == null && held.getCount() == 1, "not put on it, still in hand");
+        pawn.setAttached(Parachutes.TYPE, new ParachuteState(new ItemStack(ModItems.PARACHUTE), 0, false));
+        Parachutes.tick(pawn);
+        context.assertTrue(Parachutes.get(pawn) == null, "one found on a pawn: off");
+        List<ItemEntity> drops = context.getWorld().getEntitiesByClass(ItemEntity.class, pawn.getBoundingBox().expand(3),
+                item -> item.getStack().isOf(ModItems.PARACHUTE));
+        context.assertTrue(drops.size() == 1 && drops.getFirst().getStack().getDamage() == 0, "dropped as it was");
+        drops.forEach(Entity::discard);
+        pawn.discard();
         TestPlayers.remove(context, player);
         context.complete();
     }
