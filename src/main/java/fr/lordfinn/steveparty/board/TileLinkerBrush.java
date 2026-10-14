@@ -370,6 +370,10 @@ public final class TileLinkerBrush {
             toggle(player, world, to, back, from);
             return;
         }
+        if (kind == null && MiniGameControllerLinks.emptyController(world, from)) {
+            WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.controller_no_page", BoardText.pos(from)));
+            return;
+        }
         if (kind == null) {
             // A holder linked to nothing of the kind: a router, a Hop Switch...
             boolean board = kinds.stream().anyMatch(k -> k instanceof CartridgeLinks.BoardPaths);
@@ -390,6 +394,11 @@ public final class TileLinkerBrush {
         BrushLinkable kind = BrushLinks.kindFor(BrushLinks.of(world, from, level(brush)), world, pos);
         // Its marker or a chest reached (or refused): the space the stroke started on keeps its cartridge
         if (kind != null && !(kind instanceof CartridgeLinks.BoardPaths)) stroke.start = null;
+        if (kind == null && MiniGameControllerLinks.emptyController(world, from)) {
+            stroke.cells.add(pos.toImmutable());
+            WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.controller_no_page", BoardText.pos(from)));
+            return;
+        }
         if (kind == null) {
             // A chest or a Spawn Marker the cartridge takes none of: said, once a stroke
             String refusal = BrushLinks.refusal(world, from, level(brush), pos);

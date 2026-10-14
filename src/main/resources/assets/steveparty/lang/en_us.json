@@ -3460,5 +3460,6 @@
   "tooltip.steveparty.minigame_pipe.kept": "Broken, it keeps its page",
   "tooltip.steveparty.minigame_pipe.page": "Mini-game",
   "message.steveparty.minigame_pipe.already": "Already printed on this pipe: %s",
-  "message.steveparty.goal_pole.needs_base": "A Goal Pole only goes on its Goal Pole Base"
+  "message.steveparty.goal_pole.needs_base": "A Goal Pole only goes on its Goal Pole Base",
+  "message.steveparty.tile_linker_brush.controller_no_page": "The Mini-game Controller %s holds no Mini-game Page: put one in first"
 }

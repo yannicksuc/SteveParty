@@ -3,6 +3,9 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
+import fr.lordfinn.steveparty.board.LinkHistory;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlock;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -372,6 +375,59 @@ public class MiniGameControllerGameTests implements SteveGameTest {
                     "its controller gone: nothing");
         } finally {
             cleanUp(context, id, p1, p2, host);
+        }
+        context.complete();
+    }
+
+    /**
+     * The brush paints from a Mini-game Controller to the elements of its mini-game, written on its page as a click with
+     * the page would: a pipe mouth (the role of its colour), a podium column, a goal pole base; a mini-game pipe gets the
+     * page printed. Painting over one again unlinks it; undo puts it back. A controller without page links nothing.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_brush")
+    public void theBrushLinksAControllersPageToItsElements(TestContext context) {
+        ServerWorld world = context.getWorld();
+        MinecraftServer server = world.getServer();
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        UUID id = page(context);
+        home(context, HOME, id);
+        context.setBlockState(new BlockPos(3, 1, 1), ModBlocks.GOLD_PODIUM);
+        context.setBlockState(new BlockPos(3, 2, 1), ModBlocks.GOLD_PODIUM);
+        context.setBlockState(new BlockPos(1, 1, 4), ModBlocks.GOAL_POLE_BASE);
+        context.setBlockState(new BlockPos(4, 1, 4), Blocks.STONE);
+        BlockPos entrance = new BlockPos(4, 2, 4);
+        context.setBlockState(entrance, ModBlocks.COPPER_MINIGAME_PIPE.getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN));
+        ServerPlayerEntity player = player(context, "brush", 4.5, 2, 6.5);
+        try {
+            ItemStack brush = new ItemStack(ModItems.TILE_LINKER_BRUSH);
+            player.setStackInHand(Hand.MAIN_HAND, brush);
+            for (BlockPos pos : List.of(HOME, green, new BlockPos(3, 2, 1), new BlockPos(1, 1, 4), entrance))
+                TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(pos));
+            TileLinkerBrush.endStroke(player);
+            MiniGamePageData data = MiniGamePages.get(server, id);
+            context.assertEquals(data.pipeLinks().size(), 1, "the pipe is on the page");
+            context.assertEquals(data.pipeLinks().getFirst().role(), MiniGamePipeRole.PLAYERS, "with the role of its colour");
+            context.assertTrue(data.podiumLinkIndex(global(context, new BlockPos(3, 1, 1))) >= 0, "the podium, by the bottom of its column");
+            context.assertTrue(data.podiumLinkIndex(global(context, new BlockPos(1, 1, 4))) >= 0, "the goal pole base");
+            context.assertEquals(MiniGamePages.idOf(MiniGamePipeBlock.pageAt(world, context.getAbsolutePos(entrance))), id, "the mini-game pipe printed");
+
+            // Painted over again: unlinked; undone: back
+            TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(HOME));
+            TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(green));
+            TileLinkerBrush.endStroke(player);
+            context.assertTrue(MiniGamePages.get(server, id).pipeLinks().isEmpty(), "painted over: unlinked");
+            context.assertTrue(LinkHistory.undo(player, true, brush), "undone");
+            context.assertEquals(MiniGamePages.get(server, id).pipeLinks().size(), 1, "undo: linked again");
+
+            // Without page: nothing
+            ((MiniGameControllerBlockEntity) context.getBlockEntity(HOME)).setPage(ItemStack.EMPTY);
+            BlockPos other = pipe(context, GREEN, 1, 6);
+            TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(HOME));
+            TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(other));
+            TileLinkerBrush.endStroke(player);
+            context.assertEquals(MiniGamePages.get(server, id).pipeLinks().size(), 1, "no page: nothing linked");
+        } finally {
+            cleanUp(context, id, player);
         }
         context.complete();
     }

@@ -80,6 +80,8 @@ public final class MiniGamePageClient {
     }
 
     public static void initialize() {
+        // The brush draws and previews a Mini-game Controller's links from its page
+        fr.lordfinn.steveparty.board.MiniGameControllerLinks.clientPages = MiniGamePageClient::page;
         ClientPayloads.receive(MiniGamePagePayloads.Data.ID, (payload, context) -> put(payload.data()));
         ClientPayloads.receive(MiniGamePagePayloads.ImageChunk.ID, (payload, context) -> onImageChunk(payload));
         ClientPayloads.receive(MiniGamePagePayloads.Open.ID, (payload, context) -> {

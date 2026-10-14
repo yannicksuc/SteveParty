@@ -3460,5 +3460,6 @@
   "tooltip.steveparty.minigame_pipe.kept": "Cassé, il garde sa page",
   "tooltip.steveparty.minigame_pipe.page": "Mini-jeu",
   "message.steveparty.minigame_pipe.already": "Déjà imprimée sur ce tuyau : %s",
-  "message.steveparty.goal_pole.needs_base": "Un mât d'arrivée ne se pose que sur son socle"
+  "message.steveparty.goal_pole.needs_base": "Un mât d'arrivée ne se pose que sur son socle",
+  "message.steveparty.tile_linker_brush.controller_no_page": "Le Contrôleur de mini-jeu %s ne contient pas de Page de mini-jeu : mets-en une d'abord"
 }
