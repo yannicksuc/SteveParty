@@ -16,6 +16,7 @@ import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.BrushLinkable;
 import fr.lordfinn.steveparty.board.BrushLinks;
 import fr.lordfinn.steveparty.board.StepControllerLinks;
+import fr.lordfinn.steveparty.board.ControllerStartLinks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
@@ -120,7 +121,10 @@ final class BrushOverlay {
             Vec3d from = anchor(world, kind.holder());
             Style style = kind instanceof CartridgeLinks.SpawnPoint ? Style.BUBBLE
                     : kind instanceof StepControllerLinks.Element ? Style.STEP : Style.ARROWS;
-            if (!to.isEmpty()) found.add(new HolderLinks(from, to, kind.color(), style));
+            if (kind instanceof ControllerStartLinks.Starts) {
+                // From the Party Controller's side facing each start tile, not from its top (where its chest stands)
+                for (Vec3d end : to) found.add(new HolderLinks(sideOf(kind.holder(), from.y, end), List.of(end), kind.color(), style));
+            } else if (!to.isEmpty()) found.add(new HolderLinks(from, to, kind.color(), style));
             // A container no longer there: a broken link, in red
             if (!gone.isEmpty()) found.add(new HolderLinks(from, gone, BoardLinks.CUT_COLOR));
         }
@@ -317,6 +321,18 @@ final class BrushOverlay {
         return false;
     }
 
+    /**
+     * Where a link leaves a whole block (the Party Controller) toward {@code to}: on its side facing it, at height
+     * {@code y}, so it never seems to come from what stands behind the block.
+     */
+    static Vec3d sideOf(BlockPos block, double y, Vec3d to) {
+        Vec3d centre = Vec3d.ofCenter(block);
+        Vec3d flat = new Vec3d(to.x - centre.x, 0, to.z - centre.z);
+        if (flat.lengthSquared() < 1.0E-4) return new Vec3d(centre.x, y, centre.z);
+        flat = flat.normalize().multiply(0.55);
+        return new Vec3d(centre.x + flat.x, y, centre.z + flat.z);
+    }
+
     /** Where links start and end on a board space: a little above the middle of its surface. */
     static Vec3d anchor(ClientWorld world, BlockPos pos) {
         return BoardSpaces.standPos(world, pos).add(0, 0.2, 0);
@@ -325,7 +341,8 @@ final class BrushOverlay {
     /** A pulsing highlight on a board space, where it is seen (lowered, sloped, all 4 blocks of a large tile). */
     static void frame(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world, BlockPos pos, int argb) {
         float pulse = 0.25f + 0.15f * (float) Math.sin(world.getTime() / 3.0);
+        // No outline through walls: drawn after the board view's labels, it would cross the « ! » above the tile
         GlowingCuboidRenderer.drawBlockBox(matrices, consumers, pos,
-                ((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f, (argb & 0xFF) / 255f, pulse);
+                ((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f, (argb & 0xFF) / 255f, pulse, false);
     }
 }

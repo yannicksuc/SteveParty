@@ -371,7 +371,10 @@ public final class BoardView {
         if (label.deadEnd || label.unreachable) {
             // Gently pulsing, never flashing
             float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
-            Vec3d at = label.alone ? top : top.add(0, plate / 2 + 8 * 1.08 * scale + gap, 0);
+            // Stacked in screen space (the camera's up), so the gap holds whatever the pitch
+            Vector3f up = new Vector3f(0, 1, 0).rotate(camera.getRotation());
+            double above = plate / 2 + 8 * 1.08 * scale + gap;
+            Vec3d at = label.alone ? top : top.add(up.x() * above, up.y() * above, up.z() * above);
             WorldDraw.plateLabel(matrices, consumers, camera, at, WARNING,
                     label.deadEnd ? WorldDraw.Plate.RED : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale * pulse);
         }

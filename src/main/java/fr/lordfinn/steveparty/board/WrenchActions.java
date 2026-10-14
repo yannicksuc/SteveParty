@@ -111,7 +111,8 @@ public final class WrenchActions {
      */
     public static void needsWrench(PlayerEntity player) {
         if (player.getWorld().isClient || !player.getMainHandStack().isEmpty() || !player.canModifyBlocks() || player.isSpectator()) return;
-        player.sendMessage(Text.translatable("message.steveparty.wrench_required").formatted(Formatting.GOLD), true);
+        // The key colour of the tooltips, readable over a white tile
+        player.sendMessage(Text.translatable("message.steveparty.wrench_required").withColor(0xFFD24A), true);
     }
 
     /** Runs a link edit, recording what it changes for undo (labelled by its last message); {@code tool}'s anchor too. */

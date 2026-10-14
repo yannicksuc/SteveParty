@@ -67,10 +67,10 @@ final class BrushSuggestions {
     /** The Party Controller suggests start tiles this far at most, and chests this far. */
     private static final double START_RANGE = PartyControllerEntity.START_TILES_SEARCH_RADIUS, CHEST_RANGE = 8;
     private static final int REFRESH_TICKS = 20;
-    /** The ghost bubble stands this far beside its tile (blocks, centre to centre): a block clear of it. */
-    private static final double BUBBLE_SIDE = 1.5;
-    /** The ghost bubble's outline: a darker lavender, 2 pixels thick. */
-    private static final int BUBBLE_EDGE = 0x8A6FD1;
+    /** The ghost bubble stands this far beside its tile (blocks, centre to centre): a full block clear of it. */
+    private static final int BUBBLE_SIDE = 2;
+    /** The ghost bubble's outline: a darker lavender (60 % of its fill), 2 pixels thick. */
+    private static final int BUBBLE_EDGE = 0x6A4FB0;
     private static final double BUBBLE_EDGE_WIDTH = 2 / 16.0;
 
     /** A ghost link from a block to another, and the ghost blocks drawn at their end. */
@@ -160,17 +160,15 @@ final class BrushSuggestions {
             for (BoardGraph.Node node : graph.nodes()) {
                 if (!node.start() || controller.getStartLinks().contains(node.pos())) continue;
                 if (node.pos().getSquaredDistance(pos) > START_RANGE * START_RANGE || !PartyBoard.isStart(world, node.pos())) continue;
-                links.add(new Vec3d[]{from, BrushOverlay.anchor(world, node.pos())});
+                Vec3d to = BrushOverlay.anchor(world, node.pos());
+                links.add(new Vec3d[]{BrushOverlay.sideOf(pos, from.y, to), to});
             }
         }
         BlockPos ghostChest = null;
         if (bankWithoutContainer(world, pos)) {
             BlockPos chest = nearestChest(world, pos);
-            if (chest != null) links.add(new Vec3d[]{from, Vec3d.ofCenter(chest)});
-            else {
-                ghostChest = ghostChestSpot(world, pos);
-                if (ghostChest != null) links.add(new Vec3d[]{from, Vec3d.ofCenter(ghostChest)});
-            }
+            BlockPos to = chest != null ? chest : (ghostChest = ghostChestSpot(world, pos));
+            if (to != null) links.add(new Vec3d[]{BrushOverlay.sideOf(pos, from.y, Vec3d.ofCenter(to)), Vec3d.ofCenter(to)});
         }
         // The ghost chest opens toward the controller
         Direction facing = ghostChest == null ? Direction.SOUTH
@@ -228,7 +226,6 @@ final class BrushSuggestions {
      */
     private static Vec3d defaultMobSpot(ClientWorld world, BoardSpaceBlockEntity space) {
         BlockPos pos = space.getPos();
-        Vec3d stand = BoardSpaces.standPos(world, pos);
         Vec3d way = null;
         List<BlockPos> out = BoardLinks.links(space, space.getActiveSlot());
         for (BlockPos to : out) if (!to.equals(pos)) {
@@ -246,8 +243,15 @@ final class BrushSuggestions {
         if (way == null || way.horizontalLengthSquared() < 1.0E-4) way = new Vec3d(0, 0, -1);
         Vec3d forward = new Vec3d(way.x, 0, way.z).normalize();
         // Facing the way it goes, its right hand: (-z, x), a block clear of the tile, standing on the ground of its cell
-        Vec3d side = stand.add(-forward.z * BUBBLE_SIDE, 0, forward.x * BUBBLE_SIDE);
-        return new Vec3d(side.x, pos.getY(), side.z);
+        Direction right = Direction.getFacing(-forward.z, 0, forward.x), ahead = Direction.getFacing(forward.x, 0, forward.z);
+        // The right hand first, then the other sides: the first on solid ground (not over water), else the right
+        for (Direction side : new Direction[]{right, right.getOpposite(), ahead, ahead.getOpposite()}) {
+            BlockPos cell = pos.offset(side, BUBBLE_SIDE);
+            if (world.getBlockState(cell).isReplaceable() && world.getBlockState(cell.down()).isSolidBlock(world, cell.down())) {
+                return Vec3d.ofBottomCenter(cell);
+            }
+        }
+        return Vec3d.ofBottomCenter(pos.offset(right, BUBBLE_SIDE));
     }
 
     // ---------------------------------------------------------------- drawing
