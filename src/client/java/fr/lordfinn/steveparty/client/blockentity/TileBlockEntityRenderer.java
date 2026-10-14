@@ -11,7 +11,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileStamping;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSupport;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
-import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import fr.lordfinn.steveparty.client.utils.TileColors;
 import fr.lordfinn.steveparty.client.utils.TileStampTextures;
 import fr.lordfinn.steveparty.components.TileStampComponent;
@@ -30,9 +29,7 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
-import net.minecraft.client.render.block.entity.SkullBlockEntityRenderer;
 import net.minecraft.client.render.entity.model.EntityModelLayers;
-import net.minecraft.client.render.entity.model.SkullEntityModel;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
@@ -47,15 +44,15 @@ import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
+
+
 
 import java.util.Collection;
-import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+
+
 import java.util.concurrent.ConcurrentHashMap;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
@@ -74,9 +71,8 @@ import static fr.lordfinn.steveparty.components.ModComponents.*;
  */
 public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEntity> {
 
-    private final SkullEntityModel model;
-    private static final int MAX_CACHED_OWNERS = 256;
-    private static final Map<String, Optional<UUID>> OWNER_UUIDS = new HashMap<>();
+    /** The start tiles' statues: a player model of each kind of arms (see StartTileStatue). */
+    private final net.minecraft.client.model.ModelPart statueWide, statueSlim;
     private static final Map<Identifier, Sprite> SPRITES = new ConcurrentHashMap<>();
     private static final Random RANDOM = Random.create();
     private static final Identifier textureBad = Steveparty.id("block/tile_overlay_angry");
@@ -89,7 +85,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     private static final float FACE_TOP = 2 / 16f, FACE_BOTTOM = 1 / 16f;
 
     public TileBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
-        this.model = new SkullEntityModel(ctx.getLayerRenderDispatcher().getModelPart(EntityModelLayers.PLAYER_HEAD));
+        this.statueWide = ctx.getLayerModelPart(EntityModelLayers.PLAYER);
+        this.statueSlim = ctx.getLayerModelPart(EntityModelLayers.PLAYER_SLIM);
     }
 
     @Override
@@ -255,47 +252,15 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         }
     }
 
-    /** @param onSupport the transformation of the level tile onto its support (where its pedestal is) */
+    /**
+     * The statue of the start tile's player and its name plate, on the pedestal (see {@link StartTileStatue}).
+     *
+     * @param onSupport the transformation of the level tile onto its support (where its pedestal is)
+     */
     private void renderTileStart(BoardSpaceBlockEntity entity, boolean small, Matrix4f onSupport, MatrixStack matrices,
                                  VertexConsumerProvider vertexConsumers, int light, ItemStack stack) {
-        String owner = stack.get(TB_START_OWNER);
-        if (owner == null || owner.isEmpty()) return;
-        UUID ownerUUID = parseOwner(owner);
-        if (ownerUUID == null) return;
-        Identifier texture = SkinUtils.getPlayerSkin(ownerUUID);
-        if (texture == null) return;
-
-        int dir = entity.getCachedState().get(ROTATION_8);
-        // The head sits on the pedestal of the model, on the front side (toward the player who placed the tile),
-        // diagonals included (tile_start_45)
-        Vector3f front = frontVector(dir);
-        Vector3f pedestal = new Vector3f(9f / 16, 0, 9f / 16).mul(front);
-        if (small) pedestal.mul(TileSize.SMALL_SCALE, 1, TileSize.SMALL_SCALE);
-        // Where the pedestal is once the tile lies on its support (tilted or lowered); the head itself stays upright
-        Vector4f point = new Vector4f(0.5f + pedestal.x, -1f / 16, 0.5f + pedestal.z, 1).mul(onSupport);
-        matrices.push();
-        // renderSkull puts the head in the middle of the block it is given
-        matrices.translate(point.x - 0.5, point.y, point.z - 0.5);
-        SkullBlockEntityRenderer.renderSkull(Direction.DOWN, 180 + dir * 45, 0.0F, matrices, vertexConsumers, light, this.model,
-                RenderLayer.getEntityTranslucent(texture));
-        matrices.pop();
-    }
-
-    /** Parses (and caches) the owner UUID; an invalid value is logged once instead of every frame. */
-    private static UUID parseOwner(String owner) {
-        Optional<UUID> cached = OWNER_UUIDS.get(owner);
-        if (cached == null) {
-            UUID parsed = null;
-            try {
-                parsed = UUID.fromString(owner);
-            } catch (IllegalArgumentException e) {
-                Steveparty.LOGGER.error("Invalid UUID: {}", owner);
-            }
-            if (OWNER_UUIDS.size() >= MAX_CACHED_OWNERS) OWNER_UUIDS.clear();
-            cached = Optional.ofNullable(parsed);
-            OWNER_UUIDS.put(owner, cached);
-        }
-        return cached.orElse(null);
+        StartTileStatue.render(entity, stack, entity.getCachedState().get(ROTATION_8), small, onSupport, matrices, vertexConsumers,
+                light, statueWide, statueSlim);
     }
 
     private static Sprite getSprite(Identifier texture) {
@@ -322,15 +287,6 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
             }
         });
         TileStampTextures.registerReloadListener();
-    }
-
-    /**
-     * Side the tile faces, in 8 steps of 45°: rotation 0 = placed while looking north, faces south; the rotation turns
-     * clockwise (2 = west, 4 = north, 6 = east), like the blockstate "y"; odd ones are the diagonals of tile_start_45.
-     */
-    private static Vector3f frontVector(int rot) {
-        double angle = Math.toRadians(rot * 45);
-        return new Vector3f((float) -Math.sin(angle), 0, (float) Math.cos(angle));
     }
 
     /**

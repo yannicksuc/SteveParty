@@ -687,5 +687,11 @@
   "book.steveparty.guide.stars_mula.telescope.page0.title": "Télescope",
   "book.steveparty.guide.stars_mula.telescope.page1.text": "La nuit, ciel dégagé, [#](9A6A00)clic droit[#]() dessus.\n\n- [#](9A6A00)Molette[#]() : une nuit\n- Garde une étoile filante dans le viseur\n- Une [#](2E7D32)**étoile guide**[#]() montre où les Mulas sont tombées",
   "book.steveparty.guide.stars_mula.telescope.page1.title": "Retrouver les Mulas",
-  "book.steveparty.guide.tooltip": "Construis un plateau, mène une partie, apprivoise une Mula."
+  "book.steveparty.guide.tooltip": "Construis un plateau, mène une partie, apprivoise une Mula.",
+  "book.steveparty.guide.cartridges.end.name": "Arrivée",
+  "book.steveparty.guide.cartridges.end.description": "La ligne d'arrivée du plateau",
+  "book.steveparty.guide.cartridges.end.page0.title": "Arrivée",
+  "book.steveparty.guide.cartridges.end.page0.text": "Un pion qui l'atteint [#](D94F70)**s'arrête**[#]() et la partie file vers sa **fin**.\n\nEnsuite : fin du tour, arrêt, un dernier tour, ou les arrivés [#](D94F70)**attendent**[#]() les autres.",
+  "book.steveparty.guide.cartridges.end.page1.title": "Rassemblement",
+  "book.steveparty.guide.cartridges.end.page1.text": "**Pinceau lieur** : du Party Controller vers une case Arrivée.\n\nLa partie finie, les pions s'y rassemblent ; à plusieurs, ils tournent en petit."
 }

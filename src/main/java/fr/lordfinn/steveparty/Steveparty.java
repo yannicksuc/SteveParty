@@ -126,6 +126,8 @@ public class Steveparty implements ModInitializer {
         ModBlockEntities.initialize();
         // Before the party / movement listeners of TileReachedEvent (a movement going on stops the chain)
         TileFeedback.initialize();
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyStatsCollector.initialize();
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyPawnGuard.initialize();
         TileTeleport.initialize();
         GlandouilleTileBehavior.initialize();
         BoomcartLaunches.initialize();

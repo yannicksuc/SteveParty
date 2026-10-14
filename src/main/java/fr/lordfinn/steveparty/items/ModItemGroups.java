@@ -104,7 +104,7 @@ public final class ModItemGroups {
     /** The party, the board spaces and their cartridges, the pawns, the shop, coins and stars, the dice, power-ups. */
     private static void board(ItemGroup.DisplayContext context, ItemGroup.Entries entries) {
         addAll(entries, PARTY_CONTROLLER, PARTY_CARD_TURNS, PARTY_CARD_MINIGAME, PARTY_CARD_EVENT,
-                PARTY_CARD_SEQUENCE_START, PARTY_CARD_REPEAT, PARTY_BELL, STEP_CONTROLLER, PIGGY_BANK);
+                PARTY_CARD_SEQUENCE_START, PARTY_CARD_REPEAT, PARTY_CARD_END, PARTY_BELL, STEP_CONTROLLER, PIGGY_BANK);
         // The tiles: plain, one per cartridge, then their other sizes (same order as in REI)
         entries.addAll(CartridgeApplications.tileEntries());
         addAll(entries, CHECK_POINT, BOARD_SPACE_REDSTONE_ROUTER, WRENCH, TILE_LINKER_BRUSH, ModItems.SPAWN_MARKER, EXPLORER_HELMET);
@@ -117,7 +117,7 @@ public final class ModItemGroups {
             entries.add(TeleportCartridgeItem.withNetwork(new ItemStack(TELEPORT_CARTRIDGE), network));
         }
         addAll(entries, STAR_CARTRIDGE, GLANDOUILLE_CARTRIDGE, FROUSSEUX_CARTRIDGE, MISTIGRI_CARTRIDGE,
-                THRESHOLD_CARTRIDGE, POT_CARTRIDGE, KEY_GATE_CARTRIDGE, GATE_KEY, TRICHAUDRON_CARTRIDGE);
+                THRESHOLD_CARTRIDGE, POT_CARTRIDGE, KEY_GATE_CARTRIDGE, GATE_KEY, TRICHAUDRON_CARTRIDGE, END_CARTRIDGE);
         addAll(entries, TOKENIZER_WAND, LAPIS_CRYSTAL_BALL, TOKEN, PLUNGER);
         addAll(entries, TRADING_STALL, CASH_REGISTER, SHOPKEEPER_KEY);
         addAll(entries, COIN, PARTY_STAR);

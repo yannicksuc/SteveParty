@@ -34,6 +34,11 @@ public class PartyCardItem extends Item {
          * nothing; a stack of several is the same as one.
          */
         SEQUENCE_START("sequence_start"),
+        /**
+         * How the party ends: plays no step of its own (the end always comes last); linked to a pipe (a right click on
+         * it), the players come out of that pipe once the party is over (see PartyEnding).
+         */
+        END("end"),
         /** A card of an addon: what it plays is the {@link fr.lordfinn.steveparty.api.party.PartyCard} of its id ({@link #getCardId}). */
         CUSTOM("custom");
 
@@ -76,6 +81,15 @@ public class PartyCardItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
+        if (cardType == CardType.END) {
+            fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe pipe = stack.get(fr.lordfinn.steveparty.components.ModComponents.END_PIPE);
+            Tooltips tips = Tooltips.of(tooltip);
+            if (pipe != null) tips.state("tooltip.steveparty.party_card_end.pipe",
+                    Tooltips.value(pipe.mouth().pos().getX() + " " + pipe.mouth().pos().getY() + " " + pipe.mouth().pos().getZ()));
+            tips.summary("item.steveparty.party_card_end.tooltip")
+                    .more(more -> more.use("tooltip.steveparty.party_card_end.program").use(Tooltips.Keys.use(), "tooltip.steveparty.party_card_end.use"));
+            return;
+        }
         Tooltips.of(tooltip)
                 .summary(cardType == CardType.CUSTOM ? getTranslationKey() + ".tooltip"
                         : "item.steveparty.party_card_" + cardType.getName() + ".tooltip", Tooltips.value(stack.getCount()))

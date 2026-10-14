@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "steveparty:yellow_plastic_stud"
+    },
+    {
+      "item": "minecraft:paper"
+    },
+    {
+      "item": "minecraft:redstone"
+    }
+  ],
+  "result": {
+    "id": "steveparty:party_card_end",
+    "count": 4
+  }
+}

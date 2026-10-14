@@ -1,0 +1,45 @@
+{
+  "category": "cartridges",
+  "name": "book.steveparty.guide.cartridges.end.name",
+  "description": "book.steveparty.guide.cartridges.end.description",
+  "icon": {
+    "item": "steveparty:end_cartridge"
+  },
+  "x": -4,
+  "y": 7,
+  "sort_number": 16,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "cartridges/cartridge",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/lay_the_board",
+    "tooltip": "book.steveparty.guide.lock.lay_the_board"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:end_cartridge"
+      },
+      "title": "book.steveparty.guide.cartridges.end.page0.title",
+      "text": "book.steveparty.guide.cartridges.end.page0.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.cartridges.end.page1.title",
+      "text": "book.steveparty.guide.cartridges.end.page1.text"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:end_cartridge"
+    }
+  ]
+}

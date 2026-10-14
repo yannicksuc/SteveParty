@@ -46,7 +46,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, TeleportChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -164,6 +164,19 @@ public final class LinkHistory {
             if (!(world.getBlockEntity(pos) instanceof PartyControllerEntity controller)
                     || !controller.getStartLinks().equals(undo ? after : before)) return false;
             controller.setStartLinks(undo ? before : after);
+            return true;
+        }
+    }
+
+    /** The Finish spaces or the podiums linked to a Party Controller, see {@link ControllerEndLinks}. */
+    public record ControllerLinksChange(BlockPos pos, boolean podiums, List<BlockPos> before, List<BlockPos> after) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            if (!(world.getBlockEntity(pos) instanceof PartyControllerEntity controller)) return false;
+            List<BlockPos> now = podiums ? controller.getPodiumLinks() : controller.getArrivalLinks();
+            if (!now.equals(undo ? after : before)) return false;
+            if (podiums) controller.setPodiumLinks(undo ? before : after);
+            else controller.setArrivalLinks(undo ? before : after);
             return true;
         }
     }

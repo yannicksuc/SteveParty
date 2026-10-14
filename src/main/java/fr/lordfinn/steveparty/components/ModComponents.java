@@ -79,6 +79,9 @@ public class ModComponents {
             registerComponent("bound-entity", Codec.STRING);
     public static final ComponentType<String> TB_START_OWNER =
             registerComponent("owner", Codec.STRING);
+    /** The name of a start tile's player ({@link #TB_START_OWNER}), for its plaque (shown even while he is away). */
+    public static final ComponentType<String> TB_START_OWNER_NAME =
+            registerComponent("owner-name", Codec.STRING);
     public static final ComponentType<Integer> COLOR =
             registerComponent("color", Codec.INT);
     /** Colour of a Bandana item (0-4: teal, blue, pink, orange, yellow, like the Boxed Trader's BandanaColor). */
@@ -235,6 +238,13 @@ public class ModComponents {
     /** Block a Box Costume looks like: the one the Boxed Trader's box looked like when it was taken from him. */
     public static final ComponentType<BlockState> BOX_BLOCK =
             registerComponent("box-block", BlockState.CODEC);
+
+    /**
+     * The pipe an End party card is linked to (a right click on it): where the players come out once the party is
+     * over, its mouth and the side it opens on.
+     */
+    public static final ComponentType<fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe> END_PIPE =
+            registerComponent("end-pipe", fr.lordfinn.steveparty.blocks.custom.PartyController.EndPipe.CODEC);
 
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);

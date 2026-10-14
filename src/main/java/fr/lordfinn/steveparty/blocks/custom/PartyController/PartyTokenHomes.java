@@ -45,6 +45,12 @@ public final class PartyTokenHomes {
     private final Map<UUID, BlockPos> startTiles = new LinkedHashMap<>();
     /** Tokens of a party that is over that were not loaded: sent back to their start tile as soon as they are loaded. */
     private final Map<UUID, BlockPos> tokensToSendHome = new LinkedHashMap<>();
+    /** The pawns set aside on a space that is not their start tile (an End space, an arrival space, a podium). */
+    private final PartyParking parking = new PartyParking();
+
+    PartyParking parking() {
+        return parking;
+    }
 
     void writeNbt(NbtCompound nbt) {
         if (!tokensToRelease.isEmpty()) {
@@ -54,6 +60,7 @@ public final class PartyTokenHomes {
         }
         if (!startTiles.isEmpty()) nbt.put("StartTiles", writeTokenTiles(startTiles));
         if (!tokensToSendHome.isEmpty()) nbt.put("TokensToSendHome", writeTokenTiles(tokensToSendHome));
+        parking.writeNbt(nbt);
     }
 
     void readNbt(NbtCompound nbt) {
@@ -66,6 +73,7 @@ public final class PartyTokenHomes {
         });
         readTokenTiles(nbt.getCompound("StartTiles"), startTiles);
         readTokenTiles(nbt.getCompound("TokensToSendHome"), tokensToSendHome);
+        parking.readNbt(nbt);
     }
 
     /** Tokens and board spaces: the UUIDs as keys, the positions as longs. */
@@ -101,6 +109,16 @@ public final class PartyTokenHomes {
         tiles.keySet().forEach(tokensToSendHome::remove);
     }
 
+    /**
+     * The party starts: each of its tokens is put on its start tile, still, as if it had never left it (a pawn floating
+     * a little off its tile, pushed, or bobbing beside it, starts from the right place). A token not loaded stays where it is.
+     */
+    static void placeOnStarts(ServerWorld serverWorld, Map<UUID, BlockPos> tiles) {
+        tiles.forEach((token, tile) -> {
+            if (serverWorld.getEntity(token) instanceof MobEntity mob && serverWorld.isChunkLoaded(tile)) place(serverWorld, mob, tile);
+        });
+    }
+
     /** The start tiles of the running party (a copy). */
     Map<UUID, BlockPos> startTiles() {
         return new LinkedHashMap<>(startTiles);
@@ -128,6 +146,7 @@ public final class PartyTokenHomes {
      * loaded, else as soon as they are. It stays where it is if its start tile is gone by then.
      */
     void sendHome(ServerWorld serverWorld, UUID tokenUUID, BlockPos home) {
+        parking.unpark(serverWorld, tokenUUID);
         if (serverWorld.getEntity(tokenUUID) instanceof MobEntity mob && serverWorld.isChunkLoaded(home)) {
             tokensToSendHome.remove(tokenUUID);
             sendHome(serverWorld, mob, home);
@@ -196,8 +215,9 @@ public final class PartyTokenHomes {
      * destinations it was choosing from forgotten. Its riders come along. A puff of smoke and a pop where it leaves
      * and where it lands, when it really moves.
      */
-    private static void place(ServerWorld serverWorld, MobEntity mob, @Nullable BlockPos tile) {
+    static void place(ServerWorld serverWorld, MobEntity mob, @Nullable BlockPos tile) {
         if (mob.hasVehicle()) mob.stopRiding();
+        PartyParking.restoreSize(mob);
         TileTeleport.cancel(mob);
         BoardSpaceBlockEntity space = BoardSpaces.boardSpaceOf(mob);
         if (space != null) space.hideDestinations();

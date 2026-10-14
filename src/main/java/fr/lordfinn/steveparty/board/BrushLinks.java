@@ -69,6 +69,7 @@ public final class BrushLinks {
     static {
         PROVIDERS.add(StepControllerLinks.PROVIDER);
         PROVIDERS.add(ControllerStartLinks.PROVIDER);
+        PROVIDERS.add(ControllerEndLinks.PROVIDER);
     }
 
     /** Another kind of links the brush paints (an addon's holder or cartridge). */
@@ -197,7 +198,8 @@ public final class BrushLinks {
      */
     static @Nullable BrushLinkable reverse(World world, BlockPos from, BlockPos to) {
         BrushLinkable back = StepControllerLinks.reverse(world, from, to);
-        return back != null ? back : ControllerStartLinks.reverse(world, from, to);
+        if (back == null) back = ControllerStartLinks.reverse(world, from, to);
+        return back != null ? back : ControllerEndLinks.reverse(world, from, to);
     }
 
     /**

@@ -16,6 +16,7 @@
     "dyed=false,tile_type=tile_pot": { "model": "steveparty:block/check_point" },
     "dyed=false,tile_type=tile_key_gate": { "model": "steveparty:block/check_point" },
     "dyed=false,tile_type=tile_trichaudron": { "model": "steveparty:block/check_point" },
+    "dyed=false,tile_type=tile_end": { "model": "steveparty:block/check_point" },
     "dyed=true,tile_type=default": { "model": "steveparty:block/check_point_dyed" },
     "dyed=true,tile_type=tile_start": { "model": "steveparty:block/check_point_dyed" },
     "dyed=true,tile_type=board_space_stop": { "model": "steveparty:block/check_point_dyed" },
@@ -31,6 +32,7 @@
     "dyed=true,tile_type=tile_threshold": { "model": "steveparty:block/check_point_dyed" },
     "dyed=true,tile_type=tile_pot": { "model": "steveparty:block/check_point_dyed" },
     "dyed=true,tile_type=tile_key_gate": { "model": "steveparty:block/check_point_dyed" },
-    "dyed=true,tile_type=tile_trichaudron": { "model": "steveparty:block/check_point_dyed" }
+    "dyed=true,tile_type=tile_trichaudron": { "model": "steveparty:block/check_point_dyed" },
+    "dyed=true,tile_type=tile_end": { "model": "steveparty:block/check_point_dyed" }
   }
 }
