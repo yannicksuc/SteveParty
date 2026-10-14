@@ -21,9 +21,8 @@ import java.util.List;
 
 /**
  * The Tile Linker Brush's links from a Party Controller to its start tiles: painted from the controller to a start
- * tile, or from a start tile to the controller; painted again, removed. When a controller has any, they are its only
- * start tiles (see {@link PartyBoard}); none: the start tiles within
- * {@link PartyControllerEntity#START_TILES_SEARCH_RADIUS} blocks of it.
+ * tile, or from a start tile to the controller; painted again, removed. They are its only start tiles (see
+ * {@link PartyBoard}): none linked, no start (nothing is ever found around it).
  * <p>
  * Server side only, its texts built here: a client without it still paints them (the brush is server side), and sees
  * them as particle trails (when linked, and when a stroke starts on the controller).
@@ -69,15 +68,15 @@ public final class ControllerStartLinks {
     public static Text status(ServerPlayerEntity player, PartyControllerEntity controller) {
         int linked = controller.getStartLinks().size();
         if (linked == 0) return howToLink(player);
-        return Text.literal(french(player) ? "Départs liés au Pinceau : " + linked + " (seuls ceux-là comptent)"
-                : "Start tiles linked with the brush: " + linked + " (only those count)").formatted(Formatting.GRAY);
+        return Text.literal(french(player) ? "Départs reliés : " + linked
+                : "Start tiles linked: " + linked).formatted(Formatting.GRAY);
     }
 
     /** The line of {@code /steveparty links} about the start tiles, for {@code player} (null: English). */
     public static Text linksLine(@Nullable ServerPlayerEntity player) {
         return Text.literal(player != null && french(player)
-                ? "Du Party Controller à une case de départ : ses départs (aucun lié : ceux à moins de 32 blocs)"
-                : "From the Party Controller to a start tile: its starts (none linked: those within 32 blocks)");
+                ? "Du Party Controller à une case départ : ses départs (seuls ceux-là comptent)"
+                : "From the Party Controller to a start tile: its starts (only those count)");
     }
 
     /** Whether the player reads French (their client's language). */
@@ -92,8 +91,8 @@ public final class ControllerStartLinks {
      */
     public static Text howToLink(ServerPlayerEntity player) {
         return Text.literal(french(player)
-                ? "Départs : trouvés à moins de 32 blocs. Les choisir : Pinceau lieur, du Party Controller vers chaque case de départ (/steveparty links)"
-                : "Starts: found within 32 blocks. To pick them: Tile Linker Brush, from the Party Controller to each start tile (/steveparty links)")
+                ? "Aucun départ relié : Pinceau lieur, du Party Controller vers chaque case départ (une par joueur)"
+                : "No start tile linked: Tile Linker Brush, from the Party Controller to each start tile (one per player)")
                 .formatted(Formatting.GRAY);
     }
 
@@ -145,7 +144,7 @@ public final class ControllerStartLinks {
             set(player, links);
             TileLinkerBrush.erased(player, world, holder(), start);
             BoardLinks.trail(world, holder(), start, BoardLinks.CUT_COLOR);
-            // The last one gone: its start tiles are found around it again
+            // The last one gone: no start any more, said how to link them
             if (links.isEmpty()) player.sendMessage(howToLink(player), false);
             return true;
         }

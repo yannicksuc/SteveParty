@@ -471,7 +471,7 @@
   "book.steveparty.guide.party.controller.page0.title": "Party Controller",
   "book.steveparty.guide.party.controller.page1.text": "- **Status**: what's missing, then the party\n- **Players**: tokens, stars, coins\n- **Program**: mini-games and cards\n- **Gains** · **Storage** · **Settings**",
   "book.steveparty.guide.party.controller.page1.title": "Its tabs",
-  "book.steveparty.guide.party.controller.page2.text": "It takes the tokens bound to a [#](4C9A2A)**Start**[#]() within 100 blocks.\\\n\\\n[#](9A6A00)Start the party[#](), or a redstone signal.",
+  "book.steveparty.guide.party.controller.page2.text": "It takes the tokens of the [#](4C9A2A)**Starts**[#]() linked with the [#](1C4E80)**Linker Brush**[#]().\\\n\\\n[#](9A6A00)Start the party[#](), or a redstone signal.",
   "book.steveparty.guide.party.controller.page2.title": "Starting",
   "book.steveparty.guide.party.controller.page3.text": "[#](9A6A00)Stop the party[#]() (**Status** tab): ends it [#](C0392B)**with no winner**[#]().\\\n\\\nTokens go back to start.\\\n\\\nOnly an operator or a Game Master.",
   "book.steveparty.guide.party.controller.page3.title": "Stopping",

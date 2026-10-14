@@ -76,8 +76,9 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
     /**
-     * The start tiles of its board are looked for this far from the controller; the rest of the board is where the
-     * paths from them go, however far (see {@link PartyBoard}).
+     * How far from the controller the board is looked at while no start tile is linked to it (to tell there is a board
+     * but no start), and the brush suggests start tiles to link; its board is where the paths from its linked start
+     * tiles go, however far (see {@link PartyBoard}).
      */
     public static final int START_TILES_SEARCH_RADIUS = 32;
     /**
@@ -124,7 +125,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private long boardScanTime;
     /**
      * The start tiles linked to it with the Tile Linker Brush (see {@link fr.lordfinn.steveparty.board.ControllerStartLinks}):
-     * when there is any, they are its only start tiles; none: the ones within {@link #START_TILES_SEARCH_RADIUS} blocks.
+     * its only start tiles (none linked: no start).
      */
     private final List<BlockPos> startLinks = new ArrayList<>();
     /** Its own storage, {@link #BANK_SIZE} slots (see {@link PartyBank}): saved, never sent to the clients. */

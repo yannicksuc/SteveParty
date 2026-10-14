@@ -36,8 +36,8 @@ import static fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControll
 import static fr.lordfinn.steveparty.components.ModComponents.TB_START_BOUND_ENTITY;
 
 /**
- * The board of a Party Controller. Its start tiles are the ones linked to it with the Tile Linker Brush; none linked,
- * the ones within {@link PartyControllerEntity#START_TILES_SEARCH_RADIUS} blocks of it; its board spaces are the ones the paths from them join (the links of the cartridges, whichever way:
+ * The board of a Party Controller. Its start tiles are the ones linked to it with the Tile Linker Brush, and only
+ * those (none linked: no start, the brush suggests the ones around); its board spaces are the ones the paths from them join (the links of the cartridges, whichever way:
  * see {@link BoardGraph#boardOf}), however far they go. A board standing beside it, or a lone tile, is not part of it.
  * <p>
  * Never loads a chunk. The controller remembers its board ({@link Memory}): a start tile or a space in a chunk that
@@ -112,17 +112,12 @@ public final class PartyBoard {
      */
     static Snapshot scan(ServerWorld world, BlockPos controller, Memory memory, Collection<BlockPos> partySpaces,
                          List<BlockPos> startLinks) {
-        // The start tiles linked to the controller (else around it), and the ones in chunks that are not loaded
-        List<BlockPos> loadedStarts, unloadedStarts;
-        if (!startLinks.isEmpty()) {
-            loadedStarts = new ArrayList<>();
-            for (BlockPos pos : startLinks) if (isLoaded(world, pos) && isStart(world, pos)) loadedStarts.add(pos);
-            sort(loadedStarts);
-            unloadedStarts = startLinks.stream().filter(pos -> !isLoaded(world, pos)).toList();
-        } else {
-            loadedStarts = boardSpaces(world, controller, START_TILES_SEARCH_RADIUS, BoardSpaceType.TILE_START);
-            unloadedStarts = memory.starts.stream().filter(pos -> !isLoaded(world, pos)).toList();
-        }
+        // The start tiles linked to the controller (none linked: none, the brush only suggests them), and the ones in
+        // chunks that are not loaded
+        List<BlockPos> loadedStarts = new ArrayList<>();
+        for (BlockPos pos : startLinks) if (isLoaded(world, pos) && isStart(world, pos)) loadedStarts.add(pos);
+        sort(loadedStarts);
+        List<BlockPos> unloadedStarts = startLinks.stream().filter(pos -> !isLoaded(world, pos)).toList();
         List<BlockPos> starts = new ArrayList<>(loadedStarts);
         starts.addAll(unloadedStarts);
         sort(starts);

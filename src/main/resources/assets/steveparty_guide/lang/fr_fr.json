@@ -471,7 +471,7 @@
   "book.steveparty.guide.party.controller.page0.title": "Party Controller",
   "book.steveparty.guide.party.controller.page1.text": "- **État** : ce qui manque, puis la partie\n- **Joueurs** : pions, étoiles, pièces\n- **Programme** : mini-jeux et cartes\n- **Gains** · **Stockage** · **Réglages**",
   "book.steveparty.guide.party.controller.page1.title": "Ses onglets",
-  "book.steveparty.guide.party.controller.page2.text": "Il prend les pions liés à un [#](4C9A2A)**Départ**[#]() à 100 blocs.\\\n\\\n[#](9A6A00)Lancer la partie[#](), ou un signal redstone.",
+  "book.steveparty.guide.party.controller.page2.text": "Il prend les pions des [#](4C9A2A)**Départs**[#]() reliés au [#](1C4E80)**Pinceau lieur**[#]().\\\n\\\n[#](9A6A00)Lancer la partie[#](), ou un signal redstone.",
   "book.steveparty.guide.party.controller.page2.title": "Lancer",
   "book.steveparty.guide.party.controller.page3.text": "[#](9A6A00)Arrêter la partie[#]() (onglet **État**) : fin [#](C0392B)**sans gagnant**[#]().\\\n\\\nPions renvoyés au départ.\\\n\\\nRéservé : opérateur ou Maître du jeu.",
   "book.steveparty.guide.party.controller.page3.title": "Arrêter",

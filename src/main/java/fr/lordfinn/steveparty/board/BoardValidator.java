@@ -69,6 +69,12 @@ public final class BoardValidator {
         Report report = check(world, board.graph());
         int radius = fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.START_TILES_SEARCH_RADIUS;
         List<Issue> issues = new ArrayList<>(report.issues());
+        if (board.starts().isEmpty()) {
+            // No start tile linked to the controller: the start tiles around are no starts (the brush links them)
+            issues.removeIf(issue -> issue.key().equals("no_start") || issue.key().equals("unreachable") || issue.key().equals("no_token"));
+            if (report.boardSpaces() > 0) issues.addFirst(new Issue(Severity.ERROR, "no_start", List.of()));
+            return new Report(report.boardSpaces(), 0, issues, radius);
+        }
         add(issues, Severity.WARNING, "unloaded_starts", board.unloadedStarts());
         return new Report(report.boardSpaces(), report.starts() + board.unloadedStarts().size(), issues, radius);
     }
