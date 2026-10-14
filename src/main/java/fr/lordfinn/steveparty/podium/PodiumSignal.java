@@ -34,6 +34,17 @@ public enum PodiumSignal {
         this.byClick = byClick;
     }
 
+    /** The colour a mode is shown in (rgb): its preview's outline, its message. */
+    public int color() {
+        return switch (this) {
+            case REGISTER -> 0x55E07A;
+            case FILL -> 0xFFD84A;
+            case FILL_BOTTOM -> 0x6CC6F0;
+            case CLEAR -> 0xFF6A5A;
+            case RESET -> 0xFFFFFF;
+        };
+    }
+
     public String key() {
         return name().toLowerCase(Locale.ROOT);
     }

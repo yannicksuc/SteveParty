@@ -604,7 +604,8 @@ public final class Podiums {
         boolean redstone = PodiumBlock.answersRedstone(world, pos);
         master.setSignal(master.getSignal().next(redstone));
         world.playSound(null, pos, SoundEvents.BLOCK_COPPER_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0f, 1.5f);
-        player.sendMessage(master.getSignal().text(redstone).copy().formatted(Formatting.YELLOW), true);
+        PodiumSignal mode = master.getSignal();
+        player.sendMessage(mode.text(redstone).copy().styled(style -> style.withColor(mode.color())), true);
         preview(player, world, pos);
     }
 

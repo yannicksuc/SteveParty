@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnPose;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
+import fr.lordfinn.steveparty.podium.PodiumSignal;
 import fr.lordfinn.steveparty.podium.Podiums;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.model.ModelPart;
@@ -132,6 +133,11 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
     /** A small statue of a player (half his size) standing on the top, facing the podium's front. */
     private void drawFigure(PodiumBlockEntity entity, BlockState state, SkinTextures skin, PlayerPawnPose pose, float y, float scaleBy,
                             MatrixStack matrices, VertexConsumerProvider vertexConsumers) {
+        drawFigure(entity, state, skin, pose, y, scaleBy, 0xFFFFFFFF, matrices, vertexConsumers);
+    }
+
+    private void drawFigure(PodiumBlockEntity entity, BlockState state, SkinTextures skin, PlayerPawnPose pose, float y, float scaleBy, int color,
+                            MatrixStack matrices, VertexConsumerProvider vertexConsumers) {
         ModelPart root = skin.model() == SkinTextures.Model.SLIM ? slim : wide;
         root.traverse().forEach(ModelPart::resetTransform);
         PlayerStatue.pose(root, pose);
@@ -143,12 +149,10 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
         matrices.scale(-scale, -scale, scale);
         PlayerStatue.transform(matrices, pose);
         matrices.translate(0, -1.501, 0);
-        root.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(skin.texture())), light, OverlayTexture.DEFAULT_UV);
+        root.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(skin.texture())), light, OverlayTexture.DEFAULT_UV, color);
         matrices.pop();
     }
 
-    /** The colour a mode lights its columns in (rgb), by {@code PodiumSignal} ordinal: register, fill, fill from the bottom, clear, reset. */
-    private static final int[] MODE_COLORS = {0x55E07A, 0xFFD84A, 0x6CC6F0, 0xFF6A5A, 0xFFFFFF};
     private static SkinTextures steve;
 
     /** Steve's skin: the default skin found for the first id giving the wide Steve. */
@@ -177,19 +181,25 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
         if (shown == null) return;
         float surface = state.get(PodiumBlock.FULL) ? 1f : 0.5f;
         float age = world.getTime() - shown.since() + tickDelta, left = shown.until() - world.getTime() - tickDelta;
-        int rgb = MODE_COLORS[Math.floorMod(shown.mode(), MODE_COLORS.length)];
+        PodiumSignal[] modes = PodiumSignal.values();
+        int rgb = modes[Math.floorMod(shown.mode(), modes.length)].color();
         // Blinks: full colour, then a darker one, twice a second
         float blink = (MathHelper.sin(age * 0.6f) + 1) / 2;
         float shade = 0.65f + 0.35f * blink;
         double bottom = master.getPos().getY() - entity.getPos().getY();
-        WorldRenderer.drawBox(matrices, vertexConsumers.getBuffer(RenderLayer.getLines()), -0.02, bottom - 0.02, -0.02, 1.02, surface + 0.02, 1.02,
+        // A dark line behind the coloured one, so that a gold outline reads on a gold podium; its foot just above the ground
+        WorldRenderer.drawBox(matrices, vertexConsumers.getBuffer(RenderLayer.getLines()), -0.035, bottom + 0.01, -0.035, 1.035, surface + 0.035, 1.035,
+                0.16f, 0.16f, 0.16f, 1f);
+        WorldRenderer.drawBox(matrices, vertexConsumers.getBuffer(RenderLayer.getLines()), -0.02, bottom + 0.02, -0.02, 1.02, surface + 0.02, 1.02,
                 ((rgb >> 16) & 0xFF) / 255f * shade, ((rgb >> 8) & 0xFF) / 255f * shade, (rgb & 0xFF) / 255f * shade, 1f);
         PodiumOccupant occupant = master.getOccupant();
         if (!shown.statue() || (occupant != null && occupant.figure() != null)) return;
         float in = age >= STATUE_IN ? 1f : Easing.easeOutBack(Math.max(0, age) / STATUE_IN);
         float out = left >= STATUE_OUT ? 1f : Math.max(0, left) / STATUE_OUT;
         PlayerPawnPose pose = PlayerPawnPose.podiumPose((int) shown.since() * 31 + master.getPos().hashCode());
-        drawFigure(entity, state, steve(), pose, surface, in * out, matrices, vertexConsumers);
+        // A statue, not a player: tinted in the mode's colour (opaque: nothing see-through here)
+        int tint = ColorHelper.Argb.lerp(0.45f, 0xFFFFFFFF, 0xFF000000 | rgb);
+        drawFigure(entity, state, steve(), pose, surface, in * out, tint, matrices, vertexConsumers);
     }
 
     public static void registerReloadListener() {
