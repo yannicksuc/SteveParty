@@ -2104,7 +2104,7 @@
   "gui.steveparty.mini_game_page.pipes.empty": "%s pipe",
   "gui.steveparty.mini_game_page.pipes.colour.glass": "glass",
   "gui.steveparty.mini_game_page.podiums.info": "• linking: §e/steveparty links\n• §ePodium§7: a place; the taller its column, the better\n• §eGoal Pole Base§7: a counter, reset with the podiums\n• §eStep Controller§7: a redstone pulse ends the mini-game\n• §bclick§7 a card: find it · §bright click§7: unlink",
-  "gui.steveparty.mini_game_page.pipes.info": "In by a colour, out by that colour.\n• Left: the §eMini-game Pipes§7 the page is printed on\n• Linking: §e/steveparty links§7, or the brush from the Mini-game Controller\n• §bDrag§7 a card: another role · §bclick§7: find the pipe",
+  "gui.steveparty.mini_game_page.pipes.info": "In by a colour, out by that colour.\n• Left: the §eMini-game Pipes§7 the page is printed on\n• Linking: §e/steveparty links§7, or the brush from the Mini-game Controller",
   "tooltip.steveparty.controls.container_click": "on a storage (chest, barrel…): add / remove it (either hand)",
   "message.steveparty.inventory_cartridge.added": "Storage %1$s added: %2$s %3$s %4$s",
   "message.steveparty.inventory_cartridge.removed": "Storage %1$s %2$s %3$s removed (%4$s left)",

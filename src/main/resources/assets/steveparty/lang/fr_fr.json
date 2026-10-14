@@ -2104,7 +2104,7 @@
   "gui.steveparty.mini_game_page.pipes.empty": "tuyau %s",
   "gui.steveparty.mini_game_page.pipes.colour.glass": "en verre",
   "gui.steveparty.mini_game_page.podiums.info": "• lier : §e/steveparty links\n• §ePodium§7 : une place ; plus sa colonne est haute, meilleure elle est\n• §eSocle de mât§7 : un compteur, remis à 0 avec les podiums\n• §eContrôleur de pas§7 : une impulsion de redstone termine le mini-jeu\n• §bclic§7 sur une carte : la repérer · §bclic droit§7 : la délier",
-  "gui.steveparty.mini_game_page.pipes.info": "On entre par une couleur, on sort par cette couleur.\n• À gauche : les §etuyaux de mini-jeu§7 où la page est imprimée\n• Lier : §e/steveparty links§7, ou le pinceau depuis le Contrôleur de mini-jeu\n• §bGlisse§7 une carte : autre rôle · §bclic§7 : repérer le tuyau",
+  "gui.steveparty.mini_game_page.pipes.info": "On entre par une couleur, on sort par cette couleur.\n• À gauche : les §etuyaux de mini-jeu§7 où la page est imprimée\n• Lier : §e/steveparty links§7, ou le pinceau depuis le Contrôleur de mini-jeu",
   "tooltip.steveparty.controls.container_click": "sur un stockage (coffre, tonneau…) : l'ajouter / le retirer (une main ou l'autre)",
   "message.steveparty.inventory_cartridge.added": "Stockage n°%1$s ajouté : %2$s %3$s %4$s",
   "message.steveparty.inventory_cartridge.removed": "Stockage %1$s %2$s %3$s retiré (%4$s restants)",
