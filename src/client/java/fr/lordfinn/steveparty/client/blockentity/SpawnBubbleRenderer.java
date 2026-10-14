@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.client.board.SpawnMarkerView;
 import fr.lordfinn.steveparty.client.entity.FrousseuxRenderer;
+import fr.lordfinn.steveparty.client.utils.GhostModels;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
@@ -13,6 +14,7 @@ import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -33,6 +35,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationPropertyHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -347,6 +350,24 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
                 BubbleFilm.FACE_FROM, BubbleFilm.FACE_TO, 1, 1, 1, 1, light);
         matrices.pop();
     };
+
+    /**
+     * Asks for a bubble's ghost this frame (the Tile Linker Brush's suggestion, see {@link GhostModels#request}): the
+     * bubble at rest, as placed in the block whose bottom centre is {@code at} toward {@code yaw}, see-through
+     * ({@code alpha}). Its plate and arrow, nearest faces only, then its film (far faces, near faces) over them.
+     */
+    public static void ghost(Vec3d at, float yaw, float alpha, int light) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        BlockState state = ModBlocks.SPAWN_MARKER.getDefaultState().with(SpawnMarkerBlock.ROTATION, RotationPropertyHelper.fromYaw(yaw));
+        float centerY = (float) SpawnMarkerBlock.BUBBLE_HEIGHT;
+        GhostModels.request(at.add(-0.5, 0, -0.5), at.add(0, centerY, 0), alpha, false, (matrices, buffers) -> {
+            plate(client, state, matrices, buffers, light, OverlayTexture.DEFAULT_UV);
+            arrow(client, matrices, buffers, centerY, SpawnMarkerBlock.yaw(state), 1, light, OverlayTexture.DEFAULT_UV);
+        }, (matrices, buffers) -> {
+            film(matrices, buffers, BUBBLE_LAYER, centerY, 0, 0, 0, 1, light, false);
+            film(matrices, buffers, BUBBLE_LAYER, centerY, 0, 0, 0, 1, light, true);
+        });
+    }
 
     @Override
     public boolean rendersOutsideBoundingBox(SpawnMarkerBlockEntity marker) {

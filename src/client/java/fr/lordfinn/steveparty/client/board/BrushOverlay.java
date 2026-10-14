@@ -90,6 +90,11 @@ final class BrushOverlay {
         // frame writes depth, and drawn before them it hid what a tile's renderer draws under it
         // After the translucent blocks: drawn before, the ghosts would hide the stained glass behind them
         WorldRenderEvents.LAST.register(context -> WorldView.draw(context, () -> render(context)));
+        // The suggestions' ghost models: asked for before the translucent terrain, drawn around it (GhostModels)
+        WorldRenderEvents.AFTER_SETUP.register(context -> {
+            if (MinecraftClient.getInstance().world != null)
+                BrushSuggestions.requestGhosts(MinecraftClient.getInstance().world, context.camera(), context.tickCounter().getTickDelta(true));
+        });
         ClientTickEvents.END_CLIENT_TICK.register(BrushOverlay::tick);
         ClientTickEvents.END_CLIENT_TICK.register(BrushSuggestions::tick);
     }
@@ -300,20 +305,6 @@ final class BrushOverlay {
             Vec3d max = new Vec3d(Math.max(start.x, end.x), Math.max(start.y, end.y), Math.max(start.z, end.z)).add(half);
             WorldDraw.box(matrices, consumers, camera, min, max, DANGLING, alpha);
         }
-    }
-
-    /** The 12 edges of the box (min, max), thin see-through boxes in {@code rgb}: a ghost block's outline. */
-    static void edges(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d min, Vec3d max, int rgb, float alpha) {
-        edges(matrices, consumers, camera, min, max, rgb, alpha, DASH_WIDTH);
-    }
-
-    /** The 12 edges of the box, {@code width} thick. */
-    static void edges(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d min, Vec3d max, int rgb, float alpha, double width) {
-        double w = width / 2;
-        double[] xs = {min.x, max.x}, ys = {min.y, max.y}, zs = {min.z, max.z};
-        for (double y : ys) for (double z : zs) WorldDraw.box(matrices, consumers, camera, new Vec3d(min.x - w, y - w, z - w), new Vec3d(max.x + w, y + w, z + w), rgb, alpha);
-        for (double x : xs) for (double z : zs) WorldDraw.box(matrices, consumers, camera, new Vec3d(x - w, min.y + w, z - w), new Vec3d(x + w, max.y - w, z + w), rgb, alpha);
-        for (double x : xs) for (double y : ys) WorldDraw.box(matrices, consumers, camera, new Vec3d(x - w, y - w, min.z + w), new Vec3d(x + w, y + w, max.z - w), rgb, alpha);
     }
 
     /** A link from {@code a} to {@code b} in the slot of the brush's level: the stroke would erase it (not the way back). */
