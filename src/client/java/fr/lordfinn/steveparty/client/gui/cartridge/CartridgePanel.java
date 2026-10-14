@@ -959,12 +959,21 @@ public final class CartridgePanel {
         UiText.centered(context, textRenderer, text, bx + 1, by + 4, bw - 2, active ? Argb.lighten(color, 0.35F) : LABEL_OFF, active);
     }
 
-    /** A box of the editor ({x, y, w}) outlined in {@code edge}, its corners cut, filled with {@code fill}. */
+    /** A box of the editor ({x, y, w}) as a side's button not chosen: see {@link #outlined(DrawContext, int, int, int, int, int, int)}. */
     private static void outlined(DrawContext context, int[] at, int edge, int fill) {
-        int bx = at[0], by = at[1], bw = at[2];
-        context.fill(bx + 1, by, bx + bw - 1, by + EDIT_H, edge);
-        context.fill(bx, by + 1, bx + bw, by + EDIT_H - 1, edge);
-        context.fill(bx + 1, by + 1, bx + bw - 1, by + EDIT_H - 1, fill);
+        outlined(context, at[0], at[1], at[2], EDIT_H, edge, fill);
+    }
+
+    /**
+     * A side's button not chosen (also a slot of that side not chosen): a 1 px line of {@code edge}, its corners cut,
+     * filled with {@code fill} (0: the line alone).
+     */
+    private static void outlined(DrawContext context, int x, int y, int w, int h, int edge, int fill) {
+        context.fill(x + 1, y, x + w - 1, y + 1, edge);
+        context.fill(x + 1, y + h - 1, x + w - 1, y + h, edge);
+        context.fill(x, y + 1, x + 1, y + h - 1, edge);
+        context.fill(x + w - 1, y + 1, x + w, y + h - 1, edge);
+        if (fill != 0) context.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
     }
 
     private void editButton(DrawContext context, int[] at, int part, boolean active, boolean hovered) {
@@ -1364,8 +1373,9 @@ public final class CartridgePanel {
     }
 
     /**
-     * Under the items: each filled slot framed as its side's button (20 x 20 around it), its ground the slots' dark
-     * one, or the side's colour for the chosen one (that button chosen).
+     * Under the items: each filled slot framed as its side's button, 18 x 18 hugging it: not chosen, a 1 px line of the
+     * side's colour around the slots' dark ground (that button not chosen); chosen, that button chosen (outline,
+     * bevels, filled with the side's colour).
      */
     private void drawGhostFrames(DrawContext context, GhostSlotsModule ghosts, int mx, int my) {
         List<GhostSlot> slots = ghostSlots();
@@ -1373,31 +1383,28 @@ public final class CartridgePanel {
         for (int s = 0; s < Math.min(ghosts.count(), slots.size()); s++) {
             GhostSlot slot = slots.get(s);
             if (!slot.isEnabled() || !slot.hasStack()) continue;
-            PartyGui.Theme theme = sideTheme(GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE);
-            int sx = mx + ghosts.slotX(s), sy = my + ghosts.slotY(s);
-            if (slot == chosen) {
-                PartyGui.button(context, sx - 2, sy - 2, 20, 20, theme, false);
-            } else {
-                context.fill(sx - 1, sy - 1, sx + 17, sy + 17, WELL);
-                PartyGui.buttonEdge(context, sx - 2, sy - 2, 20, 20, theme, false);
-            }
+            int color = GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE;
+            int fx = mx + ghosts.slotX(s) - 1, fy = my + ghosts.slotY(s) - 1;
+            if (slot == chosen) PartyGui.button(context, fx, fy, 18, 18, sideTheme(color), false);
+            else outlined(context, fx, fy, 18, 18, color, WELL);
         }
     }
 
     /**
-     * Over the items: the filled slots' frames again (the count's shadow reaches them), and on the chosen slot its count
-     * shadowed in its side's dark colour, as the chosen button's text.
+     * Over the items: the filled slots' outer line again (the count's shadow reaches it), and on the chosen slot its
+     * count shadowed in its side's dark colour, as the chosen button's text.
      */
     public void drawGhostMarks(DrawContext context, List<Slot> slots, int originX, int originY) {
         int i = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
         GhostSlot chosen = i >= 0 && modules.get(i) instanceof GhostSlotsModule ghosts && ghosts.signed() ? chosenGhost(ghosts) : null;
         for (Slot slot : slots) {
             if (!(slot instanceof GhostSlot) || !slot.isEnabled() || !slot.hasStack()) continue;
-            PartyGui.Theme theme = sideTheme(GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE);
+            int color = GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE;
+            PartyGui.Theme theme = sideTheme(color);
             int sx = originX + slot.x, sy = originY + slot.y;
             context.getMatrices().push();
             context.getMatrices().translate(0, 0, 400);
-            PartyGui.buttonEdge(context, sx - 2, sy - 2, 20, 20, theme, false);
+            outlined(context, sx - 1, sy - 1, 18, 18, slot == chosen ? theme.outline() : color, 0);
             int count = slot.getStack().getCount();
             if (slot == chosen && count != 1) {
                 // Where the game draws the count: its shadow in the side's dark colour over the grey one, then the count
@@ -1409,6 +1416,7 @@ public final class CartridgePanel {
             context.getMatrices().pop();
         }
     }
+
 
     // ------------------------------------------------------------------ tooltips
 
