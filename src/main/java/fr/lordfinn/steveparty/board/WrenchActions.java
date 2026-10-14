@@ -311,6 +311,7 @@ public final class WrenchActions {
             }
             int slot = BoardLinks.slotOf(anchorContainer, TileLinkerBrush.level(brush));
             if (!addLink(player, serverWorld, anchor, anchorContainer, slot, pos)) return;
+            BrushTutorialSteps.pathLinked(player, serverWorld, anchor);
             TileLinkerBrush.setAnchor(brush, world, pos);
             say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(anchor), BoardText.pos(pos)));
             playChainSound(world, player, 3);

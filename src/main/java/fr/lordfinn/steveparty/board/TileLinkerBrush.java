@@ -419,9 +419,10 @@ public final class TileLinkerBrush {
             cannotEdit(player, from);
             return;
         }
-        if (kind.linked(world, target)) kind.unlink(player, world, target);
-        else {
-            kind.link(player, world, target);
+        if (kind.linked(world, target)) {
+            if (kind.unlink(player, world, target)) BrushTutorialSteps.erased(player);
+        } else {
+            if (kind.link(player, world, target)) BrushTutorialSteps.linked(player, world, from, kind, target);
             ModCriteria.fire(player, "tiles_linked");
         }
     }
@@ -447,6 +448,7 @@ public final class TileLinkerBrush {
         }
         WrenchActions.recorded(player, world, brush, () -> {
             if (!WrenchActions.addLink(player, world, from, origin, slot, cell)) return;
+            BrushTutorialSteps.pathLinked(player, world, from);
             say(player, Text.translatable("message.steveparty.tile_linker_brush.blob", BoardText.pos(from), BoardText.pos(cell)));
             world.playSound(null, surface.getBlockPos(), SoundEvents.ENTITY_SLIME_SQUISH, SoundCategory.PLAYERS, 0.7f, 0.8f);
         });

@@ -32,6 +32,7 @@ public class ModPayloads {
         s2c(JumpShoesPayloads.Seen.ID, JumpShoesPayloads.Seen.CODEC);
         s2c(BoardActorStatePayload.ID, BoardActorStatePayload.CODEC);
         s2c(TeleportLinkChoicePayload.ID, TeleportLinkChoicePayload.CODEC);
+        s2c(BrushTutorialPayload.ID, BrushTutorialPayload.CODEC);
 
         // Client → server
         c2s(SaveStencilPayload.ID, SaveStencilPayload.CODEC);

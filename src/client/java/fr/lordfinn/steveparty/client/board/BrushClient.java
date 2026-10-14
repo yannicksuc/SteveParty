@@ -46,6 +46,7 @@ public final class BrushClient {
         BoardView.initialize();
         HelmetView.initialize();
         SpawnMarkerView.initialize();
+        BrushTutorial.initialize();
     }
 
     /** While painting: a little dust of the paint's colour where the brush is, on the tile it paints. */
