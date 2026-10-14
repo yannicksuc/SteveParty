@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.EventTimeOut;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
@@ -330,6 +331,24 @@ public class CartridgeMenuGameTests implements SteveGameTest {
         context.assertEquals(narrow.columns(), 1, "one column when there is no room for two");
         context.assertEquals(narrow.width(), CartridgeLayout.width(1, CartridgeLayout.MIN_COLUMN_W), "a narrow shell");
         context.assertEquals(CartridgeLayout.of(teleport, 100, tall, 2, columnW).columns(), 2, "two columns when there is room");
+        context.complete();
+    }
+
+    /** The Event's hourglass reads the same everywhere: « 0:30 », « 1:00 »... on its buttons as in its texts, « none » for none. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theHourglassReadsAsAClockEverywhere(TestContext context) {
+        String k = CartridgeItem.MENU_KEY + "event.duration.";
+        for (String code : List.of("fr_fr", "en_us")) {
+            JsonObject lang = lang(code);
+            for (int seconds : EventTimeOut.DURATIONS) {
+                String button = translate(lang, k + seconds, context);
+                String said = resolve(EventTimeOut.durationText(seconds), lang);
+                context.assertEquals(button, said, code + ": the button of " + seconds + " s reads as the texts");
+                if (seconds > 0) context.assertEquals(said, EventTimeOut.clock(seconds), code + ": " + seconds + " s as a clock");
+            }
+        }
+        context.assertEquals(EventTimeOut.clock(30), "0:30", "half a minute");
+        context.assertEquals(EventTimeOut.clock(300), "5:00", "five minutes");
         context.complete();
     }
 
