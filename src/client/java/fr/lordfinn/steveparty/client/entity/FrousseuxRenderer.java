@@ -52,6 +52,12 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     public static final Identifier CORE = Steveparty.id("textures/entity/frousseux_flame_core.png");
     /** Its flame's bones, one a stage (FrousseuxEntity.Flame order): each its own size, pixel for pixel. */
     private static final String[] STAGE_BONES = {"flame_full", "flame_high", "flame_low", "flame_ember"};
+    /**
+     * Under a shader pack (its glow boosted, bloom over it): its flame's brightness, its heart's brightness and
+     * opacity, and its heart's tint, its flame's colour taken this far towards a warm white.
+     */
+    private static final float SHADER_EDGE = 0.85f, SHADER_HEART = 0.8f, SHADER_HEART_ALPHA = 0.7f, SHADER_HEART_PALE = 0.4f;
+    private static final int SHADER_HEART_TINT = 0xFFF0C8;
 
     /** How tall it is drawn (blocks): its body (8 pixels) and its full flame over it (10), taller than its hitbox. */
     public static final float DRAWN_HEIGHT = 18 / 16f;
@@ -244,14 +250,21 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                 boolean behind = DeferredGlows.behindTranslucent(frousseux.getWorld(),
                         MinecraftClient.getInstance().gameRenderer.getCamera().getPos(),
                         frousseux.getLerpedPos(partialTick).add(0, FrousseuxEntity.HEIGHT, 0));
+                // Its glow is boosted there (Complementary's emissive pass, about one and a half times, then its
+                // bloom): at full strength its heart blew out to a white blob, so a little dimmer, its heart paler
+                // than its flame but warm, and more see-through
+                float alpha = flameAlpha(frousseux, partialTick);
+                int glowEdge = withAlpha(shade(frousseux.getColor().flameEdge, brightness * SHADER_EDGE), alpha);
+                int glowHeart = withAlpha(shade(Argb.lerp(frousseux.getColor().flame, SHADER_HEART_TINT, SHADER_HEART_PALE),
+                        brightness * SHADER_HEART), alpha * SHADER_HEART_ALPHA);
                 AnimatableTexture.setAndUpdate(FLAME);
                 VertexConsumer flameGlow = DeferredGlows.buffer(FLAME, behind);
                 getRenderer().reRender(bakedModel, poseStack, any -> flameGlow, frousseux, null, flameGlow, partialTick,
-                        LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, edge);
+                        LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, glowEdge);
                 AnimatableTexture.setAndUpdate(CORE);
                 VertexConsumer heartGlow = DeferredGlows.buffer(CORE, behind);
                 getRenderer().reRender(bakedModel, poseStack, any -> heartGlow, frousseux, null, heartGlow, partialTick,
-                        LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, heart);
+                        LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, glowHeart);
                 flame.setHidden(true);
                 body.setHidden(bodyHidden);
                 body.setChildrenHidden(false);
