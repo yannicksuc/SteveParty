@@ -221,6 +221,13 @@ public final class DiceRollSequence {
         } else if (autoStopAt >= 0 && age >= autoStopAt) {
             stop();
         }
+        // A Slow die stopped by time too (a fast party)
+        if (byHand() && autoStopAt >= 0 && age >= autoStopAt && phase == Phase.ROLLING) stop();
+    }
+
+    /** The rolling dice stop by themselves in {@code ticks} (a fast party's die over its pawn: see FastDice). */
+    public void stopIn(int ticks) {
+        if (phase == Phase.ROLLING) autoStopAt = age + ticks;
     }
 
     private void advanceCycles() {

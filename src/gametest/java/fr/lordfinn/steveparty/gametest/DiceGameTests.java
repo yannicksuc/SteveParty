@@ -401,6 +401,43 @@ public class DiceGameTests implements SteveGameTest {
         context.complete();
     }
 
+    /** A fast party: the die stops by itself 5 seconds after reaching his pawn; a classic party's goes on rolling. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 260, batchId = "dice_throws")
+    public void inAFastPartyTheDieStopsByItself(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new ItemStack(ModItems.DEFAULT_DICE), -20, false);
+        PigEntity his = pawnInParty(context, player, new BlockPos(3, 2, 5));
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity party =
+                (fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity) context.getWorld().getBlockEntity(context.getAbsolutePos(new BlockPos(0, 1, 0)));
+        party.setFastParty(true);
+        his.setAiDisabled(true);
+        player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        int[] arrivedAt = {-1};
+        TestWait.everyTick(context, () -> {
+            if (arrivedAt[0] < 0 && fr.lordfinn.steveparty.dice.FastDice.arrived(dice, his)) arrivedAt[0] = (int) context.getTick();
+        });
+        context.waitAndRun(60 + 20 * fr.lordfinn.steveparty.dice.FastDice.STOP_SECONDS + 40, () -> {
+            context.assertTrue(arrivedAt[0] >= 0, "the die reached his pawn");
+            context.assertTrue(dice.isRollFinished() || dice.isRemoved() || dice.sequence().phase() != DiceRollSequence.Phase.ROLLING,
+                    "it stopped by itself");
+            context.complete();
+        });
+    }
+
+    /** A classic party: the die rolls until its player stops it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 260, batchId = "dice_throws")
+    public void inAClassicPartyTheDieWaitsForItsPlayer(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new ItemStack(ModItems.DEFAULT_DICE), -20, false);
+        PigEntity his = pawnInParty(context, player, new BlockPos(3, 2, 5));
+        his.setAiDisabled(true);
+        player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        context.waitAndRun(60 + 20 * fr.lordfinn.steveparty.dice.FastDice.STOP_SECONDS + 40, () -> {
+            context.assertTrue(!dice.isRemoved() && dice.sequence().phase() == DiceRollSequence.Phase.ROLLING, "still rolling");
+            context.complete();
+        });
+    }
+
     /** In a party, sneaking: the die stays above the thrower's own head. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
     public void inAPartySneakingKeepsTheDieAboveHisHead(TestContext context) {

@@ -57,7 +57,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
             BUTTON_PRACTICE = 5, BUTTON_MAX_POWER_UPS_DOWN = 6, BUTTON_MAX_POWER_UPS_UP = 7, BUTTON_RESTRICT_DICE = 8,
-            BUTTON_STOP = 9, BUTTON_INFINITE_BANK = 11;
+            BUTTON_STOP = 9, BUTTON_INFINITE_BANK = 11, BUTTON_FAST_PARTY = 12;
     /**
      * The page the player opened: {@code BUTTON_PAGE + ordinal}. The server only needs it for the shift-clicks (to the
      * storage on its page) and the double-clicks (the storage's items only gathered on its page).
@@ -557,6 +557,10 @@ public class PartyControllerScreenHandler extends ScreenHandler {
             case BUTTON_PRACTICE -> {
                 if (!controller.canEdit(player)) return false;
                 controller.setPracticeRound(!controller.hasPracticeRound());
+            }
+            case BUTTON_FAST_PARTY -> {
+                if (!controller.canEdit(player)) return false;
+                controller.setFastParty(!controller.isFastParty());
             }
             case BUTTON_LAUNCH -> {
                 board = PartyDashboardData.checkBoard(controller, world);

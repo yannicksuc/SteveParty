@@ -457,6 +457,15 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         if (settings.setPracticeRound(practiceRound)) markDirty();
     }
 
+    /** @return true in a fast party: the dice stop by themselves, the mini-games start without reading time */
+    public boolean isFastParty() {
+        return settings.isFastParty();
+    }
+
+    public void setFastParty(boolean fastParty) {
+        if (settings.setFastParty(fastParty)) markDirty();
+    }
+
     /**
      * The power-ups a player may carry during this party (Power-up dice included), 0 for no limit.
      * See {@link fr.lordfinn.steveparty.powerups.PowerUpLimit}.

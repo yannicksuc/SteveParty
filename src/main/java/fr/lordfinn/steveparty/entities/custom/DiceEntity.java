@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DiceReveal;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
+import fr.lordfinn.steveparty.dice.FastDice;
 import fr.lordfinn.steveparty.dice.DiceThrow;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
@@ -137,6 +138,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     private int secondsSinceRolled = 0;
     /** Loaded already rolled: its roll is over (it is not run again). */
     private boolean rollWasLoadedFinished;
+    /** A fast party's die (see FastDice): 0 not known yet, 1 waiting to reach its pawn, 2 armed or not a fast party's. Not saved. */
+    private int fastStop;
 
     public DiceEntity(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
@@ -417,8 +420,23 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 simulation.tick();
             } else freeFlight();
             if (!this.isRemoved() && !rollWasLoadedFinished && lead() == this) sequence().tick();
+            if (!this.isRemoved() && lead() == this) tickFastStop();
         }
         super.tick();
+    }
+
+    /**
+     * A fast party's die stops by itself a few seconds after reaching the pawn it goes around (see {@link FastDice}).
+     */
+    private void tickFastStop() {
+        if (fastStop == 2 || isShowDie() || rollWasLoadedFinished || !(this.getWorld() instanceof ServerWorld world)) return;
+        if (fastStop == 0) fastStop = FastDice.inFastParty(world, this.getOwner().orElse(null)) ? 1 : 2;
+        if (fastStop != 1 || sequence().phase() != DiceRollSequence.Phase.ROLLING) return;
+        Entity target = this.getTarget().map(world::getEntity).orElse(null);
+        if (target != null && FastDice.arrived(this, target)) {
+            fastStop = 2;
+            FastDice.arm(this);
+        }
     }
 
     /**
