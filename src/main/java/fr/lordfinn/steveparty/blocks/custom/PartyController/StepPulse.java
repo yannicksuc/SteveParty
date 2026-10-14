@@ -32,10 +32,10 @@ import net.minecraft.text.Text;
 public final class StepPulse {
     /**
      * The mode of a Party Rewinder, chosen by a click on its button (anywhere else: cycled), told by its icon and the
-     * colour of its button: ⏮ blue, ↻ yellow, ⏭ green.
+     * colour of its button, lightened to read on any background: ⏮ blue, ↻ yellow, ⏭ green.
      */
     public enum Mode {
-        NEXT(Tooltips.Icons.NEXT, 0x70EA75), REPLAY(Tooltips.Icons.REPLAY, 0xFDD419), PREVIOUS(Tooltips.Icons.PREVIOUS, 0x63A3EA);
+        NEXT(Tooltips.Icons.NEXT, 0x7CF07C), REPLAY(Tooltips.Icons.REPLAY, 0xFFE14D), PREVIOUS(Tooltips.Icons.PREVIOUS, 0x7FB8FF);
 
         private final char icon;
         private final int color;

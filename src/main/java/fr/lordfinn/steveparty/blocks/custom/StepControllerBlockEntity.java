@@ -26,7 +26,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
@@ -64,6 +63,9 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     public static final String ACTION = "action", REFUSED = "refused";
     /** How long the reels' sound lasts after a pulse (ticks), one tick of it every 2 ticks. */
     private static final int TAPE_TICKS = 16;
+    /** Its chosen button pushed in, by mode. */
+    private static final RawAnimation[] MODE_ANIMATIONS = java.util.Arrays.stream(StepPulse.Mode.values())
+            .map(each -> RawAnimation.begin().thenLoop("mode." + each.id())).toArray(RawAnimation[]::new);
     public static final int RANGE = 64;
     private static final int CHECK_TICKS = 20;
     private StepPulse.Mode mode = StepPulse.Mode.NEXT;
@@ -113,8 +115,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     /** Its chosen button stays pushed in ({@code mode.<id>}); a pulse plays {@code act.<id>}, or {@value #REFUSED}. */
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
-        controllerRegistrar.add(new AnimationController<>(this, "mode", 2,
-                state -> state.setAndContinue(RawAnimation.begin().thenLoop("mode." + mode.id()))));
+        controllerRegistrar.add(new AnimationController<>(this, "mode", 2, state -> state.setAndContinue(MODE_ANIMATIONS[mode.ordinal()])));
         AnimationController<StepControllerBlockEntity> action = new AnimationController<>(this, ACTION, 0, state -> PlayState.STOP);
         for (StepPulse.Mode each : StepPulse.Mode.values()) {
             action.triggerableAnim(actName(each), RawAnimation.begin().thenPlay(actName(each)));
@@ -334,6 +335,9 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         } else {
             hint = Text.translatable("block.steveparty.step_controller.hint.none");
         }
-        return Text.translatable("block.steveparty.step_controller.mode", mode.label(), hint.copy().formatted(Formatting.GRAY));
+        return Text.translatable("block.steveparty.step_controller.mode", mode.label(), hint.copy().styled(style -> style.withColor(HINT_COLOR)));
     }
+
+    /** The hint after the mode's name: a light grey, readable over any ground under the action bar. */
+    private static final int HINT_COLOR = 0xE0E0E0;
 }
