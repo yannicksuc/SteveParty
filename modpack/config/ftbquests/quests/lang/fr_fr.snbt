@@ -250,7 +250,7 @@
 		"Accroupis-toi dessus ou clic droit pour le prendre. Clique sur les podiums avec la page pour les lier."
 	]
 	quest.0CE8734A07EDA523.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.0CE8734A07EDA523.title: "Podium"
+	quest.0CE8734A07EDA523.title: "Podium redstone"
 	quest.0D2D7E4E7239F684.quest_desc: [
 		"« Tracer la zone » dans l'éditeur, puis clique sur deux coins (128 blocs par côté au plus)."
 		"Option Restaurer : chaque manche se joue à part, inventaire vide, et l'arène est reconstruite à la fin."
@@ -477,7 +477,7 @@
 		"Un Podium + un lingot de fer, sans forme. Seulement une apparence : c'est la hauteur de la colonne qui donne la place."
 	]
 	quest.1FAB526747142277.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.1FAB526747142277.title: "Podium d'argent"
+	quest.1FAB526747142277.title: "Podium de fer"
 	quest.1FD5DF613F9840F0.quest_desc: [
 		"Mets-y une Cartouche Bonus / Malus liée à un coffre (Clé à molette), suspends-la avec 2 ou 3 blocs d'air dessous, puis saute et frappe-la de la tête : elle lâche les objets du coffre."
 		"2 coups, puis 3 s de recharge."
@@ -492,7 +492,7 @@
 		"Équipes (2 à 4 camps, « 1 contre tous », « 2 contre 2 »...), chacun pour soi ou tous ensemble. Une page n'est tirée que si l'un de ses modes de jeu convient aux équipes du plateau."
 		"Équipe A : joueurs sur une case positive. Équipe B : sur une case négative."
 	]
-	quest.2059FF1EE20FE13D.title: "Formats"
+	quest.2059FF1EE20FE13D.title: "Modes de jeu"
 	quest.209EEA42C80532A7.quest_desc: [
 		"Deux lignes de 3 : 6 murets."
 	]
@@ -774,7 +774,7 @@
 		"Hors partie : lance ou arrête ce mini-jeu à distance. En partie : dit si tu es prêt pour la manche officielle."
 	]
 	quest.3F68A81D8A5CA07D.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.3F68A81D8A5CA07D.title: "Télécommande de mini-jeu"
+	quest.3F68A81D8A5CA07D.title: "Télécommande"
 	quest.405FC7652C003313.quest_desc: [
 		"Des dés sur mesure, un noyau au plus haut et des Mulas qui dansent autour."
 	]
@@ -1226,7 +1226,7 @@
 		"Un Podium + un lingot de cuivre, sans forme. Seulement une apparence : c'est la hauteur de la colonne qui donne la place."
 	]
 	quest.6E614CCC831846DA.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.6E614CCC831846DA.title: "Podium de bronze"
+	quest.6E614CCC831846DA.title: "Podium de cuivre"
 	quest.6EF85DD450A37FB8.quest_desc: [
 		"Page en main, clique sur l'embouchure d'un tuyau pour le lier (re-clic pour le délier) ; les tuyaux liés brillent tant que tu tiens la page."
 		"Au départ du mini-jeu, chaque joueur sort d'un tuyau de son rôle."

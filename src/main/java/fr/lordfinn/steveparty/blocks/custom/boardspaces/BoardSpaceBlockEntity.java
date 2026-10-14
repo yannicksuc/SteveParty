@@ -587,6 +587,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             return;
         }
         PartyAdvancements.landed(token, this, behavior, partyController);
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyStatsCollector.landed(partyController, token, this);
         behavior.onDestinationReached(this.world, this.pos, token, this, partyController);
         if (!behavior.keepsTurn(token)) partyController.nextStep();
     }

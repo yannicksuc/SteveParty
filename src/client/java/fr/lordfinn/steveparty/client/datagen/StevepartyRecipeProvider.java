@@ -386,6 +386,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.POT_CARTRIDGE, ModItems.MAGPIE_NEST);
         // A Gate Key: the Key gate
         offerCartridge(ModItems.KEY_GATE_CARTRIDGE, ModItems.GATE_KEY);
+        // A banner (the checkered flag): the End
+        offerCartridge(ModItems.END_CARTRIDGE, Ingredient.fromTag(net.minecraft.registry.tag.ItemTags.BANNERS));
         // An Inventory Cartridge (its prizes) and a lava bucket (its tank; the bucket comes back): the Trichaudron
         ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.TRICHAUDRON_CARTRIDGE)
                 .input(ModItems.INVENTORY_CARTRIDGE)

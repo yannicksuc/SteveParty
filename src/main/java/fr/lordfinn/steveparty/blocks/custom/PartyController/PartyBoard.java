@@ -36,8 +36,8 @@ import static fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControll
 import static fr.lordfinn.steveparty.components.ModComponents.TB_START_BOUND_ENTITY;
 
 /**
- * The board of a Party Controller. Its start tiles are the ones linked to it with the Tile Linker Brush; none linked,
- * the ones within {@link PartyControllerEntity#START_TILES_SEARCH_RADIUS} blocks of it; its board spaces are the ones the paths from them join (the links of the cartridges, whichever way:
+ * The board of a Party Controller. Its start tiles are the ones linked to it with the Tile Linker Brush, and only
+ * those (none linked: no start, the brush suggests the ones around); its board spaces are the ones the paths from them join (the links of the cartridges, whichever way:
  * see {@link BoardGraph#boardOf}), however far they go. A board standing beside it, or a lone tile, is not part of it.
  * <p>
  * Never loads a chunk. The controller remembers its board ({@link Memory}): a start tile or a space in a chunk that
@@ -112,17 +112,21 @@ public final class PartyBoard {
      */
     static Snapshot scan(ServerWorld world, BlockPos controller, Memory memory, Collection<BlockPos> partySpaces,
                          List<BlockPos> startLinks) {
-        // The start tiles linked to the controller (else around it), and the ones in chunks that are not loaded
-        List<BlockPos> loadedStarts, unloadedStarts;
-        if (!startLinks.isEmpty()) {
-            loadedStarts = new ArrayList<>();
-            for (BlockPos pos : startLinks) if (isLoaded(world, pos) && isStart(world, pos)) loadedStarts.add(pos);
-            sort(loadedStarts);
-            unloadedStarts = startLinks.stream().filter(pos -> !isLoaded(world, pos)).toList();
-        } else {
-            loadedStarts = boardSpaces(world, controller, START_TILES_SEARCH_RADIUS, BoardSpaceType.TILE_START);
-            unloadedStarts = memory.starts.stream().filter(pos -> !isLoaded(world, pos)).toList();
-        }
+        return scan(world, controller, memory, partySpaces, startLinks, Set.of());
+    }
+
+    /**
+     * @param away the pawns the controller set aside elsewhere (its arrival spaces, its podiums, an End space): bound
+     *             to a start tile, they play from it all the same
+     */
+    static Snapshot scan(ServerWorld world, BlockPos controller, Memory memory, Collection<BlockPos> partySpaces,
+                         List<BlockPos> startLinks, Set<UUID> away) {
+        // The start tiles linked to the controller (none linked: none, the brush only suggests them), and the ones in
+        // chunks that are not loaded
+        List<BlockPos> loadedStarts = new ArrayList<>();
+        for (BlockPos pos : startLinks) if (isLoaded(world, pos) && isStart(world, pos)) loadedStarts.add(pos);
+        sort(loadedStarts);
+        List<BlockPos> unloadedStarts = startLinks.stream().filter(pos -> !isLoaded(world, pos)).toList();
         List<BlockPos> starts = new ArrayList<>(loadedStarts);
         starts.addAll(unloadedStarts);
         sort(starts);
@@ -151,7 +155,7 @@ public final class PartyBoard {
         // The spaces remembered in chunks that are not loaded stay on the board
         for (BlockPos pos : memory.spaces) if (!isLoaded(world, pos)) spaces.add(pos);
         spaces.addAll(unloadedStarts);
-        return new Snapshot(starts, startTokens(world, loadedStarts), spaces, unloadedStarts, graph);
+        return new Snapshot(starts, startTokens(world, loadedStarts, away), spaces, unloadedStarts, graph);
     }
 
     /** The loaded board spaces the links of the cartridges (every slot) lead to from {@code from}, {@code from} included. */
@@ -176,10 +180,10 @@ public final class PartyBoard {
      * (the first one bound to it). A tile still bound to a token that is gone or elsewhere has no token: it used to add
      * a player without a pawn to the party.
      */
-    private static Map<UUID, BlockPos> startTokens(ServerWorld world, List<BlockPos> starts) {
+    private static Map<UUID, BlockPos> startTokens(ServerWorld world, List<BlockPos> starts, Set<UUID> away) {
         Map<UUID, BlockPos> tokens = new LinkedHashMap<>();
         boundTokens(world, starts).forEach((uuid, tilePos) -> {
-            if (isOn(world, uuid, tilePos)) tokens.put(uuid, tilePos);
+            if (isOn(world, uuid, tilePos) || away.contains(uuid) && isAlive(world, uuid)) tokens.put(uuid, tilePos);
         });
         return tokens;
     }
@@ -207,6 +211,11 @@ public final class PartyBoard {
         return world.getEntity(uuid) instanceof MobEntity token && token.isAlive()
                 && ((TokenizedEntityInterface) token).steveparty$isTokenized()
                 && token.getPos().squaredDistanceTo(tilePos.toCenterPos()) <= ON_START_DISTANCE * ON_START_DISTANCE;
+    }
+
+    /** Whether the token {@code uuid} is a living token (loaded), wherever it stands. */
+    private static boolean isAlive(ServerWorld world, UUID uuid) {
+        return world.getEntity(uuid) instanceof MobEntity token && token.isAlive() && ((TokenizedEntityInterface) token).steveparty$isTokenized();
     }
 
     /** Whether the block at {@code pos} is a start tile (a board space with a Start Cartridge active). */

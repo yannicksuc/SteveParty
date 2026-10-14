@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -228,7 +229,7 @@ public final class KeyGates {
         ServerPlayerEntity player = CommonPots.playerOf(world, token);
         switch (choice) {
             case USE_KEY -> {
-                if (player == null || !takeKey(player)) {
+                if (player == null || !takeKey(player, PartyControllerEntity.getRunningPartyOf(token.getUuid()).orElse(null))) {
                     halt(world, token, space);
                     return;
                 }
@@ -290,12 +291,12 @@ public final class KeyGates {
         return false;
     }
 
-    /** Uses up one key of the player (none in creative is used up). */
-    private static boolean takeKey(ServerPlayerEntity player) {
+    /** Uses up one key of the player (none in creative is used up): it goes back to {@code party}'s storage. */
+    private static boolean takeKey(ServerPlayerEntity player, @Nullable PartyControllerEntity party) {
         for (int slot = 0; slot < player.getInventory().size(); slot++) {
             ItemStack stack = player.getInventory().getStack(slot);
             if (!stack.isIn(KEYS)) continue;
-            if (!player.isInCreativeMode()) stack.decrement(1);
+            if (!player.isInCreativeMode()) PartyResources.giveBackUsed(party, stack.split(1), player);
             player.getInventory().markDirty();
             return true;
         }

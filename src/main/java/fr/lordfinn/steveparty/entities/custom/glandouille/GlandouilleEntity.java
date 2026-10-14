@@ -710,7 +710,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
         for (LivingEntity other : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(0.2),
                 e -> e != this && e.isAlive() && !e.isSpectator() && !GlandouilleTowers.sameTower(this, e) && !spares(e)
                         && !(e instanceof MulaEntity mula && mula.isDancing()))) {
-            shove(other, chargeDir, SHOVE);
+            shove(this, other, chargeDir, SHOVE);
             hit = true;
         }
         if (hit) {
@@ -732,13 +732,13 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
     }
 
     /**
-     * Shoves {@code other} along {@code dir}: knockback only, never damage. A player is not thrown but dazed on the
-     * spot instead (see {@link DazedEffect}), unless it is only a gentle touch.
+     * Shoves {@code other} along {@code dir} ({@code by} a Glandouille): knockback only, never damage. A player is not
+     * thrown but dazed on the spot instead (see {@link DazedEffect}), unless it is only a gentle touch.
      */
-    public static void shove(LivingEntity other, Vec3d dir, double strength) {
+    public static void shove(Entity by, LivingEntity other, Vec3d dir, double strength) {
         if (other instanceof GlandouilleEntity glandouille && glandouille.isBoardActor()) return;
         if (other instanceof PlayerEntity) {
-            if (strength >= DAZE_STRENGTH) DazedEffect.daze(other);
+            if (strength >= DAZE_STRENGTH) DazedEffect.daze(other, by);
             return;
         }
         // takeKnockback pushes away from (x, z): the opposite of where it goes
@@ -1008,7 +1008,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
                 setMood(Mood.CALM, 0);
                 return;
             }
-            shove(other, new Vec3d(flyDir.x, 0, flyDir.z).normalize(), SHOVE);
+            shove(this, other, new Vec3d(flyDir.x, 0, flyDir.z).normalize(), SHOVE);
             playSound(ModSounds.GLANDOUILLE_RAM, 1f, 1.2f);
         }
         if (flown % 2 == 0) world.spawnParticles(ParticleTypes.CLOUD, getX(), getY() + 0.3, getZ(), 1, 0, 0, 0, 0);
@@ -1189,7 +1189,7 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity, Boa
                     continue;
                 }
             }
-            shove(other, slideVelocity.normalize(), slideVelocity.horizontalLength() * 2);
+            shove(this, other, slideVelocity.normalize(), slideVelocity.horizontalLength() * 2);
         }
         if (this.age % 3 == 0) world.spawnParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 0.05, getZ(), 1, 0.1, 0, 0.1, 0);
         if (--moodTicks <= 0 || slideVelocity.horizontalLength() < 0.03) {

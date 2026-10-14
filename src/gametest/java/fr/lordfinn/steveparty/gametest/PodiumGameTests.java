@@ -57,6 +57,10 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
+import fr.lordfinn.steveparty.blocks.custom.RedstonePodiumBlock;
+import fr.lordfinn.steveparty.payloads.custom.PodiumPreviewPayload;
+import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
@@ -96,9 +100,15 @@ public class PodiumGameTests implements SteveGameTest {
     private static BlockPos column(TestContext context, int x, int z, int halves) {
         BlockPos bottom = new BlockPos(x, 1, z);
         int y = 0;
-        for (; halves >= 2; halves -= 2) place(context, bottom.up(y++), ModBlocks.PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
+        for (; halves >= 2; halves -= 2) place(context, bottom.up(y++), ModBlocks.GOLD_PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
         if (halves == 1) place(context, bottom.up(y), ModBlocks.GOLD_PODIUM.getDefaultState());
         return bottom;
+    }
+
+    /** The column's bottom block becomes a Redstone Podium: the column (a classic one) answers pulses too. */
+    private static void wire(TestContext context, BlockPos bottom) {
+        BlockState state = context.getBlockState(bottom);
+        place(context, bottom, ModBlocks.PODIUM.getDefaultState().with(PodiumBlock.FULL, state.get(PodiumBlock.FULL)));
     }
 
     private static PodiumBlockEntity master(TestContext context, BlockPos bottom) {
@@ -483,6 +493,7 @@ public class PodiumGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "podium_party_redstone", tickLimit = 100)
     public void aPulseRegistersTheNearestPlayer(TestContext context) {
         BlockPos first = column(context, 3, 3, 4), second = column(context, 4, 3, 2), third = column(context, 5, 3, 1);
+        wire(context, first);
         ServerPlayerEntity near = player(context, "near", 3.5, 1, 5.5), far = player(context, "far", 7.5, 1, 7.5),
                 other = player(context, "other", 0.5, 1, 0.5), watcher = player(context, "w", 3.5, 3, 3.5);
         try {
@@ -497,7 +508,8 @@ public class PodiumGameTests implements SteveGameTest {
             context.assertEquals(master(context, first).getSignal(), PodiumSignal.REGISTER, "registers by default");
             Podiums.cycleSignal(near, context.getWorld(), context.getAbsolutePos(first.up()));
             Podiums.cycleSignal(near, context.getWorld(), context.getAbsolutePos(first));
-            context.assertEquals(master(context, first).getSignal(), PodiumSignal.CLEAR, "register, fill, then empty");
+            Podiums.cycleSignal(near, context.getWorld(), context.getAbsolutePos(first));
+            context.assertEquals(master(context, first).getSignal(), PodiumSignal.CLEAR, "register, fill, fill from the bottom, then empty");
             context.setBlockState(first.north(), Blocks.REDSTONE_BLOCK);
             context.assertTrue(occupant(context, first) == null, "a pulse empties this podium");
             context.setBlockState(first.north(), Blocks.AIR);
@@ -514,10 +526,177 @@ public class PodiumGameTests implements SteveGameTest {
         context.complete();
     }
 
+    /** A column of Redstone Podiums alone, out of a party. */
+    private static BlockPos redstoneColumn(TestContext context, int x, int z, int halves) {
+        BlockPos bottom = new BlockPos(x, 1, z);
+        int y = 0;
+        for (; halves >= 2; halves -= 2) place(context, bottom.up(y++), ModBlocks.PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
+        if (halves == 1) place(context, bottom.up(y), ModBlocks.PODIUM.getDefaultState());
+        return bottom;
+    }
+
+    /** A column of classic (gold) podiums alone. */
+    private static BlockPos goldColumn(TestContext context, int x, int z, int halves) {
+        BlockPos bottom = new BlockPos(x, 1, z);
+        int y = 0;
+        for (; halves >= 2; halves -= 2) place(context, bottom.up(y++), ModBlocks.GOLD_PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
+        if (halves == 1) place(context, bottom.up(y), ModBlocks.GOLD_PODIUM.getDefaultState());
+        return bottom;
+    }
+
+    private static boolean click(TestContext context, ServerPlayerEntity player, BlockPos pos) {
+        return Podiums.toggle(player, context.getWorld(), context.getAbsolutePos(pos));
+    }
+
+    /**
+     * Two families: a classic podium (gold, iron, copper) is taken by a click and ignores redstone; a Redstone Podium is
+     * taken by a pulse (the nearest player) and not by a click; a column of both answers both.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void classicPodiumsTakeClicksRedstoneOnesPulses(TestContext context) {
+        BlockPos gold = goldColumn(context, 2, 3, 2), redstone = redstoneColumn(context, 6, 3, 2);
+        ServerPlayerEntity player = player(context, "fam", 4.5, 1, 1.5);
+        try {
+            context.assertTrue(PodiumBlock.answersClicks(context.getWorld(), context.getAbsolutePos(gold))
+                    && !PodiumBlock.answersRedstone(context.getWorld(), context.getAbsolutePos(gold)), "gold: clicks only");
+            context.assertTrue(PodiumBlock.answersRedstone(context.getWorld(), context.getAbsolutePos(redstone))
+                    && !PodiumBlock.answersClicks(context.getWorld(), context.getAbsolutePos(redstone)), "redstone: pulses only");
+            context.setBlockState(gold.north(), Blocks.REDSTONE_BLOCK);
+            context.assertTrue(occupant(context, gold) == null, "a pulse into a gold podium: nothing");
+            context.assertTrue(!click(context, player, redstone) && occupant(context, redstone) == null, "a click on a Redstone Podium: nothing");
+            context.setBlockState(redstone.north(), Blocks.REDSTONE_BLOCK);
+            context.assertEquals(occupant(context, redstone), player.getUuid(), "a pulse: the nearest player on the Redstone Podium");
+            context.assertTrue(click(context, player, gold) && player.getUuid().equals(occupant(context, gold)), "a click takes the gold podium");
+            BlockPos mixed = column(context, 4, 6, 3);
+            wire(context, mixed);
+            context.assertTrue(PodiumBlock.answersClicks(context.getWorld(), context.getAbsolutePos(mixed))
+                    && PodiumBlock.answersRedstone(context.getWorld(), context.getAbsolutePos(mixed)), "both kinds: both");
+        } finally {
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
+    /**
+     * « Fill from the bottom »: the first one to take the podium gets the last free place, the next one the place
+     * above (an elimination: the first out is last). Clicks on a classic podium, pulses on a Redstone one.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void fillFromTheBottom(TestContext context) {
+        BlockPos first = goldColumn(context, 2, 3, 3), second = goldColumn(context, 3, 3, 2), third = goldColumn(context, 4, 3, 1);
+        ServerPlayerEntity a = player(context, "outA", 2.5, 1, 6.5), b = player(context, "outB", 7.5, 1, 7.5);
+        master(context, first).setSignal(PodiumSignal.FILL_BOTTOM);
+        context.assertTrue(click(context, a, first), "a click on the tallest column");
+        context.assertEquals(occupant(context, third), a.getUuid(), "the first one out takes the last place");
+        context.assertTrue(click(context, b, first), "another click");
+        context.assertEquals(occupant(context, second), b.getUuid(), "the next one the place above");
+        // A click and a sneak in the same moment are one gesture: the next clicks come a little later
+        context.waitAndRun(8, () -> {
+            try {
+                context.assertTrue(!click(context, a, first) && occupant(context, first) == null, "already placed: no second place");
+                context.waitAndRun(8, () -> {
+                    try {
+                        context.assertTrue(click(context, a, third) && occupant(context, third) == null, "a click on his own podium: he leaves it");
+
+                        // The same with pulses, on a Redstone Podium
+                        BlockPos r1 = redstoneColumn(context, 2, 8, 2), r2 = redstoneColumn(context, 3, 8, 1);
+                        master(context, r1).setSignal(PodiumSignal.FILL_BOTTOM);
+                        PodiumGroup group = group(context, r1);
+                        context.assertEquals(Podiums.target(group, PodiumSignal.FILL_BOTTOM, null).bottom(), context.getAbsolutePos(r2), "the last free place");
+                        context.assertEquals(Podiums.target(group, PodiumSignal.FILL, null).bottom(), context.getAbsolutePos(r1), "the best free place");
+                    } finally {
+                        TestPlayers.remove(context, a, b);
+                    }
+                    context.complete();
+                });
+            } catch (RuntimeException e) {
+                TestPlayers.remove(context, a, b);
+                throw e;
+            }
+        });
+    }
+
+    /**
+     * The Wrench cycles a column's mode (a classic podium: this podium, best place, last place; a Redstone Podium: also
+     * empty and reset) and shows it: the column it acts on lights up and a Steve statue stands where a player would go.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theWrenchShowsTheMode(TestContext context) {
+        BlockPos first = goldColumn(context, 2, 3, 3), second = goldColumn(context, 3, 3, 2), third = goldColumn(context, 4, 3, 1);
+        BlockPos red = redstoneColumn(context, 7, 7, 1);
+        ServerPlayerEntity player = player(context, "wrench", 5.5, 1, 1.5);
+        try {
+            ServerWorld world = context.getWorld();
+            BlockPos at = context.getAbsolutePos(second);
+            Podiums.cycleSignal(player, world, at);
+            context.assertEquals(master(context, second).getSignal(), PodiumSignal.FILL, "register, then best place");
+            PodiumPreviewPayload shown = Podiums.preview(player, world, at);
+            context.assertEquals(shown.statue().orElse(null), context.getAbsolutePos(first), "best place: the statue on the tallest column");
+            context.assertEquals(shown.columns(), List.of(context.getAbsolutePos(first)), "that column lights up");
+            Podiums.cycleSignal(player, world, at);
+            shown = Podiums.preview(player, world, at);
+            context.assertEquals(master(context, second).getSignal(), PodiumSignal.FILL_BOTTOM, "then last place");
+            context.assertEquals(shown.statue().orElse(null), context.getAbsolutePos(third), "last place: on the lowest column");
+            Podiums.cycleSignal(player, world, at);
+            context.assertEquals(master(context, second).getSignal(), PodiumSignal.REGISTER, "a classic podium has three modes");
+            shown = Podiums.preview(player, world, at);
+            context.assertEquals(shown.statue().orElse(null), at, "this podium: on itself");
+
+            BlockPos redAt = context.getAbsolutePos(red);
+            List<PodiumSignal> seen = new ArrayList<>();
+            for (int i = 0; i < 5; i++) {
+                Podiums.cycleSignal(player, world, redAt);
+                seen.add(master(context, red).getSignal());
+            }
+            context.assertEquals(seen, List.of(PodiumSignal.FILL, PodiumSignal.FILL_BOTTOM, PodiumSignal.CLEAR, PodiumSignal.RESET, PodiumSignal.REGISTER),
+                    "a Redstone Podium has five");
+        } finally {
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
+    /**
+     * The Redstone Podium's carpet takes a dye's colour, the whole column at once; a podium put on it keeps that colour.
+     * The classic podiums have their own recipes, two at a time; the Redstone Podium has its own.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theRedstoneCarpetIsDyedAndEachFamilyHasItsRecipe(TestContext context) {
+        ServerWorld world = context.getWorld();
+        BlockPos column = redstoneColumn(context, 3, 3, 3);
+        BlockPos top = column.up();
+        ItemStack dye = new ItemStack(Items.BLUE_DYE, 2);
+        context.assertTrue(RedstonePodiumBlock.dyeCarpet(world, context.getAbsolutePos(column), null, dye, DyeColor.BLUE).isAccepted(), "dyed");
+        context.assertTrue(context.getBlockState(column).get(RedstonePodiumBlock.CARPET) == DyeColor.BLUE
+                && context.getBlockState(top).get(RedstonePodiumBlock.CARPET) == DyeColor.BLUE, "the whole column");
+        context.assertEquals(dye.getCount(), 1, "one dye used");
+        context.assertTrue(!RedstonePodiumBlock.dyeCarpet(world, context.getAbsolutePos(column), null, dye, DyeColor.BLUE).isAccepted(), "already blue");
+        BlockPos abs = context.getAbsolutePos(top);
+        BlockHitResult onTop = new BlockHitResult(Vec3d.ofCenter(abs).add(0, 0, 0), Direction.UP, abs, false);
+        context.assertTrue(RedstonePodiumBlock.onCarpet(world, abs, context.getBlockState(top), onTop), "its top is the carpet");
+        BlockHitResult low = new BlockHitResult(new Vec3d(abs.getX() + 0.5, abs.getY() + 0.1, abs.getZ()), Direction.NORTH, abs, false);
+        context.assertTrue(!RedstonePodiumBlock.onCarpet(world, abs, context.getBlockState(top), low), "low on its side: the banner, not the carpet");
+
+        ItemStack gold = new ItemStack(Items.GOLD_INGOT), iron = new ItemStack(Items.IRON_INGOT), copper = new ItemStack(Items.COPPER_INGOT),
+                quartz = new ItemStack(Items.QUARTZ_BLOCK);
+        ItemStack crafted = crafted(context, gold, gold, gold, quartz, quartz, quartz);
+        context.assertTrue(crafted.isOf(ModBlocks.GOLD_PODIUM.asItem()) && crafted.getCount() == 2, "gold podiums");
+        context.assertTrue(crafted(context, iron, iron, iron, quartz, quartz, quartz).isOf(ModBlocks.SILVER_PODIUM.asItem()), "iron podiums");
+        context.assertTrue(crafted(context, copper, copper, copper, quartz, quartz, quartz).isOf(ModBlocks.BRONZE_PODIUM.asItem()), "copper podiums");
+        context.complete();
+    }
+
+    private static ItemStack crafted(TestContext context, ItemStack... grid) {
+        CraftingRecipeInput input = CraftingRecipeInput.create(3, 2, List.of(grid));
+        return context.getWorld().getServer().getRecipeManager().getFirstMatch(RecipeType.CRAFTING, input, context.getWorld())
+                .map(entry -> entry.value().craft(input, context.getWorld().getRegistryManager())).orElse(ItemStack.EMPTY);
+    }
+
     /** Out of a party a pulse registers the nearest player around, whoever it is. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aPulseRegistersAnyoneOutOfAParty(TestContext context) {
         BlockPos podium = column(context, 3, 3, 2);
+        wire(context, podium);
         ServerPlayerEntity player = player(context, "free", 3.5, 2, 3.5);
         try {
             PodiumGroup group = group(context, podium);
@@ -539,7 +718,8 @@ public class PodiumGameTests implements SteveGameTest {
                 p3 = player(context, "three", 1.5, 1, 7.5), p4 = player(context, "four", 0.5, 1, 0.5);
         try {
             Played played = played(context, page(context, first), null, MiniGamePartyStep.Phase.PLAYING, p1, p2, p3, p4);
-            // The entry is the lowest column: it stays a place like the others
+            // The entry is the lowest column, a Redstone Podium: it stays a place like the others
+            place(context, third, ModBlocks.PODIUM.getDefaultState());
             master(context, third).setSignal(PodiumSignal.FILL);
             BlockPos source = third.east();
             context.setBlockState(source, Blocks.REDSTONE_BLOCK);

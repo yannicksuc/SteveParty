@@ -251,7 +251,7 @@ public final class TileLinkerBrush {
         // From a Party Controller, the tiles the look crosses on the way to a start tile: skipped (no path from them)
         if (fromKind == null && from != null && world.getBlockEntity(from) instanceof PartyControllerEntity
                 && BrushLinks.reverse(world, from, pos) == null && BoardLinks.container(world, pos) != null) return;
-        if (fromKind instanceof ControllerStartLinks.Starts) {
+        if (fromKind instanceof ControllerStartLinks.Starts || fromKind instanceof ControllerEndLinks.Arrivals) {
             // From a Party Controller to its start tiles: each once a stroke, the stroke goes on from the controller
             if (!stroke.cells.add(pos.toImmutable())) return;
             stroke.start = null;
@@ -259,7 +259,8 @@ public final class TileLinkerBrush {
             return;
         }
         // From a start tile to a Party Controller: the stroke goes on from the controller, that start tile done
-        if (from != null && ControllerStartLinks.reverse(world, from, pos) != null) stroke.cells.add(from);
+        if (from != null && (ControllerStartLinks.reverse(world, from, pos) != null || ControllerEndLinks.reverse(world, from, pos) != null))
+            stroke.cells.add(from);
         stroke.last = pos.toImmutable();
         BrushLinks.Held origin = from == null ? null : BrushLinks.holder(world, from, level(brush));
         if (origin == null) {
@@ -270,6 +271,12 @@ public final class TileLinkerBrush {
             // A Party Controller shows its start tiles
             ControllerStartLinks.show(world, pos);
             world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS, 0.5f, 1.2f);
+            return;
+        }
+        // Into a start tile: refused (its links only go out of it), the stroke goes on from it
+        if (fromKind == null && WrenchActions.intoStart(world, from, pos)) {
+            stroke.start = null;
+            WrenchActions.refuseIntoStart(player);
             return;
         }
         // From a Teleport tile to a board space it has no link to: « TP » or « link », the player picks
@@ -370,6 +377,10 @@ public final class TileLinkerBrush {
             toggle(player, world, to, back, from);
             return;
         }
+        if (kind == null && MiniGameControllerLinks.emptyController(world, from)) {
+            WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.controller_no_page", BoardText.pos(from)));
+            return;
+        }
         if (kind == null) {
             // A holder linked to nothing of the kind: a router, a Hop Switch...
             boolean board = kinds.stream().anyMatch(k -> k instanceof CartridgeLinks.BoardPaths);
@@ -390,6 +401,11 @@ public final class TileLinkerBrush {
         BrushLinkable kind = BrushLinks.kindFor(BrushLinks.of(world, from, level(brush)), world, pos);
         // Its marker or a chest reached (or refused): the space the stroke started on keeps its cartridge
         if (kind != null && !(kind instanceof CartridgeLinks.BoardPaths)) stroke.start = null;
+        if (kind == null && MiniGameControllerLinks.emptyController(world, from)) {
+            stroke.cells.add(pos.toImmutable());
+            WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.controller_no_page", BoardText.pos(from)));
+            return;
+        }
         if (kind == null) {
             // A chest or a Spawn Marker the cartridge takes none of: said, once a stroke
             String refusal = BrushLinks.refusal(world, from, level(brush), pos);
@@ -413,9 +429,10 @@ public final class TileLinkerBrush {
             cannotEdit(player, from);
             return;
         }
-        if (kind.linked(world, target)) kind.unlink(player, world, target);
-        else {
-            kind.link(player, world, target);
+        if (kind.linked(world, target)) {
+            if (kind.unlink(player, world, target)) BrushTutorialSteps.erased(player);
+        } else {
+            if (kind.link(player, world, target)) BrushTutorialSteps.linked(player, world, from, kind, target);
             ModCriteria.fire(player, "tiles_linked");
         }
     }
@@ -441,13 +458,14 @@ public final class TileLinkerBrush {
         }
         WrenchActions.recorded(player, world, brush, () -> {
             if (!WrenchActions.addLink(player, world, from, origin, slot, cell)) return;
-            say(player, Text.translatable("message.steveparty.tile_linker_brush.blob", BoardText.pos(from), BoardText.pos(cell)));
+            BrushTutorialSteps.pathLinked(player, world, from);
+            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.blob", BoardText.pos(from), BoardText.pos(cell)), WrenchActions.linkWord(true));
             world.playSound(null, surface.getBlockPos(), SoundEvents.ENTITY_SLIME_SQUISH, SoundCategory.PLAYERS, 0.7f, 0.8f);
         });
     }
 
     static void erased(ServerPlayerEntity player, ServerWorld world, BlockPos from, BlockPos to) {
-        say(player, Text.translatable("message.steveparty.tile_linker_brush.erased", BoardText.pos(from), BoardText.pos(to)));
+        WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.erased", BoardText.pos(from), BoardText.pos(to)), WrenchActions.linkWord(false));
         world.playSound(null, player.getBlockPos(), ModSounds.CANCEL_SOUND_EVENT, SoundCategory.PLAYERS, 0.6f, 1f);
     }
 

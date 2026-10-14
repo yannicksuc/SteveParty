@@ -1,5 +1,10 @@
 package fr.lordfinn.steveparty.board;
 
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
+import fr.lordfinn.steveparty.minigame.MiniGamePageData;
+import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
+import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 
 import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
@@ -46,7 +51,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, TeleportChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange, PageLinksChange, PipePageChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -157,6 +162,30 @@ public final class LinkHistory {
         }
     }
 
+    /** The pipes and results linked to a mini-game page, painted from its Mini-game Controller (see {@link MiniGameControllerLinks}). */
+    public record PageLinksChange(BlockPos pos, UUID page, List<MiniGamePipeLink> pipesBefore, List<MiniGamePodiumLink> resultsBefore,
+                                  List<MiniGamePipeLink> pipesAfter, List<MiniGamePodiumLink> resultsAfter) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            MiniGamePageData data = MiniGamePages.find(world.getServer(), page).orElse(null);
+            if (data == null || !data.pipeLinks().equals(undo ? pipesAfter : pipesBefore)
+                    || !data.podiumLinks().equals(undo ? resultsAfter : resultsBefore)) return false;
+            MiniGamePages.update(world.getServer(), data.withPipeLinks(undo ? pipesBefore : pipesAfter).withPodiumLinks(undo ? resultsBefore : resultsAfter));
+            return true;
+        }
+    }
+
+    /** The page printed on a mini-game pipe (empty: none), painted from a Mini-game Controller. */
+    public record PipePageChange(BlockPos pos, ItemStack before, ItemStack after) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            if (!(world.getBlockEntity(pos) instanceof MiniGamePipeBlockEntity pipe)
+                    || !Objects.equals(MiniGamePages.idOf(pipe.getPage()), MiniGamePages.idOf(undo ? after : before))) return false;
+            pipe.setPage((undo ? before : after).copy());
+            return true;
+        }
+    }
+
     /** The start tiles linked to a Party Controller, see {@link ControllerStartLinks}. */
     public record StartLinksChange(BlockPos pos, List<BlockPos> before, List<BlockPos> after) implements Change {
         @Override
@@ -164,6 +193,19 @@ public final class LinkHistory {
             if (!(world.getBlockEntity(pos) instanceof PartyControllerEntity controller)
                     || !controller.getStartLinks().equals(undo ? after : before)) return false;
             controller.setStartLinks(undo ? before : after);
+            return true;
+        }
+    }
+
+    /** The Finish spaces or the podiums linked to a Party Controller, see {@link ControllerEndLinks}. */
+    public record ControllerLinksChange(BlockPos pos, boolean podiums, List<BlockPos> before, List<BlockPos> after) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            if (!(world.getBlockEntity(pos) instanceof PartyControllerEntity controller)) return false;
+            List<BlockPos> now = podiums ? controller.getPodiumLinks() : controller.getArrivalLinks();
+            if (!now.equals(undo ? after : before)) return false;
+            if (podiums) controller.setPodiumLinks(undo ? before : after);
+            else controller.setArrivalLinks(undo ? before : after);
             return true;
         }
     }

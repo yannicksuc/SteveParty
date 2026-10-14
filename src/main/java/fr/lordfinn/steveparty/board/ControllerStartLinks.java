@@ -21,9 +21,8 @@ import java.util.List;
 
 /**
  * The Tile Linker Brush's links from a Party Controller to its start tiles: painted from the controller to a start
- * tile, or from a start tile to the controller; painted again, removed. When a controller has any, they are its only
- * start tiles (see {@link PartyBoard}); none: the start tiles within
- * {@link PartyControllerEntity#START_TILES_SEARCH_RADIUS} blocks of it.
+ * tile, or from a start tile to the controller; painted again, removed. They are its only start tiles (see
+ * {@link PartyBoard}): none linked, no start (nothing is ever found around it).
  * <p>
  * Server side only, its texts built here: a client without it still paints them (the brush is server side), and sees
  * them as particle trails (when linked, and when a stroke starts on the controller).
@@ -51,33 +50,22 @@ public final class ControllerStartLinks {
     static void show(ServerWorld world, BlockPos pos) {
         if (!(world.getBlockEntity(pos) instanceof PartyControllerEntity controller)) return;
         for (BlockPos start : controller.getStartLinks()) BoardLinks.trail(world, pos, start, COLOR);
-    }
-
-    /** The players told how to link the start tiles of a controller, by controller (once a server run). */
-    private static final Set<String> TOLD = ServerMemory.forgetOnStop(new HashSet<>());
-
-    /**
-     * The dashboard of {@code controller} opened by {@code player}: with no start tile linked and no party running,
-     * told once (in the chat) how to link them, if they may edit it.
-     */
-    public static void dashboardOpened(ServerPlayerEntity player, PartyControllerEntity controller) {
-        if (!controller.getStartLinks().isEmpty() || controller.getPartyData().isStarted() || !controller.canEdit(player)) return;
-        if (TOLD.add(player.getUuid() + "@" + controller.getPos().asLong())) player.sendMessage(howToLink(player), false);
+        ControllerEndLinks.show(world, controller);
     }
 
     /** What the Wrench's board check adds about the start tiles of {@code controller}. */
     public static Text status(ServerPlayerEntity player, PartyControllerEntity controller) {
         int linked = controller.getStartLinks().size();
         if (linked == 0) return howToLink(player);
-        return Text.literal(french(player) ? "Départs liés au Pinceau : " + linked + " (seuls ceux-là comptent)"
-                : "Start tiles linked with the brush: " + linked + " (only those count)").formatted(Formatting.GRAY);
+        return Text.literal(french(player) ? "Départs reliés : " + linked
+                : "Start tiles linked: " + linked).formatted(Formatting.GRAY);
     }
 
     /** The line of {@code /steveparty links} about the start tiles, for {@code player} (null: English). */
     public static Text linksLine(@Nullable ServerPlayerEntity player) {
         return Text.literal(player != null && french(player)
-                ? "Du Party Controller à une case de départ : ses départs (aucun lié : ceux à moins de 32 blocs)"
-                : "From the Party Controller to a start tile: its starts (none linked: those within 32 blocks)");
+                ? "Du Party Controller à une case départ : ses départs (seuls ceux-là comptent)"
+                : "From the Party Controller to a start tile: its starts (only those count)");
     }
 
     /** Whether the player reads French (their client's language). */
@@ -92,8 +80,8 @@ public final class ControllerStartLinks {
      */
     public static Text howToLink(ServerPlayerEntity player) {
         return Text.literal(french(player)
-                ? "Départs : trouvés à moins de 32 blocs. Les choisir : Pinceau lieur, du Party Controller vers chaque case de départ (/steveparty links)"
-                : "Starts: found within 32 blocks. To pick them: Tile Linker Brush, from the Party Controller to each start tile (/steveparty links)")
+                ? "Aucun départ relié : Pinceau lieur, du Party Controller vers chaque case départ (une par joueur)"
+                : "No start tile linked: Tile Linker Brush, from the Party Controller to each start tile (one per player)")
                 .formatted(Formatting.GRAY);
     }
 
@@ -131,7 +119,7 @@ public final class ControllerStartLinks {
             List<BlockPos> links = new ArrayList<>(controller.getStartLinks());
             links.add(start);
             set(player, links);
-            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(holder()), BoardText.pos(start)));
+            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(holder()), BoardText.pos(start)), WrenchActions.linkWord(true));
             world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.45f, 1.5f);
             BoardLinks.trail(world, holder(), start, COLOR);
             return true;
@@ -145,8 +133,6 @@ public final class ControllerStartLinks {
             set(player, links);
             TileLinkerBrush.erased(player, world, holder(), start);
             BoardLinks.trail(world, holder(), start, BoardLinks.CUT_COLOR);
-            // The last one gone: its start tiles are found around it again
-            if (links.isEmpty()) player.sendMessage(howToLink(player), false);
             return true;
         }
 

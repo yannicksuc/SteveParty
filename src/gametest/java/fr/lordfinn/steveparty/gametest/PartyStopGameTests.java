@@ -80,6 +80,8 @@ public class PartyStopGameTests implements SteveGameTest {
         context.setBlockState(CONTROLLER.down(), Blocks.STONE);
         context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
         PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
+        // Its start tiles are the ones linked to it (the brush's links)
+        controller.setStartLinks(List.of(context.getAbsolutePos(START_A), context.getAbsolutePos(START_B)));
         controller.boot();
         context.assertTrue(controller.getPartyData().isStarted(), "the party started");
         context.assertTrue(controller.getPartyData().getTokens().containsAll(List.of(a.getUuid(), b.getUuid())), "both pawns play");
@@ -341,6 +343,7 @@ public class PartyStopGameTests implements SteveGameTest {
         context.setBlockState(CONTROLLER.down(), Blocks.STONE);
         context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
         PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
+        controller.setStartLinks(List.of(context.getAbsolutePos(START_A), context.getAbsolutePos(START_B)));
         controller.boot();
         context.assertTrue(controller.getPartyData().getTokens().size() == 2, "both play");
         int colorA = PartyLiveData.colorOf(a), colorB = PartyLiveData.colorOf(b);

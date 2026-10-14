@@ -39,7 +39,27 @@ public final class PartyResults {
      * @param name  the player's name (the pawn's when nobody plays it)
      * @param tied  same stars and coins as the place before or after it: the start roll decided
      */
-    public record Place(int place, @Nullable UUID owner, String name, int stars, int coins, boolean tied) {
+    public record Place(int place, @Nullable UUID owner, String name, int stars, int coins, boolean tied, @Nullable UUID token) {
+        public Place(int place, @Nullable UUID owner, String name, int stars, int coins, boolean tied) {
+            this(place, owner, name, stars, coins, tied, null);
+        }
+
+        /** As the clients get it (the end panel over the podiums): no pawn. */
+        public net.minecraft.nbt.NbtCompound toNbt() {
+            net.minecraft.nbt.NbtCompound nbt = new net.minecraft.nbt.NbtCompound();
+            nbt.putInt("Place", place);
+            if (owner != null) nbt.putUuid("Owner", owner);
+            nbt.putString("Name", name);
+            nbt.putInt("Stars", stars);
+            nbt.putInt("Coins", coins);
+            if (tied) nbt.putBoolean("Tied", true);
+            return nbt;
+        }
+
+        public static Place fromNbt(net.minecraft.nbt.NbtCompound nbt) {
+            return new Place(nbt.getInt("Place"), nbt.containsUuid("Owner") ? nbt.getUuid("Owner") : null, nbt.getString("Name"),
+                    nbt.getInt("Stars"), nbt.getInt("Coins"), nbt.getBoolean("Tied"));
+        }
     }
 
     /** The ranking of the party of {@code controller} (its pawns still in it), the winner first. */
@@ -52,12 +72,25 @@ public final class PartyResults {
         }
         List<PartyLiveData.Standing> sorted = new ArrayList<>(players.values());
         sorted.sort(Comparator.comparingInt(PartyLiveData.Standing::stars).thenComparingInt(PartyLiveData.Standing::coins).reversed());
+        // Ranked by arrival (an End space): who arrived first, in their order, then the others by stars
+        int arrived = 0;
+        if (controller.getPartyData().getEndRanking() == fr.lordfinn.steveparty.items.custom.cartridges.EndCartridgeItem.Ranking.ARRIVAL.ordinal()) {
+            List<PartyLiveData.Standing> first = new ArrayList<>();
+            for (UUID token : controller.getPartyData().getArrivals()) {
+                for (PartyLiveData.Standing standing : sorted) {
+                    if (standing.token().equals(token) && !first.contains(standing)) first.add(standing);
+                }
+            }
+            sorted.removeAll(first);
+            sorted.addAll(0, first);
+            arrived = first.size();
+        }
         List<Place> places = new ArrayList<>(sorted.size());
         for (int i = 0; i < sorted.size(); i++) {
             PartyLiveData.Standing standing = sorted.get(i);
-            boolean tied = i > 0 && same(sorted.get(i - 1), standing) || i + 1 < sorted.size() && same(sorted.get(i + 1), standing);
+            boolean tied = i >= arrived && (i > arrived && same(sorted.get(i - 1), standing) || i + 1 < sorted.size() && same(sorted.get(i + 1), standing));
             String name = standing.ownerName().isEmpty() ? standing.tokenName() : standing.ownerName();
-            places.add(new Place(i + 1, standing.owner().orElse(null), name, standing.stars(), standing.coins(), tied));
+            places.add(new Place(i + 1, standing.owner().orElse(null), name, standing.stars(), standing.coins(), tied, standing.token()));
         }
         return places;
     }

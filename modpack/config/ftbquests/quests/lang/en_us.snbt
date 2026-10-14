@@ -250,7 +250,7 @@
 		"Sneak on one or right-click it to take it. Click podiums with the page to link them."
 	]
 	quest.0CE8734A07EDA523.quest_subtitle: "Craft it (owned ones don't count)"
-	quest.0CE8734A07EDA523.title: "Podium"
+	quest.0CE8734A07EDA523.title: "Redstone Podium"
 	quest.0D2D7E4E7239F684.quest_desc: [
 		"\"Draw the zone\" in the editor, then click two corners (128 blocks per side at most)."
 		"Restore option: each round plays apart, with an empty inventory, and the arena is rebuilt at the end."
@@ -477,7 +477,7 @@
 		"A Podium + an iron ingot, shapeless. Only a look: the height of the column decides the place."
 	]
 	quest.1FAB526747142277.quest_subtitle: "Craft it (owned ones don't count)"
-	quest.1FAB526747142277.title: "Silver Podium"
+	quest.1FAB526747142277.title: "Iron Podium"
 	quest.1FD5DF613F9840F0.quest_desc: [
 		"Put an Inventory Cartridge linked to a chest in it (Wrench), hang it with 2 or 3 blocks of air below, then jump and hit it with your head: it drops the chest's items."
 		"2 hits, then 3 s to recharge."
@@ -774,7 +774,7 @@
 		"Out of a party: plays or stops that mini-game from afar. In a party: tells you're ready for the real round."
 	]
 	quest.3F68A81D8A5CA07D.quest_subtitle: "Craft it (owned ones don't count)"
-	quest.3F68A81D8A5CA07D.title: "Mini-game Remote"
+	quest.3F68A81D8A5CA07D.title: "Remote"
 	quest.405FC7652C003313.quest_desc: [
 		"Custom dice, a core at full height and Mulas dancing around it."
 	]
@@ -1226,7 +1226,7 @@
 		"A Podium + a copper ingot, shapeless. Only a look: the height of the column decides the place."
 	]
 	quest.6E614CCC831846DA.quest_subtitle: "Craft it (owned ones don't count)"
-	quest.6E614CCC831846DA.title: "Bronze Podium"
+	quest.6E614CCC831846DA.title: "Copper Podium"
 	quest.6EF85DD450A37FB8.quest_desc: [
 		"Page in hand, click a pipe mouth to link it (again to unlink); linked pipes glow while you hold the page."
 		"When the mini-game starts, each player comes out of a pipe of their role."

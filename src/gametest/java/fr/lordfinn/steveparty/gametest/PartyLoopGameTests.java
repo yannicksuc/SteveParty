@@ -147,6 +147,7 @@ public class PartyLoopGameTests implements SteveGameTest {
             case EVENT -> ModItems.PARTY_CARD_EVENT;
             case REPEAT -> ModItems.PARTY_CARD_REPEAT;
             case SEQUENCE_START -> ModItems.PARTY_CARD_SEQUENCE_START;
+            case END -> ModItems.PARTY_CARD_END;
             case CUSTOM -> throw new IllegalArgumentException("an addon's card has its own item");
         }, count);
     }

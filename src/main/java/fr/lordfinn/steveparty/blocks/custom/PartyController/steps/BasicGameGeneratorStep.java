@@ -116,7 +116,7 @@ public class BasicGameGeneratorStep extends PartyStep {
         List<ExpandedCard> result = new ArrayList<>();
         List<ExpandedCard> group = new ArrayList<>();
         boolean any = program.stream().anyMatch(stack -> stack.getItem() instanceof PartyCardItem card
-                && card.getCardType() != PartyCardItem.CardType.SEQUENCE_START);
+                && card.getCardType() != PartyCardItem.CardType.SEQUENCE_START && card.getCardType() != PartyCardItem.CardType.END);
         if (!any) {
             for (int i = 0; i < Math.max(1, defaultRounds); i++) {
                 result.add(new ExpandedCard(PartyCardItem.CardType.TURNS, 1));
@@ -126,6 +126,8 @@ public class BasicGameGeneratorStep extends PartyStep {
         }
         for (ItemStack stack : program) {
             if (!(stack.getItem() instanceof PartyCardItem cardItem)) continue;
+            // The End card plays nothing: how the party ends (see PartyEnding)
+            if (cardItem.getCardType() == PartyCardItem.CardType.END) continue;
             ExpandedCard card = new ExpandedCard(cardItem.getCardType(), stack.getCount(), cardItem.getCardId());
             if (card.type() == PartyCardItem.CardType.SEQUENCE_START) {
                 // What is before it was played once, and stays out of the next loop

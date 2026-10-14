@@ -733,7 +733,7 @@ q("write_page", 5.75, -4.5, C(), deps=["page"], rewards=T1(), icon="minecraft:wr
         ["Clic droit dans le vide avec la page : l'éditeur. Un titre, une description (400 caractères, en couleurs) et une image (dépose un PNG ou un JPEG sur la fenêtre), affichée quand le mini-jeu est tiré."]))
 
 q("formats", 9.5, -4.75, C(), deps=["write_page"], rewards=T1(), icon="minecraft:white_banner",
-  title=("Formats", "Formats"),
+  title=("Formats", "Modes de jeu"),
   desc=(["Teams (2 to 4 sides, \"1 vs all\", \"2 vs 2\"...), free-for-all or all together. A page is drawn only if one of its formats fits the board's teams.",
          "Team A: players on positive spaces. Team B: on negative ones."],
         ["Équipes (2 à 4 camps, « 1 contre tous », « 2 contre 2 »...), chacun pour soi ou tous ensemble. Une page n'est tirée que si l'un de ses modes de jeu convient aux équipes du plateau.",

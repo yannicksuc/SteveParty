@@ -1083,6 +1083,26 @@ public class GoalPoleGameTests implements SteveGameTest {
         return player;
     }
 
+    /** A pole only stands on its base: on the ground it is not placed; on a base, then on its segments, it is. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aPoleOnlyGoesOnItsBase(TestContext context) {
+        context.setBlockState(BASE.down(), Blocks.STONE);
+        context.setBlockState(BASE.east().down(), Blocks.STONE);
+        PlayerEntity player = builder(context);
+        BlockPos ground = context.getAbsolutePos(BASE.east().down());
+        ItemStack stack = new ItemStack(ModBlocks.GOAL_POLE);
+        player.setStackInHand(Hand.MAIN_HAND, stack);
+        ActionResult refused = stack.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND,
+                new BlockHitResult(Vec3d.ofCenter(ground).add(0, 0.5, 0), Direction.UP, ground, false)));
+        context.assertTrue(!refused.isAccepted() && context.getBlockState(BASE.east()).isAir(), "not on the ground");
+        context.assertTrue(!GoalPoleBlock.canStandOn(Blocks.STONE.getDefaultState()), "stone carries no pole");
+        context.setBlockState(BASE, base());
+        placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE);
+        placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE.up());
+        context.assertTrue(context.getBlockState(BASE.up(2)).getBlock() instanceof GoalPoleBlock, "on its base, then on its segments");
+        context.complete();
+    }
+
     /**
      * A crafted pole comes with its flag: the first segment shows the classic red flag at the top, facing the player;
      * segments stacked on it take the flag up (still one flag, none dropped); a dye colours it and an empty hand on a
@@ -1142,7 +1162,7 @@ public class GoalPoleGameTests implements SteveGameTest {
     public void aBrokenPoleComesBackWithoutItsFlag(TestContext context) {
         ServerWorld world = context.getWorld();
         PlayerEntity player = builder(context);
-        context.setBlockState(BASE, Blocks.STONE);
+        context.setBlockState(BASE, base());
         placePole(context, player, new ItemStack(ModBlocks.GOAL_POLE), BASE);
         poleEntity(context, BASE.up()).setFlagColor(FlagItem.dyeColor(DyeColor.BLUE));
         world.breakBlock(context.getAbsolutePos(BASE.up()), true);

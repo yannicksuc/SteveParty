@@ -230,6 +230,34 @@ public final class PodiumGroup {
         return free ? first : null;
     }
 
+    /** The last free column (the lowest place): filling from the bottom. Null when every column is taken. */
+    public @Nullable Column lowestFree() {
+        for (int i = columns.size() - 1; i >= 0; i--) if (columns.get(i).occupant() == null) return columns.get(i);
+        return null;
+    }
+
+    /** The first column of the worst place none of whose columns is taken, null when every place is. */
+    public @Nullable Column lowestFreePlace() {
+        Column found = null;
+        int place = 0;
+        boolean free = false;
+        for (Column column : columns) {
+            if (placeOf(column) != place) {
+                if (free) found = first(place);
+                place = placeOf(column);
+                free = true;
+            }
+            if (column.occupant() != null) free = false;
+        }
+        return free ? first(place) : found;
+    }
+
+    /** The first column of {@code place}. */
+    private @Nullable Column first(int place) {
+        for (Column column : columns) if (placeOf(column) == place) return column;
+        return null;
+    }
+
     /** @return true if every column is taken. */
     public boolean isFull() {
         return !columns.isEmpty() && highestFree() == null;

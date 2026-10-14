@@ -4,6 +4,9 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
 import net.minecraft.block.BlockState;
+import net.minecraft.component.ComponentMap;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -15,6 +18,8 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 /**
  * The mini-game pipe's block entity: its slot holds the mini-game page it is programmed with (only pages go
@@ -55,6 +60,39 @@ public class MiniGamePipeBlockEntity extends PipeBlockEntity {
         if (!(world instanceof ServerWorld server) || !server.getServer().isOnThread()) return;
         MiniGamePipeIndex.set(server.getServer(), GlobalPos.create(server.getRegistryKey(), pos),
                 MiniGamePages.idOf(getPage()), MiniGamePipeBlock.reachOf(getCachedState()));
+    }
+
+    /** The page carried by the item of a mini-game pipe broken with one (empty: none). */
+    public static ItemStack pageOf(ItemStack pipeItem) {
+        ContainerComponent contents = pipeItem.get(DataComponentTypes.CONTAINER);
+        return contents == null ? ItemStack.EMPTY : contents.stream().filter(MiniGamePages::isPage).findFirst().orElse(ItemStack.EMPTY);
+    }
+
+    /** Broken, it keeps its page: its item carries it (see its loot table), and gives it back when placed. */
+    @Override
+    protected void addComponents(ComponentMap.Builder builder) {
+        super.addComponents(builder);
+        if (!getPage().isEmpty()) builder.add(DataComponentTypes.CONTAINER, ContainerComponent.fromStacks(List.of(getPage().copy())));
+    }
+
+    @Override
+    protected void readComponents(ComponentsAccess components) {
+        super.readComponents(components);
+        ContainerComponent contents = components.get(DataComponentTypes.CONTAINER);
+        if (contents != null) contents.stream().filter(MiniGamePages::isPage).findFirst().ifPresent(page -> setStack(CARTRIDGE_SLOT, page.copyWithCount(1)));
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void removeFromCopiedStackNbt(NbtCompound nbt) {
+        super.removeFromCopiedStackNbt(nbt);
+        nbt.remove("Items");
+    }
+
+    /** Broken, its page stays with the pipe item: nothing is scattered. */
+    @Override
+    public boolean scattersContents() {
+        return false;
     }
 
     @Override

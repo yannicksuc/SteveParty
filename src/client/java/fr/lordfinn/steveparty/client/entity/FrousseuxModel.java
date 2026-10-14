@@ -13,7 +13,7 @@ import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 
 /**
  * The Frousseux's model (geo/entity/frousseux.geo.json, from the art sources): a melted candle of wax, its drips on
- * an outer layer, its hands floating beside it. Its body's wax is drawn a little see-through (a ghost still; its
+ * an outer layer, its hands floating beside it; a baby's, its own (frousseux_baby, the same bones). Its body's wax is drawn a little see-through (a ghost still; its
  * drips and eyes are opaque in the texture). On top of the keyframed animations: its flame's size by its health
  * ({@link FrousseuxEntity.Flame}) with a little flicker, gone once dead or blown out; its lids closed while it blinks
  * now and then and while it hides its eyes. Nothing allocated per frame.
@@ -27,8 +27,22 @@ public class FrousseuxModel extends DefaultedEntityGeoModel<FrousseuxEntity> {
      */
     static final String[] OVERLAY_BONES = {"body_overlay", "left_sleeve", "right_sleeve"};
 
+    /** A baby's own little model and textures (the adult's bones and animations, its flame textures). */
+    private static final Identifier BABY_MODEL = Steveparty.id("geo/entity/frousseux_baby.geo.json");
+    private static final Identifier BABY_TEXTURE = Steveparty.id("textures/entity/frousseux_baby.png");
+
     public FrousseuxModel() {
         super(Steveparty.id("frousseux"));
+    }
+
+    @Override
+    public Identifier getModelResource(FrousseuxEntity frousseux) {
+        return frousseux.isBaby() ? BABY_MODEL : super.getModelResource(frousseux);
+    }
+
+    @Override
+    public Identifier getTextureResource(FrousseuxEntity frousseux) {
+        return frousseux.isBaby() ? BABY_TEXTURE : super.getTextureResource(frousseux);
     }
 
     @Override

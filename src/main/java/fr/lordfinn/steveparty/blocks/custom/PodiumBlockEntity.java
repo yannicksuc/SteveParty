@@ -126,7 +126,7 @@ public class PodiumBlockEntity extends SyncedBlockEntity implements TickableBloc
         for (ServerPlayerEntity player : standing) {
             if (!player.isSneaking()) continue;
             now.add(player.getUuid());
-            if (!sneaking.contains(player.getUuid())) Podiums.toggle(player, world, pos);
+            if (!sneaking.contains(player.getUuid())) Podiums.toggle(player, world, pos, false);
         }
         sneaking.clear();
         sneaking.addAll(now);

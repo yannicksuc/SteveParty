@@ -133,6 +133,9 @@ public class ModItems {
     /** Its tile's face is magma crust until dyed; the Trichaudron's heads hold the prizes of its stock. */
     public static final Item TRICHAUDRON_CARTRIDGE = register("trichaudron_cartridge", TrichaudronCartridgeItem::new,
             new Item.Settings().component(ModComponents.COLOR, TrichaudronCartridgeItem.COLOR));
+    /** The End Cartridge: the finish of the board, raspberry with a checkered flag until dyed (PartyEndRules). */
+    public static final Item END_CARTRIDGE = register("end_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.EndCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.EndCartridgeItem.COLOR));
     /** The Gate Key: opens a Key gate on the board, used up (KeyGates). */
     public static final Item GATE_KEY = register("gate_key", GateKeyItem::new,
             new Item.Settings().maxCount(16));
@@ -229,6 +232,7 @@ public class ModItems {
     public static final Item PARTY_CARD_EVENT = registerCard(PartyCardItem.CardType.EVENT);
     public static final Item PARTY_CARD_REPEAT = registerCard(PartyCardItem.CardType.REPEAT);
     public static final Item PARTY_CARD_SEQUENCE_START = registerCard(PartyCardItem.CardType.SEQUENCE_START);
+    public static final Item PARTY_CARD_END = registerCard(PartyCardItem.CardType.END);
 
 
     /**
@@ -287,6 +291,7 @@ public class ModItems {
             case EVENT -> PARTY_CARD_EVENT;
             case REPEAT -> PARTY_CARD_REPEAT;
             case SEQUENCE_START -> PARTY_CARD_SEQUENCE_START;
+            case END -> PARTY_CARD_END;
             case CUSTOM -> net.minecraft.item.Items.AIR;
         };
     }

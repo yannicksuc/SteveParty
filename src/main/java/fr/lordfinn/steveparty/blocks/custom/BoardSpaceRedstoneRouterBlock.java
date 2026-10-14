@@ -33,6 +33,13 @@ public class BoardSpaceRedstoneRouterBlock extends CartridgeContainer {
         return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 
+    /** An empty hand: nothing, said so (the Wrench opens it). */
+    @Override
+    protected net.minecraft.util.ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        fr.lordfinn.steveparty.board.WrenchActions.needsWrench(player);
+        return net.minecraft.util.ActionResult.SUCCESS;
+    }
+
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new BoardSpaceRedstoneRouterBlockEntity(pos, state);

@@ -46,6 +46,7 @@ public final class BrushClient {
         BoardView.initialize();
         HelmetView.initialize();
         SpawnMarkerView.initialize();
+        BrushTutorial.initialize();
     }
 
     /** While painting: a little dust of the paint's colour where the brush is, on the tile it paints. */
@@ -83,7 +84,8 @@ public final class BrushClient {
             panel.state(Text.translatable("wheel.steveparty.brush.levels.current", brushLevel), ToolHud.Plate.GREEN);
         }
         if (heldSince < 0) heldSince = client.world.getTime();
-        if (client.world.getTime() - heldSince < HINT_TICKS) panel.hint(Text.translatable("hud.steveparty.tile_linker_brush.hint"));
+        // Not while a tutorial toast shows: it says the same
+        if (client.world.getTime() - heldSince < HINT_TICKS && !BrushTutorial.showing()) panel.hint(Text.translatable("hud.steveparty.tile_linker_brush.hint"));
     }
 
     /** Forgets when the brush came in hand once it leaves it (the controls show again next time). */

@@ -1041,6 +1041,24 @@ public class GlandouilleGameTests implements SteveGameTest {
     }
 
     /**
+     * Dazes add up, however fast they come (no anti-autoclick limit): two Glandouilles one after the other, twice as
+     * long; the same one still touching him (within DazedEffect#CONTACT_TICKS) counts once.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void dazesAddUp(TestContext context) {
+        TestBoards.floor(context, 8);
+        GlandouilleEntity one = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 1));
+        GlandouilleEntity two = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 5));
+        ServerPlayerEntity player = player(context, new BlockPos(4, 1, 3), 90f);
+        context.assertTrue(DazedEffect.daze(player, one), "dazed");
+        context.assertFalse(DazedEffect.daze(player, one), "the same one still touching him: once");
+        context.assertTrue(DazedEffect.daze(player, two), "another one: dazed again");
+        context.assertEquals(player.getStatusEffect(ModEffects.DAZED).getDuration(), DazedEffect.TICKS * 2, "twice as long");
+        player.removeStatusEffect(ModEffects.DAZED);
+        context.complete();
+    }
+
+    /**
      * Waits for {@code player} to be dazed: its movement speed and jump strength at 0 for {@link DazedEffect#TICKS},
      * not hurt, then free again.
      */

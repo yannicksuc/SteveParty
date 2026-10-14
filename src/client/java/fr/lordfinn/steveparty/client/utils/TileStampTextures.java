@@ -512,6 +512,35 @@ public final class TileStampTextures {
             ".........."};
     private static final Map<Character, Float> THRESHOLD_SHADES = Map.of('#', FEATURE, 'o', -0.7f, '-', 0.45f);
 
+    /** The End: a checkered flag on its pole. */
+    private static final String[] END = {
+            "..............",
+            "..#...........",
+            "..#oo--oo--...",
+            "..#oo--oo--...",
+            "..#--oo--oo...",
+            "..#--oo--oo...",
+            "..#oo--oo--...",
+            "..#oo--oo--...",
+            "..#...........",
+            "..#...........",
+            "..#...........",
+            "..#...........",
+            ".###..........",
+            ".............."};
+    private static final String[] SMALL_END = {
+            "..........",
+            ".#........",
+            ".#o-o-o-..",
+            ".#-o-o-o..",
+            ".#o-o-o-..",
+            ".#-o-o-o..",
+            ".#........",
+            ".#........",
+            "###.......",
+            ".........."};
+    private static final Map<Character, Float> END_SHADES = Map.of('#', FEATURE, 'o', -0.75f, '-', 0.6f);
+
     /** The Common pot: a woven nest full of coins. */
     private static final String[] POT = {
             "..............",
@@ -651,7 +680,8 @@ public final class TileStampTextures {
             BoardSpaceType.TILE_POT, new Pictogram("pot", POT, SMALL_POT, POT_SHADES),
             BoardSpaceType.TILE_KEY_GATE, new Pictogram("key_gate", KEY_GATE, SMALL_KEY_GATE, KEY_GATE_SHADES),
             BoardSpaceType.TILE_MISTIGRI, new Pictogram("mistigri", MISTIGRI, SMALL_MISTIGRI, MISTIGRI_SHADES),
-            BoardSpaceType.TILE_TRICHAUDRON, new Pictogram("trichaudron", TRICHAUDRON, SMALL_TRICHAUDRON, TRICHAUDRON_SHADES));
+            BoardSpaceType.TILE_TRICHAUDRON, new Pictogram("trichaudron", TRICHAUDRON, SMALL_TRICHAUDRON, TRICHAUDRON_SHADES),
+            BoardSpaceType.TILE_END, new Pictogram("end", END, SMALL_END, END_SHADES));
 
     /**
      * The face of a tile of role {@code type} when it is a pictogram (a shop, a star, an acorn, a ghost, a hurdle, a nest,

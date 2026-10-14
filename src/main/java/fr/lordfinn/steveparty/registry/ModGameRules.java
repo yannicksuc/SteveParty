@@ -13,6 +13,12 @@ public final class ModGameRules {
     /** Lets the Tokenizer Wand take the Wither too (off by default: shrinking or controlling it can be exploited). */
     public static final GameRules.Key<GameRules.BooleanRule> TOKENIZE_BOSSES = GameRuleRegistry.register(
             "stevepartyTokenizeBosses", GameRules.Category.MISC, GameRuleFactory.createBooleanRule(false));
+    /** Lets the Tokenizer Wand turn players into player pawns (on by default). */
+    public static final GameRules.Key<GameRules.BooleanRule> TOKENIZE_PLAYERS = GameRuleRegistry.register(
+            "stevepartyTokenizePlayers", GameRules.Category.MISC, GameRuleFactory.createBooleanRule(true));
+    /** Lets the Tokenizer Wand take hostile mobs (monsters: zombies, creepers...; on by default). */
+    public static final GameRules.Key<GameRules.BooleanRule> TOKENIZE_HOSTILE_MOBS = GameRuleRegistry.register(
+            "stevepartyTokenizeHostileMobs", GameRules.Category.MISC, GameRuleFactory.createBooleanRule(true));
 
     private ModGameRules() {
     }

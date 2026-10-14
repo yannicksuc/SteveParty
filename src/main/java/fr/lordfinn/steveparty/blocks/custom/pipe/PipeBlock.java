@@ -190,7 +190,7 @@ public class PipeBlock extends Block implements BlockEntityProvider {
     protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (world instanceof ServerWorld serverWorld) {
             PipeNetworks.changed(serverWorld, pos);
-            if (!newState.isOf(this) && world.getBlockEntity(pos) instanceof PipeBlockEntity pipe) {
+            if (!newState.isOf(this) && world.getBlockEntity(pos) instanceof PipeBlockEntity pipe && pipe.scattersContents()) {
                 ItemScatterer.spawn(world, pos, pipe);
             }
             if (!isPipe(newState)) {
@@ -243,6 +243,13 @@ public class PipeBlock extends Block implements BlockEntityProvider {
             if (world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer) {
                 MiniGamePipes.click(serverPlayer, hand, serverWorld, pos);
             }
+            return ItemActionResult.SUCCESS;
+        }
+        // An End party card: the players come out of this pipe once the party is over
+        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.PartyCardItem card
+                && card.getCardType() == fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.END) {
+            if (world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer)
+                fr.lordfinn.steveparty.blocks.custom.PartyController.PartyEnding.clickPipe(serverPlayer, hand, serverWorld, pos);
             return ItemActionResult.SUCCESS;
         }
         // A block in hand is placed against the pipe (to go on with the run); anything else: into the mouth

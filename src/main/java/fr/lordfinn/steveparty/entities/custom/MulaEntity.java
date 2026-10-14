@@ -1319,7 +1319,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
     /**
      * Server: "no" to what this player holds out. It shakes its head (its clients float the item up and back down, puff
      * a little grey cloud) and, when something was held out, says why in the player's action bar: food of another
-     * colour (and whose), or something no Mula eats. Still taking in its last meal, it only shakes its head. At most
+     * colour (never which one), or something no Mula eats. Still taking in its last meal, it only shakes its head. At most
      * once per {@value #REFUSAL_GAP_TICKS} ticks for the same player.
      */
     private void refuse(PlayerEntity player, ItemStack stack) {
@@ -1334,21 +1334,14 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
 
     /**
      * Why a Mula of this colour refuses this stack (action bar), null when it would eat it or nothing is held out: food
-     * of another colour (its colour, the item, the colour that eats it), or anything no Mula eats.
+     * of another colour (it never says which colour: finding out is the game), or anything no Mula eats.
      */
     public static @Nullable Text refusalReason(MulaVariant variant, ItemStack stack) {
         if (stack.isEmpty() || MulaFood.value(variant, stack) > 0) return null;
-        MulaVariant eater = MulaFood.eatenBy(stack);
-        Text message = eater != null
-                ? Text.translatable("message.steveparty.mula.refuse.colour", colourName(variant), stack.getName(), colourName(eater))
-                : Text.translatable("message.steveparty.mula.refuse.inedible", stack.getName());
+        Text message = MulaFood.eatenBy(stack) != null
+                ? Text.translatable("message.steveparty.mula.refuse.colour")
+                : Text.translatable("message.steveparty.mula.refuse.inedible");
         return message.copy().formatted(Formatting.GRAY);
-    }
-
-    /** A Mula colour's name, in that colour (lightened: the black one stays readable). */
-    private static Text colourName(MulaVariant variant) {
-        return Text.translatable("mula.steveparty.colour." + variant.name().toLowerCase(Locale.ROOT))
-                .styled(style -> style.withColor(variant.getHaloColor()));
     }
 
     /** Every animation the server can start ({@code /mula <mulas> play <animation>}). */

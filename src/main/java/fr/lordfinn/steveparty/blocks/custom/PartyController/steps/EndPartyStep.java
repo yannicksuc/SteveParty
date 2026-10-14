@@ -17,7 +17,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * The end of a party: its tokens are taken out of the game and go back onto their start tiles.
+ * The end of a party: its tokens are taken out of the game and go to their places (podiums, Finish spaces, else their
+ * start tiles: see PartyEnding).
  */
 public class EndPartyStep extends PartyStep {
     // No initializer: it would run after super(nbt) and wipe what fromNbt just read
@@ -43,6 +44,7 @@ public class EndPartyStep extends PartyStep {
 
         PartyAdvancements.partyEnded(partyControllerEntity, serverWorld);
         // Who won: the ranking on the results card and in the chat (never two winners)
+        java.util.List<PartyResults.Place> places = PartyResults.ranking(partyControllerEntity, serverWorld);
         PartyResults.announce(partyControllerEntity, serverWorld);
         // Release every token of the party so they are no longer considered in game
         // (the tokens that are not loaded are released as soon as they are loaded again)
@@ -51,8 +53,9 @@ public class EndPartyStep extends PartyStep {
         for (UUID tokenUUID : allTokens) {
             partyControllerEntity.releaseToken(serverWorld, tokenUUID);
         }
-        // Each token back onto its start tile
-        partyControllerEntity.sendTokensHome(serverWorld, allTokens);
+        // The pawns onto the podiums and the Finish spaces linked to the controller (the others back onto their start
+        // tiles), the players out of the End card's pipe
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyEnding.partyOver(partyControllerEntity, serverWorld, places, allTokens);
 
         MessageUtils.sendToNearby(
                 serverWorld,

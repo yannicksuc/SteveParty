@@ -89,6 +89,14 @@ public final class BubbleRiding {
      * gap a tick, at most this fast, blocks a tick), and how much of the way to that speed it gets a tick.
      */
     public static final double LEAD_SLACK = 3, LEAD_PULL = 0.08, LEAD_MAX = 0.3, LEAD_GRIP = 0.15;
+    /** How far a lead ties a bubble from (blocks: one floating over its Bubbler is out of a hand's reach). */
+    public static final double LEAD_REACH = 10;
+    /**
+     * Bubbles held on leads by one player: from {@link #FLOAT_LEADS} he floats down slowly, from {@link #LIFT_LEADS} they
+     * lift him (Levitation, one level stronger a bubble more, {@link #MAX_LIFT} at most), each refreshed for
+     * {@link #LIFT_TICKS}.
+     */
+    public static final int FLOAT_LEADS = 2, LIFT_LEADS = 3, MAX_LIFT = 2, LIFT_TICKS = 10;
     /**
      * Popped, its riders fall slowly: at least this long (ticks, 3 s), longer high up to reach the ground safely (from
      * the top of the world to its bottom), at most this long (over the void).

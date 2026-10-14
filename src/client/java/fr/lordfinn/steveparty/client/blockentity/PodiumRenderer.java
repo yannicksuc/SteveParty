@@ -9,11 +9,13 @@ import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnPose;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
+import fr.lordfinn.steveparty.podium.PodiumSignal;
 import fr.lordfinn.steveparty.podium.Podiums;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.entity.model.EntityModelLayers;
+import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.text.MutableText;
 import net.minecraft.util.math.MathHelper;
@@ -48,7 +50,9 @@ import java.nio.ByteBuffer;
  *     colour of his team, with its name, in a team mini-game). During a mini-game the columns of the same height are
  *     one place: each shows the figure it was given (the player on the column he took, a member of the team on each
  *     column), or no figure at all, only the label of who holds the place (see {@code PodiumOccupant}).</li>
- *     <li>With the Wrench in hand: what a redstone pulse into the column does.</li>
+ *     <li>With the Wrench in hand: its mode (what a pulse or a click does). Just changed: the column it acts on lights
+ *     up and a Steve statue stands a few seconds where a player would go ({@link PodiumPreviews}); opaque lines and an
+ *     opaque figure, both writing depth: nothing see-through here.</li>
  *     <li><b>The pattern tagged on its banner</b> (see {@code PodiumBanner}), in the dye's colour over the front face
  *     of the column's top: 8x8 in the middle of the banner hanging over one block of height (across the top slab and
  *     the block under it when the column ends with a slab), 4x3 on the label of a slab alone (see
@@ -99,20 +103,7 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
             float time = world.getTime() + tickDelta + (entity.getPos().getX() * 7 + entity.getPos().getZ() * 13) % 40;
             float bob = MathHelper.sin(time * 0.12f) * 0.025f;
             SkinTextures skin = SkinUtils.getSkinTextures(figure.player());
-            ModelPart root = skin.model() == SkinTextures.Model.SLIM ? slim : wide;
-            root.traverse().forEach(ModelPart::resetTransform);
-            PlayerPawnPose pose = master.getFigurePose();
-            PlayerStatue.pose(root, pose);
-            int light = WorldRenderer.getLightmapCoordinates(world, entity.getPos().up());
-            matrices.push();
-            matrices.translate(0.5, surface + bob, 0.5);
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180 - state.get(PodiumBlock.FACING).asRotation()));
-            float scale = FIGURE_SCALE * PlayerStatue.AS_HIGH_AS_A_PLAYER * pop;
-            matrices.scale(-scale, -scale, scale);
-            PlayerStatue.transform(matrices, pose);
-            matrices.translate(0, -1.501, 0);
-            root.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(skin.texture())), light, OverlayTexture.DEFAULT_UV);
-            matrices.pop();
+            drawFigure(entity, state, skin, master.getFigurePose(), surface + bob, pop, matrices, vertexConsumers);
             labelY = surface + 2 * FIGURE_SCALE + 0.16f;
         }
         if (occupant != null && near) {
@@ -134,8 +125,81 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
         // The Wrench shows what a redstone pulse does to the column looked at
         if (near && WorldLabels.holdingWrench() && WorldLabels.lookingAtColumn(entity.getPos().getX(), entity.getPos().getZ(),
                 PodiumBlock.bottomOf(world, entity.getPos()).getY(), entity.getPos().getY())) {
-            WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5, master.getSignal().text(), 0xFFFFE08A, 0x60000000, 0, 1f / 80f);
+            WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5,
+                    master.getSignal().text(PodiumBlock.answersRedstone(world, entity.getPos())), 0xFFFFE08A, 0x60000000, 0, 1f / 80f);
         }
+    }
+
+    /** A small statue of a player (half his size) standing on the top, facing the podium's front. */
+    private void drawFigure(PodiumBlockEntity entity, BlockState state, SkinTextures skin, PlayerPawnPose pose, float y, float scaleBy,
+                            MatrixStack matrices, VertexConsumerProvider vertexConsumers) {
+        drawFigure(entity, state, skin, pose, y, scaleBy, 0xFFFFFFFF, matrices, vertexConsumers);
+    }
+
+    private void drawFigure(PodiumBlockEntity entity, BlockState state, SkinTextures skin, PlayerPawnPose pose, float y, float scaleBy, int color,
+                            MatrixStack matrices, VertexConsumerProvider vertexConsumers) {
+        ModelPart root = skin.model() == SkinTextures.Model.SLIM ? slim : wide;
+        root.traverse().forEach(ModelPart::resetTransform);
+        PlayerStatue.pose(root, pose);
+        int light = WorldRenderer.getLightmapCoordinates(entity.getWorld(), entity.getPos().up());
+        matrices.push();
+        matrices.translate(0.5, y, 0.5);
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180 - state.get(PodiumBlock.FACING).asRotation()));
+        float scale = FIGURE_SCALE * PlayerStatue.AS_HIGH_AS_A_PLAYER * scaleBy;
+        matrices.scale(-scale, -scale, scale);
+        PlayerStatue.transform(matrices, pose);
+        matrices.translate(0, -1.501, 0);
+        root.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(skin.texture())), light, OverlayTexture.DEFAULT_UV, color);
+        matrices.pop();
+    }
+
+    private static SkinTextures steve;
+
+    /** Steve's skin: the default skin found for the first id giving the wide Steve. */
+    private static SkinTextures steve() {
+        if (steve == null) {
+            for (int i = 0; i < 64 && steve == null; i++) {
+                SkinTextures skin = DefaultSkinHelper.getSkinTextures(new java.util.UUID(0, i));
+                if (skin.texture().getPath().endsWith("wide/steve.png")) steve = skin;
+            }
+            if (steve == null) steve = DefaultSkinHelper.getSkinTextures(new java.util.UUID(0, 0));
+        }
+        return steve;
+    }
+
+    /** How long the statue takes to come and to go (ticks). */
+    private static final float STATUE_IN = 8, STATUE_OUT = 6;
+
+    /**
+     * The mode just changed with the Wrench (see {@link PodiumPreviews}): the column lights up (an opaque outline round
+     * the whole column, blinking slowly), and a Steve statue stands where a player would go, unless someone stands there.
+     */
+    private void renderPreview(PodiumBlockEntity entity, PodiumBlockEntity master, BlockState state, float tickDelta,
+                               MatrixStack matrices, VertexConsumerProvider vertexConsumers) {
+        World world = entity.getWorld();
+        PodiumPreviews.Shown shown = PodiumPreviews.at(master.getPos(), world.getTime());
+        if (shown == null) return;
+        float surface = state.get(PodiumBlock.FULL) ? 1f : 0.5f;
+        float age = world.getTime() - shown.since() + tickDelta, left = shown.until() - world.getTime() - tickDelta;
+        PodiumSignal[] modes = PodiumSignal.values();
+        int rgb = modes[Math.floorMod(shown.mode(), modes.length)].color();
+        // Blinks: full colour, then a darker one, twice a second
+        float blink = (MathHelper.sin(age * 0.6f) + 1) / 2;
+        float shade = 0.65f + 0.35f * blink;
+        double bottom = master.getPos().getY() - entity.getPos().getY();
+        // A dark line behind the coloured one, so that a gold outline reads on a gold podium; its foot just above the ground
+        WorldRenderer.drawBox(matrices, vertexConsumers.getBuffer(RenderLayer.getLines()), -0.035, bottom + 0.01, -0.035, 1.035, surface + 0.035, 1.035,
+                0.16f, 0.16f, 0.16f, 1f);
+        WorldRenderer.drawBox(matrices, vertexConsumers.getBuffer(RenderLayer.getLines()), -0.02, bottom + 0.02, -0.02, 1.02, surface + 0.02, 1.02,
+                ((rgb >> 16) & 0xFF) / 255f * shade, ((rgb >> 8) & 0xFF) / 255f * shade, (rgb & 0xFF) / 255f * shade, 1f);
+        PodiumOccupant occupant = master.getOccupant();
+        if (!shown.statue() || (occupant != null && occupant.figure() != null)) return;
+        float in = age >= STATUE_IN ? 1f : Easing.easeOutBack(Math.max(0, age) / STATUE_IN);
+        float out = left >= STATUE_OUT ? 1f : Math.max(0, left) / STATUE_OUT;
+        PlayerPawnPose pose = PlayerPawnPose.podiumPose((int) shown.since() * 31 + master.getPos().hashCode());
+        // A statue, not a player: tinted in the mode's colour (opaque: nothing see-through here)
+        int tint = ColorHelper.Argb.lerp(0.45f, 0xFFFFFFFF, 0xFF000000 | rgb);
+        drawFigure(entity, state, steve(), pose, surface, in * out, tint, matrices, vertexConsumers);
     }
 
     public static void registerReloadListener() {
@@ -150,6 +214,7 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
         PodiumBlockEntity master = PodiumBlock.master(world, entity.getPos());
         if (master == null) return;
         renderOccupant(entity, master, state, tickDelta, matrices, vertexConsumers);
+        renderPreview(entity, master, state, tickDelta, matrices, vertexConsumers);
         TileStampComponent stamp = master.getBannerStamp();
         if (stamp == null) return;
         boolean slab = !PodiumBlock.bannerHangs(state);

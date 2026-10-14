@@ -42,7 +42,23 @@ public final class PartyControllers {
 
     private PartyControllers() {}
 
+    /** The controllers loaded in the client's world (what the client draws over them: the end panel over the podiums). */
+    private static final Set<PartyControllerEntity> CLIENT = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+
+    /** The Party Controllers loaded on the client (a copy). */
+    public static List<PartyControllerEntity> onClient() {
+        synchronized (CLIENT) {
+            return List.copyOf(CLIENT);
+        }
+    }
+
     static void register(PartyControllerEntity controller) {
+        if (controller.getWorld() != null && controller.getWorld().isClient) {
+            synchronized (CLIENT) {
+                if (controller.isRemoved()) CLIENT.remove(controller);
+                else CLIENT.add(controller);
+            }
+        }
         if (controller.getWorld() instanceof ServerWorld && !controller.isRemoved()) {
             ACTIVE.put(GlobalPos.create(controller.getWorld().getRegistryKey(), controller.getPos()), controller);
             indexBoard(controller, Set.of(), controller.rememberedBoardSpaces());
@@ -50,6 +66,9 @@ public final class PartyControllers {
     }
 
     static void unregister(PartyControllerEntity controller) {
+        synchronized (CLIENT) {
+            CLIENT.remove(controller);
+        }
         if (controller.getWorld() instanceof ServerWorld) {
             ACTIVE.remove(GlobalPos.create(controller.getWorld().getRegistryKey(), controller.getPos()), controller);
             indexBoard(controller, controller.rememberedBoardSpaces(), Set.of());

@@ -154,6 +154,16 @@
         ]
       }
     },
+    "end": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:end_cartridge"
+          }
+        ]
+      }
+    },
     "trichaudron": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
@@ -210,6 +220,9 @@
     ],
     [
       "trichaudron"
+    ],
+    [
+      "end"
     ]
   ],
   "rewards": {
