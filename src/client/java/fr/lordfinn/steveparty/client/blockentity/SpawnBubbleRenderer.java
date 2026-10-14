@@ -81,7 +81,7 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     /** Within this many blocks the mob shows in the bubble, farther away its arrow. */
     public static final double MOB_RANGE = 8;
     /** A resident's see-through mob: its opacity up close, and over how many blocks it fades out before MOB_RANGE. */
-    private static final float GHOST_ALPHA = 0.45f, GHOST_FADE = 3;
+    private static final float GHOST_ALPHA = 0.55f, GHOST_FADE = 3;
     /** About one tiny bubble of the trail for this many blocks of it. */
     private static final float TRAIL_STEP = 3 / 16f;
     /** How far from the middle a tiny bubble starts at most (blocks): anywhere under the bubble. */

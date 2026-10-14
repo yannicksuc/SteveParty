@@ -1455,7 +1455,7 @@
   "gamerule.stevepartyShopStopSeconds": "SteveParty: seconds to shop at a shop stop",
   "gamerule.stevepartyTokenizeBosses": "SteveParty: the Tokenizer Wand can take the Wither",
   "gamerule.stevepartyTokenizePlayers": "SteveParty: the Tokenizer Wand can turn players into pawns",
-  "gamerule.stevepartyTokenizeHostileMobs": "SteveParty: the Tokenizer Wand can take hostile mobs",
+  "gamerule.stevepartyTokenizeHostileMobs": "SteveParty: the Tokenizer Wand can take monsters",
   "gui.steveparty.party_controller.tab.state": "Status",
   "gui.steveparty.party_controller.tab.state.tooltip": "The party, and what it takes to start one",
   "gui.steveparty.party_controller.tab.players": "Players",
