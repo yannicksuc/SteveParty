@@ -37,7 +37,7 @@ Point the **Tokenizer Wand** at a mob and it becomes a pawn. Store it in a token
 
 ![A party running: the turn strip, the announcement and the score table](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/hud.png)
 ![The Party Controller's dashboard during a party](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/party-controller.png)
-![Party Controller, Step Controller, Party Bell, Piggy Bank, dice, coins, stars and party cards](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/party.png)
+![Party Controller, Party Rewinder, Party Bell, Piggy Bank, dice, coins, stars and party cards](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/party.png)
 ![Goal poles with flags, gold, silver and bronze podiums](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/finish-pole.png)
 
 ### 🏆 Mini-games, safe in survival

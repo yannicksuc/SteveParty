@@ -529,7 +529,7 @@
   "book.steveparty.guide.party.rewards.page3.text": "Bouton [#](1C4E80)**∞**[#]() (créatif ou opérateur) : stockage infini.",
   "book.steveparty.guide.party.step_controller.description": "Précédent, Rejouer, Suivant",
   "book.steveparty.guide.party.step_controller.name": "Magnéto de Party",
-  "book.steveparty.guide.party.step_controller.page0.text": "[#](9A6A00)Clic droit[#]() sur un bouton : son mode.\\\n[#](1C4E80)**Précédent**[#]() · [#](9A6A00)**Rejouer**[#]() · [#](2E7D32)**Suivant**[#]()\n\nUne impulsion de [#](C0392B)**redstone**[#]() : il agit.",
+  "book.steveparty.guide.party.step_controller.page0.text": "[#](9A6A00)Clic droit[#]() sur un bouton : son mode.\n\n[#](1C4E80)**Précédent**[#]() · [#](9A6A00)**Rejouer**[#]() · [#](2E7D32)**Suivant**[#]()\n\nUne impulsion de [#](C0392B)**redstone**[#]() : il agit.",
   "book.steveparty.guide.party.step_controller.page0.title": "Magnéto de Party",
   "book.steveparty.guide.party.step_controller.page1.text": "- Tour : sauté / rejoué depuis son début / retour au tour d'avant\n- Cloche en attente : relâchée\n- Manche de chauffe : l'officielle / encore\n- Mini-jeu : fini / recommencé",
   "book.steveparty.guide.party.step_controller.page1.title": "Ce qu'il fait",
