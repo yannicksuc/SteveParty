@@ -74,12 +74,17 @@ public final class PartyGui {
 
     /** Small shape (buttons): 1 px bevels and 1 px rounded corners. {@code pressed} swaps the bevels. */
     public static void button(DrawContext context, int x, int y, int w, int h, Theme theme, boolean pressed) {
+        context.fill(x + 1, y + 1, x + w - 1, y + h - 1, theme.body());
+        buttonEdge(context, x, y, w, h, theme, pressed);
+    }
+
+    /** A {@link #button}'s edge alone (its outline and bevels, not its body): a frame drawn as a button's. */
+    public static void buttonEdge(DrawContext context, int x, int y, int w, int h, Theme theme, boolean pressed) {
         int o = theme.outline();
         context.fill(x + 1, y, x + w - 1, y + 1, o);
         context.fill(x + 1, y + h - 1, x + w - 1, y + h, o);
         context.fill(x, y + 1, x + 1, y + h - 1, o);
         context.fill(x + w - 1, y + 1, x + w, y + h - 1, o);
-        context.fill(x + 1, y + 1, x + w - 1, y + h - 1, theme.body());
         int light = pressed ? theme.shadow() : theme.highlight();
         int dark = pressed ? theme.highlight() : theme.shadow();
         context.fill(x + 1, y + 1, x + w - 2, y + 2, light);
