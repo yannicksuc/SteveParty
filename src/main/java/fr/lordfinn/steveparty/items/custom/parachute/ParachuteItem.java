@@ -15,8 +15,8 @@ import net.minecraft.world.World;
 
 /**
  * The Parachute: held while falling it opens over its holder, a use in the air opens or folds it; a use on a mob puts
- * it on its back, opening when it falls ({@link Parachutes}). Wears out like a shield, repaired with wool or string;
- * dyed like leather (its stripes take the colour, the white stays white).
+ * it on its back (never on a pawn), opening when it falls ({@link Parachutes}). Wears out like a shield, repaired with
+ * wool or string; dyed like leather (its stripes take the colour, the white stays white).
  */
 public class ParachuteItem extends Item {
     /** The stripes of an undyed one (ARGB): sky blue. */
@@ -41,6 +41,7 @@ public class ParachuteItem extends Item {
 
     @Override
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+        if (Parachutes.isPawn(entity)) return ActionResult.FAIL; // a pawn: nothing, not even the item's own use
         if (!Parachutes.canCarry(entity)) return ActionResult.PASS;
         if (!user.getWorld().isClient) Parachutes.attach(user, entity, stack);
         return ActionResult.success(user.getWorld().isClient);

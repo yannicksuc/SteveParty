@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.items.custom.parachute;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.advancement.ModCriteria;
+import fr.lordfinn.steveparty.entities.TokenBase;
+import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
@@ -36,10 +38,11 @@ import java.util.UUID;
  *     ({@link #DESCENT}), steering with his keys as in any fall, and takes no fall damage. It folds when he lands,
  *     swims, gets into lava or a vehicle, glides with an elytra (the elytra wins) or stops holding it. Each opening
  *     wears it by one.</li>
- *     <li><b>A mob</b> (not a player, not a boss) gets one by a use on it: packed on its back until it falls
- *     {@link #MOB_OPEN_FALL} blocks, then open the same way; landed, the parachute drops as an item, worn by one. A
- *     player takes a packed or open one back by sneaking with an empty hand on the mob. Removed (killed, despawned, a
- *     board space's mob at the end of its sequence), the mob drops it as it was.</li>
+ *     <li><b>A mob</b> (not a player, not a boss, not a pawn) gets one by a use on it: packed on its back until it
+ *     falls {@link #MOB_OPEN_FALL} blocks, then open the same way; landed, the parachute drops as an item, worn by
+ *     one. A player takes a packed or open one back by sneaking with an empty hand on the mob. Removed (killed,
+ *     despawned, a board space's mob at the end of its sequence), the mob drops it as it was; so does a pawn found
+ *     carrying one.</li>
  * </ul>
  */
 public final class Parachutes {
@@ -113,7 +116,9 @@ public final class Parachutes {
         if (entity instanceof ServerPlayerEntity player) tickPlayer(player);
         else {
             ParachuteState state = get(entity);
-            if (state != null) tickMob(entity, state);
+            if (state == null) return;
+            if (isPawn(entity)) removed(entity); // a pawn never carries one: off, as it was
+            else tickMob(entity, state);
         }
     }
 
@@ -206,10 +211,15 @@ public final class Parachutes {
 
     // ---------------------------------------------------------------- a mob's
 
-    /** Whether a parachute can be put on {@code entity}: a living mob, not a player, not a boss, none on it yet. */
+    /** Whether a parachute can be put on {@code entity}: a living mob, not a player, not a boss, not a pawn, none on it yet. */
     public static boolean canCarry(LivingEntity entity) {
         return entity.isAlive() && !(entity instanceof PlayerEntity) && !entity.getType().isIn(ConventionalEntityTypeTags.BOSSES)
-                && get(entity) == null;
+                && !isPawn(entity) && get(entity) == null;
+    }
+
+    /** Whether {@code entity} is a pawn of the board: a tokenized mob, a player pawn (a statue on its token base). */
+    public static boolean isPawn(Entity entity) {
+        return TokenBase.isToken(entity) || entity instanceof PlayerPawnEntity;
     }
 
     /** {@code player} puts one of {@code stack} on {@code mob} (server), packed. @return whether he could */
