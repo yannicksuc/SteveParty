@@ -27,6 +27,8 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.thrown.SnowballEntity;
+import net.minecraft.entity.passive.AnimalEntity;
+import fr.lordfinn.steveparty.service.BoardActors;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -63,11 +65,15 @@ import java.util.function.Function;
  *     <li><b>Steering</b>: its players' movement keys make it drift, their charged jump puffs it where they look
  *     ({@link BubbleRiding}); every rider's keys count.</li>
  *     <li><b>Merging</b>: two bubbles with riders touching become one bigger bubble with all of them
- *     ({@link #absorb}), the one with more riders (else the older) taking the other in.</li>
+ *     ({@link #absorb}), the one with more riders (else the older) taking the other in: a Bubbler's, the Bubbled
+ *     effect's (a bubbled snowball, arrow...), any of them.</li>
+ *     <li><b>Animals</b>: an animal it touches (a cow, a sheep, a cat...) is taken in, carried along with its riders
+ *     ({@link #takeInAnimals}), if it fits and there is room; any other mob still pops it.</li>
  *     <li><b>Leaving</b>: a rider sneaking (or teleported...) leaves it alone, falling slowly; it shrinks around those
  *     left and pops once the last one is out.</li>
  *     <li><b>On a lead</b>: a lead ties it to whoever holds it, who guides it from the ground ({@link #followLeash}); it
- *     floats freely then and is never left still.</li>
+ *     floats freely then and is never left still. Tied from afar too, up to {@link BubbleRiding#LEAD_REACH} blocks
+ *     (BubbleLeads). Several bubbles held lift their holder like balloons ({@link #liftHolder}).</li>
  *     <li><b>Popping</b> ({@link #pop}): a rider's punch, a puff too many (puffs chained too
  *     fast strain it: {@link #strainedPuff}), bumping into a block (a wall, the floor, a
  *     ceiling) or touching a mob, a player, a boat... ({@link #popsOnTouch}; not in its first moments, rising from its
@@ -123,8 +129,8 @@ public class BubbleEntity extends Entity implements Leashable {
     private @Nullable BlockPos column;
     private double columnTop;
     /**
-     * Server: blown by the Bubbled effect ({@link #encloseByEffect}), not by a Bubbler: it never merges, its pop ends
-     * the effect, and an effect given for a time pops it when it ends.
+     * Server: blown by the Bubbled effect ({@link #encloseByEffect}), not by a Bubbler (merged: only if both were): an
+     * effect given for a time pops it when it ends. Leaving any bubble ends the effect.
      */
     private boolean fromEffect;
     /**
@@ -376,10 +382,12 @@ public class BubbleEntity extends Entity implements Leashable {
             pop();
             return;
         }
-        if (hasPassengers() && !fromEffect) {
+        if (hasPassengers()) {
             mergeAround(world);
             if (isRemoved()) return;
+            takeInAnimals(world);
         }
+        liftHolder(world);
         for (Entity rider : getPassengerList()) rider.fallDistance = 0; // floating, never falling: no fall to pay once out
         leavers.removeIf(left -> left.isRemoved() || !left.getBoundingBox().intersects(getBoundingBox()));
         Vec3d drift = BubbleRiding.drift(getPassengerList()).add(followLeash());
@@ -472,7 +480,7 @@ public class BubbleEntity extends Entity implements Leashable {
      */
     private boolean popsOnTouch(Entity entity) {
         if (!entity.isAlive() || entity.isSpectator() || entity instanceof BubbleEntity || entity instanceof ProjectileEntity) return false;
-        if (entity.getRootVehicle() instanceof BubbleEntity || leavers.contains(entity)) return false;
+        if (entity.getRootVehicle() instanceof BubbleEntity || leavers.contains(entity) || carries(entity)) return false;
         return entity instanceof LivingEntity || entity.isCollidable();
     }
 
@@ -634,7 +642,7 @@ public class BubbleEntity extends Entity implements Leashable {
     private void mergeAround(ServerWorld world) {
         Box box = getBoundingBox();
         for (BubbleEntity other : world.getEntitiesByClass(BubbleEntity.class, box, other -> other != this && other.hasPassengers())) {
-            if (other.isRemoved() || other.fromEffect || !takesIn(other)) continue;
+            if (other.isRemoved() || !takesIn(other)) continue;
             if (getPassengerList().size() + other.getPassengerList().size() > BubbleRiding.MAX_RIDERS) continue;
             absorb(other);
         }
@@ -659,6 +667,7 @@ public class BubbleEntity extends Entity implements Leashable {
         if (other.isHovering()) setHoverY(isHovering() ? Math.max(getHoverY(), other.getHoverY()) : other.getHoverY());
         life = Math.min(life, other.life);
         strain = Math.max(strain, other.strain);
+        fromEffect = fromEffect && other.fromEffect; // an effect's timer only rules a bubble made of effect bubbles alone
         other.transferring = true;
         for (Entity rider : List.copyOf(other.getPassengerList())) {
             rider.stopRiding();
@@ -675,6 +684,65 @@ public class BubbleEntity extends Entity implements Leashable {
         }
         int count = getPassengerList().size();
         for (Entity rider : getPassengerList()) ModCriteria.fire(rider instanceof PlayerEntity p ? p : null, "bubble_merge", count);
+    }
+
+    /**
+     * The animals it touches come in, carried with its riders (if they fit and there is room): a cow, a sheep, a cat...
+     * Not one on a lead, riding or ridden, nor one of a board.
+     */
+    private void takeInAnimals(ServerWorld world) {
+        for (AnimalEntity animal : world.getEntitiesByClass(AnimalEntity.class, getBoundingBox(), this::carries)) {
+            if (!carries(animal) || !animal.startRiding(this, true)) continue;
+            world.playSound(null, getX(), getY(), getZ(), ModSounds.BUBBLE_MERGE, SoundCategory.NEUTRAL, 0.6f, 1.2f);
+            world.spawnParticles(ParticleTypes.BUBBLE_POP, animal.getX(), animal.getBodyY(0.5), animal.getZ(), 6, 0.2, 0.2, 0.2, 0.02);
+        }
+    }
+
+    /** Whether it takes {@code entity} in rather than popping on it: an animal free to come that fits. */
+    private boolean carries(Entity entity) {
+        return hasPassengers() && getItem().isEmpty() && getPassengerList().size() < BubbleRiding.MAX_RIDERS
+                && entity instanceof AnimalEntity animal && animal.isAlive() && !animal.hasVehicle() && !animal.hasPassengers()
+                && !animal.isLeashed() && !leavers.contains(animal) && BubbleRiding.fits(animal)
+                && !animal.getCommandTags().contains(BoardActors.TAG);
+    }
+
+    // ---------------------------------------------------------------- held like balloons
+
+    /** Per holder, this tick: how many bubbles hold them (counted once a tick, by the first one to look). */
+    private static final Map<UUID, Integer> HELD = new HashMap<>();
+    private static long heldTick = Long.MIN_VALUE;
+
+    /**
+     * Its holder, a player holding {@link BubbleRiding#FLOAT_LEADS} bubbles or more on leads, floats down slowly (Slow
+     * Falling); {@link BubbleRiding#LIFT_LEADS} or more lift him like balloons (Levitation, stronger with more), sneaking
+     * lets him down.
+     */
+    private void liftHolder(ServerWorld world) {
+        if (!(getLeashHolder() instanceof PlayerEntity holder) || holder.isSpectator() || holder.getAbilities().flying) return;
+        long now = world.getTime();
+        if (heldTick != now) {
+            heldTick = now;
+            HELD.clear();
+        }
+        Integer counted = HELD.get(holder.getUuid());
+        if (counted != null) return; // another of its bubbles did it this tick
+        int held = world.getEntitiesByClass(BubbleEntity.class, holder.getBoundingBox().expand(BubbleRiding.LEAD_REACH),
+                bubble -> bubble.getLeashHolder() == holder).size();
+        HELD.put(holder.getUuid(), held);
+        if (held < BubbleRiding.FLOAT_LEADS) return;
+        if (held >= BubbleRiding.LIFT_LEADS && !holder.isSneaking()) {
+            int strength = Math.min(held - BubbleRiding.LIFT_LEADS, BubbleRiding.MAX_LIFT);
+            holder.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, BubbleRiding.LIFT_TICKS, strength, true, false, true));
+        } else {
+            holder.removeStatusEffect(StatusEffects.LEVITATION);
+        }
+        holder.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, BubbleRiding.LIFT_TICKS, 0, true, false, true));
+        holder.fallDistance = 0;
+    }
+
+    /** How many bubbles hold {@code holder} on leads now (server, this tick's count; tests). */
+    public static int heldBy(PlayerEntity holder) {
+        return HELD.getOrDefault(holder.getUuid(), 0);
     }
 
     // ---------------------------------------------------------------- riders
@@ -698,7 +766,9 @@ public class BubbleEntity extends Entity implements Leashable {
     protected void removePassenger(Entity passenger) {
         super.removePassenger(passenger);
         if (getWorld().isClient || transferring) return;
-        if (fromEffect && passenger instanceof LivingEntity living) living.removeStatusEffect(ModEffects.BUBBLED);
+        // out of a bubble, whichever (a Bubbled one may have merged into a Bubbler's): no longer Bubbled, or the effect
+        // would blow it a new one at once
+        if (passenger instanceof LivingEntity living) living.removeStatusEffect(ModEffects.BUBBLED);
         fallSlowly(passenger);
         if (popping) return;
         if (getPassengerList().isEmpty()) {

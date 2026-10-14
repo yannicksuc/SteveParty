@@ -16,6 +16,7 @@ import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.BrushLinkable;
 import fr.lordfinn.steveparty.board.BrushLinks;
 import fr.lordfinn.steveparty.board.StepControllerLinks;
+import fr.lordfinn.steveparty.board.ControllerStartLinks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
@@ -89,6 +90,7 @@ final class BrushOverlay {
         // After the translucent blocks: drawn before, the ghosts would hide the stained glass behind them
         WorldRenderEvents.LAST.register(BrushOverlay::render);
         ClientTickEvents.END_CLIENT_TICK.register(BrushOverlay::tick);
+        ClientTickEvents.END_CLIENT_TICK.register(BrushSuggestions::tick);
     }
 
     private static void tick(MinecraftClient client) {
@@ -119,7 +121,10 @@ final class BrushOverlay {
             Vec3d from = anchor(world, kind.holder());
             Style style = kind instanceof CartridgeLinks.SpawnPoint ? Style.BUBBLE
                     : kind instanceof StepControllerLinks.Element ? Style.STEP : Style.ARROWS;
-            if (!to.isEmpty()) found.add(new HolderLinks(from, to, kind.color(), style));
+            if (kind instanceof ControllerStartLinks.Starts) {
+                // From the Party Controller's side facing each start tile, not from its top (where its chest stands)
+                for (Vec3d end : to) found.add(new HolderLinks(sideOf(kind.holder(), from.y, end), List.of(end), kind.color(), style));
+            } else if (!to.isEmpty()) found.add(new HolderLinks(from, to, kind.color(), style));
             // A container no longer there: a broken link, in red
             if (!gone.isEmpty()) found.add(new HolderLinks(from, gone, BoardLinks.CUT_COLOR));
         }
@@ -184,6 +189,7 @@ final class BrushOverlay {
         ghosts(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));
         holderLinks(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));
         bankLinks(matrices, consumers, camera);
+        BrushSuggestions.render(matrices, consumers, camera, world, context.tickCounter().getTickDelta(true));
         BlockPos aimed = BrushAim.aimed(player, world, context.tickCounter().getTickDelta(true), ghosts(), targets(world, brush));
         StorageMarkers.render(matrices, consumers, camera, numbers(matrices, consumers, camera, world, brush, aimed));
         if (aimed != null) {
@@ -295,10 +301,36 @@ final class BrushOverlay {
         }
     }
 
+    /** The 12 edges of the box (min, max), thin see-through boxes in {@code rgb}: a ghost block's outline. */
+    static void edges(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d min, Vec3d max, int rgb, float alpha) {
+        edges(matrices, consumers, camera, min, max, rgb, alpha, DASH_WIDTH);
+    }
+
+    /** The 12 edges of the box, {@code width} thick. */
+    static void edges(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d min, Vec3d max, int rgb, float alpha, double width) {
+        double w = width / 2;
+        double[] xs = {min.x, max.x}, ys = {min.y, max.y}, zs = {min.z, max.z};
+        for (double y : ys) for (double z : zs) WorldDraw.box(matrices, consumers, camera, new Vec3d(min.x - w, y - w, z - w), new Vec3d(max.x + w, y + w, z + w), rgb, alpha);
+        for (double x : xs) for (double z : zs) WorldDraw.box(matrices, consumers, camera, new Vec3d(x - w, min.y + w, z - w), new Vec3d(x + w, max.y - w, z + w), rgb, alpha);
+        for (double x : xs) for (double y : ys) WorldDraw.box(matrices, consumers, camera, new Vec3d(x - w, y - w, min.z + w), new Vec3d(x + w, y + w, max.z - w), rgb, alpha);
+    }
+
     /** A link from {@code a} to {@code b} in the slot of the brush's level: the stroke would erase it (not the way back). */
     static boolean linked(ClientWorld world, ItemStack brush, BlockPos a, BlockPos b) {
         for (BrushLinkable kind : BrushLinks.of(world, a, TileLinkerBrush.level(brush))) if (kind.linked(world, b)) return true;
         return false;
+    }
+
+    /**
+     * Where a link leaves a whole block (the Party Controller) toward {@code to}: on its side facing it, at height
+     * {@code y}, so it never seems to come from what stands behind the block.
+     */
+    static Vec3d sideOf(BlockPos block, double y, Vec3d to) {
+        Vec3d centre = Vec3d.ofCenter(block);
+        Vec3d flat = new Vec3d(to.x - centre.x, 0, to.z - centre.z);
+        if (flat.lengthSquared() < 1.0E-4) return new Vec3d(centre.x, y, centre.z);
+        flat = flat.normalize().multiply(0.55);
+        return new Vec3d(centre.x + flat.x, y, centre.z + flat.z);
     }
 
     /** Where links start and end on a board space: a little above the middle of its surface. */
@@ -309,7 +341,8 @@ final class BrushOverlay {
     /** A pulsing highlight on a board space, where it is seen (lowered, sloped, all 4 blocks of a large tile). */
     static void frame(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world, BlockPos pos, int argb) {
         float pulse = 0.25f + 0.15f * (float) Math.sin(world.getTime() / 3.0);
+        // No outline through walls: drawn after the board view's labels, it would cross the « ! » above the tile
         GlowingCuboidRenderer.drawBlockBox(matrices, consumers, pos,
-                ((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f, (argb & 0xFF) / 255f, pulse);
+                ((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f, (argb & 0xFF) / 255f, pulse, false);
     }
 }

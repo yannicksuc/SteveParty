@@ -1,7 +1,10 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.blockentity.GhostMobs;
 import fr.lordfinn.steveparty.client.blockentity.SpawnBubbleRenderer;
+import fr.lordfinn.steveparty.client.utils.ShaderPacks;
+import net.minecraft.client.MinecraftClient;
 import fr.lordfinn.steveparty.client.render.geo.GeoBones;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.utils.Argb;
@@ -43,6 +46,7 @@ import java.util.function.Consumer;
  */
 public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
     private static final Identifier WAX = Steveparty.id("textures/entity/frousseux_wax.png");
+    private static final Identifier BABY_WAX = Steveparty.id("textures/entity/frousseux_baby_wax.png");
     /** Its flame's animated textures (the same frames): the flame, then its heart and wick; the candle holder's too. */
     public static final Identifier FLAME = Steveparty.id("textures/entity/frousseux_flame.png");
     public static final Identifier CORE = Steveparty.id("textures/entity/frousseux_flame_core.png");
@@ -86,6 +90,17 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
      */
     private static RenderLayer shell(FrousseuxEntity frousseux, Identifier texture) {
         return frousseux.isFaded() ? FrousseuxGhostLayers.noCull(texture) : RenderLayer.getEntityTranslucent(texture);
+    }
+
+    /** Its flame's opacity: faded out of its owner's way, or a ghost's (GhostMobs: drawn outside the buffers it fades). */
+    private static float flameAlpha(FrousseuxEntity frousseux, float partialTick) {
+        float ghost = GhostMobs.drawingAlpha();
+        return frousseux.flameAlpha(partialTick) * (ghost >= 0 ? ghost : 1);
+    }
+
+    /** Its pool's texture: a baby's own. */
+    private static Identifier wax(FrousseuxEntity frousseux) {
+        return frousseux.isBaby() ? BABY_WAX : WAX;
     }
 
     /** Draws what these layers hold now, when the buffers can (vanilla's): their place in the order is now. */
@@ -146,7 +161,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
                            int packedLight, int packedOverlay) {
             // see-through wax as the rest, two-sided: from inside the hollow body it closes the top, which hides the
             // flame (drawn after it) by depth
-            RenderLayer layer = shell(frousseux, WAX);
+            RenderLayer layer = shell(frousseux, wax(frousseux));
             getRenderer().reRender(bakedModel, poseStack, bufferSource, frousseux, layer, bufferSource.getBuffer(layer),
                     partialTick, packedLight, packedOverlay, withAlpha(0xFF000000 | frousseux.getColor().accent, frousseux.bodyAlpha(partialTick)));
         }
@@ -203,7 +218,7 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
         public void render(MatrixStack poseStack, FrousseuxEntity frousseux, BakedGeoModel bakedModel, @Nullable RenderLayer renderType,
                            VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay) {
-            if (frousseux.deathTime > 0) return;
+            if (frousseux.deathTime > 0 || GhostMobs.isDepthPass()) return; // a ghost's depth: its wax alone
             GeoBone body = bakedModel.getBone("body").orElse(null), flame = bakedModel.getBone("flame").orElse(null);
             if (body == null || flame == null) return;
             boolean bodyHidden = body.isHidden();
@@ -219,17 +234,40 @@ public class FrousseuxRenderer extends GeoEntityRenderer<FrousseuxEntity> {
             // grouping layers its own way) the flame went out before the wax, which covered it, and the heart under
             // the flame (a blue flame without its white heart). Same as the candle holder (FrousseuxCandleHolderRenderer)
             flush(bufferSource, getRenderer().getRenderType(frousseux, getTextureResource(frousseux), bufferSource, partialTick),
-                    shell(frousseux, getTextureResource(frousseux)), shell(frousseux, WAX));
+                    shell(frousseux, getTextureResource(frousseux)), shell(frousseux, wax(frousseux)));
+            int edge = withAlpha(shade(frousseux.getColor().flameEdge, brightness), flameAlpha(frousseux, partialTick));
+            int heart = withAlpha(shade(frousseux.getColor().flameHeart, brightness), flameAlpha(frousseux, partialTick));
+            if (ShaderPacks.inUse() && !SpawnBubbleRenderer.isDrawingMiniature() && GhostMobs.drawingAlpha() < 0) {
+                // A shader pack batches the entities its own way and draws them after this: drawn now, the flame went
+                // under its own wax (cut off at the top of the candle, stripes left). Drawn apart, after the wax
+                // (DeferredGlows: after the translucent terrain, or right before it seen through glass or water)
+                boolean behind = DeferredGlows.behindTranslucent(frousseux.getWorld(),
+                        MinecraftClient.getInstance().gameRenderer.getCamera().getPos(),
+                        frousseux.getLerpedPos(partialTick).add(0, FrousseuxEntity.HEIGHT, 0));
+                AnimatableTexture.setAndUpdate(FLAME);
+                VertexConsumer flameGlow = DeferredGlows.buffer(FLAME, behind);
+                getRenderer().reRender(bakedModel, poseStack, any -> flameGlow, frousseux, null, flameGlow, partialTick,
+                        LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, edge);
+                AnimatableTexture.setAndUpdate(CORE);
+                VertexConsumer heartGlow = DeferredGlows.buffer(CORE, behind);
+                getRenderer().reRender(bakedModel, poseStack, any -> heartGlow, frousseux, null, heartGlow, partialTick,
+                        LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, heart);
+                flame.setHidden(true);
+                body.setHidden(bodyHidden);
+                body.setChildrenHidden(false);
+                GeoBones.restore(bakedModel, OTHERS, othersHidden);
+                return;
+            }
             AnimatableTexture.setAndUpdate(FLAME); // its frames (frousseux_flame.png.mcmeta): GeckoLib animates it
             RenderLayer layer = RenderLayer.getBeaconBeam(FLAME, true);
             drawNow(layer, consumer -> getRenderer().reRender(bakedModel, poseStack, any -> consumer, frousseux, layer, consumer,
                     partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
-                    withAlpha(shade(frousseux.getColor().flameEdge, brightness), frousseux.flameAlpha(partialTick))));
+                    edge));
             AnimatableTexture.setAndUpdate(CORE);
             RenderLayer heartLayer = RenderLayer.getBeaconBeam(CORE, true);
             drawNow(heartLayer, consumer -> getRenderer().reRender(bakedModel, poseStack, any -> consumer, frousseux, heartLayer, consumer,
                     partialTick, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV,
-                    withAlpha(shade(frousseux.getColor().flameHeart, brightness), frousseux.flameAlpha(partialTick))));
+                    heart));
 
             // Inside a Spawn Bubble: then its depth, for the film's near faces drawn after it (SpawnBubbleRenderer), which
             // otherwise would be painted over the part of it poking out of the film

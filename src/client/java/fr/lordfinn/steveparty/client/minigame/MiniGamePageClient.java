@@ -81,6 +81,8 @@ public final class MiniGamePageClient {
     }
 
     public static void initialize() {
+        // The brush draws and previews a Mini-game Controller's links from its page
+        fr.lordfinn.steveparty.board.MiniGameControllerLinks.clientPages = MiniGamePageClient::page;
         ClientPayloads.receive(MiniGamePagePayloads.Data.ID, (payload, context) -> put(payload.data()));
         ClientPayloads.receive(MiniGamePagePayloads.ImageChunk.ID, (payload, context) -> onImageChunk(payload));
         ClientPayloads.receive(MiniGamePagePayloads.Open.ID, (payload, context) -> {
@@ -92,6 +94,9 @@ public final class MiniGamePageClient {
                 String status = client.currentScreen instanceof MiniGamePageEditorScreen editor ? editor.handOver() : null;
                 client.setScreen(new MiniGamePageEditorScreen(payload.hand(), payload.data(), payload.canEdit(), payload.linked(), status));
             }
+        });
+        ClientPayloads.receive(MiniGamePagePayloads.Entrances.ID, (payload, context) -> {
+            if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor) editor.onEntrances(payload);
         });
         ClientPayloads.receive(MiniGamePagePayloads.Status.ID, (payload, context) -> {
             if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor) editor.onStatus(payload.page(), payload.code());

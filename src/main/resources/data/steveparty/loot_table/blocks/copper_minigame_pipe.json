@@ -7,7 +7,16 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "steveparty:copper_minigame_pipe"
+          "name": "steveparty:copper_minigame_pipe",
+          "functions": [
+            {
+              "function": "minecraft:copy_components",
+              "source": "block_entity",
+              "include": [
+                "minecraft:container"
+              ]
+            }
+          ]
         }
       ],
       "conditions": [

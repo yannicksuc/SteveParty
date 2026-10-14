@@ -254,7 +254,7 @@ public final class ShopStops {
         Vec3d at = BoardSpaces.standPos(world, space.getPos());
         world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.BLOCKS, 0.8F, 1.2F);
         world.playSound(null, trader.getX(), trader.getY(), trader.getZ(), SoundEvents.ENTITY_VILLAGER_TRADE, SoundCategory.NEUTRAL, 0.8F, 1.0F);
-        MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.welcome", tokenName, limit, seconds)
+        MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.welcome" + (limit == 1 ? ".one" : ""), tokenName, limit, seconds)
                 .formatted(Formatting.GOLD).append(" ").append(openButton(mob.getUuid())), MessageUtils.MessageType.CHAT);
         for (ServerPlayerEntity player : audience(stop)) {
             MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.shop_stop.stopped", owner.getDisplayName(), tokenName)
@@ -456,7 +456,7 @@ public final class ShopStops {
         Text who = owner != null ? owner.getDisplayName() : stop.tokenName;
         int purchases = purchases(stop);
         Text message = switch (how) {
-            case BOUGHT -> Text.translatable("message.steveparty.shop_stop.bought", who, purchases).formatted(Formatting.GREEN);
+            case BOUGHT -> Text.translatable("message.steveparty.shop_stop.bought" + (purchases == 1 ? ".one" : ""), who, purchases).formatted(Formatting.GREEN);
             case NOTHING -> Text.translatable("message.steveparty.shop_stop.nothing", who).formatted(Formatting.GRAY);
             case TIMEOUT -> Text.translatable("message.steveparty.shop_stop.timeout", who).formatted(Formatting.GOLD);
             case LEFT -> Text.translatable("message.steveparty.shop_stop.left", stop.tokenName).formatted(Formatting.GRAY);

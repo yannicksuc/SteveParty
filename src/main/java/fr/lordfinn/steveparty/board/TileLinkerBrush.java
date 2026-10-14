@@ -273,6 +273,12 @@ public final class TileLinkerBrush {
             world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS, 0.5f, 1.2f);
             return;
         }
+        // Into a start tile: refused (its links only go out of it), the stroke goes on from it
+        if (fromKind == null && WrenchActions.intoStart(world, from, pos)) {
+            stroke.start = null;
+            WrenchActions.refuseIntoStart(player);
+            return;
+        }
         // From a Teleport tile to a board space it has no link to: « TP » or « link », the player picks
         if (teleportChoice(world, level(brush), from, pos) != null) {
             stroke.start = null;
@@ -371,6 +377,10 @@ public final class TileLinkerBrush {
             toggle(player, world, to, back, from);
             return;
         }
+        if (kind == null && MiniGameControllerLinks.emptyController(world, from)) {
+            WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.controller_no_page", BoardText.pos(from)));
+            return;
+        }
         if (kind == null) {
             // A holder linked to nothing of the kind: a router, a Hop Switch...
             boolean board = kinds.stream().anyMatch(k -> k instanceof CartridgeLinks.BoardPaths);
@@ -391,6 +401,11 @@ public final class TileLinkerBrush {
         BrushLinkable kind = BrushLinks.kindFor(BrushLinks.of(world, from, level(brush)), world, pos);
         // Its marker or a chest reached (or refused): the space the stroke started on keeps its cartridge
         if (kind != null && !(kind instanceof CartridgeLinks.BoardPaths)) stroke.start = null;
+        if (kind == null && MiniGameControllerLinks.emptyController(world, from)) {
+            stroke.cells.add(pos.toImmutable());
+            WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.controller_no_page", BoardText.pos(from)));
+            return;
+        }
         if (kind == null) {
             // A chest or a Spawn Marker the cartridge takes none of: said, once a stroke
             String refusal = BrushLinks.refusal(world, from, level(brush), pos);
@@ -414,9 +429,10 @@ public final class TileLinkerBrush {
             cannotEdit(player, from);
             return;
         }
-        if (kind.linked(world, target)) kind.unlink(player, world, target);
-        else {
-            kind.link(player, world, target);
+        if (kind.linked(world, target)) {
+            if (kind.unlink(player, world, target)) BrushTutorialSteps.erased(player);
+        } else {
+            if (kind.link(player, world, target)) BrushTutorialSteps.linked(player, world, from, kind, target);
             ModCriteria.fire(player, "tiles_linked");
         }
     }
@@ -442,13 +458,14 @@ public final class TileLinkerBrush {
         }
         WrenchActions.recorded(player, world, brush, () -> {
             if (!WrenchActions.addLink(player, world, from, origin, slot, cell)) return;
-            say(player, Text.translatable("message.steveparty.tile_linker_brush.blob", BoardText.pos(from), BoardText.pos(cell)));
+            BrushTutorialSteps.pathLinked(player, world, from);
+            WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.blob", BoardText.pos(from), BoardText.pos(cell)), WrenchActions.linkWord(true));
             world.playSound(null, surface.getBlockPos(), SoundEvents.ENTITY_SLIME_SQUISH, SoundCategory.PLAYERS, 0.7f, 0.8f);
         });
     }
 
     static void erased(ServerPlayerEntity player, ServerWorld world, BlockPos from, BlockPos to) {
-        say(player, Text.translatable("message.steveparty.tile_linker_brush.erased", BoardText.pos(from), BoardText.pos(to)));
+        WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.erased", BoardText.pos(from), BoardText.pos(to)), WrenchActions.linkWord(false));
         world.playSound(null, player.getBlockPos(), ModSounds.CANCEL_SOUND_EVENT, SoundCategory.PLAYERS, 0.6f, 1f);
     }
 

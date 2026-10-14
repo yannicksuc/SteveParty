@@ -8,7 +8,7 @@
         "base": "true"
       },
       "apply": {
-        "model": "steveparty:block/podium_slab"
+        "model": "steveparty:block/redstone_podium_slab"
       }
     },
     {
@@ -19,7 +19,7 @@
         "base": "false"
       },
       "apply": {
-        "model": "steveparty:block/podium_slab_stacked"
+        "model": "steveparty:block/redstone_podium_slab_stacked"
       }
     },
     {
@@ -40,7 +40,7 @@
         "base": "true"
       },
       "apply": {
-        "model": "steveparty:block/podium_full"
+        "model": "steveparty:block/redstone_podium_full"
       }
     },
     {
@@ -51,7 +51,7 @@
         "base": "false"
       },
       "apply": {
-        "model": "steveparty:block/podium_full_stacked"
+        "model": "steveparty:block/redstone_podium_full_stacked"
       }
     },
     {
@@ -182,7 +182,7 @@
         "base": "true"
       },
       "apply": {
-        "model": "steveparty:block/podium_slab",
+        "model": "steveparty:block/redstone_podium_slab",
         "y": 90
       }
     },
@@ -194,7 +194,7 @@
         "base": "false"
       },
       "apply": {
-        "model": "steveparty:block/podium_slab_stacked",
+        "model": "steveparty:block/redstone_podium_slab_stacked",
         "y": 90
       }
     },
@@ -217,7 +217,7 @@
         "base": "true"
       },
       "apply": {
-        "model": "steveparty:block/podium_full",
+        "model": "steveparty:block/redstone_podium_full",
         "y": 90
       }
     },
@@ -229,7 +229,7 @@
         "base": "false"
       },
       "apply": {
-        "model": "steveparty:block/podium_full_stacked",
+        "model": "steveparty:block/redstone_podium_full_stacked",
         "y": 90
       }
     },
@@ -371,7 +371,7 @@
         "base": "true"
       },
       "apply": {
-        "model": "steveparty:block/podium_slab",
+        "model": "steveparty:block/redstone_podium_slab",
         "y": 180
       }
     },
@@ -383,7 +383,7 @@
         "base": "false"
       },
       "apply": {
-        "model": "steveparty:block/podium_slab_stacked",
+        "model": "steveparty:block/redstone_podium_slab_stacked",
         "y": 180
       }
     },
@@ -406,7 +406,7 @@
         "base": "true"
       },
       "apply": {
-        "model": "steveparty:block/podium_full",
+        "model": "steveparty:block/redstone_podium_full",
         "y": 180
       }
     },
@@ -418,7 +418,7 @@
         "base": "false"
       },
       "apply": {
-        "model": "steveparty:block/podium_full_stacked",
+        "model": "steveparty:block/redstone_podium_full_stacked",
         "y": 180
       }
     },
@@ -560,7 +560,7 @@
         "base": "true"
       },
       "apply": {
-        "model": "steveparty:block/podium_slab",
+        "model": "steveparty:block/redstone_podium_slab",
         "y": 270
       }
     },
@@ -572,7 +572,7 @@
         "base": "false"
       },
       "apply": {
-        "model": "steveparty:block/podium_slab_stacked",
+        "model": "steveparty:block/redstone_podium_slab_stacked",
         "y": 270
       }
     },
@@ -595,7 +595,7 @@
         "base": "true"
       },
       "apply": {
-        "model": "steveparty:block/podium_full",
+        "model": "steveparty:block/redstone_podium_full",
         "y": 270
       }
     },
@@ -607,7 +607,7 @@
         "base": "false"
       },
       "apply": {
-        "model": "steveparty:block/podium_full_stacked",
+        "model": "steveparty:block/redstone_podium_full_stacked",
         "y": 270
       }
     },

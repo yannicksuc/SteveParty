@@ -49,6 +49,11 @@ public class PipeBlockEntity extends BlockEntity implements ImplementedInventory
         return PipeDestinationProvider.of(getCartridge());
     }
 
+    /** Whether its slot is scattered when it is broken. */
+    public boolean scattersContents() {
+        return true;
+    }
+
     // Hoppers and droppers never put anything in or take it out
     @Override
     public int[] getAvailableSlots(Direction side) {

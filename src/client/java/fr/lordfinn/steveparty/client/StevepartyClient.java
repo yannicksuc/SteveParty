@@ -102,6 +102,7 @@ import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
 import fr.lordfinn.steveparty.client.model.BrickShadeModelPlugin;
 import fr.lordfinn.steveparty.client.model.ConnectedPlasticModelPlugin;
 import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
+import fr.lordfinn.steveparty.client.blockentity.GhostMobs;
 import fr.lordfinn.steveparty.client.blockentity.SpawnBubbleRenderer;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
@@ -247,10 +248,13 @@ public class StevepartyClient implements ClientModInitializer {
         // The Spawn Bubble: its plate is its block model, its bubble (and what is inside) its renderer. Translucent: its
         // item (a plain block model: the plate, the arrow and the bubble's cube) is drawn on a translucent layer too
         SpawnBubbleRenderer.registerModels();
+        GhostMobs.initialize();
         BlockEntityRendererFactories.register(ModBlockEntities.SPAWN_MARKER_ENTITY, SpawnBubbleRenderer::new);
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.SPAWN_MARKER, SpawnBubbleRenderer.ITEM);
         BlockEntityRendererFactories.register(ModBlockEntities.BUBBLER_ENTITY, BubblerRenderer::new);
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.SPAWN_MARKER, RenderLayer.getTranslucent());
+        // The Redstone Podium's carpet: a tinted layer over the band its sides leave see-through
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.PODIUM, RenderLayer.getCutout());
         MiniGamePipeNotchRenderer.registerHint();
         // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
         for (PipeKind kind : PipeKind.values()) {
@@ -463,6 +467,10 @@ public class StevepartyClient implements ClientModInitializer {
         // A dyed check point (TileDye): its grey crystal in its cartridge's colour, as a tile's sides
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, CHECK_POINT);
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTradingStallColor, TRADING_STALL);
+        ColorProviderRegistry.BLOCK.register((state, world, pos, tint) -> tint == 0 && state.contains(fr.lordfinn.steveparty.blocks.custom.RedstonePodiumBlock.CARPET)
+                ? fr.lordfinn.steveparty.blocks.custom.RedstonePodiumBlock.carpetRgb(state.get(fr.lordfinn.steveparty.blocks.custom.RedstonePodiumBlock.CARPET)) : 0xFFFFFF, PODIUM);
+        ColorProviderRegistry.ITEM.register((stack, tint) -> tint == 0
+                ? 0xFF000000 | fr.lordfinn.steveparty.blocks.custom.RedstonePodiumBlock.carpetRgb(net.minecraft.util.DyeColor.RED) : -1, PODIUM);
     }
 
     private static void initEntitiesRenderers() {

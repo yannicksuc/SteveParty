@@ -186,7 +186,10 @@ public class ReplayTileGameTests implements SteveGameTest {
         context.complete();
     }
 
-    /** The Power-up die spent for the turn comes back for the replay (a forged die included); the replay flag is saved. */
+    /**
+     * The Power-up die spent for the turn comes back for the replay (a forged die included), out of the party's storage;
+     * the replay flag is saved.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theSpentDieComesBackAndTheReplayIsSaved(TestContext context) {
         ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
@@ -206,11 +209,14 @@ public class ReplayTileGameTests implements SteveGameTest {
         dice.setItemReference(die.copy());
         turn(data).onDiceRoll(dice, player.getUuid(), 4, controller);
         dice.discard();
+        // Spent: in the party's storage
+        controller.getBankItems().setStack(0, die.copy());
 
         tile.onDestinationReached(token, controller);
         context.assertTrue(turn(data).isReplay(), "replay turn");
         ItemStack back = player.getInventory().main.stream().filter(stack -> stack.isOf(ModItems.DEFAULT_DICE)).findFirst().orElse(ItemStack.EMPTY);
         context.assertTrue(ItemStack.areItemsAndComponentsEqual(back, die), "the same die came back, got " + back);
+        context.assertTrue(controller.getBankItems().getStack(0).isEmpty(), "taken out of the storage");
 
         PartyStep reloaded = PartyStepFactory.get(turn(data).toNbt());
         context.assertTrue(reloaded instanceof TokenTurnPartyStep step && step.isReplay(), "the replay turn is saved");

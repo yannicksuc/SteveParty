@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom.trichaudron;
 
 import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.entities.TokenBase;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,8 +41,8 @@ public final class TrichaudronParts {
             heads[head] = keep(heads[head], shown, head, false);
             necks[head] = keep(necks[head], shown, head, true);
             if (!shown) continue;
-            place(heads[head], owner.headCenter(head));
-            place(necks[head], owner.neckMiddle(head));
+            place(heads[head], drawn(owner.headCenter(head)));
+            place(necks[head], drawn(owner.neckMiddle(head)));
         }
     }
 
@@ -53,13 +54,26 @@ public final class TrichaudronParts {
         }
         if (part != null || !wanted) return part;
         TrichaudronPartEntity spawned = TrichaudronPartEntity.of(ModEntities.TRICHAUDRON_PART, owner, head, neck);
-        place(spawned, neck ? owner.neckMiddle(head) : owner.headCenter(head));
+        place(spawned, drawn(neck ? owner.neckMiddle(head) : owner.headCenter(head)));
         return owner.getWorld().spawnEntity(spawned) ? spawned : null;
     }
 
-    /** Centres the box on {@code centre}. */
-    private static void place(TrichaudronPartEntity part, Vec3d centre) {
+    /**
+     * Where {@code centre} (worked out for a Trichaudron of the normal size, standing on the ground) is drawn: away from
+     * its feet as much as it is scaled (a pawn shrunk or blown up by the Tokenizer Wand, the Squish effect), raised by its
+     * pawn base. A huge pawn's heads are clicked where they are seen, so the wand can shrink it back.
+     */
+    private Vec3d drawn(Vec3d centre) {
+        float scale = owner.getScale();
+        Vec3d feet = owner.getPos();
+        double base = TokenBase.isToken(owner) ? TokenBase.baseHeight(owner) : 0.0;
+        return scale == 1.0f && base == 0.0 ? centre : feet.add(centre.subtract(feet).multiply(scale)).add(0, base, 0);
+    }
+
+    /** Centres the box on {@code centre}, as big as its Trichaudron is scaled. */
+    private void place(TrichaudronPartEntity part, Vec3d centre) {
         if (part == null) return;
+        part.setScale(owner.getScale());
         part.refreshPositionAndAngles(centre.x, centre.y - part.getHeight() / 2, centre.z, 0, 0);
     }
 

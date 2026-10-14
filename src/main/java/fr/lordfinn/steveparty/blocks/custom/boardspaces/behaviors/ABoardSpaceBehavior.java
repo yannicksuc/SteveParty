@@ -81,7 +81,9 @@ public abstract class ABoardSpaceBehavior {
         return false;
     }
 
+    /** An empty hand: nothing, said so (the Wrench opens a board space). */
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        fr.lordfinn.steveparty.board.WrenchActions.needsWrench(player);
         return SUCCESS;
     }
 

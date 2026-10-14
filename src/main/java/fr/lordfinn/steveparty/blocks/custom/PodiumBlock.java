@@ -42,7 +42,9 @@ import java.util.List;
  * Podium (see {@link PodiumBlockEntity} and {@link Podiums}): it records who came first, second, third... in a
  * mini-game.
  * <ul>
- *     <li>Four looks: classic, gold, silver and bronze. The look says nothing about the place.</li>
+ *     <li>Two families: the classic podiums (gold, iron, copper), taken by a click or by sneaking on them, and the
+ *     {@link RedstonePodiumBlock Redstone Podium}, taken by a redstone pulse (the nearest player). A column made of both
+ *     answers both ({@link #answersClicks}, {@link #answersRedstone}). The look says nothing about the place.</li>
  *     <li>A podium is a slab; another podium put on it makes it a full block. Podiums stacked on one another make one
  *     podium (a column): its settings (who is registered, what a signal does, its banner) are kept by its bottom
  *     block. A column looks like one piece: the plate on its top only, the plinth at its foot only, and its banner
@@ -51,11 +53,15 @@ import java.util.List;
  *     <li>The columns touching each other, and the columns linked to the same mini-game page (page in hand, click),
  *     form a group. <b>The taller the column, the better the place</b>: the tallest is the 1st place, the next height
  *     the 2nd... Columns of the same height share the place.</li>
- *     <li>Sneaking on its top, or right-clicking it, registers the player on it; again, unregisters him. One podium
- *     per player (per team in a team mini-game); a podium held by someone else can be taken.</li>
- *     <li>Redstone into any block of the column: what the Wrench set (right click with it): register the nearest
- *     player on it, give him the highest free place of the group, empty the column, or reset the group. Sneak +
+ *     <li>Classic: sneaking on its top, or right-clicking it, takes it as its mode says (the Wrench changes it, see
+ *     {@link fr.lordfinn.steveparty.podium.PodiumSignal}): this podium, the best free place of the group or its last
+ *     one (filled from the bottom); again on the podium showing him, he leaves it. One podium per player (per team in a
+ *     team mini-game); a podium held by someone else can be taken.</li>
+ *     <li>Redstone Podium: a pulse into any block of the column does what its mode says: register the nearest player
+ *     on it, give him the best or the last free place of the group, empty the column, or reset the group. Sneak +
  *     right click with the Wrench resets the group.</li>
+ *     <li>Changing the mode shows it: the column it acts on lights up, a Steve statue stands a few seconds where the
+ *     player would go.</li>
  *     <li>The banner hanging on its front can be stamped with a stencil (Stencil Hammer, or a stencil and a dye),
  *     washed with a wet sponge.</li>
  *     <li>Comparator: 15 while someone is registered on the column.</li>
@@ -212,6 +218,24 @@ public class PodiumBlock extends Block implements BlockEntityProvider {
         return state.getBlock() instanceof PodiumBlock;
     }
 
+    /** Whether the column {@code pos} belongs to answers redstone: one of its blocks is a Redstone Podium. */
+    public static boolean answersRedstone(BlockView world, BlockPos pos) {
+        BlockPos top = topOf(world, pos);
+        for (BlockPos block = bottomOf(world, pos); block.getY() <= top.getY(); block = block.up())
+            if (world.getBlockState(block).getBlock() instanceof RedstonePodiumBlock) return true;
+        return false;
+    }
+
+    /** Whether the column {@code pos} belongs to is taken by a click: one of its blocks is a classic podium. */
+    public static boolean answersClicks(BlockView world, BlockPos pos) {
+        BlockPos top = topOf(world, pos);
+        for (BlockPos block = bottomOf(world, pos); block.getY() <= top.getY(); block = block.up()) {
+            BlockState state = world.getBlockState(block);
+            if (isPodium(state) && !(state.getBlock() instanceof RedstonePodiumBlock)) return true;
+        }
+        return false;
+    }
+
     /** Bottom block of the column {@code pos} belongs to (it keeps the podium's settings). */
     public static BlockPos bottomOf(BlockView world, BlockPos pos) {
         BlockPos.Mutable cursor = pos.mutableCopy();
@@ -289,8 +313,7 @@ public class PodiumBlock extends Block implements BlockEntityProvider {
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.podium.register")
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.podium.page")
-                        .use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.podium.reset")
-                        .note("tooltip.steveparty.podium.signal")
+                        .note("tooltip.steveparty.podium.modes")
                         .note("tooltip.steveparty.podium.comparator"));
     }
 
@@ -299,7 +322,7 @@ public class PodiumBlock extends Block implements BlockEntityProvider {
     @Override
     protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
         super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
-        if (world.isClient) return;
+        if (world.isClient || !answersRedstone(world, pos)) return;
         PodiumBlockEntity podium = master(world, pos);
         if (podium != null) podium.onRedstoneInput(columnPower(world, pos) > 0);
     }

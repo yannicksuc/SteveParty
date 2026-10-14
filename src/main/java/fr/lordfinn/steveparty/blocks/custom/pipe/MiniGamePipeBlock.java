@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.pipe;
 
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -12,6 +13,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -28,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * The mini-game pipes (Copper, Iron, Golden: they differ by how far they send, see {@link Reach}):
@@ -35,9 +38,11 @@ import java.util.Locale;
  * mini-game page, shown in the notch on its side. Programmed, it is the way into that mini-game out of a party: see
  * {@code MiniGamePipes}.
  * <ul>
- *     <li>A click with a page puts it in (the one already there comes back).</li>
- *     <li>A click on the notch, or a sneaking click anywhere on it, takes the page back.</li>
- *     <li>Broken, it drops its page.</li>
+ *     <li>A click with a page prints it on the pipe: the page is not used up (a linked copy of it goes in, the one
+ *     that was there is wiped off).</li>
+ *     <li>A click with an empty hand on the notch, or sneaking anywhere on it, wipes the page off: nothing comes back.</li>
+ *     <li>Broken, it keeps its page: the pipe item carries it, placed again it is still printed.</li>
+ *     <li>Unlinked from the page's editor, it is wiped off too ({@link #wipe}).</li>
  * </ul>
  * Programming it takes the right to build.
  */
@@ -108,13 +113,17 @@ public class MiniGamePipeBlock extends PipeBlock {
 
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
-        Tooltips.of(tooltip)
+        ItemStack page = MiniGamePipeBlockEntity.pageOf(stack);
+        Tooltips tips = Tooltips.of(tooltip);
+        if (!page.isEmpty()) tips.state("tooltip.steveparty.minigame_pipe.page", Tooltips.value(page.getName()));
+        tips
                 .state("tooltip.steveparty.minigame_pipe.reach",
                         Tooltips.value(Text.translatable("tooltip.steveparty.minigame_pipe.reach." + reach().name().toLowerCase(Locale.ROOT))))
                 .summary("tooltip.steveparty.minigame_pipe.what")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.minigame_pipe.program")
-                        .use(Tooltips.Keys.use(), "tooltip.steveparty.minigame_pipe.take")
+                        .use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.minigame_pipe.take")
+                        .note("tooltip.steveparty.minigame_pipe.kept")
                         .note("tooltip.steveparty.minigame_pipe.colours")
                         .note("tooltip.steveparty.minigame_pipe.own"));
     }
@@ -128,7 +137,8 @@ public class MiniGamePipeBlock extends PipeBlock {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (!pageAt(world, pos).isEmpty() && (player.isSneaking() || hit.getSide() == notchSide(state))) {
+        // An empty hand on its notch, or sneaking: the page wiped off
+        if (!pageAt(world, pos).isEmpty() && player.getMainHandStack().isEmpty() && (player.isSneaking() || hit.getSide() == notchSide(state))) {
             if (player instanceof ServerPlayerEntity serverPlayer) takePage(serverPlayer, pos);
             return ActionResult.SUCCESS;
         }
@@ -136,10 +146,10 @@ public class MiniGamePipeBlock extends PipeBlock {
     }
 
     /**
-     * Programs the mini-game pipe at {@code pos} with the page held in {@code hand} (one page of the stack); the page
-     * that was there goes back to the player.
+     * Prints the page held in {@code hand} on the mini-game pipe at {@code pos}: a linked copy goes in, the page held is
+     * not used up; the page that was there is wiped off.
      *
-     * @return false if the player may not build, or holds no page
+     * @return false if the player may not build, holds no page, or the pipe already has that page
      */
     public static boolean program(ServerPlayerEntity player, Hand hand, BlockPos pos) {
         ItemStack held = player.getStackInHand(hand);
@@ -148,30 +158,53 @@ public class MiniGamePipeBlock extends PipeBlock {
             player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.not_allowed").formatted(Formatting.RED), true);
             return false;
         }
-        ItemStack before = pipe.getPage();
-        ItemStack page = held.split(1);
+        UUID id = MiniGamePageNetworking.ensureSinglePage(player, hand);
+        ItemStack page = player.getStackInHand(hand).copyWithCount(1);
+        if (id.equals(MiniGamePages.idOf(pipe.getPage()))) {
+            player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.already", page.getName()), true);
+            return false;
+        }
         MiniGamePages.refresh(player.server, page);
         pipe.setPage(page);
-        if (!before.isEmpty()) player.getInventory().offerOrDrop(before);
         ModSounds.playSelect(player.getWorld(), pos);
         player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.programmed", page.getName()), true);
         return true;
     }
 
-    /** Takes the page out of the mini-game pipe at {@code pos}, into the player's hands. @return false if there is none, or the player may not build */
+    /** Wipes the page off the mini-game pipe at {@code pos}: nothing comes back. @return false if there is none, or the player may not build */
     public static boolean takePage(ServerPlayerEntity player, BlockPos pos) {
         if (!(player.getWorld().getBlockEntity(pos) instanceof MiniGamePipeBlockEntity pipe) || pipe.getPage().isEmpty()) return false;
         if (!MiniGamePages.canEdit(player)) {
             player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.not_allowed").formatted(Formatting.RED), true);
             return false;
         }
-        ItemStack page = pipe.getPage();
         pipe.setPage(ItemStack.EMPTY);
-        if (player.getMainHandStack().isEmpty()) player.setStackInHand(Hand.MAIN_HAND, page);
-        else player.getInventory().offerOrDrop(page);
         ModSounds.playCancel(player.getWorld(), pos);
         player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.page_taken"), true);
         return true;
+    }
+
+    /**
+     * The mini-game pipe at {@code pipe} unlinked from the page {@code page} (its editor): wiped off if it still has
+     * that page, its chunk loaded or not (loaded for the change).
+     *
+     * @return true if it was wiped off
+     */
+    public static boolean wipe(MinecraftServer server, GlobalPos pipe, UUID page) {
+        ServerWorld world = server.getWorld(pipe.dimension());
+        if (world == null) {
+            MiniGamePipeIndex.remove(server, pipe);
+            return false;
+        }
+        if (world.getBlockEntity(pipe.pos()) instanceof MiniGamePipeBlockEntity entity && page.equals(MiniGamePages.idOf(entity.getPage()))) {
+            entity.setPage(ItemStack.EMPTY);
+            ModSounds.playCancel(world, pipe.pos());
+            return true;
+        }
+        // Not that page (or no pipe any more): only the index forgets it
+        MiniGamePipeIndex.Entry entry = MiniGamePipeIndex.at(server, pipe);
+        if (entry != null && entry.page().equals(page)) MiniGamePipeIndex.remove(server, pipe);
+        return false;
     }
 
     @Override

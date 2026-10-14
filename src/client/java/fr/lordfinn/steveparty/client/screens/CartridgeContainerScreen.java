@@ -352,7 +352,7 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
             lines.add(Text.translatable("gui.steveparty.pipette.pick").formatted(Formatting.YELLOW));
         } else {
             lines.add(Text.translatable("gui.steveparty.pipette.copy", pipetteCartridge.getName()).formatted(Formatting.GREEN));
-            lines.add(Text.translatable("gui.steveparty.pipette.count", pipetteLinks.size()).formatted(Formatting.WHITE));
+            lines.add(Text.translatable(pipetteLinks.size() == 1 ? "gui.steveparty.pipette.count.one" : "gui.steveparty.pipette.count", pipetteLinks.size()).formatted(Formatting.WHITE));
             for (int i = 0; i < Math.min(SHOWN_LINKS, pipetteLinks.size()); i++) {
                 lines.add(Text.literal("  → ").append(BoardText.pos(pipetteLinks.get(i))).formatted(Formatting.GRAY));
             }

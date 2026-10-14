@@ -214,7 +214,7 @@ public final class HelmetView {
             }
             if (cartridge.getItem() instanceof ShopCartridgeItem) {
                 int offers = ShopCartridgeItem.offers(cartridge).size();
-                lines.add(new Line(offers > 0 ? Text.translatable("hud.steveparty.explorer_helmet.shop", offers)
+                lines.add(new Line(offers > 0 ? Text.translatable(offers == 1 ? "hud.steveparty.explorer_helmet.shop.one" : "hud.steveparty.explorer_helmet.shop", offers)
                         : Text.translatable("hud.steveparty.explorer_helmet.shop.none"), offers > 0 ? WorldDraw.Plate.GOLD : WorldDraw.Plate.RED));
             }
         }

@@ -4,9 +4,8 @@ import net.minecraft.block.entity.BlockEntity;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.minigame.MiniGameTest;
+import fr.lordfinn.steveparty.screen_handlers.RemoteAccess;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -26,36 +25,28 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.UUID;
 
 /**
- * The Mini-game Remote: the buttons of a Mini-game Controller, from afar (playtest of 2026-10-06, #72).
+ * The Remote: the screen of a Party Controller or of a Mini-game Controller, from afar (playtest of 2026-10-13).
  * <ul>
- *     <li>A sneaking click on a Mini-game Controller links the remote to it (on the same one again: unlinks it).</li>
- *     <li>A click anywhere: out of a party, « Play » or « Stop » of its controller, as its screen's button (the
- *     players near the page's pipes play; the one holding the remote watches if he is not near one of them); while
- *     a party plays its mini-game, the holder's « Ready » vote of the practice round.</li>
+ *     <li>A sneaking click on a Party Controller or a Mini-game Controller links the remote to it (on the same one
+ *     again: unlinks it).</li>
+ *     <li>A click anywhere opens its controller's screen, wherever the player is (its chunk is loaded and kept while
+ *     the screen is open, see {@link RemoteAccess}): pause, stop, « Play », « Ready »... as at the controller.</li>
  * </ul>
- * The controller's chunk is loaded to press it, a second at most between two presses.
  */
 public class MiniGameRemoteItem extends Item {
     private static final String KEY = "message.steveparty.mini_game_remote.";
     /** Ticks between two presses. */
-    private static final int COOLDOWN_TICKS = 20;
-    /** The reasons the controller's screen gives (without arguments) for not playing, said by the remote too. */
-    private static final Set<MiniGameTest.Status> SAID = Set.of(MiniGameTest.Status.NO_PIPE, MiniGameTest.Status.NOBODY,
-            MiniGameTest.Status.NOT_ENOUGH, MiniGameTest.Status.PARTY_PLAYING, MiniGameTest.Status.ZONE_TOO_BIG, MiniGameTest.Status.ZONE_BUSY,
-            MiniGameTest.Status.ZONE_NO_WORLD, MiniGameTest.Status.ZONE_TOO_FULL);
+    private static final int COOLDOWN_TICKS = 10;
 
     public MiniGameRemoteItem(Settings settings) {
         super(settings);
     }
 
-    /** Whether the remote links to the block holding {@code blockEntity} (sneak + click): a Mini-game Controller. */
+    /** Whether the remote links to the block holding {@code blockEntity} (sneak + click): a Party Controller or a Mini-game Controller. */
     public static boolean linkable(@Nullable BlockEntity blockEntity) {
-        return blockEntity instanceof MiniGameControllerBlockEntity;
+        return blockEntity instanceof MiniGameControllerBlockEntity || blockEntity instanceof PartyControllerEntity;
     }
 
     @Override
@@ -90,23 +81,25 @@ public class MiniGameRemoteItem extends Item {
         }
         stack.set(ModComponents.MINI_GAME_REMOTE_LINK, controller);
         BlockPos pos = controller.pos();
-        player.sendMessage(Text.translatable(KEY + "linked", pos.getX(), pos.getY(), pos.getZ()).formatted(Formatting.GREEN), true);
+        Text name = player.getWorld().getBlockState(pos).getBlock().getName();
+        player.sendMessage(Text.translatable(KEY + "linked", name, pos.getX(), pos.getY(), pos.getZ()).formatted(Formatting.GREEN), true);
         ModSounds.playSelect(player.getWorld(), pos);
     }
 
     /** The controller the remote is linked to, its chunk loaded; null if none, or it is no more. */
-    public static @Nullable MiniGameControllerBlockEntity controllerOf(ServerPlayerEntity player, ItemStack stack) {
+    public static @Nullable BlockEntity controllerOf(ServerPlayerEntity player, ItemStack stack) {
         GlobalPos link = stack.get(ModComponents.MINI_GAME_REMOTE_LINK);
         ServerWorld world = link == null ? null : player.server.getWorld(link.dimension());
         if (world == null) return null;
         world.getChunk(link.pos().getX() >> 4, link.pos().getZ() >> 4);
-        return world.getBlockEntity(link.pos()) instanceof MiniGameControllerBlockEntity controller ? controller : null;
+        BlockEntity controller = world.getBlockEntity(link.pos());
+        return linkable(controller) ? controller : null;
     }
 
     /**
-     * A press of the remote by {@code player}: see the class. The player is told what it did, or why it did nothing.
+     * A press of the remote by {@code player}: its controller's screen opens. The player is told why it did not.
      *
-     * @return true if it did something
+     * @return true if the screen opened
      */
     public static boolean press(ItemStack stack, ServerPlayerEntity player) {
         if (player.getItemCooldownManager().isCoolingDown(stack.getItem())) return false;
@@ -115,38 +108,15 @@ public class MiniGameRemoteItem extends Item {
             return false;
         }
         player.getItemCooldownManager().set(stack.getItem(), COOLDOWN_TICKS);
-        MiniGameControllerBlockEntity controller = controllerOf(player, stack);
+        BlockEntity controller = controllerOf(player, stack);
         if (controller == null) {
             player.sendMessage(Text.translatable(KEY + "gone").formatted(Formatting.RED), true);
+            ModSounds.playCancel(player.getWorld(), player.getBlockPos());
             return false;
         }
-        UUID page = controller.getPageId();
-        if (page == null) {
-            player.sendMessage(Text.translatable(KEY + "no_page").formatted(Formatting.RED), true);
-            return false;
-        }
-        // A party plays it: the vote for the real round
-        if (PartyControllerEntity.getPartyPlayingPage(List.of(page)).isPresent()) {
-            if (!MiniGamePartyStep.toggleReady(player)) {
-                player.sendMessage(Text.translatable(KEY + "no_vote").formatted(Formatting.RED), true);
-                return false;
-            }
-            player.sendMessage(Text.translatable(KEY + "voted"), true);
-            ModSounds.playSelect(player.getWorld(), player.getBlockPos());
-            return true;
-        }
-        boolean running = MiniGameTest.of(page) != null;
-        if (controller.playOrStop(player)) {
-            player.sendMessage(Text.translatable(KEY + (running ? "stopped" : "started")).formatted(running ? Formatting.GOLD : Formatting.GREEN), true);
-            ModSounds.playSelect(player.getWorld(), player.getBlockPos());
-            return true;
-        }
-        MiniGameTest.Status status = MiniGameTest.check(player.server, page, player).status();
-        Text why = SAID.contains(status) ? Text.translatable("gui.steveparty.mini_game_controller.status." + status.name().toLowerCase(Locale.ROOT))
-                : Text.translatable(KEY + "cannot");
-        player.sendMessage(why.copy().formatted(Formatting.RED), true);
-        ModSounds.playCancel(player.getWorld(), player.getBlockPos());
-        return false;
+        if (!RemoteAccess.open(player, controller)) return false;
+        ModSounds.playSelect(player.getWorld(), player.getBlockPos());
+        return true;
     }
 
     @Override
@@ -168,7 +138,6 @@ public class MiniGameRemoteItem extends Item {
         tips.summary("tooltip.steveparty.mini_game_remote.play");
         tips.more(more -> more
                 .use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.mini_game_remote.link")
-                .use(Tooltips.Keys.use(), "tooltip.steveparty.mini_game_remote.use")
-                .note("tooltip.steveparty.mini_game_remote.ready"));
+                .use(Tooltips.Keys.use(), "tooltip.steveparty.mini_game_remote.use"));
     }
 }

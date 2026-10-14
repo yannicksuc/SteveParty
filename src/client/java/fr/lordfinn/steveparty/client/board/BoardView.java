@@ -43,7 +43,7 @@ import java.util.Set;
  * paths of a party board game: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
  * start on a green one), forks get a gold « ? », dead ends a red « ! » and spaces no start leads to an orange « ! »,
- * gently pulsing. The teleport tiles of a network are no paths: dashed arcs in the network's colour with sparkles riding
+ * gently pulsing. A link of a space to itself is kept but ignored here (no arrow, no fork, no new branch colour). The teleport tiles of a network are no paths: dashed arcs in the network's colour with sparkles riding
  * them join them one to the next (a teleport tile alone in its network gets a purple « ! »). Only the holder sees it (client side); the links come from the block entity data the server already
  * sends, no packet needed.
  * <p>
@@ -198,7 +198,7 @@ public final class BoardView {
         for (BoardGraph.Node node : built.nodes()) {
             Vec3d from = anchors.computeIfAbsent(node.pos(), pos -> BrushOverlay.anchor(world, pos));
             for (BoardGraph.Edge edge : node.edges()) {
-                if (!shownAtLevel(world, edge, level)) continue;
+                if (isSelf(edge) || !shownAtLevel(world, edge, level)) continue;
                 Vec3d to = anchors.computeIfAbsent(edge.to(), pos -> BrushOverlay.anchor(world, pos));
                 // A level picked: its links as if powered that much, in the colour of redstone at that power
                 boolean followed = level != TileLinkerBrush.POWERED || edge.active();
@@ -236,11 +236,14 @@ public final class BoardView {
             } else if (distance != null) {
                 number = Text.literal(Integer.toString(distance));
             }
-            boolean deadEnd = built.isDeadEnd(node), notReached = built.isUnreachable(node);
+            // A link of a space to itself is kept but not shown: it neither makes a fork nor saves a dead end
+            boolean deadEnd = node.edges().stream().noneMatch(e -> !isSelf(e) && e.target() != BoardGraph.Target.BROKEN);
+            boolean fork = node.edges().stream().filter(e -> !isSelf(e) && e.active() && e.target() != BoardGraph.Target.BROKEN).count() >= 2;
+            boolean notReached = built.isUnreachable(node);
             if (deadEnd) deadEnds++;
             if (notReached) unreachable++;
             boolean alone = !node.start() && distance == null && hasStart;
-            Label label = new Label(from, number, plate, deadEnd, notReached, built.isFork(node), alone);
+            Label label = new Label(from, number, plate, deadEnd, notReached, fork, alone);
             label.teleportAlone = built.isTeleportAlone(node);
             builtLabels.add(label);
             if (world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space) {
@@ -292,7 +295,9 @@ public final class BoardView {
             BoardGraph.Node node = graph.node(queue.poll());
             if (node == null) continue;
             int color = nodeColor.get(node.pos());
-            List<BoardGraph.Edge> ways = node.edges().stream().filter(e -> e.active() && e.target() != BoardGraph.Target.BROKEN).toList();
+            // A link to itself opens no branch: the other way keeps the path's colour
+            List<BoardGraph.Edge> ways = node.edges().stream()
+                    .filter(e -> !isSelf(e) && e.active() && e.target() != BoardGraph.Target.BROKEN).toList();
             for (int i = 0; i < ways.size(); i++) {
                 BoardGraph.Edge edge = ways.get(i);
                 int edgeColor = i == 0 ? color : next++;
@@ -304,6 +309,11 @@ public final class BoardView {
             }
         }
         return result;
+    }
+
+    /** A link of a board space to itself: stored, never drawn nor counted (see the view's javadoc). */
+    private static boolean isSelf(BoardGraph.Edge edge) {
+        return edge.to().equals(edge.from());
     }
 
     private static int color(BoardGraph.Edge edge, Map<BoardGraph.Edge, Integer> colors) {
@@ -353,13 +363,18 @@ public final class BoardView {
     private static void labels(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Label label, float scale, double time) {
         double plate = 16 * scale; // a plate's height in blocks
         Vec3d top = label.anchor.add(0, 0.25 + plate / 2, 0);
+        // The markers keep a 2 px gap to the number's plate, pulsing included (one row: left, number, right)
+        double gap = 2 * scale, beside = (label.number == null ? 16 : WorldDraw.plateWidth(label.number)) * scale / 2 + 8 * 1.08 * scale + gap;
         if (label.number != null) {
             WorldDraw.plateLabel(matrices, consumers, camera, top, label.number, label.numberPlate, WorldDraw.PLATE_TEXT, scale);
         }
         if (label.deadEnd || label.unreachable) {
             // Gently pulsing, never flashing
             float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
-            Vec3d at = label.alone ? top : top.add(0, plate * 1.05, 0);
+            // Stacked in screen space (the camera's up), so the gap holds whatever the pitch
+            Vector3f up = new Vector3f(0, 1, 0).rotate(camera.getRotation());
+            double above = plate / 2 + 8 * 1.08 * scale + gap;
+            Vec3d at = label.alone ? top : top.add(up.x() * above, up.y() * above, up.z() * above);
             WorldDraw.plateLabel(matrices, consumers, camera, at, WARNING,
                     label.deadEnd ? WorldDraw.Plate.RED : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale * pulse);
         }
@@ -367,14 +382,14 @@ public final class BoardView {
             // A teleport tile alone in its network: to the left of the number
             float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
             Vector3f right = new Vector3f(1, 0, 0).rotate(camera.getRotation());
-            Vec3d beside = top.subtract(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);
-            WorldDraw.plateLabel(matrices, consumers, camera, beside, WARNING, WorldDraw.Plate.PURPLE, WorldDraw.PLATE_TEXT, scale * pulse);
+            Vec3d left = top.subtract(right.x() * beside, right.y() * beside, right.z() * beside);
+            WorldDraw.plateLabel(matrices, consumers, camera, left, WARNING, WorldDraw.Plate.PURPLE, WorldDraw.PLATE_TEXT, scale * pulse);
         }
         if (label.fork) {
             // The junction marker, beside the number (to the right as seen from the camera)
             Vector3f right = new Vector3f(1, 0, 0).rotate(camera.getRotation());
-            Vec3d beside = top.add(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);
-            WorldDraw.plateLabel(matrices, consumers, camera, beside, FORK, WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, scale);
+            Vec3d at = top.add(right.x() * beside, right.y() * beside, right.z() * beside);
+            WorldDraw.plateLabel(matrices, consumers, camera, at, FORK, WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, scale);
         }
         if (label.shop) {
             // Above the other plates of the space: « Shop », orange « Shop ? » while it has no offer

@@ -1,8 +1,15 @@
 package fr.lordfinn.steveparty.effect;
 
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.WeakHashMap;
+
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -22,6 +29,14 @@ import static fr.lordfinn.steveparty.effect.ModEffects.DAZED;
  */
 public class DazedEffect extends StatusEffect {
     public static final int TICKS = 40;
+    /** A Glandouille touching someone over several ticks (its charge, its flight, its slide): one daze. */
+    public static final int CONTACT_TICKS = 10;
+    private static final UUID NO_SOURCE = new UUID(0, 0);
+    /** Who dazed whom last, and when (forgotten with the dazed entity). */
+    private static final Map<LivingEntity, LastDaze> LAST_DAZES = new WeakHashMap<>();
+
+    private record LastDaze(UUID source, long tick) {
+    }
     private static final int STAR_COLOR = 0xFFE066;
 
     public DazedEffect() {
@@ -33,12 +48,20 @@ public class DazedEffect extends StatusEffect {
     }
 
     /**
-     * Dazes {@code entity} on the spot (its run stops there), with a dizzy "bonk". False if it already is: a daze is
-     * never stretched by the same Glandouille still touching it. Server side.
+     * Dazes {@code entity} on the spot (its run stops there), with a dizzy "bonk". Dazes add up: already dazed, it is
+     * for {@link #TICKS} more (Glandouilles thrown at someone one after the other keep him rooted, however fast they
+     * come). Only the same Glandouille still touching it ({@code source}, within {@link #CONTACT_TICKS}) counts once:
+     * false then. Server side.
      */
-    public static boolean daze(LivingEntity entity) {
-        if (entity.getWorld().isClient || entity.hasStatusEffect(DAZED)) return false;
-        entity.addStatusEffect(new StatusEffectInstance(DAZED, TICKS, 0, false, false, true));
+    public static boolean daze(LivingEntity entity, @Nullable Entity source) {
+        if (entity.getWorld().isClient) return false;
+        long now = entity.getWorld().getTime();
+        LastDaze last = LAST_DAZES.get(entity);
+        if (source != null && last != null && last.source.equals(source.getUuid()) && now - last.tick <= CONTACT_TICKS) return false;
+        LAST_DAZES.put(entity, new LastDaze(source == null ? NO_SOURCE : source.getUuid(), now));
+        StatusEffectInstance dazed = entity.getStatusEffect(DAZED);
+        int ticks = dazed == null ? TICKS : dazed.getDuration() + TICKS;
+        entity.addStatusEffect(new StatusEffectInstance(DAZED, ticks, 0, false, false, true));
         Vec3d v = entity.getVelocity();
         entity.setVelocity(0, Math.min(v.y, 0), 0);
         entity.velocityModified = true;

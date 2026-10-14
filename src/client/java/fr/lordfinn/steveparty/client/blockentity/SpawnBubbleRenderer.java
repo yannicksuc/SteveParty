@@ -16,6 +16,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
@@ -32,7 +34,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +54,9 @@ import java.util.Optional;
  * popping at the end ({@link #trail}). Inside: a blue arrow (models/block/spawn_bubble_arrow.json) pointing its way while no
  * space links it; once linked, a miniature of the space's mob facing its way (several spaces: each mob in turn,
  * {@link #CYCLE} ticks each), from {@link #MOB_RANGE} blocks: farther away the arrow; nothing while its real mob lives
- * on it (« always visible », a party running). During a party nothing of it shows, plate included, but to those who build the
+ * on it (« always visible », a party running). Its mob « always visible » and no party running: the bubble empty, the mob
+ * shown where it will stand, as big as it is, see-through ({@link GhostMobs}), fading out as one goes away, the arrow
+ * beyond {@link #MOB_RANGE}. During a party nothing of it shows, plate included, but to those who build the
  * board (SpawnMarkerView#sees). Placed, it comes out of the plate growing ({@link SpawnMarkerBlockEntity#INFLATE}).
  * <p>
  * What is inside stays 2 pixels or more away from the faces (no z-fighting). All of it is drawn through buffers of its
@@ -74,6 +80,8 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     public static final int CYCLE = 40;
     /** Within this many blocks the mob shows in the bubble, farther away its arrow. */
     public static final double MOB_RANGE = 8;
+    /** A resident's see-through mob: its opacity up close, and over how many blocks it fades out before MOB_RANGE. */
+    private static final float GHOST_ALPHA = 0.55f, GHOST_FADE = 3;
     /** About one tiny bubble of the trail for this many blocks of it. */
     private static final float TRAIL_STEP = 3 / 16f;
     /** How far from the middle a tiny bubble starts at most (blocks): anywhere under the bubble. */
@@ -147,13 +155,27 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         // and be painted over it, and it would look behind the bubble
         VertexConsumerProvider.Immediate inside = insideBuffers();
         float squash = WOBBLE * MathHelper.sin(anim * WOBBLE_SPEED + phase);
-        film(matrices, inside, centerY, anim, phase, squash, grown, bubbleLight, false);
+        film(matrices, inside, BUBBLE_LAYER, centerY, anim, phase, squash, grown, bubbleLight, false);
         inside.draw();
         List<EntityType<?>> mobs = marker.getLinkedMobs();
-        boolean mobShown = false;
+        boolean mobShown = false, ghost = false;
         if (!mobs.isEmpty()) {
+            double distance = client.player == null ? Double.MAX_VALUE
+                    : Math.sqrt(client.player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5));
             if (marker.isPartyRunning() && marker.isResident()) mobShown = true; // the real mob is there: an empty bubble
-            else if (client.player != null && client.player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + centerY, pos.getZ() + 0.5) <= MOB_RANGE * MOB_RANGE) {
+            else if (marker.isResident() && distance <= MOB_RANGE) {
+                // it lives here: where it will stand, see-through, the bubble empty
+                EntityType<?> kind = mobs.get((int) ((world.getTime() / CYCLE) % mobs.size()));
+                Entity mob = miniatureOf(world, kind);
+                if (mob != null) {
+                    mob.age = (int) time;
+                    Vec3d at = SpawnMarkerBlock.spawnPos(world, pos);
+                    float fade = MathHelper.clamp((float) (MOB_RANGE - distance) / GHOST_FADE, 0, 1);
+                    GhostMobs.request(mob, at, yaw, WorldRenderer.getLightmapCoordinates(world, BlockPos.ofFloored(at.add(0, 0.5, 0))),
+                            GHOST_ALPHA * fade * grown);
+                    mobShown = ghost = true;
+                }
+            } else if (distance <= MOB_RANGE) {
                 EntityType<?> kind = mobs.get((int) ((world.getTime() / CYCLE) % mobs.size()));
                 drawingMiniature = true;
                 try {
@@ -165,7 +187,8 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         }
         if (!mobShown) arrow(client, matrices, inside, centerY, yaw, grown, bubbleLight, overlay);
         inside.draw();
-        film(matrices, inside, centerY, anim, phase, squash, grown, bubbleLight, true);
+        // its near faces in front of a ghost (drawn later, GhostMobs) write no depth: the ghost shows through them
+        film(matrices, inside, ghost ? FilmLayers.NO_DEPTH : BUBBLE_LAYER, centerY, anim, phase, squash, grown, bubbleLight, true);
         inside.draw();
         if (Math.abs(lift) >= 0.25f && risen >= 1)
             trail(matrices, consumers.getBuffer(BUBBLE_LAYER), plateTop, height, bob, anim, pos.hashCode(), light);
@@ -175,14 +198,14 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
      * Its film, a soap bubble's, not a glass cube's: it wobbles (taller and thinner, then squatter) and sways a little.
      * Only its faces toward the camera ({@code near} true), or only the others (false).
      */
-    private static void film(MatrixStack matrices, VertexConsumerProvider buffers, float centerY, float anim, float phase,
+    private static void film(MatrixStack matrices, VertexConsumerProvider buffers, RenderLayer layer, float centerY, float anim, float phase,
                              float squash, float grown, int light, boolean near) {
         matrices.push();
         matrices.translate(0.5f, centerY, 0.5f);
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_X + phase)));
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(SWAY * MathHelper.sin(anim * SWAY_SPEED_Z + phase * 1.7f)));
         matrices.scale(1 - squash / 2, 1 + squash, 1 - squash / 2);
-        BubbleFilm.cube(matrices.peek(), buffers.getBuffer(BUBBLE_LAYER), BubbleFilm.FILM.getSprite(), 0, 0, 0, HALF * grown,
+        BubbleFilm.cube(matrices.peek(), buffers.getBuffer(layer), BubbleFilm.FILM.getSprite(), 0, 0, 0, HALF * grown,
                 BubbleFilm.FACE_FROM, BubbleFilm.FACE_TO, 1, 1, 1, 1, light, near);
         matrices.pop();
     }
@@ -228,23 +251,7 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     /** The mob {@code kind} in small at the bubble's centre, facing {@code yaw}. @return whether it could be drawn */
     private static boolean miniature(World world, EntityType<?> kind, BlockPos pos, float centerY, float yaw, float time, float tickDelta,
                                      float grown, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
-        if (miniaturesWorld != world) {
-            MINIATURES.clear();
-            miniaturesWorld = world;
-        }
-        Entity mob = MINIATURES.computeIfAbsent(kind, type -> {
-            try {
-                Entity created = type.create(world);
-                // Never ticked: the Shop's merchant would stay closed in his box
-                if (created instanceof BoxedTraderEntity trader) trader.comeOut();
-                // nor the Mula: its drawn size (MulaMotion#visualScaleRatio) stays nothing until a tick; a still pawn's
-                if (created instanceof MulaEntity mula) mula.getMotion().tickPawn(mula.getScaleFactor(), 0);
-                return Optional.ofNullable(created);
-            } catch (RuntimeException e) {
-                Steveparty.LOGGER.warn("No miniature of {} for the spawn bubbles", EntityType.getId(type), e);
-                return Optional.empty();
-            }
-        }).orElse(null);
+        Entity mob = miniatureOf(world, kind);
         if (mob == null) return false;
         MinecraftClient client = MinecraftClient.getInstance();
         EntityRenderer<? super Entity> renderer = client.getEntityRenderDispatcher().getRenderer(mob);
@@ -274,6 +281,27 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
         }
         matrices.pop();
         return true;
+    }
+
+    /** The client-side mob of {@code kind} drawn in the bubbles and as residents' ghosts (one per kind), or null. */
+    private static @Nullable Entity miniatureOf(World world, EntityType<?> kind) {
+        if (miniaturesWorld != world) {
+            MINIATURES.clear();
+            miniaturesWorld = world;
+        }
+        return MINIATURES.computeIfAbsent(kind, type -> {
+            try {
+                Entity created = type.create(world);
+                // Never ticked: the Shop's merchant would stay closed in his box
+                if (created instanceof BoxedTraderEntity trader) trader.comeOut();
+                // nor the Mula: its drawn size (MulaMotion#visualScaleRatio) stays nothing until a tick; a still pawn's
+                if (created instanceof MulaEntity mula) mula.getMotion().tickPawn(mula.getScaleFactor(), 0);
+                return Optional.ofNullable(created);
+            } catch (RuntimeException e) {
+                Steveparty.LOGGER.warn("No miniature of {} for the spawn bubbles", EntityType.getId(type), e);
+                return Optional.empty();
+            }
+        }).orElse(null);
     }
 
     /**
@@ -323,5 +351,25 @@ public class SpawnBubbleRenderer implements BlockEntityRenderer<SpawnMarkerBlock
     @Override
     public boolean rendersOutsideBoundingBox(SpawnMarkerBlockEntity marker) {
         return true;
+    }
+
+    /** The film writing no depth (its near faces in front of a resident's ghost). */
+    private static final class FilmLayers extends RenderLayer {
+        static final RenderLayer NO_DEPTH = RenderLayer.of("steveparty_spawn_bubble_film_no_depth",
+                VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, VertexFormat.DrawMode.QUADS, 1536, true, true,
+                MultiPhaseParameters.builder()
+                        .program(ENTITY_TRANSLUCENT_PROGRAM)
+                        .texture(new Texture(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, false, false))
+                        .transparency(TRANSLUCENT_TRANSPARENCY)
+                        .cull(DISABLE_CULLING)
+                        .lightmap(ENABLE_LIGHTMAP)
+                        .overlay(ENABLE_OVERLAY_COLOR)
+                        .writeMaskState(COLOR_MASK)
+                        .build(true));
+
+        private FilmLayers(String name, VertexFormat format, VertexFormat.DrawMode mode, int size, boolean crumbling,
+                           boolean translucent, Runnable begin, Runnable end) {
+            super(name, format, mode, size, crumbling, translucent, begin, end);
+        }
     }
 }

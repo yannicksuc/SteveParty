@@ -27,6 +27,7 @@
     "ClientPlayerInteractionManagerVillagerPunchMixin",
     "EntityRenderDispatcherPipePoseMixin",
     "LivingEntityRendererPipePoseMixin",
+    "LivingEntityRendererPipeLayerMixin",
     "FallingBlockEntityRendererVillagerMixin",
     "GameRendererFovMixin",
     "GameRendererGoalPoleRollMixin",

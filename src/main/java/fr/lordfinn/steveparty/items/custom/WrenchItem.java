@@ -27,7 +27,7 @@ import java.util.List;
 
 /**
  * The Wrench (« Clé »): opens and works what is otherwise locked (board spaces and routers, the blocks that answer
- * only to it), checks the board on the Party Controller, and takes plastic apart in one hit. Links are painted with
+ * only to it), opens the Party Controller's screen, and takes plastic apart in one hit. Links are painted with
  * the Tile Linker Brush. See {@link WrenchActions}.
  */
 public class WrenchItem extends AbstractDestinationsSelectorItem implements CartridgeContainerOpener {

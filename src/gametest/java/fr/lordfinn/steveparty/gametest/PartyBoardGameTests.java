@@ -94,6 +94,7 @@ public class PartyBoardGameTests implements SteveGameTest {
         space(context, MIDDLE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), END);
         space(context, END, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), START);
         space(context, LONE, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), null);
+        controller.setStartLinks(List.of(context.getAbsolutePos(START)));
         controller.board(context.getWorld(), true);
 
         var world = context.getWorld();
@@ -136,6 +137,7 @@ public class PartyBoardGameTests implements SteveGameTest {
         ItemStack bound = new ItemStack(ModItems.TILE_BEHAVIOR_START);
         bound.set(ModComponents.TB_START_BOUND_ENTITY, away.getUuidAsString());
         space(context, MIDDLE, bound, START);
+        controller.setStartLinks(List.of(context.getAbsolutePos(START), context.getAbsolutePos(MIDDLE)));
 
         context.assertTrue(controller.findStartTokens(context.getWorld()).isEmpty(), "no pawn on its start: nobody plays");
         context.assertEquals(controller.board(context.getWorld(), true).starts().size(), 2, "both starts still count");

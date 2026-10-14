@@ -303,24 +303,34 @@ public class FrousseuxGameTests implements SteveGameTest {
         });
     }
 
-    /** Its owner's empty hand: a plain click, it follows; sneaking, a candle holder. Nobody else's hand does either. */
+    /**
+     * Two states, one click each: its owner's empty hand makes it a candle holder (sneaking or not), and a click on the
+     * candle holder wakes it, following him again. Nobody else's hand does either.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void aClickFollowsASneakingClickMakesACandleHolderOwnerOnly(TestContext context) {
+    public void oneClickMakesACandleHolderOneClickWakesItOwnerOnly(TestContext context) {
         TestBoards.floor(context, 8);
         FrousseuxEntity frousseux = frousseux(context, new BlockPos(3, 1, 3));
         ServerPlayerEntity owner = player(context, new BlockPos(3, 1, 5));
         ServerPlayerEntity other = player(context, new BlockPos(5, 1, 5));
         frousseux.tame(owner);
         BlockPos at = BlockPos.ofFloored(frousseux.getPos().add(0, 0.1, 0));
-        context.assertTrue(frousseux.interact(owner, Hand.MAIN_HAND).isAccepted(), "a plain click is answered");
-        context.assertTrue(frousseux.isAlive() && frousseux.goesWithOwner(owner), "it follows");
-        other.setSneaking(true);
         frousseux.interact(other, Hand.MAIN_HAND);
-        context.assertTrue(frousseux.isAlive(), "someone else's sneaking click: nothing");
-        owner.setSneaking(true);
-        context.assertTrue(frousseux.interact(owner, Hand.MAIN_HAND).isAccepted(), "a sneaking click is answered");
+        context.assertTrue(frousseux.isAlive(), "someone else's click: nothing");
+        context.assertTrue(frousseux.interact(owner, Hand.MAIN_HAND).isAccepted(), "a plain click is answered");
         context.assertTrue(frousseux.isRemoved(), "asleep");
         context.assertTrue(context.getWorld().getBlockState(at).isOf(ModBlocks.FROUSSEUX_CANDLE_HOLDER), "a candle holder");
+        BlockHitResult hit = new BlockHitResult(Vec3d.ofCenter(at), Direction.UP, at, false);
+        context.getWorld().getBlockState(at).onUse(context.getWorld(), other, hit);
+        context.assertTrue(context.getWorld().getBlockState(at).isOf(ModBlocks.FROUSSEUX_CANDLE_HOLDER), "someone else can't wake it");
+        context.getWorld().getBlockState(at).onUse(context.getWorld(), owner, hit);
+        context.assertTrue(context.getWorld().getBlockState(at).isAir(), "a click wakes it");
+        FrousseuxEntity awake = context.getWorld().getEntitiesByClass(FrousseuxEntity.class, new Box(at).expand(2), FrousseuxEntity::isAlive)
+                .stream().findFirst().orElse(null);
+        context.assertTrue(awake != null && awake.goesWithOwner(owner), "awake, it follows him");
+        owner.setSneaking(true);
+        context.assertTrue(awake.interact(owner, Hand.MAIN_HAND).isAccepted(), "a sneaking click is answered too");
+        context.assertTrue(awake.isRemoved(), "a candle holder again");
         context.complete();
     }
 
@@ -542,5 +552,49 @@ public class FrousseuxGameTests implements SteveGameTest {
         context.assertTrue(fire != null && fire.getBurnChance() > 0 && fire.getSpreadChance() > 0, "it catches fire and burns");
         context.assertTrue(ModBlocks.FROUSSEUX_CANDLE_HOLDER.getDefaultState().isBurnable(), "lava sets it alight");
         context.complete();
+    }
+
+    /**
+     * Breeding: a flint and steel on a tamed one at full health lights it for a mate (on a hurt one it heals, on a baby
+     * nothing); two lit ones meet and have a baby, tamed by one of their owners, which grows up in time. The parents
+     * rest after.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void twoLitTamedOnesHaveABaby(TestContext context) {
+        TestBoards.floor(context, 8);
+        FrousseuxEntity one = frousseux(context, new BlockPos(2, 1, 3));
+        FrousseuxEntity other = frousseux(context, new BlockPos(5, 1, 3));
+        one.setAiDisabled(false);
+        other.setAiDisabled(false);
+        ServerPlayerEntity ownerOne = player(context, new BlockPos(2, 1, 6));
+        ServerPlayerEntity ownerOther = player(context, new BlockPos(5, 1, 6));
+        one.tame(ownerOne);
+        other.tame(ownerOther);
+        ownerOne.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.FLINT_AND_STEEL));
+        context.assertTrue(ownerOne.interact(one, Hand.MAIN_HAND).isAccepted(), "the flint and steel lights it");
+        context.assertTrue(one.isInLove(), "lit for a mate");
+        context.assertFalse(one.fallInLove(), "lit once");
+        context.assertTrue(other.fallInLove(), "the other one too");
+        boolean[] born = {false};
+        context.waitAndRun(1, () -> context.runAtEveryTick(() -> {
+            if (born[0]) return;
+            List<FrousseuxEntity> babies = context.getWorld().getEntitiesByClass(FrousseuxEntity.class,
+                    new Box(context.getAbsolutePos(BlockPos.ORIGIN)).expand(16), FrousseuxEntity::isBaby);
+            if (babies.isEmpty()) return;
+            born[0] = true;
+            FrousseuxEntity baby = babies.getFirst();
+            context.assertTrue(ownerOne.getUuid().equals(baby.getOwner()) || ownerOther.getUuid().equals(baby.getOwner()),
+                    "tamed by one of the owners");
+            context.assertTrue(baby.getWidth() < FrousseuxEntity.WIDTH, "small");
+            context.assertFalse(one.isInLove() || other.isInLove(), "the parents no longer lit");
+            context.assertFalse(one.canFallInLove(), "they rest");
+            context.assertFalse(baby.canFallInLove(), "a baby is not lit");
+            baby.setGrowTicks(1);
+            context.waitAndRun(3, () -> {
+                context.assertFalse(baby.isBaby(), "grown up");
+                context.assertTrue(Math.abs(baby.getWidth() - FrousseuxEntity.WIDTH) < 1e-4, "its full size");
+                context.complete();
+            });
+        }));
     }
 }

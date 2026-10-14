@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *     <li>a pipe, a podium, a goal pole base, a step controller, for a Mini-game Page ({@link MiniGamePipes#linkable},
  *     {@link Podiums#linkable});</li>
  *     <li>a trading stall, a cash register, for a Shopkeeper Key ({@link ShopkeeperKeyItem#linkable});</li>
- *     <li>a Mini-game Controller, for a Mini-game Remote ({@link MiniGameRemoteItem#linkable});</li>
+ *     <li>a Party Controller, a Mini-game Controller, for a Remote ({@link MiniGameRemoteItem#linkable});</li>
  *     <li>any element of a party, for a Step Controller (the Party Controller, a block of a board holding a
  *     cartridge, a Mini-game Controller, a podium, a pipe: {@link StepControllerLinks#drivable}).</li>
  * </ul>

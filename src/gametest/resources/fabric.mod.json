@@ -22,6 +22,7 @@
       "fr.lordfinn.steveparty.gametest.WildMagpieLifeGameTests",
       "fr.lordfinn.steveparty.gametest.MagpieNestGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpGameTests",
+      "fr.lordfinn.steveparty.gametest.ConsumedItemsGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpWiringGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpStarGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpLimitGameTests",

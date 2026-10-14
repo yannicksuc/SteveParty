@@ -14,9 +14,13 @@ public final class ScreenHandlerChecks {
 
     private ScreenHandlerChecks() {}
 
-    /** @return true if the block entity still exists at its position and the player is within reach. */
+    /**
+     * @return true if the block entity still exists at its position and the player is within reach, or uses its screen
+     * opened from afar ({@link RemoteAccess})
+     */
     public static boolean canUseBlockEntity(BlockEntity blockEntity, PlayerEntity player) {
         if (blockEntity == null || blockEntity.isRemoved() || blockEntity.getWorld() == null) return false;
+        if (!player.getWorld().isClient && RemoteAccess.allows(player, blockEntity)) return true;
         if (blockEntity.getWorld() != player.getWorld()) return false;
         return Inventory.canPlayerUse(blockEntity, player);
     }

@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.BubblerBlock;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleEntity;
+import fr.lordfinn.steveparty.entities.custom.bubble.BubbleLeads;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleRiding;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
@@ -510,8 +511,9 @@ public class BubblerGameTests implements SteveGameTest {
         });
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_cow", tickLimit = 120)
-    public void touchingACowPopsIt(TestContext context) {
+    /** Out of its column, an animal it touches is taken in and carried along; another mob (a zombie) pops it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_cow", tickLimit = 140)
+    public void aCowItTouchesIsCarriedAZombiePopsIt(TestContext context) {
         clear(context, 0, 1, 0, 14, 7, 6);
         ServerPlayerEntity rider = TestPlayers.mock(context, GameMode.SURVIVAL);
         BubbleEntity bubble = riding(context, rider, new BlockPos(3, 1, 3), 2);
@@ -520,14 +522,26 @@ public class BubblerGameTests implements SteveGameTest {
             context.assertFalse(bubble.isRemoved() || bubble.inColumn(), "out of its column, alone: intact");
             CowEntity cow = context.spawnEntity(EntityType.COW, new BlockPos(3, 1, 3));
             cow.setAiDisabled(true);
+            cow.setBaby(true); // a calf: it fits
             cow.setNoGravity(true);
             Vec3d center = bubble.center();
-            cow.refreshPositionAndAngles(center.x + bubble.getSide() / 2, center.y - 0.5, center.z, 0, 0);
+            cow.refreshPositionAndAngles(center.x + bubble.getSide() / 2, center.y - 0.3, center.z, 0, 0);
             context.waitAndRun(3, () -> {
-                context.assertTrue(bubble.isRemoved(), "touching a cow: popped");
-                cow.discard();
-                TestPlayers.remove(context, rider);
-                context.complete();
+                context.assertFalse(bubble.isRemoved(), "touching a calf: not popped");
+                context.assertTrue(cow.getVehicle() == bubble, "the calf taken in");
+                context.assertTrue(bubble.getPassengerList().size() == 2, "carried with its rider");
+                ZombieEntity zombie = context.spawnEntity(EntityType.ZOMBIE, new BlockPos(3, 1, 3));
+                zombie.setAiDisabled(true);
+                zombie.setNoGravity(true);
+                Vec3d c = bubble.center();
+                zombie.refreshPositionAndAngles(c.x - bubble.getSide() / 2 - 0.2, c.y - 0.5, c.z, 0, 0);
+                context.waitAndRun(3, () -> {
+                    context.assertTrue(bubble.isRemoved(), "touching a zombie: popped");
+                    zombie.discard();
+                    cow.discard();
+                    TestPlayers.remove(context, rider);
+                    context.complete();
+                });
             });
         });
     }
@@ -584,6 +598,7 @@ public class BubblerGameTests implements SteveGameTest {
             cow.refreshPositionAndAngles(center.x + bubble.getSide() / 2, center.y - 0.5, center.z, 0, 0);
             context.waitAndRun(10, () -> {
                 context.assertFalse(bubble.isRemoved(), "waiting in its column: a cow touching it pops nothing");
+                context.assertTrue(cow.getVehicle() == bubble, "the cow it touched taken in");
                 cow.discard();
                 TestPlayers.remove(context, rider);
                 bubble.discard();
@@ -924,5 +939,95 @@ public class BubblerGameTests implements SteveGameTest {
         context.assertFalse(actor.addStatusEffect(new StatusEffectInstance(ModEffects.BUBBLED, 100, 0)), "a board actor: never");
         actor.discard();
         context.complete();
+    }
+
+    // ---------------------------------------------------------------- every kind merges, leads from afar, balloons
+
+    /** A Bubbled one's bubble (a snowball's, an arrow's) merges with a Bubbler's like any other; out, no longer Bubbled. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_merge_effect", tickLimit = 60)
+    public void anEffectBubbleMergesWithABubblersOne(TestContext context) {
+        ServerPlayerEntity rider = TestPlayers.mock(context, GameMode.SURVIVAL);
+        BubbleEntity bubbler = riding(context, rider, new BlockPos(3, 1, 3), 4);
+        PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(4, 1, 3));
+        pig.setAiDisabled(true);
+        pig.addStatusEffect(new StatusEffectInstance(ModEffects.BUBBLED, StatusEffectInstance.INFINITE, 0));
+        context.waitAndRun(4, () -> {
+            List<BubbleEntity> left = bubbles(context);
+            context.assertTrue(left.size() == 1, "one bubble left: " + left.size());
+            BubbleEntity merged = left.getFirst();
+            context.assertTrue(rider.getVehicle() == merged && pig.getVehicle() == merged, "both in it");
+            context.assertFalse(merged.isFromEffect(), "a Bubbler's bubble with it: no effect's timer");
+            pig.stopRiding();
+            context.waitAndRun(2, () -> {
+                context.assertFalse(pig.hasStatusEffect(ModEffects.BUBBLED), "out: no longer Bubbled");
+                context.assertFalse(pig.getVehicle() instanceof BubbleEntity, "not blown a new bubble");
+                pig.discard();
+                TestPlayers.remove(context, rider);
+                discard(bubbles(context));
+                context.complete();
+            });
+        });
+    }
+
+    /** A lead used in the air ties the bubble looked at, out of a hand's reach (never through a wall). */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_lead_far", tickLimit = 80)
+    public void aLeadTiesABubbleFromAfar(TestContext context) {
+        clear(context, 0, 1, 0, 14, 10, 6);
+        ServerPlayerEntity rider = TestPlayers.mock(context, GameMode.SURVIVAL);
+        BubbleEntity bubble = riding(context, rider, new BlockPos(3, 1, 3), 5);
+        ServerPlayerEntity guide = TestPlayers.mock(context, GameMode.SURVIVAL);
+        BlockPos abs = context.getAbsolutePos(new BlockPos(9, 1, 3));
+        guide.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, 90, 0);
+        guide.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LEAD));
+        context.waitAndRun(40, () -> {
+            Vec3d look = bubble.center().subtract(guide.getEyePos());
+            context.assertTrue(look.length() > 5, "out of reach: " + look.length());
+            guide.lookAt(net.minecraft.command.argument.EntityAnchorArgumentType.EntityAnchor.EYES, bubble.center());
+            context.assertTrue(BubbleLeads.aimed(guide) == bubble, "aimed at: eyes " + guide.getEyePos() + " look "
+                    + guide.getRotationVec(1.0f) + " to " + bubble.getBoundingBox() + " removed " + bubble.isRemoved()
+                    + " block " + context.getWorld().raycast(new net.minecraft.world.RaycastContext(guide.getEyePos(), bubble.center(),
+                    net.minecraft.world.RaycastContext.ShapeType.COLLIDER, net.minecraft.world.RaycastContext.FluidHandling.NONE, guide)).getType());
+            context.assertTrue(guide.interactionManager.interactItem(guide, context.getWorld(), guide.getMainHandStack(), Hand.MAIN_HAND)
+                    .isAccepted(), "the lead used in the air");
+            context.assertTrue(guide.getMainHandStack().isEmpty(), "the lead gone on it");
+            context.assertTrue(bubble.getLeashHolder() == guide, "tied from afar");
+            TestPlayers.remove(context, rider, guide);
+            bubble.discard();
+            context.complete();
+        });
+    }
+
+    /** Three bubbles held on leads lift their holder (Levitation), two let him down slowly; sneaking, no lift. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_balloons", tickLimit = 80)
+    public void threeBubblesOnLeadsLiftTheirHolder(TestContext context) {
+        clear(context, 0, 1, 0, 14, 10, 8);
+        ServerPlayerEntity holder = TestPlayers.mock(context, GameMode.SURVIVAL);
+        BlockPos abs = context.getAbsolutePos(new BlockPos(7, 1, 4));
+        holder.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, 0, 0);
+        ServerPlayerEntity[] riders = new ServerPlayerEntity[3];
+        BubbleEntity[] held = new BubbleEntity[3];
+        for (int i = 0; i < 3; i++) {
+            riders[i] = TestPlayers.mock(context, GameMode.SURVIVAL);
+            held[i] = riding(context, riders[i], new BlockPos(1 + i * 6, 1, 1 + (i % 2) * 7), 3);
+        }
+        held[0].attachLeash(holder, true);
+        held[1].attachLeash(holder, true);
+        context.waitAndRun(2, () -> {
+            context.assertEquals(BubbleEntity.heldBy(holder), 2, "two held");
+            context.assertTrue(holder.hasStatusEffect(StatusEffects.SLOW_FALLING), "two: he floats down slowly");
+            context.assertFalse(holder.hasStatusEffect(StatusEffects.LEVITATION), "two: no lift");
+            held[2].attachLeash(holder, true);
+            context.waitAndRun(2, () -> {
+                context.assertTrue(holder.hasStatusEffect(StatusEffects.LEVITATION), "three: lifted");
+                holder.setSneaking(true);
+                context.waitAndRun(2, () -> {
+                    context.assertFalse(holder.hasStatusEffect(StatusEffects.LEVITATION), "sneaking: let down");
+                    TestPlayers.remove(context, holder);
+                    TestPlayers.remove(context, riders);
+                    for (BubbleEntity bubble : held) bubble.discard();
+                    context.complete();
+                });
+            });
+        });
     }
 }

@@ -20,7 +20,7 @@ import java.util.List;
  *     <li>« [Linker] » ({@link Tooltips.Tag#LINKER}), the items that make links by clicking: the Tile Linker Brush,
  *     every Cartridge (its destinations, its containers, its Spawn Bubble), the Mini-game Page (its pipes, podiums,
  *     goal pole bases and step controllers), the Shopkeeper Key (its trader and the blocks of his shop), the Mini-game
- *     Remote (its Mini-game Controller);</li>
+ *     Remote (its Party Controller or Mini-game Controller);</li>
  *     <li>« [Linkable] » ({@link Tooltips.Tag#LINKABLE}), the blocks they link to: see {@link LinkTargets} (a vanilla
  *     chest or barrel as well as the mod's tiles).</li>
  * </ul>
