@@ -108,10 +108,13 @@ function Set-WindowedClient {
     $options = Join-Path $RepoRoot 'run\options.txt'
     if (-not (Test-Path $options)) {
         New-Item -ItemType Directory -Force (Split-Path $options) | Out-Null
-        Set-Content $options @('fullscreen:false', 'soundCategory_master:0.0', 'pauseOnLostFocus:false', 'onboardAccessibility:false')
+        Set-Content $options @('fullscreen:false', 'soundCategory_master:0.0', 'pauseOnLostFocus:false', 'onboardAccessibility:false', 'tutorialStep:none')
         return
     }
     $lines = Get-Content $options
+    # No vanilla tutorial toasts (« Look around », « Move with… ») over the screenshots
+    if ($lines -match '^tutorialStep:') { $lines = $lines -replace '^tutorialStep:.*', 'tutorialStep:none' }
+    else { $lines += 'tutorialStep:none' }
     if ($lines -match '^fullscreen:true') { $lines = $lines -replace '^fullscreen:true', 'fullscreen:false' }
     if ($lines -match '^soundCategory_master:') { $lines = $lines -replace '^soundCategory_master:.*', 'soundCategory_master:0.0' }
     else { $lines += 'soundCategory_master:0.0' }
