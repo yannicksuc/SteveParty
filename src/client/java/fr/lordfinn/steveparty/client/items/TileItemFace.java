@@ -15,6 +15,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
@@ -41,8 +42,10 @@ import java.util.List;
  * </ul>
  */
 public final class TileItemFace {
-    /** The face turned so that it reads upright in the GUI (its top toward the back of the slot). */
+    /** The face turned so that it reads upright in the GUI and in item frames (its top toward the back of the slot). */
     private static final int DIRECTION = 4;
+    /** In hand (first and third person), held flat: its top away from the holder. */
+    private static final int HELD_DIRECTION = 0;
     private static final float SMALL_SCALE = 16f / 18f;
     /** The 4 pictures of the large model (14.5 px wide, centred at 0.5 and 15.5 px), a hair wider than them. */
     private static final float LARGE_SCALE = 14.75f / 16f;
@@ -58,7 +61,8 @@ public final class TileItemFace {
     private TileItemFace() {
     }
 
-    public static void render(ItemStack stack, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
+    public static void render(ItemStack stack, ModelTransformationMode mode, MatrixStack matrices,
+                              VertexConsumerProvider vertexConsumers, int light) {
         if (!(stack.getItem() instanceof TileBlockItem)) return;
         List<ItemStack> cartridges = cartridges(stack.get(DataComponentTypes.CONTAINER));
         ItemStack cartridge = cartridges.isEmpty() ? ItemStack.EMPTY : cartridges.get(TileContents.previewedIndex(cartridges.size()));
@@ -67,15 +71,17 @@ public final class TileItemFace {
         Identifier face = face(stack, cartridge, small);
         if (face == null) return;
         VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face));
+        int direction = mode.isFirstPerson() || mode == ModelTransformationMode.THIRD_PERSON_LEFT_HAND
+                || mode == ModelTransformationMode.THIRD_PERSON_RIGHT_HAND ? HELD_DIRECTION : DIRECTION;
         switch (size) {
-            case STANDARD -> TileBlockEntityRenderer.renderFace(matrices, consumer, light, false, DIRECTION, 1f);
-            case SMALL -> TileBlockEntityRenderer.renderFace(matrices, consumer, light, true, DIRECTION, SMALL_SCALE);
+            case STANDARD -> TileBlockEntityRenderer.renderFace(matrices, consumer, light, false, direction, 1f);
+            case SMALL -> TileBlockEntityRenderer.renderFace(matrices, consumer, light, true, direction, SMALL_SCALE);
             case LARGE -> {
                 for (float x : LARGE_CENTRES) {
                     for (float z : LARGE_CENTRES) {
                         matrices.push();
                         matrices.translate(x - 0.5f, 0, z - 0.5f);
-                        TileBlockEntityRenderer.renderFace(matrices, consumer, light, true, DIRECTION, LARGE_SCALE);
+                        TileBlockEntityRenderer.renderFace(matrices, consumer, light, true, direction, LARGE_SCALE);
                         matrices.pop();
                     }
                 }
