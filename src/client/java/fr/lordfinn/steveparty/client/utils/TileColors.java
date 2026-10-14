@@ -35,8 +35,10 @@ public final class TileColors {
         } else if (darkness < 0) {
             float light = -darkness;
             if (s >= 0.08f) h = shiftHue(h, -12 * light);
-            v = v + (1 - v) * 0.6f * light;
-            s = s * (1 - 0.4f * light);
+            // Up to almost white at -1 (a white pixel reads white on any colour), the soft highlights near 0 as before
+            float cube = light * light * light;
+            v = v + (1 - v) * (0.6f * light + 0.32f * cube);
+            s = s * (1 - (0.4f * light + 0.45f * cube));
         }
         return fromHsv(h, s, v);
     }
