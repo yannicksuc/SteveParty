@@ -9,15 +9,19 @@ import fr.lordfinn.steveparty.items.custom.cartridges.MiniGameCartridgeItem;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.minigame.MiniGamePageData;
+import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 /**
  * « Mini-jeu »: a pawn stopping here starts a mini-game right after its turn (MiniGameCartridgeItem), its teams made
- * by the cartridge's mode, the pawn's owner being the one who landed.
+ * by the cartridge's format, the pawn's owner being the one who landed.
  */
 public class MiniGameTileBehavior extends ABoardSpaceBehavior {
     public MiniGameTileBehavior() {
@@ -31,14 +35,18 @@ public class MiniGameTileBehavior extends ABoardSpaceBehavior {
         ItemStack stack = boardSpaceEntity.getActiveCartridgeItemStack();
         if (!(stack.getItem() instanceof MiniGameCartridgeItem)) return;
         slipIn(partyController, MiniGamePartyStep.ofSpace(new ArrayList<>(partyController.getPartyData().getTokens()),
-                MiniGameCartridgeItem.mode(stack), partyController.getTokenOwner(token.getUuid())));
+                MiniGameCartridgeItem.formats(stack), partyController.getTokenOwner(token.getUuid()), MiniGameCartridgeItem.page(stack)));
     }
 
-    /** Its mode. */
+    /** Its formats, and its page when it always plays one. */
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof MiniGameCartridgeItem)) return;
-        info.line(TileInfo.Glyph.ALL, TileInfo.line("minigame.mode", TileInfo.value(
-                Text.translatable("gui.steveparty.cartridge_menu.minigame.mode." + MiniGameCartridgeItem.mode(stack).id()))));
+        info.line(TileInfo.Glyph.ALL, TileInfo.line("minigame.format", TileInfo.value(MiniGameCartridgeItem.formatsText(stack))));
+        UUID page = MiniGameCartridgeItem.page(stack);
+        if (page == null) return;
+        String title = MiniGamePages.find(world.getServer(), page).map(MiniGamePageData::title).orElse("");
+        info.line(new ItemStack(ModItems.MINI_GAME_PAGE), TileInfo.line("minigame.page", TileInfo.value(
+                title.isEmpty() ? ModItems.MINI_GAME_PAGE.getName() : Text.literal(title))));
     }
 }

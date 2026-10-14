@@ -33,7 +33,7 @@ public final class PartyGui {
     public static final Theme BUTTON = new Theme(0xFF000000, 0xFFFFFFFF, 0xFFE2E2E2, 0xFF8A8A8A);
     public static final Theme BUTTON_SELECTED = new Theme(0xFF3B2600, 0xFFFFF2A8, 0xFFFFC52E, 0xFFB5761A);
     public static final Theme BUTTON_PRIMARY = new Theme(0xFF08270A, 0xFFA6EF8A, 0xFF46AE2E, 0xFF1F6A14);
-    public static final Theme BUTTON_DISABLED = new Theme(0xFF3A3A3A, 0xFFBDBDBD, 0xFFA3A3A3, 0xFF7A7A7A);
+    public static final Theme BUTTON_DISABLED = new Theme(0xFF000000, 0xFFBDBDBD, 0xFFA3A3A3, 0xFF7A7A7A);
 
     public static final int TEXT_DARK = 0xFF404040;
     public static final int TEXT_SOFT = 0xFF6B6B6B;

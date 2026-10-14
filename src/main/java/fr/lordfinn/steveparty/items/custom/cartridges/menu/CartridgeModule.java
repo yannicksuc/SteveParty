@@ -13,7 +13,8 @@ import java.util.List;
  * <p>
  * Kinds: {@link ChoiceModule} (buttons or colour swatches), {@link NumberModule} (a − / + stepper),
  * {@link ColorModule} (the dyes), {@link GhostSlotsModule} (the Inventory Cartridge's item slots),
- * {@link OutcomeListModule} (the Mistigri's editable list of sentences) and {@link InfoModule} (read-only lines). A new
+ * {@link OutcomeListModule} (the Mistigri's editable list of sentences), {@link BlockSlotModule} and
+ * {@link PageSlotModule} (one slot: a block, a mini-game page) and {@link InfoModule} (read-only lines). A new
  * cartridge only declares modules of these kinds.
  */
 public abstract class CartridgeModule {

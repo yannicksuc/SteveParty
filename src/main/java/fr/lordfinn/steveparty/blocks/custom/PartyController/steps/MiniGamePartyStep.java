@@ -5,6 +5,9 @@ import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
+import fr.lordfinn.steveparty.components.MiniGamePageRef;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameControllers;
 import fr.lordfinn.steveparty.minigame.MiniGameIntro;
@@ -89,10 +92,16 @@ public class MiniGamePartyStep extends PartyStep {
     private Set<UUID> ready;
     /** The practice round showed its results: it starts again in a few seconds. Not saved. */
     boolean practiceOver;
-    /** How its teams are made (a Mini-game space's mode; a card: the board's). No initializer, see above. */
+    /** How its teams are made (a Mini-game space's format; a card: the board's). No initializer, see above. */
     MiniGameMode mode;
+    /** The formats the player who landed picks from ({@link MiniGameMode#CHOICE}). No initializer, see above. */
+    List<MiniGameMode> choices;
     /** The player who landed on the Mini-game space, null for a card. */
     @Nullable UUID lander;
+    /** The opponent of a 1 v 1, once picked or drawn. */
+    @Nullable UUID opponent;
+    /** The page a Mini-game space always plays, null: the catalogue's. */
+    @Nullable UUID page;
 
     // Not saved; built after super(nbt), which only reads the fields above
     private final MiniGameRoulette roulette = new MiniGameRoulette(this);
@@ -115,11 +124,16 @@ public class MiniGamePartyStep extends PartyStep {
         initCollections();
     }
 
-    /** The mini-game of a Mini-game space: teams made by {@code mode}, {@code lander} being the one who landed. */
-    public static MiniGamePartyStep ofSpace(List<UUID> tokens, MiniGameMode mode, @Nullable UUID lander) {
+    /**
+     * The mini-game of a Mini-game space: teams made by one of {@code formats} (several: {@code lander}, the one who
+     * landed, picks), played on {@code page} (null: drawn from the catalogue).
+     */
+    public static MiniGamePartyStep ofSpace(List<UUID> tokens, List<MiniGameMode> formats, @Nullable UUID lander, @Nullable UUID page) {
         MiniGamePartyStep step = new MiniGamePartyStep(tokens);
-        step.mode = mode;
+        step.mode = formats.size() == 1 ? formats.getFirst() : formats.isEmpty() ? MiniGameMode.ANY : MiniGameMode.CHOICE;
+        if (formats.size() > 1) step.choices.addAll(formats);
         step.lander = lander;
+        step.page = page;
         return step;
     }
 
@@ -131,6 +145,19 @@ public class MiniGamePartyStep extends PartyStep {
         return lander;
     }
 
+    /** The formats offered to the player who landed (empty: one format). */
+    public List<MiniGameMode> getChoices() {
+        return Collections.unmodifiableList(choices);
+    }
+
+    public @Nullable UUID getOpponent() {
+        return opponent;
+    }
+
+    public @Nullable UUID getPage() {
+        return page;
+    }
+
     /** A Mini-game space's mini-game belongs to the round it is played in. */
     @Override
     public boolean isInterlude() {
@@ -139,6 +166,7 @@ public class MiniGamePartyStep extends PartyStep {
 
     private void initCollections() {
         if (mode == null) mode = MiniGameMode.ANY;
+        if (choices == null) choices = new ArrayList<>();
         if (phase == null) phase = Phase.ROULETTE;
         if (participants == null) participants = new ArrayList<>();
         if (returnPositions == null) returnPositions = new LinkedHashMap<>();
@@ -214,7 +242,9 @@ public class MiniGamePartyStep extends PartyStep {
         screens.hidePreview(partyControllerEntity);
         // The pages show the title they have now
         MiniGamesCatalogueItem.refreshPages(serverWorld.getServer(), partyControllerEntity.catalogue);
-        List<ItemStack> miniGames = partyControllerEntity.getMiniGames();
+        // A space's page is played without the catalogue's pages, but the catalogue keeps the mini-game being played
+        List<ItemStack> miniGames = page == null || partyControllerEntity.catalogue.isEmpty() ? partyControllerEntity.getMiniGames()
+                : List.of(pageStack(partyControllerEntity, serverWorld.getServer()));
         if (miniGames.isEmpty()) {
             MessageUtils.sendToPlayers(partyControllerEntity.getInterestedPlayersEntities(),
                     Text.translatable("message.steveparty.no_minigame").setStyle(Style.EMPTY.withColor(0xFFA500)),
@@ -229,11 +259,8 @@ public class MiniGamePartyStep extends PartyStep {
             if (!participants.contains(seat.player())) participants.add(seat.player());
         });
 
-        // A Mini-game space leaving the choice to its player: he chooses first (in the chat)
-        if (mode == MiniGameMode.CHOICE) {
-            MiniGameModeChoice.ask(this, partyControllerEntity, serverWorld);
-            return;
-        }
+        // A Mini-game space leaving the format or the opponent to its player: he picks first (in the chat)
+        if (MiniGameModeChoice.ask(this, partyControllerEntity, serverWorld, seats.stream().map(TeamDispositionGenerator.Seat::player).toList())) return;
 
         // Step 5: The ways to make teams, each with the mini-games that can be played that way (a Mini-game space: its mode's)
         Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions = MiniGameModeChoice.dispositions(this,
@@ -255,6 +282,8 @@ public class MiniGamePartyStep extends PartyStep {
         // Step 6: Choose a random disposition for the mini-games
         TeamDisposition chosenDisposition = MiniGameRoulette.chooseRandomDisposition(miniGamesToTeamDispositions);
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(partyControllerEntity.catalogue, chosenDisposition);
+        // Those left out of the teams (a 1 v 1) watch
+        participants.removeIf(player -> chosenDisposition.teamOf(player) < 0);
         partyControllerEntity.markDirty();
 
         // Step 7: Notify players about the chosen disposition
@@ -268,6 +297,17 @@ public class MiniGamePartyStep extends PartyStep {
 
         // Step 9: Start the iteration effect through the mini-games
         roulette.spin(applicableMiniGames, partyControllerEntity, partyControllerEntity.getInterestedPlayersEntities());
+    }
+
+    /** The page the space always plays, as an item (its catalogue's copy if it holds one). */
+    private ItemStack pageStack(PartyControllerEntity controller, MinecraftServer server) {
+        for (ItemStack stored : controller.getMiniGames()) {
+            if (page.equals(MiniGamePages.idOf(stored))) return stored;
+        }
+        ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
+        stack.set(ModComponents.MINI_GAME_PAGE, new MiniGamePageRef(page, "", false));
+        MiniGamePages.refresh(server, stack);
+        return stack;
     }
 
     @Override
@@ -791,6 +831,11 @@ public class MiniGamePartyStep extends PartyStep {
         this.chosenPageSlot = nbt.contains("ChosenPage") ? nbt.getInt("ChosenPage") + 1 : 0;
         this.mode = MiniGameMode.byName(nbt.getString("Mode"));
         this.lander = nbt.containsUuid("Lander") ? nbt.getUuid("Lander") : null;
+        choices.clear();
+        NbtList choicesNbt = nbt.getList("Choices", NbtElement.STRING_TYPE);
+        for (int i = 0; i < choicesNbt.size(); i++) choices.add(MiniGameMode.byName(choicesNbt.getString(i)));
+        this.opponent = nbt.containsUuid("Opponent") ? nbt.getUuid("Opponent") : null;
+        this.page = nbt.containsUuid("Page") ? nbt.getUuid("Page") : null;
         if (nbt.contains("Tokens")) {
             if (tokens == null)
                 tokens = new ArrayList<>();
@@ -831,6 +876,13 @@ public class MiniGamePartyStep extends PartyStep {
             nbtCompound.putInt("ChosenPage", chosenPageSlot - 1);
         if (mode != MiniGameMode.ANY) nbtCompound.putString("Mode", mode.name());
         if (lander != null) nbtCompound.putUuid("Lander", lander);
+        if (!choices.isEmpty()) {
+            NbtList list = new NbtList();
+            choices.forEach(choice -> list.add(NbtString.of(choice.name())));
+            nbtCompound.put("Choices", list);
+        }
+        if (opponent != null) nbtCompound.putUuid("Opponent", opponent);
+        if (page != null) nbtCompound.putUuid("Page", page);
         return nbtCompound;
     }
 

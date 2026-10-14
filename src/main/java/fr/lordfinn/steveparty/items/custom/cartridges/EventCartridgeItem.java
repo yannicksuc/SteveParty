@@ -40,7 +40,7 @@ public class EventCartridgeItem extends BoardRuleCartridgeItem {
             durations.add(seconds == 0 ? ChoiceModule.Option.tipped(K + "duration.0") : new ChoiceModule.Option(K + "duration." + seconds));
         return List.of(
                 description("event_cartridge", 2),
-                DURATION_SETTING.choice("duration", K + "duration", durations),
+                DURATION_SETTING.choice("duration", K + "duration", durations).fitted(),
                 CHANNEL_SETTING.number("channel", K + "channel", stack -> COLOR),
                 colorModule(COLOR));
     }

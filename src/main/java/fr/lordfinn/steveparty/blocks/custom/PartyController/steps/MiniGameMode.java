@@ -5,20 +5,31 @@ import java.util.Locale;
 /**
  * How the teams of a mini-game are made. A mini-game card of the program: {@link #ANY}, the board decides (see
  * {@link TeamDispositionGenerator}). A Mini-game space (see fr.lordfinn.steveparty.items.custom.cartridges.MiniGameCartridgeItem)
- * picks one of the others.
+ * plays one of the others, its formats.
  */
 public enum MiniGameMode {
     /** The board's teams, as a mini-game card. */
     ANY,
-    /** VS: the player who landed against all the others; the board's teams when no mini-game fits that. */
+    /** 1 v 1: the player who landed against the opponent he picks in the chat (drawn without an answer). */
+    DUEL,
+    /** 1 v 1: the player who landed against another player drawn at random. */
+    DUEL_RANDOM,
+    /** 1 against all: the player who landed against all the others. */
     VS,
     /** Free for all: everyone for themselves. */
     FFA,
-    /** The player who landed chooses VS or free for all (in the chat). */
+    /** The board's teams (2 v 2, 1 v 3...), never everyone for themselves. */
+    TEAMS,
+    /** The player who landed picks one of the space's formats (in the chat). */
     CHOICE;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);
+    }
+
+    /** Whether it pits the player who landed against one other player. */
+    public boolean isDuel() {
+        return this == DUEL || this == DUEL_RANDOM;
     }
 
     public static MiniGameMode byName(String name) {

@@ -169,6 +169,9 @@ public class ModComponents {
     /** Mini-game page: the id of its content, kept by the server (see MiniGamePages). */
     public static final ComponentType<MiniGamePageRef> MINI_GAME_PAGE =
             registerComponent("mini-game-page", MiniGamePageRef.CODEC);
+    /** Mini-game Cartridge: the page it always plays (none: drawn from the catalogue). */
+    public static final ComponentType<MiniGamePageRef> CARTRIDGE_MINI_GAME_PAGE =
+            registerComponent("cartridge-mini-game-page", MiniGamePageRef.CODEC);
     public static final ComponentType<List<Byte>> STENCIL_PIXELS =
             registerComponent("stencil-pixels", Codec.list(Codec.BYTE));
     /** Block (planks, rock...) a material sign is made of. */

@@ -18,6 +18,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.PageSlotModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.OutcomeListModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
@@ -305,9 +306,10 @@ public final class CartridgePanel {
                 case ChoiceModule choice -> {
                     optionTexts[i] = new String[choice.options().size()];
                     for (int o = 0; o < optionTexts[i].length; o++) optionTexts[i][o] = PartyCurrencyText.menuText(choice.options().get(o).key()).getString();
-                    yield choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
+                    yield choice.bodyHeight();
                 }
                 case NumberModule number -> NumberModule.ROW_H;
+                case PageSlotModule page -> BlockSlotModule.SLOT;
                 case StallOffersModule stall -> StallOffersModule.PREVIEW_H;
                 case OutcomeListModule list -> OutcomeListModule.BODY_H;
                 case BlockSlotModule slot -> {
@@ -671,6 +673,7 @@ public final class CartridgePanel {
             case GhostSlotsModule ghosts -> drawGhostSlots(context, ghosts, mx, my, mouseX, mouseY, editable);
             case StallOffersModule stall -> drawStall(context, current, mx, top, mouseX, mouseY, editable);
             case BlockSlotModule slot -> drawBlockSlot(context, current, i, slot, mx, top, mouseX, mouseY, editable);
+            case PageSlotModule page -> drawPageSlot(context, current, page, mx, top, mouseX, mouseY, editable);
             case InfoModule info -> drawInfo(context, current, i, info, mx, top);
             case ContainersModule containers -> drawContainers(context, current, containers, mx, top, mouseX, mouseY, editable);
             case OutcomeListModule list -> {
@@ -695,7 +698,7 @@ public final class CartridgePanel {
         int value = value(current, i);
         int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
         for (int o = 0; o < choice.options().size(); o++) {
-            int bx = choiceX(choice, i, mx, o), bw = choiceW(choice, i);
+            int bx = choiceX(choice, i, mx, o), bw = choiceW(choice, i, o);
             boolean selected = o == value;
             boolean hovered = active && HitArea.contains(mouseX, mouseY, bx, top, bw, bh);
             // The chosen tab stands taller and opens into the panel (its bottom edge is the panel's top, gone); what is
@@ -724,22 +727,25 @@ public final class CartridgePanel {
         int value = value(current, i);
         boolean swatches = choice.swatches();
         for (int o = 0; o < n; o++) {
-            int bx = choiceX(choice, i, mx, o), bw = choiceW(choice, i), bh = swatches ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
-            boolean selected = o == value && choice.enabled(current);
-            boolean over = HitArea.contains(mouseX, mouseY, bx, top, bw, bh);
+            int bx = choiceX(choice, i, mx, o), bw = choiceW(choice, i, o), bh = swatches ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
+            int by = choiceY(choice, top, o);
+            boolean selected = choice.isOn(value, o) && choice.enabled(current);
+            boolean over = HitArea.contains(mouseX, mouseY, bx, by, bw, bh);
             boolean hovered = active && over;
             PartyGui.Theme theme = !choice.enabled(current) ? PartyGui.BUTTON_DISABLED : selected ? PartyGui.BUTTON_SELECTED : PartyGui.BUTTON;
             if (hovered && !selected) theme = theme.brighter();
-            PartyGui.button(context, bx, top, bw, bh, theme, selected);
+            PartyGui.button(context, bx, by, bw, bh, theme, selected);
             ChoiceModule.Option option = choice.options().get(o);
             if (swatches) {
                 int c = Argb.opaque(option.color());
-                PartyGui.button(context, bx + 4, top + 4, bw - 8, bh - 8,
+                PartyGui.button(context, bx + 4, by + 4, bw - 8, bh - 8,
                         new PartyGui.Theme(Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), false);
             } else {
                 String text = optionTexts[i][o];
                 int color = !choice.enabled(current) ? 0xFF7A7A7A : selected ? 0xFF3B2600 : PartyGui.TEXT_DARK;
-                buttonText(context, text, bx, top, bw, bh, color);
+                // A fitted button is as wide as its text asks: never scrolled
+                if (choice.isFitted() && textRenderer.getWidth(text) + ChoiceModule.FITTED_PAD <= bw) ButtonGlyphs.text(context, textRenderer, text, bx, by, bw, bh, color);
+                else buttonText(context, text, bx, by, bw, bh, color);
             }
         }
     }
@@ -753,14 +759,34 @@ public final class CartridgePanel {
         else UiText.centered(context, textRenderer, text, x + 3, y + (h - ButtonGlyphs.CAP_H) / 2, w - 6, color, false);
     }
 
-    private int choiceW(ChoiceModule choice, int i) {
-        int n = choice.options().size();
-        int w = (layout.w(i) - (n - 1) * 3) / n;
+    /** The width of a choice's button: its share of the row, or (fitted) what its text asks. */
+    private int choiceW(ChoiceModule choice, int i, int option) {
+        int[] fitted = fittedWidths(choice, i);
+        if (fitted != null) return fitted[option];
+        int n = choice.columns();
+        int w = (layout.w(i) - (n - 1) * ChoiceModule.GAP) / n;
         return choice.swatches() ? Math.min(34, w) : w;
     }
 
     private int choiceX(ChoiceModule choice, int i, int mx, int option) {
-        return mx + option * (choiceW(choice, i) + 3);
+        int[] fitted = fittedWidths(choice, i);
+        if (fitted == null) return mx + option % choice.columns() * (choiceW(choice, i, option) + ChoiceModule.GAP);
+        int x = mx;
+        for (int o = 0; o < option; o++) x += fitted[o] + ChoiceModule.FITTED_GAP;
+        return x;
+    }
+
+    /** The top of a choice's button: its row's. */
+    private static int choiceY(ChoiceModule choice, int top, int option) {
+        return top + option / choice.columns() * ((choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H) + ChoiceModule.GAP);
+    }
+
+    /** A fitted choice's widths (see {@link ChoiceModule#fittedWidths}), null for equal ones. */
+    private int @Nullable [] fittedWidths(ChoiceModule choice, int i) {
+        if (!choice.isFitted() || optionTexts[i] == null) return null;
+        int[] texts = new int[optionTexts[i].length];
+        for (int o = 0; o < texts.length; o++) texts[o] = textRenderer.getWidth(optionTexts[i][o]);
+        return ChoiceModule.fittedWidths(texts, layout.w(i));
     }
 
     // Number: [-] figure [+] lamps
@@ -1216,6 +1242,30 @@ public final class CartridgePanel {
         }
     }
 
+    /**
+     * A page slot, as a block slot: the page kept in it (its title beside it), or empty, « From the catalogue » faded
+     * beside it. Under the mouse with an item on the cursor: outlined green if it is a page that can go there, red if not.
+     */
+    private void drawPageSlot(DrawContext context, ItemStack current, PageSlotModule slot, int mx, int top,
+                              int mouseX, int mouseY, boolean editable) {
+        int size = BlockSlotModule.SLOT;
+        context.fill(mx, top, mx + size, top + size, 0xFF2B2B2B);
+        context.fill(mx + 1, top + 1, mx + size, top + size, 0xFF5A5A5A);
+        context.fill(mx + 1, top + 1, mx + size - 1, top + size - 1, 0xFF3A3A3A);
+        ItemStack page = slot.pageStack(current);
+        if (!page.isEmpty()) context.drawItem(page, mx + 1, top + 1);
+        if (editable && HitArea.contains(mouseX, mouseY, mx, top, size, size)) {
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 200);
+            ItemStack cursor = cursor();
+            if (cursor.isEmpty()) context.fill(mx + 1, top + 1, mx + size - 1, top + size - 1, 0x80FFFFFF);
+            else context.drawBorder(mx, top, size, size, PageSlotModule.accepts(cursor) ? 0xFF7CE06A : 0xFFFF5050);
+            context.getMatrices().pop();
+        }
+        Text name = page.isEmpty() ? Text.translatable(CartridgeItem.MENU_KEY + "minigame.page.catalogue") : page.getName();
+        UiText.line(context, textRenderer, name, mx + BLOCK_TEXT_X, top + (size - 8) / 2, blockTextW(), page.isEmpty() ? TONE_SOFT : TONE_NORMAL, false);
+    }
+
     private void drawInfo(DrawContext context, ItemStack current, int i, InfoModule info, int mx, int top) {
         int tx = mx;
         if (info.hasIcon()) {
@@ -1458,7 +1508,7 @@ public final class CartridgePanel {
             if (module instanceof ChoiceModule choice) {
                 int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                 for (int o = 0; o < choice.options().size(); o++) {
-                    if (!HitArea.contains(mouseX, mouseY, choiceX(choice, i, mx, o), top, choiceW(choice, i), bh)) continue;
+                    if (!HitArea.contains(mouseX, mouseY, choiceX(choice, i, mx, o), choiceY(choice, top, o), choiceW(choice, i, o), bh)) continue;
                     ChoiceModule.Option option = choice.options().get(o);
                     List<Text> lines = new ArrayList<>();
                     lines.add(PartyCurrencyText.menuText(option.key()));
@@ -1503,6 +1553,17 @@ public final class CartridgePanel {
                             .formatted(offers == 0 ? Formatting.RED : Formatting.WHITE));
                     if (canEdit.getAsBoolean()) lines.add(Text.translatable(CartridgeItem.MENU_KEY + "shop.offers.open").formatted(Formatting.YELLOW));
                     context.drawTooltip(textRenderer, lines, mouseX, mouseY);
+                    return true;
+                }
+            } else if (module instanceof PageSlotModule slot) {
+                if (HitArea.contains(mouseX, mouseY, mx, top, BlockSlotModule.SLOT, BlockSlotModule.SLOT)) {
+                    List<Text> lines = new ArrayList<>();
+                    lines.add(PartyCurrencyText.menuText(slot.hintKey()));
+                    ItemStack cursor = cursor();
+                    if (canEdit.getAsBoolean() && !cursor.isEmpty() && !PageSlotModule.accepts(cursor)) {
+                        lines.add(Text.translatable(CartridgeItem.MENU_KEY + "minigame.page.refused", cursor.getName()).formatted(Formatting.RED));
+                    }
+                    context.drawTooltip(textRenderer, wrap(lines), mouseX, mouseY);
                     return true;
                 }
             } else if (module instanceof BlockSlotModule slot) {
@@ -1585,7 +1646,14 @@ public final class CartridgePanel {
                 case ChoiceModule choice -> {
                     int bh = choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                     for (int o = 0; o < choice.options().size(); o++) {
-                        if (HitArea.contains(mouseX, mouseY, choiceX(choice, i, mx, o), top, choiceW(choice, i), bh)) return change(i, o, value);
+                        if (!HitArea.contains(mouseX, mouseY, choiceX(choice, i, mx, o), choiceY(choice, top, o), choiceW(choice, i, o), bh)) continue;
+                        int chosen = choice.clicked(value, o);
+                        // The last one on stays on
+                        if (!choice.accepts(current, chosen)) {
+                            client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_VILLAGER_NO, 1.0F));
+                            return true;
+                        }
+                        return change(i, chosen, value);
                     }
                 }
                 case NumberModule number -> {
@@ -1623,6 +1691,19 @@ public final class CartridgePanel {
                         return change(i, chosen, value);
                     }
                 }
+                case PageSlotModule slot -> {
+                    if (HitArea.contains(mouseX, mouseY, mx, top, BlockSlotModule.SLOT, BlockSlotModule.SLOT)) {
+                        ItemStack cursor = cursor();
+                        if (cursor.isEmpty()) return change(i, PageSlotModule.EMPTY, value);
+                        // Not a page that can go there: refused at once, the slot unchanged
+                        if (!PageSlotModule.accepts(cursor)) {
+                            client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_VILLAGER_NO, 1.0F));
+                            return true;
+                        }
+                        // Another page over one: sent all the same (the server reads the cursor)
+                        return change(i, PageSlotModule.CURSOR, Integer.MIN_VALUE);
+                    }
+                }
                 case OutcomeListModule list -> {
                     if (outcomeList != null && outcomeList.mouseClicked(mouseX, mouseY)) return true;
                 }
@@ -1645,11 +1726,18 @@ public final class CartridgePanel {
         return false;
     }
 
-    /** A right click on a block slot empties it (the default again). */
+    /** A right click on a block slot empties it (the default again), on a page slot too (the catalogue again). */
     private boolean rightClicked(double mouseX, double mouseY) {
         if (!canEdit.getAsBoolean() || !inContent(mouseY)) return false;
         ItemStack current = stack.get();
         for (int i = 0; i < modules.size(); i++) {
+            if (modules.get(i) instanceof PageSlotModule page && page.enabled(current)) {
+                int top = moduleY(i) + (page.labelKey() != null ? CartridgeModule.LABEL_H : 0);
+                if (HitArea.contains(mouseX, mouseY, x + layout.x(i), top, BlockSlotModule.SLOT, BlockSlotModule.SLOT)) {
+                    return change(i, PageSlotModule.EMPTY, value(current, i));
+                }
+                continue;
+            }
             if (!(modules.get(i) instanceof BlockSlotModule slot) || !slot.enabled(current)) continue;
             int mx = x + layout.x(i), top = moduleY(i) + (slot.labelKey() != null ? CartridgeModule.LABEL_H : 0);
             if (HitArea.contains(mouseX, mouseY, blockSlotX(slot, mx), blockSlotY(slot, top), BlockSlotModule.SLOT, BlockSlotModule.SLOT)) {
