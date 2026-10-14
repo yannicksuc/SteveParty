@@ -15,7 +15,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.OrderedText;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,8 +27,10 @@ import java.util.List;
  * (« [Y] Ready 1/3 »).
  */
 public final class MiniGameRoundHud {
-    private static final int WIDTH = 190, PAD = 6, TOP = 4, CHIP = 15, GAP = 3, OBJECTIVE_LINES = 2;
+    private static final int WIDTH = 190, PAD = 6, TOP = 4, CHIP = 18, GAP = 4, OBJECTIVE_LINES = 2;
     private static final float FADE_RATE = 0.35f;
+    /** How it is played, under the team: between the soft text and the plain text. */
+    private static final int KIND_TEXT = 0xFF505050;
 
     private static @Nullable RoundCard card;
     /** The last card shown: drawn while it fades out. */
@@ -109,12 +110,12 @@ public final class MiniGameRoundHud {
         Text title = shown.title().isEmpty() ? Text.translatable("hud.steveparty.minigame.in.untitled")
                 : Text.literal(shown.title());
         List<OrderedText> objective = shown.objective().isEmpty() ? List.of()
-                : UiText.wrap(font, MiniGameText.parse(shown.objective(), Style.EMPTY), inner);
+                : UiText.wrap(font, Text.literal(MiniGameText.strip(shown.objective())), inner);
         if (objective.size() > OBJECTIVE_LINES) objective = objective.subList(0, OBJECTIVE_LINES);
         Text type = typeText(shown);
         Text team = teamText(shown);
         boolean bottomRow = type != null || team != null;
-        int height = PAD + 9 + (objective.isEmpty() ? 0 : 3 + UiText.LINE_H * objective.size()) + (bottomRow ? 5 + 11 : 0) + PAD - 1;
+        int height = PAD + 9 + (objective.isEmpty() ? 0 : 3 + UiText.LINE_H * objective.size()) + (bottomRow ? 5 + 11 : 0) + PAD + 1;
         // Under the boss bars and clear of the status effects, as the party HUD
         int x = (screenWidth - width) / 2, y = Math.round(PartyHud.keepClear(x, TOP, width, height, screenWidth, context.getScaledWindowHeight()));
         BOUNDS[0] = x;
@@ -142,14 +143,14 @@ public final class MiniGameRoundHud {
             int right = x + width - PAD;
             if (type != null) {
                 int typeWidth = Math.min(font.getWidth(type), inner / 2);
-                HudDraw.text(context, type, right - typeWidth, top + 2, typeWidth, HudDraw.TEXT_SOFT, fade);
+                HudDraw.text(context, type, right - typeWidth, top + 2, typeWidth, KIND_TEXT, fade);
                 right -= typeWidth + 6;
             }
             if (team != null) {
                 int color = shown.team() >= 0 ? Argb.opaque(MiniGamePipeRole.ofTeam(shown.team()).color()) : 0xFFA0A0A0;
-                HudDraw.fill(context, x + PAD, top + 1, x + PAD + 9, top + 10, HudDraw.OUTLINE, fade);
-                HudDraw.fill(context, x + PAD + 1, top + 2, x + PAD + 8, top + 9, color, fade);
-                HudDraw.text(context, team, x + PAD + 13, top + 2, right - (x + PAD + 13), HudDraw.TEXT, fade);
+                HudDraw.fill(context, x + PAD + 2, top + 1, x + PAD + 11, top + 10, HudDraw.OUTLINE, fade);
+                HudDraw.fill(context, x + PAD + 3, top + 2, x + PAD + 10, top + 9, color, fade);
+                HudDraw.text(context, team, x + PAD + 15, top + 2, right - (x + PAD + 15), HudDraw.TEXT, fade);
             }
         }
         if (voteShown != null) drawVote(context, voteShown, x + width / 2f, y + height + GAP, fade);
@@ -162,10 +163,11 @@ public final class MiniGameRoundHud {
                 : Text.translatable(shown.mine() ? "hud.steveparty.minigame.start.ready" : "hud.steveparty.minigame.start",
                 MiniGamePracticeHud.keyText(), shown.ready(), shown.total());
         int textWidth = Math.min(font.getWidth(label), context.getScaledWindowWidth() - 40);
-        int width = textWidth + 14;
+        // Centred on the ink (the font counts a pixel after the last glyph), the accents clear of the frame
+        int width = textWidth - 1 + 14;
         int x = Math.round(centre - width / 2f);
         HudDraw.plate(context, shown.mine() ? Plate.GREEN : Plate.ORANGE, x, y, width, CHIP, fade);
-        HudDraw.text(context, label, x + 7, y + 4, textWidth, HudDraw.TEXT, fade);
+        HudDraw.text(context, label, x + 7, y + 6, textWidth, HudDraw.TEXT, fade);
     }
 
     /** « Free for all », « All together », « 2 against 2 »; null when unknown. */

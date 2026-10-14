@@ -81,17 +81,15 @@ public final class SettingsPage {
         plus.active = editable && data.roundsSetting() < PartyControllerEntity.MAX_ROUNDS;
         minus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.less") : why));
         plus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.more") : why));
-        // A practice round before each mini-game, and the fast party: two switches on one row (their state in their tooltip)
+        // A practice round before each mini-game, and the fast party: two switches on one row (the switch shows its state)
         DashboardSwitch practice = dashboard.add(new DashboardSwitch(dashboard, x + PRACTICE_SWITCH_X, y + SETTINGS_Y + SETTINGS_ROW, 24, BTN_H,
                 Text.empty(), data.practiceRound(), BUTTON_PRACTICE));
         practice.active = data.canEdit();
-        practice.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.practice." + (data.practiceRound() ? "on" : "off"))
-                .append("\n").append(Text.translatable(KEY + "settings.practice.tooltip")) : Text.translatable(KEY + "locked")));
+        practice.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.practice.tooltip") : Text.translatable(KEY + "locked")));
         DashboardSwitch fast = dashboard.add(new DashboardSwitch(dashboard, x + FAST_SWITCH_X, y + SETTINGS_Y + SETTINGS_ROW, 24, BTN_H,
                 Text.empty(), data.fastParty(), BUTTON_FAST_PARTY));
         fast.active = data.canEdit();
-        fast.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.fast." + (data.fastParty() ? "on" : "off"))
-                .append("\n").append(Text.translatable(KEY + "settings.fast.tooltip")) : Text.translatable(KEY + "locked")));
+        fast.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.fast.tooltip") : Text.translatable(KEY + "locked")));
         // The power-ups a player may carry (0: no limit)
         int limitY = y + SETTINGS_Y + 2 * SETTINGS_ROW + 1;
         ConsoleButton fewer = dashboard.add(new ConsoleButton(sx, limitY, STEP, STEP, Text.literal("-"), ConsoleButton.Kind.SCREEN, null,

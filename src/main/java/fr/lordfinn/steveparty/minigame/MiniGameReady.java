@@ -60,8 +60,8 @@ public final class MiniGameReady {
                                 Text.keybind("key.steveparty.minigame_ready")))));
     }
 
-    /** The line under the mini-game's name: its button, and that everyone ready skips the description. */
+    /** The line under the mini-game's name: its button (everyone ready skips the description). */
     public static Text skipLine() {
-        return Text.translatable("message.steveparty.minigame.skip_line", button()).formatted(Formatting.GRAY);
+        return button();
     }
 }
