@@ -3502,5 +3502,12 @@
   "tooltip.steveparty.party_card_end.program": "In the Program tab of the Party Controller: how its party ends",
   "tooltip.steveparty.party_card_end.use": "on a pipe: the players come out of it once the party is over",
   "message.steveparty.party_card_end.pipe.linked": "Pipe linked: (%d, %d, %d), the players come out of it at the end",
-  "hud.steveparty.party_end.title": "Party over"
+  "hud.steveparty.party_end.title": "Party over",
+  "block.steveparty.start_plaque.owned": "Start %s · %s",
+  "block.steveparty.start_plaque.owned_no_number": "Start · %s",
+  "block.steveparty.start_plaque.free": "Free start",
+  "hud.steveparty.tile_info.end.ending.finish_round": "round played out",
+  "hud.steveparty.tile_info.end.ending.at_once": "stop at once",
+  "hud.steveparty.tile_info.end.ending.one_more_turn": "one more turn for the others",
+  "hud.steveparty.tile_info.end.ending.wait_for_all": "the arrived wait for all"
 }

@@ -3502,5 +3502,12 @@
   "tooltip.steveparty.party_card_end.program": "Dans l'onglet Programme du Party Controller : la fin de sa partie",
   "tooltip.steveparty.party_card_end.use": "sur un tuyau : les joueurs en sortent à la fin de la partie",
   "message.steveparty.party_card_end.pipe.linked": "Tuyau lié : (%d, %d, %d), les joueurs en sortent à la fin",
-  "hud.steveparty.party_end.title": "Fin de la partie"
+  "hud.steveparty.party_end.title": "Fin de la partie",
+  "block.steveparty.start_plaque.owned": "Départ %s · %s",
+  "block.steveparty.start_plaque.owned_no_number": "Départ · %s",
+  "block.steveparty.start_plaque.free": "Départ libre",
+  "hud.steveparty.tile_info.end.ending.finish_round": "fin du tour",
+  "hud.steveparty.tile_info.end.ending.at_once": "arrêt immédiat",
+  "hud.steveparty.tile_info.end.ending.one_more_turn": "un tour de plus pour les autres",
+  "hud.steveparty.tile_info.end.ending.wait_for_all": "les arrivés attendent les autres"
 }

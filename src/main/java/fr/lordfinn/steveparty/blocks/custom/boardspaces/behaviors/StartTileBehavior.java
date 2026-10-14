@@ -116,6 +116,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
             ((TokenizedEntityInterface)entity).steveparty$setTokenOwner(owner == null ? null : world.getPlayerByUuid(UUID.fromString(owner)));
         }
         stack.set(ModComponents.TB_START_OWNER, owner);
+        setOwnerName(stack, owner == null ? null : player.getGameProfile().getName());
         tileEntity.update(); // saves and syncs the owner (rendered client-side)
         return SUCCESS;
     }
@@ -138,6 +139,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
 
         UUID owner = ((TokenizedEntityInterface)entity).steveparty$getTokenOwner();
         stack.set(ModComponents.TB_START_OWNER, owner == null ? null : owner.toString());
+        setOwnerName(stack, owner == null ? null : nameOf(entity.getWorld(), owner));
         entity.setVelocity(0, 0, 0);
         BoardSpaceBlockEntity tileEntity = getTileEntity(entity.getWorld(), pos);
         if (tileEntity != null) {
@@ -152,6 +154,20 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
                 1F,
                 1F
         );
+    }
+
+    /** The plaque's name of the start tile's player (null: nobody). */
+    private static void setOwnerName(ItemStack stack, @org.jetbrains.annotations.Nullable String name) {
+        if (name == null || name.isEmpty()) stack.remove(ModComponents.TB_START_OWNER_NAME);
+        else stack.set(ModComponents.TB_START_OWNER_NAME, name);
+    }
+
+    /** {@code player}'s name: online, else as the server remembers it (empty if unknown). */
+    private static String nameOf(World world, UUID player) {
+        PlayerEntity online = world.getPlayerByUuid(player);
+        if (online != null) return online.getGameProfile().getName();
+        if (world.getServer() == null || world.getServer().getUserCache() == null) return "";
+        return world.getServer().getUserCache().getByUuid(player).map(com.mojang.authlib.GameProfile::getName).orElse("");
     }
 
     private static boolean isBoundedEntity(Entity entity) {

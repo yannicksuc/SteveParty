@@ -91,6 +91,24 @@ public class StartDetectionGameTests implements SteveGameTest {
         context.complete();
     }
 
+    /** A player claiming a start tile: its plaque shows his name, even once he is away. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aClaimedStartKeepsItsPlayersName(TestContext context) {
+        PigEntity a = pawn(context, START_A), b = pawn(context, START_B);
+        board(context, a, b);
+        net.minecraft.server.network.ServerPlayerEntity player = fr.lordfinn.steveparty.gametest.kit.TestPlayers.mock(context);
+        BoardSpaceBlockEntity start = context.getBlockEntity(START_A);
+        BlockPos abs = context.getAbsolutePos(START_A);
+        start.getBoardSpaceBehavior().onUse(context.getWorld().getBlockState(abs), context.getWorld(), abs, player, null);
+        ItemStack cartridge = start.getActiveCartridgeItemStack();
+        context.assertEquals(cartridge.get(ModComponents.TB_START_OWNER), player.getUuidAsString(), "his start");
+        context.assertEquals(cartridge.get(ModComponents.TB_START_OWNER_NAME), player.getGameProfile().getName(), "his name on the plaque");
+        start.getBoardSpaceBehavior().onUse(context.getWorld().getBlockState(abs), context.getWorld(), abs, player, null);
+        context.assertTrue(cartridge.get(ModComponents.TB_START_OWNER) == null && cartridge.get(ModComponents.TB_START_OWNER_NAME) == null,
+                "given up: a free start");
+        context.complete();
+    }
+
     /** A pawn killed on its start: its tile forgets it, the party starts without it (no phantom player). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aKilledPawnIsForgottenByItsStart(TestContext context) {

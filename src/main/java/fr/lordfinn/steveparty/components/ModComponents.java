@@ -79,6 +79,9 @@ public class ModComponents {
             registerComponent("bound-entity", Codec.STRING);
     public static final ComponentType<String> TB_START_OWNER =
             registerComponent("owner", Codec.STRING);
+    /** The name of a start tile's player ({@link #TB_START_OWNER}), for its plaque (shown even while he is away). */
+    public static final ComponentType<String> TB_START_OWNER_NAME =
+            registerComponent("owner-name", Codec.STRING);
     public static final ComponentType<Integer> COLOR =
             registerComponent("color", Codec.INT);
     /** Colour of a Bandana item (0-4: teal, blue, pink, orange, yellow, like the Boxed Trader's BandanaColor). */
