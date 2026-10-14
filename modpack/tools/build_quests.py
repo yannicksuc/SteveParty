@@ -294,20 +294,20 @@ q("wrench", -4, 0.5, I("wrench"), deps=["tile"], rewards=T2(),
          "Right-click opens tiles, Checkpoints and routers. A cartridge in the off hand swaps the tile's own, links kept.",
          "It also sets podiums, poles and Spawn Bubbles, and breaks plastic in one hit."],
         ["Redstone + lingot de fer.",
-         "Clic droit : ouvre tuiles, Points de déclenchement et routeurs. Une cartouche en main secondaire remplace celle de la tuile, liens gardés.",
+         "Clic droit : ouvre tuiles, Checkpoints et routeurs. Une cartouche en main secondaire remplace celle de la tuile, liens gardés.",
          "Elle règle aussi podiums, mâts et Bulles d'apparition, et casse le plastique d'un coup."]))
 
 q("check_point", -6, 0.75, I("check_point", 4), deps=["tile"], rewards=T1(),
   desc=(["Prismarine shards + light blue panes + chest: 4 Checkpoints.",
          "Pawns float through without spending a step: free turns, forks and detours. Its role never triggers, except Stop and Shop."],
-        ["Éclats de prismarine + vitres bleu clair + coffre : 4 Points de déclenchement.",
+        ["Éclats de prismarine + vitres bleu clair + coffre : 4 Checkpoints.",
          "Les pions le traversent sans dépenser de pas : virages, bifurcations et détours gratuits. Son rôle ne joue jamais, sauf Stop et Boutique."]))
 
 q("colours", -6, 2.25, C(), deps=["check_point"], rewards=T1(), icon="minecraft:glow_ink_sac",
   title=("Colours and glow", "Couleurs et lueur"),
   desc=(["Dye: colours the cartridge (on a Checkpoint, the whole cube).",
          "Glow ink sac: it shines. Ink sac: off. Sponge: dye removed."],
-        ["Teinture : colore la cartouche (sur un Point de déclenchement, tout le cube).",
+        ["Teinture : colore la cartouche (sur un Checkpoint, tout le cube).",
          "Poche d'encre luisante : il brille. Poche d'encre : éteint. Éponge : plus de teinture."]))
 
 q("advanced_tile", -2, 0.5, I("advanced_tile"), deps=["tile"], rewards=T2(),
@@ -352,7 +352,7 @@ q("start", -6, -5, I("tile_behavior_start"), deps=["cartridge"], rewards=T1(),
 
 q("stop", -4.5, -5, I("board_space_behavior_stop"), deps=["cartridge"], rewards=T1(),
   desc=(["Cartridge + red dye. A pawn reaching it stops there, whatever steps it has left. Works on a Checkpoint too."],
-        ["Cartouche + teinture rouge. Un pion qui l'atteint s'y arrête, quels que soient ses pas restants. Marche aussi sur un Point de déclenchement."]))
+        ["Cartouche + teinture rouge. Un pion qui l'atteint s'y arrête, quels que soient ses pas restants. Marche aussi sur un Checkpoint."]))
 
 q("advance", -3, -5, I("advance_back_cartridge"), deps=["cartridge"], rewards=T1(),
   desc=(["Cartridge + piston. The pawn stopping here moves again, 1 to 6 spaces forward (green) or back (pink), pushed by a Boomcart.",
@@ -380,7 +380,7 @@ q("shop", 3, -5, I("shop_cartridge"), deps=["inventory", "shops.bandana"], rewar
   desc=(["Inventory Cartridge + a bandana stolen from a Boxed Trader (see Shops).",
          "A pawn stopping here (or passing a Checkpoint with it) brings out a Boxed Trader. Up to 9 offers, set in the cartridge's stall; the goods come from its chests, else the Party Controller's storage."],
         ["Cartouche d'inventaire + un bandana volé à un Marchand en carton (voir Boutiques).",
-         "Un pion qui s'y arrête (ou passe un Point de déclenchement qui la porte) fait sortir un Marchand en carton. 9 offres au plus, réglées dans l'étal de la cartouche ; la marchandise vient de ses coffres, sinon du stockage du Party Controller."]))
+         "Un pion qui s'y arrête (ou passe un Checkpoint qui la porte) fait sortir un Marchand en carton. 9 offres au plus, réglées dans l'étal de la cartouche ; la marchandise vient de ses coffres, sinon du stockage du Party Controller."]))
 
 q("threshold", 4.5, -5, I("threshold_cartridge"), deps=["cartridge"], rewards=T1(),
   desc=(["Cartridge + iron bars. A wall: a pawn with steps left only goes through if its roll meets the condition (7 or more by default, a double, a triple...). Otherwise it stops here.",
@@ -412,7 +412,7 @@ done("done", 4.25, 2.75, ["loop", "wrench", "check_point", "advanced_tile", "rou
                        "replay", "tp_pair", "bonus_malus", "threshold", "key_gate"],
      ("Board builder", "Bâtisseur de plateau"),
      (["Tiles, checkpoints, the main cartridges and a closed loop: your board is ready for pawns."],
-      ["Tuiles, points de déclenchement, les principales cartouches et une boucle fermée : votre plateau attend ses pions."]),
+      ["Tuiles, checkpoints, les principales cartouches et une boucle fermée : votre plateau attend ses pions."]),
      "steveparty:advanced_tile")
 
 
