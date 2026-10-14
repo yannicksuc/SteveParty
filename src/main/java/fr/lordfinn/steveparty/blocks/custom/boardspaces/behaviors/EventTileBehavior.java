@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.board.TileInfo;
 import fr.lordfinn.steveparty.items.custom.cartridges.EventCartridgeItem;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -36,7 +37,7 @@ public class EventTileBehavior extends ABoardSpaceBehavior {
     @Override
     public void describe(ServerWorld world, BoardSpaceBlockEntity space, ItemStack stack, TileInfo.Builder info) {
         if (!(stack.getItem() instanceof EventCartridgeItem)) return;
-        info.line(TileInfo.Glyph.CYCLE, TileInfo.line("event.hourglass",
+        info.line(new ItemStack(Items.CLOCK), TileInfo.line("event.hourglass",
                 TileInfo.value(EventTimeOut.durationText(EventCartridgeItem.seconds(stack)))));
         int pipes = EventCartridgeItem.pipes(stack).size();
         if (pipes > 0) info.line(TileInfo.Glyph.ALL, TileInfo.line("event.pipes", TileInfo.value(pipes)));

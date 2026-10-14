@@ -18,7 +18,7 @@ import java.util.List;
  * redstone and commands take over: the "event" party bells of its channel ring (a comparator on a Router of the space
  * reads the landing too), the players come out of the pipes it is linked to with the Tile Linker Brush, if any. The
  * event ends when its hourglass runs out, when a waiting bell receives redstone, or on a Step Controller's pulse; the
- * players then come back and the party goes on. Its tile is violet with a starburst; a dye on it changes that.
+ * players then come back and the party goes on. Its tile is violet with an exclamation mark; a dye on it changes that.
  * <p>
  * Settings ({@link ModComponents#BOARD_CARTRIDGE_SETTINGS}): {@link #DURATION} (an index of
  * {@link EventTimeOut#DURATIONS}, a minute by default) and {@link #CHANNEL} (the value the bells ring with, 1 to 15).
