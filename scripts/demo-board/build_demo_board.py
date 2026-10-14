@@ -5,7 +5,7 @@ Writes <run-server>/world/datapacks/steveparty-demo/, then in game (or through `
     /function steveparty_demo:board
 
 The board: a loop of 20 tiles (2 start tiles, 2 blue and 2 red inventory tiles linked to a chest of coins,
-the rest default tiles), a Party Controller and a Step Controller with levers, two tokens owned by the dev player,
+the rest default tiles), a Party Controller and a Party Rewinder with levers, two tokens owned by the dev player,
 and a kit (dice, wand, token, wrench, cartridges) given to the player.
 """
 import json
@@ -23,6 +23,13 @@ CONTROLLER = (318, Y, 438)
 STEP_CONTROLLER = (322, Y, 438)
 
 WHITE, GOOD, BAD = 0xE8E8E8, 0x0083DF, 0xC41C24
+
+
+def as_long(pos):
+    """BlockPos#asLong: the start tiles linked to the Party Controller (as by the Tile Linker Brush)."""
+    x, y, z = pos
+    value = ((x & 0x3FFFFFF) << 38) | ((z & 0x3FFFFFF) << 12) | (y & 0xFFF)
+    return value - (1 << 64) if value >= 1 << 63 else value
 
 
 def loop_positions():
@@ -88,7 +95,8 @@ def main():
         cmds.append('setblock %d %d %d steveparty:tile[tile_type=%s]{Items:[%s]}' % (*pos, state, item))
 
     cmds += [
-        'setblock %d %d %d steveparty:party_controller[facing=north]' % CONTROLLER,
+        'setblock %d %d %d steveparty:party_controller[facing=north]{StartLinks:[L;%s]}'
+        % (*CONTROLLER, ','.join('%dL' % as_long(tiles[i]) for i in sorted(starts))),
         'setblock %d %d %d minecraft:lever[face=floor,facing=north]' % (CONTROLLER[0] - 1, Y, CONTROLLER[2]),
         'setblock %d %d %d steveparty:step_controller' % STEP_CONTROLLER,
         'setblock %d %d %d minecraft:lever[face=floor,facing=north]' % (STEP_CONTROLLER[0] + 1, Y, STEP_CONTROLLER[2]),
@@ -106,7 +114,7 @@ def main():
     cmds += ['give %s %s' % (PLAYER, k) for k in kit]
     cmds += ['tp %s 320.5 %d 440.5 180 20' % (PLAYER, Y),
              'tellraw %s {"text":"[demo] Plateau prêt : levier du Party Controller = lancer la partie, '
-             'lance un dé (clic droit) pour jouer. Levier du Step Controller = étape suivante.","color":"gold"}' % PLAYER]
+             'lance un dé (clic droit) pour jouer. Levier du Magnéto = étape suivante.","color":"gold"}' % PLAYER]
 
     pack = os.path.join(RUN_DIR, 'world', 'datapacks', 'steveparty-demo')
     fdir = os.path.join(pack, 'data', 'steveparty_demo', 'function')
