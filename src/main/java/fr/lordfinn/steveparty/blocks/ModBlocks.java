@@ -536,8 +536,8 @@ public class ModBlocks {
                     .nonOpaque()
                     .requiresTool(),
             "party_bell", true);
-    /** Podiums: four looks (classic, gold, silver, bronze); the place of a podium is the height of its column. */
-    public static final Block PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Style.CLASSIC),
+    /** Podiums: the Redstone Podium (taken by a pulse) and the classic ones, gold, iron and copper (taken by a click); the place of a podium is the height of its column. */
+    public static final Block PODIUM = register(RedstonePodiumBlock::new,
             Block.Settings.create()
                     .strength(2.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.STONE)

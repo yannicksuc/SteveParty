@@ -1,15 +1,20 @@
 {
-  "type": "minecraft:crafting_shapeless",
+  "type": "minecraft:crafting_shaped",
   "category": "redstone",
-  "ingredients": [
-    {
-      "item": "steveparty:podium"
-    },
-    {
-      "item": "minecraft:gold_ingot"
-    }
+  "pattern": [
+    "MMM",
+    "QQQ"
   ],
+  "key": {
+    "M": {
+      "item": "minecraft:gold_ingot"
+    },
+    "Q": {
+      "item": "minecraft:quartz_block"
+    }
+  },
   "result": {
-    "id": "steveparty:gold_podium"
+    "id": "steveparty:gold_podium",
+    "count": 2
   }
 }

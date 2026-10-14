@@ -87,6 +87,8 @@ public class PayloadReceivers {
         ClientPayloads.receive(DicePromptPayload.ID, (payload, context) -> DicePickScreen.onPayload(context.client(), payload));
         // The brush painted from a Teleport tile: « TP » or « link »
         ClientPayloads.receive(TeleportLinkChoicePayload.ID, (payload, context) -> TeleportLinkChoiceScreen.onPayload(context.client(), payload));
+        // A podium's new mode, shown for a few seconds
+        ClientPayloads.receive(PodiumPreviewPayload.ID, (payload, context) -> fr.lordfinn.steveparty.client.blockentity.PodiumPreviews.show(payload));
         ClientPayloads.receive(DiceRevealPayload.ID, (payload, context) -> DiceRevealHud.onPayload(payload));
         ClientPayloads.receive(OutcomeRoulettePayload.ID, (payload, context) -> OutcomeRouletteHud.onPayload(payload));
         ClientPayloads.receive(SixSevenPayload.ID, (payload, context) -> SixSevenClient.onPayload(payload));

@@ -18,6 +18,8 @@ import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.podium.PodiumGroup.Column;
+import fr.lordfinn.steveparty.payloads.custom.PodiumPreviewPayload;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -47,6 +49,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -141,6 +144,18 @@ public final class Podiums {
      * @return true if something changed
      */
     public static boolean toggle(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        return toggle(player, world, pos, true);
+    }
+
+    /**
+     * A click ({@code told}: the player is told when the column answers no click) or a sneak on a podium: see
+     * {@link #toggle(ServerPlayerEntity, ServerWorld, BlockPos)}. A Redstone Podium alone is not taken so.
+     */
+    public static boolean toggle(ServerPlayerEntity player, ServerWorld world, BlockPos pos, boolean told) {
+        if (!PodiumBlock.answersClicks(world, pos)) {
+            if (told) player.sendMessage(Text.translatable("message.steveparty.podium.redstone_only").formatted(Formatting.GRAY), true);
+            return false;
+        }
         long now = world.getTime();
         Long last = LAST_TOGGLE.get(player.getUuid());
         if (last != null && now >= last && now - last < TOGGLE_COOLDOWN_TICKS) return false;
@@ -152,6 +167,16 @@ public final class Podiums {
         if (occupant != null && occupant.player().equals(player.getUuid())) {
             unregister(group, column, player);
             return true;
+        }
+        PodiumBlockEntity master = column.master();
+        PodiumSignal mode = master == null ? PodiumSignal.REGISTER : master.getSignal();
+        if (mode == PodiumSignal.FILL || mode == PodiumSignal.FILL_BOTTOM) {
+            if (fill(group, player, mode == PodiumSignal.FILL_BOTTOM)) return true;
+            MiniGameSession played = played(group);
+            boolean placed = group.columnOf(player.getUuid(), played == null ? -1 : played.teamOf(player.getUuid())) != null;
+            player.sendMessage(Text.translatable(placed ? "message.steveparty.podium.already_placed" : "message.steveparty.podium.no_free_place")
+                    .formatted(Formatting.GRAY), true);
+            return false;
         }
         return register(group, column, player);
     }
@@ -233,7 +258,8 @@ public final class Podiums {
                 Math.max(0.8f, 1.7f - 0.2f * (place - 1)));
         world.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.BLOCKS, 0.6f, 1.2f);
 
-        player.sendMessage(Text.translatable("message.steveparty.podium.registered", placeText(place)).formatted(Formatting.GOLD), true);
+        String registered = PodiumBlock.answersClicks(world, column.bottom()) ? "message.steveparty.podium.registered" : "message.steveparty.podium.registered.redstone";
+        player.sendMessage(Text.translatable(registered, placeText(place)).formatted(Formatting.GOLD), true);
         ModCriteria.fire(player, "podium_claimed", place);
         for (UUID gone : ousted) {
             ServerPlayerEntity loser = world.getServer().getPlayerManager().getPlayer(gone);
@@ -311,12 +337,35 @@ public final class Podiums {
      * @return true if he took a place
      */
     public static boolean fill(PodiumGroup group, ServerPlayerEntity player) {
+        return fill(group, player, false);
+    }
+
+    /**
+     * {@code player} takes the best free place of the group, or its last one ({@code fromBottom}: the group is filled
+     * from the bottom, the first one out gets the last place). A player already placed (or whose team is) is not placed
+     * again.
+     *
+     * @return true if he took a place
+     */
+    public static boolean fill(PodiumGroup group, ServerPlayerEntity player, boolean fromBottom) {
         MiniGameSession played = played(group);
         if (played != null && !played.isParticipant(player.getUuid())) return false;
         if (group.columnOf(player.getUuid(), played == null ? -1 : played.teamOf(player.getUuid())) != null) return false;
-        // During a mini-game: the best place none of whose columns is taken
-        Column free = played == null ? group.highestFree() : group.highestFreePlace();
+        Column free = target(group, fromBottom ? PodiumSignal.FILL_BOTTOM : PodiumSignal.FILL, null);
         return free != null && register(group, free, player);
+    }
+
+    /**
+     * The column a mode sends the player to: {@code column} itself to register there, the best or the last free place
+     * of the group to fill it (during a mini-game, a place none of whose columns is taken); null for none.
+     */
+    public static @Nullable Column target(PodiumGroup group, PodiumSignal mode, @Nullable Column column) {
+        MiniGameSession played = played(group);
+        return switch (mode) {
+            case FILL -> played == null ? group.highestFree() : group.highestFreePlace();
+            case FILL_BOTTOM -> played == null ? group.lowestFree() : group.lowestFreePlace();
+            default -> column;
+        };
     }
 
     // ------------------------------------------------------------------ redstone
@@ -332,9 +381,9 @@ public final class Podiums {
                 ServerPlayerEntity nearest = nearest(group, column, false);
                 if (nearest != null) register(group, column, nearest);
             }
-            case FILL -> {
+            case FILL, FILL_BOTTOM -> {
                 ServerPlayerEntity nearest = nearest(group, column, true);
-                if (nearest != null) fill(group, nearest);
+                if (nearest != null) fill(group, nearest, master.getSignal() == PodiumSignal.FILL_BOTTOM);
             }
             case CLEAR -> {
                 if (empty(group, column, played(group))) notifyPlayed(group);
@@ -538,7 +587,13 @@ public final class Podiums {
 
     // ------------------------------------------------------------------ Wrench and command
 
-    /** Right click with the Wrench: what a redstone pulse into the column does. */
+    /** How long the mode of a column is shown when it changes (ticks). */
+    public static final int PREVIEW_TICKS = 70;
+
+    /**
+     * Right click with the Wrench: the mode of the column (what a pulse does to a Redstone Podium, which place a click
+     * gives on a classic one), shown to the player: see {@link #preview}.
+     */
     public static void cycleSignal(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
         PodiumBlockEntity master = PodiumBlock.master(world, pos);
         if (master == null) return;
@@ -546,9 +601,41 @@ public final class Podiums {
             player.sendMessage(Text.translatable("message.steveparty.podium.not_allowed").formatted(Formatting.RED), true);
             return;
         }
-        master.setSignal(master.getSignal().next());
+        boolean redstone = PodiumBlock.answersRedstone(world, pos);
+        master.setSignal(master.getSignal().next(redstone));
         world.playSound(null, pos, SoundEvents.BLOCK_COPPER_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0f, 1.5f);
-        player.sendMessage(Text.translatable("message.steveparty.podium.signal", master.getSignal().text().copy().formatted(Formatting.YELLOW)), true);
+        player.sendMessage(master.getSignal().text(redstone).copy().formatted(Formatting.YELLOW), true);
+        preview(player, world, pos);
+    }
+
+    /**
+     * Shows {@code player} what the mode of the column at {@code pos} does, for {@link #PREVIEW_TICKS}: the columns it
+     * acts on light up (the whole group for a reset) and a Steve statue stands where a player would go.
+     *
+     * @return what is shown
+     */
+    public static PodiumPreviewPayload preview(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        PodiumGroup group = PodiumGroup.of(world, pos);
+        Column column = group.columnAt(world, pos);
+        PodiumBlockEntity master = PodiumBlock.master(world, pos);
+        PodiumSignal mode = master == null ? PodiumSignal.REGISTER : master.getSignal();
+        List<BlockPos> lit = new ArrayList<>();
+        BlockPos statue = null;
+        if (column != null) {
+            switch (mode) {
+                case RESET -> group.columns().forEach(each -> lit.add(each.bottom()));
+                case CLEAR -> lit.add(column.bottom());
+                default -> {
+                    Column target = target(group, mode, column);
+                    if (target == null) target = column;
+                    lit.add(target.bottom());
+                    statue = target.bottom();
+                }
+            }
+        }
+        PodiumPreviewPayload payload = new PodiumPreviewPayload(lit, Optional.ofNullable(statue), mode.ordinal(), PREVIEW_TICKS);
+        if (ServerPlayNetworking.canSend(player, PodiumPreviewPayload.ID)) ServerPlayNetworking.send(player, payload);
+        return payload;
     }
 
     /** Sneak + right click with the Wrench: the group of the podium is reset. */
