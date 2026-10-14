@@ -59,6 +59,15 @@ public class GlowingCuboidRenderer {
     }
 
     public static void drawBlockBox(MatrixStack matrices, VertexConsumerProvider vertexConsumers, BlockPos pos, float red, float green, float blue, float alpha) {
+        drawBlockBox(matrices, vertexConsumers, pos, red, green, blue, alpha, true);
+    }
+
+    /**
+     * {@link #drawBlockBox(MatrixStack, VertexConsumerProvider, BlockPos, float, float, float, float)}; {@code throughWalls}
+     * false: no dimmed outline through what hides it (drawn late, it would cross the labels in front of it).
+     */
+    public static void drawBlockBox(MatrixStack matrices, VertexConsumerProvider vertexConsumers, BlockPos pos, float red, float green, float blue, float alpha,
+                                    boolean throughWalls) {
         // A tile is highlighted where it is seen: hugging its surface (lowered, sloped, all 4 blocks of a large tile)
         ClientWorld world = MinecraftClient.getInstance().world;
         Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
@@ -66,7 +75,7 @@ public class GlowingCuboidRenderer {
             BlockPos tile = BoardSpaces.resolve(world, pos);
             var shape = TileShape.of(world, tile);
             if (shape != null) {
-                drawTile(matrices, vertexConsumers, shape, camera.getPos(), red, green, blue, alpha);
+                drawTile(matrices, vertexConsumers, shape, camera.getPos(), red, green, blue, alpha, throughWalls);
                 return;
             }
         }
@@ -99,6 +108,13 @@ public class GlowingCuboidRenderer {
     public static void drawTile(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
                                 TileShape shape, Vec3d cam,
                                 float red, float green, float blue, float alpha) {
+        drawTile(matrices, vertexConsumers, shape, cam, red, green, blue, alpha, true);
+    }
+
+    /** {@link #drawTile(MatrixStack, VertexConsumerProvider, TileShape, Vec3d, float, float, float, float)}, the outline through walls or not. */
+    public static void drawTile(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
+                                TileShape shape, Vec3d cam,
+                                float red, float green, float blue, float alpha, boolean throughWalls) {
         Vec3d[] c = shape.corners();
         Vec3d centre = Vec3d.ZERO;
         for (Vec3d corner : c) centre = centre.add(corner.multiply(1 / 8.0));
@@ -121,7 +137,7 @@ public class GlowingCuboidRenderer {
         VertexConsumer seen = vertexConsumers.getBuffer(HighlightLayers.SEEN), hidden = vertexConsumers.getBuffer(HighlightLayers.HIDDEN);
         for (int[] e : edges) {
             segment(seen, matrix, c[e[0]], c[e[1]], thick, r, g, b, 0.85f + 0.15f * pulse);
-            segment(hidden, matrix, c[e[0]], c[e[1]], thick * 0.7, r, g, b, 0.3f);
+            if (throughWalls) segment(hidden, matrix, c[e[0]], c[e[1]], thick * 0.7, r, g, b, 0.3f);
         }
     }
 

@@ -289,6 +289,11 @@ public final class WorldDraw {
 
     // ---------------------------------------------------------------- plates
 
+    /** The width of the plate of {@code text} (text pixels); its height is {@link #PLATE_SIZE}. */
+    public static float plateWidth(Text text) {
+        return Math.max(PLATE_SIZE, MinecraftClient.getInstance().textRenderer.getWidth(text) + 9);
+    }
+
     /**
      * A camera-facing label on a plate, centred on {@code pos} (depth tested: the text lies just in front of its plate).
      *

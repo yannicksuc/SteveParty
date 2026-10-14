@@ -22,7 +22,7 @@ import static fr.lordfinn.steveparty.gametest.BoardLinkingGameTests.withPlayer;
 
 /**
  * The start tiles of a Party Controller linked with the Tile Linker Brush: when it has any, its only start tiles;
- * painted again (either way), unlinked; none linked, the ones around it; undo takes a link back.
+ * painted again (either way), unlinked; none linked, no start at all; undo takes a link back.
  */
 public class ControllerStartLinksGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 1);
@@ -48,7 +48,7 @@ public class ControllerStartLinksGameTests implements SteveGameTest {
         BlockPos controllerPos = context.getAbsolutePos(CONTROLLER);
         BlockPos a = context.getAbsolutePos(A), b = context.getAbsolutePos(B), c = context.getAbsolutePos(C);
         withPlayer(context, true, player -> {
-            context.assertEquals(starts(context, controller), List.of(a, b, c), "none linked: the starts around it");
+            context.assertEquals(starts(context, controller), List.of(), "none linked: no start (none found around it)");
 
             ItemStack brush = brush(player);
             paint(player, brush, context, controllerPos, a);
@@ -74,7 +74,7 @@ public class ControllerStartLinksGameTests implements SteveGameTest {
             context.assertEquals(starts(context, controller), List.of(c), "only C");
             paint(player, brush, context, c, controllerPos);
             context.assertEquals(controller.getStartLinks(), List.of(), "C unlinked from the start tile");
-            context.assertEquals(starts(context, controller), List.of(a, b, c), "none linked: found around it again");
+            context.assertEquals(starts(context, controller), List.of(), "none linked: no start again");
 
             // A tile that is no start: not linked
             context.setBlockState(B, Blocks.AIR);

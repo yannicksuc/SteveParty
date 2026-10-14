@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.board;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBoard;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
@@ -47,8 +48,8 @@ import java.util.UUID;
  * <ul>
  *     <li>The Wrench (« Clé ») opens and works what is otherwise locked: a right click on a board space or a router
  *     opens its interface (no sneaking), or, with another kind of cartridge in the off hand, swaps its cartridge (links
- *     kept); on the Party Controller it checks the board; sneaking on a podium resets its group. It takes plastic apart
- *     in one hit.</li>
+ *     kept); on the Party Controller it opens its screen; sneaking on a podium resets its group. It takes plastic apart
+ *     in one hit. The blocks only it edits say so to an empty hand ({@link #needsWrench}).</li>
  *     <li>The link edits shared by the tools (the Tile Linker Brush paints the links, see {@link TileLinkerBrush}):
  *     adding / removing a link, the undo history ({@link #recorded}), the cartridge supplied to a tile.</li>
  *     <li>What the brush's anchor (the last board space it painted) gives: a chest clicked joins its inventory tile, a
@@ -83,11 +84,10 @@ public final class WrenchActions {
         BlockPos pos = BoardSpaces.resolve(world, clicked);
         BlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof PartyController) {
-            // The board this controller plays: checked, the report in the chat
-            if (!isRepeat(player, pos, world.getTime())) {
-                BoardValidator.send(player, BoardValidator.check(world, pos));
-                if (world.getBlockEntity(pos) instanceof fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller)
-                    player.sendMessage(ControllerStartLinks.status(player, controller), false);
+            // Its screen, as an empty hand opens it (its board's state is in its Status tab)
+            if (!isRepeat(player, pos, world.getTime())
+                    && world.getBlockEntity(pos) instanceof fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller) {
+                player.openHandledScreen(controller);
             }
             return ActionResult.SUCCESS;
         }
@@ -105,6 +105,16 @@ public final class WrenchActions {
         return ActionResult.SUCCESS;
     }
 
+    /**
+     * A block only the Wrench edits, used by {@code player} (server side) with an empty hand: « Edit it with the
+     * Wrench », in the action bar, to a player who may build (not to a party's adventure players).
+     */
+    public static void needsWrench(PlayerEntity player) {
+        if (player.getWorld().isClient || !player.getMainHandStack().isEmpty() || !player.canModifyBlocks() || player.isSpectator()) return;
+        // The key colour of the tooltips, readable over a white tile
+        player.sendMessage(Text.translatable("message.steveparty.wrench_required").withColor(0xFFD24A), true);
+    }
+
     /** Runs a link edit, recording what it changes for undo (labelled by its last message); {@code tool}'s anchor too. */
     public static void recorded(ServerPlayerEntity player, World world, @Nullable ItemStack tool, Runnable action) {
         LAST_LABELS.remove(player.getUuid());
@@ -118,8 +128,22 @@ public final class WrenchActions {
 
     /** The action bar message of an action (also its label in the undo history). */
     public static void say(ServerPlayerEntity player, Text text) {
-        LAST_LABELS.put(player.getUuid(), text);
-        player.sendMessage(text, true);
+        say(player, text, text);
+    }
+
+    /**
+     * An action labelled {@code label} in the undo history (with its positions), the action bar only saying
+     * {@code shown} (a link painted: the arrow in the world already shows where).
+     */
+    public static void say(ServerPlayerEntity player, Text label, Text shown) {
+        LAST_LABELS.put(player.getUuid(), label);
+        player.sendMessage(shown, true);
+    }
+
+    /** The action bar word of a link painted (green) or erased (gold). */
+    public static Text linkWord(boolean linked) {
+        return Text.translatable(linked ? "message.steveparty.tile_linker_brush.linked.short" : "message.steveparty.tile_linker_brush.erased.short")
+                .formatted(linked ? Formatting.GREEN : Formatting.GOLD);
     }
 
     private static final Map<UUID, Text> LAST_WARNINGS = ServerMemory.forgetOnStop(new HashMap<>());
@@ -131,11 +155,31 @@ public final class WrenchActions {
      * one not again within a few seconds (a stroke meets it at every tile).
      */
     public static void warn(ServerPlayerEntity player, Text text) {
+        warn(player, text, false);
+    }
+
+    /** {@link #warn(ServerPlayerEntity, Text)} in the action bar (or the chat), in red, not repeated within a few seconds. */
+    public static void warn(ServerPlayerEntity player, Text text, boolean actionBar) {
         long now = Util.getMeasuringTimeMs();
         if (text.equals(LAST_WARNINGS.get(player.getUuid())) && now - LAST_WARNING_AT.getOrDefault(player.getUuid(), 0L) < WARNING_REPEAT_MS) return;
         LAST_WARNINGS.put(player.getUuid(), text);
         LAST_WARNING_AT.put(player.getUuid(), now);
-        player.sendMessage(text.copy().formatted(Formatting.RED), false);
+        player.sendMessage(text.copy().formatted(Formatting.RED), actionBar);
+    }
+
+    /**
+     * Whether a link from the board space at {@code origin} to {@code target} would lead into a start tile: refused,
+     * a start tile is where a token starts, never a place of the loop (its links only go out of it).
+     */
+    public static boolean intoStart(World world, BlockPos origin, BlockPos target) {
+        return world.getBlockEntity(BoardSpaces.resolve(world, origin)) instanceof BoardSpaceBlockEntity
+                && PartyBoard.isStart(world, BoardSpaces.resolve(world, target));
+    }
+
+    /** Says that nothing links into a start tile (action bar). */
+    static void refuseIntoStart(ServerPlayerEntity player) {
+        warn(player, Text.translatable("message.steveparty.tile_linker_brush.into_start"), true);
+        player.playSoundToPlayer(ModSounds.CANCEL_SOUND_EVENT, SoundCategory.PLAYERS, 0.6f, 0.8f);
     }
 
     /** The board space (or router) the player aims at, up to {@link #LONG_REACH} blocks away, or null (see {@link BrushAim}). */
@@ -212,6 +256,10 @@ public final class WrenchActions {
      */
     static boolean addLink(ServerPlayerEntity player, ServerWorld world, BlockPos origin,
                                    CartridgeContainerBlockEntity originContainer, int slot, BlockPos target) {
+        if (intoStart(world, origin, target)) {
+            refuseIntoStart(player);
+            return false;
+        }
         ItemStack cartridge = BoardLinks.ensureCartridge(player, originContainer, slot);
         if (cartridge.isEmpty()) {
             warn(player, Text.translatable("message.steveparty.wrench.no_cartridge"));
@@ -264,7 +312,8 @@ public final class WrenchActions {
         BlockPos anchor = TileLinkerBrush.anchor(brush, world);
         CartridgeContainerBlockEntity anchorContainer = anchor == null ? null : BoardLinks.container(world, anchor);
         recorded(player, world, brush, () -> {
-            if (anchorContainer == null) {
+            // A start tile placed: nothing links into it, the path goes on from it
+            if (anchorContainer == null || PartyBoard.isStart(world, pos)) {
                 TileLinkerBrush.setAnchor(brush, world, pos);
                 say(player, Text.translatable("message.steveparty.tile_linker_brush.start", BoardText.pos(pos)));
                 return;
@@ -276,8 +325,9 @@ public final class WrenchActions {
             }
             int slot = BoardLinks.slotOf(anchorContainer, TileLinkerBrush.level(brush));
             if (!addLink(player, serverWorld, anchor, anchorContainer, slot, pos)) return;
+            BrushTutorialSteps.pathLinked(player, serverWorld, anchor);
             TileLinkerBrush.setAnchor(brush, world, pos);
-            say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(anchor), BoardText.pos(pos)));
+            say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(anchor), BoardText.pos(pos)), linkWord(true));
             playChainSound(world, player, 3);
         });
     }

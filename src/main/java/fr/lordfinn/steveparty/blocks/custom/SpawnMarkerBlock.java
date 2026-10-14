@@ -188,6 +188,7 @@ public class SpawnMarkerBlock extends BlockWithEntity {
     /** An empty hand: nothing (the Wrench is its tool). */
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        fr.lordfinn.steveparty.board.WrenchActions.needsWrench(player);
         return ActionResult.PASS;
     }
 
