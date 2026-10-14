@@ -1391,22 +1391,20 @@ public final class CartridgePanel {
     }
 
     /**
-     * Over the items: the filled slots' outer line again (the count's shadow reaches it), and on the chosen slot its
-     * count shadowed in its side's dark colour, as the chosen button's text.
+     * Over the items, on the chosen slot: its count shadowed in its side's dark colour, as the chosen button's text. The
+     * frames are under the items (drawn with the slots): every count and its shadow pass over them.
      */
     public void drawGhostMarks(DrawContext context, List<Slot> slots, int originX, int originY) {
         int i = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
         GhostSlot chosen = i >= 0 && modules.get(i) instanceof GhostSlotsModule ghosts && ghosts.signed() ? chosenGhost(ghosts) : null;
         for (Slot slot : slots) {
-            if (!(slot instanceof GhostSlot) || !slot.isEnabled() || !slot.hasStack()) continue;
-            int color = GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE;
-            PartyGui.Theme theme = sideTheme(color);
+            if (slot != chosen || !slot.isEnabled() || !slot.hasStack()) continue;
+            PartyGui.Theme theme = sideTheme(GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE);
             int sx = originX + slot.x, sy = originY + slot.y;
             context.getMatrices().push();
             context.getMatrices().translate(0, 0, 400);
-            outlined(context, sx - 1, sy - 1, 18, 18, slot == chosen ? theme.outline() : color, 0);
             int count = slot.getStack().getCount();
-            if (slot == chosen && count != 1) {
+            if (count != 1) {
                 // Where the game draws the count: its shadow in the side's dark colour over the grey one, then the count
                 String text = Integer.toString(count);
                 int tx = sx + 19 - 2 - textRenderer.getWidth(text), ty = sy + 6 + 3;
@@ -1416,7 +1414,6 @@ public final class CartridgePanel {
             context.getMatrices().pop();
         }
     }
-
 
     // ------------------------------------------------------------------ tooltips
 
