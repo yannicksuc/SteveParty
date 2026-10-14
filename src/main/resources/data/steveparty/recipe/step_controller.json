@@ -3,7 +3,7 @@
   "fabric:type": "minecraft:crafting_shaped",
   "pattern": [
     "BBB",
-    "PNP",
+    "PHP",
     "IRI"
   ],
   "key": {
@@ -11,10 +11,10 @@
       "item": "minecraft:stone_button"
     },
     "P": {
-      "item": "minecraft:glass_pane"
+      "item": "steveparty:gray_plastic_block"
     },
-    "N": {
-      "item": "minecraft:note_block"
+    "H": {
+      "item": "minecraft:clock"
     },
     "I": {
       "item": "minecraft:iron_ingot"

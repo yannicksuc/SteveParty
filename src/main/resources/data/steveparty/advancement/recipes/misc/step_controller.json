@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_note_block": {
+    "has_clock": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "minecraft:note_block"
+            "items": "minecraft:clock"
           }
         ]
       }
@@ -30,7 +30,7 @@
   },
   "requirements": [
     [
-      "has_note_block",
+      "has_clock",
       "has_stone_button",
       "has_the_recipe"
     ]
