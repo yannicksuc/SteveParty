@@ -189,15 +189,13 @@ public class MulaFeedbackGameTests implements SteveGameTest {
         return text != null && text.getContent() instanceof TranslatableTextContent t ? t.getKey() : null;
     }
 
-    /** What it refuses, it says why (action bar): another colour's food and whose it is, or something no Mula eats. */
+    /** What it refuses, it says why (action bar): another colour's food (never which colour), or something no Mula eats. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void refusalSaysWhy(TestContext context) {
         MulaEntity.MulaVariant blue = MulaEntity.MulaVariant.BLUE;
         Text colour = MulaEntity.refusalReason(blue, new ItemStack(Items.APPLE));
         context.assertEquals(key(colour), "message.steveparty.mula.refuse.colour", "an apple: another colour's food");
-        Object[] args = ((TranslatableTextContent) colour.getContent()).getArgs();
-        context.assertEquals(key((Text) args[0]), "mula.steveparty.colour.blue", "its own colour");
-        context.assertEquals(key((Text) args[2]), "mula.steveparty.colour.red", "the colour that eats it");
+        context.assertEquals(((TranslatableTextContent) colour.getContent()).getArgs().length, 0, "never says which colour");
         context.assertEquals(key(MulaEntity.refusalReason(blue, new ItemStack(Items.STICK))),
                 "message.steveparty.mula.refuse.inedible", "a stick is not food");
         context.assertEquals(key(MulaEntity.refusalReason(blue, new ItemStack(Items.COOKED_CHICKEN))),
