@@ -570,34 +570,35 @@ public final class TileStampTextures {
             ".........."};
     private static final Map<Character, Float> EVENT_SHADES = Map.of('#', FEATURE, '-', 0.6f);
 
-    /** The Mini-game: « VS ». */
+    /** The Mini-game: an arcade joystick, its ball lit from the top left. */
     private static final String[] MINIGAME = {
             "..............",
-            "..............",
-            "..............",
-            ".#...#..#####.",
-            ".#...#..#.....",
-            ".#...#..#.....",
-            "..#.#...#####.",
-            "..#.#.......#.",
-            "...#........#.",
-            "...#....#####.",
-            "..............",
-            "..............",
-            "..............",
+            ".....oooo.....",
+            "....ohhooo....",
+            "....ohoooo....",
+            "....oooooo....",
+            "....oooood....",
+            ".....oddd.....",
+            "......od......",
+            "......od......",
+            "....cccccc....",
+            ".cccccccccccc.",
+            ".oooooooooooo.",
+            ".dddddddddddd.",
             ".............."};
     private static final String[] SMALL_MINIGAME = {
             "..........",
-            "..........",
-            ".#.#.###..",
-            ".#.#.#....",
-            ".#.#.###..",
-            "..#....#..",
-            "..#..###..",
-            "..........",
-            "..........",
-            ".........."};
-    private static final Map<Character, Float> MINIGAME_SHADES = Map.of('#', FEATURE);
+            "...hhoo...",
+            "...hooo...",
+            "...oooo...",
+            "...oddd...",
+            "....od....",
+            "....od....",
+            "..cccccc..",
+            ".oooooooo.",
+            ".dddddddd."};
+    private static final Map<Character, Float> MINIGAME_SHADES =
+            Map.of('o', 0.45f, 'h', -0.5f, 'd', 0.65f, 'c', 0.2f);
 
     /** The Common pot: a woven nest full of coins. */
     private static final String[] POT = {
