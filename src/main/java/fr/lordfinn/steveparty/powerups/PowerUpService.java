@@ -142,6 +142,7 @@ public final class PowerUpService {
             refuse(use.player(), result.refusal());
             return false;
         }
+        fr.lordfinn.steveparty.blocks.custom.PartyController.PartyStatsCollector.used(use.controller(), use.turn().getTokenUUID(), use.item());
         consume(use.player(), hand, use);
         announce(use);
         use.controller().markDirty();

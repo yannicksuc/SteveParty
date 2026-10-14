@@ -342,6 +342,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         nbt.remove(TrapState.NBT_KEY);
         nbt.remove(BANK_ITEMS);
         nbt.remove("Board");
+        // Server only until an infographic shows them
+        nbt.remove("Stats");
         return nbt;
     }
 
@@ -1120,7 +1122,10 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      */
     public static void onTokenDiceRolled(ServerWorld world, Entity token, int rollValue) {
         Optional<PartyControllerEntity> party = getRunningPartyOf(token.getUuid());
-        if (party.isPresent()) party.get().ringMoment(PartyMoment.DICE_ROLLED, rollValue);
+        if (party.isPresent()) {
+            PartyStatsCollector.rolled(party.get(), token.getUuid(), rollValue);
+            party.get().ringMoment(PartyMoment.DICE_ROLLED, rollValue);
+        }
         else PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), PartyMoment.DICE_ROLLED, rollValue);
     }
 

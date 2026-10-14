@@ -39,6 +39,8 @@ public class PartyData {
     private final TrichaudronPrizes.Won trichaudronWon = new TrichaudronPrizes.Won();
     /** Bad spaces each player landed on during this party (advancements; not saved: counted again after a restart). */
     private final Map<UUID, Integer> badLandings = new HashMap<>();
+    /** What each pawn did during this party (end infographic, bonus awards): saved, see PartyStats. */
+    private final PartyStats stats = new PartyStats();
 
     // Constructor
     public PartyData() {
@@ -85,6 +87,7 @@ public class PartyData {
         traps.readNbt(nbt);
         thresholdGates.readNbt(nbt);
         trichaudronWon.readNbt(nbt);
+        stats.readNbt(nbt);
         skippedTokens.clear();
         nbt.getList("SkippedTokens", 8).forEach(token -> {
             try {
@@ -119,6 +122,7 @@ public class PartyData {
         traps.writeNbt(nbt);
         thresholdGates.writeNbt(nbt);
         trichaudronWon.writeNbt(nbt);
+        stats.writeNbt(nbt);
         if (!skippedTokens.isEmpty()) {
             NbtList skippedNbt = new NbtList();
             skippedTokens.forEach(uuid -> skippedNbt.add(NbtString.of(uuid.toString())));
@@ -227,6 +231,12 @@ public class PartyData {
         this.thresholdGates.reset();
         this.trichaudronWon.reset();
         this.badLandings.clear();
+        this.stats.clear();
+    }
+
+    /** What each pawn did during this party (kept after its end, until the next one starts). */
+    public PartyStats getStats() {
+        return stats;
     }
 
     /** The hidden traps set with the Trap power-up during this party (see {@code TrapEffect}). */
