@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.payloads.custom.OutcomeRoulettePayload;
 import fr.lordfinn.steveparty.payloads.custom.OutcomeRoulettePayload.Line;
 import fr.lordfinn.steveparty.utils.Argb;
 import fr.lordfinn.steveparty.utils.Easing;
+import fr.lordfinn.steveparty.client.utils.WorldView;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
@@ -69,7 +70,7 @@ public final class OutcomeRoulettePanel {
     }
 
     public static void initialize() {
-        WorldRenderEvents.LAST.register(OutcomeRoulettePanel::render);
+        WorldRenderEvents.LAST.register(context -> WorldView.draw(context, () -> render(context)));
     }
 
     private static void render(WorldRenderContext context) {

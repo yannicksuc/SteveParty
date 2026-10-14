@@ -132,11 +132,13 @@ public class BubbleEntityRenderer extends EntityRenderer<BubbleEntity> {
         float time = clock();
         boolean swapped = BubbleFilmDepth.begin();
         emitFilms(matrices, eye, consumers.getBuffer(BubbleLayers.FILM), time);
-        consumers.draw(BubbleLayers.FILM);
+        // draw(), not draw(layer): a shader pack's batched buffers ignore that one, the film left there would be drawn
+        // later, out of the world's view (see WorldView)
+        consumers.draw();
         if (swapped) BubbleFilmDepth.end();
         if (MinecraftClient.isFabulousGraphicsOrBetter()) {
             emitFilms(matrices, eye, consumers.getBuffer(BubbleLayers.FILM_DEPTH), time);
-            consumers.draw(BubbleLayers.FILM_DEPTH);
+            consumers.draw();
         }
         FILMS.clear();
     }

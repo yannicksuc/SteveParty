@@ -20,6 +20,7 @@ import fr.lordfinn.steveparty.board.ControllerStartLinks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
+import fr.lordfinn.steveparty.client.utils.WorldView;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -88,7 +89,7 @@ final class BrushOverlay {
         // After the block entities (where the vanilla block outline is drawn), not AFTER_ENTITIES: the see-through
         // frame writes depth, and drawn before them it hid what a tile's renderer draws under it
         // After the translucent blocks: drawn before, the ghosts would hide the stained glass behind them
-        WorldRenderEvents.LAST.register(BrushOverlay::render);
+        WorldRenderEvents.LAST.register(context -> WorldView.draw(context, () -> render(context)));
         ClientTickEvents.END_CLIENT_TICK.register(BrushOverlay::tick);
         ClientTickEvents.END_CLIENT_TICK.register(BrushSuggestions::tick);
     }
