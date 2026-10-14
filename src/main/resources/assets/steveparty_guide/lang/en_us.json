@@ -27,7 +27,7 @@
   "book.steveparty.guide.board.board_view.name": "Board View & Check",
   "book.steveparty.guide.board.board_view.page0.text": "[#](1C4E80)**Linker Brush**[#]() in hand: every link shows.\n- [#](1C4E80)**Start**[#]()\n- [#](B8860B)**?**[#]() at forks\n- [#](C0392B)**!**[#]() at dead ends\n- [#](D2691E)**!**[#]() if unreachable",
   "book.steveparty.guide.board.board_view.page0.title": "Board view",
-  "book.steveparty.guide.board.board_view.page1.text": "[#](1C4E80)**Wrench**[#]() on the [#](1C4E80)**Party Controller**[#](), or [#](9A6A00)/steveparty board check[#]().\\\n\\\nNo start, dead ends, empty shops…",
+  "book.steveparty.guide.board.board_view.page1.text": "[#](1C4E80)**Status**[#]() tab of the [#](1C4E80)**Party Controller**[#](), or [#](9A6A00)/steveparty board check[#]().\\\n\\\nNo start, dead ends, empty shops…",
   "book.steveparty.guide.board.board_view.page1.title": "Check",
   "book.steveparty.guide.board.explorer_helmet.description": "The board view, hands free",
   "book.steveparty.guide.board.explorer_helmet.name": "Explorer's Helmet",

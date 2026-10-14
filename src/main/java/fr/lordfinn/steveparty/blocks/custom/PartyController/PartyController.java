@@ -122,7 +122,7 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     @Override
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
-        // The Wrench checks the board (see WrenchActions)
+        // The Wrench opens its screen (see WrenchActions)
         if (stack.getItem() instanceof WrenchItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // The Tile Linker Brush paints the links of its bank's Inventory Cartridge (see BrushLinks)
         if (stack.getItem() instanceof TileLinkerBrushItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;

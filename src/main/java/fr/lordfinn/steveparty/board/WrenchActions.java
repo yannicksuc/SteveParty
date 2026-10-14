@@ -48,8 +48,8 @@ import java.util.UUID;
  * <ul>
  *     <li>The Wrench (« Clé ») opens and works what is otherwise locked: a right click on a board space or a router
  *     opens its interface (no sneaking), or, with another kind of cartridge in the off hand, swaps its cartridge (links
- *     kept); on the Party Controller it checks the board; sneaking on a podium resets its group. It takes plastic apart
- *     in one hit.</li>
+ *     kept); on the Party Controller it opens its screen; sneaking on a podium resets its group. It takes plastic apart
+ *     in one hit. The blocks only it edits say so to an empty hand ({@link #needsWrench}).</li>
  *     <li>The link edits shared by the tools (the Tile Linker Brush paints the links, see {@link TileLinkerBrush}):
  *     adding / removing a link, the undo history ({@link #recorded}), the cartridge supplied to a tile.</li>
  *     <li>What the brush's anchor (the last board space it painted) gives: a chest clicked joins its inventory tile, a
@@ -84,11 +84,11 @@ public final class WrenchActions {
         BlockPos pos = BoardSpaces.resolve(world, clicked);
         BlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof PartyController) {
-            // The board this controller plays: checked, the report in the chat
-            if (!isRepeat(player, pos, world.getTime())) {
-                BoardValidator.send(player, BoardValidator.check(world, pos));
-                if (world.getBlockEntity(pos) instanceof fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller)
-                    player.sendMessage(ControllerStartLinks.status(player, controller), false);
+            // Its screen, as an empty hand opens it (its board's state is in its Status tab)
+            if (!isRepeat(player, pos, world.getTime())
+                    && world.getBlockEntity(pos) instanceof fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller) {
+                player.openHandledScreen(controller);
+                ControllerStartLinks.dashboardOpened(player, controller);
             }
             return ActionResult.SUCCESS;
         }
@@ -104,6 +104,15 @@ public final class WrenchActions {
         }
         block.openContainerScreen(state, world, pos, player);
         return ActionResult.SUCCESS;
+    }
+
+    /**
+     * A block only the Wrench edits, used by {@code player} (server side) with an empty hand: « Edit it with the
+     * Wrench », in the action bar, to a player who may build (not to a party's adventure players).
+     */
+    public static void needsWrench(PlayerEntity player) {
+        if (player.getWorld().isClient || !player.getMainHandStack().isEmpty() || !player.canModifyBlocks() || player.isSpectator()) return;
+        player.sendMessage(Text.translatable("message.steveparty.wrench_required").formatted(Formatting.GOLD), true);
     }
 
     /** Runs a link edit, recording what it changes for undo (labelled by its last message); {@code tool}'s anchor too. */
