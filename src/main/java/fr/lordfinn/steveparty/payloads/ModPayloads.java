@@ -43,7 +43,7 @@ public class ModPayloads {
         c2s(HeldItemScrollPayload.ID, HeldItemScrollPayload.CODEC);
         c2s(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
         c2s(GoalPolePayload.ID, GoalPolePayload.CODEC);
-        c2s(CartridgeSlotScrollPayload.ID, CartridgeSlotScrollPayload.CODEC);
+        c2s(CartridgeGhostEditPayload.ID, CartridgeGhostEditPayload.CODEC);
         c2s(CartridgeSettingPayload.ID, CartridgeSettingPayload.CODEC);
         c2s(TokenSpellPayload.ID, TokenSpellPayload.CODEC);
         c2s(VillagerBlockPunchPayload.ID, VillagerBlockPunchPayload.CODEC);

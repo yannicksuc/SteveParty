@@ -13,14 +13,14 @@ import java.util.function.Consumer;
 import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
 
 /**
- * A « ghost » slot of the Inventory Cartridge: it holds a copy of an item with a quantity set with the mouse wheel,
- * given (positive) or taken (negative, {@link fr.lordfinn.steveparty.components.ModComponents#IS_NEGATIVE}), and never
- * consumes nor hands out a real item.
+ * A « ghost » slot of the Inventory Cartridge: it holds a copy of an item with a quantity ({@link #edit}: the − / +
+ * buttons of the menu, or the mouse wheel), given (positive) or taken (negative,
+ * {@link fr.lordfinn.steveparty.components.ModComponents#IS_NEGATIVE}), and never consumes nor hands out a real item.
  */
 public class GhostSlot extends Slot {
     public static final int MAX_COUNT = 1028;
     private final BooleanSupplier enabled;
-    /** Whether its item may be taken (negative) as well as given: otherwise the wheel stops at 1. */
+    /** Whether its item may be taken (negative) as well as given. */
     private final BooleanSupplier signed;
 
     public GhostSlot(Inventory inventory, int index, int x, int y, BooleanSupplier enabled) {
@@ -90,21 +90,40 @@ public class GhostSlot extends Slot {
         return !stack.contains(IS_NEGATIVE) || Boolean.FALSE.equals(stack.get(IS_NEGATIVE));
     }
 
-    /**
-     * One more / one less of the item, from one to a full stack of it (64, 16, 1...) given or taken: going under 1
-     * turns a given item into a taken one (and back), on a slot that may take; on one that only gives, it stops at 1.
-     */
-    public void onScroll(double amount) {
+    /** A change of a ghost slot's item: its quantity, or whether it is given or taken. */
+    public enum Edit {
+        /** {@code amount} more (less if negative), from one to a full stack of it, given or taken alike. */
+        STEP,
+        /** Given (green). */
+        GIVE,
+        /** Taken (red), on a slot that may take. */
+        TAKE
+    }
+
+    /** Whether its item may be taken (red) as well as given. */
+    public boolean signed() {
+        return signed.getAsBoolean();
+    }
+
+    /** Applies {@code edit} to its item (nothing on an empty slot, nor {@link Edit#TAKE} on a slot that only gives). */
+    public void edit(Edit edit, int amount) {
         ItemStack stack = this.getStack();
         if (stack.isEmpty()) return;
-        boolean positive = isPositive(stack);
-        int change = amount > 0 ? 1 : -1;
-        if (!positive) change = -change;
-        int max = maxQuantity(stack);
-        int count = Math.min(stack.getCount(), max) + change;
-        if (count <= 0 && !signed.getAsBoolean()) return;
-        if (count <= 0) stack.set(IS_NEGATIVE, positive);
-        else stack.setCount(Math.min(count, max));
+        switch (edit) {
+            case STEP -> {
+                int count = Math.clamp((long) Math.min(stack.getCount(), maxQuantity(stack)) + amount, 1, maxQuantity(stack));
+                if (count == stack.getCount()) return;
+                stack.setCount(count);
+            }
+            case GIVE -> {
+                if (isPositive(stack)) return;
+                stack.remove(IS_NEGATIVE);
+            }
+            case TAKE -> {
+                if (!isPositive(stack) || !signed()) return;
+                stack.set(IS_NEGATIVE, true);
+            }
+        }
         markDirty();
     }
 

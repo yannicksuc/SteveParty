@@ -29,8 +29,9 @@ public final class ContainersModule extends CartridgeModule {
 
     @Override
     public int height() {
-        // Its most rows: the storage, the full list, two per row, and the hint
-        return labelHeight() + (CartridgeContainers.MAX / PER_ROW + 2) * ROW_H;
+        // Its most rows: the storage, the full list, two per row, and the hint; under a title, the full list alone
+        // (the storage's line and the hint only while it has none)
+        return labelHeight() + (CartridgeContainers.MAX / PER_ROW + (labelKey() == null ? 2 : 0)) * ROW_H;
     }
 
     @Override

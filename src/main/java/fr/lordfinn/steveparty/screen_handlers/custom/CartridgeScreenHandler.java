@@ -173,9 +173,9 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
     }
 
     @Override
-    public void handleGhostScroll(PlayerEntity player, int slotIndex, int direction) {
-        if (!canUse(player) || !isGhost(slotIndex) || direction == 0 || !ref.mayEdit(player)) return;
-        ((GhostSlot) slots.get(slotIndex)).onScroll(direction);
+    public void handleGhostEdit(PlayerEntity player, int slotIndex, GhostSlot.Edit edit, int amount) {
+        if (!canUse(player) || !isGhost(slotIndex) || !ref.mayEdit(player)) return;
+        ((GhostSlot) slots.get(slotIndex)).edit(edit, amount);
     }
 
     @Override

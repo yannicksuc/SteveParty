@@ -131,8 +131,8 @@ public class InventoryCartridgeItem extends CartridgeItem implements ContainerCa
 
     private static final List<CartridgeModule> MODULES = List.of(
             new GhostSlotsModule("items", K + "items"),
-            // No title: its hint row says what it is, and it fits beside a tile with all its rows
-            new ContainersModule("chests", null),
+            // Its title's tooltip: the order (how to link: the hint row, while it has none)
+            new ContainersModule("chests", K + "chests").tipped(K + "chests.tooltip"),
             new ChoiceModule("mode", K + "mode",
                     List.of(new ChoiceModule.Option(K + "random", -1, "message.steveparty.button_state.random"),
                             new ChoiceModule.Option(K + "all", -1, "message.steveparty.button_state.all"),

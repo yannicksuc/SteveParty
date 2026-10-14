@@ -181,11 +181,11 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler impl
     }
 
     @Override
-    public void handleGhostScroll(PlayerEntity player, int slotIndex, int direction) {
+    public void handleGhostEdit(PlayerEntity player, int slotIndex, GhostSlot.Edit edit, int amount) {
         CartridgeRef ref = editedCartridge(player);
-        if (!canUse(player) || !isGhost(slotIndex) || direction == 0 || ref == null || !ref.mayEdit(player)
+        if (!canUse(player) || !isGhost(slotIndex) || ref == null || !ref.mayEdit(player)
                 || !slots.get(slotIndex).isEnabled()) return;
-        ((GhostSlot) slots.get(slotIndex)).onScroll(direction);
+        ((GhostSlot) slots.get(slotIndex)).edit(edit, amount);
     }
 
     @Override
