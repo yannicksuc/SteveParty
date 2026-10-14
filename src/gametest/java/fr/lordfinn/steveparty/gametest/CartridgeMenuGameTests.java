@@ -191,9 +191,10 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                 int rows = (ColorModule.DEFAULT + perRow) / perRow;
                 yield rows * ColorModule.SWATCH + (rows - 1) * ColorModule.GAP;
             }
+            // Signed: the chosen slot's editor beside the slots, a row each
             case GhostSlotsModule ghosts -> ghosts.signed()
-                    ? Math.max(54, 26 + 10 * lines(lang.get(CartridgeItem.MENU_KEY + "inventory.wheel").getAsString(), columnW - 60))
-                    : Math.max(ghosts.rows() * GhostSlotsModule.SLOT, 2 + 10 * lines(lang.get(ghosts.helpKey()).getAsString(), columnW - 60));
+                    ? ghosts.slotsHeight()
+                    : Math.max(ghosts.slotsHeight(), 2 + 10 * lines(lang.get(ghosts.helpKey()).getAsString(), columnW - GhostSlotsModule.SIDE_X));
             case InfoModule infoModule -> {
                 int width = columnW - (infoModule.hasIcon() ? InfoModule.ICON + 4 : 0), count = 0;
                 for (InfoModule.Line line : infoModule.content(info)) count += lines(resolve(line.text(), lang), width);
@@ -268,6 +269,14 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                                 for (ChoiceModule.Option option : choice.options()) {
                                     String text = translate(lang, option.key(), context);
                                     context.assertTrue(width(text) <= room, name + ": button « " + text + " » fits (" + width(text) + " > " + room + ")");
+                                }
+                            }
+                            if (module instanceof GhostSlotsModule ghostSlots && ghostSlots.signed()) {
+                                // Gives / Takes: two buttons side by side beside the slots
+                                int half = (moduleW - GhostSlotsModule.SIDE_X - 2) / 2;
+                                for (String side : List.of("give", "take")) {
+                                    String text = translate(lang, CartridgeItem.MENU_KEY + "inventory." + side, context);
+                                    context.assertTrue(width(text) <= half - 4, name + ": button « " + text + " » fits (" + width(text) + " > " + (half - 4) + ")");
                                 }
                             }
                             if (module instanceof OutcomeListModule) {
@@ -487,21 +496,31 @@ public class CartridgeMenuGameTests implements SteveGameTest {
             menu.onSlotClick(0, 0, SlotActionType.PICKUP, player);
             context.assertEquals(menu.getCursorStack().getCount(), 5, "the real diamonds stay on the cursor");
             menu.setCursorStack(ItemStack.EMPTY);
-            menu.handleGhostScroll(player, 0, 1);
-            menu.handleGhostScroll(player, 0, 1);
+            menu.handleGhostEdit(player, 0, GhostSlot.Edit.STEP, 1);
+            menu.handleGhostEdit(player, 0, GhostSlot.Edit.STEP, 1);
             ItemStack stored = cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(0);
             context.assertTrue(stored.isOf(Items.DIAMOND) && stored.getCount() == 3, "3 diamonds given, written in the cartridge: " + stored);
             // The wheel stops at a full stack, given or taken
-            for (int i = 0; i < 70; i++) menu.handleGhostScroll(player, 0, 1);
+            for (int i = 0; i < 70; i++) menu.handleGhostEdit(player, 0, GhostSlot.Edit.STEP, 1);
             stored = cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(0);
             context.assertEquals(stored.getCount(), 64, "at most 64 diamonds given");
-            for (int i = 0; i < 140; i++) menu.handleGhostScroll(player, 0, -1);
+            // Down to one, never turned into taken by the wheel: that is the take button
+            for (int i = 0; i < 70; i++) menu.handleGhostEdit(player, 0, GhostSlot.Edit.STEP, -1);
+            stored = cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(0);
+            context.assertTrue(GhostSlot.isPositive(stored) && stored.getCount() == 1, "the wheel stops at 1 diamond given: " + stored);
+            menu.handleGhostEdit(player, 0, GhostSlot.Edit.TAKE, 0);
+            menu.handleGhostEdit(player, 0, GhostSlot.Edit.STEP, 10);
+            stored = cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(0);
+            context.assertTrue(!GhostSlot.isPositive(stored) && stored.getCount() == 11, "11 diamonds taken (− / + by ten with Shift): " + stored);
+            menu.handleGhostEdit(player, 0, GhostSlot.Edit.STEP, 1000);
             stored = cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(0);
             context.assertTrue(!GhostSlot.isPositive(stored) && stored.getCount() == 64, "at most 64 diamonds taken: " + stored);
+            menu.handleGhostEdit(player, 0, GhostSlot.Edit.GIVE, 0);
+            context.assertTrue(GhostSlot.isPositive(cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(0)), "given again");
             menu.setCursorStack(new ItemStack(Items.ENDER_PEARL));
             menu.onSlotClick(1, 0, SlotActionType.PICKUP, player);
             menu.setCursorStack(ItemStack.EMPTY);
-            for (int i = 0; i < 20; i++) menu.handleGhostScroll(player, 1, 1);
+            for (int i = 0; i < 20; i++) menu.handleGhostEdit(player, 1, GhostSlot.Edit.STEP, 1);
             context.assertEquals(cartridge.get(ModComponents.INVENTORY_COMPONENT).getStack(1).getCount(), 16, "at most 16 pearls");
             player.currentScreenHandler = player.playerScreenHandler;
 

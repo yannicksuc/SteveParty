@@ -57,8 +57,8 @@ public class TrichaudronCartridgeItem extends CartridgeItem implements Container
             // No title: its two buttons say it (and it fits beside a tile)
             TRUE_CHOICE.choice("pick", null, ChoiceModule.Option.tipped(K + "blind"),
                     ChoiceModule.Option.tipped(K + "true_choice")),
-            // No title: its hint row says what it is; no description: it fits beside a tile with all its rows
-            new ContainersModule("chests", null));
+            // Titled as the Inventory Cartridge's, its tooltip the order (how to link: the hint row, while it has none)
+            new ContainersModule("chests", MENU_KEY + "inventory.chests").tipped(K + "chests.tooltip"));
 
     public TrichaudronCartridgeItem(Settings settings) {
         super(settings);

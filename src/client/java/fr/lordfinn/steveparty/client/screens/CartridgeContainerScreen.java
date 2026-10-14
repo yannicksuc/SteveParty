@@ -64,7 +64,10 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
                 handler::menuPos, handler::storage, () -> handler.syncId,
                 () -> handler.menuPos() != null && CartridgeRef.slot(handler.menuPos(), handler.getSelectedSlot()).mayEdit(inventory.player),
                 CartridgeLayout.MAX_CONTENT_BESIDE_TILE, 0, backgroundHeight) : null;
-        if (panel != null) panel.setStock(handler::shopStock);
+        if (panel != null) {
+            panel.setStock(handler::shopStock);
+            panel.setGhostHost(handler);
+        }
     }
 
     /** The block's part: its texture, the cable to the cartridge's menu and the menu. */
@@ -151,7 +154,6 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (panel != null) {
             double amount = verticalAmount + horizontalAmount;
-            if (CartridgeScreen.scrollGhost(handler.slots, handler.syncId, x, y, mouseX, mouseY, amount)) return true;
             if (panel.mouseScrolled(mouseX, mouseY, amount)) return true;
         }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
@@ -311,7 +313,7 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
             Slot slot = handler.slots.getFirst();
             PartyGui.ghostItem(context, ghost, x + slot.x, y + slot.y, null, emptySlotVeil());
         }
-        if (panel != null) CartridgePanel.drawGhostMarks(context, handler.slots, x, y);
+        if (panel != null) panel.drawGhostMarks(context, handler.slots, x, y);
         if (!hasPipette()) return;
         drawPipetteButton(context, mouseX, mouseY);
         if (pipetteOn) {

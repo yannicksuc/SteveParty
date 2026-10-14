@@ -5,7 +5,7 @@ import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.client.gui.cartridge.CartridgePanel;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
-import fr.lordfinn.steveparty.payloads.custom.CartridgeSlotScrollPayload;
+import fr.lordfinn.steveparty.payloads.custom.CartridgeGhostEditPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.GhostSlot;
 import java.util.List;
@@ -14,7 +14,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 
@@ -36,6 +35,7 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
                 fixed ? CartridgeLayout.MAX_CONTENT_WITH_INVENTORY : CartridgeLayout.MAX_CONTENT_ALONE,
                 fixed ? CartridgeLayout.SHELL_W_WITH_INVENTORY : 0, fixed ? CartridgeLayout.SHELL_H_WITH_INVENTORY : 0);
         panel.setStock(handler::shopStock);
+        panel.setGhostHost(handler);
     }
 
     /** With the inventory: the handler's fixed size (its slots); alone: the shell's own size, within the window. */
@@ -96,7 +96,7 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        CartridgePanel.drawGhostMarks(context, handler.slots, x, y);
+        panel.drawGhostMarks(context, handler.slots, x, y);
         if (!panel.renderTooltip(context, mouseX, mouseY)) drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
@@ -109,7 +109,6 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         double amount = verticalAmount + horizontalAmount;
-        if (scrollGhost(handler.slots, handler.syncId, x, y, mouseX, mouseY, amount)) return true;
         if (panel.mouseScrolled(mouseX, mouseY, amount)) return true;
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
@@ -120,16 +119,16 @@ public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
         HandCursor.reset();
     }
 
-    /** The wheel over a ghost slot: its quantity (predicted here, applied by the server). */
+    /** The wheel over a ghost slot of a screen without a cartridge's menu (a stall's offers): its quantity, predicted here. */
     static boolean scrollGhost(List<Slot> slots, int syncId, int originX, int originY, double mouseX, double mouseY, double amount) {
         if (amount == 0) return false;
         for (Slot slot : slots) {
             if (!(slot instanceof GhostSlot ghost) || !slot.isEnabled()) continue;
             if (mouseX < originX + slot.x - 1 || mouseX >= originX + slot.x + 17 || mouseY < originY + slot.y - 1 || mouseY >= originY + slot.y + 17) continue;
-            ItemStack stack = slot.getStack();
-            if (stack.isEmpty()) return true;
-            ghost.onScroll(amount);
-            ClientPlayNetworking.send(CartridgeSlotScrollPayload.fromScroll(syncId, slot.id, amount));
+            if (slot.getStack().isEmpty()) return true;
+            int step = amount > 0 ? 1 : -1;
+            ghost.edit(GhostSlot.Edit.STEP, step);
+            ClientPlayNetworking.send(new CartridgeGhostEditPayload(syncId, slot.id, GhostSlot.Edit.STEP, step));
             return true;
         }
         return false;

@@ -144,8 +144,8 @@ public class ShopCartridgeStallGameTests implements SteveGameTest {
             context.assertEquals(stall.getCursorStack().getCount(), 4, "a ghost copy: nothing taken");
             stall.setCursorStack(new ItemStack(Items.EMERALD));
             stall.onSlotClick(ShopCartridgeItem.slot(5, ShopCartridgeItem.ROW_PRICE), 0, SlotActionType.PICKUP, player);
-            stall.handleGhostScroll(player, ShopCartridgeItem.slot(5, ShopCartridgeItem.ROW_PRICE), 1);
-            stall.handleGhostScroll(player, ShopCartridgeItem.slot(5, ShopCartridgeItem.ROW_PRICE), 1);
+            stall.handleGhostEdit(player, ShopCartridgeItem.slot(5, ShopCartridgeItem.ROW_PRICE), GhostSlot.Edit.STEP, 1);
+            stall.handleGhostEdit(player, ShopCartridgeItem.slot(5, ShopCartridgeItem.ROW_PRICE), GhostSlot.Edit.STEP, 1);
             stall.setCursorStack(ItemStack.EMPTY);
 
             InventoryComponent stored = cartridge.get(ModComponents.INVENTORY_COMPONENT);

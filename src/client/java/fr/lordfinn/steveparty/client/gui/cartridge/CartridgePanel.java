@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.gui.cartridge;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
+import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.LinksHelp;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -25,6 +26,7 @@ import fr.lordfinn.steveparty.client.gui.HandCursor;
 import fr.lordfinn.steveparty.client.gui.StallArt;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.payloads.custom.CartridgeGhostEditPayload;
 import fr.lordfinn.steveparty.payloads.custom.CartridgeSettingPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GhostSlot;
 import fr.lordfinn.steveparty.utils.Argb;
@@ -41,7 +43,9 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
@@ -54,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
@@ -129,6 +134,10 @@ public final class CartridgePanel {
     /** The width the ghost slots' help is wrapped at. */
     private int ghostHelpW;
     private String giveText = "", takeText = "";
+    /** The screen's handler, whose ghost slots the ghost slots' module edits; null: none (see {@link #setGhostHost}). */
+    private @Nullable ScreenHandler ghostHost;
+    /** The ghost slot chosen (its index among the ghost slots), -1: the first with an item. */
+    private int selectedGhost = -1;
     /** The storage the containers' module was laid out for, null without such a module. */
     private @Nullable CartridgeContainers.Storage shownStorage;
     private int infoTicks;
@@ -199,6 +208,11 @@ public final class CartridgePanel {
         this.slotPower = slotPower;
     }
 
+    /** The handler holding the ghost slots (the Inventory Cartridge's): its menu then edits them. */
+    public void setGhostHost(ScreenHandler handler) {
+        this.ghostHost = handler;
+    }
+
     public int width() {
         return Math.max(minWidth, layout.width());
     }
@@ -221,6 +235,7 @@ public final class CartridgePanel {
         sparkStart = new long[n];
         flashStart = new long[n];
         scroll = 0;
+        selectedGhost = -1;
         infoTicks = INFO_REFRESH_TICKS;
         openedAt = Util.getMeasuringTimeMs();
         outcomeList = null;
@@ -266,9 +281,6 @@ public final class CartridgePanel {
         return Math.max(1, (columnW + ColorModule.GAP) / (ColorModule.SWATCH + ColorModule.GAP));
     }
 
-    private int ghostHelpX() {
-        return GhostSlotsModule.COLUMNS * GhostSlotsModule.SLOT + 6;
-    }
 
     /** Measures every text with the font, gives each module its height, and lays the modules out in the place given. */
     private void relayout(ItemStack current) {
@@ -305,7 +317,7 @@ public final class CartridgePanel {
                     infoLines.set(i, hint);
                     yield Math.max(BlockSlotModule.SLOT, (1 + hint.size()) * InfoModule.LINE_H);
                 }
-                case ContainersModule containers -> containersHeight(current);
+                case ContainersModule containers -> containersHeight(current, containers);
                 case ColorModule color -> {
                     int rows = (ColorModule.DEFAULT + colorsPerRow()) / colorsPerRow();
                     yield rows * ColorModule.SWATCH + (rows - 1) * ColorModule.GAP;
@@ -314,11 +326,10 @@ public final class CartridgePanel {
                     String k = CartridgeItem.MENU_KEY + "inventory.";
                     giveText = I18n.translate(k + "give");
                     takeText = I18n.translate(k + "take");
-                    // Slots that only give (a Trichaudron's prizes): their own help, no give / take legend
-                    ghostHelpW = Math.max(40, columnW - ghostHelpX());
-                    ghostHelp = textRenderer.wrapLines(Text.translatable(ghosts.signed() ? k + "wheel" : ghosts.helpKey()), ghostHelpW);
-                    int legend = ghosts.signed() ? 26 : 2;
-                    yield Math.max(ghosts.rows() * GhostSlotsModule.SLOT, legend + ghostHelp.size() * InfoModule.LINE_H);
+                    // Slots that give or take: the chosen slot's editor beside them; that only give (a Trichaudron's prizes): their own help
+                    ghostHelpW = Math.max(40, columnW - GhostSlotsModule.SIDE_X);
+                    ghostHelp = ghosts.signed() ? List.of() : textRenderer.wrapLines(Text.translatable(ghosts.helpKey()), ghostHelpW);
+                    yield Math.max(ghosts.slotsHeight(), 2 + ghostHelp.size() * InfoModule.LINE_H);
                 }
                 case InfoModule info -> {
                     int width = columnW - (info.hasIcon() ? InfoModule.ICON + 4 : 0);
@@ -564,6 +575,9 @@ public final class CartridgePanel {
         return I18n.hasTranslation(key) ? I18n.translate(key) : name;
     }
 
+    /** The mod's (i) ({@link ConsolePaint#infoButton}), at the end of a title with a tooltip. */
+    private static final int INFO_MARK = 12;
+
     private void drawLabel(DrawContext context, ItemStack current, int w, int mouseX, int mouseY) {
         int sx = x + 6, sy = y + 5, sw = w - 12, sh = 20;
         CartridgeItem cartridge = CartridgeMenus.cartridge(current);
@@ -619,6 +633,11 @@ public final class CartridgePanel {
             context.fill(mx - 1, my, mx + numberWidth + 2, my + 9, chipColor);
             UiText.line(context, textRenderer, number, mx + 1, my + 1, numberWidth, flash > 0.5F ? 0xFF3B2600 : (enabled ? CHIP_TEXT : LABEL_OFF), false);
             int lx = mx + numberWidth + 5, room = layout.w(i) - (lx - mx);
+            // A title with a tooltip: an (i) at the end of its line says there is more under the mouse
+            if (!module.tooltipKeys().isEmpty()) {
+                ConsolePaint.infoButton(context, mx + layout.w(i) - INFO_MARK, my - 1);
+                room -= INFO_MARK + 3;
+            }
             // An inline module next: its title takes the right of the line
             if (i + 1 < modules.size() && modules.get(i + 1).inline() && labels[i + 1] != null) room -= inlineTitleW(i + 1) + 6;
             // A choice of colours: its title names the one chosen (« Réseau : violet »)
@@ -649,11 +668,11 @@ public final class CartridgePanel {
             case ChoiceModule choice -> drawChoice(context, current, i, choice, mx, top, mouseX, mouseY, enabled && editable);
             case NumberModule number -> drawNumber(context, current, i, number, mx, top, mouseX, mouseY, editable);
             case ColorModule color -> drawColors(context, current, i, color, mx, top, mouseX, mouseY, editable);
-            case GhostSlotsModule ghosts -> drawGhostSlots(context, ghosts, mx, my);
+            case GhostSlotsModule ghosts -> drawGhostSlots(context, ghosts, mx, my, mouseX, mouseY, editable);
             case StallOffersModule stall -> drawStall(context, current, mx, top, mouseX, mouseY, editable);
             case BlockSlotModule slot -> drawBlockSlot(context, current, i, slot, mx, top, mouseX, mouseY, editable);
             case InfoModule info -> drawInfo(context, current, i, info, mx, top);
-            case ContainersModule containers -> drawContainers(context, current, mx, top, mouseX, mouseY, editable);
+            case ContainersModule containers -> drawContainers(context, current, containers, mx, top, mouseX, mouseY, editable);
             case OutcomeListModule list -> {
                 if (outcomeList != null) outcomeList.render(context, current, mx, top, layout.w(i), mouseX, mouseY, editable);
             }
@@ -827,19 +846,224 @@ public final class CartridgePanel {
         }
     }
 
-    private void drawGhostSlots(DrawContext context, GhostSlotsModule ghosts, int mx, int my) {
-        for (int s = 0; s < ghosts.count(); s++) PartyGui.slot(context, mx + ghosts.slotX(s), my + ghosts.slotY(s));
-        // On the right of the slots: green gives, red takes, then how to set the quantity
-        int tx = mx + ghostHelpX(), ty = my + CartridgeModule.LABEL_H + 2, room = columnW - ghostHelpX() - 8;
-        if (!ghosts.signed()) {
-            for (int l = 0; l < ghostHelp.size(); l++) UiText.line(context, textRenderer, ghostHelp.get(l), tx, ty + l * InfoModule.LINE_H, ghostHelpW, TONE_SOFT, false);
+    private void drawGhostSlots(DrawContext context, GhostSlotsModule ghosts, int mx, int my, int mouseX, int mouseY, boolean editable) {
+        for (int s = 0; s < ghosts.count(); s++) PartyGui.slot(context, mx + ghosts.slotX(s), my + ghosts.slotY(s), WELL, WELL);
+        if (ghosts.signed()) {
+            drawGhostEditor(context, ghosts, mx, my, mouseX, mouseY, editable);
             return;
         }
-        context.fill(tx, ty + 1, tx + 5, ty + 6, 0xFF46AE2E);
-        UiText.line(context, textRenderer, giveText, tx + 8, ty, room, TONE_NORMAL, false);
-        context.fill(tx, ty + 12, tx + 5, ty + 17, 0xFFD9283B);
-        UiText.line(context, textRenderer, takeText, tx + 8, ty + 11, room, TONE_NORMAL, false);
-        for (int l = 0; l < ghostHelp.size(); l++) UiText.line(context, textRenderer, ghostHelp.get(l), tx, ty + 24 + l * InfoModule.LINE_H, ghostHelpW, TONE_SOFT, false);
+        // Slots that only give: their help on the right
+        int tx = mx + GhostSlotsModule.SIDE_X, ty = my + CartridgeModule.LABEL_H + 2;
+        for (int l = 0; l < ghostHelp.size(); l++) UiText.line(context, textRenderer, ghostHelp.get(l), tx, ty + l * InfoModule.LINE_H, ghostHelpW, TONE_SOFT, false);
+    }
+
+    // ------------------------------------------------------------------ the chosen ghost slot's editor
+
+    private static final int GIVE = 0xFF46AE2E, TAKE = 0xFFD9283B, EDIT_H = 16;
+    /** The slots: darker than the shell's screen, sunk in it by their darkness only (the ground of the editor's boxes). */
+    private static final int WELL = BODY;
+    /** The editor's parts: give, take, −, +, empty the slot, the quantity's box. */
+    private static final int E_GIVE = 0, E_TAKE = 1, E_MINUS = 2, E_PLUS = 3, E_CLEAR = 4, E_FIGURE = 5;
+    /** The bin of the button that empties a slot, 8 x 8. */
+    private static final String[] BIN = {"..####..", "########", "........", ".######.", ".#.##.#.", ".#.##.#.", ".#.##.#.", ".######."};
+
+    /** The ghost slots of the screen, in their order (the module's slot {@code s} is the {@code s}-th). */
+    private List<GhostSlot> ghostSlots() {
+        if (ghostHost == null) return List.of();
+        List<GhostSlot> ghosts = new ArrayList<>(GhostSlotsModule.COUNT);
+        for (Slot slot : ghostHost.slots) if (slot instanceof GhostSlot ghost) ghosts.add(ghost);
+        return ghosts;
+    }
+
+    /** The slot the editor shows: the one chosen while it holds an item, else the first that holds one; null: none. */
+    private @Nullable GhostSlot chosenGhost(GhostSlotsModule ghosts) {
+        List<GhostSlot> slots = ghostSlots();
+        int count = Math.min(ghosts.count(), slots.size());
+        if (selectedGhost >= 0 && selectedGhost < count && slots.get(selectedGhost).isEnabled() && slots.get(selectedGhost).hasStack()) {
+            return slots.get(selectedGhost);
+        }
+        for (int s = 0; s < count; s++) {
+            if (slots.get(s).isEnabled() && slots.get(s).hasStack()) return slots.get(s);
+        }
+        return null;
+    }
+
+    /** The ghost slot under the mouse (its index), -1 for none. */
+    private static int ghostAt(GhostSlotsModule ghosts, int mx, int my, double mouseX, double mouseY) {
+        for (int s = 0; s < ghosts.count(); s++) {
+            if (HitArea.contains(mouseX, mouseY, mx + ghosts.slotX(s) - 2, my + ghosts.slotY(s) - 2, GhostSlotsModule.SLOT, GhostSlotsModule.SLOT)) return s;
+        }
+        return -1;
+    }
+
+    /** A part of the editor, {x, y, w} ({@link #EDIT_H} high), each row on a row of slots: gives / takes, − n +, name ×. */
+    private int[] editorPart(GhostSlotsModule ghosts, int mx, int my, int part) {
+        // Every row as wide as gives + takes: − and + at its ends (+ over ×), the quantity's box between them
+        int ex = mx + GhostSlotsModule.SIDE_X, half = (columnW - GhostSlotsModule.SIDE_X - 2) / 2, ew = 2 * half + 2;
+        int row = part == E_GIVE || part == E_TAKE ? 0 : part == E_CLEAR ? 2 : 1;
+        int ey = my + ghosts.slotY(row * GhostSlotsModule.COLUMNS);
+        return switch (part) {
+            case E_GIVE -> new int[]{ex, ey, half};
+            case E_TAKE -> new int[]{ex + half + 2, ey, half};
+            case E_MINUS -> new int[]{ex, ey, STEP_W};
+            case E_PLUS -> new int[]{ex + ew - STEP_W, ey, STEP_W};
+            case E_FIGURE -> new int[]{ex + STEP_W + 2, ey, ew - 2 * STEP_W - 4};
+            default -> new int[]{ex + ew - STEP_W, ey, STEP_W};
+        };
+    }
+
+    private boolean overPart(GhostSlotsModule ghosts, int mx, int my, int part, double mouseX, double mouseY) {
+        int[] at = editorPart(ghosts, mx, my, part);
+        return HitArea.contains(mouseX, mouseY, at[0], at[1], at[2], EDIT_H);
+    }
+
+    /**
+     * Beside the slots, row by row: gives / takes (green / red), − its quantity +, its name and a button that empties
+     * it. Greyed while no slot holds an item.
+     */
+    private void drawGhostEditor(DrawContext context, GhostSlotsModule ghosts, int mx, int my, int mouseX, int mouseY, boolean editable) {
+        GhostSlot slot = chosenGhost(ghosts);
+        ItemStack item = slot == null ? ItemStack.EMPTY : slot.getStack();
+        boolean active = editable && slot != null, taken = slot != null && !GhostSlot.isPositive(item);
+        sideButton(context, editorPart(ghosts, mx, my, E_GIVE), giveText, GIVE, slot != null && !taken, active,
+                active && overPart(ghosts, mx, my, E_GIVE, mouseX, mouseY));
+        sideButton(context, editorPart(ghosts, mx, my, E_TAKE), takeText, TAKE, slot != null && taken, active,
+                active && overPart(ghosts, mx, my, E_TAKE, mouseX, mouseY));
+        int count = slot == null ? 0 : item.getCount(), max = slot == null ? 0 : GhostSlot.maxQuantity(item);
+        int[] minus = editorPart(ghosts, mx, my, E_MINUS), plus = editorPart(ghosts, mx, my, E_PLUS), clear = editorPart(ghosts, mx, my, E_CLEAR);
+        editButton(context, minus, E_MINUS, active && count > 1, overPart(ghosts, mx, my, E_MINUS, mouseX, mouseY));
+        editButton(context, plus, E_PLUS, active && count < max, overPart(ghosts, mx, my, E_PLUS, mouseX, mouseY));
+        // The quantity, between − and +: as the side's button not chosen (its edge, its ground, its text and shadow)
+        int[] box = editorPart(ghosts, mx, my, E_FIGURE);
+        int side = taken ? TAKE : GIVE;
+        outlined(context, box, slot == null ? 0xFF3A3A3A : side, BODY);
+        String figure = slot == null ? "–" : Integer.toString(count);
+        UiText.centered(context, textRenderer, figure, box[0] + 1, box[1] + 4, box[2] - 2, slot == null ? LABEL_OFF : Argb.lighten(side, 0.35F), slot != null);
+        // Its name, then the button that empties it
+        if (slot != null) {
+            UiText.line(context, textRenderer, item.getName().getString(), minus[0], clear[1] + 4, clear[0] - minus[0] - 3, TONE_NORMAL, false);
+        }
+        editButton(context, clear, E_CLEAR, active, active && overPart(ghosts, mx, my, E_CLEAR, mouseX, mouseY));
+    }
+
+    /** Gives / takes: the side chosen filled with its colour, the other only outlined with it. */
+    private void sideButton(DrawContext context, int[] at, String text, int color, boolean chosen, boolean active, boolean hovered) {
+        int bx = at[0], by = at[1], bw = at[2];
+        if (chosen) {
+            PartyGui.button(context, bx, by, bw, EDIT_H, new PartyGui.Theme(Argb.darken(color, 0.6F), Argb.lighten(color, 0.4F), color, Argb.darken(color, 0.35F)), false);
+            UiText.centered(context, textRenderer, text, bx + 1, by + 4, bw - 2, 0xFFFFFFFF, true);
+            return;
+        }
+        outlined(context, at, active ? color : 0xFF3A3A3A, hovered ? 0xFF3A3A3A : BODY);
+        UiText.centered(context, textRenderer, text, bx + 1, by + 4, bw - 2, active ? Argb.lighten(color, 0.35F) : LABEL_OFF, active);
+    }
+
+    /** A box of the editor ({x, y, w}) outlined in {@code edge}, its corners cut, filled with {@code fill}. */
+    private static void outlined(DrawContext context, int[] at, int edge, int fill) {
+        int bx = at[0], by = at[1], bw = at[2];
+        context.fill(bx + 1, by, bx + bw - 1, by + EDIT_H, edge);
+        context.fill(bx, by + 1, bx + bw, by + EDIT_H - 1, edge);
+        context.fill(bx + 1, by + 1, bx + bw - 1, by + EDIT_H - 1, fill);
+    }
+
+    private void editButton(DrawContext context, int[] at, int part, boolean active, boolean hovered) {
+        int bx = at[0], by = at[1], bw = at[2];
+        PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
+        PartyGui.button(context, bx, by, bw, EDIT_H, theme, false);
+        int color = active ? PartyGui.TEXT_DARK : 0xFF7A7A7A;
+        switch (part) {
+            case E_MINUS -> ButtonGlyphs.minus(context, bx, by, bw, EDIT_H, color);
+            case E_PLUS -> ButtonGlyphs.plus(context, bx, by, bw, EDIT_H, color);
+            default -> ConsolePaint.pattern(context, "bin" + Integer.toHexString(color), BIN, Map.of('#', color), bx + (bw - 8) / 2, by + (EDIT_H - 8) / 2);
+        }
+    }
+
+    /** How much − / + or a wheel notch changes a ghost slot's quantity: one, ten with Shift. */
+    private static int ghostStep() {
+        return Screen.hasShiftDown() ? 10 : 1;
+    }
+
+    /** Changes a ghost slot: at once here (predicted), then on the server, which writes it in the cartridge. */
+    private void editGhost(int module, GhostSlot slot, GhostSlot.Edit edit, int amount) {
+        if (ghostHost == null) return;
+        slot.edit(edit, amount);
+        ClientPlayNetworking.send(new CartridgeGhostEditPayload(ghostHost.syncId, slot.id, edit, amount));
+        sparkStart[module] = Util.getMeasuringTimeMs();
+        click();
+    }
+
+    /**
+     * A left click on the ghost slots' module: on a slot holding an item with nothing on the cursor, it chooses it (it
+     * no longer empties it: the editor's × does, or a right click); an item on the cursor goes in the slot (the screen's
+     * click) and the slot is chosen; on the editor, its buttons.
+     */
+    private boolean ghostClicked(double mouseX, double mouseY) {
+        int i = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
+        if (i < 0 || ghostHost == null || !(modules.get(i) instanceof GhostSlotsModule ghosts) || !ghosts.signed()) return false;
+        int mx = x + layout.x(i), my = moduleY(i);
+        int s = ghostAt(ghosts, mx, my, mouseX, mouseY);
+        List<GhostSlot> slots = ghostSlots();
+        if (s >= 0 && s < slots.size()) {
+            boolean empty = cursor().isEmpty();
+            if (!empty) selectedGhost = s;
+            if (!empty || !slots.get(s).hasStack()) return false;
+            if (chosenGhost(ghosts) != slots.get(s)) click();
+            selectedGhost = s;
+            return true;
+        }
+        GhostSlot slot = chosenGhost(ghosts);
+        if (slot == null || !canEdit.getAsBoolean()) return false;
+        ItemStack item = slot.getStack();
+        if (overPart(ghosts, mx, my, E_GIVE, mouseX, mouseY)) {
+            if (!GhostSlot.isPositive(item)) editGhost(i, slot, GhostSlot.Edit.GIVE, 0);
+            return true;
+        }
+        if (overPart(ghosts, mx, my, E_TAKE, mouseX, mouseY)) {
+            if (GhostSlot.isPositive(item)) editGhost(i, slot, GhostSlot.Edit.TAKE, 0);
+            return true;
+        }
+        if (overPart(ghosts, mx, my, E_MINUS, mouseX, mouseY)) {
+            if (item.getCount() > 1) editGhost(i, slot, GhostSlot.Edit.STEP, -ghostStep());
+            return true;
+        }
+        if (overPart(ghosts, mx, my, E_PLUS, mouseX, mouseY)) {
+            if (item.getCount() < GhostSlot.maxQuantity(item)) editGhost(i, slot, GhostSlot.Edit.STEP, ghostStep());
+            return true;
+        }
+        if (overPart(ghosts, mx, my, E_CLEAR, mouseX, mouseY)) {
+            // As a click on the slot with nothing on the cursor: the server empties it
+            if (cursor().isEmpty() && client.interactionManager != null && client.player != null) {
+                client.interactionManager.clickSlot(ghostHost.syncId, slot.id, 0, SlotActionType.PICKUP, client.player);
+                sparkStart[i] = Util.getMeasuringTimeMs();
+                click();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /** The wheel over a ghost slot holding an item (chooses it) or the quantity's box: one more / one less (ten with Shift). */
+    private boolean ghostScrolled(double mouseX, double mouseY, double amount) {
+        int i = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
+        if (i < 0 || ghostHost == null || !(modules.get(i) instanceof GhostSlotsModule ghosts)) return false;
+        int mx = x + layout.x(i), my = moduleY(i);
+        int s = ghostAt(ghosts, mx, my, mouseX, mouseY);
+        List<GhostSlot> slots = ghostSlots();
+        GhostSlot slot;
+        if (s >= 0 && s < slots.size()) {
+            slot = slots.get(s);
+        } else {
+            // The quantity's box: the slot it shows
+            if (!ghosts.signed() || !overPart(ghosts, mx, my, E_FIGURE, mouseX, mouseY)) return false;
+            slot = chosenGhost(ghosts);
+            if (slot == null) return true;
+            s = slots.indexOf(slot);
+        }
+        if (!slot.isEnabled() || !slot.hasStack() || !canEdit.getAsBoolean()) return true;
+        selectedGhost = s;
+        int before = slot.getStack().getCount(), step = amount > 0 ? ghostStep() : -ghostStep();
+        if (Math.clamp(before + step, 1, GhostSlot.maxQuantity(slot.getStack())) != before) editGhost(i, slot, GhostSlot.Edit.STEP, step);
+        return true;
     }
 
     // ------------------------------------------------------------------ the Shop Cartridge's small stall
@@ -1043,10 +1267,18 @@ public final class CartridgePanel {
     }
 
     /** The module's height: the storage, its containers two per row, then the hint (how to link: the command). */
-    private int containersHeight(ItemStack current) {
+    private int containersHeight(ItemStack current, ContainersModule module) {
         int count = rows(current).size();
         shownStorage = storage(count);
-        return (1 + containersBody(count) + 1) * ContainersModule.ROW_H;
+        return (containersBody(count) + (bare(module, count) ? 0 : 2)) * ContainersModule.ROW_H;
+    }
+
+    /**
+     * Under a title (its tooltip says the order) with containers: only their rows, the title and the numbers say what
+     * they are. Otherwise the storage's line above them and the hint (how to link) under them.
+     */
+    private static boolean bare(CartridgeModule module, int count) {
+        return module.labelKey() != null && count > 0;
     }
 
     /** The rows of its containers, two per row. */
@@ -1072,9 +1304,9 @@ public final class CartridgePanel {
         return mx + (index % ContainersModule.PER_ROW) * (cellW() + 2);
     }
 
-    /** Under the storage's line. */
-    private static int cellY(int top, int index) {
-        return top + (1 + index / ContainersModule.PER_ROW) * ContainersModule.ROW_H;
+    /** Under the storage's line (at the top when {@link #bare}). */
+    private static int cellY(int top, int index, boolean bare) {
+        return top + ((bare ? 0 : 1) + index / ContainersModule.PER_ROW) * ContainersModule.ROW_H;
     }
 
     /** The x of a cell's button: « earlier in the order », then remove at the cell's right end. */
@@ -1083,7 +1315,7 @@ public final class CartridgePanel {
         return op == ContainersModule.REMOVE ? right : right - ROW_BUTTON - 1;
     }
 
-    private void drawContainers(DrawContext context, ItemStack current, int mx, int top, int mouseX, int mouseY, boolean editable) {
+    private void drawContainers(DrawContext context, ItemStack current, ContainersModule module, int mx, int top, int mouseX, int mouseY, boolean editable) {
         List<ContainerRow> rows = rows(current);
         // First, where the items come from: green, it has a storage; red, none
         CartridgeContainers.Storage now = storage(rows.size());
@@ -1093,11 +1325,12 @@ public final class CartridgePanel {
             case PARTY_CONTROLLER -> I18n.translate(CartridgeItem.MENU_KEY + "storage.party");
             case NONE -> I18n.translate(CartridgeItem.MENU_KEY + "storage.none");
         };
-        UiText.line(context, textRenderer, title, mx, top + 1, columnW, now == CartridgeContainers.Storage.NONE ? TONE_BAD : TONE_GOOD, false);
+        boolean bare = bare(module, rows.size());
+        if (!bare) UiText.line(context, textRenderer, title, mx, top + 1, columnW, now == CartridgeContainers.Storage.NONE ? TONE_BAD : TONE_GOOD, false);
         int buttons = editable ? 2 * (ROW_BUTTON + 1) : 0;
         for (int r = 0; r < rows.size(); r++) {
             ContainerRow row = rows.get(r);
-            int cx = cellX(mx, r), cy = cellY(top, r);
+            int cx = cellX(mx, r), cy = cellY(top, r, bare);
             String number = Integer.toString(r + 1);
             int numberWidth = textRenderer.getWidth(number);
             context.fill(cx, cy, cx + numberWidth + 3, cy + 9, CHIP);
@@ -1109,6 +1342,7 @@ public final class CartridgePanel {
             rowButton(context, rowButtonX(mx, r, ContainersModule.REMOVE), cy, "×", true, mouseX, mouseY);
         }
         // How to link, under the list: a click shows it in the chat
+        if (bare) return;
         int hintY = containersHintY(top, rows.size());
         boolean hintHovered = HitArea.contains(mouseX, mouseY, mx, hintY, columnW, ContainersModule.ROW_H);
         UiText.line(context, textRenderer, containersHint(rows.size()), mx, hintY + 1, columnW, hintHovered ? LinksHelp.HOVER_COLOR : TONE_SOFT, false);
@@ -1123,23 +1357,63 @@ public final class CartridgePanel {
         else ButtonGlyphs.left(context, bx, ry, ROW_BUTTON, ROW_BUTTON, color);
     }
 
-    /** The give / take marks of the ghost slots (a green or red frame), over their items. */
-    public static void drawGhostMarks(DrawContext context, List<Slot> slots, int originX, int originY) {
+    /**
+     * The give / take marks of the ghost slots (a green or red frame), over their items; the slot the editor shows
+     * framed in white around it.
+     */
+    public void drawGhostMarks(DrawContext context, List<Slot> slots, int originX, int originY) {
+        int i = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
+        GhostSlot chosen = i >= 0 && modules.get(i) instanceof GhostSlotsModule ghosts && ghosts.signed() ? chosenGhost(ghosts) : null;
         for (Slot slot : slots) {
             if (!(slot instanceof GhostSlot) || !slot.isEnabled() || !slot.hasStack()) continue;
-            int color = GhostSlot.isPositive(slot.getStack()) ? 0xFF46AE2E : 0xFFD9283B;
+            int color = GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE;
             int sx = originX + slot.x, sy = originY + slot.y;
             context.getMatrices().push();
-            context.getMatrices().translate(0, 0, 300);
-            context.fill(sx - 1, sy - 1, sx + 17, sy, color);
-            context.fill(sx - 1, sy + 16, sx + 17, sy + 17, color);
-            context.fill(sx - 1, sy, sx, sy + 16, color);
-            context.fill(sx + 16, sy, sx + 17, sy + 16, color);
+            // Over the item and its count (the count's shadow reaches the ring)
+            context.getMatrices().translate(0, 0, 400);
+            // Hugging the slot's rounded shape (its cut corners included); the chosen one also ringed in white around it
+            ring(context, sx - 1, sy - 1, 18, 2, color);
+            // The count's shadow reaches past the slot's bottom right corner: the ground there again, outside the ring
+            context.fill(sx + 16, sy + 15, sx + 17, sy + 17, SCREEN);
+            context.fill(sx + 15, sy + 16, sx + 16, sy + 17, SCREEN);
+            if (slot == chosen) ring(context, sx - 2, sy - 2, 20, 3, 0xFFFFFFFF);
             context.getMatrices().pop();
         }
     }
 
+    /**
+     * A 1 px ring {@code size} wide whose corners are cut by {@code cut} pixels: cut 1 follows a slot's own edge from
+     * inside, cut 2 its outside, the slot's cut corner pixel included (nothing of the background shows between them).
+     */
+    private static void ring(DrawContext context, int fx, int fy, int size, int cut, int color) {
+        int end = fx + size, bottom = fy + size;
+        context.fill(fx + cut, fy, end - cut, fy + 1, color);
+        context.fill(fx + cut, bottom - 1, end - cut, bottom, color);
+        context.fill(fx, fy + cut, fx + 1, bottom - cut, color);
+        context.fill(end - 1, fy + cut, end, bottom - cut, color);
+        // The diagonal steps of the corners
+        for (int d = 1; d < cut; d++) {
+            context.fill(fx + d, fy + cut - d, fx + d + 1, fy + cut - d + 1, color);
+            context.fill(end - 1 - d, fy + cut - d, end - d, fy + cut - d + 1, color);
+            context.fill(fx + d, bottom - 1 - cut + d, fx + d + 1, bottom - cut + d, color);
+            context.fill(end - 1 - d, bottom - 1 - cut + d, end - d, bottom - cut + d, color);
+        }
+    }
+
     // ------------------------------------------------------------------ tooltips
+
+    /** The editor's buttons: − / + say Shift steps by ten, × what it does. */
+    private boolean drawGhostTooltip(DrawContext context, int mouseX, int mouseY) {
+        int i = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
+        if (i < 0 || !(modules.get(i) instanceof GhostSlotsModule ghosts) || !ghosts.signed() || !canEdit.getAsBoolean()
+                || chosenGhost(ghosts) == null) return false;
+        int mx = x + layout.x(i), my = moduleY(i);
+        String key = overPart(ghosts, mx, my, E_MINUS, mouseX, mouseY) || overPart(ghosts, mx, my, E_PLUS, mouseX, mouseY) ? "inventory.shift"
+                : overPart(ghosts, mx, my, E_CLEAR, mouseX, mouseY) ? "inventory.clear" : null;
+        if (key == null) return false;
+        context.drawTooltip(textRenderer, Text.translatable(CartridgeItem.MENU_KEY + key), mouseX, mouseY);
+        return true;
+    }
 
     public boolean renderTooltip(DrawContext context, int mouseX, int mouseY) {
         // Its own tooltip is the one shown, not the whole text of a scrolling line under it
@@ -1150,6 +1424,7 @@ public final class CartridgePanel {
 
     private boolean drawTooltip(DrawContext context, int mouseX, int mouseY) {
         if (!inContent(mouseY)) return false;
+        if (drawGhostTooltip(context, mouseX, mouseY)) return true;
         ItemStack current = stack.get();
         for (int i = 0; i < modules.size(); i++) {
             CartridgeModule module = modules.get(i);
@@ -1177,7 +1452,7 @@ public final class CartridgePanel {
             } else if (module instanceof ContainersModule) {
                 List<ContainerRow> rows = rows(current);
                 for (int r = 0; r < rows.size(); r++) {
-                    int cy = cellY(top, r);
+                    int cy = cellY(top, r, bare(module, rows.size()));
                     if (canEdit.getAsBoolean()) {
                         for (int op : new int[]{ContainersModule.UP, ContainersModule.REMOVE}) {
                             if (!HitArea.contains(mouseX, mouseY, rowButtonX(mx, r, op), cy, ROW_BUTTON, ROW_BUTTON)) continue;
@@ -1268,13 +1543,15 @@ public final class CartridgePanel {
         if (button == 1) return rightClicked(mouseX, mouseY);
         if (button != 0) return false;
         if (!inContent(mouseY)) return false;
+        if (ghostClicked(mouseX, mouseY)) return true;
         ItemStack current = stack.get();
         // The containers' hint, for anyone who sees it: how to link, in the chat
         for (int i = 0; i < modules.size(); i++) {
             CartridgeModule module = modules.get(i);
             if (!(module instanceof ContainersModule) || !module.enabled(current)) continue;
             int mx = x + layout.x(i), top = moduleY(i) + (module.labelKey() != null ? CartridgeModule.LABEL_H : 0);
-            if (HitArea.contains(mouseX, mouseY, mx, containersHintY(top, rows(current).size()), columnW, ContainersModule.ROW_H)) {
+            int count = rows(current).size();
+            if (!bare(module, count) && HitArea.contains(mouseX, mouseY, mx, containersHintY(top, count), columnW, ContainersModule.ROW_H)) {
                 click();
                 LinksHelp.show();
                 return true;
@@ -1334,7 +1611,7 @@ public final class CartridgePanel {
                 case ContainersModule containers -> {
                     int count = rows(current).size();
                     for (int r = 0; r < count; r++) {
-                        int cy = cellY(top, r);
+                        int cy = cellY(top, r, bare(containers, count));
                         for (int op : new int[]{ContainersModule.UP, ContainersModule.REMOVE}) {
                             if (HitArea.contains(mouseX, mouseY, rowButtonX(mx, r, op), cy, ROW_BUTTON, ROW_BUTTON)) {
                                 // An action, not a value: sent as is (the list shown follows the server's)
@@ -1369,9 +1646,13 @@ public final class CartridgePanel {
         return Screen.hasShiftDown() && number.max() - number.min() >= 20 ? 10 : 1;
     }
 
-    /** The wheel over a number: one more / one less (ten with Shift on a wide range); elsewhere on a shell too low for its modules: scrolls them. */
+    /**
+     * The wheel over a ghost slot: its quantity; over a number: one more / one less (ten with Shift on a wide range);
+     * elsewhere on a shell too low for its modules: scrolls them.
+     */
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (amount == 0 || !HitArea.contains(mouseX, mouseY, x, y, width(), shellHeight)) return false;
+        if (inContent(mouseY) && ghostScrolled(mouseX, mouseY, amount)) return true;
         ItemStack current = stack.get();
         // The sentences' box: its figures, its rows (for anyone: reading them too)
         if (outcomeList != null && inContent(mouseY) && outcomeList.mouseScrolled(mouseX, mouseY, amount)) return true;
