@@ -328,11 +328,12 @@ public class MiniGameControllerGameTests implements SteveGameTest {
     }
 
     /**
-     * The Mini-game Remote (playtest #72): linked to a controller, it presses its « Play » / « Stop » from afar; not
-     * linked, or linked to a controller without page, it does nothing.
+     * The Remote (playtest of 2026-10-13): linked to a Mini-game Controller or a Party Controller, it opens that
+     * controller's screen from afar, a screen that stays usable there (its buttons work); not linked, or linked to a
+     * controller that is gone, it opens nothing.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_remote", tickLimit = 100)
-    public void theRemotePlaysAndStopsFromAfar(TestContext context) {
+    public void theRemoteOpensItsControllersScreenFromAfar(TestContext context) {
         BlockPos green = pipe(context, GREEN, 1, 1);
         ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 2.5, 1, 1.5), host = player(context, "h", 4.5, 30, 4.5);
         UUID id = page(context, green);
@@ -340,18 +341,35 @@ public class MiniGameControllerGameTests implements SteveGameTest {
             alone(context, p1, p2, host);
             home(context, HOME, id);
             ItemStack remote = new ItemStack(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && !(host.currentScreenHandler instanceof MiniGameControllerScreenHandler),
                     "not linked: nothing");
+            context.assertTrue(MiniGameRemoteItem.linkable(context.getBlockEntity(HOME)), "a Mini-game Controller takes a remote");
             remote.set(ModComponents.MINI_GAME_REMOTE_LINK, global(context, HOME));
-            context.assertTrue(MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) != null,
-                    "linked: Play, from 30 blocks away");
-            context.assertTrue(!MiniGameRemoteItem.press(remote, host), "a second at most between two presses");
+            context.assertTrue(MiniGameRemoteItem.press(remote, host) && host.currentScreenHandler instanceof MiniGameControllerScreenHandler,
+                    "linked: its screen, from 30 blocks away");
+            context.assertTrue(host.currentScreenHandler.canUse(host), "usable from afar");
+            context.assertTrue(host.currentScreenHandler.onButtonClick(host, MiniGameControllerScreenHandler.BUTTON_PLAY) && MiniGameTest.of(id) != null,
+                    "its « Play » works from afar");
+            MiniGameTest.stop(id);
+            host.closeHandledScreen();
+            context.assertTrue(!new MiniGameControllerScreenHandler(7, host.getInventory(), (MiniGameControllerBlockEntity) context.getBlockEntity(HOME)).canUse(host),
+                    "a screen not opened by the remote: out of reach");
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host), "a moment between two presses");
+
+            // A Party Controller too
+            context.setBlockState(PARTY, ModBlocks.PARTY_CONTROLLER.getDefaultState());
+            context.assertTrue(MiniGameRemoteItem.linkable(context.getBlockEntity(PARTY)), "a Party Controller takes a remote");
+            remote.set(ModComponents.MINI_GAME_REMOTE_LINK, global(context, PARTY));
             host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null, "Stop");
-            ((MiniGameControllerBlockEntity) context.getBlockEntity(HOME)).setPage(ItemStack.EMPTY);
+            context.assertTrue(MiniGameRemoteItem.press(remote, host) && host.currentScreenHandler instanceof PartyControllerScreenHandler
+                    && host.currentScreenHandler.canUse(host), "its dashboard, from afar");
+            host.closeHandledScreen();
+
+            // Gone
+            context.setBlockState(PARTY, Blocks.AIR);
             host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
-                    "no page in the controller: nothing to play");
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && !(host.currentScreenHandler instanceof PartyControllerScreenHandler),
+                    "its controller gone: nothing");
         } finally {
             cleanUp(context, id, p1, p2, host);
         }
