@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileStamping;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSupport;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
 import fr.lordfinn.steveparty.client.utils.TileColors;
@@ -216,12 +217,21 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         matrices.translate(-x, 0, -z);
     }
 
-    /** An item tile's face: excited (bonus), angry (malus) or blowing (nothing yet), painted (tile_face/inventory_*). */
+    /**
+     * An item tile's face by the sign of what it gives or takes: excited (bonus), angry (malus) or blowing (nothing
+     * yet), painted (tile_face/inventory_*).
+     */
     private static @Nullable Identifier inventoryFace(ItemStack stack, int color, boolean small) {
-        int kind = stack.getOrDefault(COLOR, 0);
-        if (kind == InventoryInteractorTileBehavior.GOOD_COLOR) return TileStampTextures.inventoryFace("inventory_good", textureExcited, color, small);
-        if (kind == InventoryInteractorTileBehavior.BAD_COLOR) return TileStampTextures.inventoryFace("inventory_bad", textureBad, color, small);
-        return TileStampTextures.inventoryFace("inventory_neutral", textureBlow, color, small);
+        return inventoryFace(InventoryInteractorTileBehavior.statusOf(stack), color, small);
+    }
+
+    /** The item tile's face for the sign {@code status}, in {@code color}. */
+    public static @Nullable Identifier inventoryFace(ABoardSpaceBehavior.Status status, int color, boolean small) {
+        return switch (status) {
+            case GOOD -> TileStampTextures.inventoryFace("inventory_good", textureExcited, color, small);
+            case BAD -> TileStampTextures.inventoryFace("inventory_bad", textureBad, color, small);
+            default -> TileStampTextures.inventoryFace("inventory_neutral", textureBlow, color, small);
+        };
     }
 
     /**

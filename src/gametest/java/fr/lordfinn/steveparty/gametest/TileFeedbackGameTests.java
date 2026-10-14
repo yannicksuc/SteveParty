@@ -20,6 +20,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Kind;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Landing;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Played;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
@@ -110,6 +111,26 @@ public class TileFeedbackGameTests implements SteveGameTest {
             context.assertTrue(landing.noticeKey().startsWith("message.steveparty.tile_landed."), "notice key");
         }
         context.assertTrue(Registries.SOUND_EVENT.containsId(Landing.GOOD.layers().getFirst().sound().getId()), "registered sound");
+        context.complete();
+    }
+
+    /**
+     * An item tile's sign (what its face shows: excited, angry, blowing) comes from what it gives or takes, not from its
+     * colour: a cartridge still holding another colour (an older constant, a colour not yet synced) keeps the right face.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itemTileSignFollowsWhatItGivesNotItsColour(TestContext context) {
+        ItemStack cartridge = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
+        cartridge.set(ModComponents.COLOR, InventoryInteractorTileBehavior.GOOD_COLOR);
+        context.assertEquals(InventoryInteractorTileBehavior.statusOf(cartridge), ABoardSpaceBehavior.Status.NEUTRAL, "empty: neutral, whatever its colour");
+        cartridge.set(ModComponents.INVENTORY_COMPONENT, new InventoryComponent(List.of(new ItemStack(Items.DIAMOND))));
+        cartridge.set(ModComponents.COLOR, 0xDB2B41);
+        context.assertEquals(InventoryInteractorTileBehavior.statusOf(cartridge), ABoardSpaceBehavior.Status.GOOD, "gives: good, even red");
+        ItemStack taken = new ItemStack(Items.DIAMOND);
+        taken.set(ModComponents.IS_NEGATIVE, true);
+        cartridge.set(ModComponents.INVENTORY_COMPONENT, new InventoryComponent(List.of(taken)));
+        cartridge.set(ModComponents.COLOR, InventoryInteractorTileBehavior.NEUTRAL_COLOR);
+        context.assertEquals(InventoryInteractorTileBehavior.statusOf(cartridge), ABoardSpaceBehavior.Status.BAD, "takes: bad, even neutral-coloured");
         context.complete();
     }
 
