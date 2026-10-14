@@ -325,7 +325,7 @@ def board():
         label(loop[check_point][0] + 0.5, Y + 2, loop[check_point][1] + 0.5, 'Point de passage', 'light_purple', 0.8),
         label(loop[simple][0] + 0.5, Y + 2, loop[simple][1] + 0.5, 'Case simple', 'white', 0.8),
         label(CONTROLLER[0] + 0.5, Y + 2, CONTROLLER[2] + 0.5, 'Party Controller (levier)', 'white', 0.7, False),
-        label(STEP_CONTROLLER[0] + 0.5, Y + 2, STEP_CONTROLLER[2] + 0.5, 'Step Controller (levier)', 'white', 0.7, False),
+        label(STEP_CONTROLLER[0] + 0.5, Y + 2, STEP_CONTROLLER[2] + 0.5, 'Magnéto de Party (levier)', 'white', 0.7, False),
     ]
     return cmds, loop, shortcut
 
@@ -882,7 +882,7 @@ def showcase():
              'setblock %d %d %d steveparty:step_controller' % (SC_STEP_CONTROLLER[0], Y, SC_STEP_CONTROLLER[1]),
              'setblock %d %d %d minecraft:lever[face=floor,facing=south]' % (SC_STEP_CONTROLLER[0] + 1, Y, SC_STEP_CONTROLLER[1]),
              label(SC_CONTROLLER[0] + 0.5, Y + 2.2, SC_CONTROLLER[1] + 0.5, 'Party Controller (levier)', 'white', 0.7, False),
-             label(SC_STEP_CONTROLLER[0] + 0.5, Y + 1.7, SC_STEP_CONTROLLER[1] + 0.5, 'Step Controller (levier)', 'white', 0.7, False),
+             label(SC_STEP_CONTROLLER[0] + 0.5, Y + 1.7, SC_STEP_CONTROLLER[1] + 0.5, 'Magnéto de Party (levier)', 'white', 0.7, False),
              label(SC_X0 + 10.5, Y + 4.5, SC_Z0 + 8.5, 'PLATEAU DE DÉMO', 'gold', 2),
              label(SC_X0 + 10.5, Y + 3.3, SC_Z0 + 8.5,
                    'Levier du Party Controller = lancer la partie, puis le dé.\nLes dés truqués du coffre font tomber pile '

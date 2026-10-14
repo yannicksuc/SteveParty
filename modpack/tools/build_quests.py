@@ -642,13 +642,13 @@ q("hud", 8.25, -0.5, C(), deps=["first_party"], rewards=T0(), optional=True, ico
         ["Pendant une partie, la barre de tours, les annonces et le tableau des scores s'affichent. Touche M (ou /partyhud) pour les déplacer, H pour les masquer."]))
 
 q("step", 4, -1.5, I("step_controller"), deps=["controller"], rewards=T2(),
-  desc=(["An hourglass. Right-click: standing (Next) or on its side (Replay).",
+  desc=(["A tape deck. Right-click a button on top: its mode. Previous · Replay · Next.",
          "Next + a pulse: skips what the party waits for (a turn not rolled, a bell, the practice round); in a mini-game, ends it with the podiums' places.",
-         "Replay + a pulse: the player plays again, or the round restarts.",
+         "Replay + a pulse: the turn is undone and played again, or the round restarts. Previous: back to the turn before.",
          "Link it to any part of a game with the Tile Linker Brush; otherwise it drives the nearest party (64 blocks)."],
-        ["Un sablier. Clic droit : debout (Suivant) ou couché (Rejouer).",
+        ["Un magnétophone. Clic droit sur un bouton du dessus : son mode. Précédent · Rejouer · Suivant.",
          "Suivant + une impulsion : passe ce que la partie attend (tour pas lancé, cloche, manche de chauffe) ; en mini-jeu, le termine avec les places des podiums.",
-         "Rejouer + une impulsion : le joueur rejoue, ou la manche recommence.",
+         "Rejouer + une impulsion : le tour est annulé et rejoué, ou la manche recommence. Précédent : retour au tour d'avant.",
          "Lie-le au Pinceau lieur à un élément d'une partie ; sinon il pilote la partie la plus proche (64 blocs)."]))
 
 q("bell", 4, -4, I("party_bell"), deps=["controller"], rewards=T2(),
@@ -797,9 +797,9 @@ for metal, en_m, fr_m, x, y in [("gold", "a gold ingot", "un lingot d'or", 7, -2
 
 q("results", 7, 2, C(), deps=["podium"], rewards=T1(), icon="steveparty:gold_podium",
   title=("Results", "Résultats"),
-  desc=(["The page's Results tab lists what ends the mini-game: linked podiums, goal pole bases and Step Controllers.",
+  desc=(["The page's Results tab lists what ends the mini-game: linked podiums, goal pole bases and Party Rewinders.",
          "A podium set with the Wrench can register the nearest player, or reset the group, on a pulse."],
-        ["L'onglet Résultats de la page liste ce qui termine le mini-jeu : podiums liés, socles de mât d'arrivée et Contrôleurs de pas.",
+        ["L'onglet Résultats de la page liste ce qui termine le mini-jeu : podiums liés, socles de mât d'arrivée et Magnétos de Party.",
          "Un podium réglé à la Clé à molette peut, sur une impulsion, inscrire le joueur le plus proche ou vider le groupe."]))
 
 q("mg_controller", 5, 2.5, I("mini_game_controller"), deps=["page", "copper_pipe"], rewards=T2(),

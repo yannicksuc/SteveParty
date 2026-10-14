@@ -118,7 +118,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.01C543D5464F2458.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.01C543D5464F2458.title: "Carte de partie : Répéter"
+	quest.01C543D5464F2458.title: "Carte de Party : Répéter"
 	quest.02559E197888FCA2.quest_desc: [
 		"Mélange les fragments comme des teintures : rouge + bleu + jaune. On récupère autant de fragments qu'on en a mis."
 	]
@@ -129,7 +129,7 @@
 		"Mode attente (Clé à molette) : la partie se fige jusqu'à ce qu'elle reçoive un signal."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.030135F1CA2F65E1.title: "Cloche de partie"
+	quest.030135F1CA2F65E1.title: "Cloche de Party"
 	quest.042DD30AE9744165.quest_desc: [
 		"Tes mini-jeux sont écrits, liés et testés. Que la roulette tourne !"
 	]
@@ -299,13 +299,13 @@
 	quest.0FC0569B81622F76.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.0FC0569B81622F76.title: "Fragment d'étoile vert clair"
 	quest.101F5B0C2C547670.quest_desc: [
-		"Un sablier. Clic droit : debout (Suivant) ou couché (Rejouer)."
+		"Un magnétophone. Clic droit sur un bouton du dessus : son mode. Précédent · Rejouer · Suivant."
 		"Suivant + une impulsion : passe ce que la partie attend (tour pas lancé, cloche, manche de chauffe) ; en mini-jeu, le termine avec les places des podiums."
-		"Rejouer + une impulsion : le joueur rejoue, ou la manche recommence."
+		"Rejouer + une impulsion : le tour est annulé et rejoué, ou la manche recommence. Précédent : retour au tour d'avant."
 		"Lie-le au Pinceau lieur à un élément d'une partie ; sinon il pilote la partie la plus proche (64 blocs)."
 	]
 	quest.101F5B0C2C547670.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.101F5B0C2C547670.title: "Contrôleur de pas"
+	quest.101F5B0C2C547670.title: "Magnéto de Party"
 	quest.10373F304237AA4E.quest_desc: [
 		"6 blocs en escalier : 4 escaliers."
 	]
@@ -317,7 +317,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.10428E9FDADB4DDF.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.10428E9FDADB4DDF.title: "Carte de partie : Début de séquence"
+	quest.10428E9FDADB4DDF.title: "Carte de Party : Début de séquence"
 	quest.10458D4F11AF735B.quest_desc: [
 		"3 blocs en ligne : 6 dalles."
 	]
@@ -576,7 +576,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.27B5092765B1742F.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.27B5092765B1742F.title: "Carte de partie : Mini-jeu"
+	quest.27B5092765B1742F.title: "Carte de Party : Mini-jeu"
 	quest.27E0EE1DE702627E.quest_desc: [
 		"Trois Dés simples, ou un Dé double + un Dé simple. Trois dés liés : 3 à 30."
 	]
@@ -715,7 +715,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.3476803BD17DBC9E.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.3476803BD17DBC9E.title: "Carte de partie : Évènement"
+	quest.3476803BD17DBC9E.title: "Carte de Party : Évènement"
 	quest.35120B4602A51333.quest_desc: [
 		"Deux lignes de 3 : 6 murets."
 	]
@@ -970,7 +970,7 @@
 	]
 	quest.55428C54977D8D69.title: "Démontage express"
 	quest.55DCC18B70E655E2.quest_desc: [
-		"L'onglet Résultats de la page liste ce qui termine le mini-jeu : podiums liés, socles de mât d'arrivée et Contrôleurs de pas."
+		"L'onglet Résultats de la page liste ce qui termine le mini-jeu : podiums liés, socles de mât d'arrivée et Magnétos de Party."
 		"Un podium réglé à la Clé à molette peut, sur une impulsion, inscrire le joueur le plus proche ou vider le groupe."
 	]
 	quest.55DCC18B70E655E2.title: "Résultats"
@@ -1368,7 +1368,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.7CD8704D1E8BE3C5.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.7CD8704D1E8BE3C5.title: "Carte de partie : Tour de jeu"
+	quest.7CD8704D1E8BE3C5.title: "Carte de Party : Tour de jeu"
 	quest.7CE9B67A9BE1ED07.quest_desc: [
 		"Un Mula ne mange que la nourriture de sa couleur (l'infobulle indique « Nourriture de Mula ») :"
 		"bleu : morue · rouge : pommes, baies, saumon, viande crue · vert : pastèque · jaune : nourriture dorée, pain, miel · violet : chorus, betterave · noir : algue séchée, cookies, ragoûts, steak"
