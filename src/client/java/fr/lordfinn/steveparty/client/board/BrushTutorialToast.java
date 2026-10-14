@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.board.BrushTutorialSteps;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.toast.Toast;
@@ -21,6 +22,8 @@ final class BrushTutorialToast implements Toast {
     private static final int TITLE = 0xFF500050, LINE = 0xFF000000, BAR_BACK = 0xFFFFFFFF, BAR_UP = 0xFF005500, BAR_DOWN = 0xFF550000;
     /** How long a done step stays shown, its bar full (ms). */
     private static final long DONE_SHOWN = 1200;
+    /** Room for the texts, right of the icon. */
+    private static final int TEXT_WIDTH = 160 - 30 - 4;
 
     final BrushTutorialSteps.Step step;
     private final ItemStack icon;
@@ -44,8 +47,8 @@ final class BrushTutorialToast implements Toast {
         context.drawGuiTexture(TEXTURE, 0, 0, getWidth(), getHeight());
         context.drawItem(icon, 8, 8);
         TextRenderer font = manager.getClient().textRenderer;
-        context.drawText(font, title, 30, 7, TITLE, false);
-        context.drawText(font, line, 30, 18, LINE, false);
+        UiText.line(context, font, title, 30, 7, TEXT_WIDTH, TITLE, false);
+        UiText.line(context, font, line, 30, 18, TEXT_WIDTH, LINE, false);
         if (progressBar) {
             context.fill(3, 28, 157, 29, BAR_BACK);
             if (lastTime < 0) lastTime = startTime;
