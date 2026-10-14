@@ -586,7 +586,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity, Boar
     private void consumeStock(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) return;
         if (boardShop != null) {
-            boardShop.take(itemStack);
+            boardShop.take(itemStack, getCustomer());
             return;
         }
         int remainingAmount = itemStack.getCount();
@@ -617,7 +617,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity, Boar
         }
         // A space's merchant: the payment goes to its till (the party's bank)
         if (boardShop != null) {
-            boardShop.pay(stack, this.getPos().add(0, 0.5, 0));
+            boardShop.pay(stack, this.getPos().add(0, 0.5, 0), getCustomer());
             return;
         }
         for (CashRegisterBlockEntity inventory : cashRegisters) {

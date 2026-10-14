@@ -43,6 +43,11 @@
       "text": "book.steveparty.guide.party.step_controller.page2.text"
     },
     {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.party.step_controller.page3.title",
+      "text": "book.steveparty.guide.party.step_controller.page3.text"
+    },
+    {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:step_controller"
     }

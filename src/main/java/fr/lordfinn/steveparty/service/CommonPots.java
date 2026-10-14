@@ -8,6 +8,8 @@ import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
@@ -171,6 +173,8 @@ public final class CommonPots {
         int added = nest.addCoins(coin, taken);
         // What the nest would not take goes back where it came from
         if (added < taken) storage.give(coin.copyWithCount(taken - added));
+        TurnJournal.moved(party, JournalPlace.of(storage), JournalPlace.Nest.of(nest), coin, added);
+        TurnJournal.space(space);
         PotCartridgeItem.setBaseDue(pot, false);
         space.update();
         return added;
@@ -183,6 +187,7 @@ public final class CommonPots {
         int taken = InventoryUtils.take(player.getInventory(), coin, wanted);
         int added = nest.addCoins(coin, taken);
         if (added < taken) InventoryUtils.giveOrDrop(player, coin, taken - added);
+        TurnJournal.moved(null, JournalPlace.player(player), JournalPlace.Nest.of(nest), coin, added);
         return new Stake(added);
     }
 
@@ -208,11 +213,13 @@ public final class CommonPots {
         List<ItemStack> items = new ArrayList<>();
         for (ItemStack stack : nest.takeAll()) {
             InventoryUtils.giveOrDrop(player, stack.copyWithCount(1), stack.getCount());
+            TurnJournal.moved(party, JournalPlace.Nest.of(nest), JournalPlace.player(player), stack, stack.getCount());
             if (ItemStack.areItemsAndComponentsEqual(stack, coin)) coins += stack.getCount();
             else items.add(stack);
         }
         Win win = new Win(coins, items);
         // It starts again: its base from the storage, nothing made
+        TurnJournal.space(space);
         PotCartridgeItem.setBaseDue(pot, true);
         fillBase(world, space, party);
         space.update();

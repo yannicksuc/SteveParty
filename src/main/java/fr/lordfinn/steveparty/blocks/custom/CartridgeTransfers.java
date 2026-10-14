@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
@@ -100,7 +102,7 @@ public final class CartridgeTransfers {
     }
 
     private static int transfer(ItemStack stack, PartyResources linked, PlayerEntity player, @Nullable Moves moves) {
-        int moved = transfer(stack, linked, player);
+        int moved = move(stack, linked, player);
         if (moved > 0 && moves != null) moves.moved(pattern(stack), isNegative(stack) ? -moved : moved);
         return moved;
     }
@@ -130,11 +132,21 @@ public final class CartridgeTransfers {
 
     /**
      * Moves the cartridge item {@code stack}: negative, from the player into {@code linked} (what does not go in stays
-     * with the player); positive, from {@code linked} to the player (what does not fit falls at their feet).
+     * with the player); positive, from {@code linked} to the player (what does not fit falls at their feet). A board
+     * space's doing: written in its party's turn journal.
      *
      * @return the number of items moved
      */
     public static int transfer(ItemStack stack, PartyResources linked, PlayerEntity player) {
+        int moved = move(stack, linked, player);
+        JournalPlace chests = JournalPlace.of(linked), held = JournalPlace.player(player.getUuid());
+        if (isNegative(stack)) TurnJournal.moved(null, held, chests, pattern(stack), moved);
+        else TurnJournal.moved(null, chests, held, pattern(stack), moved);
+        return moved;
+    }
+
+    /** {@link #transfer}, not written down (a device the map maker fires: a Piggy Bank). */
+    private static int move(ItemStack stack, PartyResources linked, PlayerEntity player) {
         if (isNegative(stack)) {
             return InventoryInteractorTileBehavior.extractMatching(stack, player.getInventory(), toMove -> linked.give(toMove));
         }

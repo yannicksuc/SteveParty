@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.service;
 import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
@@ -424,14 +426,16 @@ public final class PartyStars {
             return false;
         }
         ItemStack star = party.getCurrency(PartyCurrency.STAR);
-        if (PartyResources.of(party).take(star, 1) < 1) {
+        PartyResources bank = PartyResources.of(party);
+        if (bank.take(star, 1) < 1) {
             MessageUtils.sendToPlayers(audienceWith(party, buyer), Text.translatable("message.steveparty.star.bank_empty", PartyCurrencyText.name(party, PartyCurrency.STAR))
                     .formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
             return false;
         }
         InventoryUtils.take(buyer.getInventory(), coin, price);
-        deposit(party, world, coin.copyWithCount(price));
+        deposit(party, world, coin.copyWithCount(price), buyer);
         InventoryUtils.giveOrDrop(buyer, star, 1);
+        TurnJournal.moved(party, JournalPlace.of(bank), JournalPlace.player(buyer), star, 1);
         List<ServerPlayerEntity> audience = party.getPartyAudience();
         if (!audience.contains(buyer)) audience.add(buyer);
         MessageUtils.sendToPlayers(audience, Text.translatable("message.steveparty.star.bought", buyer.getDisplayName(), PartyCurrencyText.amount(coin, price))
@@ -452,8 +456,8 @@ public final class PartyStars {
      * gains come from it. What does not fit falls by the Party Controller: nothing is lost, and the purchase is never
      * refused for it.
      */
-    static void deposit(PartyControllerEntity party, ServerWorld world, ItemStack coins) {
-        PartyResources.deposit(party, coins.copy());
+    static void deposit(PartyControllerEntity party, ServerWorld world, ItemStack coins, ServerPlayerEntity buyer) {
+        PartyResources.deposit(party, coins.copy(), JournalPlace.player(buyer));
     }
 
     /** The party's stars left in its bank: what the star spaces can still sell. */

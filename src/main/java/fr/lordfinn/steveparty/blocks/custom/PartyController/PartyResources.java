@@ -1,13 +1,16 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.utils.InventoryChain;
+import fr.lordfinn.steveparty.utils.InventoryUtils;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,34 +58,7 @@ public interface PartyResources {
     };
 
     /** A bank that never runs out: everything asked is there, everything given is absorbed. */
-    PartyResources INFINITE = new PartyResources() {
-        @Override
-        public int available(ItemStack template) {
-            return template.isEmpty() ? 0 : Integer.MAX_VALUE;
-        }
-
-        @Override
-        public int take(ItemStack template, int count) {
-            return template.isEmpty() ? 0 : Math.max(0, count);
-        }
-
-        @Override
-        public int give(ItemStack stack) {
-            int count = stack.getCount();
-            stack.setCount(0);
-            return count;
-        }
-
-        @Override
-        public List<ItemStack> contents() {
-            return List.of();
-        }
-
-        @Override
-        public boolean isUnlimited() {
-            return true;
-        }
-    };
+    PartyResources INFINITE = new Unlimited(null);
 
     /** How many items matching {@code template} it can give now ({@link Integer#MAX_VALUE}: no end). */
     int available(ItemStack template);
@@ -101,6 +77,16 @@ public interface PartyResources {
     /** One stack of each kind of item it holds, as many as it holds, in order (a bank without end lists nothing). */
     List<ItemStack> contents();
 
+    /** How many more items like {@code template} it takes now ({@link Integer#MAX_VALUE}: no end). */
+    default int room(ItemStack template) {
+        return 0;
+    }
+
+    /** Where it is, as the turn journal notes a transfer from or to it; null for no source at all. */
+    default @Nullable JournalPlace place() {
+        return null;
+    }
+
     /** For the screens only (the dashboard, the tile info): a bank without end. */
     default boolean isUnlimited() {
         return false;
@@ -116,21 +102,28 @@ public interface PartyResources {
     /** The party's source: its bank, or the bank without end when the controller says so; {@link #NONE} for no party. */
     static PartyResources of(@Nullable PartyControllerEntity controller) {
         if (controller == null) return NONE;
-        if (controller.isInfiniteBank()) return INFINITE;
-        return new Containers(PartyBank.places(controller));
+        JournalPlace bank = new JournalPlace.Bank(controller.getGlobalPos());
+        if (controller.isInfiniteBank()) return new Unlimited(bank);
+        return new Containers(PartyBank.places(controller), bank);
     }
 
     /** Real containers (a cartridge's own, in their order): taken from the first ones first, filled the first first. */
     static PartyResources of(List<Inventory> containers) {
-        return containers.isEmpty() ? NONE : new Containers(containers);
+        return containers.isEmpty() ? NONE : new Containers(containers, JournalPlace.Containers.of(containers));
     }
 
     /**
-     * {@code stack} (emptied) goes into the party's source; what does not fit falls by its Party Controller: nothing is
-     * ever lost. Nothing happens outside a party ({@code controller} null: {@code stack} is left as it is).
+     * {@code stack} (emptied), taken from {@code from}, goes into the party's source; what does not fit falls by its
+     * Party Controller: nothing is ever lost. The turn journal notes both. Nothing happens outside a party
+     * ({@code controller} null: {@code stack} is left as it is).
      */
+    static void deposit(@Nullable PartyControllerEntity controller, ItemStack stack, JournalPlace from) {
+        spill(controller, stack, from);
+    }
+
+    /** {@link #deposit(PartyControllerEntity, ItemStack, JournalPlace)} of items from no one (not written down). */
     static void deposit(@Nullable PartyControllerEntity controller, ItemStack stack) {
-        spill(controller, stack);
+        spill(controller, stack, JournalPlace.GONE);
     }
 
     /**
@@ -138,29 +131,96 @@ public interface PartyResources {
      * source, as {@link #deposit} does; when it falls by the Party Controller (its storage full), {@code user} is told
      * in red. A bank without end takes it without a word. Nothing happens outside a party.
      */
-    static void giveBackUsed(@Nullable PartyControllerEntity controller, ItemStack stack, @Nullable ServerPlayerEntity user) {
-        ItemStack fallen = spill(controller, stack);
+    static void giveBackUsed(@Nullable PartyControllerEntity controller, ItemStack stack, @Nullable ServerPlayerEntity user, JournalPlace from) {
+        ItemStack fallen = spill(controller, stack, from);
         if (fallen.isEmpty() || user == null) return;
         user.sendMessage(Text.translatable("message.steveparty.party.storage_full", fallen.toHoverableText()).formatted(Formatting.RED), false);
     }
 
     /** {@link #deposit}: what fell by the Party Controller (a copy), empty when everything went in. */
-    private static ItemStack spill(@Nullable PartyControllerEntity controller, ItemStack stack) {
+    private static ItemStack spill(@Nullable PartyControllerEntity controller, ItemStack stack, JournalPlace from) {
         if (controller == null || stack.isEmpty()) return ItemStack.EMPTY;
-        of(controller).give(stack);
+        ItemStack kind = stack.copyWithCount(1);
+        PartyResources bank = of(controller);
+        int in = bank.give(stack);
+        TurnJournal.moved(controller, from, JournalPlace.of(bank), kind, in);
         if (stack.isEmpty() || controller.getWorld() == null) return ItemStack.EMPTY;
         ItemStack fallen = stack.copy();
         BlockPos pos = controller.getPos();
-        ItemScatterer.spawn(controller.getWorld(), pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, stack.copyAndEmpty());
+        ItemEntity item = new ItemEntity(controller.getWorld(), pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, stack.copyAndEmpty());
+        item.setToDefaultPickupDelay();
+        controller.getWorld().spawnEntity(item);
+        TurnJournal.moved(controller, from, JournalPlace.dropped(item), kind, fallen.getCount());
         return fallen;
+    }
+
+    /** A bank without end: {@link #INFINITE}, or the « Infinite bank » of the controller at {@code place}. */
+    final class Unlimited implements PartyResources {
+        private final @Nullable JournalPlace place;
+
+        private Unlimited(@Nullable JournalPlace place) {
+            this.place = place;
+        }
+
+        @Override
+        public int available(ItemStack template) {
+            return template.isEmpty() ? 0 : Integer.MAX_VALUE;
+        }
+
+        @Override
+        public int take(ItemStack template, int count) {
+            return template.isEmpty() ? 0 : Math.max(0, count);
+        }
+
+        @Override
+        public int give(ItemStack stack) {
+            int count = stack.getCount();
+            stack.setCount(0);
+            return count;
+        }
+
+        @Override
+        public int room(ItemStack template) {
+            return template.isEmpty() ? 0 : Integer.MAX_VALUE;
+        }
+
+        @Override
+        public List<ItemStack> contents() {
+            return List.of();
+        }
+
+        @Override
+        public boolean isUnlimited() {
+            return true;
+        }
+
+        @Override
+        public @Nullable JournalPlace place() {
+            return place;
+        }
     }
 
     /** Real containers, in order. */
     final class Containers implements PartyResources {
         private final List<Inventory> containers;
+        private final @Nullable JournalPlace place;
 
-        Containers(List<Inventory> containers) {
+        Containers(List<Inventory> containers, @Nullable JournalPlace place) {
             this.containers = List.copyOf(containers);
+            this.place = place;
+        }
+
+        @Override
+        public @Nullable JournalPlace place() {
+            return place;
+        }
+
+        @Override
+        public int room(ItemStack template) {
+            if (template.isEmpty()) return 0;
+            long room = 0;
+            for (Inventory inventory : containers) room += InventoryUtils.room(inventory, template);
+            return (int) Math.min(Integer.MAX_VALUE, room);
         }
 
         /** The containers, end to end. */

@@ -31,8 +31,20 @@ import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
  * when the server stops. Server thread only.
  */
 public final class BoardSequences<S extends BoardSequences.Sequence> {
+    /** Every service's registry, to know whether any show is under way for a token. */
+    private static final List<BoardSequences<?>> REGISTRIES = new ArrayList<>();
     /** The running sequences, by the UUID of the token that landed. */
     private final Map<UUID, S> running = ServerMemory.forgetOnStop(new HashMap<>());
+
+    public BoardSequences() {
+        REGISTRIES.add(this);
+    }
+
+    /** Whether a show of any service is under way for the token {@code tokenId}. */
+    public static boolean anyRunning(UUID tokenId) {
+        for (BoardSequences<?> registry : REGISTRIES) if (registry.running.containsKey(tokenId)) return true;
+        return false;
+    }
 
     /** The server stopping in the middle: {@code stop} for each sequence still running (none is ever resumed). */
     public void stopWithServer(Consumer<S> stop) {

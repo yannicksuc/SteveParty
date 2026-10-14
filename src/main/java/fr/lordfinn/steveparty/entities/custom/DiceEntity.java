@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.dice.DiceModule;
@@ -786,7 +787,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             ServerPlayerEntity owner = getOnlineOwner();
             UUID ownerId = this.getOwner().orElse(null);
             if ((owner == null || !owner.isInCreativeMode()) && ownerId != null)
-                PartyResources.giveBackUsed(DiceTargets.partyOf(world, ownerId), diceItem.copy(), owner);
+                PartyResources.giveBackUsed(DiceTargets.partyOf(world, ownerId), diceItem.copy(), owner, JournalPlace.player(ownerId));
         }
         this.remove(reason);
     }

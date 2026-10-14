@@ -94,7 +94,7 @@ public class StepControllerBlock extends BlockWithEntity {
             if (blockEntity != null) blockEntity.refreshLinkedPages();
             return ActionResult.SUCCESS;
         }
-        if (blockEntity != null) blockEntity.cycleMode();
+        if (blockEntity != null) blockEntity.cycleMode(player);
         return ActionResult.SUCCESS;
     }
 }

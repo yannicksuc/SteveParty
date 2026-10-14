@@ -97,8 +97,8 @@ public class StepControllerGameTests implements SteveGameTest {
     }
 
     /**
-     * « Next » passes a turn whose player has not rolled; « replay » gives that player one more turn right after it,
-     * once. A comparator reads the party's phase.
+     * « Next » passes a turn whose player has not rolled; « replay » plays that turn again from its start, as often as
+     * pulsed; « previous » goes back to the turn before. A comparator reads the party's phase.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "step_controller_turns")
     public void aStepControllerPassesAndReplaysTurns(TestContext context) {
@@ -126,11 +126,22 @@ public class StepControllerGameTests implements SteveGameTest {
             context.assertEquals(stepController.getComparatorOutput(), PartyControllerEntity.PHASE_TURN, "the comparator reads a turn");
 
             stepController.cycleMode();
+            context.assertEquals(stepController.getMode(), StepPulse.Mode.REPLAY, "then « replay »");
             context.assertTrue(stepController.trigger(), "replay");
-            context.assertEquals(data.getSteps().size(), 4, "one more turn");
-            context.assertTrue(data.getSteps().get(2) instanceof TokenTurnPartyStep extra && extra.isReplay() && b.equals(extra.getTokenUUID()),
-                    "b plays again right after");
-            context.assertTrue(!stepController.trigger() && data.getSteps().size() == 4, "once");
+            PartyData replayed = controller.getPartyData();
+            context.assertTrue(replayed.getSteps().size() == 3 && replayed.getStepIndex() == 1
+                    && replayed.getCurrentStep() instanceof TokenTurnPartyStep turn && b.equals(turn.getTokenUUID())
+                    && turn.getStatus() == PartyStep.Status.IN_PROGRESS, "b's turn starts again, no turn added");
+            context.assertTrue(stepController.trigger() && controller.getPartyData().getStepIndex() == 1, "and again");
+
+            stepController.cycleMode();
+            context.assertEquals(stepController.getMode(), StepPulse.Mode.PREVIOUS, "then « previous »");
+            context.assertTrue(stepController.trigger(), "previous");
+            context.assertTrue(controller.getPartyData().getStepIndex() == 0
+                    && controller.getPartyData().getCurrentStep() instanceof TokenTurnPartyStep turn && a.equals(turn.getTokenUUID()), "back to a's turn");
+            context.assertTrue(!stepController.trigger(), "nothing before the first turn");
+            stepController.cycleMode();
+            context.assertEquals(stepController.getMode(), StepPulse.Mode.NEXT, "round the modes");
         } finally {
             TestCleanup.removeIf(context, controllerPos, ModBlocks.PARTY_CONTROLLER);
         }

@@ -204,7 +204,7 @@ public class OneThrowPerRollGameTests implements SteveGameTest {
         context.complete();
     }
 
-    /** The next turn, and a replay of the turn, are new rolls. */
+    /** The next turn, and the extra turn of a Replay tile, are new rolls. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
     public void aReplayAndTheNextTurnRollAgain(TestContext context) {
         Scene scene = new Scene();
@@ -217,7 +217,7 @@ public class OneThrowPerRollGameTests implements SteveGameTest {
             lands(controller, throwHeld(context, player), player.getUuid(), 2);
             context.assertTrue(throwHeld(context, player) == null, "rolled");
 
-            context.assertTrue(turn.replay(controller), "the Step Controller replays the turn");
+            context.assertTrue(turn.grantReplay(controller) != null, "a Replay tile gives the turn again");
             controller.nextStep();
             context.assertTrue(controller.getPartyData().getCurrentStep() instanceof TokenTurnPartyStep extra && extra.isReplay(), "the replay");
             DiceEntity replayed = throwHeld(context, player);
