@@ -22,6 +22,8 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.IntPredicate;
+
 import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.DICE_FORGE_SCREEN_HANDLER;
 
@@ -61,6 +63,8 @@ public class DiceForgeScreenHandler extends ScreenHandler {
 
     private final Inventory inventory;
     private final PropertyDelegate properties;
+    /** The forge slots shown: the screen hides those of the steps not reached yet (every slot on the server). */
+    private IntPredicate shownSlots = slot -> true;
 
     public DiceForgeScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory, PropertyDelegate properties) {
         super(DICE_FORGE_SCREEN_HANDLER, syncId);
@@ -89,6 +93,11 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             @Override
             public boolean canInsert(ItemStack stack) {
                 return false;
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return shownSlots.test(OUTPUT_SLOT);
             }
 
             @Override
@@ -174,6 +183,11 @@ public class DiceForgeScreenHandler extends ScreenHandler {
         @Override
         public boolean canInsert(ItemStack stack) {
             return isValidForSlot(inventory, getIndex(), stack, isActivated());
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return shownSlots.test(getIndex());
         }
     }
 
@@ -282,6 +296,11 @@ public class DiceForgeScreenHandler extends ScreenHandler {
 
     public Inventory getInventory() {
         return this.inventory;
+    }
+
+    /** Client side: which forge slots the screen shows (a hidden slot is neither drawn nor clickable). */
+    public void setShownSlots(IntPredicate shownSlots) {
+        this.shownSlots = shownSlots;
     }
 
     // ---- synced state (valid on both sides)

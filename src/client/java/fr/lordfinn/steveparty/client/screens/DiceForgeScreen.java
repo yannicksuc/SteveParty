@@ -9,6 +9,8 @@ import fr.lordfinn.steveparty.client.gui.HandCursor;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.Status;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -33,8 +35,10 @@ import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 
@@ -43,6 +47,10 @@ import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
  * weight), the 5 star fragments around the core and, in its center, the gravity core. The five gems on the points of the star hold the dice modules put on every die
  * forged; the capsule under the galaxy takes the blank faces in on its left and gives the forged die on its right,
  * and its arrow is the FORGE button (it fills with the progress).
+ * <p>
+ * The forge shows itself step by step ({@link Step}): the core first, then the fragments round it, then the faces and
+ * the capsule, then the module gems; the slots of a step not reached yet are hidden (unless they hold something). An
+ * empty slot shows the silhouette of what it takes: the fragment colours still free turning, the faces 1 to 10.
  */
 public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /**
@@ -59,16 +67,34 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /** One turn of the galaxy (ms). */
     private static final long GALAXY_TURN_MS = 150_000;
     private static final float GHOST_ALPHA = 0.35f;
+    /** The module silhouettes are optional: fainter and tinted violet, never mistaken for a module put in. */
+    private static final float MODULE_GHOST_ALPHA = 0.3f, MODULE_GHOST_R = 0.7f, MODULE_GHOST_G = 0.6f;
+    /** Before the core is in, the galaxy is dimmed (multiplied by this): it lights up with the core. */
+    private static final float SLEEPING_GALAXY = 0.45f;
+    /** The module gem (one per point of the star, its slot at +4, +4) and the capsule (drawn at FRAME_X, FRAME_Y). */
+    private static final int GEM_U = 0, GEM_V = 400, GEM_SIZE = 24, CAPSULE_U = 32, CAPSULE_V = 400;
+    /** The fragment silhouettes turn through the colours still free every FRAGMENT_CYCLE_MS, the faces 1 to 10 faster. */
+    private static final long FRAGMENT_CYCLE_MS = 3000, FACE_CYCLE_MS = 1500;
+    /** The fragment colours the silhouettes show, in rainbow order (not black: dark on the galaxy, it would not show). */
+    private static final List<Item> FRAGMENT_CYCLE = List.of(ModItems.RED_STAR_FRAGMENT, ModItems.ORANGE_STAR_FRAGMENT,
+            ModItems.YELLOW_STAR_FRAGMENT, ModItems.LIME_STAR_FRAGMENT, ModItems.GREEN_STAR_FRAGMENT,
+            ModItems.CYAN_STAR_FRAGMENT, ModItems.LIGHT_BLUE_STAR_FRAGMENT, ModItems.BLUE_STAR_FRAGMENT,
+            ModItems.PURPLE_STAR_FRAGMENT, ModItems.MAGENTA_STAR_FRAGMENT, ModItems.PINK_STAR_FRAGMENT,
+            ModItems.WHITE_STAR_FRAGMENT, ModItems.LIGHT_GRAY_STAR_FRAGMENT, ModItems.GRAY_STAR_FRAGMENT,
+            ModItems.BROWN_STAR_FRAGMENT);
+    /** Clicked while it can't forge, the FORGE button makes the first missing thing pulse for HINT_MS. */
+    private static final long HINT_MS = 1600, HINT_PULSE_MS = 400;
     private static final String KEY = "gui.steveparty.dice_forge.";
     /** Tooltips wrap at this width (GUI px), so that long hints stay readable. */
     private static final int TOOLTIP_WIDTH = 170;
 
     /**
      * The FORGE button is the arrow of the capsule, between the blank faces and the die (only the screen draws it):
-     * its shaft from ARROW_X0, its head's base at ARROW_X1, and the box that takes the clicks.
+     * its shaft from ARROW_X0, its head's base at ARROW_X1, its tip at ARROW_TIP, symmetric about the row ARROW_Y (the
+     * capsule's middle row), centred between the two slots.
      */
-    private static final int ARROW_X0 = DiceForgeScreenHandler.BLANK_X + 18, ARROW_X1 = DiceForgeScreenHandler.OUTPUT_X - 5,
-            ARROW_Y = DiceForgeScreenHandler.BLANK_Y + 8;
+    private static final int ARROW_X0 = DiceForgeScreenHandler.BLANK_X + 18, ARROW_X1 = DiceForgeScreenHandler.OUTPUT_X - 6,
+            ARROW_TIP = ARROW_X1 + 3, ARROW_Y = DiceForgeScreenHandler.BLANK_Y + 8;
     private static final int[][] ARROW_PIXELS = arrowPixels();
     /**
      * The FORGE button is the whole capsule (its slots aside: hovering a slot is hovering the slot). Its hovered frame
@@ -90,9 +116,14 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /** While forging it fills from the left through a smooth gradient of these colours, violet to gold; orange when blocked. */
     private static final int[] GAUGE_COLORS = {0xFF8A3FFC, 0xFFD23CF0, 0xFFFF4FA3, 0xFFFF8A3D, 0xFFFFD35A};
     private static final int GAUGE_BLOCKED = 0xFFE0703A;
-    /** Ready to forge, the resting arrow pulses towards white once per PULSE_MS, by at most PULSE_AMOUNT. */
-    private static final long PULSE_MS = 1200;
-    private static final float PULSE_AMOUNT = 0.55f;
+    /**
+     * Everything in and not pressed yet, the FORGE capsule breathes, dark then light, once per PULSE_MS (eased): the
+     * screen fades it to its dimmed then its lit version (same outline, rim and slots: only its violet inside changes),
+     * its arrow from ARROW_SHADE to ARROW_IDLE.
+     */
+    private static final long PULSE_MS = 2000;
+    private static final int CAPSULE_LIT_V = 432, CAPSULE_DIM_V = 464;
+    private static final int ARROW_SHADE = 0xFFC9962E;
     /** Free GUI pixels kept around the forge; with less room (large GUI scales) the whole screen is shrunk to fit. */
     private static final int FIT_MARGIN = 4;
 
@@ -101,18 +132,36 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /** Scale the screen is drawn at: 1, or less when the window is too small for it at this GUI scale. */
     private float fit = 1f;
 
-    private final ItemStack gravityCore = new ItemStack(ModBlocks.GRAVITY_CORE);
-    private final ItemStack blankFace = new ItemStack(Registries.ITEM.get(Steveparty.id("blank_dice_face")));
+    /** The steps the forge is filled in: each shows its slots once the ones before are done. */
+    private enum Step {CORE, FRAGMENTS, FACES, MODULES}
 
-    /** The arrow's pixels: a 2 px shaft, then a head 6 px tall narrowing over 3 columns. */
+    /** Which steps are shown this frame (by ordinal), see {@link #updateSteps}. */
+    private final boolean[] shownSteps = new boolean[Step.values().length];
+    /** The step being filled this frame. */
+    private Step step = Step.CORE;
+    /** Until when the first missing thing pulses (FORGE clicked while it can't forge). */
+    private long hintUntil;
+
+    private final ItemStack gravityCore = new ItemStack(ModBlocks.GRAVITY_CORE);
+    /** The die to come, before the ring has a face. */
+    private final ItemStack plainDie = new ItemStack(ModItems.DEFAULT_DICE);
+    private final ItemStack blankFace = new ItemStack(Registries.ITEM.get(Steveparty.id("blank_dice_face")));
+    /**
+     * The module slots are optional: each gem shows a different module, still, where the slots to fill show their
+     * items turning.
+     */
+    private final List<ItemStack> moduleGhosts = DiceModules.all().stream().limit(MODULE_SLOTS)
+            .map(module -> new ItemStack(module.item())).toList();
+
+    /** The arrow's pixels: a 3 px shaft, then a head 7, 5, 3 and 1 px tall, all centred on the row ARROW_Y. */
     private static int[][] arrowPixels() {
         List<int[]> pixels = new ArrayList<>();
         for (int x = ARROW_X0; x < ARROW_X1; x++) {
-            pixels.add(new int[]{x, ARROW_Y - 1});
-            pixels.add(new int[]{x, ARROW_Y});
+            for (int y = ARROW_Y - 1; y <= ARROW_Y + 1; y++) pixels.add(new int[]{x, y});
         }
-        for (int k = 0; k < 3; k++) {
-            for (int y = ARROW_Y - 1 - (2 - k); y <= ARROW_Y + (2 - k); y++) pixels.add(new int[]{ARROW_X1 + k, y});
+        for (int x = ARROW_X1; x <= ARROW_TIP; x++) {
+            int half = ARROW_TIP - x;
+            for (int y = ARROW_Y - half; y <= ARROW_Y + half; y++) pixels.add(new int[]{x, y});
         }
         return pixels.toArray(new int[0][]);
     }
@@ -121,6 +170,65 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         super(handler, inventory, title);
         this.backgroundWidth = 236;
         this.backgroundHeight = 330;
+        handler.setShownSlots(index -> shownSteps[stepOf(index).ordinal()]);
+        updateSteps();
+    }
+
+    // ------------------------------------------------------------------ steps
+
+    private static Step stepOf(int slot) {
+        if (slot == CENTER_SLOT) return Step.CORE;
+        if (slot >= FIRST_FRAGMENT_SLOT && slot < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS) return Step.FRAGMENTS;
+        if (isModuleSlot(slot)) return Step.MODULES;
+        return Step.FACES; // the faces, and the capsule: blank faces and the die
+    }
+
+    /** @return true when the 5 fragment slots hold fragments of different colours (black may repeat). */
+    private static boolean areFragmentsDone(Inventory inventory) {
+        Set<Item> colours = new HashSet<>();
+        for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (!isStarFragment(stack) || !isInfiniteFragment(stack) && !colours.add(stack.getItem())) return false;
+        }
+        return true;
+    }
+
+    /**
+     * The step being filled, and the steps shown: those up to it, and any holding something (filled by a hopper, or
+     * still holding its items once the core is taken back).
+     */
+    private void updateSteps() {
+        Inventory inventory = handler.getInventory();
+        int faces = countFaces(inventory);
+        ItemStack blanks = inventory.getStack(BLANK_SLOT);
+        if (!handler.isActivated()) step = Step.CORE;
+        else if (!areFragmentsDone(inventory)) step = Step.FRAGMENTS;
+        else if (faces < DiceForgeBlockEntity.MIN_FACES || !isBlankFace(blanks) || blanks.getCount() < faces) step = Step.FACES;
+        else step = Step.MODULES;
+        for (Step each : Step.values()) shownSteps[each.ordinal()] = each.ordinal() <= step.ordinal();
+        for (int i = 0; i < DiceForgeBlockEntity.SIZE; i++) {
+            if (!inventory.getStack(i).isEmpty()) shownSteps[stepOf(i).ordinal()] = true;
+        }
+    }
+
+    private boolean isShown(Step each) {
+        return shownSteps[each.ordinal()];
+    }
+
+    /** @return the forge slot of the first thing missing to forge, or -1. */
+    private int getFirstMissingSlot() {
+        Inventory inventory = handler.getInventory();
+        return switch (step) {
+            case CORE -> CENTER_SLOT;
+            case FRAGMENTS -> {
+                for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
+                    if (inventory.getStack(i).isEmpty()) yield i;
+                }
+                yield -1;
+            }
+            case FACES -> countFaces(inventory) < DiceForgeBlockEntity.MIN_FACES ? 0 : BLANK_SLOT;
+            case MODULES -> -1;
+        };
     }
 
     /**
@@ -171,14 +279,22 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         int x = this.x, y = this.y;
         RenderSystem.enableBlend();
         context.drawTexture(TEXTURE, x, y, 0, 0, this.backgroundWidth, this.backgroundHeight, ATLAS_SIZE, ATLAS_SIZE);
+        // Asleep without its core, the galaxy lights up when the core goes in
+        float light = handler.isActivated() ? 1f : SLEEPING_GALAXY;
+        RenderSystem.setShaderColor(light, light, light, 1f);
         drawGalaxy(context, x + GALAXY_CENTER_X, y + GALAXY_CENTER_Y);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
-        // Light slots on the galaxy, where the faces and fragments are this frame
-        for (int i = 0; i < FACE_SLOTS; i++) {
-            drawLightSlot(context, x, y, handler.getSlot(i), LIGHT_SQUARE_U);
+        // Light slots on the galaxy, where the faces and fragments are shown
+        if (isShown(Step.FACES)) {
+            for (int i = 0; i < FACE_SLOTS; i++) drawLightSlot(context, x, y, handler.getSlot(i), LIGHT_SQUARE_U);
         }
-        for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
-            drawLightSlot(context, x, y, handler.getSlot(i), LIGHT_ROUND_U);
+        // The core's place, before it is in
+        if (!handler.isActivated()) drawLightSlot(context, x, y, handler.getSlot(CENTER_SLOT), LIGHT_ROUND_U);
+        if (isShown(Step.FRAGMENTS)) {
+            for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
+                drawLightSlot(context, x, y, handler.getSlot(i), LIGHT_ROUND_U);
+            }
         }
         // Faces: the brighter the gold contour, the more likely the face
         int totalWeight = getTotalWeight();
@@ -189,11 +305,30 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
             drawSlotContour(context, x + slot.x, y + slot.y, (alpha << 24) | 0xFFE08C);
         }
 
-        // Over the galaxy: its ring, the module gems and the capsule
+        // Over the galaxy: its ring, then the capsule and the module gems once shown
+        RenderSystem.enableBlend(); // the face contours (fills) above leave blending off
+        RenderSystem.defaultBlendFunc();
         context.drawTexture(TEXTURE, x, y, OVERLAY_U, 0, this.backgroundWidth, this.backgroundHeight, ATLAS_SIZE, ATLAS_SIZE);
+        if (isShown(Step.FACES)) {
+            context.drawTexture(TEXTURE, x + FRAME_X, y + FRAME_Y, CAPSULE_U, CAPSULE_V, FRAME_W, FRAME_H, ATLAS_SIZE, ATLAS_SIZE);
+            if (isReadyToForge()) {
+                // Ready to forge: the capsule breathes, dark then light, until it is pressed
+                float pulse = getPulse();
+                float fade = pulse < 0.5f ? 1f - 2f * pulse : 2f * pulse - 1f;
+                RenderSystem.setShaderColor(1f, 1f, 1f, fade);
+                context.drawTexture(TEXTURE, x + FRAME_X, y + FRAME_Y, CAPSULE_U, pulse < 0.5f ? CAPSULE_DIM_V : CAPSULE_LIT_V,
+                        FRAME_W, FRAME_H, ATLAS_SIZE, ATLAS_SIZE);
+                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            }
+        }
+        if (isShown(Step.MODULES)) {
+            for (int[] gem : DiceForgeScreenHandler.MODULE_POSITIONS) {
+                context.drawTexture(TEXTURE, x + gem[0] - 4, y + gem[1] - 4, GEM_U, GEM_V, GEM_SIZE, GEM_SIZE, ATLAS_SIZE, ATLAS_SIZE);
+            }
+        }
         RenderSystem.disableBlend();
 
-        drawArrowButton(context, x, y, mouseX, mouseY, delta);
+        if (isShown(Step.FACES)) drawArrowButton(context, x, y, mouseX, mouseY, delta);
     }
 
     private static void drawLightSlot(DrawContext context, int x, int y, Slot slot, int u) {
@@ -260,6 +395,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     private boolean isOverButton(double mouseX, double mouseY) {
+        if (!isShown(Step.FACES)) return false;
         double px = mouseX - this.x, py = mouseY - this.y;
         if (px < BUTTON_X0 || px >= BUTTON_X1 || py < BUTTON_Y0 || py >= BUTTON_Y1) return false;
         // Its two slots are slots
@@ -295,13 +431,10 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
         int base = hovered ? (enabled ? ARROW_HOVERED : ARROW_OFF_HOVERED) : !enabled ? ARROW_OFF
                 : handler.isRunning() ? ARROW_RUNNING : ARROW_IDLE;
-        if (!hovered && enabled && !handler.isRunning() && handler.getStatus() == Status.OK) {
-            // Ready to forge: a gentle pulse invites the click
-            float wave = 0.5f - 0.5f * MathHelper.cos((Util.getMeasuringTimeMs() % PULSE_MS) / (float) PULSE_MS * MathHelper.TAU);
-            base = ColorHelper.Argb.lerp(wave * PULSE_AMOUNT, ARROW_IDLE, ARROW_HOVERED);
-        }
+        // Ready to forge, not pressed yet: the arrow pulses with its capsule
+        if (!hovered && isReadyToForge()) base = ColorHelper.Argb.lerp(getPulse(), ARROW_SHADE, ARROW_IDLE);
+        float length = ARROW_TIP - ARROW_X0;
         float progress = getSmoothProgress(delta);
-        float length = ARROW_X1 + 2 - ARROW_X0;
         int shift = pressed ? 1 : 0;
         for (int[] pixel : ARROW_PIXELS) {
             float t = (pixel[0] - ARROW_X0) / length;
@@ -310,6 +443,16 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
             int px = x + pixel[0] + shift, py = y + pixel[1] + shift;
             context.fill(px, py, px + 1, py + 1, color);
         }
+    }
+
+    /** Everything is in (core, fragments, faces, blank faces), the output has room, and it is not forging yet. */
+    private boolean isReadyToForge() {
+        return isButtonEnabled() && !handler.isRunning() && handler.getStatus() == Status.OK;
+    }
+
+    /** @return the FORGE pulse: 0 (dark) to 1 (light) and back once per PULSE_MS, eased. */
+    private static float getPulse() {
+        return 0.5f - 0.5f * MathHelper.cos((Util.getMeasuringTimeMs() % PULSE_MS) / (float) PULSE_MS * MathHelper.TAU);
     }
 
     /** The FORGE arrow: what a click does now, the progress, and what is missing. */
@@ -399,6 +542,8 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         mouseY = toScreen(mouseY);
         if (button == 0 && isOverButton(mouseX, mouseY)) {
             buttonPressed = isButtonEnabled();
+            // It can't forge yet: what is missing first pulses
+            if (!isButtonEnabled()) hintUntil = Util.getMeasuringTimeMs() + HINT_MS;
             if (isButtonEnabled() && client != null && client.interactionManager != null) {
                 client.interactionManager.clickButton(handler.syncId, DiceForgeScreenHandler.BUTTON_TOGGLE);
                 MinecraftClient.getInstance().getSoundManager()
@@ -437,18 +582,67 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         int index = slot.id;
         if (index < DiceForgeBlockEntity.SIZE && !slot.hasStack()) {
             ItemStack ghost = getGhostStack(index);
-            if (!ghost.isEmpty()) GuiItems.tinted(context, ghost, slot.x, slot.y, 1f, 1f, 1f, GHOST_ALPHA);
+            boolean module = isModuleSlot(index);
+            if (!ghost.isEmpty()) GuiItems.tinted(context, ghost, slot.x, slot.y, module ? MODULE_GHOST_R : 1f,
+                    module ? MODULE_GHOST_G : 1f, 1f, getGhostAlpha(index));
         }
         super.drawSlot(context, slot);
     }
 
-    /** @return what to show at low opacity in an empty forge slot (remembered item, hint or preview). */
+    /** The silhouettes' opacity; the first missing thing pulses a moment after a click on FORGE that can't forge. */
+    private float getGhostAlpha(int index) {
+        long now = Util.getMeasuringTimeMs();
+        if (now >= hintUntil || index != getFirstMissingSlot()) return isModuleSlot(index) ? MODULE_GHOST_ALPHA : GHOST_ALPHA;
+        float wave = 0.5f - 0.5f * MathHelper.cos((now % HINT_PULSE_MS) / (float) HINT_PULSE_MS * MathHelper.TAU);
+        return MathHelper.lerp(wave, GHOST_ALPHA, 1f);
+    }
+
+    /**
+     * @return what to show at low opacity in an empty forge slot: the item it remembers (used up by the last die), or
+     * what it takes (the core, a fragment colour still free, a face while the ring is empty, blank faces, a module),
+     * or the die it makes.
+     */
     private ItemStack getGhostStack(int index) {
         if (index == CENTER_SLOT) return handler.isActivated() ? ItemStack.EMPTY : gravityCore;
-        if (index == OUTPUT_SLOT) return DiceForgeBlockEntity.createDie(handler.getInventory());
+        if (index == OUTPUT_SLOT) {
+            ItemStack die = DiceForgeBlockEntity.createDie(handler.getInventory());
+            return die.isEmpty() ? plainDie : die;
+        }
         Item ghost = handler.getGhost(index);
         if (ghost != null) return new ItemStack(ghost);
-        return index == BLANK_SLOT ? blankFace : ItemStack.EMPTY;
+        if (index == BLANK_SLOT) return blankFace;
+        if (index >= FIRST_FRAGMENT_SLOT && index < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS) return getFragmentGhost(index);
+        if (index < FACE_SLOTS) {
+            // Only while the ring is empty: once a face is in, the other face slots are free to use or not
+            if (countFaces(handler.getInventory()) > 0) return ItemStack.EMPTY;
+            long turn = Util.getMeasuringTimeMs() / FACE_CYCLE_MS;
+            return new ItemStack(Registries.ITEM.get(Steveparty.id("dice_face_" + (1 + turn % 10))));
+        }
+        if (isModuleSlot(index)) {
+            int gem = index - FIRST_MODULE_SLOT;
+            return gem < moduleGhosts.size() ? moduleGhosts.get(gem) : ItemStack.EMPTY;
+        }
+        return ItemStack.EMPTY;
+    }
+
+    /**
+     * An empty fragment slot shows a colour no other slot holds, the empty slots each a different one, all turning
+     * together through the colours still free.
+     */
+    private ItemStack getFragmentGhost(int index) {
+        Inventory inventory = handler.getInventory();
+        List<Item> free = new ArrayList<>(FRAGMENT_CYCLE);
+        int empties = 0, rank = 0;
+        for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (!stack.isEmpty() && !isInfiniteFragment(stack)) free.remove(stack.getItem());
+            if (stack.isEmpty()) {
+                if (i == index) rank = empties;
+                empties++;
+            }
+        }
+        long turn = Util.getMeasuringTimeMs() / FRAGMENT_CYCLE_MS;
+        return new ItemStack(free.get((int) ((rank + turn) % free.size())));
     }
 
     @Override
@@ -459,6 +653,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
     @Override
     public void render(DrawContext context, int realMouseX, int realMouseY, float delta) {
+        updateSteps();
         // Drawn shrunk when the window is too small (see init), the tooltips at full size
         int mouseX = (int) toScreen(realMouseX), mouseY = (int) toScreen(realMouseY);
         MatrixStack matrices = context.getMatrices();
