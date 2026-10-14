@@ -12,18 +12,15 @@ import fr.lordfinn.steveparty.board.BrushLinkable;
 import fr.lordfinn.steveparty.board.BrushLinks;
 import fr.lordfinn.steveparty.board.CartridgeLinks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
+import fr.lordfinn.steveparty.client.blockentity.SpawnBubbleRenderer;
+import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
+import fr.lordfinn.steveparty.client.utils.GhostModels;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.entity.model.EntityModelLayers;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
@@ -57,7 +54,8 @@ import java.util.Set;
  * </ul>
  * Worked out when the aimed block or the board changes (or once a second), never per frame. Drawn by
  * {@link BrushOverlay} in its pass (LAST, entity buffers drawn at the end of the hook), like the brush's own ghost
- * tiles: thin see-through arrows and boxes writing no depth that is relied on (see the minecraft-rendering skill).
+ * tiles: thin see-through arrows writing no depth that is relied on. The ghost chest and bubble are models, asked for
+ * from GhostModels (nearest faces only, seen through water and glass: see the minecraft-rendering skill).
  */
 final class BrushSuggestions {
     /** The grey of the suggestions, and how see-through their arrows are. */
@@ -69,9 +67,6 @@ final class BrushSuggestions {
     private static final int REFRESH_TICKS = 20;
     /** The ghost bubble stands this far beside its tile (blocks, centre to centre): a full block clear of it. */
     private static final int BUBBLE_SIDE = 2;
-    /** The ghost bubble's outline: a darker lavender (60 % of its fill), 2 pixels thick. */
-    private static final int BUBBLE_EDGE = 0x6A4FB0;
-    private static final double BUBBLE_EDGE_WIDTH = 2 / 16.0;
 
     /** A ghost link from a block to another, and the ghost blocks drawn at their end. */
     private record Suggestion(List<Vec3d[]> links, @Nullable BlockPos chest, Direction chestFacing, @Nullable Vec3d bubble, @Nullable Vec3d bubbleFrom) {
@@ -264,39 +259,44 @@ final class BrushSuggestions {
         float pulse = 0.75f + 0.25f * (float) Math.sin((world.getTime() + tickDelta) / 6.0);
         int arrows = ((int) (ARROW_ALPHA * pulse) << 24) | GREY;
         for (Vec3d[] link : suggestion.links()) WorldDraw.path(matrices, consumers, camera, link[0], link[1], arrows, 0.4, 0.45, phase, 0.3, 0);
-        if (suggestion.chest() != null) {
-            ghostChest(matrices, consumers, camera, suggestion.chest(), suggestion.chestFacing(), CHEST_ALPHA * pulse);
-        }
+        // Linked from its tile to its middle, inside its film
         if (suggestion.bubble() != null) {
-            // A Spawn Bubble's ghost: its iridescent colours, see-through, a dotted grey link to it
-            Vec3d at = suggestion.bubble();
-            Vec3d min = at.add(-0.4, 0.05, -0.4), max = at.add(0.4, 0.85, 0.4);
-            WorldDraw.box(matrices, consumers, camera, min, max, CartridgeLinks.SPAWN_MIDDLE, 0.35f * pulse);
-            BrushOverlay.edges(matrices, consumers, camera, min, max, BUBBLE_EDGE, 0.9f * pulse, BUBBLE_EDGE_WIDTH);
-            WorldDraw.dotted(matrices, consumers, camera, suggestion.bubbleFrom(), at.add(0, 0.45, 0), 0.6f * pulse, t -> GREY);
+            WorldDraw.dotted(matrices, consumers, camera, suggestion.bubbleFrom(), suggestion.bubble().add(0, 0.45, 0), 0.6f * pulse, t -> GREY);
         }
     }
 
-    /** How see-through the ghost chest is (its model, greyed). */
-    private static final float CHEST_ALPHA = 0.45f;
-    private static final Identifier CHEST_TEXTURE = Identifier.ofVanilla("textures/entity/chest/normal.png");
+    /**
+     * Asks for the ghost chest and bubble of this frame (AFTER_SETUP: they are drawn around the translucent terrain,
+     * GhostModels), pulsing with the arrows.
+     */
+    static void requestGhosts(ClientWorld world, Camera camera, float tickDelta) {
+        Suggestion suggestion = current;
+        if (suggestion == Suggestion.NONE || ToolWheel.isOpen()) return;
+        float pulse = 0.75f + 0.25f * (float) Math.sin((world.getTime() + tickDelta) / 6.0);
+        if (suggestion.chest() != null) ghostChest(suggestion.chest(), suggestion.chestFacing(), GHOST_ALPHA * pulse);
+        if (suggestion.bubble() != null) {
+            // A Spawn Bubble's ghost: the real one at rest, see-through, facing the camera (as one placed)
+            Vec3d at = suggestion.bubble(), cam = camera.getPos();
+            float yaw = (float) Math.toDegrees(Math.atan2(-(cam.x - at.x), cam.z - at.z));
+            SpawnBubbleRenderer.ghost(at, yaw, GHOST_ALPHA * pulse, LightmapTextureManager.MAX_LIGHT_COORDINATE);
+        }
+    }
+
+    /** How see-through the ghost chest and the ghost bubble are (their models in their own colours, before the pulse). */
+    private static final float GHOST_ALPHA = 0.5f;
 
     /**
-     * A ghost chest: the vanilla chest model (closed), see-through and greyed, at {@code pos}, opening toward
-     * {@code facing}. Translucent entity layer, drawn in the overlay's pass with the other ghosts.
+     * A ghost chest: a chest's hologram (one cube and its latch, GhostModels#CHEST), see-through, at
+     * {@code pos}, opening toward {@code facing}.
      */
-    private static void ghostChest(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, BlockPos pos, Direction facing, float alpha) {
-        ModelPart model = MinecraftClient.getInstance().getEntityModelLoader().getModelPart(EntityModelLayers.CHEST);
-        VertexConsumer consumer = consumers.getBuffer(RenderLayer.getEntityTranslucent(CHEST_TEXTURE));
-        Vec3d cam = camera.getPos();
-        int color = ((int) (alpha * 255) << 24) | GREY;
-        matrices.push();
-        matrices.translate(pos.getX() - cam.x + 0.5, pos.getY() - cam.y + 0.5, pos.getZ() - cam.z + 0.5);
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-facing.asRotation()));
-        matrices.translate(-0.5, -0.5, -0.5);
-        for (String part : new String[]{"bottom", "lid", "lock"}) {
-            model.getChild(part).render(matrices, consumer, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, color);
-        }
-        matrices.pop();
+    private static void ghostChest(BlockPos pos, Direction facing, float alpha) {
+        GhostModels.request(Vec3d.of(pos), Vec3d.ofCenter(pos), alpha, true, (matrices, buffers) -> {
+            matrices.push();
+            matrices.translate(0.5, 0.5, 0.5);
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-facing.asRotation()));
+            matrices.translate(-0.5, -0.5, -0.5);
+            GhostModels.CHEST.draw(matrices, buffers, 0xFFFFFF, LightmapTextureManager.MAX_LIGHT_COORDINATE);
+            matrices.pop();
+        }, null);
     }
 }

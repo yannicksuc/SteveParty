@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.mixin;
 
 import fr.lordfinn.steveparty.client.blockentity.GhostMobs;
 import fr.lordfinn.steveparty.client.entity.DeferredGlows;
+import fr.lordfinn.steveparty.client.utils.GhostModels;
 import net.minecraft.client.render.WorldRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,5 +25,6 @@ public class WorldRendererDeferredGlowsMixin {
     private void steveparty$glowsBeforeTranslucentTerrain(CallbackInfo ci) {
         DeferredGlows.drawBeforeTranslucentTerrain();
         GhostMobs.drawBeforeTranslucentTerrain();
+        GhostModels.drawBeforeTranslucentTerrain();
     }
 }
