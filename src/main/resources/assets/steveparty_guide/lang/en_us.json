@@ -535,7 +535,7 @@
   "book.steveparty.guide.party.step_controller.page1.title": "What it does",
   "book.steveparty.guide.party.step_controller.page2.text": "Linked with the [#](1C4E80)**Linker Brush**[#]() to a part of a party: that party, even far away.\\\n\\\nElse: the nearest within 64 blocks.",
   "book.steveparty.guide.party.step_controller.page2.title": "What it drives",
-  "book.steveparty.guide.party.step_controller.page3.text": "The pawn goes back, and what the game gave or took goes back where it came from.\\n\\nWhat was used, thrown or given away is not given back: the chat says so.\\n\\nNot what you trigger yourself (redstone, commands).",
+  "book.steveparty.guide.party.step_controller.page3.text": "The pawn goes back, and what the game gave or took [#](2E7D32)**goes back**[#]() where it came from.\\n\\nWhat was used, thrown or given away [#](C0392B)**isn't given back**[#](): the chat says so.\\n\\nDoesn't undo what you trigger yourself (redstone, commands).",
   "book.steveparty.guide.party.step_controller.page3.title": "Going back",
   "book.steveparty.guide.pawns_dice.dice.description": "Throw, stop, move",
   "book.steveparty.guide.pawns_dice.dice.name": "Dice",

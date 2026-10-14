@@ -535,7 +535,7 @@
   "book.steveparty.guide.party.step_controller.page1.title": "Ce qu'il fait",
   "book.steveparty.guide.party.step_controller.page2.text": "Lié au [#](1C4E80)**Pinceau lieur**[#]() à un élément d'une partie : cette partie, même loin.\\\n\\\nSinon : la plus proche à 64 blocs.",
   "book.steveparty.guide.party.step_controller.page2.title": "Ce qu'il pilote",
-  "book.steveparty.guide.party.step_controller.page3.text": "Le pion revient, et ce que le jeu a donné ou pris revient d'où il vient.\\n\\nCe qui a été utilisé, jeté ou donné n'est pas rendu : le chat le dit.\\n\\nPas ce que tu déclenches toi-même (redstone, commandes).",
+  "book.steveparty.guide.party.step_controller.page3.text": "Le pion revient, et ce que le jeu a donné ou pris [#](2E7D32)**revient**[#]() d'où il vient.\\n\\nCe qui a été utilisé, jeté ou donné [#](C0392B)**n'est pas rendu**[#]() : le chat le dit.\\n\\nNe défait pas ce que tu déclenches toi-même (redstone, commandes).",
   "book.steveparty.guide.party.step_controller.page3.title": "Revenir en arrière",
   "book.steveparty.guide.pawns_dice.dice.description": "Lancer, arrêter, avancer",
   "book.steveparty.guide.pawns_dice.dice.name": "Dés",
