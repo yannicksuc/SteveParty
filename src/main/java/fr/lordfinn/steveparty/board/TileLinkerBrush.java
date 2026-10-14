@@ -272,6 +272,12 @@ public final class TileLinkerBrush {
             world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS, 0.5f, 1.2f);
             return;
         }
+        // Into a start tile: refused (its links only go out of it), the stroke goes on from it
+        if (fromKind == null && WrenchActions.intoStart(world, from, pos)) {
+            stroke.start = null;
+            WrenchActions.refuseIntoStart(player);
+            return;
+        }
         // From a Teleport tile to a board space it has no link to: « TP » or « link », the player picks
         if (teleportChoice(world, level(brush), from, pos) != null) {
             stroke.start = null;

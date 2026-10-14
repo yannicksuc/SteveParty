@@ -119,7 +119,8 @@ public final class CartridgeLinks {
 
         @Override
         public boolean accepts(World world, BlockPos target) {
-            return BoardLinks.container(world, target) instanceof BoardSpaceBlockEntity;
+            // Nothing leads into a start tile (see WrenchActions#intoStart)
+            return BoardLinks.container(world, target) instanceof BoardSpaceBlockEntity && !WrenchActions.intoStart(world, holder(), target);
         }
 
         @Override
@@ -171,6 +172,7 @@ public final class CartridgeLinks {
         @Override
         public boolean accepts(World world, BlockPos target) {
             return !target.equals(holder()) && BoardLinks.container(world, target) instanceof BoardSpaceBlockEntity
+                    && !WrenchActions.intoStart(world, holder(), target)
                     && targets(world).size() < TeleportSettingsComponent.MAX_TARGETS;
         }
 

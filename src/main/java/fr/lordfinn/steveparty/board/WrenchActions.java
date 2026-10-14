@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.board;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBoard;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
@@ -131,11 +132,31 @@ public final class WrenchActions {
      * one not again within a few seconds (a stroke meets it at every tile).
      */
     public static void warn(ServerPlayerEntity player, Text text) {
+        warn(player, text, false);
+    }
+
+    /** {@link #warn(ServerPlayerEntity, Text)} in the action bar (or the chat), in red, not repeated within a few seconds. */
+    public static void warn(ServerPlayerEntity player, Text text, boolean actionBar) {
         long now = Util.getMeasuringTimeMs();
         if (text.equals(LAST_WARNINGS.get(player.getUuid())) && now - LAST_WARNING_AT.getOrDefault(player.getUuid(), 0L) < WARNING_REPEAT_MS) return;
         LAST_WARNINGS.put(player.getUuid(), text);
         LAST_WARNING_AT.put(player.getUuid(), now);
-        player.sendMessage(text.copy().formatted(Formatting.RED), false);
+        player.sendMessage(text.copy().formatted(Formatting.RED), actionBar);
+    }
+
+    /**
+     * Whether a link from the board space at {@code origin} to {@code target} would lead into a start tile: refused,
+     * a start tile is where a token starts, never a place of the loop (its links only go out of it).
+     */
+    public static boolean intoStart(World world, BlockPos origin, BlockPos target) {
+        return world.getBlockEntity(BoardSpaces.resolve(world, origin)) instanceof BoardSpaceBlockEntity
+                && PartyBoard.isStart(world, BoardSpaces.resolve(world, target));
+    }
+
+    /** Says that nothing links into a start tile (action bar). */
+    static void refuseIntoStart(ServerPlayerEntity player) {
+        warn(player, Text.translatable("message.steveparty.tile_linker_brush.into_start"), true);
+        player.playSoundToPlayer(ModSounds.CANCEL_SOUND_EVENT, SoundCategory.PLAYERS, 0.6f, 0.8f);
     }
 
     /** The board space (or router) the player aims at, up to {@link #LONG_REACH} blocks away, or null (see {@link BrushAim}). */
@@ -212,6 +233,10 @@ public final class WrenchActions {
      */
     static boolean addLink(ServerPlayerEntity player, ServerWorld world, BlockPos origin,
                                    CartridgeContainerBlockEntity originContainer, int slot, BlockPos target) {
+        if (intoStart(world, origin, target)) {
+            refuseIntoStart(player);
+            return false;
+        }
         ItemStack cartridge = BoardLinks.ensureCartridge(player, originContainer, slot);
         if (cartridge.isEmpty()) {
             warn(player, Text.translatable("message.steveparty.wrench.no_cartridge"));
@@ -264,7 +289,8 @@ public final class WrenchActions {
         BlockPos anchor = TileLinkerBrush.anchor(brush, world);
         CartridgeContainerBlockEntity anchorContainer = anchor == null ? null : BoardLinks.container(world, anchor);
         recorded(player, world, brush, () -> {
-            if (anchorContainer == null) {
+            // A start tile placed: nothing links into it, the path goes on from it
+            if (anchorContainer == null || PartyBoard.isStart(world, pos)) {
                 TileLinkerBrush.setAnchor(brush, world, pos);
                 say(player, Text.translatable("message.steveparty.tile_linker_brush.start", BoardText.pos(pos)));
                 return;

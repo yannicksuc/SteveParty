@@ -2675,6 +2675,7 @@
   "tooltip.steveparty.wrench.controls.plastic": "casse tout bloc de plastique en un coup",
   "message.steveparty.tile_linker_brush.cartridge": "Pinceau : les tuiles peintes reçoivent : %s (l'ancienne rendue, liens gardés)",
   "message.steveparty.tile_linker_brush.not_board_space": "Pas une case : un lien ne mène qu'à une case",
+  "message.steveparty.tile_linker_brush.into_start": "Rien ne mène à une case départ : peins depuis elle",
   "message.steveparty.tile_linker_brush.not_target": "Le dernier bloc peint ne peut pas être relié à %s",
   "message.steveparty.tile_linker_brush.cannot_edit": "Tu ne peux pas changer les liens du bloc en %s",
   "message.steveparty.tile_linker_brush.too_far": "Posée à %s blocs de la dernière tuile du pinceau (plus de %s) : pas reliée, peins-la",

@@ -149,6 +149,21 @@ public class BoardLinkingGameTests implements SteveGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void nothingIsLinkedIntoAStartTile(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
+        boardSpace(context, t.get(1)).setStack(0, new ItemStack(ModItems.TILE_BEHAVIOR_START));
+        withPlayer(context, true, player -> {
+            ItemStack brush = brush(player);
+            paint(player, brush, context, t.get(0), t.get(1), t.get(2));
+            context.assertTrue(links(context, t.get(0)).isEmpty(), "nothing leads into the start tile");
+            context.assertEquals(links(context, t.get(1)), List.of(t.get(2)), "the stroke goes on from the start tile");
+            // Painted the other way round: the start tile links out of it, the tile still not into it
+            paint(player, brush, context, t.get(2), t.get(1));
+            context.assertTrue(links(context, t.get(2)).isEmpty(), "still nothing into the start tile");
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void holdingTheBrushOverATileDoesNotRepaintIt(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
         withPlayer(context, true, player -> {

@@ -2675,6 +2675,7 @@
   "tooltip.steveparty.wrench.controls.plastic": "breaks any plastic block in one hit",
   "message.steveparty.tile_linker_brush.cartridge": "Brush: the tiles painted get a %s (theirs back, links kept)",
   "message.steveparty.tile_linker_brush.not_board_space": "Not a board space: a link only leads to a board space",
+  "message.steveparty.tile_linker_brush.into_start": "Nothing leads into a start tile: paint from it",
   "message.steveparty.tile_linker_brush.not_target": "%s is nothing the last block painted can be linked to",
   "message.steveparty.tile_linker_brush.cannot_edit": "You may not change the links of the block at %s",
   "message.steveparty.tile_linker_brush.too_far": "Placed %s blocks from the brush's last tile (more than %s): not linked, paint it",
