@@ -189,7 +189,7 @@ public final class FormatChips {
         if (shortfall[1] < 0) return Text.translatable("format.steveparty.shortfall.size", name);
         MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(shortfall[1]);
         MiniGameFormat.Side range = new MiniGameFormat.Side(shortfall[3], shortfall[4] >= 255 ? MiniGameFormat.Side.INFINITE : shortfall[4]);
-        return Text.translatable("format.steveparty.shortfall.count", name, role == null ? Text.empty() : role.text(), shortfall[2], range.rangeText());
+        return Text.translatable("format.steveparty.shortfall.count" + (shortfall[2] == 1 ? ".one" : ""), name, role == null ? Text.empty() : role.text(), shortfall[2], range.rangeText());
     }
 
     /** The x of a chip's × (its right part), for the clicks. */

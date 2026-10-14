@@ -23,7 +23,7 @@ import net.minecraft.world.World;
 import java.util.List;
 
 /**
- * The Tile Linker Brush (« Pinceau lieur de tuiles »): links board spaces by painting them, the button held while
+ * The Tile Linker Brush (« Pinceau lieur »): links board spaces by painting them, the button held while
  * sweeping over them; going over a link again erases it. Its wheel (left click) picks the level (the redstone power
  * whose cartridge gets the link on a 16-slot board space), the kind of Cartridge put in new tiles, undo and redo. See
  * {@link TileLinkerBrush}.
