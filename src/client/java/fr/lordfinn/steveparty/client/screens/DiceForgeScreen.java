@@ -116,16 +116,12 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private static final int[] GAUGE_COLORS = {0xFF8A3FFC, 0xFFD23CF0, 0xFFFF4FA3, 0xFFFF8A3D, 0xFFFFD35A};
     private static final int GAUGE_BLOCKED = 0xFFE0703A;
     /**
-     * Everything in and not pressed yet, the FORGE capsule pulses, light then dark, once per PULSE_MS (eased): darkened
-     * down to PULSE_DARK at one end, its violet inside veiled in white (up to PULSE_LIGHT alpha) at the other, its
-     * arrow from ARROW_SHADE to white. Nothing moves or grows: only its own pixels change.
+     * Everything in and not pressed yet, the FORGE capsule breathes, dark then light, once per PULSE_MS (eased): the
+     * screen fades it to its dimmed then its lit version (same outline, rim and slots: only its violet inside changes),
+     * its arrow from ARROW_SHADE to ARROW_IDLE.
      */
     private static final long PULSE_MS = 2000;
-    private static final float PULSE_DARK = 0.72f;
-    private static final int PULSE_LIGHT = 0x70;
-    /** The capsule's violet inside (as drawn by the texture script): its box and the radius of its rounded ends. */
-    private static final int INSIDE_X0 = CAPSULE_CX - 28, INSIDE_X1 = CAPSULE_CX + 29, INSIDE_Y0 = CAPSULE_CY - 10,
-            INSIDE_Y1 = CAPSULE_CY + 11, INSIDE_RADIUS = 8;
+    private static final int CAPSULE_LIT_V = 432, CAPSULE_DIM_V = 464;
     private static final int ARROW_SHADE = 0xFFC9962E;
     /** Free GUI pixels kept around the forge; with less room (large GUI scales) the whole screen is shrunk to fit. */
     private static final int FIT_MARGIN = 4;
@@ -309,16 +305,20 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         }
 
         // Over the galaxy: its ring, then the capsule and the module gems once shown
+        RenderSystem.enableBlend(); // the face contours (fills) above leave blending off
+        RenderSystem.defaultBlendFunc();
         context.drawTexture(TEXTURE, x, y, OVERLAY_U, 0, this.backgroundWidth, this.backgroundHeight, ATLAS_SIZE, ATLAS_SIZE);
         if (isShown(Step.FACES)) {
-            // Ready to forge: the capsule pulses, light then dark, until it is pressed
-            float pulse = isReadyToForge() ? getPulse() : 0.5f;
-            float shade = isReadyToForge() ? MathHelper.lerp(Math.min(1f, 2f * pulse), PULSE_DARK, 1f) : 1f;
-            RenderSystem.setShaderColor(shade, shade, shade, 1f);
             context.drawTexture(TEXTURE, x + FRAME_X, y + FRAME_Y, CAPSULE_U, CAPSULE_V, FRAME_W, FRAME_H, ATLAS_SIZE, ATLAS_SIZE);
-            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            int glow = isReadyToForge() ? Math.round(Math.max(0f, 2f * pulse - 1f) * PULSE_LIGHT) : 0;
-            if (glow > 0) drawCapsuleVeil(context, x, y, (glow << 24) | 0xFFFFFF);
+            if (isReadyToForge()) {
+                // Ready to forge: the capsule breathes, dark then light, until it is pressed
+                float pulse = getPulse();
+                float fade = pulse < 0.5f ? 1f - 2f * pulse : 2f * pulse - 1f;
+                RenderSystem.setShaderColor(1f, 1f, 1f, fade);
+                context.drawTexture(TEXTURE, x + FRAME_X, y + FRAME_Y, CAPSULE_U, pulse < 0.5f ? CAPSULE_DIM_V : CAPSULE_LIT_V,
+                        FRAME_W, FRAME_H, ATLAS_SIZE, ATLAS_SIZE);
+                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            }
         }
         if (isShown(Step.MODULES)) {
             for (int[] gem : DiceForgeScreenHandler.MODULE_POSITIONS) {
@@ -431,7 +431,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         int base = hovered ? (enabled ? ARROW_HOVERED : ARROW_OFF_HOVERED) : !enabled ? ARROW_OFF
                 : handler.isRunning() ? ARROW_RUNNING : ARROW_IDLE;
         // Ready to forge, not pressed yet: the arrow pulses with its capsule
-        if (!hovered && isReadyToForge()) base = ColorHelper.Argb.lerp(getPulse(), ARROW_SHADE, ARROW_HOVERED);
+        if (!hovered && isReadyToForge()) base = ColorHelper.Argb.lerp(getPulse(), ARROW_SHADE, ARROW_IDLE);
         float length = ARROW_X1 + 2 - ARROW_X0;
         float progress = getSmoothProgress(delta);
         int shift = pressed ? 1 : 0;
@@ -441,27 +441,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
             if (pressed) color = ColorHelper.Argb.lerp(0.25f, color, 0xFF000000);
             int px = x + pixel[0] + shift, py = y + pixel[1] + shift;
             context.fill(px, py, px + 1, py + 1, color);
-        }
-    }
-
-    /** A veil of {@code color} over the capsule's violet inside, round ends included, its two slots left clear. */
-    private static void drawCapsuleVeil(DrawContext context, int x, int y, int color) {
-        int wellTop = DiceForgeScreenHandler.BLANK_Y - 1, wellBottom = DiceForgeScreenHandler.BLANK_Y + 16;
-        for (int row = INSIDE_Y0; row < INSIDE_Y1; row++) {
-            // Rows near the top and the bottom are shorter: the ends are rounded
-            float fromEdge = Math.min(row - INSIDE_Y0, INSIDE_Y1 - 1 - row) + 0.5f;
-            float dy = Math.max(0f, INSIDE_RADIUS - fromEdge);
-            int inset = Math.round(INSIDE_RADIUS - MathHelper.sqrt(INSIDE_RADIUS * INSIDE_RADIUS - dy * dy));
-            int x0 = INSIDE_X0 + inset, x1 = INSIDE_X1 - inset;
-            if (row < wellTop || row >= wellBottom) {
-                context.fill(x + x0, y + row, x + x1, y + row + 1, color);
-                continue;
-            }
-            int blank0 = DiceForgeScreenHandler.BLANK_X, blank1 = blank0 + 16;
-            int out0 = DiceForgeScreenHandler.OUTPUT_X, out1 = out0 + 16;
-            context.fill(x + x0, y + row, x + blank0, y + row + 1, color);
-            context.fill(x + blank1, y + row, x + out0, y + row + 1, color);
-            context.fill(x + out1, y + row, x + x1, y + row + 1, color);
         }
     }
 
