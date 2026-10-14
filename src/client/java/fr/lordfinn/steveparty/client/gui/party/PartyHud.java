@@ -181,8 +181,9 @@ public final class PartyHud {
 
         int screenWidth = context.getScaledWindowWidth();
         int screenHeight = context.getScaledWindowHeight();
-        // Hidden with the toggle key: they fade out (the layout screen shows them all the same)
-        boolean on = current != null && (preview || !PartyHudLayout.hidden());
+        // Hidden with the toggle key, or in a mini-game's round (its card takes their place): they fade out (the layout
+        // screen shows them all the same)
+        boolean on = current != null && (preview || (!PartyHudLayout.hidden() && !MiniGameRoundHud.isShown()));
         boolean standings = placeHud(Hud.STANDINGS, drawn, on && standingsShown && !drawn.players.isEmpty(), preview, STANDINGS_ALPHA, delta, now, screenWidth, screenHeight, 0);
         boolean turnBar = placeHud(Hud.TURN_BAR, drawn, on && turnBarShown, preview, TURN_BAR_ALPHA, delta, now, screenWidth, screenHeight,
                 turnBarRoom(standings, screenWidth, screenHeight));
@@ -262,8 +263,13 @@ public final class PartyHud {
         if (b[0] < right && b[1] + b[3] > top) b[1] = Math.max(0, top - b[3] - 2);
     }
 
-    /** Where the practice round's chip goes: centred under the notice when it is at the top, else under the bar. */
+    /**
+     * Where the practice round's chip goes: under the mini-game's card, else centred under the notice when it is at the
+     * top, else under the bar.
+     */
     static float[] practiceSpot(int screenWidth) {
+        float[] card = MiniGameRoundHud.below();
+        if (card != null) return card;
         for (Hud hud : new Hud[]{Hud.NOTICE, Hud.TURN_BAR}) {
             float[] b = BOUNDS[hud.ordinal()];
             HudPlacements.Placement placement = PartyHudLayout.get(hud);
@@ -404,7 +410,7 @@ public final class PartyHud {
      * Moves a HUD at the top of the screen down under the boss bars (top centre) and the status effect icons (top
      * right) when it would cover them.
      */
-    private static float keepClear(float x, float y, float width, float height, int screenWidth, int screenHeight) {
+    static float keepClear(float x, float y, float width, float height, int screenWidth, int screenHeight) {
         MinecraftClient client = MinecraftClient.getInstance();
         int bars = ((BossBarHudAccessor) client.inGameHud.getBossBarHud()).steveparty$getBossBars().size();
         if (bars > 0 && x < screenWidth / 2f + 92 && x + width > screenWidth / 2f - 92) {

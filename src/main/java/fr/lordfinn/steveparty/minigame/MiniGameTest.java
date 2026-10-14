@@ -353,6 +353,8 @@ public final class MiniGameTest implements MiniGameSession {
     private final List<UUID> tasks = new ArrayList<>();
     private Phase phase = Phase.COUNTDOWN;
     private boolean closed = false;
+    /** The chat told the mini-game (its name, its description): once, however many times it is replayed. */
+    private boolean told;
     private final MiniGameArena arena = new MiniGameArena();
     private Map<UUID, Integer> places = Map.of();
     private @Nullable MiniGameResults results;
@@ -546,8 +548,12 @@ public final class MiniGameTest implements MiniGameSession {
             ServerPlayerEntity player = comeOut(link, uuid);
             if (player != null && players.contains(uuid)) out.add(player);
         });
-        MiniGamePartyStep.announceStart(page.title(), page, audience());
-        MiniGameFreeze.start(server, out, audience(), page.title(), () -> !closed && phase == Phase.PLAYING);
+        // The card at the top of the screen: the team of each, by his pipe
+        for (UUID uuid : pipes.keySet()) MiniGamePipes.enterParty(uuid, pageId, () -> !closed, MiniGameRoundCards.of(page, disposition, pipes, players, uuid));
+        // The chat tells the mini-game the first time, then the countdown
+        MiniGameFreeze.start(server, out, audience(), page.title(), page, told ? MiniGameFreeze.Pace.AGAIN : MiniGameFreeze.Pace.FIRST,
+                () -> !closed && phase == Phase.PLAYING);
+        told = true;
     }
 
     /** @return the player if he comes out of the pipe, else null */

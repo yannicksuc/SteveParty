@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.minigame.MiniGameIntro;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
+import fr.lordfinn.steveparty.minigame.MiniGameReady;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
@@ -369,9 +370,15 @@ public class MiniGamePartyStep extends PartyStep {
         ready.clear();
         practiceOver = false;
         departure.sendOut(controller, Phase.PRACTICE);
-        MessageUtils.sendToPlayers(screens.previewAudience(controller), Text.translatable("message.steveparty.minigame.practice.start",
-                Text.keybind("key.steveparty.minigame_ready").formatted(Formatting.WHITE)).formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
         screens.showPractice(controller);
+    }
+
+    /** At the « Go! » of the first practice round: how it works, and the button to say one is ready. */
+    void tellPractice(PartyControllerEntity controller) {
+        Text how = Text.translatable("message.steveparty.minigame.practice.start").formatted(Formatting.GOLD);
+        for (ServerPlayerEntity player : screens.previewAudience(controller)) {
+            player.sendMessage(participants.contains(player.getUuid()) ? how.copy().append(" ").append(MiniGameReady.button()) : how, false);
+        }
     }
 
     /** The practice round starts again after its results: the votes are kept. */
@@ -462,6 +469,15 @@ public class MiniGamePartyStep extends PartyStep {
         if (online.isEmpty() || !online.stream().allMatch(player -> ready.contains(player.getUuid()))) return false;
         depart(controller);
         return true;
+    }
+
+    /** @return true if {@code player} plays the practice round of his party: he may say he is ready. */
+    public static boolean canVote(ServerPlayerEntity player) {
+        for (PartyControllerEntity controller : PartyControllerEntity.getActivePartyControllers()) {
+            if (!controller.isRemoved() && controller.getPartyData().getCurrentStep() instanceof MiniGamePartyStep step
+                    && step.isPractice() && step.participants.contains(player.getUuid())) return true;
+        }
+        return false;
     }
 
     /** The player's vote in the practice round of his party, from anywhere (the key, the Mini-game Controller). */

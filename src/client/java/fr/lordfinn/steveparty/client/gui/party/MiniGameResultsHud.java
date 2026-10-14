@@ -25,8 +25,7 @@ import java.util.List;
  * The end of a party's mini-game, in the style of the mini-game card ({@link MiniGameCardHud}): the results card, in
  * the middle of the screen for a few seconds, a line per player (per team in a team mini-game) with its place, and
  * what the party paid for it (the coins and the stars, with their items). The results of a mini-game played out of a
- * party, or of a party's practice round, say that nothing was paid; while the player is in a mini-game's round, a chip
- * at the top of the screen says which (« Mini-game: ... »).
+ * party, or of a party's practice round, say that nothing was paid.
  */
 public final class MiniGameResultsHud {
     private static final int WIDTH = 210, PAD = 7, ROW = 14, CHIP = 24;
@@ -36,8 +35,6 @@ public final class MiniGameResultsHud {
 
     private static @Nullable MiniGameResults results;
     private static double shownAt;
-    /** The title of the mini-game being tested (empty: it has none), null while no test is played. */
-    private static @Nullable String testTitle;
 
     private MiniGameResultsHud() {
     }
@@ -52,14 +49,8 @@ public final class MiniGameResultsHud {
         shownAt = PartyHud.now();
     }
 
-    /** The player is in a mini-game's round ({@code title}: its page's, empty for none), or no more (null). */
-    public static void test(@Nullable String title) {
-        testTitle = title;
-    }
-
     public static void clear() {
         results = null;
-        testTitle = null;
     }
 
     /** @return true while the results card is on screen. */
@@ -69,7 +60,6 @@ public final class MiniGameResultsHud {
 
     private static void render(DrawContext context, RenderTickCounter tickCounter) {
         if (MinecraftClient.getInstance().options.hudHidden) return;
-        if (testTitle != null) drawTestLabel(context, testTitle);
         if (results == null) return;
         double now = PartyHud.now();
         float age = (float) (now - shownAt);
@@ -83,24 +73,6 @@ public final class MiniGameResultsHud {
         float alpha = Math.min(in, out);
         if (alpha < 0.08f) return;
         drawResults(context, results, alpha, (1 - in) * -10 + (1 - out) * -6);
-    }
-
-    /**
-     * « Mini-game: ... », on a chip at the top of the screen (under the party's notice or turn bar when they are there),
-     * for as long as the player is in a mini-game's round. The practice round's chip says it already.
-     */
-    private static void drawTestLabel(DrawContext context, String title) {
-        if (MiniGamePracticeHud.practice() != null) return;
-        TextRenderer font = HudDraw.font();
-        Text text = title.isEmpty() ? Text.translatable("hud.steveparty.minigame.in.untitled")
-                : Text.translatable("hud.steveparty.minigame.in", Text.literal(title));
-        // One line at most the screen's width - 40: a longer one scrolls in the chip
-        int textWidth = Math.min(font.getWidth(text), context.getScaledWindowWidth() - 40);
-        float[] spot = PartyHud.practiceSpot(context.getScaledWindowWidth());
-        int width = textWidth + 14, y = Math.round(spot[1]);
-        int x = Math.clamp(Math.round(spot[0] - width / 2f), 2, Math.max(2, context.getScaledWindowWidth() - width - 2));
-        HudDraw.plate(context, Plate.ORANGE, x, y, width, 15, 1);
-        HudDraw.text(context, text, x + 7, y + 4, textWidth, HudDraw.TEXT, 1);
     }
 
     private static void drawResults(DrawContext context, MiniGameResults shown, float alpha, float slide) {

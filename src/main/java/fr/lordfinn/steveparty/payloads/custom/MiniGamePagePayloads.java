@@ -41,7 +41,8 @@ public final class MiniGamePagePayloads {
         Payloads.s2c(Status.ID, Status.CODEC);
         Payloads.s2c(Preview.ID, Preview.CODEC);
         Payloads.s2c(Results.ID, Results.CODEC);
-        Payloads.s2c(TestLabel.ID, TestLabel.CODEC);
+        Payloads.s2c(RoundCard.ID, RoundCard.CODEC);
+        Payloads.s2c(StartVote.ID, StartVote.CODEC);
         Payloads.s2c(TestStatus.ID, TestStatus.CODEC);
         Payloads.s2c(Practice.ID, Practice.CODEC);
     }
@@ -203,18 +204,67 @@ public final class MiniGamePagePayloads {
     }
 
     /**
-     * The label of a mini-game played out of any party (« Out of a party: ... »), for its players, spectators and
-     * observer.
+     * The card of the mini-game round a player is in (a party's or a test's), at the top of his screen in place of
+     * the party's HUD, for as long as he is in it.
      *
-     * @param show  false: it is over
-     * @param title the page's title, empty if it has none
+     * @param show      false: he is out of it
+     * @param title     the page's title, empty if it has none
+     * @param objective what to do: the first sentence of the page's description (markup), empty if it has none
+     * @param team      his team (0: A ... 3: D), {@link #NO_TEAM} without teams, {@link #SPECTATOR} for the audience
+     * @param kind      ordinal of the {@link MiniGameFormat.Kind} played, -1 if unknown
+     * @param sizes     the players of each team (teams), or the number of players (the other kinds)
      */
-    public record TestLabel(boolean show, String title) implements CustomPayload {
-        public static final Id<TestLabel> ID = id("test_label");
-        public static final PacketCodec<PacketByteBuf, TestLabel> CODEC = PacketCodec.of((payload, buf) -> {
+    public record RoundCard(boolean show, String title, String objective, int team, int kind, List<Integer> sizes) implements CustomPayload {
+        public static final int NO_TEAM = -1, SPECTATOR = -2;
+        public static final RoundCard HIDDEN = new RoundCard(false, "", "", NO_TEAM, -1, List.of());
+        public static final Id<RoundCard> ID = id("round_card");
+        public static final PacketCodec<PacketByteBuf, RoundCard> CODEC = PacketCodec.of((payload, buf) -> {
             buf.writeBoolean(payload.show);
             buf.writeString(payload.title, MiniGamePageData.MAX_TITLE_LENGTH);
-        }, buf -> new TestLabel(buf.readBoolean(), buf.readString(MiniGamePageData.MAX_TITLE_LENGTH)));
+            buf.writeString(payload.objective, 2048);
+            buf.writeVarInt(payload.team + 2);
+            buf.writeVarInt(payload.kind + 1);
+            List<Integer> sizes = payload.sizes.size() > 4 ? payload.sizes.subList(0, 4) : payload.sizes;
+            buf.writeVarInt(sizes.size());
+            sizes.forEach(buf::writeVarInt);
+        }, buf -> {
+            boolean show = buf.readBoolean();
+            String title = buf.readString(MiniGamePageData.MAX_TITLE_LENGTH);
+            String objective = buf.readString(2048);
+            int team = buf.readVarInt() - 2, kind = buf.readVarInt() - 1;
+            int count = Math.min(buf.readVarInt(), 4);
+            List<Integer> sizes = new ArrayList<>(count);
+            for (int i = 0; i < count; i++) sizes.add(buf.readVarInt());
+            return new RoundCard(show, title, objective, team, kind, sizes);
+        });
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /**
+     * The start of a round, while its players stand still before « Go! » (its description told in the chat): who says
+     * he is ready. Once every player is, the rest of the description is skipped. Sent to each player of the round (and
+     * its audience) each time it changes.
+     *
+     * @param show  false: the round started (or was called off)
+     * @param ready the players who said they are ready
+     * @param total the players of the round
+     * @param voter the player it is sent to is one of them
+     * @param mine  he said he is ready
+     */
+    public record StartVote(boolean show, int ready, int total, boolean voter, boolean mine) implements CustomPayload {
+        public static final StartVote HIDDEN = new StartVote(false, 0, 0, false, false);
+        public static final Id<StartVote> ID = id("start_vote");
+        public static final PacketCodec<PacketByteBuf, StartVote> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeBoolean(payload.show);
+            buf.writeVarInt(payload.ready);
+            buf.writeVarInt(payload.total);
+            buf.writeBoolean(payload.voter);
+            buf.writeBoolean(payload.mine);
+        }, buf -> new StartVote(buf.readBoolean(), buf.readVarInt(), buf.readVarInt(), buf.readBoolean(), buf.readBoolean()));
 
         @Override
         public Id<? extends CustomPayload> getId() {

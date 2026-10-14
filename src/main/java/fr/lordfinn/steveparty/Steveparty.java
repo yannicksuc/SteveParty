@@ -165,6 +165,7 @@ public class Steveparty implements ModInitializer {
         Podiums.initialize();
         MiniGameTest.initialize();
         MiniGameFreeze.initialize();
+        fr.lordfinn.steveparty.minigame.MiniGameReady.initialize();
         PartyChunkHolds.initialize();
         InventoryCartridgeItem.initialize();
         ZoneBubbles.initialize();
@@ -193,6 +194,7 @@ public class Steveparty implements ModInitializer {
         PartyCommands.initialize();
         BoardCommands.initialize();
         MiniGamePageCommand.initialize();
+        fr.lordfinn.steveparty.commands.DevMiniGameStartCommand.initialize();
         PodiumCommand.initialize();
         LinksCommand.initialize();
         WrenchActions.initialize();
