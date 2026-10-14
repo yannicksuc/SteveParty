@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_podium": {
+    "has_metal": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "steveparty:podium"
+            "items": "minecraft:copper_ingot"
           }
         ]
       }
@@ -20,7 +20,7 @@
   },
   "requirements": [
     [
-      "has_podium",
+      "has_metal",
       "has_the_recipe"
     ]
   ],

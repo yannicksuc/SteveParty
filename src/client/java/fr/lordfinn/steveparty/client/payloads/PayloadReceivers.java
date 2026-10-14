@@ -90,6 +90,8 @@ public class PayloadReceivers {
         // A step of the brush's tutorial done
         ClientPayloads.receive(fr.lordfinn.steveparty.payloads.custom.BrushTutorialPayload.ID,
                 (payload, context) -> fr.lordfinn.steveparty.client.board.BrushTutorial.onStep(payload.step()));
+        // A podium's new mode, shown for a few seconds
+        ClientPayloads.receive(PodiumPreviewPayload.ID, (payload, context) -> fr.lordfinn.steveparty.client.blockentity.PodiumPreviews.show(payload));
         ClientPayloads.receive(DiceRevealPayload.ID, (payload, context) -> DiceRevealHud.onPayload(payload));
         ClientPayloads.receive(OutcomeRoulettePayload.ID, (payload, context) -> OutcomeRouletteHud.onPayload(payload));
         ClientPayloads.receive(SixSevenPayload.ID, (payload, context) -> SixSevenClient.onPayload(payload));

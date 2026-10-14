@@ -234,6 +234,8 @@ public class MiniGamePageEditorScreen extends Screen implements PageEditor {
         // init() runs again on every resize and tab change: keep what the player already typed
         pageTab.keepTexts();
         popup = null;
+        if (tab == BinderTab.PIPES && ClientPlayNetworking.canSend(MiniGamePagePayloads.EntranceQuery.ID))
+            ClientPlayNetworking.send(new MiniGamePagePayloads.EntranceQuery(page));
 
         // ---- The bottom row: « Test » and « Done » on the right edge of the content
         int right = x + PW - M;
@@ -337,6 +339,11 @@ public class MiniGamePageEditorScreen extends Screen implements PageEditor {
     }
 
     /** The server's answer to the last request. */
+    /** The mini-game pipes printed with the page, as the server has them (the Pipes tab shows them). */
+    public void onEntrances(MiniGamePagePayloads.Entrances entrances) {
+        if (entrances.page().equals(page)) pipesTab.setEntrances(entrances);
+    }
+
     public void onStatus(UUID about, MiniGamePagePayloads.Status.Code code) {
         if (!about.equals(page)) return;
         boolean error = code == MiniGamePagePayloads.Status.Code.IMAGE_REFUSED || code == MiniGamePagePayloads.Status.Code.COPY_NEEDS_PAPER

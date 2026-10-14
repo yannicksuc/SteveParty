@@ -106,7 +106,7 @@ public class MiniGameTestGameTests implements SteveGameTest {
 
     private static BlockPos podium(TestContext context, UUID page, int x, int z, int halves) {
         BlockPos bottom = new BlockPos(x, 1, z);
-        if (halves >= 2) context.setBlockState(bottom, ModBlocks.PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
+        if (halves >= 2) context.setBlockState(bottom, ModBlocks.GOLD_PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
         else context.setBlockState(bottom, ModBlocks.GOLD_PODIUM.getDefaultState());
         MiniGamePages.addPodiumLink(context.getWorld().getServer(), page, new MiniGamePodiumLink(global(context, bottom), MiniGamePodiumLink.Kind.PODIUM));
         return bottom;

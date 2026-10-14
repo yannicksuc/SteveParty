@@ -144,7 +144,7 @@ public class MiniGameZoneGameTests implements SteveGameTest {
         UUID id = UUID.randomUUID();
         MiniGamePages.update(server, MiniGamePageData.empty(id).withTexts("Zone " + SERIAL.incrementAndGet(), ""));
         MiniGamePages.toggleLink(server, id, global(context, pipe), Direction.UP, MiniGamePipeRole.ofPipe(context.getBlockState(pipe)));
-        context.setBlockState(FIRST, ModBlocks.PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
+        context.setBlockState(FIRST, ModBlocks.GOLD_PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
         context.setBlockState(SECOND, ModBlocks.GOLD_PODIUM.getDefaultState());
         MiniGamePages.addPodiumLink(server, id, new MiniGamePodiumLink(global(context, FIRST), MiniGamePodiumLink.Kind.PODIUM));
         MiniGamePages.addPodiumLink(server, id, new MiniGamePodiumLink(global(context, SECOND), MiniGamePodiumLink.Kind.PODIUM));

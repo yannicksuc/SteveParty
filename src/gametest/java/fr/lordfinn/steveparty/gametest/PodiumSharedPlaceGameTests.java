@@ -68,9 +68,15 @@ public class PodiumSharedPlaceGameTests implements SteveGameTest {
     private static BlockPos column(TestContext context, int x, int z, int halves) {
         BlockPos bottom = new BlockPos(x, 1, z);
         int y = 0;
-        for (; halves >= 2; halves -= 2) place(context, bottom.up(y++), ModBlocks.PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
+        for (; halves >= 2; halves -= 2) place(context, bottom.up(y++), ModBlocks.GOLD_PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
         if (halves == 1) place(context, bottom.up(y), ModBlocks.GOLD_PODIUM.getDefaultState());
         return bottom;
+    }
+
+    /** The column's bottom block becomes a Redstone Podium: the column (a classic one) answers pulses too. */
+    private static void wire(TestContext context, BlockPos bottom) {
+        BlockState state = context.getBlockState(bottom);
+        place(context, bottom, ModBlocks.PODIUM.getDefaultState().with(PodiumBlock.FULL, state.get(PodiumBlock.FULL)));
     }
 
     private static PodiumBlockEntity master(TestContext context, BlockPos bottom) {
@@ -301,6 +307,9 @@ public class PodiumSharedPlaceGameTests implements SteveGameTest {
     public void redstoneActsOnTheWholePlace(TestContext context) {
         BlockPos a1 = column(context, 1, 3, 3), a2 = column(context, 2, 3, 3), b1 = column(context, 3, 3, 2), b2 = column(context, 4, 3, 2),
                 c = column(context, 5, 3, 1);
+        wire(context, a2);
+        wire(context, c);
+        wire(context, b2);
         ServerPlayerEntity p1 = player(context, "one", 2.5, 1, 5.5), p2 = player(context, "two", 5.5, 1, 5.5), p3 = player(context, "three", 7.5, 1, 7.5),
                 p4 = player(context, "four", 0.5, 1, 0.5);
         try {
@@ -348,6 +357,7 @@ public class PodiumSharedPlaceGameTests implements SteveGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "podium_shared_unchanged", tickLimit = 100)
     public void outOfAMiniGameEveryColumnIsOnItsOwn(TestContext context) {
         BlockPos a1 = column(context, 1, 3, 2), a2 = column(context, 2, 3, 2), low = column(context, 3, 3, 1);
+        wire(context, a2);
         // Another group, linked to no page
         BlockPos free1 = column(context, 6, 6, 2), free2 = column(context, 7, 6, 2);
         ServerPlayerEntity p1 = player(context, "one", 1.5, 1, 5.5), p2 = player(context, "two", 2.5, 1, 5.5);

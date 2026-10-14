@@ -3,6 +3,9 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
+import fr.lordfinn.steveparty.board.LinkHistory;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlock;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -132,7 +135,7 @@ public class MiniGameControllerGameTests implements SteveGameTest {
 
     private static BlockPos podium(TestContext context, UUID page, int x, int z, int halves) {
         BlockPos bottom = new BlockPos(x, 1, z);
-        if (halves >= 2) context.setBlockState(bottom, ModBlocks.PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
+        if (halves >= 2) context.setBlockState(bottom, ModBlocks.GOLD_PODIUM.getDefaultState().with(PodiumBlock.FULL, true));
         else context.setBlockState(bottom, ModBlocks.GOLD_PODIUM.getDefaultState());
         MiniGamePages.addPodiumLink(context.getWorld().getServer(), page, new MiniGamePodiumLink(global(context, bottom), MiniGamePodiumLink.Kind.PODIUM));
         return bottom;
@@ -328,11 +331,12 @@ public class MiniGameControllerGameTests implements SteveGameTest {
     }
 
     /**
-     * The Mini-game Remote (playtest #72): linked to a controller, it presses its « Play » / « Stop » from afar; not
-     * linked, or linked to a controller without page, it does nothing.
+     * The Remote (playtest of 2026-10-13): linked to a Mini-game Controller or a Party Controller, it opens that
+     * controller's screen from afar, a screen that stays usable there (its buttons work); not linked, or linked to a
+     * controller that is gone, it opens nothing.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_remote", tickLimit = 100)
-    public void theRemotePlaysAndStopsFromAfar(TestContext context) {
+    public void theRemoteOpensItsControllersScreenFromAfar(TestContext context) {
         BlockPos green = pipe(context, GREEN, 1, 1);
         ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 2.5, 1, 1.5), host = player(context, "h", 4.5, 30, 4.5);
         UUID id = page(context, green);
@@ -340,20 +344,90 @@ public class MiniGameControllerGameTests implements SteveGameTest {
             alone(context, p1, p2, host);
             home(context, HOME, id);
             ItemStack remote = new ItemStack(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && !(host.currentScreenHandler instanceof MiniGameControllerScreenHandler),
                     "not linked: nothing");
+            context.assertTrue(MiniGameRemoteItem.linkable(context.getBlockEntity(HOME)), "a Mini-game Controller takes a remote");
             remote.set(ModComponents.MINI_GAME_REMOTE_LINK, global(context, HOME));
-            context.assertTrue(MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) != null,
-                    "linked: Play, from 30 blocks away");
-            context.assertTrue(!MiniGameRemoteItem.press(remote, host), "a second at most between two presses");
+            context.assertTrue(MiniGameRemoteItem.press(remote, host) && host.currentScreenHandler instanceof MiniGameControllerScreenHandler,
+                    "linked: its screen, from 30 blocks away");
+            context.assertTrue(host.currentScreenHandler.canUse(host), "usable from afar");
+            context.assertTrue(host.currentScreenHandler.onButtonClick(host, MiniGameControllerScreenHandler.BUTTON_PLAY) && MiniGameTest.of(id) != null,
+                    "its « Play » works from afar");
+            MiniGameTest.stop(id);
+            host.closeHandledScreen();
+            context.assertTrue(!new MiniGameControllerScreenHandler(7, host.getInventory(), (MiniGameControllerBlockEntity) context.getBlockEntity(HOME)).canUse(host),
+                    "a screen not opened by the remote: out of reach");
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host), "a moment between two presses");
+
+            // A Party Controller too
+            context.setBlockState(PARTY, ModBlocks.PARTY_CONTROLLER.getDefaultState());
+            context.assertTrue(MiniGameRemoteItem.linkable(context.getBlockEntity(PARTY)), "a Party Controller takes a remote");
+            remote.set(ModComponents.MINI_GAME_REMOTE_LINK, global(context, PARTY));
             host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null, "Stop");
-            ((MiniGameControllerBlockEntity) context.getBlockEntity(HOME)).setPage(ItemStack.EMPTY);
+            context.assertTrue(MiniGameRemoteItem.press(remote, host) && host.currentScreenHandler instanceof PartyControllerScreenHandler
+                    && host.currentScreenHandler.canUse(host), "its dashboard, from afar");
+            host.closeHandledScreen();
+
+            // Gone
+            context.setBlockState(PARTY, Blocks.AIR);
             host.getItemCooldownManager().remove(ModItems.MINI_GAME_REMOTE);
-            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && MiniGameTest.of(id) == null,
-                    "no page in the controller: nothing to play");
+            context.assertTrue(!MiniGameRemoteItem.press(remote, host) && !(host.currentScreenHandler instanceof PartyControllerScreenHandler),
+                    "its controller gone: nothing");
         } finally {
             cleanUp(context, id, p1, p2, host);
+        }
+        context.complete();
+    }
+
+    /**
+     * The brush paints from a Mini-game Controller to the elements of its mini-game, written on its page as a click with
+     * the page would: a pipe mouth (the role of its colour), a podium column, a goal pole base; a mini-game pipe gets the
+     * page printed. Painting over one again unlinks it; undo puts it back. A controller without page links nothing.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_brush")
+    public void theBrushLinksAControllersPageToItsElements(TestContext context) {
+        ServerWorld world = context.getWorld();
+        MinecraftServer server = world.getServer();
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        UUID id = page(context);
+        home(context, HOME, id);
+        context.setBlockState(new BlockPos(3, 1, 1), ModBlocks.GOLD_PODIUM);
+        context.setBlockState(new BlockPos(3, 2, 1), ModBlocks.GOLD_PODIUM);
+        context.setBlockState(new BlockPos(1, 1, 4), ModBlocks.GOAL_POLE_BASE);
+        context.setBlockState(new BlockPos(4, 1, 4), Blocks.STONE);
+        BlockPos entrance = new BlockPos(4, 2, 4);
+        context.setBlockState(entrance, ModBlocks.COPPER_MINIGAME_PIPE.getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN));
+        ServerPlayerEntity player = player(context, "brush", 4.5, 2, 6.5);
+        try {
+            ItemStack brush = new ItemStack(ModItems.TILE_LINKER_BRUSH);
+            player.setStackInHand(Hand.MAIN_HAND, brush);
+            for (BlockPos pos : List.of(HOME, green, new BlockPos(3, 2, 1), new BlockPos(1, 1, 4), entrance))
+                TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(pos));
+            TileLinkerBrush.endStroke(player);
+            MiniGamePageData data = MiniGamePages.get(server, id);
+            context.assertEquals(data.pipeLinks().size(), 1, "the pipe is on the page");
+            context.assertEquals(data.pipeLinks().getFirst().role(), MiniGamePipeRole.PLAYERS, "with the role of its colour");
+            context.assertTrue(data.podiumLinkIndex(global(context, new BlockPos(3, 1, 1))) >= 0, "the podium, by the bottom of its column");
+            context.assertTrue(data.podiumLinkIndex(global(context, new BlockPos(1, 1, 4))) >= 0, "the goal pole base");
+            context.assertEquals(MiniGamePages.idOf(MiniGamePipeBlock.pageAt(world, context.getAbsolutePos(entrance))), id, "the mini-game pipe printed");
+
+            // Painted over again: unlinked; undone: back
+            TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(HOME));
+            TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(green));
+            TileLinkerBrush.endStroke(player);
+            context.assertTrue(MiniGamePages.get(server, id).pipeLinks().isEmpty(), "painted over: unlinked");
+            context.assertTrue(LinkHistory.undo(player, true, brush), "undone");
+            context.assertEquals(MiniGamePages.get(server, id).pipeLinks().size(), 1, "undo: linked again");
+
+            // Without page: nothing
+            ((MiniGameControllerBlockEntity) context.getBlockEntity(HOME)).setPage(ItemStack.EMPTY);
+            BlockPos other = pipe(context, GREEN, 1, 6);
+            TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(HOME));
+            TileLinkerBrush.paint(player, brush, world, context.getAbsolutePos(other));
+            TileLinkerBrush.endStroke(player);
+            context.assertEquals(MiniGamePages.get(server, id).pipeLinks().size(), 1, "no page: nothing linked");
+        } finally {
+            cleanUp(context, id, player);
         }
         context.complete();
     }
