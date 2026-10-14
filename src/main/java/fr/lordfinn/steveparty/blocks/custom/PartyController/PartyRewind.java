@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A Step Controller going back in a party with its turn journal ({@link PartyJournal}): « replay » undoes the turn being
+ * A Party Rewinder going back in a party with its turn journal ({@link PartyJournal}): « replay » undoes the turn being
  * played and plays it again from its start; « previous » undoes it and the turn before it (passing over a mini-game in
  * between, whose gains are taken back) and plays that one again. Never while something is under way (a pawn walking, a
  * die rolling or resolving, a choice asked, a show on a space, a shop open), nor during a mini-game or at the party's end.
@@ -71,6 +71,25 @@ public final class PartyRewind {
         while (index >= 0 && frames.get(index).kind() != JournalFrame.Kind.TURN) index--;
         if (index < 0) return null;
         return rewind(party, frames.size() - index, "message.steveparty.journal.back");
+    }
+
+    /**
+     * How many turns « previous » can go back now, pulse after pulse, as far as the journal goes (0 during a mini-game,
+     * or with nothing to undo).
+     */
+    public static int turnsBack(PartyControllerEntity party) {
+        PartyData data = party.getPartyData();
+        PartyStep step = data.getCurrentStep();
+        if (step == null || step.getStatus() != PartyStep.Status.IN_PROGRESS || step instanceof MiniGamePartyStep || !data.isStarted()) return 0;
+        List<JournalFrame> frames = party.getJournal().frames();
+        int turns = 0;
+        for (int i = frames.size() - 1; i >= 0 && !frames.get(i).isOverflowing(); i--) {
+            if (frames.get(i).kind() == JournalFrame.Kind.TURN) turns++;
+        }
+        JournalFrame current = party.getJournal().current();
+        boolean playing = step instanceof TokenTurnPartyStep && current != null && current.kind() == JournalFrame.Kind.TURN
+                && current.stepIndex() == data.getStepIndex();
+        return Math.max(0, playing ? turns - 1 : turns);
     }
 
     private static @Nullable List<Text> rewind(PartyControllerEntity party, int count, String told) {

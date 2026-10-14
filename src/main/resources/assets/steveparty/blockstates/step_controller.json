@@ -1,5 +1,8 @@
 {
   "variants": {
-    "": { "model": "steveparty:block/step_controller" }
+    "facing=north": { "model": "steveparty:block/magneto_plate" },
+    "facing=east": { "model": "steveparty:block/magneto_plate", "y": 90 },
+    "facing=south": { "model": "steveparty:block/magneto_plate", "y": 180 },
+    "facing=west": { "model": "steveparty:block/magneto_plate", "y": 270 }
   }
 }

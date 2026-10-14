@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.items.tooltip;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.jumpshoes.JumpShoes;
@@ -111,9 +112,14 @@ public final class ItemTips {
         map.put(item("party_controller"), (stack, tips) -> tips
                 .summary(KEY + "party_controller.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "party_controller.use")));
-        map.put(item("step_controller"), (stack, tips) -> tips
-                .summary(KEY + "step_controller.summary")
-                .more(more -> more.use(Tooltips.Keys.use(), KEY + "step_controller.use")));
+        // The Party Rewinder: its three modes, in the colours of its buttons
+        map.put(item("step_controller"), (stack, tips) -> {
+            for (StepPulse.Mode mode : new StepPulse.Mode[]{StepPulse.Mode.PREVIOUS, StepPulse.Mode.REPLAY, StepPulse.Mode.NEXT}) {
+                tips.state(Text.translatable("block.steveparty.step_controller.mode", mode.label(),
+                        Text.translatable(KEY + "step_controller." + mode.id())));
+            }
+            tips.more(more -> more.use(Tooltips.Keys.use(), KEY + "step_controller.use").use(KEY + "step_controller.redstone"));
+        });
         map.put(item("goal_pole_base"), (stack, tips) -> tips
                 .summary(KEY + "goal_pole_base.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "goal_pole_base.use")));

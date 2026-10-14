@@ -5,9 +5,13 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyS
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
+import fr.lordfinn.steveparty.items.tooltip.Tooltips;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 
 /**
- * What a Step Controller's redstone pulse does to a party, by its mode. Never in the middle of something: a pulse that
+ * What a Party Rewinder's redstone pulse does to a party, by its mode. Never in the middle of something: a pulse that
  * can't act now does nothing (the controller says so by its sound).
  * <ul>
  *     <li>{@link Mode#NEXT}, « Suivant »: the party stops waiting for what it waits for. A party bell holding a moment:
@@ -27,11 +31,19 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnParty
  */
 public final class StepPulse {
     /**
-     * The mode of a Step Controller, cycled by a click: its model points up for « next », sideways for « replay », down
-     * for « previous ».
+     * The mode of a Party Rewinder, chosen by a click on its button (anywhere else: cycled), told by its icon and the
+     * colour of its button: ⏮ blue, ↻ yellow, ⏭ green.
      */
     public enum Mode {
-        NEXT, REPLAY, PREVIOUS;
+        NEXT(Tooltips.Icons.NEXT, 0x70EA75), REPLAY(Tooltips.Icons.REPLAY, 0xFDD419), PREVIOUS(Tooltips.Icons.PREVIOUS, 0x63A3EA);
+
+        private final char icon;
+        private final int color;
+
+        Mode(char icon, int color) {
+            this.icon = icon;
+            this.color = color;
+        }
 
         public static Mode of(int index) {
             return index >= 0 && index < values().length ? values()[index] : NEXT;
@@ -43,8 +55,40 @@ public final class StepPulse {
 
         /** Its name, as the controller says it when clicked. */
         public String translationKey() {
-            return "block.steveparty.step_controller.mode." + name().toLowerCase(java.util.Locale.ROOT);
+            return "block.steveparty.step_controller.mode." + id();
         }
+
+        /** {@code previous}, {@code replay} or {@code next}: its animations, its lit button. */
+        public String id() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+
+        /** « ⏮ Précédent », in the colour of its button. */
+        public MutableText label() {
+            return Text.empty().append(Tooltips.Icons.of(icon)).append(" ").append(Text.translatable(translationKey()))
+                    .styled(s -> s.withColor(color));
+        }
+    }
+
+    private static final String HINT = "block.steveparty.step_controller.hint.";
+
+    /** What a pulse would do to {@code party} now, in a few words (« le tour de Bob », « 2 tours possibles »). */
+    public static Text preview(PartyControllerEntity party, Mode mode) {
+        PartyStep step = party.getPartyData().getCurrentStep();
+        if (step == null || step.getStatus() != PartyStep.Status.IN_PROGRESS || step instanceof EndPartyStep
+                || !(party.getWorld() instanceof ServerWorld world)) return Text.translatable(HINT + "nothing");
+        if (mode == Mode.PREVIOUS) {
+            int turns = PartyRewind.turnsBack(party);
+            return turns == 0 ? Text.translatable(HINT + "previous.none")
+                    : Text.translatable(HINT + (turns == 1 ? "previous.one" : "previous.many"), turns);
+        }
+        if (mode == Mode.NEXT && step.isWaitingForBell()) return Text.translatable(HINT + "next.bell");
+        return switch (step) {
+            case TokenTurnPartyStep turn -> Text.translatable(HINT + mode.id() + ".turn", turn.getTokenDisplayName(world));
+            case MiniGamePartyStep ignored -> Text.translatable(HINT + mode.id() + ".mini_game");
+            case StartRollsStep ignored -> Text.translatable(HINT + mode.id() + ".rolls");
+            default -> Text.translatable(mode == Mode.NEXT ? HINT + "next.step" : HINT + "nothing");
+        };
     }
 
     private StepPulse() {

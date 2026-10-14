@@ -8,7 +8,10 @@ import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
@@ -18,19 +21,24 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
+import software.bernie.geckolib.renderer.GeoRenderer;
+import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
 /**
- * The step controller's model. Looked at with the Wrench or a mini-game page in hand, it says over it which mini-game
+ * The Party Rewinder's deck (its plate is a plain block model): LordFinn's tape deck, cutout, its chosen button lit by
+ * {@link LitButtonLayer}. Looked at with the Wrench or a mini-game page in hand, it says over it which mini-game
  * pages it is linked to (like a podium says what a pulse does to it).
  */
 public class StepControllerBlockEntityRenderer extends GeoBlockRenderer<StepControllerBlockEntity> {
     private final BlockEntityRenderDispatcher dispatcher;
 
     public StepControllerBlockEntityRenderer(BlockEntityRendererFactory.Context context) {
-        super(new DefaultedBlockGeoModel<>(Steveparty.id("step_controller")));
+        super(new DefaultedBlockGeoModel<>(Steveparty.id("magneto")));
         this.dispatcher = context.getRenderDispatcher();
+        addRenderLayer(new LitButtonLayer(this));
     }
 
     @Override
@@ -64,6 +72,24 @@ public class StepControllerBlockEntityRenderer extends GeoBlockRenderer<StepCont
 
     @Override
     public @Nullable RenderLayer getRenderType(StepControllerBlockEntity animatable, Identifier texture, @Nullable VertexConsumerProvider bufferSource, float partialTick) {
-        return RenderLayer.getEntityTranslucent(getTextureLocation(animatable));
+        return RenderLayer.getEntityCutout(getTextureLocation(animatable));
+    }
+
+    /**
+     * The chosen mode's button, lit: its own pixels ({@code magneto_lit_<mode>.png}, the rest black) added over it at full
+     * light, like a spider's eyes (drawn on the deck's own depth, nothing see-through behind it), following its press.
+     */
+    private static final class LitButtonLayer extends GeoRenderLayer<StepControllerBlockEntity> {
+        LitButtonLayer(GeoRenderer<StepControllerBlockEntity> renderer) {
+            super(renderer);
+        }
+
+        @Override
+        public void render(MatrixStack matrices, StepControllerBlockEntity animatable, BakedGeoModel model, RenderLayer renderType,
+                           VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay) {
+            RenderLayer lit = RenderLayer.getEyes(Steveparty.id("textures/block/magneto_lit_" + animatable.getMode().id() + ".png"));
+            getRenderer().reRender(model, matrices, bufferSource, animatable, lit, bufferSource.getBuffer(lit), partialTick,
+                    LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, -1);
+        }
     }
 }

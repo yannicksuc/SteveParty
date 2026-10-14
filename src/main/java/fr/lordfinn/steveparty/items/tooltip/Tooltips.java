@@ -127,6 +127,8 @@ public final class Tooltips {
         public static final char LINKABLE = '';
         /** A chest: a storage. */
         public static final char STORAGE = '';
+        /** The Party Rewinder's modes, as on its buttons: |◀◀, a looping arrow, ▶▶|. */
+        public static final char PREVIOUS = '', REPLAY = '', NEXT = '';
 
         private Icons() {
         }
