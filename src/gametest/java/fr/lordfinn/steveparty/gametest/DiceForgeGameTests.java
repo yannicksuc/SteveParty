@@ -13,8 +13,10 @@ import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Box;
@@ -549,6 +551,42 @@ public class DiceForgeGameTests implements SteveGameTest {
                 context.assertEquals(dropped(context, ModItems.PURPLE_STAR_FRAGMENT), 1, "its fragments");
                 context.assertEquals(dropped(context, blanks(1).getItem()), 7, "its blank faces");
                 context.assertEquals(dropped(context, ModItems.DEFAULT_DICE), 1, "its forged die");
+                context.complete();
+            });
+        });
+    }
+
+    /**
+     * Playtest 2026-10-06: a forge broken and placed again woke up without a core. The forge dropped is placed back:
+     * asleep, empty, its core on the ground with the rest.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = TICK_LIMIT)
+    public void aForgeBrokenAndPlacedAgainIsAsleep(TestContext context) {
+        context.setBlockState(FORGE_POS.down(), Blocks.STONE);
+        loadedForge(context);
+        context.waitAndRun(CORE_INSERT_TICKS + 10, () -> {
+            BlockPos abs = context.getAbsolutePos(FORGE_POS);
+            ServerPlayerEntity player = TestPlayers.mock(context);
+            try {
+                player.changeGameMode(GameMode.SURVIVAL);
+                player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+                context.assertTrue(player.interactionManager.tryBreakBlock(abs), "the forge breaks");
+                ItemEntity drop = context.getWorld().getEntitiesByClass(ItemEntity.class, new Box(abs).expand(3),
+                        e -> e.getStack().isOf(ModBlocks.DICE_FORGE.asItem())).getFirst();
+                ItemStack forgeItem = drop.getStack().copy();
+                player.setStackInHand(Hand.MAIN_HAND, forgeItem);
+                forgeItem.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND,
+                        new BlockHitResult(abs.down().toCenterPos().add(0, 0.5, 0), Direction.UP, abs.down(), false)));
+            } finally {
+                TestPlayers.remove(context, player);
+            }
+            DiceForgeBlockEntity placed = context.getBlockEntity(FORGE_POS);
+            context.assertFalse(placed.isActivated(), "placed again, the forge is asleep");
+            context.assertTrue(placed.isEmpty(), "and empty");
+            context.assertEquals(placed.getStatus(), Status.NOT_ACTIVATED, "it asks for a core");
+            context.waitAndRun(5, () -> {
+                context.assertTrue(coreHitboxes(context).isEmpty(), "no core floats over it");
+                context.assertEquals(dropped(context, ModBlocks.GRAVITY_CORE.asItem()), 1, "its core is on the ground");
                 context.complete();
             });
         });
