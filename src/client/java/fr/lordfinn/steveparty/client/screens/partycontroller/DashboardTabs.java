@@ -129,7 +129,7 @@ public final class DashboardTabs {
             case STORAGE -> {
                 // Linked containers gone or not loaded (skipped): said, without blocking anything
                 int skipped = data.bank().absent() + data.bank().unloaded();
-                return skipped > 0 ? new Badge(false, Text.translatable(KEY + "badge.storage", skipped)) : null;
+                return skipped > 0 ? new Badge(false, Text.translatable(KEY + (skipped == 1 ? "badge.storage.one" : "badge.storage"), skipped)) : null;
             }
             default -> {
                 return null;

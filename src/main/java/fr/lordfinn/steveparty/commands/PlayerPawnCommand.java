@@ -54,7 +54,7 @@ public final class PlayerPawnCommand {
         if (done == 0) {
             context.getSource().sendError(Text.translatable("command.steveparty.playerpawn.none"));
         } else {
-            context.getSource().sendFeedback(() -> Text.translatable("command.steveparty.playerpawn.done", done), true);
+            context.getSource().sendFeedback(() -> Text.translatable("command.steveparty.playerpawn.done" + (done == 1 ? ".one" : ""), done), true);
         }
         return done;
     }

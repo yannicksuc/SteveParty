@@ -354,7 +354,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         List<Text> lines = new ArrayList<>();
         lines.add(Text.translatableWithFallback(KEY + "output", "Forged die").formatted(Formatting.GOLD, Formatting.BOLD));
         if (made) {
-            lines.add(point(Formatting.GREEN, Text.translatableWithFallback(KEY + "output.ready", "%s ready: take them",
+            lines.add(point(Formatting.GREEN, Text.translatableWithFallback(KEY + (shown.getCount() == 1 ? "output.ready.one" : "output.ready"), "%s ready: take them",
                     shown.getCount()).formatted(Formatting.GREEN)));
         } else {
             lines.add(point(Formatting.GOLD, Text.translatableWithFallback(KEY + "output.preview", "Preview of the next die")));
