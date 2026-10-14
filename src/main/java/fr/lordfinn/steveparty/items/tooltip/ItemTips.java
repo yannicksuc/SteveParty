@@ -73,6 +73,12 @@ public final class ItemTips {
                 .more(more -> more
                         .use(Tooltips.Keys.use(), KEY + "mini_games_catalogue.use")
                         .note(KEY + "mini_games_catalogue.controller")));
+        map.put(item("parachute"), (stack, tips) -> tips
+                .summary(KEY + "parachute.summary")
+                .more(more -> more
+                        .use(Tooltips.Keys.use(), KEY + "parachute.use.air")
+                        .use(Tooltips.Keys.use(), KEY + "parachute.use.mob")
+                        .use(Tooltips.Keys.sneakUse(), KEY + "parachute.take_back")));
         map.put(item("acorn"), (stack, tips) -> tips
                 .summary(KEY + "acorn.summary")
                 .more(more -> more.use(Tooltips.Keys.use(), KEY + "acorn.use")));

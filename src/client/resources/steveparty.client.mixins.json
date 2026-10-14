@@ -48,6 +48,7 @@
     "EntityRendererBoxCostumeShadowMixin",
     "EntityRendererNameTagMixin",
     "LivingEntityRendererBoxCostumeMixin",
+    "LivingEntityRendererParachuteMixin",
     "ItemRendererStencilHammerFaceMixin",
     "ItemRendererTileFaceMixin",
     "ItemRendererWandOrbitMixin",

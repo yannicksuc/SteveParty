@@ -18,6 +18,8 @@
     "LivingEntityJumpingAccessor",
     "FireworkRocketEntityHarmlessMixin",
     "LivingEntityMixin",
+    "LivingEntityParachuteMixin",
+    "EntityParachuteMixin",
     "PipeFallEntryMixin",
     "PlayerEntityBoxCostumeMixin",
     "PlayerFallMixin",

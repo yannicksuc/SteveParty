@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.dice.DiceModule;
+import fr.lordfinn.steveparty.items.custom.parachute.ParachuteItem;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
@@ -233,6 +234,8 @@ public class ModItems {
     /** The Boxed Trader's bandana (stolen with shears), wearable on the head. */
     public static final Item BANDANA = register("bandana", BandanaItem::new, new Item.Settings().maxCount(1));
     public static final Item BOX_COSTUME = register("box_costume", BoxCostumeItem::new, new Item.Settings().maxCount(1));
+    /** The Parachute: slows a fall, its holder's or a mob's (see Parachutes). */
+    public static final Item PARACHUTE = register("parachute", ParachuteItem::new, new Item.Settings().maxCount(1));
     public static final Item PARTY_CARD_TURNS = registerCard(PartyCardItem.CardType.TURNS);
     public static final Item PARTY_CARD_MINIGAME = registerCard(PartyCardItem.CardType.MINIGAME);
     public static final Item PARTY_CARD_EVENT = registerCard(PartyCardItem.CardType.EVENT);

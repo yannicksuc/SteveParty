@@ -222,6 +222,91 @@
 		{
 			dependencies: [
 				"18BCF0FF3DA0DC75"
+			]
+			id: "2640EB687D4B6C51"
+			rewards: [
+				{
+					id: "57637102B08CFFB4"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "3674786995CE3843"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "6E8C1CF95D3545A6"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "7F85A27A16369F28"
+					item: {
+						count: 1
+						id: "steveparty:parachute"
+					}
+					only_from_crafting: true
+					type: "item"
+				}
+			]
+			x: 2.5d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"2640EB687D4B6C51"
+			]
+			icon: {
+				id: "steveparty:parachute"
+			}
+			id: "02E3D80EBC49D590"
+			optional: true
+			rewards: [
+				{
+					id: "04FE4DEC300EBE5F"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "6D0205D5413ED118"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "02EEF1B6F647857B"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					advancement: "steveparty:workshop/bubbles/soft_landing"
+					criterion: ""
+					id: "358E876F3E99DD18"
+					type: "advancement"
+				}
+			]
+			x: 4.5d
+			y: 3.0d
+		}
+		{
+			dependencies: [
+				"18BCF0FF3DA0DC75"
 				"06ED662D95913D40"
 			]
 			id: "5A1C048043D2611F"

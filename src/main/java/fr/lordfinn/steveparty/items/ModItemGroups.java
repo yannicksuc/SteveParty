@@ -143,7 +143,7 @@ public final class ModItemGroups {
             for (Block pipe : pipes) entries.add(pipe);
         }
         addAll(entries, GOAL_POLE_BASE, GOAL_POLE, FLAG, GOLD_PODIUM, SILVER_PODIUM, BRONZE_PODIUM, PODIUM);
-        addAll(entries, TRIPLE_JUMP_SHOES, HOP_SWITCH, LOOTING_BOX, GRAVITY_CORE, ModItems.BUBBLER);
+        addAll(entries, TRIPLE_JUMP_SHOES, HOP_SWITCH, LOOTING_BOX, GRAVITY_CORE, ModItems.BUBBLER, ModItems.PARACHUTE);
     }
 
     /** The mobs, each egg followed by what belongs to it. */

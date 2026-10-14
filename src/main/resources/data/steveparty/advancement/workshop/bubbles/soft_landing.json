@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:workshop/bubbles/ride",
+  "display": {
+    "icon": {
+      "id": "steveparty:parachute",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.bubbles.soft_landing.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.bubbles.soft_landing.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "landing": {
+      "trigger": "steveparty:event",
+      "conditions": {
+        "event": "parachute_landing"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "landing"
+    ]
+  ]
+}

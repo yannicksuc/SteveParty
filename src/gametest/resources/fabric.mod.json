@@ -163,6 +163,7 @@
       "fr.lordfinn.steveparty.gametest.FrousseuxGameTests",
       "fr.lordfinn.steveparty.gametest.TrichaudronGameTests",
       "fr.lordfinn.steveparty.gametest.BubblerGameTests",
+      "fr.lordfinn.steveparty.gametest.ParachuteGameTests",
       "fr.lordfinn.steveparty.gametest.ApiGameTests",
       "fr.lordfinn.steveparty.gametest.PartyBoardGameTests",
       "fr.lordfinn.steveparty.gametest.ControllerStartLinksGameTests"

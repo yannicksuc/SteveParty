@@ -92,6 +92,7 @@ import fr.lordfinn.steveparty.service.PawnBeams;
 import fr.lordfinn.steveparty.service.ShopStops;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.items.custom.parachute.Parachutes;
 import fr.lordfinn.steveparty.stencil.StencilLibrary;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
 import fr.lordfinn.steveparty.utils.TaskScheduler;
@@ -151,6 +152,7 @@ public class Steveparty implements ModInitializer {
         ModEffects.initialize();
         RandomStencilPatternLootFunction.initialize();
         StencilLibrary.initialize();
+        Parachutes.initialize();
         ModLootTableModifiers.initialize();
         ModPayloads.initialize();
         TileInfos.initialize();
