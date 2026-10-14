@@ -246,7 +246,7 @@ public final class TileStampTextures {
      * (its rounded bevel) of a standard tile, 10 px on a small one, all in the ramp of {@code rgb}.
      */
     public static Identifier stopFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("stop", rgb, small), key -> register(stopValues(rgb, small), rgb, small));
+        return pictogramFace(BoardSpaceType.BOARD_SPACE_STOP, rgb, small);
     }
 
     /** The barred disc, drawn by hand for each size (smooth 4-2-1-2-4 and 4-2-2-4 stair steps): '#' disc, 'o' bar. */
@@ -277,10 +277,8 @@ public final class TileStampTextures {
             ".########.",
             "...####..."};
 
-    private static float[] stopValues(int rgb, boolean small) {
-        boolean dark = TileColors.isDark(rgb);
-        return glyphValues(small ? SMALL_STOP_DISC : STOP_DISC, small, dark ? LIGHT_INK : FEATURE, dark ? FEATURE : NUMBER);
-    }
+    /** On a dark colour: a light disc and a dark bar. */
+    private static final DarkInk STOP_DARK_INK = new DarkInk(true, Map.of(FEATURE, LIGHT_INK, NUMBER, FEATURE));
 
     /**
      * The blank face with {@code glyph} centred on it: '#' painted {@code ink}, 'o' painted {@code counter}. Glyphs
@@ -341,11 +339,11 @@ public final class TileStampTextures {
      * on the blank tile face (its rounded bevel), in the ramp of {@code rgb} (cyan by default).
      */
     public static Identifier replayFace(int rgb, boolean small) {
-        return TEXTURES.get(new Key("replay", rgb, small), key -> {
-            boolean dark = TileColors.isDark(rgb);
-            return register(glyphValues(small ? SMALL_REPLAY_ARROW : REPLAY_ARROW, small, dark ? LIGHT_INK : FEATURE, FEATURE), rgb, small);
-        });
+        return pictogramFace(BoardSpaceType.TILE_REPLAY, rgb, small);
     }
+
+    /** On a dark colour: the arrow in light ink. */
+    private static final DarkInk REPLAY_DARK_INK = new DarkInk(true, Map.of(FEATURE, LIGHT_INK));
 
     // ---------------------------------------------------------------- the Shop face
 
@@ -726,11 +724,26 @@ public final class TileStampTextures {
      * A role's pictogram: a glyph drawn by hand for each size, each character painted with its shade, on the blank tile
      * face. {@code id} names its textures.
      */
-    private record Pictogram(String id, String[] big, String[] small, Map<Character, Float> shades) {
+    private record Pictogram(String id, String[] big, String[] small, Map<Character, Float> shades, DarkInk darkInk) {
+        Pictogram(String id, String[] big, String[] small, Map<Character, Float> shades) {
+            this(id, big, small, shades, INVERT);
+        }
     }
+
+    /**
+     * How a pictogram's ink turns on a dark colour: its shades listed in {@code swaps} become their pair, the others
+     * are turned over (dark ↔ light) when {@code invert}, kept otherwise. The bevel is kept as it is.
+     */
+    private record DarkInk(boolean invert, Map<Float, Float> swaps) {
+    }
+
+    private static final DarkInk INVERT = new DarkInk(true, Map.of());
+    private static final DarkInk KEEP = new DarkInk(false, Map.of());
 
     /** The roles whose face is a pictogram in the ramp of their tile's colour (the others are drawn their own way). */
     private static final Map<BoardSpaceType, Pictogram> PICTOGRAMS = Map.ofEntries(
+            Map.entry(BoardSpaceType.BOARD_SPACE_STOP, new Pictogram("stop", STOP_DISC, SMALL_STOP_DISC, Map.of('#', FEATURE, 'o', NUMBER), STOP_DARK_INK)),
+            Map.entry(BoardSpaceType.TILE_REPLAY, new Pictogram("replay", REPLAY_ARROW, SMALL_REPLAY_ARROW, Map.of('#', FEATURE), REPLAY_DARK_INK)),
             Map.entry(BoardSpaceType.BOARD_SPACE_SHOP, new Pictogram("shop", SHOP_BOX, SMALL_SHOP_BOX, SHOP_SHADES)),
             Map.entry(BoardSpaceType.TILE_STAR, new Pictogram("star", STAR, SMALL_STAR, Map.of('#', FEATURE, 'o', -0.6f))),
             Map.entry(BoardSpaceType.TILE_GLANDOUILLE, new Pictogram("glandouille", ACORN, SMALL_ACORN, ACORN_SHADES)),
@@ -752,18 +765,31 @@ public final class TileStampTextures {
         Pictogram pictogram = PICTOGRAMS.get(type);
         if (pictogram == null) return null;
         return TEXTURES.get(new Key(pictogram.id(), rgb, small), key -> {
-            float[] painted = painted(Steveparty.id("block/tile_face/" + pictogram.id() + (small ? "_small" : "")), small);
-            float[] values;
-            if (painted == null) values = glyphValues(small ? pictogram.small() : pictogram.big(), small, pictogram.shades());
-            else {
-                values = frame(small).clone();
-                for (int i = 0; i < values.length; i++) if (!Float.isNaN(painted[i])) values[i] = painted[i];
-            }
-            // On a dark colour (the Mistigri's black), the pictogram in light ink, as the Stop face does: its darker
-            // shades become lighter ones (the bevel kept as it is)
-            if (TileColors.isDark(rgb)) invertFeatures(values, frame(small));
+            float[] values = paintedValues(pictogram.id(), small);
+            if (values == null) values = glyphValues(small ? pictogram.small() : pictogram.big(), small, pictogram.shades());
+            // On a dark colour (the Mistigri's black, the Stop anthracite), the pictogram in light ink
+            if (TileColors.isDark(rgb)) darkInk(values, frame(small), pictogram.darkInk());
             return register(values, rgb, small);
         });
+    }
+
+    /**
+     * An item tile's face (excited bonus, angry malus, blowing when there is nothing yet) in the ramp of {@code rgb}:
+     * painted as textures/block/tile_face/{@code id}, else read from the face texture {@code template}. Kept as it is
+     * on a dark colour.
+     */
+    public static @Nullable Identifier inventoryFace(String id, Identifier template, int rgb, boolean small) {
+        if (painted(paintedId(id, small), small) == null) return face(template, rgb, small);
+        return TEXTURES.get(new Key(id, rgb, small), key -> register(paintedValues(id, small), rgb, small));
+    }
+
+    /** The blank face with the pictogram painted as textures/block/tile_face/{@code id} over it; null without one. */
+    private static float @Nullable [] paintedValues(String id, boolean small) {
+        float[] painted = painted(paintedId(id, small), small);
+        if (painted == null) return null;
+        float[] values = frame(small).clone();
+        for (int i = 0; i < values.length; i++) if (!Float.isNaN(painted[i])) values[i] = painted[i];
+        return values;
     }
 
     /**
@@ -794,11 +820,26 @@ public final class TileStampTextures {
         }).orElse(null);
     }
 
-    /** The pixels of {@code values} that differ from the blank face {@code frame}, their shade turned over (dark ↔ light). */
-    private static void invertFeatures(float[] values, float[] frame) {
+    private static Identifier paintedId(String id, boolean small) {
+        return Steveparty.id("block/tile_face/" + id + (small ? "_small" : ""));
+    }
+
+    /** Half a grey level of a painted pictogram: a painted shade this close to a listed one is that shade. */
+    private static final float GREY_STEP = 0.5f / 128;
+
+    /**
+     * The pixels of {@code values} that differ from the blank face {@code frame} in light ink ({@code ink}): a shade it
+     * swaps becomes its pair, the others are turned over (dark ↔ light) or kept.
+     */
+    private static void darkInk(float[] values, float[] frame, DarkInk ink) {
         for (int i = 0; i < values.length; i++) {
             if (Float.isNaN(values[i]) || values[i] == frame[i]) continue;
-            values[i] = -values[i];
+            Float swapped = null;
+            for (Map.Entry<Float, Float> swap : ink.swaps().entrySet()) {
+                if (Math.abs(values[i] - swap.getKey()) <= GREY_STEP) swapped = swap.getValue();
+            }
+            if (swapped != null) values[i] = swapped;
+            else if (ink.invert()) values[i] = -values[i];
         }
     }
 

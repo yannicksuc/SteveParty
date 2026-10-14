@@ -166,7 +166,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         Identifier face;
         if (stamp != null) face = TileStampTextures.get(stamp, small);
         // An item tile: excited (bonus), angry (malus) or blowing (nothing yet) face, in the cartridge's colour
-        else if (tileType == BoardSpaceType.TILE_INVENTORY_INTERACTOR) face = TileStampTextures.face(inventoryFace(stack), color, small);
+        else if (tileType == BoardSpaceType.TILE_INVENTORY_INTERACTOR) face = inventoryFace(stack, color, small);
         // A Stop tile: a barred "no entry" disc in the cartridge's colour (anthracite by default)
         else if (tileType == BoardSpaceType.BOARD_SPACE_STOP) face = TileStampTextures.stopFace(color, small);
         // A Move Forward / Back tile: a double arrow and the number of spaces, green forward, pink-magenta back
@@ -216,11 +216,12 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         matrices.translate(-x, 0, -z);
     }
 
-    private static Identifier inventoryFace(ItemStack stack) {
-        int color = stack.getOrDefault(COLOR, 0);
-        if (color == InventoryInteractorTileBehavior.GOOD_COLOR) return textureExcited;
-        if (color == InventoryInteractorTileBehavior.BAD_COLOR) return textureBad;
-        return textureBlow;
+    /** An item tile's face: excited (bonus), angry (malus) or blowing (nothing yet), painted (tile_face/inventory_*). */
+    private static @Nullable Identifier inventoryFace(ItemStack stack, int color, boolean small) {
+        int kind = stack.getOrDefault(COLOR, 0);
+        if (kind == InventoryInteractorTileBehavior.GOOD_COLOR) return TileStampTextures.inventoryFace("inventory_good", textureExcited, color, small);
+        if (kind == InventoryInteractorTileBehavior.BAD_COLOR) return TileStampTextures.inventoryFace("inventory_bad", textureBad, color, small);
+        return TileStampTextures.inventoryFace("inventory_neutral", textureBlow, color, small);
     }
 
     /**
