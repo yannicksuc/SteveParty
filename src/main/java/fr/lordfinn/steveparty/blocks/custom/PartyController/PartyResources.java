@@ -141,7 +141,7 @@ public interface PartyResources {
     static void giveBackUsed(@Nullable PartyControllerEntity controller, ItemStack stack, @Nullable ServerPlayerEntity user) {
         ItemStack fallen = spill(controller, stack);
         if (fallen.isEmpty() || user == null) return;
-        user.sendMessage(Text.translatable("message.steveparty.party.storage_full", fallen.getName()).formatted(Formatting.RED), false);
+        user.sendMessage(Text.translatable("message.steveparty.party.storage_full", fallen.toHoverableText()).formatted(Formatting.RED), false);
     }
 
     /** {@link #deposit}: what fell by the Party Controller (a copy), empty when everything went in. */
