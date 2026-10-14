@@ -92,7 +92,8 @@ public final class TokenizerFlare {
                 || entity instanceof PlayerEntity other && !other.isSpectator()))) {
             LivingEntity mob = candidate instanceof TrichaudronPartEntity part ? part.getOwner() : (LivingEntity) candidate;
             if (mob == null || !mob.isAlive()) continue;
-            Optional<Vec3d> at = TokenBase.targetBox(candidate).expand(0.2).raycast(from, end);
+            Box target = TokenBase.targetBox(candidate).expand(0.2);
+            Optional<Vec3d> at = target.contains(from) ? Optional.of(from) : target.raycast(from, end); // from on a huge pawn's base too
             if (at.isPresent() && from.squaredDistanceTo(at.get()) < nearestDistance) {
                 nearestDistance = from.squaredDistanceTo(at.get());
                 nearest = mob;

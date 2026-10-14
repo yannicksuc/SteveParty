@@ -671,6 +671,8 @@ public class TokenSpellGameTests implements SteveGameTest {
         token(pig).steveparty$setTokenOwner(player.getUuid());
         pig.getAttributeInstance(EntityAttributes.GENERIC_SCALE).setBaseValue(4.0);
         pig.calculateDimensions();
+        Vec3d inside = context.getAbsolute(new Vec3d(2.5, 2, 4.5)); // room in front of it, the flare starting in the air
+        pig.refreshPositionAndAngles(inside.x, inside.y, inside.z, 0, 0);
         try {
             float margin = TokenBase.targetMargin(pig);
             context.assertTrue(margin > 0.5F, "its base sticks out: " + margin);
@@ -678,8 +680,8 @@ public class TokenSpellGameTests implements SteveGameTest {
             // a flight along the base's edge, outside the hit box, inside the base
             double x = pig.getBoundingBox().maxX + margin * 0.6;
             double y = pig.getY() + TokenBase.baseHeight(pig) * 0.5;
-            Vec3d from = new Vec3d(x, y, pig.getBoundingBox().minZ - 2);
-            TokenizerFlare.Hit hit = TokenizerFlare.trace(player.getServerWorld(), player, player.getMainHandStack(), from, from.add(0, 0, 4));
+            Vec3d from = new Vec3d(x, y, pig.getBoundingBox().minZ - 1.5);
+            TokenizerFlare.Hit hit = TokenizerFlare.trace(player.getServerWorld(), player, player.getMainHandStack(), from, from.add(0, 0, 3));
             context.assertTrue(hit.mob() == pig, "the flare hits the pawn on its base: " + hit + " from " + from + ", pawn " + pig.getBoundingBox());
         } finally {
             TestPlayers.remove(context, player);
