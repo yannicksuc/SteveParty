@@ -246,8 +246,8 @@
 	]
 	quest.0BF6FB84D3C83852.title: "Bird watcher"
 	quest.0CE8734A07EDA523.quest_desc: [
-		"Gold, a heavy pressure plate, redstone and quartz blocks. Podiums record the winners: the highest column is 1st."
-		"Sneak on one or right-click it to take it. Click podiums with the page to link them."
+		"Three redstone over three quartz blocks: 2 Redstone Podiums. A redstone pulse puts the nearest player on it: the highest column is 1st."
+		"Click podiums with the page to link them."
 	]
 	quest.0CE8734A07EDA523.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.0CE8734A07EDA523.title: "Redstone Podium"
@@ -474,7 +474,7 @@
 	quest.1F2DCDEC85464F26.quest_subtitle: "A party game, block by block"
 	quest.1F2DCDEC85464F26.title: "Welcome to Steve Party Maker!"
 	quest.1FAB526747142277.quest_desc: [
-		"A Podium + an iron ingot, shapeless. Only a look: the height of the column decides the place."
+		"Three iron ingots over three quartz blocks: 2 podiums. Click one or sneak on it to take a place: the highest column is 1st."
 	]
 	quest.1FAB526747142277.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.1FAB526747142277.title: "Iron Podium"
@@ -1041,7 +1041,7 @@
 	]
 	quest.5A220F1629768E53.title: "A lucky cat"
 	quest.5A7CE62676D0F450.quest_desc: [
-		"A Podium + a gold ingot, shapeless. Only a look: the height of the column decides the place."
+		"Three gold ingots over three quartz blocks: 2 podiums. Click one or sneak on it to take a place: the highest column is 1st."
 	]
 	quest.5A7CE62676D0F450.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.5A7CE62676D0F450.title: "Gold Podium"
@@ -1223,7 +1223,7 @@
 	]
 	quest.6E22696E6BCB0E7C.title: "Cursed Die Face 3"
 	quest.6E614CCC831846DA.quest_desc: [
-		"A Podium + a copper ingot, shapeless. Only a look: the height of the column decides the place."
+		"Three copper ingots over three quartz blocks: 2 podiums. Click one or sneak on it to take a place: the highest column is 1st."
 	]
 	quest.6E614CCC831846DA.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.6E614CCC831846DA.title: "Copper Podium"

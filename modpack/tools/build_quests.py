@@ -782,18 +782,18 @@ q("link_pipes", 5.25, 5.25, C(), deps=["role_green_pipe", "role_blue_pipe", "rol
 
 # Podiums
 q("podium", 4.5, 0, I("podium"), deps=["page"], rewards=T2(),
-  desc=(["Gold, a heavy pressure plate, redstone and quartz blocks. Podiums record the winners: the highest column is 1st.",
-         "Sneak on one or right-click it to take it. Click podiums with the page to link them."],
-        ["Or, plaque de pression lourde, redstone et blocs de quartz. Les podiums retiennent les gagnants : la colonne la plus haute est 1re.",
-         "Accroupis-toi dessus ou clic droit pour le prendre. Clique sur les podiums avec la page pour les lier."]))
+  desc=(["Three redstone over three quartz blocks: 2 Redstone Podiums. A redstone pulse puts the nearest player on it: the highest column is 1st.",
+         "Click podiums with the page to link them."],
+        ["Trois redstone sur trois blocs de quartz : 2 podiums redstone. Une impulsion de redstone y place le joueur le plus proche : la colonne la plus haute est 1re.",
+         "Clique sur les podiums avec la page pour les lier."]))
 
 # The chapter's milestone gathers 10 arrows: its prerequisites stand on an arc around it.
-for metal, en_m, fr_m, x, y in [("gold", "a gold ingot", "un lingot d'or", 7, -2),
-                                ("silver", "an iron ingot", "un lingot de fer", 6.75, -0.75),
-                                ("bronze", "a copper ingot", "un lingot de cuivre", 6.75, 0.75)]:
+for metal, en_m, fr_m, x, y in [("gold", "gold ingots", "lingots d'or", 7, -2),
+                                ("silver", "iron ingots", "lingots de fer", 6.75, -0.75),
+                                ("bronze", "copper ingots", "lingots de cuivre", 6.75, 0.75)]:
     q(metal + "_podium", x, y, I(metal + "_podium"), deps=["podium"], rewards=T1(),
-      desc=([f"A Podium + {en_m}, shapeless. Only a look: the height of the column decides the place."],
-            [f"Un Podium + {fr_m}, sans forme. Seulement une apparence : c'est la hauteur de la colonne qui donne la place."]))
+      desc=([f"Three {en_m} over three quartz blocks: 2 podiums. Click one or sneak on it to take a place: the highest column is 1st."],
+            [f"Trois {fr_m} sur trois blocs de quartz : 2 podiums. Clic ou accroupi dessus pour prendre une place : la colonne la plus haute est 1re."]))
 
 q("results", 7, 2, C(), deps=["podium"], rewards=T1(), icon="steveparty:gold_podium",
   title=("Results", "Résultats"),

@@ -118,7 +118,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.01C543D5464F2458.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.01C543D5464F2458.title: "Carte de partie : Répéter"
+	quest.01C543D5464F2458.title: "Carte de Party : Répéter"
 	quest.02559E197888FCA2.quest_desc: [
 		"Mélange les fragments comme des teintures : rouge + bleu + jaune. On récupère autant de fragments qu'on en a mis."
 	]
@@ -129,7 +129,7 @@
 		"Mode attente (Clé à molette) : la partie se fige jusqu'à ce qu'elle reçoive un signal."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.030135F1CA2F65E1.title: "Cloche de partie"
+	quest.030135F1CA2F65E1.title: "Cloche de Party"
 	quest.042DD30AE9744165.quest_desc: [
 		"Tes mini-jeux sont écrits, liés et testés. Que la roulette tourne !"
 	]
@@ -246,8 +246,8 @@
 	]
 	quest.0BF6FB84D3C83852.title: "Ornithologue"
 	quest.0CE8734A07EDA523.quest_desc: [
-		"Or, plaque de pression lourde, redstone et blocs de quartz. Les podiums retiennent les gagnants : la colonne la plus haute est 1re."
-		"Accroupis-toi dessus ou clic droit pour le prendre. Clique sur les podiums avec la page pour les lier."
+		"Trois redstone sur trois blocs de quartz : 2 podiums redstone. Une impulsion de redstone y place le joueur le plus proche : la colonne la plus haute est 1re."
+		"Clique sur les podiums avec la page pour les lier."
 	]
 	quest.0CE8734A07EDA523.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.0CE8734A07EDA523.title: "Podium redstone"
@@ -317,7 +317,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.10428E9FDADB4DDF.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.10428E9FDADB4DDF.title: "Carte de partie : Début de séquence"
+	quest.10428E9FDADB4DDF.title: "Carte de Party : Début de séquence"
 	quest.10458D4F11AF735B.quest_desc: [
 		"3 blocs en ligne : 6 dalles."
 	]
@@ -474,7 +474,7 @@
 	quest.1F2DCDEC85464F26.quest_subtitle: "Un party game, bloc par bloc"
 	quest.1F2DCDEC85464F26.title: "Bienvenue dans Steve Party Maker !"
 	quest.1FAB526747142277.quest_desc: [
-		"Un Podium + un lingot de fer, sans forme. Seulement une apparence : c'est la hauteur de la colonne qui donne la place."
+		"Trois lingots de fer sur trois blocs de quartz : 2 podiums. Clic ou accroupi dessus pour prendre une place : la colonne la plus haute est 1re."
 	]
 	quest.1FAB526747142277.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.1FAB526747142277.title: "Podium de fer"
@@ -576,7 +576,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.27B5092765B1742F.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.27B5092765B1742F.title: "Carte de partie : Mini-jeu"
+	quest.27B5092765B1742F.title: "Carte de Party : Mini-jeu"
 	quest.27E0EE1DE702627E.quest_desc: [
 		"Trois Dés simples, ou un Dé double + un Dé simple. Trois dés liés : 3 à 30."
 	]
@@ -715,7 +715,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.3476803BD17DBC9E.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.3476803BD17DBC9E.title: "Carte de partie : Évènement"
+	quest.3476803BD17DBC9E.title: "Carte de Party : Évènement"
 	quest.35120B4602A51333.quest_desc: [
 		"Deux lignes de 3 : 6 murets."
 	]
@@ -1041,7 +1041,7 @@
 	]
 	quest.5A220F1629768E53.title: "Un chat porte-bonheur"
 	quest.5A7CE62676D0F450.quest_desc: [
-		"Un Podium + un lingot d'or, sans forme. Seulement une apparence : c'est la hauteur de la colonne qui donne la place."
+		"Trois lingots d'or sur trois blocs de quartz : 2 podiums. Clic ou accroupi dessus pour prendre une place : la colonne la plus haute est 1re."
 	]
 	quest.5A7CE62676D0F450.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.5A7CE62676D0F450.title: "Podium d'or"
@@ -1223,7 +1223,7 @@
 	]
 	quest.6E22696E6BCB0E7C.title: "Face de dé maudite 3"
 	quest.6E614CCC831846DA.quest_desc: [
-		"Un Podium + un lingot de cuivre, sans forme. Seulement une apparence : c'est la hauteur de la colonne qui donne la place."
+		"Trois lingots de cuivre sur trois blocs de quartz : 2 podiums. Clic ou accroupi dessus pour prendre une place : la colonne la plus haute est 1re."
 	]
 	quest.6E614CCC831846DA.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.6E614CCC831846DA.title: "Podium de cuivre"
@@ -1368,7 +1368,7 @@
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.7CD8704D1E8BE3C5.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.7CD8704D1E8BE3C5.title: "Carte de partie : Tour de jeu"
+	quest.7CD8704D1E8BE3C5.title: "Carte de Party : Tour de jeu"
 	quest.7CE9B67A9BE1ED07.quest_desc: [
 		"Un Mula ne mange que la nourriture de sa couleur (l'infobulle indique « Nourriture de Mula ») :"
 		"bleu : morue · rouge : pommes, baies, saumon, viande crue · vert : pastèque · jaune : nourriture dorée, pain, miel · violet : chorus, betterave · noir : algue séchée, cookies, ragoûts, steak"
