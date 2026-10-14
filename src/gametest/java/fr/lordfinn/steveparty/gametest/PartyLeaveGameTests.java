@@ -131,6 +131,20 @@ public class PartyLeaveGameTests implements SteveGameTest {
         context.complete();
     }
 
+    /** {@code /leave} is {@code /steveparty leave}: the player is out of the party, it goes on with the others. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void slashLeaveIsTheShortLeave(TestContext context) {
+        ServerPlayerEntity alice = player(context, "A"), bob = player(context, "B");
+        UUID a = token(context, 1, alice), b = token(context, 3, bob);
+        PartyControllerEntity controller = TestBoards.party(context, CONTROLLER, 2, a, b);
+        follow(controller, alice, bob);
+        context.getWorld().getServer().getCommandManager().executeWithPrefix(alice.getCommandSource(), "/leave");
+        context.assertEquals(controller.getPartyData().getTokens(), List.of(b), "her pawn is out");
+        context.assertTrue(!controller.getInterestedPlayers().contains(alice.getUuid()), "she no longer follows the party");
+        controller.stopParty(null);
+        context.complete();
+    }
+
     /** The last player leaving (with all his pawns) ends the party: everything is put back as after a stop. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void lastPlayerLeavingEndsTheParty(TestContext context) {
