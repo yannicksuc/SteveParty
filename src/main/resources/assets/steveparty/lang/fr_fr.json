@@ -3466,5 +3466,6 @@
   "tooltip.steveparty.tag.linker": "Lieur",
   "tooltip.steveparty.minigame_pipe.kept": "Cassé, il garde sa page",
   "tooltip.steveparty.minigame_pipe.page": "Mini-jeu",
-  "message.steveparty.minigame_pipe.already": "Déjà imprimée sur ce tuyau : %s"
+  "message.steveparty.minigame_pipe.already": "Déjà imprimée sur ce tuyau : %s",
+  "message.steveparty.goal_pole.needs_base": "Un mât d'arrivée ne se pose que sur son socle"
 }

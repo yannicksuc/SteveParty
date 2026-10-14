@@ -78,8 +78,17 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         builder.add(FACING, FLAG, ON_BASE, TOP);
     }
 
+    /**
+     * A pole only stands on its base: a segment goes on a Goal Pole Base or on a segment; anywhere else it is not placed
+     * and the player is told why.
+     */
     @Override
     public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
+        if (!canStandOn(ctx.getWorld().getBlockState(ctx.getBlockPos().down()))) {
+            if (ctx.getPlayer() instanceof ServerPlayerEntity player)
+                player.sendMessage(Text.translatable("message.steveparty.goal_pole.needs_base").formatted(Formatting.RED), true);
+            return null;
+        }
         return getDefaultState()
                 // A new pole's flag shows its cloth to the player (not its edge)
                 .with(FACING, ctx.getHorizontalPlayerFacing().getOpposite())
@@ -87,6 +96,11 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
                         && !columnFlagged(ctx.getWorld(), ctx.getBlockPos().down()))
                 .with(ON_BASE, isOnBase(ctx.getWorld(), ctx.getBlockPos()))
                 .with(TOP, isTop(ctx.getWorld(), ctx.getBlockPos()));
+    }
+
+    /** Whether a segment can be put on {@code below}: a Goal Pole Base, or another segment. */
+    public static boolean canStandOn(BlockState below) {
+        return below.getBlock() instanceof GoalPoleBaseBlock || below.getBlock() instanceof GoalPoleBlock;
     }
 
     /** Whether the pole at {@code pos} (if any) already has its flag: a segment joining it brings none. */
