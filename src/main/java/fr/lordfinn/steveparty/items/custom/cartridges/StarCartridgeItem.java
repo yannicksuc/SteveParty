@@ -31,7 +31,7 @@ import java.util.List;
  */
 public class StarCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** The star's yellow: the cartridge, its tile and its check point (no other role is yellow). */
-    public static final int COLOR = 0xF7D44F;
+    public static final int COLOR = 0xFDD419;
 
     private static final String K = MENU_KEY + "star.";
 

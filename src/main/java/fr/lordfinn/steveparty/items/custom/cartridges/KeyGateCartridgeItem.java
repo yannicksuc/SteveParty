@@ -28,7 +28,7 @@ import java.util.List;
  */
 public class KeyGateCartridgeItem extends BoardRuleCartridgeItem {
     /** Its tile's and its gates' teal. */
-    public static final int COLOR = 0x6E819A;
+    public static final int COLOR = 0x5B6C78;
     public static final String WITHOUT_KEY = "without_key", STAY_OPEN = "stay_open", OPENED = "opened";
     /** {@link #WITHOUT_KEY}: what is offered besides waiting, 1 replaying the move, 2 going back to the start (both: 3). */
     public static final int REPLAY = 1, BACK_TO_START = 2;

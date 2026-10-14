@@ -85,18 +85,18 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 0.55F, 2.0F, 6),
                 new Layer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.35F, 1.35F, 6))),
         /** A penalty (item taken): a falling "womp" and red puffs. */
-        BAD("bad", 0xDB2B41, List.of(
+        BAD("bad", 0xE15558, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.7F, 0.84F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.7F, 0.707F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.55F, 0.53F, 8),
                 new Layer(SoundEvents.BLOCK_FIRE_EXTINGUISH, 0.15F, 1.7F, 8))),
         /** An item tile with nothing to give or take yet: a light wooden two-step, orange sparkles. */
-        ITEM("item", 0x9F9F9F, List.of(
+        ITEM("item", 0xA498A6, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 0.45F, 1.335F, 3),
                 new Layer(SoundEvents.ENTITY_ITEM_PICKUP, 0.25F, 1.4F, 3))),
         /** A shop tile: a shop bell and a coin clink, lime green sparkles. */
-        SHOP("shop", 0x287844, List.of(
+        SHOP("shop", 0x47C74C, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.5F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.45F, 2.0F, 3),
                 new Layer(SoundEvents.ENTITY_VILLAGER_TRADE, 0.45F, 1.1F, 2),
@@ -114,14 +114,14 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 0.749F, 4))),
         /** Move Forward (the token moves on): a quick rising run of chiptune notes over a piston push, green gusts. */
-        ADVANCE("advance", 0x21ACC5, List.of(
+        ADVANCE("advance", 0x2FCAC8, List.of(
                 new Layer(SoundEvents.BLOCK_PISTON_EXTEND, 0.35F, 1.3F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 2.0F, 6))),
         /** Move Back (the token goes back): the same run falling, a piston pulling back, a pink "rewind". */
-        BACK("back", 0x087F79, List.of(
+        BACK("back", 0x26B5CF, List.of(
                 new Layer(SoundEvents.BLOCK_PISTON_CONTRACT, 0.35F, 0.9F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
@@ -141,7 +141,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.0F, 3))),
         /** A star space: a twinkling rising chime, gold sparkles (buying the star has its own fanfare: see PartyStars). */
-        STAR("star", 0xF7D44F, List.of(
+        STAR("star", 0xFDD419, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 0.45F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 0.45F, 2.0F, 3),
                 new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 0.6F, 1.8F, 3))),
@@ -153,24 +153,24 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 0.749F, 6),
                 new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, 0.5F, 1.4F, 0))),
         /** A Glandouille space: two grumpy woody stomps and a low bassoon "hmph" (see GlandouilleTileBehavior). */
-        GLANDOUILLE("glandouille", 0x85451F, List.of(
+        GLANDOUILLE("glandouille", 0x97662F, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.749F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.749F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.45F, 1.0F, 8))),
         /** A Frousseux space: a sneaky tiptoe of plucked notes and a flame flaring up (see FrousseuxTileBehavior). */
-        FROUSSEUX("frousseux", 0x631B68, List.of(
+        FROUSSEUX("frousseux", 0x3D1876, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.4F, 1.26F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.4F, 1.0F, 3),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.4F, 1.26F, 6),
                 new Layer(SoundEvents.ITEM_FIRECHARGE_USE, 0.25F, 1.6F, 8))),
         /** A Mistigri space: a sour minor fall on the bass and a low, heavy cat's hiss (see MistigriTileBehavior). */
-        MISTIGRI("mistigri", 0x211D25, List.of(
+        MISTIGRI("mistigri", 0x21202C, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.943F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.794F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.63F, 8),
                 new Layer(SoundEvents.ENTITY_CAT_HISS, 0.35F, 0.7F, 10))),
         /** A Trichaudron space: a deep bubbling rise on the bass and a pop of lava (see TrichaudronTileBehavior). */
-        TRICHAUDRON("trichaudron", 0xEC541B, List.of(
+        TRICHAUDRON("trichaudron", 0xEE5D06, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.63F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.84F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 1.0F, 8),

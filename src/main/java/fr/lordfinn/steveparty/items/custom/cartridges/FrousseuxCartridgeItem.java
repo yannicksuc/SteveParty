@@ -23,7 +23,7 @@ import java.util.List;
  */
 public class FrousseuxCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** Its tile's night indigo (a thief in the dark). */
-    public static final int COLOR = 0x631B68;
+    public static final int COLOR = 0x3D1876;
     public static final int MAX_COINS = 99, DEFAULT_COINS = 15;
     public static final int MAX_STARS = 5, DEFAULT_STARS = 1;
 
