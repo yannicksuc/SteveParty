@@ -40,9 +40,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * The Step Controller: a rising edge of redstone moves a party on, by its mode (see {@link StepPulse}: « next », the
- * party stops waiting for what it waits for; « replay », the step is played again, a turn undone first; « previous », back
- * to the turn before). What it drives:
+ * The Party Rewinder (« Magnéto de Party », registry id {@code step_controller}): a tape deck whose rising edge of
+ * redstone moves a party on, by its mode, the button pushed in on its top (see {@link StepPulse}: « next », the party
+ * stops waiting for what it waits for; « replay », the step is played again, a turn undone first; « previous », back to
+ * the turn before). A pulse presses its button and spins its reels (back, back then play, forward), with their sound; a
+ * pulse that can't act shakes it, with the dispenser's fail click. What it drives:
  * <ul>
  *     <li>linked with the Tile Linker Brush to an element of a party ({@link #getLink}, see
  *     {@link fr.lordfinn.steveparty.board.StepControllerLinks}): a board space or any block of a board (its board's
@@ -57,11 +59,13 @@ import java.util.UUID;
  */
 public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoBlockEntity, TickableBlockEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
-    protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
-    protected static final RawAnimation UP = RawAnimation.begin().thenLoop("up");
-    protected static final RawAnimation SIDE = RawAnimation.begin().thenLoop("side");
-    protected static final RawAnimation DOWN = RawAnimation.begin().thenLoop("down");
-    protected static final RawAnimation ACTIVATED = RawAnimation.begin().thenPlay("powered");
+    /** The animations played on a pulse (see {@link #triggerAnim}), in the controller {@value #ACTION}. */
+    public static final String ACTION = "action", REFUSED = "refused";
+    /** How long the reels' sound lasts after a pulse (ticks), one tick of it every 2 ticks. */
+    private static final int TAPE_TICKS = 16;
+    /** Its chosen button pushed in, by mode. */
+    private static final RawAnimation[] MODE_ANIMATIONS = java.util.Arrays.stream(StepPulse.Mode.values())
+            .map(each -> RawAnimation.begin().thenLoop("mode." + each.id())).toArray(RawAnimation[]::new);
     public static final int RANGE = 64;
     private static final int CHECK_TICKS = 20;
     private StepPulse.Mode mode = StepPulse.Mode.NEXT;
@@ -72,6 +76,9 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     private List<UUID> linkedPages = List.of();
     /** The comparator output, checked again every second. */
     private int output;
+    /** Ticks since the pulse whose tape sound is playing, -1 for none (server). */
+    private int tapeTicks = -1;
+    private StepPulse.Mode tapeMode = StepPulse.Mode.NEXT;
 
     public StepControllerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STEP_CONTROLLER_ENTITY, pos, state);
@@ -105,23 +112,19 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         linkedPages = List.copyOf(pages);
     }
 
+    /** Its chosen button stays pushed in ({@code mode.<id>}); a pulse plays {@code act.<id>}, or {@value #REFUSED}. */
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
-        controllerRegistrar.add(new AnimationController<>(this, "idle", 0, state -> state.setAndContinue(IDLE)));
-        controllerRegistrar.add(new AnimationController<>(this, "mode", 5,
-                state -> state.setAndContinue(switch (mode) {
-                    case NEXT -> UP;
-                    case REPLAY -> SIDE;
-                    case PREVIOUS -> DOWN;
-                })));
-        controllerRegistrar.add(new AnimationController<>(this, "activation", 5, this::activationAnimController));
+        controllerRegistrar.add(new AnimationController<>(this, "mode", 2, state -> state.setAndContinue(MODE_ANIMATIONS[mode.ordinal()])));
+        AnimationController<StepControllerBlockEntity> action = new AnimationController<>(this, ACTION, 0, state -> PlayState.STOP);
+        for (StepPulse.Mode each : StepPulse.Mode.values()) {
+            action.triggerableAnim(actName(each), RawAnimation.begin().thenPlay(actName(each)));
+        }
+        controllerRegistrar.add(action.triggerableAnim(REFUSED, RawAnimation.begin().thenPlay(REFUSED)));
     }
 
-    private PlayState activationAnimController(AnimationState<StepControllerBlockEntity> state) {
-        if (wasPowered || (!state.getController().hasAnimationFinished() && state.getController().getCurrentRawAnimation() == ACTIVATED)) {
-            return state.setAndContinue(ACTIVATED);
-        }
-        return state.setAndContinue(IDLE);
+    private static String actName(StepPulse.Mode mode) {
+        return "act." + mode.id();
     }
 
     @Override
@@ -148,6 +151,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     @Override
     public void tick() {
         if (!(this.world instanceof ServerWorld serverWorld)) return;
+        if (tapeTicks >= 0) playTape(serverWorld);
         if (serverWorld.getTime() % CHECK_TICKS == 0) {
             refreshLinkedPages();
             refreshOutput(serverWorld);
@@ -228,7 +232,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         return new Driven(null, MiniGamePages.pageIdsAt(world, pos));
     }
 
-    /** A redstone pulse: what it drives moves by its mode, said by its sound (a low one: nothing could be done). */
+    /** A redstone pulse: what it drives moves by its mode, shown by its button and reels (a shake: nothing could be done). */
     public boolean trigger() {
         if (!(this.world instanceof ServerWorld serverWorld)) return false;
         Driven driven = driven();
@@ -240,10 +244,41 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
             MiniGameSession session = driven.session();
             done = session != null && session.step(mode);
         }
-        serverWorld.playSound(null, this.pos, done ? SoundEvents.BLOCK_TRIAL_SPAWNER_OPEN_SHUTTER : SoundEvents.EVENT_MOB_EFFECT_TRIAL_OMEN,
-                SoundCategory.BLOCKS, 1.0F, 1.0F);
+        if (done) {
+            triggerAnim(ACTION, actName(mode));
+            serverWorld.playSound(null, this.pos, SoundEvents.BLOCK_STONE_BUTTON_CLICK_ON, SoundCategory.BLOCKS, 0.6F, 0.8F);
+            tapeMode = mode;
+            tapeTicks = 0;
+        } else {
+            triggerAnim(ACTION, REFUSED);
+            serverWorld.playSound(null, this.pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.2F);
+        }
         refreshOutput(serverWorld);
         return done;
+    }
+
+    /**
+     * The reels' whirr after a pulse, a tick of a hi-hat every 2 ticks: falling for « previous » (rewinding), rising for
+     * « next » (fast-forwarding); « replay » rewinds a little then clicks back into play.
+     */
+    private void playTape(ServerWorld serverWorld) {
+        int tick = tapeTicks++;
+        if (tick >= TAPE_TICKS) {
+            tapeTicks = -1;
+            return;
+        }
+        if (tick % 2 != 0) return;
+        float progress = tick / (float) TAPE_TICKS;
+        if (tapeMode == StepPulse.Mode.REPLAY && tick >= TAPE_TICKS / 2) {
+            if (tick == TAPE_TICKS / 2 + 2) serverWorld.playSound(null, this.pos, SoundEvents.BLOCK_LEVER_CLICK, SoundCategory.BLOCKS, 0.5F, 1.4F);
+            return;
+        }
+        float pitch = switch (tapeMode) {
+            case PREVIOUS -> 2.0F - progress;
+            case NEXT -> 1.0F + progress;
+            case REPLAY -> 2.0F - 2 * progress;
+        };
+        serverWorld.playSound(null, this.pos, SoundEvents.BLOCK_NOTE_BLOCK_HAT.value(), SoundCategory.BLOCKS, 0.35F, pitch);
     }
 
     /** The comparator output: the phase of the party it drives (a test of its mini-game: the mini-game phase), 0 for none. */
@@ -266,18 +301,43 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         serverWorld.updateComparators(this.pos, getCachedState().getBlock());
     }
 
-    /** A click: the next mode (« next » up, « replay » sideways, « previous » down). */
+    /** A click elsewhere than on a button: the next mode (« next », « replay », « previous »). */
     public void cycleMode() {
         cycleMode(null);
     }
 
     /** {@link #cycleMode()}, said to {@code player} over his hotbar. */
     public void cycleMode(@Nullable PlayerEntity player) {
+        selectMode(mode.cycle(), player);
+    }
+
+    /** A click on the button of {@code mode}: it is pushed in, and what a pulse would do is said to {@code player}. */
+    public void selectMode(StepPulse.Mode mode, @Nullable PlayerEntity player) {
         if (this.world == null) return;
-        mode = mode.cycle();
-        this.world.playSound(null, this.getPos(), SoundEvents.BLOCK_COPPER_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0F, 2.0F);
-        if (player != null) player.sendMessage(Text.translatable(mode.translationKey()), true);
+        boolean changed = mode != this.mode;
+        this.mode = mode;
+        this.world.playSound(null, this.getPos(), SoundEvents.BLOCK_STONE_BUTTON_CLICK_ON, SoundCategory.BLOCKS, 0.5F, changed ? 1.3F : 1.6F);
+        if (player != null) player.sendMessage(describe(mode), true);
+        if (!changed) return;
         markDirty();
         syncToClients();
     }
+
+    /** « ⏮ Précédent : 2 tours possibles »: the mode, and what a pulse would do now to what it drives. */
+    public Text describe(StepPulse.Mode mode) {
+        Text hint;
+        Driven driven = driven(false);
+        if (driven.party() != null) {
+            hint = StepPulse.preview(driven.party(), mode);
+        } else if (driven.session() != null) {
+            hint = Text.translatable("block.steveparty.step_controller.hint."
+                    + (mode == StepPulse.Mode.PREVIOUS ? "nothing" : mode.id() + ".mini_game"));
+        } else {
+            hint = Text.translatable("block.steveparty.step_controller.hint.none");
+        }
+        return Text.translatable("block.steveparty.step_controller.mode", mode.label(), hint.copy().styled(style -> style.withColor(HINT_COLOR)));
+    }
+
+    /** The hint after the mode's name: a light grey, readable over any ground under the action bar. */
+    private static final int HINT_COLOR = 0xE0E0E0;
 }

@@ -5,7 +5,9 @@
       "file": "steveparty:font/icons.png",
       "ascent": 7,
       "height": 8,
-      "chars": [""]
+      "chars": [
+        "\ue000\ue001\ue002\ue003\ue004\ue005"
+      ]
     }
   ]
 }

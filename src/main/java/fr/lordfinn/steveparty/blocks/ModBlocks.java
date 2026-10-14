@@ -521,13 +521,14 @@ public class ModBlocks {
                     .luminance(state -> 3)  // Low glow to suggest activity or power
                     .requiresTool(),  // Needs a pickaxe or equivalent tool to break
             "cash_register", true);
+    /** The Party Rewinder (« Magnéto de Party »): its id stays step_controller, the blocks already placed keep it. */
     public static final Block STEP_CONTROLLER = register(StepControllerBlock::new,
             Block.Settings.create()
                     .strength(3.0f, BOARD_RESISTANCE)
-                    .sounds(BlockSoundGroup.METAL)  // Stone-like sound for a mechanical device
-                    .luminance(state -> 5)  // Slightly brighter to signify active operation
-                    .nonOpaque()  // Non-opaque to allow transparency for hourglass visualization
-                    .requiresTool(),  // Requires a pickaxe or equivalent tool to break
+                    .sounds(BlockSoundGroup.METAL)
+                    .luminance(state -> 5)
+                    .nonOpaque()  // A tape deck on a plate, not a full block
+                    .requiresTool(),
             "step_controller", true);
     public static final Block PARTY_BELL = register(PartyBellBlock::new,
             Block.Settings.create()

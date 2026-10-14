@@ -3,10 +3,12 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyRewind;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
+import fr.lordfinn.steveparty.blocks.custom.StepControllerBlock;
 import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.board.LinkTargets;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
@@ -20,6 +22,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.GameMode;
@@ -28,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** The Step Controller: linked with the Tile Linker Brush to any element of a party, what its pulses do to a party. */
+/** The Party Rewinder (registry id step_controller): its buttons; linked with the Tile Linker Brush to any element of a party, what its pulses do to a party. */
 public class StepControllerGameTests implements SteveGameTest {
 
     private static StepControllerBlockEntity stepController(TestContext context, BlockPos pos) {
@@ -124,6 +130,8 @@ public class StepControllerGameTests implements SteveGameTest {
             context.assertTrue(stepController.trigger(), "next");
             context.assertTrue(data.getCurrentStep() instanceof TokenTurnPartyStep turn && b.equals(turn.getTokenUUID()), "a's turn passed: b's turn");
             context.assertEquals(stepController.getComparatorOutput(), PartyControllerEntity.PHASE_TURN, "the comparator reads a turn");
+            context.assertEquals(PartyRewind.turnsBack(controller), 1, "« previous » could go back 1 turn");
+            context.assertEquals(key(StepPulse.preview(controller, StepPulse.Mode.REPLAY)), HINT + "replay.turn", "« replay »: b's turn");
 
             stepController.cycleMode();
             context.assertEquals(stepController.getMode(), StepPulse.Mode.REPLAY, "then « replay »");
@@ -140,11 +148,50 @@ public class StepControllerGameTests implements SteveGameTest {
             context.assertTrue(controller.getPartyData().getStepIndex() == 0
                     && controller.getPartyData().getCurrentStep() instanceof TokenTurnPartyStep turn && a.equals(turn.getTokenUUID()), "back to a's turn");
             context.assertTrue(!stepController.trigger(), "nothing before the first turn");
+            context.assertEquals(PartyRewind.turnsBack(controller), 0, "no turn to go back to");
+            context.assertEquals(key(StepPulse.preview(controller, StepPulse.Mode.PREVIOUS)), HINT + "previous.none", "said so");
             stepController.cycleMode();
             context.assertEquals(stepController.getMode(), StepPulse.Mode.NEXT, "round the modes");
         } finally {
             TestCleanup.removeIf(context, controllerPos, ModBlocks.PARTY_CONTROLLER);
         }
+        context.complete();
+    }
+
+    private static final String HINT = "block.steveparty.step_controller.hint.";
+
+    private static String key(Text text) {
+        return text.getContent() instanceof TranslatableTextContent translatable ? translatable.getKey() : text.getString();
+    }
+
+    /**
+     * A click on the top picks the button under it, in thirds, « previous » on the left seen from the front, whichever
+     * way the deck faces; below the top (the door, the sides), no button. Placed, it faces whoever placed it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aClickOnAButtonChoosesItsMode(TestContext context) {
+        double top = 12.5 / 16, depth = 9.5 / 16;
+        // Seen from the front: left, middle, right, as x (facing north) goes 12 → 8 → 4
+        double[] across = {12 / 16.0, 8 / 16.0, 4 / 16.0};
+        StepPulse.Mode[] modes = {StepPulse.Mode.PREVIOUS, StepPulse.Mode.REPLAY, StepPulse.Mode.NEXT};
+        for (int i = 0; i < 3; i++) {
+            double a = across[i];
+            context.assertEquals(StepControllerBlock.buttonAt(Direction.NORTH, new Vec3d(a, top, depth)), modes[i], "north " + modes[i]);
+            context.assertEquals(StepControllerBlock.buttonAt(Direction.SOUTH, new Vec3d(1 - a, top, 1 - depth)), modes[i], "south " + modes[i]);
+            context.assertEquals(StepControllerBlock.buttonAt(Direction.EAST, new Vec3d(1 - depth, top, a)), modes[i], "east " + modes[i]);
+            context.assertEquals(StepControllerBlock.buttonAt(Direction.WEST, new Vec3d(depth, top, 1 - a)), modes[i], "west " + modes[i]);
+        }
+        context.assertEquals(StepControllerBlock.buttonAt(Direction.NORTH, new Vec3d(0.5, 0.75, 1)), StepPulse.Mode.REPLAY, "the deck's top, behind the buttons");
+        context.assertTrue(StepControllerBlock.buttonAt(Direction.NORTH, new Vec3d(0.5, 0.4, 0.3)) == null, "the door: no button");
+
+        BlockPos pos = new BlockPos(1, 1, 1);
+        StepControllerBlockEntity rewinder = stepController(context, pos);
+        rewinder.selectMode(StepPulse.Mode.PREVIOUS, null);
+        context.assertEquals(rewinder.getMode(), StepPulse.Mode.PREVIOUS, "chosen by its button");
+        rewinder.selectMode(StepPulse.Mode.PREVIOUS, null);
+        context.assertEquals(rewinder.getMode(), StepPulse.Mode.PREVIOUS, "the same button again: still « previous »");
+        context.assertEquals(key(StepPulse.Mode.REPLAY.label().getSiblings().get(2)), "block.steveparty.step_controller.mode.replay", "named");
+        context.assertEquals(rewinder.describe(StepPulse.Mode.NEXT).getString().isEmpty(), false, "says what it would do");
         context.complete();
     }
 }

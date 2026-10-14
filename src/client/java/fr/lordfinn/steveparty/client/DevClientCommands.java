@@ -171,6 +171,22 @@ public final class DevClientCommands {
                                     });
                                     return 1;
                                 })))
+                        // The open screen closed, as by Escape
+                        .then(ClientCommandManager.literal("close").executes(context -> {
+                            var client = context.getSource().getClient();
+                            client.send(() -> client.setScreen(null));
+                            return 1;
+                        }))
+                        // Tooltips drawn as with Shift held (true), never (false), or as the keyboard says (off)
+                        .then(ClientCommandManager.literal("more")
+                                .then(ClientCommandManager.literal("off").executes(context -> {
+                                    fr.lordfinn.steveparty.items.tooltip.Tooltips.forTests(null);
+                                    return 1;
+                                }))
+                                .then(ClientCommandManager.argument("held", BoolArgumentType.bool()).executes(context -> {
+                                    fr.lordfinn.steveparty.items.tooltip.Tooltips.forTests(BoolArgumentType.getBool(context, "held"), true);
+                                    return 1;
+                                })))
                         // The token spell screen open: a circle drawn with the mouse, its radius a share (percent) of
                         // the biggest circle, as a hand would (a point every 3 window pixels, a little more than a turn)
                         .then(ClientCommandManager.literal("circle")

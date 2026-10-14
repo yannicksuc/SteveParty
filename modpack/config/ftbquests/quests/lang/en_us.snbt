@@ -299,13 +299,13 @@
 	quest.0FC0569B81622F76.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.0FC0569B81622F76.title: "Lime Star Fragment"
 	quest.101F5B0C2C547670.quest_desc: [
-		"An hourglass. Right-click: standing (Next) or on its side (Replay)."
+		"A tape deck. Right-click a button on top: its mode. Previous · Replay · Next."
 		"Next + a pulse: skips what the party waits for (a turn not rolled, a bell, the practice round); in a mini-game, ends it with the podiums' places."
-		"Replay + a pulse: the player plays again, or the round restarts."
+		"Replay + a pulse: the turn is undone and played again, or the round restarts. Previous: back to the turn before."
 		"Link it to any part of a game with the Tile Linker Brush; otherwise it drives the nearest party (64 blocks)."
 	]
 	quest.101F5B0C2C547670.quest_subtitle: "Craft it (owned ones don't count)"
-	quest.101F5B0C2C547670.title: "Step controller"
+	quest.101F5B0C2C547670.title: "Party Rewinder"
 	quest.10373F304237AA4E.quest_desc: [
 		"6 blocks in steps: 4 stairs."
 	]
@@ -970,7 +970,7 @@
 	]
 	quest.55428C54977D8D69.title: "Quick clean-up"
 	quest.55DCC18B70E655E2.quest_desc: [
-		"The page's Results tab lists what ends the mini-game: linked podiums, goal pole bases and Step Controllers."
+		"The page's Results tab lists what ends the mini-game: linked podiums, goal pole bases and Party Rewinders."
 		"A podium set with the Wrench can register the nearest player, or reset the group, on a pulse."
 	]
 	quest.55DCC18B70E655E2.title: "Results"
