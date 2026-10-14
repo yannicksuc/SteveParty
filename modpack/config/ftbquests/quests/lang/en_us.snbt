@@ -614,7 +614,7 @@
 	]
 	quest.2AB220E13F0C50C3.title: "Ball of yarn"
 	quest.2ABA40709E3044BA.quest_desc: [
-		"Paper, glass, redstone torch, gold ingots, any mini-game pipe and iron ingots. In the arena, it holds the mini-game's page."
+		"Paper, glass, redstone torch, gold ingots, any mini-game pipe and the redstone plate base (iron, redstone, iron). In the arena, it holds the mini-game's page."
 		"Lamp: red (idle), orange (practice round), green (playing). A comparator reads it."
 	]
 	quest.2ABA40709E3044BA.quest_subtitle: "Craft it (owned ones don't count)"
@@ -1244,7 +1244,7 @@
 	]
 	quest.6EF85DD450A37FB8.title: "Link the pipes"
 	quest.6F216B6287815B35.quest_desc: [
-		"Map, glass, redstone torch, gold ingots, chest and iron ingots."
+		"Map, glass, redstone torch, gold ingots, chest, and the redstone plate base (iron, redstone, iron)."
 		"The heart of a party: turns, mini-games and prizes."
 	]
 	quest.6F216B6287815B35.quest_subtitle: "Craft it (owned ones don't count)"

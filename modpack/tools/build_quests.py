@@ -600,9 +600,9 @@ chapter("party", "board_game", "steveparty:party_controller",
          ["Le Contrôleur de Party enchaîne les manches, les mini-jeux et les gains."]))
 
 q("controller", 0, 0, I("party_controller"), deps=["board.tile", "dice.default_dice"], rewards=T3(), size=1.25,
-  desc=(["Map, glass, redstone torch, gold ingots, chest and iron ingots.",
+  desc=(["Map, glass, redstone torch, gold ingots, chest, and the redstone plate base (iron, redstone, iron).",
          "The heart of a party: turns, mini-games and prizes."],
-        ["Carte, verre, torche de redstone, lingots d'or, coffre et lingots de fer.",
+        ["Carte, verre, torche de redstone, lingots d'or, coffre, et le socle redstone (fer, redstone, fer).",
          "Le cœur d'une partie : manches, mini-jeux et gains."]))
 
 q("dashboard", 2.75, -0.25, C(), deps=["controller"], rewards=T1(), icon="steveparty:party_controller",
@@ -803,9 +803,9 @@ q("results", 7, 2, C(), deps=["podium"], rewards=T1(), icon="steveparty:gold_pod
          "Un podium réglé à la Clé à molette peut, sur une impulsion, inscrire le joueur le plus proche ou vider le groupe."]))
 
 q("mg_controller", 5, 2.5, I("mini_game_controller"), deps=["page", "copper_pipe"], rewards=T2(),
-  desc=(["Paper, glass, redstone torch, gold ingots, any mini-game pipe and iron ingots. In the arena, it holds the mini-game's page.",
+  desc=(["Paper, glass, redstone torch, gold ingots, any mini-game pipe and the redstone plate base (iron, redstone, iron). In the arena, it holds the mini-game's page.",
          "Lamp: red (idle), orange (practice round), green (playing). A comparator reads it."],
-        ["Papier, verre, torche de redstone, lingots d'or, un tuyau de mini-jeu et lingots de fer. Dans l'arène, il reçoit la page du mini-jeu.",
+        ["Papier, verre, torche de redstone, lingots d'or, un tuyau de mini-jeu et le socle redstone (fer, redstone, fer). Dans l'arène, il reçoit la page du mini-jeu.",
          "Lampe : rouge (repos), orange (manche de chauffe), verte (en jeu). Un comparateur la lit."]))
 
 q("remote", 6, 3.75, I("mini_game_remote"), deps=["mg_controller"], rewards=T1(),

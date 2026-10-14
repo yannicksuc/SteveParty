@@ -614,7 +614,7 @@
 	]
 	quest.2AB220E13F0C50C3.title: "Pelote de laine"
 	quest.2ABA40709E3044BA.quest_desc: [
-		"Papier, verre, torche de redstone, lingots d'or, un tuyau de mini-jeu et lingots de fer. Dans l'arène, il reçoit la page du mini-jeu."
+		"Papier, verre, torche de redstone, lingots d'or, un tuyau de mini-jeu et le socle redstone (fer, redstone, fer). Dans l'arène, il reçoit la page du mini-jeu."
 		"Lampe : rouge (repos), orange (manche de chauffe), verte (en jeu). Un comparateur la lit."
 	]
 	quest.2ABA40709E3044BA.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
@@ -1244,7 +1244,7 @@
 	]
 	quest.6EF85DD450A37FB8.title: "Lier les tuyaux"
 	quest.6F216B6287815B35.quest_desc: [
-		"Carte, verre, torche de redstone, lingots d'or, coffre et lingots de fer."
+		"Carte, verre, torche de redstone, lingots d'or, coffre, et le socle redstone (fer, redstone, fer)."
 		"Le cœur d'une partie : manches, mini-jeux et gains."
 	]
 	quest.6F216B6287815B35.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"

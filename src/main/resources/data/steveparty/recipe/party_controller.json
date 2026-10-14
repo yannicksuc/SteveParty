@@ -4,7 +4,7 @@
   "pattern": [
     "MST",
     "GCG",
-    "III"
+    "IRI"
   ],
   "key": {
     "M": {
@@ -24,6 +24,9 @@
     },
     "S": {
       "item": "minecraft:glass"
+    },
+    "R": {
+      "item": "minecraft:redstone"
     }
   },
   "result": {

@@ -4,7 +4,7 @@
   "pattern": [
     "PGT",
     "OXO",
-    "III"
+    "IRI"
   ],
   "key": {
     "P": {
@@ -24,6 +24,9 @@
     },
     "I": {
       "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
     }
   },
   "result": {
