@@ -23,6 +23,6 @@ public class ItemRendererTileFaceMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;pop()V"))
     private void steveparty$tileFace(ItemStack stack, ModelTransformationMode mode, boolean leftHanded, MatrixStack matrices,
                                      VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel model, CallbackInfo ci) {
-        TileItemFace.render(stack, matrices, vertexConsumers, light);
+        TileItemFace.render(stack, mode, matrices, vertexConsumers, light);
     }
 }
