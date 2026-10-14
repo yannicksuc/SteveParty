@@ -38,8 +38,8 @@ public final class ChoiceModule extends CartridgeModule {
     public static final int SWATCH_H = 18;
     /** Between two buttons, across and down. */
     public static final int GAP = 3;
-    /** A fitted button: its text's width plus this (a pixel or two each side of its ink). */
-    public static final int FITTED_PAD = 3;
+    /** A fitted button: its text's width plus this (two pixels each side of its ink); between two of them, {@link #FITTED_GAP}. */
+    public static final int FITTED_PAD = 4, FITTED_GAP = 2;
 
     private final List<Option> options;
     private final ToIntFunction<ItemStack> getter;
@@ -108,7 +108,7 @@ public final class ChoiceModule extends CartridgeModule {
      * shared out; null when they don't fit in {@code room} (equal widths then).
      */
     public static int @Nullable [] fittedWidths(int[] textWidths, int room) {
-        int n = textWidths.length, need = (n - 1) * GAP;
+        int n = textWidths.length, need = (n - 1) * FITTED_GAP;
         for (int width : textWidths) need += width + FITTED_PAD;
         if (n == 0 || need > room) return null;
         int extra = room - need;

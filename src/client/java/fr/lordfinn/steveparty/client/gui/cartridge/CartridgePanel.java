@@ -772,7 +772,7 @@ public final class CartridgePanel {
         int[] fitted = fittedWidths(choice, i);
         if (fitted == null) return mx + option % choice.columns() * (choiceW(choice, i, option) + ChoiceModule.GAP);
         int x = mx;
-        for (int o = 0; o < option; o++) x += fitted[o] + ChoiceModule.GAP;
+        for (int o = 0; o < option; o++) x += fitted[o] + ChoiceModule.FITTED_GAP;
         return x;
     }
 
