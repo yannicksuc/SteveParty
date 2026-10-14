@@ -848,6 +848,7 @@ public final class CartridgePanel {
 
     private void drawGhostSlots(DrawContext context, GhostSlotsModule ghosts, int mx, int my, int mouseX, int mouseY, boolean editable) {
         for (int s = 0; s < ghosts.count(); s++) PartyGui.slot(context, mx + ghosts.slotX(s), my + ghosts.slotY(s), WELL, WELL);
+        drawGhostFrames(context, ghosts, mx, my);
         if (ghosts.signed()) {
             drawGhostEditor(context, ghosts, mx, my, mouseX, mouseY, editable);
             return;
@@ -950,7 +951,7 @@ public final class CartridgePanel {
     private void sideButton(DrawContext context, int[] at, String text, int color, boolean chosen, boolean active, boolean hovered) {
         int bx = at[0], by = at[1], bw = at[2];
         if (chosen) {
-            PartyGui.button(context, bx, by, bw, EDIT_H, new PartyGui.Theme(Argb.darken(color, 0.6F), Argb.lighten(color, 0.4F), color, Argb.darken(color, 0.35F)), false);
+            PartyGui.button(context, bx, by, bw, EDIT_H, sideTheme(color), false);
             UiText.centered(context, textRenderer, text, bx + 1, by + 4, bw - 2, 0xFFFFFFFF, true);
             return;
         }
@@ -1357,46 +1358,55 @@ public final class CartridgePanel {
         else ButtonGlyphs.left(context, bx, ry, ROW_BUTTON, ROW_BUTTON, color);
     }
 
+    /** A side's button chosen (Gives green, Takes red): also the frame of the slots of that side. */
+    private static PartyGui.Theme sideTheme(int color) {
+        return new PartyGui.Theme(Argb.darken(color, 0.6F), Argb.lighten(color, 0.4F), color, Argb.darken(color, 0.35F));
+    }
+
     /**
-     * The give / take marks of the ghost slots (a green or red frame), over their items; the slot the editor shows
-     * framed in white around it.
+     * Under the items: each filled slot framed as its side's button (20 x 20 around it), its ground the slots' dark
+     * one, or the side's colour for the chosen one (that button chosen).
+     */
+    private void drawGhostFrames(DrawContext context, GhostSlotsModule ghosts, int mx, int my) {
+        List<GhostSlot> slots = ghostSlots();
+        GhostSlot chosen = ghosts.signed() ? chosenGhost(ghosts) : null;
+        for (int s = 0; s < Math.min(ghosts.count(), slots.size()); s++) {
+            GhostSlot slot = slots.get(s);
+            if (!slot.isEnabled() || !slot.hasStack()) continue;
+            PartyGui.Theme theme = sideTheme(GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE);
+            int sx = mx + ghosts.slotX(s), sy = my + ghosts.slotY(s);
+            if (slot == chosen) {
+                PartyGui.button(context, sx - 2, sy - 2, 20, 20, theme, false);
+            } else {
+                context.fill(sx - 1, sy - 1, sx + 17, sy + 17, WELL);
+                PartyGui.buttonEdge(context, sx - 2, sy - 2, 20, 20, theme, false);
+            }
+        }
+    }
+
+    /**
+     * Over the items: the filled slots' frames again (the count's shadow reaches them), and on the chosen slot its count
+     * shadowed in its side's dark colour, as the chosen button's text.
      */
     public void drawGhostMarks(DrawContext context, List<Slot> slots, int originX, int originY) {
         int i = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
         GhostSlot chosen = i >= 0 && modules.get(i) instanceof GhostSlotsModule ghosts && ghosts.signed() ? chosenGhost(ghosts) : null;
         for (Slot slot : slots) {
             if (!(slot instanceof GhostSlot) || !slot.isEnabled() || !slot.hasStack()) continue;
-            int color = GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE;
+            PartyGui.Theme theme = sideTheme(GhostSlot.isPositive(slot.getStack()) ? GIVE : TAKE);
             int sx = originX + slot.x, sy = originY + slot.y;
             context.getMatrices().push();
-            // Over the item and its count (the count's shadow reaches the ring)
             context.getMatrices().translate(0, 0, 400);
-            // Hugging the slot's rounded shape (its cut corners included); the chosen one also ringed in white around it
-            ring(context, sx - 1, sy - 1, 18, 2, color);
-            // The count's shadow reaches past the slot's bottom right corner: the ground there again, outside the ring
-            context.fill(sx + 16, sy + 15, sx + 17, sy + 17, SCREEN);
-            context.fill(sx + 15, sy + 16, sx + 16, sy + 17, SCREEN);
-            if (slot == chosen) ring(context, sx - 2, sy - 2, 20, 3, 0xFFFFFFFF);
+            PartyGui.buttonEdge(context, sx - 2, sy - 2, 20, 20, theme, false);
+            int count = slot.getStack().getCount();
+            if (slot == chosen && count != 1) {
+                // Where the game draws the count: its shadow in the side's dark colour over the grey one, then the count
+                String text = Integer.toString(count);
+                int tx = sx + 19 - 2 - textRenderer.getWidth(text), ty = sy + 6 + 3;
+                context.drawText(textRenderer, text, tx + 1, ty + 1, theme.outline(), false);
+                context.drawText(textRenderer, text, tx, ty, 0xFFFFFFFF, false);
+            }
             context.getMatrices().pop();
-        }
-    }
-
-    /**
-     * A 1 px ring {@code size} wide whose corners are cut by {@code cut} pixels: cut 1 follows a slot's own edge from
-     * inside, cut 2 its outside, the slot's cut corner pixel included (nothing of the background shows between them).
-     */
-    private static void ring(DrawContext context, int fx, int fy, int size, int cut, int color) {
-        int end = fx + size, bottom = fy + size;
-        context.fill(fx + cut, fy, end - cut, fy + 1, color);
-        context.fill(fx + cut, bottom - 1, end - cut, bottom, color);
-        context.fill(fx, fy + cut, fx + 1, bottom - cut, color);
-        context.fill(end - 1, fy + cut, end, bottom - cut, color);
-        // The diagonal steps of the corners
-        for (int d = 1; d < cut; d++) {
-            context.fill(fx + d, fy + cut - d, fx + d + 1, fy + cut - d + 1, color);
-            context.fill(end - 1 - d, fy + cut - d, end - d, fy + cut - d + 1, color);
-            context.fill(fx + d, bottom - 1 - cut + d, fx + d + 1, bottom - cut + d, color);
-            context.fill(end - 1 - d, bottom - 1 - cut + d, end - d, bottom - cut + d, color);
         }
     }
 
