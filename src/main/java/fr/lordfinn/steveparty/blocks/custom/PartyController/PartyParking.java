@@ -33,9 +33,9 @@ import java.util.UUID;
 public final class PartyParking {
     /** Smaller when sharing a space: a modifier never saved (put again on load by the tick). */
     static final Identifier SMALL = Steveparty.id("parked_small");
-    static final double SMALL_SCALE = 0.55;
-    /** Around the middle of the space, the pawns sharing it (blocks). */
-    private static final double RADIUS = 0.32;
+    static final double SMALL_SCALE = 0.5;
+    /** Around the middle of the space, the pawns sharing it (blocks): wider the more they are. */
+    private static final double RADIUS = 0.42, RADIUS_STEP = 0.06, MAX_RADIUS = 0.75;
     /** A full turn in this many ticks: slow. */
     private static final double TURN_TICKS = 240;
     /** Taken this far from its space, a pawn is no longer parked (blocks). */
@@ -114,7 +114,8 @@ public final class PartyParking {
         }
         shrink(mob);
         double angle = 2 * Math.PI * (index / (double) count + time / TURN_TICKS);
-        double x = stand.x + Math.cos(angle) * RADIUS, z = stand.z + Math.sin(angle) * RADIUS;
+        double radius = Math.min(MAX_RADIUS, RADIUS + RADIUS_STEP * (count - 2));
+        double x = stand.x + Math.cos(angle) * radius, z = stand.z + Math.sin(angle) * radius;
         // Facing along the ring, as if walking round
         float yaw = (float) Math.toDegrees(angle) + 180f;
         mob.setPosition(x, stand.y, z);

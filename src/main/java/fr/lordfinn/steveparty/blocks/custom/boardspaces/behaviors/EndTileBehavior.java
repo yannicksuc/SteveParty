@@ -42,8 +42,8 @@ public class EndTileBehavior extends ABoardSpaceBehavior {
         if (!(stack.getItem() instanceof EndCartridgeItem)) return;
         String k = "gui.steveparty.cartridge_menu.end.";
         info.line(TileInfo.Glyph.CYCLE, TileInfo.line("end.ending",
-                TileInfo.value(Text.translatable(k + "ending."
-                        + EndCartridgeItem.ending(stack).id() + ".tooltip"))));
+                TileInfo.value(Text.translatable("hud.steveparty.tile_info.end.ending."
+                        + EndCartridgeItem.ending(stack).id()))));
         info.line(TileInfo.Glyph.ALL, TileInfo.line("end.ranking",
                 TileInfo.value(Text.translatable(k + "ranking."
                         + EndCartridgeItem.ranking(stack).id()))));

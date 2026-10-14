@@ -70,7 +70,7 @@ public class EndCartridgeItem extends BoardRuleCartridgeItem {
         for (Ranking ranking : Ranking.values()) rankings.add(ChoiceModule.Option.tipped(K + "ranking." + ranking.id()));
         return List.of(
                 // One line: what the chosen ending does
-                new InfoModule("description", null, 2, context -> List.of(InfoModule.Line.of(
+                new InfoModule("description", null, 3, context -> List.of(InfoModule.Line.of(
                         Text.translatable(MENU_KEY + "desc.end_cartridge." + ending(context.stack()).id())))),
                 ENDING_SETTING.choice("ending", K + "ending", endings),
                 RANKING_SETTING.choice("ranking", K + "ranking", rankings),
