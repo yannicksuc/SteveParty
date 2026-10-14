@@ -3360,7 +3360,7 @@
   "tooltip.steveparty.party_bell.use": "choisir le moment",
   "tooltip.steveparty.party_controller.summary": "Mène une partie : plateau, pions, programme et gains",
   "tooltip.steveparty.party_controller.use": "ouvrir son tableau de bord",
-  "tooltip.steveparty.step_controller.use": "sur un bouton : choisit le mode",
+  "tooltip.steveparty.step_controller.use": "un bouton : choisit le mode",
   "tooltip.steveparty.goal_pole_base.summary": "Compte les points du Mât d'arrivée empilé dessus",
   "tooltip.steveparty.goal_pole_base.use": "avec la Clé à molette : ses réglages",
   "tooltip.steveparty.dice_forge.summary": "Forge des dés sur mesure : choisis les faces et leur fréquence",
