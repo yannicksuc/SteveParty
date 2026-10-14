@@ -4,6 +4,9 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.utils.InventoryChain;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
@@ -127,11 +130,29 @@ public interface PartyResources {
      * ever lost. Nothing happens outside a party ({@code controller} null: {@code stack} is left as it is).
      */
     static void deposit(@Nullable PartyControllerEntity controller, ItemStack stack) {
-        if (controller == null || stack.isEmpty()) return;
+        spill(controller, stack);
+    }
+
+    /**
+     * An item {@code user} used up in the party (a power-up, a Power-up die, a gate key...) goes back to the party's
+     * source, as {@link #deposit} does; when it falls by the Party Controller (its storage full), {@code user} is told
+     * in red. A bank without end takes it without a word. Nothing happens outside a party.
+     */
+    static void giveBackUsed(@Nullable PartyControllerEntity controller, ItemStack stack, @Nullable ServerPlayerEntity user) {
+        ItemStack fallen = spill(controller, stack);
+        if (fallen.isEmpty() || user == null) return;
+        user.sendMessage(Text.translatable("message.steveparty.party.storage_full", fallen.getName()).formatted(Formatting.RED), false);
+    }
+
+    /** {@link #deposit}: what fell by the Party Controller (a copy), empty when everything went in. */
+    private static ItemStack spill(@Nullable PartyControllerEntity controller, ItemStack stack) {
+        if (controller == null || stack.isEmpty()) return ItemStack.EMPTY;
         of(controller).give(stack);
-        if (stack.isEmpty() || controller.getWorld() == null) return;
+        if (stack.isEmpty() || controller.getWorld() == null) return ItemStack.EMPTY;
+        ItemStack fallen = stack.copy();
         BlockPos pos = controller.getPos();
         ItemScatterer.spawn(controller.getWorld(), pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, stack.copyAndEmpty());
+        return fallen;
     }
 
     /** Real containers, in order. */

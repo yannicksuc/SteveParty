@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.powerups;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.dice.DiceModules;
@@ -154,11 +155,15 @@ public final class PowerUpService {
         return player.isInCreativeMode() || find(player, hand, use) != null;
     }
 
-    /** One of the power-up, from the hand that used it, else from anywhere in the inventory (moved meanwhile). */
+    /**
+     * One of the power-up, from the hand that used it, else from anywhere in the inventory (moved meanwhile); it goes
+     * back to the party's storage ({@link PartyResources#giveBackUsed}).
+     */
     private static void consume(ServerPlayerEntity player, Hand hand, PowerUpUse use) {
         if (player.isInCreativeMode()) return;
         ItemStack stack = find(player, hand, use);
-        if (stack != null) stack.decrement(1);
+        if (stack == null) return;
+        PartyResources.giveBackUsed(use.controller(), stack.split(1), player);
     }
 
     /** The item used (same components: a signed Trap is not an unsigned one), in that hand or anywhere. */

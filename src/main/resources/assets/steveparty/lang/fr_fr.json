@@ -2629,6 +2629,7 @@
   "item.steveparty.powerup_padlock": "Cadenas",
   "message.steveparty.powerup.wait": "Attends : ton bonus n'est pas encore fini",
   "message.steveparty.powerup.not_held": "Tu n'as plus ce bonus",
+  "message.steveparty.party.storage_full": "Le stockage du Contrôleur de Party est plein : %s est posé dessus",
   "powerup.steveparty.padlock.desc": "Bloque %s contre toi jusqu'à ton prochain tour",
   "powerup.steveparty.padlock.desc.attack": "une Cloche voleuse ou un Piège",
   "message.steveparty.powerup.padlock.already": "Tu es déjà protégé par un Cadenas",

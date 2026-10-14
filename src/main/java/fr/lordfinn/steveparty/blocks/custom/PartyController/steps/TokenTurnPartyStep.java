@@ -4,6 +4,7 @@ import net.minecraft.entity.mob.MobEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ThresholdTileBehavior;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DicePrompts;
@@ -302,7 +303,8 @@ public class TokenTurnPartyStep extends PartyStep {
     /**
      * Rejouer / Roll Again: the token of this turn landed on a Replay tile. Its owner plays again right away: a turn of
      * the same token is inserted right after this one (the turn order then goes on as before), and the die spent for
-     * this turn comes back to the owner (not in creative), so the replay can always be rolled, a forged die included.
+     * this turn comes back to the owner (not in creative), a forged die included: taken back from the party's storage,
+     * where a spent die goes (nothing comes back while it is not there).
      * The extra turn itself never gives another one (no endless chain).
      *
      * @return the extra turn (started by the caller's next step), null if this turn gives none
@@ -316,7 +318,8 @@ public class TokenTurnPartyStep extends PartyStep {
         partyData.getSteps().add(partyData.getStepIndex() + 1, extra);
         if (!spentDie.isEmpty() && owner != null && partyControllerEntity.getWorld() instanceof ServerWorld world) {
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(owner);
-            if (player != null && !player.isInCreativeMode()) player.getInventory().offerOrDrop(spentDie.copy());
+            if (player != null && !player.isInCreativeMode() && PartyResources.of(partyControllerEntity).take(spentDie, 1) == 1)
+                player.getInventory().offerOrDrop(spentDie.copy());
         }
         spentDie = ItemStack.EMPTY;
         partyControllerEntity.markDirty();
