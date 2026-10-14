@@ -41,11 +41,20 @@ public final class TileColors {
         return fromHsv(h, s, v);
     }
 
-    /** Warm hues shade toward red, the others toward blue; a negative amount goes the other way (highlights). */
+    /** The hue warm shades go toward and stop at: crimson. */
+    private static final float CRIMSON = 350;
+
+    /**
+     * Warm hues shade toward crimson and stop there, the others toward blue; a negative amount goes the other way
+     * (highlights: away from crimson, from blue).
+     */
     private static float shiftHue(float h, float amount) {
         if (h < 70 || h >= 300) {
-            // Toward red: yellow -> orange -> red, magenta -> crimson
-            h = h < 70 ? h - amount : h + amount;
+            // Toward crimson: yellow -> orange -> red -> crimson, magenta -> crimson (yellows counted past 360)
+            float warm = h < 70 ? h + 360 : h;
+            float distance = CRIMSON - warm;
+            if (amount > 0) h = warm + Math.signum(distance) * Math.min(amount, Math.abs(distance));
+            else h = warm + (distance > 0 ? 1 : -1) * amount;
         } else {
             float target = 245;
             float distance = target - h;
