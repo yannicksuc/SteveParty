@@ -49,6 +49,20 @@ public final class BubbleRiding {
      * how far under the Bubbler and over the height it hovers at the column goes (blocks).
      */
     public static final double COLUMN_RADIUS = 1.0, COLUMN_MARGIN = 1.0;
+    /**
+     * Its riders idle this long (ticks, 1.5 s: no movement key, no puff, no lead), out of its Bubbler's column, a bubble
+     * rises by itself: its speed up gains this much a tick (blocks a tick; with the air's drag, about 0.9 block a second
+     * at most). Their keys or a puff stop it at once.
+     */
+    public static final int IDLE_RISE_TICKS = 30;
+    public static final double IDLE_RISE_ACCEL = 0.003;
+    /**
+     * Too high, a bubble bursts and its riders fall (no Slow Falling: a parachute helps): more than {@code BURST_HEIGHT}
+     * blocks over the ground under it (a Bubbler's: and more than {@code BURST_HEADROOM} over its column's top, the height
+     * it was sent to), or within {@code BURST_UNDER_LIMIT} blocks of the build limit. Looked at every
+     * {@code ALTITUDE_CHECK_TICKS} ticks.
+     */
+    public static final int BURST_HEIGHT = 24, BURST_HEADROOM = 8, BURST_UNDER_LIMIT = 2, ALTITUDE_CHECK_TICKS = 5;
     /** A bubble about to burst by itself shows it this many ticks before (3 s): see BubbleEntity#weaken. */
     public static final int WARNING_TICKS = 60;
     /** How high a bubble blown by the Bubbled effect rises from where its rider was (blocks). */
