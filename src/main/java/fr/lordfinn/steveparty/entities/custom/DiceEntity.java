@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.advancement.PartyAdvancements;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.dice.DiceModule;
@@ -8,6 +9,7 @@ import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DiceReveal;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
+import fr.lordfinn.steveparty.dice.DiceTargets;
 import fr.lordfinn.steveparty.dice.FastDice;
 import fr.lordfinn.steveparty.dice.DiceThrow;
 import fr.lordfinn.steveparty.entities.custom.mistigri.MistigriSummoning;
@@ -762,9 +764,9 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     /**
-     * Removes the dice. A die is not lost (unless it carries the Power-up module): it goes back to its owner when the
-     * owner is online, otherwise to the player who exploded it (anyone may explode a dice). A creative owner kept theirs
-     * when throwing it: none is given back to them.
+     * Removes the dice. A die is not lost: it goes back to its owner when the owner is online, otherwise to the player
+     * who exploded it (anyone may explode a dice). A creative owner kept theirs when throwing it: none is given back to
+     * them. A die carrying the Power-up module is spent: in a party, it goes to the party's storage.
      */
     private void giveBackDice(@Nullable ServerPlayerEntity player) {
         giveBackDice(player, RemovalReason.DISCARDED);
@@ -780,6 +782,11 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             // A copy: handing the stack over empties it, and the die still reads its modules as it goes (Firecracker)
             if (recipient != null && !kept)
                 recipient.getInventory().offerOrDrop(diceItem.copy());
+        } else if (!diceItem.isEmpty() && this.getWorld() instanceof ServerWorld world) {
+            ServerPlayerEntity owner = getOnlineOwner();
+            UUID ownerId = this.getOwner().orElse(null);
+            if ((owner == null || !owner.isInCreativeMode()) && ownerId != null)
+                PartyResources.giveBackUsed(DiceTargets.partyOf(world, ownerId), diceItem.copy(), owner);
         }
         this.remove(reason);
     }

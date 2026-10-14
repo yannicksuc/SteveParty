@@ -2624,6 +2624,7 @@
   "item.steveparty.powerup_padlock": "Padlock",
   "message.steveparty.powerup.wait": "Wait: your power-up is not over yet",
   "message.steveparty.powerup.not_held": "You no longer have this power-up",
+  "message.steveparty.party.storage_full": "Party Controller full: %s dropped on top",
   "powerup.steveparty.padlock.desc": "Blocks %s against you until your next turn",
   "powerup.steveparty.padlock.desc.attack": "one Thief Bell or Trap",
   "message.steveparty.powerup.padlock.already": "You are already protected by a Padlock",
