@@ -139,6 +139,18 @@ public final class DevClientCommands {
                                             BoolArgumentType.getBool(context, "shown"));
                                     return 1;
                                 })))
+                        // The language (e.g. fr_fr, en_us), the resources reloaded as from the options
+                        .then(ClientCommandManager.literal("lang")
+                                .then(ClientCommandManager.argument("code", StringArgumentType.word()).executes(context -> {
+                                    var client = context.getSource().getClient();
+                                    String code = StringArgumentType.getString(context, "code");
+                                    client.execute(() -> {
+                                        client.getLanguageManager().setLanguage(code);
+                                        client.options.language = code;
+                                        client.reloadResources();
+                                    });
+                                    return 1;
+                                })))
                         // The GUI scale (0: auto)
                         .then(ClientCommandManager.literal("guiscale")
                                 .then(ClientCommandManager.argument("scale", IntegerArgumentType.integer(0, 6)).executes(context -> {
