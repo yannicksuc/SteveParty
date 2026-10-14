@@ -85,7 +85,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 0.55F, 2.0F, 6),
                 new Layer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.35F, 1.35F, 6))),
         /** A penalty (item taken): a falling "womp" and red puffs. */
-        BAD("bad", 0xCC2A2E, List.of(
+        BAD("bad", 0xD1181C, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.7F, 0.84F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.7F, 0.707F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.55F, 0.53F, 8),
@@ -96,7 +96,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 0.45F, 1.335F, 3),
                 new Layer(SoundEvents.ENTITY_ITEM_PICKUP, 0.25F, 1.4F, 3))),
         /** A shop tile: a shop bell and a coin clink, lime green sparkles. */
-        SHOP("shop", 0x079A0E, List.of(
+        SHOP("shop", 0x008206, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.5F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.45F, 2.0F, 3),
                 new Layer(SoundEvents.ENTITY_VILLAGER_TRADE, 0.45F, 1.1F, 2),
@@ -114,14 +114,14 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 0.749F, 4))),
         /** Move Forward (the token moves on): a quick rising run of chiptune notes over a piston push, green gusts. */
-        ADVANCE("advance", 0x61CE65, List.of(
+        ADVANCE("advance", 0x89CB43, List.of(
                 new Layer(SoundEvents.BLOCK_PISTON_EXTEND, 0.35F, 1.3F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 2.0F, 6))),
         /** Move Back (the token goes back): the same run falling, a piston pulling back, a pink "rewind". */
-        BACK("back", 0xED6466, List.of(
+        BACK("back", 0xED3939, List.of(
                 new Layer(SoundEvents.BLOCK_PISTON_CONTRACT, 0.35F, 0.9F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
@@ -153,7 +153,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 0.749F, 6),
                 new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, 0.5F, 1.4F, 0))),
         /** A Glandouille space: two grumpy woody stomps and a low bassoon "hmph" (see GlandouilleTileBehavior). */
-        GLANDOUILLE("glandouille", 0x97662F, List.of(
+        GLANDOUILLE("glandouille", 0x6C370F, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.749F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.5F, 0.749F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.45F, 1.0F, 8))),

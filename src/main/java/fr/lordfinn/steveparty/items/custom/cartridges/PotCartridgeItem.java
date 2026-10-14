@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class PotCartridgeItem extends BoardRuleCartridgeItem {
     /** Its tile's straw (the nest's). */
-    public static final int COLOR = 0x55D488;
+    public static final int COLOR = 0xEDBE04;
     public static final String STAKE = "stake", START = "start", CAP = "cap", BASE_DUE = "base_due";
     /** Every number of the menu goes from 0 to 100 (a stake of 0: the pot only grows by what its nest is given). */
     public static final int MAX = 100;

@@ -22,7 +22,7 @@ import java.util.List;
  */
 public class GlandouilleCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** Its tile's brown. */
-    public static final int COLOR = 0x97662F;
+    public static final int COLOR = 0x6C370F;
     public static final int MIN_DISTANCE = -50, MAX_DISTANCE = 50;
     public static final int DEFAULT_DISTANCE = -5;
     /** How many Glandouilles in its tower. */

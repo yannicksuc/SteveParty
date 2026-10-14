@@ -34,7 +34,7 @@ import java.util.Locale;
  */
 public class ThresholdCartridgeItem extends BoardRuleCartridgeItem {
     /** Its tile's steel blue. */
-    public static final int COLOR = 0x12C5C7;
+    public static final int COLOR = 0x1ADAA1;
     public static final int MAX_VALUE = 30, DEFAULT_VALUE = 7;
     public static final String KIND = "kind", SIGN = "sign", VALUE = "value", MODE = "mode", OPENING = "opening";
 

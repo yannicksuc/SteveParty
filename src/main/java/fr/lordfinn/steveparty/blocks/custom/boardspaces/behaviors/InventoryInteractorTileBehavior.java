@@ -36,8 +36,8 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
 
     /** Item tile colours (face and sides): orange while it has nothing to give or take, blue bonus, red malus. */
     public final static int NEUTRAL_COLOR = 0xD7C2DA;
-    public final static int GOOD_COLOR = 0x206BC9;
-    public final static int BAD_COLOR = 0xCC2A2E;
+    public final static int GOOD_COLOR = 0x2044C9;
+    public final static int BAD_COLOR = 0xD1181C;
 
     public InventoryInteractorTileBehavior() {
         super(BoardSpaceType.TILE_INVENTORY_INTERACTOR);

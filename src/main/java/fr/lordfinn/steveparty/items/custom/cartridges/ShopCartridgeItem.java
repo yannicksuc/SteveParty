@@ -59,7 +59,7 @@ public class ShopCartridgeItem extends CartridgeItem implements SneakScrollItem,
     public static final int DEFAULT_PURCHASES = 1;
     public static final int MAX_PURCHASES = 9;
     /** The shop cartridge's colour: the tile, the check point and the landing burst. */
-    public static final int COLOR = 0x079A0E;
+    public static final int COLOR = 0x008206;
     /** The most offers: the columns of a Trading Stall. */
     public static final int OFFERS = 9;
     /** The rows of an offer: the item sold, its price, a second price (optional). */
