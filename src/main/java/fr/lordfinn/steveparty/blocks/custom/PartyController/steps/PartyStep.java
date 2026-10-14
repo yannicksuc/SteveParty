@@ -153,6 +153,14 @@ public class PartyStep {
         return false;
     }
 
+    /**
+     * @return true for a step slipped into the party while it runs (a party bell's transition, an event or a mini-game
+     * of a board space): it belongs to the round it is played in, never splits it nor starts one
+     */
+    public boolean isInterlude() {
+        return false;
+    }
+
     /** @return true while this step waits for a signal on a party bell. */
     public boolean isWaitingForBell() {
         return false;

@@ -252,6 +252,14 @@ public class PipeBlock extends Block implements BlockEntityProvider {
                 fr.lordfinn.steveparty.blocks.custom.PartyController.PartyEnding.clickPipe(serverPlayer, hand, serverWorld, pos);
             return ItemActionResult.SUCCESS;
         }
+        // An Event party card or Event Cartridge: the players come out of this pipe (among its others) for the event
+        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.EventCartridgeItem
+                || stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.PartyCardItem card
+                && card.getCardType() == fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.EVENT) {
+            if (world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer)
+                fr.lordfinn.steveparty.blocks.custom.PartyController.EventTimeOut.clickPipe(serverPlayer, hand, serverWorld, pos);
+            return ItemActionResult.SUCCESS;
+        }
         // A block in hand is placed against the pipe (to go on with the run); anything else: into the mouth
         return stack.getItem() instanceof BlockItem ? ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION : ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }

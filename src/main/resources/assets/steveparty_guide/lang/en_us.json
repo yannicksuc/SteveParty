@@ -693,5 +693,17 @@
   "book.steveparty.guide.cartridges.end.page0.title": "Finish",
   "book.steveparty.guide.cartridges.end.page0.text": "A pawn reaching it [#](D94F70)**stops**[#]() and the party heads for its **end**.\n\nThen: the turn played out, a stop, one last turn, or the arrived ones [#](D94F70)**wait**[#]() for all.",
   "book.steveparty.guide.cartridges.end.page1.title": "Gathering",
-  "book.steveparty.guide.cartridges.end.page1.text": "**Tile Linker Brush**: from the Party Controller to a Finish space.\n\nOnce the party is over, the pawns gather there; several on one space turn round, small."
+  "book.steveparty.guide.cartridges.end.page1.text": "**Tile Linker Brush**: from the Party Controller to a Finish space.\n\nOnce the party is over, the pawns gather there; several on one space turn round, small.",
+  "book.steveparty.guide.cartridges.event.name": "Event",
+  "book.steveparty.guide.cartridges.event.description": "A time out for your redstone",
+  "book.steveparty.guide.cartridges.event.page0.title": "Event",
+  "book.steveparty.guide.cartridges.event.page0.text": "A pawn stopping on it starts a [#](9B6BE0)**time out**[#]().\n\nThe **Event** Party Bells ring: your redstone and commands take over.",
+  "book.steveparty.guide.cartridges.event.page1.title": "Pipes and hourglass",
+  "book.steveparty.guide.cartridges.event.page1.text": "**Tile Linker Brush**: from the space to pipes, the players come out of them.\n\nIt ends with the [#](9B6BE0)**hourglass**[#](), a waiting bell or a Step Controller: everyone comes back.",
+  "book.steveparty.guide.cartridges.minigame.name": "Mini-game",
+  "book.steveparty.guide.cartridges.minigame.description": "A mini-game after the turn",
+  "book.steveparty.guide.cartridges.minigame.page0.title": "Mini-game",
+  "book.steveparty.guide.cartridges.minigame.page0.text": "A pawn stopping on it starts a [#](F08A24)**mini-game**[#]() right after its turn, from the catalogue.",
+  "book.steveparty.guide.cartridges.minigame.page1.title": "Modes",
+  "book.steveparty.guide.cartridges.minigame.page1.text": "- [#](F08A24)**VS**[#](): its player against all the others\n- **FFA**: everyone for themselves\n- **Choice**: its player picks in the chat"
 }

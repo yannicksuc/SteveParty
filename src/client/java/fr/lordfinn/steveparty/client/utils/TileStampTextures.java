@@ -541,6 +541,64 @@ public final class TileStampTextures {
             ".........."};
     private static final Map<Character, Float> END_SHADES = Map.of('#', FEATURE, 'o', -0.75f, '-', 0.6f);
 
+    /** The Event: an hourglass, its sand running. */
+    private static final String[] EVENT = {
+            "..............",
+            "..............",
+            "..##########..",
+            "...#------#...",
+            "....#----#....",
+            ".....#--#.....",
+            "......##......",
+            "......##......",
+            ".....#..#.....",
+            "....#....#....",
+            "...#..--..#...",
+            "...#------#...",
+            "..##########..",
+            ".............."};
+    private static final String[] SMALL_EVENT = {
+            ".########.",
+            "..#----#..",
+            "...#--#...",
+            "....##....",
+            "....##....",
+            "...#..#...",
+            "..#.--.#..",
+            ".#------#.",
+            ".########.",
+            ".........."};
+    private static final Map<Character, Float> EVENT_SHADES = Map.of('#', FEATURE, '-', 0.6f);
+
+    /** The Mini-game: « VS ». */
+    private static final String[] MINIGAME = {
+            "..............",
+            "..............",
+            "..............",
+            ".#...#..#####.",
+            ".#...#..#.....",
+            ".#...#..#.....",
+            "..#.#...#####.",
+            "..#.#.......#.",
+            "...#........#.",
+            "...#....#####.",
+            "..............",
+            "..............",
+            "..............",
+            ".............."};
+    private static final String[] SMALL_MINIGAME = {
+            "..........",
+            "..........",
+            ".#.#.###..",
+            ".#.#.#....",
+            ".#.#.###..",
+            "..#....#..",
+            "..#..###..",
+            "..........",
+            "..........",
+            ".........."};
+    private static final Map<Character, Float> MINIGAME_SHADES = Map.of('#', FEATURE);
+
     /** The Common pot: a woven nest full of coins. */
     private static final String[] POT = {
             "..............",
@@ -671,17 +729,19 @@ public final class TileStampTextures {
     }
 
     /** The roles whose face is a pictogram in the ramp of their tile's colour (the others are drawn their own way). */
-    private static final Map<BoardSpaceType, Pictogram> PICTOGRAMS = Map.of(
-            BoardSpaceType.BOARD_SPACE_SHOP, new Pictogram("shop", SHOP_BOX, SMALL_SHOP_BOX, SHOP_SHADES),
-            BoardSpaceType.TILE_STAR, new Pictogram("star", STAR, SMALL_STAR, Map.of('#', FEATURE, 'o', -0.6f)),
-            BoardSpaceType.TILE_GLANDOUILLE, new Pictogram("glandouille", ACORN, SMALL_ACORN, ACORN_SHADES),
-            BoardSpaceType.TILE_FROUSSEUX, new Pictogram("frousseux", FROUSSEUX, SMALL_FROUSSEUX, FROUSSEUX_SHADES),
-            BoardSpaceType.TILE_THRESHOLD, new Pictogram("threshold", THRESHOLD, SMALL_THRESHOLD, THRESHOLD_SHADES),
-            BoardSpaceType.TILE_POT, new Pictogram("pot", POT, SMALL_POT, POT_SHADES),
-            BoardSpaceType.TILE_KEY_GATE, new Pictogram("key_gate", KEY_GATE, SMALL_KEY_GATE, KEY_GATE_SHADES),
-            BoardSpaceType.TILE_MISTIGRI, new Pictogram("mistigri", MISTIGRI, SMALL_MISTIGRI, MISTIGRI_SHADES),
-            BoardSpaceType.TILE_TRICHAUDRON, new Pictogram("trichaudron", TRICHAUDRON, SMALL_TRICHAUDRON, TRICHAUDRON_SHADES),
-            BoardSpaceType.TILE_END, new Pictogram("end", END, SMALL_END, END_SHADES));
+    private static final Map<BoardSpaceType, Pictogram> PICTOGRAMS = Map.ofEntries(
+            Map.entry(BoardSpaceType.BOARD_SPACE_SHOP, new Pictogram("shop", SHOP_BOX, SMALL_SHOP_BOX, SHOP_SHADES)),
+            Map.entry(BoardSpaceType.TILE_STAR, new Pictogram("star", STAR, SMALL_STAR, Map.of('#', FEATURE, 'o', -0.6f))),
+            Map.entry(BoardSpaceType.TILE_GLANDOUILLE, new Pictogram("glandouille", ACORN, SMALL_ACORN, ACORN_SHADES)),
+            Map.entry(BoardSpaceType.TILE_FROUSSEUX, new Pictogram("frousseux", FROUSSEUX, SMALL_FROUSSEUX, FROUSSEUX_SHADES)),
+            Map.entry(BoardSpaceType.TILE_THRESHOLD, new Pictogram("threshold", THRESHOLD, SMALL_THRESHOLD, THRESHOLD_SHADES)),
+            Map.entry(BoardSpaceType.TILE_POT, new Pictogram("pot", POT, SMALL_POT, POT_SHADES)),
+            Map.entry(BoardSpaceType.TILE_KEY_GATE, new Pictogram("key_gate", KEY_GATE, SMALL_KEY_GATE, KEY_GATE_SHADES)),
+            Map.entry(BoardSpaceType.TILE_MISTIGRI, new Pictogram("mistigri", MISTIGRI, SMALL_MISTIGRI, MISTIGRI_SHADES)),
+            Map.entry(BoardSpaceType.TILE_TRICHAUDRON, new Pictogram("trichaudron", TRICHAUDRON, SMALL_TRICHAUDRON, TRICHAUDRON_SHADES)),
+            Map.entry(BoardSpaceType.TILE_END, new Pictogram("end", END, SMALL_END, END_SHADES)),
+            Map.entry(BoardSpaceType.TILE_EVENT, new Pictogram("event", EVENT, SMALL_EVENT, EVENT_SHADES)),
+            Map.entry(BoardSpaceType.TILE_MINIGAME, new Pictogram("minigame", MINIGAME, SMALL_MINIGAME, MINIGAME_SHADES)));
 
     /**
      * The face of a tile of role {@code type} when it is a pictogram (a shop, a star, an acorn, a ghost, a hurdle, a nest,

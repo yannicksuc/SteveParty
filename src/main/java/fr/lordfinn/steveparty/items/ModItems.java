@@ -136,6 +136,12 @@ public class ModItems {
     /** The End Cartridge: the finish of the board, raspberry with a checkered flag until dyed (PartyEndRules). */
     public static final Item END_CARTRIDGE = register("end_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.EndCartridgeItem::new,
             new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.EndCartridgeItem.COLOR));
+    /** The Event Cartridge: a time out of the party, violet with a starburst until dyed (EventTimeOut). */
+    public static final Item EVENT_CARTRIDGE = register("event_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.EventCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.EventCartridgeItem.COLOR));
+    /** The Mini-game Cartridge: a mini-game after the turn, orange with « VS » until dyed (MiniGameModeChoice). */
+    public static final Item MINIGAME_CARTRIDGE = register("minigame_cartridge", fr.lordfinn.steveparty.items.custom.cartridges.MiniGameCartridgeItem::new,
+            new Item.Settings().component(ModComponents.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.MiniGameCartridgeItem.COLOR));
     /** The Gate Key: opens a Key gate on the board, used up (KeyGates). */
     public static final Item GATE_KEY = register("gate_key", GateKeyItem::new,
             new Item.Settings().maxCount(16));

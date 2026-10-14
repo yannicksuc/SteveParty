@@ -89,6 +89,10 @@ public class MiniGamePartyStep extends PartyStep {
     private Set<UUID> ready;
     /** The practice round showed its results: it starts again in a few seconds. Not saved. */
     boolean practiceOver;
+    /** How its teams are made (a Mini-game space's mode; a card: the board's). No initializer, see above. */
+    MiniGameMode mode;
+    /** The player who landed on the Mini-game space, null for a card. */
+    @Nullable UUID lander;
 
     // Not saved; built after super(nbt), which only reads the fields above
     private final MiniGameRoulette roulette = new MiniGameRoulette(this);
@@ -111,7 +115,30 @@ public class MiniGamePartyStep extends PartyStep {
         initCollections();
     }
 
+    /** The mini-game of a Mini-game space: teams made by {@code mode}, {@code lander} being the one who landed. */
+    public static MiniGamePartyStep ofSpace(List<UUID> tokens, MiniGameMode mode, @Nullable UUID lander) {
+        MiniGamePartyStep step = new MiniGamePartyStep(tokens);
+        step.mode = mode;
+        step.lander = lander;
+        return step;
+    }
+
+    public MiniGameMode getMode() {
+        return mode;
+    }
+
+    public @Nullable UUID getLander() {
+        return lander;
+    }
+
+    /** A Mini-game space's mini-game belongs to the round it is played in. */
+    @Override
+    public boolean isInterlude() {
+        return mode != MiniGameMode.ANY;
+    }
+
     private void initCollections() {
+        if (mode == null) mode = MiniGameMode.ANY;
         if (phase == null) phase = Phase.ROULETTE;
         if (participants == null) participants = new ArrayList<>();
         if (returnPositions == null) returnPositions = new LinkedHashMap<>();
@@ -202,8 +229,15 @@ public class MiniGamePartyStep extends PartyStep {
             if (!participants.contains(seat.player())) participants.add(seat.player());
         });
 
-        // Step 5: The ways to make teams, each with the mini-games that can be played that way
-        Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions = assignMiniGamesToTeamDispositions(seats, miniGames, serverWorld.getServer());
+        // A Mini-game space leaving the choice to its player: he chooses first (in the chat)
+        if (mode == MiniGameMode.CHOICE) {
+            MiniGameModeChoice.ask(this, partyControllerEntity, serverWorld);
+            return;
+        }
+
+        // Step 5: The ways to make teams, each with the mini-games that can be played that way (a Mini-game space: its mode's)
+        Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions = MiniGameModeChoice.dispositions(this,
+                partyControllerEntity, seats, miniGames, serverWorld.getServer());
         if (miniGamesToTeamDispositions.isEmpty()) {
             MessageUtils.sendToPlayers(partyControllerEntity.getInterestedPlayersEntities(),
                     Text.translatableWithFallback("message.steveparty.no_compatible_minigame",
@@ -263,6 +297,7 @@ public class MiniGamePartyStep extends PartyStep {
     @Override
     public void end(PartyControllerEntity partyControllerEntity) {
         super.end(partyControllerEntity);
+        MiniGameModeChoice.cancel(this);
         roulette.cancel();
         cancelFlow();
         screens.hidePreview(partyControllerEntity);
@@ -754,6 +789,8 @@ public class MiniGamePartyStep extends PartyStep {
             }
         }
         this.chosenPageSlot = nbt.contains("ChosenPage") ? nbt.getInt("ChosenPage") + 1 : 0;
+        this.mode = MiniGameMode.byName(nbt.getString("Mode"));
+        this.lander = nbt.containsUuid("Lander") ? nbt.getUuid("Lander") : null;
         if (nbt.contains("Tokens")) {
             if (tokens == null)
                 tokens = new ArrayList<>();
@@ -792,6 +829,8 @@ public class MiniGamePartyStep extends PartyStep {
         }
         if (chosenPageSlot > 0)
             nbtCompound.putInt("ChosenPage", chosenPageSlot - 1);
+        if (mode != MiniGameMode.ANY) nbtCompound.putString("Mode", mode.name());
+        if (lander != null) nbtCompound.putUuid("Lander", lander);
         return nbtCompound;
     }
 

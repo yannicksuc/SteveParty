@@ -244,6 +244,8 @@ public class RecipeGameTests implements SteveGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.MAGPIE_NEST)).isOf(ModItems.POT_CARTRIDGE), "pot cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.GATE_KEY)).isOf(ModItems.KEY_GATE_CARTRIDGE), "key gate cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.WHITE_BANNER)).isOf(ModItems.END_CARTRIDGE), "finish cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.CLOCK)).isOf(ModItems.EVENT_CARTRIDGE), "event cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.PARTY_CARD_MINIGAME)).isOf(ModItems.MINIGAME_CARTRIDGE), "mini-game cartridge");
 
         // The Tile and the Advanced Tile (their cartridges loaded: TileCartridgeGameTests)
         ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[DyeColor.WHITE.getId()]);

@@ -173,6 +173,26 @@
           }
         ]
       }
+    },
+    "event": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:event_cartridge"
+          }
+        ]
+      }
+    },
+    "minigame": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:minigame_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -223,6 +243,12 @@
     ],
     [
       "end"
+    ],
+    [
+      "event"
+    ],
+    [
+      "minigame"
     ]
   ],
   "rewards": {

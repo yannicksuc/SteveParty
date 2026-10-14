@@ -8,6 +8,13 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.EventTimeOut;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.world.World;
 
 import java.util.List;
 
@@ -22,7 +29,11 @@ public class PartyCardItem extends Item {
         TURNS("turns"),
         /** A mini-game drawn from the catalogue. */
         MINIGAME("minigame"),
-        /** Rings the "event" party bells (value = stack size, up to 15) and waits for the waiting ones. */
+        /**
+         * A time out (see fr.lordfinn.steveparty.blocks.custom.PartyController.EventTimeOut): rings the "event" party
+         * bells (value = stack size, up to 15), sends the players out of its pipes (a right click on each) and waits for
+         * the waiting bells or its hourglass (a right click in the air).
+         */
         EVENT("event"),
         /**
          * Plays N times in all (N = stack size) the cards since the nearest "sequence start" or "repeat" card on its
@@ -90,9 +101,43 @@ public class PartyCardItem extends Item {
                     .more(more -> more.use("tooltip.steveparty.party_card_end.program").use(Tooltips.Keys.use(), "tooltip.steveparty.party_card_end.use"));
             return;
         }
+        if (cardType == CardType.EVENT) {
+            appendEventTooltip(stack, tooltip);
+            return;
+        }
         Tooltips.of(tooltip)
                 .summary(cardType == CardType.CUSTOM ? getTranslationKey() + ".tooltip"
                         : "item.steveparty.party_card_" + cardType.getName() + ".tooltip", Tooltips.value(stack.getCount()))
                 .more(more -> more.use("tooltip.steveparty.party_card.use"));
+    }
+
+    /** The Event card: its hourglass and pipes, what it does; with Shift, how to set it and what ends it. */
+    private static void appendEventTooltip(ItemStack stack, List<Text> tooltip) {
+        int seconds = stack.getOrDefault(ModComponents.EVENT_SECONDS, 0);
+        int pipes = EventTimeOut.pipes(stack).size();
+        Tooltips.of(tooltip)
+                .state("tooltip.steveparty.event.hourglass", Tooltips.setting(EventTimeOut.durationText(seconds)))
+                .state("tooltip.steveparty.event.pipes", Tooltips.value(pipes))
+                .summary("item.steveparty.party_card_event.tooltip", Tooltips.value(stack.getCount()))
+                .more(more -> more.use("tooltip.steveparty.party_card.use")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.party_card_event.use_pipe")
+                        .use(Tooltips.Keys.use(), "tooltip.steveparty.party_card_event.use_air")
+                        .note("tooltip.steveparty.event.ends")
+                        .note("tooltip.steveparty.party_card_event.channel"));
+    }
+
+    /** An Event card used in the air: its hourglass turns to the next duration. */
+    @Override
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+        ItemStack stack = user.getStackInHand(hand);
+        if (cardType != CardType.EVENT) return super.use(world, user, hand);
+        if (!world.isClient) {
+            int seconds = EventTimeOut.nextDuration(stack.getOrDefault(ModComponents.EVENT_SECONDS, 0));
+            if (seconds > 0) stack.set(ModComponents.EVENT_SECONDS, seconds);
+            else stack.remove(ModComponents.EVENT_SECONDS);
+            user.sendMessage(Text.translatable("message.steveparty.event.hourglass_set", EventTimeOut.durationText(seconds)), true);
+            ModSounds.playSelect(world, user.getBlockPos());
+        }
+        return TypedActionResult.success(stack, world.isClient);
     }
 }

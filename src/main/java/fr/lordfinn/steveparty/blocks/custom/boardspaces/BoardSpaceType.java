@@ -55,7 +55,11 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Trichaudron »: the Trichaudron's three heads each hold a hidden prize, a slow die picks one (see TrichaudronTileBehavior). */
     TILE_TRICHAUDRON("tile_trichaudron", TrichaudronTileBehavior::new),
     /** « Fin »: the finish of the board, a pawn reaching it stops and the party heads for its end (see EndTileBehavior). */
-    TILE_END("tile_end", fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.EndTileBehavior::new);
+    TILE_END("tile_end", fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.EndTileBehavior::new),
+    /** « Événement »: a time out of the party, the map maker's redstone takes over (see EventTileBehavior). */
+    TILE_EVENT("tile_event", fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.EventTileBehavior::new),
+    /** « Mini-jeu »: a mini-game right after the turn, VS or free for all (see MiniGameTileBehavior). */
+    TILE_MINIGAME("tile_minigame", fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.MiniGameTileBehavior::new);
 
     private final String name;
     private final Supplier<ABoardSpaceBehavior> behavior;

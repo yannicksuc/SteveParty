@@ -136,6 +136,17 @@ public abstract class ABoardSpaceBehavior {
     }
 
     /**
+     * Slips {@code step} into the running party right after its current step (an event, a mini-game of the space a
+     * pawn landed on): played next, as part of the round (see PartyStep#isInterlude).
+     */
+    protected static void slipIn(PartyControllerEntity party, PartyStep step) {
+        int index = party.getPartyData().getStepIndex();
+        if (index < 0) return;
+        party.getPartyData().getSteps().add(index + 1, step);
+        party.markDirty();
+    }
+
+    /**
      * The party's next step once a role holding the turn ({@link #keepsTurn}) is done, if the landing's step is still
      * the current one (no party: nothing). Taken at the landing.
      */
