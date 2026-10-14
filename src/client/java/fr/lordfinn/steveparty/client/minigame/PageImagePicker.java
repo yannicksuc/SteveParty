@@ -9,6 +9,7 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 import javax.imageio.ImageIO;
@@ -84,7 +85,10 @@ public final class PageImagePicker {
             PointerBuffer filters = stack.mallocPointer(3);
             filters.put(stack.UTF8("*.png")).put(stack.UTF8("*.jpg")).put(stack.UTF8("*.jpeg"));
             filters.flip();
-            return TinyFileDialogs.tinyfd_openFileDialog(title, "", filters, filter, false);
+            // Opens on the instance's screenshots (F2), where a page's picture usually comes from
+            File screenshots = new File(MinecraftClient.getInstance().runDirectory, "screenshots");
+            String start = screenshots.isDirectory() ? screenshots.getAbsolutePath() + File.separator : "";
+            return TinyFileDialogs.tinyfd_openFileDialog(title, start, filters, filter, false);
         }
     }
 
