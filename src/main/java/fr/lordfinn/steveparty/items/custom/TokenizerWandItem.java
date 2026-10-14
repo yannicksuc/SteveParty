@@ -19,6 +19,7 @@ import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -108,7 +109,7 @@ public class TokenizerWandItem extends Item {
     private static final Map<UUID, Integer> LAST_RESIZES = new HashMap<>();
 
     public enum SpellResult {
-        TOKENIZED, RESIZED, NO_WAND, COOLDOWN, INVALID_TARGET, OUT_OF_REACH, BOSS, NOT_ALLOWED;
+        TOKENIZED, RESIZED, NO_WAND, COOLDOWN, INVALID_TARGET, OUT_OF_REACH, BOSS, NOT_ALLOWED, FORBIDDEN;
 
         public boolean success() {
             return this == TOKENIZED || this == RESIZED;
@@ -124,9 +125,9 @@ public class TokenizerWandItem extends Item {
         if (entity instanceof PlayerEntity target) return useOnPlayer(user, target);
         if (!(entity instanceof MobEntity mob)) return super.useOnEntity(stack, user, entity, hand);
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
-        // Bosses can't become tokens (exploit: shrinking/controlling them)
-        if (!token.steveparty$isTokenized() && isBoss(mob)) {
-            sendBossRefused(user, mob);
+        // Bosses can't become tokens (exploit: shrinking/controlling them), nor monsters when the server says so
+        if (!token.steveparty$isTokenized() && isRefused(mob)) {
+            sendRefused(user, mob);
             return ActionResult.FAIL;
         }
         // The server decides (it knows the token owner) and tells the client to open the spell screen
@@ -145,12 +146,26 @@ public class TokenizerWandItem extends Item {
     private static ActionResult useOnPlayer(PlayerEntity user, PlayerEntity target) {
         if (user.getWorld().isClient) return ActionResult.SUCCESS;
         if (!(user instanceof ServerPlayerEntity player)) return ActionResult.FAIL;
+        if (!playersAllowed(player.getWorld())) {
+            sendPlayersForbidden(player);
+            return ActionResult.FAIL;
+        }
         if (!PawnPossessions.canTokenize(target) || PawnPossessions.isInsideAPawn(player)) {
             sendPlayerRefused(player);
             return ActionResult.FAIL;
         }
         openSpell(player, target);
         return ActionResult.SUCCESS;
+    }
+
+    /** Whether the spell may take players here (game rule {@code stevepartyTokenizePlayers}, on by default). */
+    public static boolean playersAllowed(World world) {
+        return world.getGameRules().getBoolean(ModGameRules.TOKENIZE_PLAYERS);
+    }
+
+    static void sendPlayersForbidden(ServerPlayerEntity player) {
+        MessageUtils.sendToPlayer(player, Text.translatableWithFallback("message.steveparty.player_pawn.forbidden",
+                "Players can't become pawns on this server (game rule stevepartyTokenizePlayers)."), MessageUtils.MessageType.ACTION_BAR);
     }
 
     private static void sendPlayerRefused(ServerPlayerEntity player) {
@@ -205,12 +220,12 @@ public class TokenizerWandItem extends Item {
         return ENCHANTABILITY;
     }
 
-    /** A mob the spell can take: alive, not a boss, and not someone else's token (unless allowed). */
+    /** A mob the spell can take: alive, not refused (a boss, a forbidden monster), and not someone else's token (unless allowed). */
     public static boolean isSpellTarget(PlayerEntity user, ItemStack wand, MobEntity mob) {
         if (!mob.isAlive()) return false;
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         if (token.steveparty$isTokenized()) return canControlToken(user, wand, mob);
-        return !isBoss(mob);
+        return !isRefused(mob);
     }
 
     /** Whether {@code player} has the spell screen open (the server opened it, the client did not close it yet). */
@@ -302,9 +317,9 @@ public class TokenizerWandItem extends Item {
         }
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         boolean resize = token.steveparty$isTokenized();
-        if (!resize && isBoss(mob)) {
-            sendBossRefused(player, mob);
-            return SpellResult.BOSS;
+        if (!resize && isRefused(mob)) {
+            sendRefused(player, mob);
+            return isBoss(mob) ? SpellResult.BOSS : SpellResult.FORBIDDEN;
         }
         if (resize && !canControlToken(player, wand, mob)) {
             sendNotYourToken(player);
@@ -333,6 +348,10 @@ public class TokenizerWandItem extends Item {
             MessageUtils.sendToPlayer(player, Text.translatableWithFallback("message.steveparty.token_spell_out_of_reach",
                     "The spell fizzles: the mob is out of reach."), MessageUtils.MessageType.ACTION_BAR);
             return SpellResult.OUT_OF_REACH;
+        }
+        if (!playersAllowed(player.getWorld())) {
+            sendPlayersForbidden(player);
+            return SpellResult.FORBIDDEN;
         }
         // One pawn per player: not one already under the spell or in a pawn (and not from inside a pawn)
         if (!PawnPossessions.canTokenize(target) || PawnPossessions.isInsideAPawn(player)) {
@@ -396,10 +415,21 @@ public class TokenizerWandItem extends Item {
                 || (mob instanceof WitherEntity && !mob.getWorld().getGameRules().getBoolean(ModGameRules.TOKENIZE_BOSSES));
     }
 
-    /** Tells {@code user} (server side) why the boss {@code mob} can't become a pawn. */
-    public static void sendBossRefused(PlayerEntity user, MobEntity mob) {
+    /**
+     * @return whether the spell refuses to make {@code mob} a pawn: a boss ({@link #isBoss}), or a monster when the game
+     * rule {@code stevepartyTokenizeHostileMobs} is off. A pawn already made can still be resized.
+     */
+    public static boolean isRefused(MobEntity mob) {
+        return isBoss(mob) || (mob instanceof Monster && !mob.getWorld().getGameRules().getBoolean(ModGameRules.TOKENIZE_HOSTILE_MOBS));
+    }
+
+    /** Tells {@code user} (server side) why the refused {@code mob} ({@link #isRefused}) can't become a pawn. */
+    public static void sendRefused(PlayerEntity user, MobEntity mob) {
         if (!(user instanceof ServerPlayerEntity player)) return;
-        Text message = mob instanceof EnderDragonEntity
+        Text message = !isBoss(mob)
+                ? Text.translatableWithFallback("message.steveparty.token_monster_refused",
+                        "The spell can't take a monster on this server (game rule stevepartyTokenizeHostileMobs).")
+                : mob instanceof EnderDragonEntity
                 ? Text.translatableWithFallback("message.steveparty.token_dragon_refused",
                         "The Ender Dragon is far too big for the spell: it can't become a pawn.")
                 : Text.translatableWithFallback("message.steveparty.token_boss_refused",

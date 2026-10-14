@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import net.minecraft.entity.Entity;
@@ -49,6 +50,12 @@ public abstract class TokenBaseDimensionsMixin {
         if (this.steveparty$isToken() != this.steveparty$hasTokenBase) {
             this.calculateDimensions();
         }
+    }
+
+    /** The crosshair reaches a pawn on its base too, which sticks out of its hit box (TokenBase#targetMargin). */
+    @ModifyReturnValue(method = "getTargetingMargin", at = @At("RETURN"))
+    private float steveparty$aimAtTheBase(float margin) {
+        return this.steveparty$isToken() ? Math.max(margin, TokenBase.targetMargin((Entity) (Object) this)) : margin;
     }
 
     @Unique

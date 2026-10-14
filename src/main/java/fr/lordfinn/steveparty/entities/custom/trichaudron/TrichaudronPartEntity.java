@@ -9,6 +9,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -28,6 +29,8 @@ public class TrichaudronPartEntity extends Entity {
     /** Which head ({@link TrichaudronEntity#ALL_HEADS}), and whether this is its neck: synced, for its size. */
     private static final TrackedData<Byte> HEAD = DataTracker.registerData(TrichaudronPartEntity.class, TrackedDataHandlerRegistry.BYTE);
     private static final TrackedData<Boolean> NECK = DataTracker.registerData(TrichaudronPartEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    /** Its Trichaudron's scale (a pawn shrunk or blown up): synced, for its size. */
+    private static final TrackedData<Float> SCALE = DataTracker.registerData(TrichaudronPartEntity.class, TrackedDataHandlerRegistry.FLOAT);
 
     /** Server: its Trichaudron. */
     private @Nullable TrichaudronEntity owner;
@@ -52,6 +55,11 @@ public class TrichaudronPartEntity extends Entity {
         return owner;
     }
 
+    /** Server: as big as its Trichaudron is scaled (TrichaudronParts). */
+    void setScale(float scale) {
+        if (dataTracker.get(SCALE) != scale) dataTracker.set(SCALE, scale);
+    }
+
     public int getHead() {
         return dataTracker.get(HEAD);
     }
@@ -64,17 +72,18 @@ public class TrichaudronPartEntity extends Entity {
     protected void initDataTracker(DataTracker.Builder builder) {
         builder.add(HEAD, (byte) 0);
         builder.add(NECK, false);
+        builder.add(SCALE, 1.0f);
     }
 
     @Override
     public void onTrackedDataSet(TrackedData<?> data) {
         super.onTrackedDataSet(data);
-        if (NECK.equals(data)) calculateDimensions();
+        if (NECK.equals(data) || SCALE.equals(data)) calculateDimensions();
     }
 
     @Override
     public EntityDimensions getDimensions(EntityPose pose) {
-        float size = isNeck() ? TrichaudronParts.NECK_SIZE : TrichaudronParts.HEAD_SIZE;
+        float size = (isNeck() ? TrichaudronParts.NECK_SIZE : TrichaudronParts.HEAD_SIZE) * dataTracker.get(SCALE);
         return EntityDimensions.fixed(size, size);
     }
 
@@ -92,13 +101,20 @@ public class TrichaudronPartEntity extends Entity {
         return owner.damagePart(this, source, amount);
     }
 
-    /** A click: a board actor's head is picked; a wild or tamed one is clicked as its body is (its bucket, its seat). */
+    /**
+     * A click: a board actor's head is picked; a wild or tamed one is clicked as its body is (its bucket, its seat).
+     * What the body leaves, the held item gets as on the body (as vanilla does on a living entity): the Tokenizer Wand
+     * reaches a Trichaudron pawn by its heads, a name tag names it...
+     */
     @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
         if (getWorld().isClient) return ActionResult.SUCCESS;
         if (owner == null) return ActionResult.PASS;
-        if (owner.isBoardActor()) return owner.pickHead(player, getHead()) ? ActionResult.SUCCESS : ActionResult.PASS;
-        return owner.interact(player, hand);
+        if (owner.isBoardActor() && owner.pickHead(player, getHead())) return ActionResult.SUCCESS;
+        ActionResult result = owner.isBoardActor() ? ActionResult.PASS : owner.interact(player, hand);
+        if (result.isAccepted()) return result;
+        ItemStack stack = player.getStackInHand(hand);
+        return stack.isEmpty() ? result : stack.useOnEntity(player, owner, hand);
     }
 
     /** One of its Trichaudron's: never in the way of its own body's searches. */

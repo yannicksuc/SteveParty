@@ -4,6 +4,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityAttachmentType;
 import net.minecraft.entity.EntityAttachments;
 import net.minecraft.entity.EntityDimensions;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 /**
@@ -50,6 +51,25 @@ public final class TokenBase {
     /** Centre to flat side of the base under a hitbox {@code width} blocks wide, in blocks. */
     public static float baseApothem(float width) {
         return Float.isFinite(width) && width > 0 ? width * APOTHEM_PER_WIDTH : 0.0F;
+    }
+
+    /**
+     * How far the base sticks out of the hit box on each side, in blocks: its flat sides are {@link #baseApothem} from
+     * the centre, the hit box half its width. A big pawn's base is several blocks wide: clicked or hit by the wand's
+     * flare there, it is the pawn that is aimed at (the crosshair: {@code Entity#getTargetingMargin}, see
+     * {@code TokenBaseDimensionsMixin}; the flare: {@link #targetBox}).
+     */
+    public static float targetMargin(Entity entity) {
+        return isToken(entity) ? Math.max(0.0F, baseApothem(entity.getWidth()) - entity.getWidth() / 2.0F) : 0.0F;
+    }
+
+    /** The widest {@link #targetMargin} worth searching around (a 5 times huge ghast pawn is 20 blocks wide). */
+    public static final double MAX_TARGET_MARGIN = 5.0;
+
+    /** What aims at {@code entity}: its hit box, widened round a pawn's base ({@link #targetMargin}). */
+    public static Box targetBox(Entity entity) {
+        float margin = targetMargin(entity);
+        return margin > 0 ? entity.getBoundingBox().expand(margin, 0.0, margin) : entity.getBoundingBox();
     }
 
     /** Height of the base under a body of these dimensions, in blocks. */

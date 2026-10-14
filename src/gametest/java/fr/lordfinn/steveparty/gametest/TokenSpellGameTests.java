@@ -3,7 +3,11 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.components.MobEntityComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenStatus;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEntity;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronPartEntity;
+import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronParts;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -51,6 +55,7 @@ import net.minecraft.world.GameRules;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -615,5 +620,105 @@ public class TokenSpellGameTests implements SteveGameTest {
                 Text.literal("LordFinn").withColor(BLUE));
         context.assertEquals(getColorFromText(name) & 0xFFFFFF, BLUE, "colour read from the translation argument");
         context.complete();
+    }
+
+    // ---------------------------------------------------------------- server rules, huge pawns
+
+    /**
+     * The server says no to player pawns or to monsters (game rules stevepartyTokenizePlayers / HostileMobs): the
+     * spell refuses them, the flare stops on them without opening it; other mobs are still taken. Only off during
+     * this tick's checks (the other tests, run at the same time, expect the default).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void serverRulesRefusePlayersAndMonsters(TestContext context) {
+        GameRules rules = context.getWorld().getGameRules();
+        GameRules.BooleanRule players = rules.get(ModGameRules.TOKENIZE_PLAYERS);
+        GameRules.BooleanRule monsters = rules.get(ModGameRules.TOKENIZE_HOSTILE_MOBS);
+        context.assertTrue(players.get() && monsters.get(), "both allowed by default");
+        ZombieEntity zombie = spawn(context, EntityType.ZOMBIE);
+        PigEntity pig = spawn(context, EntityType.PIG);
+        ServerPlayerEntity player = wandHolder(context);
+        ServerPlayerEntity other = TestPlayers.mock(context);
+        try {
+            players.set(false, context.getWorld().getServer());
+            monsters.set(false, context.getWorld().getServer());
+            context.assertTrue(TokenizerWandItem.isRefused(zombie), "a zombie is refused");
+            context.assertTrue(!TokenizerWandItem.isRefused(pig), "a pig is not");
+            context.assertTrue(TokenizerWandItem.castSpell(player, zombie.getId(), 0.5F, BLUE) == SpellResult.FORBIDDEN, "monster refused");
+            context.assertTrue(!token(zombie).steveparty$isTokenized(), "the zombie stays a mob");
+            context.assertTrue(player.interact(zombie, Hand.MAIN_HAND) == ActionResult.FAIL, "the wand on it is refused");
+            context.assertFalse(player.interact(other, Hand.MAIN_HAND).isAccepted(), "the wand on a player is refused");
+            context.assertFalse(TokenizerWandItem.isSpellOpen(player), "no spell opened on him");
+            context.assertTrue(TokenizerWandItem.castSpell(player, pig.getId(), 0.5F, BLUE) == SpellResult.TOKENIZED, "a pig still is taken");
+        } finally {
+            players.set(true, context.getWorld().getServer());
+            monsters.set(true, context.getWorld().getServer());
+            TestPlayers.remove(context, other);
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
+    /**
+     * A huge pawn's base sticks out of its hit box: aimed at there (the flare, the crosshair's targeting margin), it is
+     * the pawn that is aimed at, so it can be shrunk back.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aHugePawnIsAimedAtOnItsBase(TestContext context) {
+        PigEntity pig = spawn(context, EntityType.PIG);
+        ServerPlayerEntity player = wandHolder(context);
+        token(pig).steveparty$setTokenized(true);
+        token(pig).steveparty$setTokenOwner(player.getUuid());
+        pig.getAttributeInstance(EntityAttributes.GENERIC_SCALE).setBaseValue(4.0);
+        pig.calculateDimensions();
+        try {
+            float margin = TokenBase.targetMargin(pig);
+            context.assertTrue(margin > 0.5F, "its base sticks out: " + margin);
+            context.assertTrue(Math.abs(pig.getTargetingMargin() - margin) < 1e-4, "the crosshair aims with it");
+            // a flight along the base's edge, outside the hit box, inside the base
+            double x = pig.getBoundingBox().maxX + margin * 0.6;
+            double y = pig.getY() + TokenBase.baseHeight(pig) * 0.5;
+            Vec3d from = new Vec3d(x, y, pig.getBoundingBox().minZ - 2);
+            TokenizerFlare.Hit hit = TokenizerFlare.trace(player.getServerWorld(), player, player.getMainHandStack(), from, from.add(0, 0, 4));
+            context.assertTrue(hit.mob() == pig, "the flare hits the pawn on its base: " + hit + " from " + from + ", pawn " + pig.getBoundingBox());
+        } finally {
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
+    /**
+     * A Trichaudron pawn blown up: its head boxes are where its heads are drawn (scaled from its feet, on its base) and
+     * as big; the wand clicked on a head opens the spell on the Trichaudron (so it can be shrunk back).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aHugeTrichaudronPawnIsReachedByItsHeads(TestContext context) {
+        TrichaudronEntity trichaudron = context.spawnEntity(ModEntities.TRICHAUDRON, new BlockPos(4, 1, 4));
+        trichaudron.setAiDisabled(true);
+        ServerPlayerEntity player = wandHolder(context);
+        token(trichaudron).steveparty$setTokenized(true);
+        token(trichaudron).steveparty$setTokenOwner(player.getUuid());
+        trichaudron.getAttributeInstance(EntityAttributes.GENERIC_SCALE).setBaseValue(3.0);
+        trichaudron.calculateDimensions();
+        context.runAtTick(3, () -> {
+            try {
+                List<TrichaudronPartEntity> parts = trichaudron.getParts().all();
+                context.assertTrue(!parts.isEmpty(), "it has head boxes");
+                TrichaudronPartEntity head = parts.stream().filter(part -> !part.isNeck()).findFirst().orElseThrow();
+                context.assertTrue(Math.abs(head.getWidth() - TrichaudronParts.HEAD_SIZE * 3.0f) < 1e-3, "a head box as big as it is: " + head.getWidth());
+                Vec3d centre = head.getPos().add(0, head.getHeight() / 2, 0);
+                Vec3d unscaled = trichaudron.headCenter(head.getHead());
+                Vec3d feet = trichaudron.getPos();
+                Vec3d expected = feet.add(unscaled.subtract(feet).multiply(3.0)).add(0, TokenBase.baseHeight(trichaudron), 0);
+                context.assertTrue(centre.distanceTo(expected) < 0.05, "where it is drawn: " + centre + " vs " + expected);
+                player.interact(head, Hand.MAIN_HAND);
+                context.assertTrue(TokenizerWandItem.isSpellOpen(player), "the wand on a head opens the spell");
+            } finally {
+                TokenizerWandItem.spellClosed(player.getUuid());
+                TestPlayers.remove(context, player);
+                trichaudron.discard();
+            }
+            context.complete();
+        });
     }
 }
