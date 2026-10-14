@@ -56,7 +56,7 @@ import static fr.lordfinn.steveparty.client.screens.pageeditor.PageEditorStyle.*
 public final class PipesTab {
     /** The lanes, top to bottom. */
     private static final MiniGamePipeRole[] LANES = {MiniGamePipeRole.PLAYERS, MiniGamePipeRole.TEAM_A, MiniGamePipeRole.TEAM_B,
-            MiniGamePipeRole.SPECTATORS, MiniGamePipeRole.TEAM_C, MiniGamePipeRole.TEAM_D, MiniGamePipeRole.ENTRY, MiniGamePipeRole.EXIT};
+            MiniGamePipeRole.TEAM_C, MiniGamePipeRole.TEAM_D, MiniGamePipeRole.SPECTATORS, MiniGamePipeRole.ENTRY, MiniGamePipeRole.EXIT};
     // The grid (from the page's corner)
     private static final int TOP = 24, PITCH = 20, LANE_H = 18;
     private static final int ENTRANCE_X = 12, ENTRANCE_W = 76, ENTRANCE_H = 18, ENTRANCE_ROWS = 7, ENTRANCE_SHIFT = PITCH / 2;
