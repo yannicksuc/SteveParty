@@ -40,6 +40,8 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntity;
+import fr.lordfinn.steveparty.minigame.MiniGamePipeIndex;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
@@ -690,10 +692,14 @@ public class MiniGamePipeGameTests implements SteveGameTest {
         });
     }
 
-    /** A page goes in with a click, comes back with a click on the notch (or sneaking), and drops when the pipe is broken. */
+    /**
+     * A page is printed with a click (not used up), wiped off by an empty hand on the notch (nothing comes back), kept by
+     * the pipe item when broken (placed again: still printed), and wiped off when unlinked from the page's editor.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void miniGamePipeTakesAPageAndGivesItBack(TestContext context) {
+    public void miniGamePipePrintsAPageAndKeepsIt(TestContext context) {
         ServerWorld world = context.getWorld();
+        MinecraftServer server = world.getServer();
         BlockPos pipePos = miniGamePipe(context, ModBlocks.IRON_MINIGAME_PIPE, 3, 3, null);
         BlockPos abs = context.getAbsolutePos(pipePos);
         BlockState state = context.getBlockState(pipePos);
@@ -707,28 +713,47 @@ public class MiniGamePipeGameTests implements SteveGameTest {
             // Not without the right to build
             player.changeGameMode(GameMode.ADVENTURE);
             state.onUseWithItem(player.getMainHandStack(), world, player, Hand.MAIN_HAND, new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false));
-            context.assertTrue(MiniGamePipeBlock.pageAt(world, abs).isEmpty(), "adventure: not programmed");
+            context.assertTrue(MiniGamePipeBlock.pageAt(world, abs).isEmpty(), "adventure: not printed");
             player.changeGameMode(GameMode.SURVIVAL);
             state.onUseWithItem(player.getMainHandStack(), world, player, Hand.MAIN_HAND, new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false));
-            context.assertEquals(MiniGamePages.idOf(MiniGamePipeBlock.pageAt(world, abs)), id, "the page is in the pipe");
-            context.assertEquals(player.getMainHandStack().getCount(), 2, "one page of the stack went in");
-            context.assertTrue(!PipeTravel.isTravelling(player), "programming is not going in");
+            context.assertEquals(MiniGamePages.idOf(MiniGamePipeBlock.pageAt(world, abs)), id, "the page is printed on the pipe");
+            context.assertEquals(player.getMainHandStack().getCount(), 3, "printing uses no page up");
+            context.assertTrue(!MiniGamePipeBlock.program(player, Hand.MAIN_HAND, abs), "the same page again: nothing to print");
+            context.assertTrue(!PipeTravel.isTravelling(player), "printing is not going in");
             context.assertTrue(((MiniGamePipeBlockEntity) world.getBlockEntity(abs)).isValid(0, new ItemStack(ModItems.MINI_GAME_PAGE))
                     && !((MiniGamePipeBlockEntity) world.getBlockEntity(abs)).isValid(0, new ItemStack(Items.PAPER)), "only pages go in");
+            context.assertTrue(MiniGamePipeIndex.of(server, id).contains(GlobalPos.create(world.getRegistryKey(), abs)), "the index knows it");
 
-            // A click elsewhere than the notch goes in the pipe (not tested here); on the notch: the page comes back
+            // Something in hand on the notch: nothing; an empty hand: wiped off, nothing comes back
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.STICK));
+            state.onUse(world, player, new BlockHitResult(Vec3d.ofCenter(abs), notch, abs, false));
+            context.assertTrue(!MiniGamePipeBlock.pageAt(world, abs).isEmpty(), "a stick in hand wipes nothing");
             player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
             state.onUse(world, player, new BlockHitResult(Vec3d.ofCenter(abs), notch, abs, false));
-            context.assertTrue(MiniGamePipeBlock.pageAt(world, abs).isEmpty(), "the page was taken");
-            context.assertEquals(MiniGamePages.idOf(player.getMainHandStack()), id, "back in hand");
+            context.assertTrue(MiniGamePipeBlock.pageAt(world, abs).isEmpty(), "the page was wiped off");
+            context.assertTrue(player.getMainHandStack().isEmpty() && player.getInventory().count(ModItems.MINI_GAME_PAGE) == 0, "nothing came back");
 
-            // Broken: the page drops
-            context.assertTrue(MiniGamePipeBlock.program(player, Hand.MAIN_HAND, abs), "programmed again");
-            world.breakBlock(abs, false);
-            List<ItemEntity> drops = world.getEntitiesByClass(ItemEntity.class, new Box(abs).expand(2),
-                    item -> id.equals(MiniGamePages.idOf(item.getStack())));
-            context.assertEquals(drops.size(), 1, "the page dropped");
+            // Broken: the pipe item carries the page, nothing else drops; placed again, still printed
+            player.setStackInHand(Hand.MAIN_HAND, pages.copyWithCount(1));
+            context.assertTrue(MiniGamePipeBlock.program(player, Hand.MAIN_HAND, abs), "printed again");
+            world.breakBlock(abs, true);
+            List<ItemEntity> drops = world.getEntitiesByClass(ItemEntity.class, new Box(abs).expand(2), item -> true);
+            context.assertEquals(drops.size(), 1, "only the pipe dropped");
+            ItemStack pipeItem = drops.getFirst().getStack().copy();
             drops.forEach(Entity::discard);
+            context.assertTrue(pipeItem.isOf(ModBlocks.IRON_MINIGAME_PIPE.asItem()), "the pipe item");
+            context.assertEquals(MiniGamePages.idOf(MiniGamePipeBlockEntity.pageOf(pipeItem)), id, "the pipe item carries the page");
+            context.assertTrue(!MiniGamePipeIndex.of(server, id).contains(GlobalPos.create(world.getRegistryKey(), abs)), "broken: out of the index");
+            context.setBlockState(pipePos, state);
+            BlockEntity placed = world.getBlockEntity(abs);
+            placed.readComponents(pipeItem);
+            placed.markDirty();
+            context.assertEquals(MiniGamePages.idOf(MiniGamePipeBlock.pageAt(world, abs)), id, "placed again: still printed");
+
+            // Unlinked from the page's editor: wiped off
+            context.assertTrue(MiniGamePipeBlock.wipe(server, GlobalPos.create(world.getRegistryKey(), abs), id), "unlinked from the page");
+            context.assertTrue(MiniGamePipeBlock.pageAt(world, abs).isEmpty(), "unlinking breaks the link");
+            context.assertTrue(!MiniGamePipeBlock.wipe(server, GlobalPos.create(world.getRegistryKey(), abs), id), "nothing left to unlink");
 
             // The recipes: copper round a sheet of paper; iron and a Party Star round the copper one; gold, two Party Stars and
             // an eye of ender round the iron one

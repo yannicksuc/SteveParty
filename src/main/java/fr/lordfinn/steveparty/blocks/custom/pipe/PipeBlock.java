@@ -190,7 +190,7 @@ public class PipeBlock extends Block implements BlockEntityProvider {
     protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (world instanceof ServerWorld serverWorld) {
             PipeNetworks.changed(serverWorld, pos);
-            if (!newState.isOf(this) && world.getBlockEntity(pos) instanceof PipeBlockEntity pipe) {
+            if (!newState.isOf(this) && world.getBlockEntity(pos) instanceof PipeBlockEntity pipe && pipe.scattersContents()) {
                 ItemScatterer.spawn(world, pos, pipe);
             }
             if (!isPipe(newState)) {
