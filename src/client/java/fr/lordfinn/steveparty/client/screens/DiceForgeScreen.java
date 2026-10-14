@@ -90,10 +90,11 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
     /**
      * The FORGE button is the arrow of the capsule, between the blank faces and the die (only the screen draws it):
-     * its shaft from ARROW_X0, its head's base at ARROW_X1, and the box that takes the clicks.
+     * its shaft from ARROW_X0, its head's base at ARROW_X1, its tip at ARROW_TIP, symmetric about the row ARROW_Y (the
+     * capsule's middle row), centred between the two slots.
      */
-    private static final int ARROW_X0 = DiceForgeScreenHandler.BLANK_X + 18, ARROW_X1 = DiceForgeScreenHandler.OUTPUT_X - 5,
-            ARROW_Y = DiceForgeScreenHandler.BLANK_Y + 8;
+    private static final int ARROW_X0 = DiceForgeScreenHandler.BLANK_X + 18, ARROW_X1 = DiceForgeScreenHandler.OUTPUT_X - 6,
+            ARROW_TIP = ARROW_X1 + 3, ARROW_Y = DiceForgeScreenHandler.BLANK_Y + 8;
     private static final int[][] ARROW_PIXELS = arrowPixels();
     /**
      * The FORGE button is the whole capsule (its slots aside: hovering a slot is hovering the slot). Its hovered frame
@@ -152,15 +153,15 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private final List<ItemStack> moduleGhosts = DiceModules.all().stream().limit(MODULE_SLOTS)
             .map(module -> new ItemStack(module.item())).toList();
 
-    /** The arrow's pixels: a 2 px shaft, then a head 6 px tall narrowing over 3 columns. */
+    /** The arrow's pixels: a 3 px shaft, then a head 7, 5, 3 and 1 px tall, all centred on the row ARROW_Y. */
     private static int[][] arrowPixels() {
         List<int[]> pixels = new ArrayList<>();
         for (int x = ARROW_X0; x < ARROW_X1; x++) {
-            pixels.add(new int[]{x, ARROW_Y - 1});
-            pixels.add(new int[]{x, ARROW_Y});
+            for (int y = ARROW_Y - 1; y <= ARROW_Y + 1; y++) pixels.add(new int[]{x, y});
         }
-        for (int k = 0; k < 3; k++) {
-            for (int y = ARROW_Y - 1 - (2 - k); y <= ARROW_Y + (2 - k); y++) pixels.add(new int[]{ARROW_X1 + k, y});
+        for (int x = ARROW_X1; x <= ARROW_TIP; x++) {
+            int half = ARROW_TIP - x;
+            for (int y = ARROW_Y - half; y <= ARROW_Y + half; y++) pixels.add(new int[]{x, y});
         }
         return pixels.toArray(new int[0][]);
     }
@@ -432,7 +433,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
                 : handler.isRunning() ? ARROW_RUNNING : ARROW_IDLE;
         // Ready to forge, not pressed yet: the arrow pulses with its capsule
         if (!hovered && isReadyToForge()) base = ColorHelper.Argb.lerp(getPulse(), ARROW_SHADE, ARROW_IDLE);
-        float length = ARROW_X1 + 2 - ARROW_X0;
+        float length = ARROW_TIP - ARROW_X0;
         float progress = getSmoothProgress(delta);
         int shift = pressed ? 1 : 0;
         for (int[] pixel : ARROW_PIXELS) {
