@@ -26,7 +26,7 @@ import java.util.List;
  */
 public class EventCartridgeItem extends BoardRuleCartridgeItem {
     /** Its tile's violet. */
-    public static final int COLOR = 0x9B6BE0;
+    public static final int COLOR = 0xED32A0;
     public static final String DURATION = "duration", CHANNEL = "channel";
 
     private static final String K = MENU_KEY + "event.";

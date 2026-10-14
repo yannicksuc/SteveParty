@@ -27,7 +27,7 @@ import java.util.Locale;
  */
 public class EndCartridgeItem extends BoardRuleCartridgeItem {
     /** Its tile's raspberry. */
-    public static final int COLOR = 0xD94F70;
+    public static final int COLOR = 0x545454;
     public static final String ENDING = "ending", RANKING = "ranking";
 
     /** What happens once a pawn arrived. */

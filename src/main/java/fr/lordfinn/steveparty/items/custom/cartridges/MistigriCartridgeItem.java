@@ -18,7 +18,7 @@ import java.util.List;
  */
 public class MistigriCartridgeItem extends CartridgeItem implements MobSpawnCartridge {
     /** Its tile's witch plum. */
-    public static final int COLOR = 0x23202A;
+    public static final int COLOR = 0x211D25;
     private static final List<CartridgeModule> MODULES = List.of(
             new OutcomeListModule("outcomes", MENU_KEY + "mistigri.outcomes").tipped());
 
