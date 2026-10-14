@@ -102,6 +102,7 @@ import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
 import fr.lordfinn.steveparty.client.model.BrickShadeModelPlugin;
 import fr.lordfinn.steveparty.client.model.ConnectedPlasticModelPlugin;
 import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
+import fr.lordfinn.steveparty.client.blockentity.GhostMobs;
 import fr.lordfinn.steveparty.client.blockentity.SpawnBubbleRenderer;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
@@ -247,6 +248,7 @@ public class StevepartyClient implements ClientModInitializer {
         // The Spawn Bubble: its plate is its block model, its bubble (and what is inside) its renderer. Translucent: its
         // item (a plain block model: the plate, the arrow and the bubble's cube) is drawn on a translucent layer too
         SpawnBubbleRenderer.registerModels();
+        GhostMobs.initialize();
         BlockEntityRendererFactories.register(ModBlockEntities.SPAWN_MARKER_ENTITY, SpawnBubbleRenderer::new);
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.SPAWN_MARKER, SpawnBubbleRenderer.ITEM);
         BlockEntityRendererFactories.register(ModBlockEntities.BUBBLER_ENTITY, BubblerRenderer::new);

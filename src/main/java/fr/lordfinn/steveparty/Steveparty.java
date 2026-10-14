@@ -42,6 +42,7 @@ import fr.lordfinn.steveparty.entities.custom.boomcart.BoomcartSpawns;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxSpawns;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronEvents;
 import fr.lordfinn.steveparty.entities.custom.bubble.BubbleEvents;
+import fr.lordfinn.steveparty.entities.custom.bubble.BubbleLeads;
 import fr.lordfinn.steveparty.entities.custom.trichaudron.TrichaudronSpawns;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleCarrySave;
 import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns;
@@ -213,6 +214,7 @@ public class Steveparty implements ModInitializer {
         TrichaudronSpawns.initialize();
         TrichaudronEvents.initialize();
         BubbleEvents.initialize();
+        BubbleLeads.initialize();
         BoomcartSpawns.initialize();
         WildMagpieSpawns.initialize();
         fr.lordfinn.steveparty.world.MagpieNestFeature.initialize();

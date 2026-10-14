@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.mixin;
 
+import fr.lordfinn.steveparty.client.blockentity.GhostMobs;
 import fr.lordfinn.steveparty.client.entity.DeferredGlows;
 import net.minecraft.client.render.WorldRenderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,5 +23,6 @@ public class WorldRendererDeferredGlowsMixin {
             @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;renderLayer(Lnet/minecraft/client/render/RenderLayer;DDDLorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V", ordinal = 5)})
     private void steveparty$glowsBeforeTranslucentTerrain(CallbackInfo ci) {
         DeferredGlows.drawBeforeTranslucentTerrain();
+        GhostMobs.drawBeforeTranslucentTerrain();
     }
 }
