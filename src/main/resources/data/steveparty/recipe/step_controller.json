@@ -2,31 +2,25 @@
   "type": "minecraft:crafting_shaped",
   "fabric:type": "minecraft:crafting_shaped",
   "pattern": [
-    "BLD",
-    "SGS",
+    "BBB",
+    "PNP",
     "IRI"
   ],
   "key": {
+    "B": {
+      "item": "minecraft:stone_button"
+    },
+    "P": {
+      "item": "minecraft:glass_pane"
+    },
+    "N": {
+      "item": "minecraft:note_block"
+    },
     "I": {
       "item": "minecraft:iron_ingot"
     },
     "R": {
       "item": "minecraft:redstone"
-    },
-    "G": {
-      "item": "minecraft:glass_bottle"
-    },
-    "B": {
-      "item": "minecraft:blue_dye"
-    },
-    "D": {
-      "item": "minecraft:red_dye"
-    },
-    "L": {
-      "item": "minecraft:sand"
-    },
-    "S": {
-      "item": "gold_ingot"
     }
   },
   "result": {

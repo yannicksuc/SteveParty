@@ -1,72 +1,22 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_iron_ingot": {
+    "has_note_block": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "minecraft:iron_ingot"
+            "items": "minecraft:note_block"
           }
         ]
       }
     },
-    "has_redstone": {
+    "has_stone_button": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "minecraft:redstone"
-          }
-        ]
-      }
-    },
-    "has_glass_bottle": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "minecraft:glass_bottle"
-          }
-        ]
-      }
-    },
-    "has_blue_dye": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "minecraft:blue_dye"
-          }
-        ]
-      }
-    },
-    "has_red_dye": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "minecraft:red_dye"
-          }
-        ]
-      }
-    },
-    "has_sand": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "minecraft:sand"
-          }
-        ]
-      }
-    },
-    "has_gold_ingot": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "gold_ingot"
+            "items": "minecraft:stone_button"
           }
         ]
       }
@@ -80,13 +30,8 @@
   },
   "requirements": [
     [
-      "has_iron_ingot",
-      "has_redstone",
-      "has_glass_bottle",
-      "has_blue_dye",
-      "has_red_dye",
-      "has_sand",
-      "has_gold_ingot",
+      "has_note_block",
+      "has_stone_button",
       "has_the_recipe"
     ]
   ],
