@@ -621,6 +621,8 @@ public class MiniGameControllerGameTests implements SteveGameTest {
             context.assertTrue(stepController.trigger() && step.isPlaying(), "replay: the round starts again");
             context.assertTrue(controller.getPartyData().getCurrentStep() == step, "the party did not move");
             stepController.cycleMode();
+            context.assertTrue(!stepController.trigger() && step.isPlaying(), "previous: nothing during a mini-game");
+            stepController.cycleMode();
             context.assertTrue(stepController.trigger(), "next");
             context.assertEquals(step.getPhase(), MiniGamePartyStep.Phase.FINISHED, "next: the mini-game ends");
             context.assertTrue(controller.getPartyData().isAtEnd(), "the party went on");
