@@ -94,6 +94,9 @@ public final class MiniGamePageClient {
                 client.setScreen(new MiniGamePageEditorScreen(payload.hand(), payload.data(), payload.canEdit(), payload.linked(), status));
             }
         });
+        ClientPayloads.receive(MiniGamePagePayloads.Entrances.ID, (payload, context) -> {
+            if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor) editor.onEntrances(payload);
+        });
         ClientPayloads.receive(MiniGamePagePayloads.Status.ID, (payload, context) -> {
             if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor) editor.onStatus(payload.page(), payload.code());
         });

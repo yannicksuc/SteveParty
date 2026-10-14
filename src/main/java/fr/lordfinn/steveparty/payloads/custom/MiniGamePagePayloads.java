@@ -44,6 +44,7 @@ public final class MiniGamePagePayloads {
         Payloads.s2c(TestLabel.ID, TestLabel.CODEC);
         Payloads.s2c(TestStatus.ID, TestStatus.CODEC);
         Payloads.s2c(Practice.ID, Practice.CODEC);
+        Payloads.s2c(Entrances.ID, Entrances.CODEC);
     }
 
     private static <T extends CustomPayload> CustomPayload.Id<T> id(String name) {
@@ -292,6 +293,73 @@ public final class MiniGamePagePayloads {
             buf.writeUuid(payload.page);
             buf.writeBoolean(payload.start);
         }, buf -> new TestAction(buf.readEnumConstant(Hand.class), buf.readUuid(), buf.readBoolean()));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /**
+     * The mini-game pipes printed with the page {@code page}: its entrances, out of a party (the answer to an
+     * {@link EntranceQuery}, and after an {@link EntranceUnlink}).
+     *
+     * @param pipes where they are
+     * @param tiers how far each sends ({@code MiniGamePipeBlock.Reach} ordinal: copper, iron, golden)
+     */
+    public record Entrances(UUID page, List<GlobalPos> pipes, List<Integer> tiers) implements CustomPayload {
+        public static final Id<Entrances> ID = id("entrances");
+        /** The most entrances told. */
+        public static final int MAX = 64;
+        public static final PacketCodec<PacketByteBuf, Entrances> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeUuid(payload.page);
+            int count = Math.min(MAX, Math.min(payload.pipes.size(), payload.tiers.size()));
+            buf.writeVarInt(count);
+            for (int i = 0; i < count; i++) {
+                buf.writeIdentifier(payload.pipes.get(i).dimension().getValue());
+                buf.writeBlockPos(payload.pipes.get(i).pos());
+                buf.writeByte(payload.tiers.get(i));
+            }
+        }, buf -> {
+            UUID page = buf.readUuid();
+            int count = Math.min(MAX, buf.readVarInt());
+            List<GlobalPos> pipes = new ArrayList<>(count);
+            List<Integer> tiers = new ArrayList<>(count);
+            for (int i = 0; i < count; i++) {
+                pipes.add(GlobalPos.create(RegistryKey.of(RegistryKeys.WORLD, buf.readIdentifier()), buf.readBlockPos()));
+                tiers.add((int) buf.readByte());
+            }
+            return new Entrances(page, pipes, tiers);
+        });
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /** The editor asks for the entrances of the page {@code page} (see {@link Entrances}). */
+    public record EntranceQuery(UUID page) implements CustomPayload {
+        public static final Id<EntranceQuery> ID = id("entrance_query");
+        public static final PacketCodec<PacketByteBuf, EntranceQuery> CODEC = PacketCodec.of(
+                (payload, buf) -> buf.writeUuid(payload.page), buf -> new EntranceQuery(buf.readUuid()));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /** A mini-game pipe printed with the page {@code page} held in {@code hand}, unlinked in the editor: its page is wiped off. */
+    public record EntranceUnlink(Hand hand, UUID page, GlobalPos pipe) implements CustomPayload {
+        public static final Id<EntranceUnlink> ID = id("entrance_unlink");
+        public static final PacketCodec<PacketByteBuf, EntranceUnlink> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeEnumConstant(payload.hand);
+            buf.writeUuid(payload.page);
+            buf.writeIdentifier(payload.pipe.dimension().getValue());
+            buf.writeBlockPos(payload.pipe.pos());
+        }, buf -> new EntranceUnlink(buf.readEnumConstant(Hand.class), buf.readUuid(),
+                GlobalPos.create(RegistryKey.of(RegistryKeys.WORLD, buf.readIdentifier()), buf.readBlockPos())));
 
         @Override
         public Id<? extends CustomPayload> getId() {

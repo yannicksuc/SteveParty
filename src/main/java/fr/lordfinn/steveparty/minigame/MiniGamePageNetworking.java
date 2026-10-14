@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.minigame;
 
+import java.util.ArrayList;
+import net.minecraft.util.math.GlobalPos;
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -71,6 +74,9 @@ public final class MiniGamePageNetworking {
         Payloads.c2s(PipeRole.ID, PipeRole.CODEC, MiniGamePageNetworking::pipeRole);
         Payloads.c2s(PipeOrder.ID, PipeOrder.CODEC, MiniGamePageNetworking::pipeOrder);
         Payloads.c2s(PodiumUnlink.ID, PodiumUnlink.CODEC, MiniGamePageNetworking::podiumUnlink);
+        Payloads.c2s(MiniGamePagePayloads.EntranceQuery.ID, MiniGamePagePayloads.EntranceQuery.CODEC,
+                (player, payload) -> send(player, entrances(player.server, payload.page())));
+        Payloads.c2s(MiniGamePagePayloads.EntranceUnlink.ID, MiniGamePagePayloads.EntranceUnlink.CODEC, MiniGamePageNetworking::entranceUnlink);
         Payloads.c2s(TestQuery.ID, TestQuery.CODEC, MiniGamePageNetworking::testQuery);
         Payloads.c2s(TestAction.ID, TestAction.CODEC, MiniGamePageNetworking::testAction);
         Payloads.c2s(Ready.ID, Ready.CODEC, (player, payload) -> MiniGamePartyStep.toggleReady(player));
@@ -162,6 +168,27 @@ public final class MiniGamePageNetworking {
         if (payload.role() < 0) return MiniGamePages.removeLink(player.server, payload.page(), payload.mouth());
         MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(payload.role());
         return role != null && MiniGamePages.setLinkRole(player.server, payload.page(), payload.mouth(), role);
+    }
+
+    /** The mini-game pipes printed with the page {@code page}, as the editor shows them. */
+    public static MiniGamePagePayloads.Entrances entrances(MinecraftServer server, UUID page) {
+        List<GlobalPos> pipes = new ArrayList<>();
+        List<Integer> tiers = new ArrayList<>();
+        for (GlobalPos pipe : MiniGamePipeIndex.of(server, page)) {
+            MiniGamePipeIndex.Entry entry = MiniGamePipeIndex.at(server, pipe);
+            if (entry == null) continue;
+            pipes.add(pipe);
+            tiers.add(entry.reach().ordinal());
+        }
+        return new MiniGamePagePayloads.Entrances(page, pipes, tiers);
+    }
+
+    /** A mini-game pipe printed with the page, unlinked in the editor: its page is wiped off. @return true if it was */
+    public static boolean entranceUnlink(ServerPlayerEntity player, MiniGamePagePayloads.EntranceUnlink payload) {
+        if (editable(player, payload.hand(), payload.page()) == null) return false;
+        boolean wiped = MiniGamePipeBlock.wipe(player.server, payload.pipe(), payload.page());
+        send(player, entrances(player.server, payload.page()));
+        return wiped;
     }
 
     /** A linked podium (or goal pole base) unlinked in the editor. @return true if it was done */

@@ -750,8 +750,11 @@ public class MiniGamePipeGameTests implements SteveGameTest {
             placed.markDirty();
             context.assertEquals(MiniGamePages.idOf(MiniGamePipeBlock.pageAt(world, abs)), id, "placed again: still printed");
 
-            // Unlinked from the page's editor: wiped off
-            context.assertTrue(MiniGamePipeBlock.wipe(server, GlobalPos.create(world.getRegistryKey(), abs), id), "unlinked from the page");
+            // Unlinked from the page's editor (its Pipes tab lists it as an entrance): wiped off
+            GlobalPos at = GlobalPos.create(world.getRegistryKey(), abs);
+            context.assertTrue(MiniGamePageNetworking.entrances(server, id).pipes().contains(at), "the editor lists it as an entrance");
+            context.assertTrue(MiniGamePageNetworking.entranceUnlink(player, new MiniGamePagePayloads.EntranceUnlink(Hand.MAIN_HAND, id, at)),
+                    "unlinked from the page");
             context.assertTrue(MiniGamePipeBlock.pageAt(world, abs).isEmpty(), "unlinking breaks the link");
             context.assertTrue(!MiniGamePipeBlock.wipe(server, GlobalPos.create(world.getRegistryKey(), abs), id), "nothing left to unlink");
 
