@@ -25,6 +25,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.ColorModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.StallOffersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.PageSlotModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.OutcomeListModule;
 import fr.lordfinn.steveparty.payloads.custom.CartridgeSettingPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
@@ -179,8 +180,9 @@ public class CartridgeMenuGameTests implements SteveGameTest {
     private static int measuredHeight(CartridgeModule module, ItemStack stack, InfoModule.Context info, JsonObject lang, int columnW) {
         int label = module.labelKey() == null ? 0 : CartridgeModule.LABEL_H;
         return label + switch (module) {
-            case ChoiceModule choice -> choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
+            case ChoiceModule choice -> choice.bodyHeight();
             case NumberModule number -> NumberModule.ROW_H;
+            case PageSlotModule page -> BlockSlotModule.SLOT;
             case StallOffersModule stall -> StallOffersModule.PREVIEW_H;
             case OutcomeListModule list -> OutcomeListModule.BODY_H;
             // Inline: in the previous module's box; else its name and hint beside the slot
@@ -263,9 +265,13 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                                     context.assertTrue(width(title) <= titleRoom, name + ": title « " + title + " » fits (" + width(title) + " > " + titleRoom + ")");
                                 }
                             }
-                            if (module instanceof ChoiceModule choice && !choice.swatches()) {
-                                int n = choice.options().size();
-                                int room = (moduleW - (n - 1) * 3) / n - 6;
+                            if (module instanceof ChoiceModule choice && choice.isFitted()) {
+                                // Each button as wide as its text, in one row
+                                int[] texts = choice.options().stream().mapToInt(option -> width(translate(lang, option.key(), context)) + 1).toArray();
+                                context.assertTrue(ChoiceModule.fittedWidths(texts, moduleW) != null, name + ": the fitted buttons of " + module.id() + " fit in a row");
+                            } else if (module instanceof ChoiceModule choice && !choice.swatches()) {
+                                int n = choice.columns();
+                                int room = (moduleW - (n - 1) * ChoiceModule.GAP) / n - 6;
                                 for (ChoiceModule.Option option : choice.options()) {
                                     String text = translate(lang, option.key(), context);
                                     context.assertTrue(width(text) <= room, name + ": button « " + text + " » fits (" + width(text) + " > " + room + ")");
@@ -292,7 +298,8 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                         }
                         // The ghost slots or a block slot: the player's inventory under the shell, to pick the items
                         boolean ghosts = CartridgeLayout.indexOf(modules, GhostSlotsModule.class) >= 0
-                                || CartridgeLayout.indexOf(modules, BlockSlotModule.class) >= 0;
+                                || CartridgeLayout.indexOf(modules, BlockSlotModule.class) >= 0
+                                || CartridgeLayout.indexOf(modules, PageSlotModule.class) >= 0;
                         // Beside a tile: one column, within the height under the tile's top (240 high: 28 above)
                         CartridgeLayout beside = CartridgeLayout.of(modules, CartridgeLayout.MAX_CONTENT_BESIDE_TILE, heights, 1, columnW);
                         context.assertTrue(beside.height() <= 240 - 28 - 4, name + ": fits beside the tile without scrolling (" + beside.height() + ")");
@@ -414,6 +421,8 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                 for (CartridgeModule module : ((CartridgeItem) item).modules()) {
                     if (!module.editable()) continue;
                     int[] values = switch (module) {
+                        // Toggles: every set of options on (at least one)
+                        case ChoiceModule choice when choice.isToggles() -> IntStream.range(1, 1 << choice.options().size()).toArray();
                         case ChoiceModule choice -> IntStream.range(0, choice.options().size()).toArray();
                         case NumberModule number -> IntStream.rangeClosed(number.min(), number.max()).toArray();
                         case ColorModule color -> IntStream.rangeClosed(0, ColorModule.DEFAULT).toArray();

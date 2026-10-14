@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopStock;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.BlockSlotModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.PageSlotModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeLayout;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenuHost;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
@@ -59,7 +60,8 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
         this.holderItem = holder.getItem();
         this.modules = CartridgeMenus.modules(holder);
         int ghost = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
-        this.withInventory = ghost >= 0 || CartridgeLayout.indexOf(modules, BlockSlotModule.class) >= 0;
+        this.withInventory = ghost >= 0 || CartridgeLayout.indexOf(modules, BlockSlotModule.class) >= 0
+                || CartridgeLayout.indexOf(modules, PageSlotModule.class) >= 0;
         // With the inventory: a shell of a fixed size (the slots can't move when the texts take more lines)
         this.backgroundWidth = withInventory ? CartridgeLayout.SHELL_W_WITH_INVENTORY : 0;
         this.backgroundHeight = withInventory ? CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP + CartridgeLayout.INVENTORY_H : 0;

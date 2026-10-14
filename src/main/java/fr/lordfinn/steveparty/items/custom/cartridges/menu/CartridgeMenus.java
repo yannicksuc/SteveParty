@@ -97,7 +97,7 @@ public final class CartridgeMenus {
         if (stack.isEmpty() || cartridge(stack) == null) return false;
         CartridgeModule module = module(stack, moduleId);
         if (module == null || !module.editable() || !module.enabled(stack) || !module.accepts(stack, value)) return false;
-        module.set(new CartridgeEdit(stack, ref.holder(player.getWorld()), ref.index()), value);
+        module.set(new CartridgeEdit(stack, ref.holder(player.getWorld()), ref.index(), player.currentScreenHandler.getCursorStack()), value);
         ref.commit(player.getWorld());
         if (ref.inHand()) sendHand(player, ref);
         return true;

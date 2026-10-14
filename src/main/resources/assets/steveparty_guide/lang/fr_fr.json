@@ -703,7 +703,7 @@
   "book.steveparty.guide.cartridges.minigame.name": "Mini-jeu",
   "book.steveparty.guide.cartridges.minigame.description": "Un mini-jeu après le tour",
   "book.steveparty.guide.cartridges.minigame.page0.title": "Mini-jeu",
-  "book.steveparty.guide.cartridges.minigame.page0.text": "Un pion qui s'y arrête lance un [#](F08A24)**mini-jeu**[#]() juste après son tour, tiré du catalogue.",
-  "book.steveparty.guide.cartridges.minigame.page1.title": "Modes",
-  "book.steveparty.guide.cartridges.minigame.page1.text": "- [#](F08A24)**VS**[#]() : son joueur contre tous les autres\n- **Chacun** : chacun pour soi\n- **Choix** : son joueur choisit dans le chat"
+  "book.steveparty.guide.cartridges.minigame.page0.text": "Un pion qui s'y arrête lance un [#](F08A24)**mini-jeu**[#]() juste après son tour, tiré du catalogue, ou toujours la page posée dans son menu.",
+  "book.steveparty.guide.cartridges.minigame.page1.title": "Formats",
+  "book.steveparty.guide.cartridges.minigame.page1.text": "- [#](F08A24)**1 vs 1**[#]() : contre un joueur qu'il choisit, ou au hasard\n- **1 vs tous**, **Chacun**, **Équipes**\n- Plusieurs allumés : son joueur choisit dans le chat"
 }

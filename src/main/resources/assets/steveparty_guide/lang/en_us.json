@@ -703,7 +703,7 @@
   "book.steveparty.guide.cartridges.minigame.name": "Mini-game",
   "book.steveparty.guide.cartridges.minigame.description": "A mini-game after the turn",
   "book.steveparty.guide.cartridges.minigame.page0.title": "Mini-game",
-  "book.steveparty.guide.cartridges.minigame.page0.text": "A pawn stopping on it starts a [#](F08A24)**mini-game**[#]() right after its turn, from the catalogue.",
-  "book.steveparty.guide.cartridges.minigame.page1.title": "Modes",
-  "book.steveparty.guide.cartridges.minigame.page1.text": "- [#](F08A24)**VS**[#](): its player against all the others\n- **FFA**: everyone for themselves\n- **Choice**: its player picks in the chat"
+  "book.steveparty.guide.cartridges.minigame.page0.text": "A pawn stopping on it starts a [#](F08A24)**mini-game**[#]() right after its turn, from the catalogue, or always the page put in its menu.",
+  "book.steveparty.guide.cartridges.minigame.page1.title": "Formats",
+  "book.steveparty.guide.cartridges.minigame.page1.text": "- [#](F08A24)**1 vs 1**[#](): against a player he picks, or a random one\n- **1 vs all**, **Free for all**, **Teams**\n- Several on: its player picks in the chat"
 }
