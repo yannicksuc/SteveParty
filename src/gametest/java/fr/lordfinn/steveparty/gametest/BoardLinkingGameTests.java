@@ -163,6 +163,49 @@ public class BoardLinkingGameTests implements SteveGameTest {
         });
     }
 
+    /** A cartridge in hand forgets its destination where a block is gone when the click aims at that cell. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aLinkerForgetsAGoneBlockAimedAt(TestContext context) {
+        context.setBlockState(new BlockPos(4, 1, 1), Blocks.STONE);
+        BlockPos gone = context.getAbsolutePos(new BlockPos(4, 2, 1)), other = context.getAbsolutePos(new BlockPos(6, 2, 6));
+        withPlayer(context, true, player -> {
+            ItemStack cartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+            cartridge.set(ModComponents.DESTINATIONS_COMPONENT,
+                    new DestinationsComponent(new ArrayList<>(List.of(gone, other)), BoardLinks.worldName(context.getWorld())));
+            player.setStackInHand(Hand.MAIN_HAND, cartridge);
+            Vec3d feet = Vec3d.ofBottomCenter(context.getAbsolutePos(new BlockPos(1, 2, 1)));
+            look(player, feet, Vec3d.ofCenter(gone));
+            context.assertTrue(fr.lordfinn.steveparty.board.LinkerGhosts.use(player, context.getWorld(), Hand.MAIN_HAND), "the gone block is aimed at");
+            DestinationsComponent left = player.getMainHandStack().get(ModComponents.DESTINATIONS_COMPONENT);
+            context.assertEquals(left == null ? List.of() : left.destinations(), List.of(other), "its link forgotten, the other one kept");
+            // Looking up: nothing aimed, the click is the cartridge's own
+            player.refreshPositionAndAngles(feet.x, feet.y, feet.z, 0, -90);
+            context.assertTrue(!fr.lordfinn.steveparty.board.LinkerGhosts.use(player, context.getWorld(), Hand.MAIN_HAND), "nothing aimed");
+        });
+    }
+
+    /** The Wrench on the Party Controller opens its screen (no board report in the chat any more). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theWrenchOpensThePartyControllerScreen(TestContext context) {
+        BlockPos controller = new BlockPos(2, 1, 2);
+        context.setBlockState(controller, ModBlocks.PARTY_CONTROLLER);
+        withPlayer(context, true, player -> {
+            click(player, wrench(player), context, context.getAbsolutePos(controller));
+            context.assertTrue(player.currentScreenHandler instanceof fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler,
+                    "its screen is open");
+            player.closeHandledScreen();
+            context.setBlockState(controller, Blocks.AIR);
+        });
+    }
+
+    /** {@code player} standing at {@code feet}, looking at {@code target}. */
+    private static void look(ServerPlayerEntity player, Vec3d feet, Vec3d target) {
+        Vec3d eye = feet.add(0, player.getStandingEyeHeight(), 0), to = target.subtract(eye);
+        float yaw = (float) Math.toDegrees(Math.atan2(-to.x, to.z));
+        float pitch = (float) -Math.toDegrees(Math.atan2(to.y, Math.sqrt(to.x * to.x + to.z * to.z)));
+        player.refreshPositionAndAngles(feet.x, feet.y, feet.z, yaw, pitch);
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void holdingTheBrushOverATileDoesNotRepaintIt(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));

@@ -197,6 +197,7 @@ public class Steveparty implements ModInitializer {
         LinksCommand.initialize();
         WrenchActions.initialize();
         TileLinkerBrush.initialize();
+        fr.lordfinn.steveparty.board.LinkerGhosts.initialize();
         new TokenMovementService();
         ShopStops.initialize();
         PartyStars.initialize();
