@@ -49,11 +49,12 @@ import java.util.List;
  * The Bubbler and its bubbles: how high a bubble rises (two blocks a level of its redstone signal, 30 without), puffs
  * carrying further up, hovering then the puff, a
  * rider's punch out, hits (never popping with Silk Touch), arrows popping and snowballs pushing, bubbles merging (and
- * several riders of one Bubbler ending in one bubble), the riders' keys shared, item bubbles, a bubble left still
- * popping (never while it travels, never in its Bubbler's column), walls, the ground and mobs popping it (never in its
+ * several riders of one Bubbler ending in one bubble), the riders' keys shared, item bubbles, an item bubble left still
+ * popping (never while it travels, never in its Bubbler's column), idle riders' bubble rising by itself (their keys
+ * stopping it), bursting too high (no Slow Falling; a Bubbler's never at the height it was sent to), walls, the ground and mobs popping it (never in its
  * column, never at its launch), its riders shooting out through it, Slow Falling once out; the Bubbled effect (a
  * rider's projectile bubbling what it hits for as long as its bubble lasts, a timed one's end popping the bubble, an
- * effect bubble left still popping and ending the effect, a bubbled player steering, bosses immune).
+ * idle effect bubble rising and bursting high, ending the effect, a bubbled player steering, bosses immune).
  */
 public class BubblerGameTests implements SteveGameTest {
     /** Bubbles rise 30 blocks and puffs carry them a dozen blocks east. */
@@ -407,27 +408,80 @@ public class BubblerGameTests implements SteveGameTest {
         bubble.push(new Vec3d(0.25 * bubble.mass(), 0, 0));
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_idle", tickLimit = 120)
-    public void leftStillFifteenSecondsItPops(TestContext context) {
-        clear(context, 0, 1, 0, 14, 7, 6);
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_idle_rise", tickLimit = 160)
+    public void itsRidersIdleItRisesByItselfTheirKeysStopIt(TestContext context) {
+        clear(context, 0, 1, 0, 14, 16, 6);
         ServerPlayerEntity rider = TestPlayers.mock(context, GameMode.SURVIVAL);
         BubbleEntity bubble = riding(context, rider, new BlockPos(3, 1, 3), 2);
-        context.waitAndRun(30, () -> {
-            context.assertTrue(bubble.inColumn() && bubble.getStillTicks() == 0, "waiting over its Bubbler: never still");
+        context.waitAndRun(40, () -> {
+            context.assertTrue(bubble.inColumn() && !bubble.isRising(), "waiting over its Bubbler: no rise ("
+                    + bubble.getIdleTicks() + " idle ticks)");
             outOfColumn(context, bubble);
         });
-        context.waitAndRun(80, () -> {
+        context.waitAndRun(90, () -> {
             context.assertFalse(bubble.inColumn(), "out of its column");
-            context.assertTrue(bubble.getStillTicks() > 0, "stopped, bobbing: still (" + bubble.getStillTicks() + ")");
-            bubble.setStillTicks(BubbleRiding.IDLE_TICKS - 3);
-            context.waitAndRun(1, () -> context.assertFalse(bubble.isRemoved(), "still there"));
-            context.waitAndRun(6, () -> {
-                context.assertTrue(bubble.isRemoved(), "15 s without moving: popped");
-                context.assertTrue(rider.hasStatusEffect(StatusEffects.SLOW_FALLING), "its rider falls slowly");
-                TestPlayers.remove(context, rider);
-                context.complete();
+            context.assertTrue(bubble.isRising() && !bubble.isHovering(), "its rider idle: it rises by itself");
+            double startY = bubble.getY();
+            context.waitAndRun(20, () -> {
+                double risen = bubble.getY() - startY;
+                context.assertTrue(risen > 0.4 && risen < 1.2, "slowly up: " + risen);
+                context.assertFalse(bubble.isRemoved(), "rising: never left still");
+                rider.setYaw(-90);
+                rider.forwardSpeed = 1; // his keys
+                context.waitAndRun(2, () -> {
+                    context.assertFalse(bubble.isRising(), "his keys: no more rise");
+                    context.assertTrue(bubble.getIdleTicks() == 0, "not idle: " + bubble.getIdleTicks());
+                    TestPlayers.remove(context, rider);
+                    bubble.discard();
+                    context.complete();
+                });
             });
         });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_burst_high", tickLimit = 60)
+    public void tooHighItBurstsAndItsRiderFallsForReal(TestContext context) {
+        clear(context, 0, 1, 0, 6, 30, 6);
+        PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(3, 1, 3));
+        pig.setAiDisabled(true);
+        BubbleEntity bubble = BubbleEntity.enclose(context.getWorld(), pig, context.getAbsolutePos(new BlockPos(3, 1, 3)), 2);
+        context.assertTrue(bubble != null, "the pig in a bubble");
+        BlockPos ground = context.getAbsolutePos(new BlockPos(3, 0, 3));
+        context.waitAndRun(20, () -> {
+            context.assertFalse(bubble.tooHigh(context.getWorld()), "2 blocks up: fine");
+            // far over its column's top, the ground far under it
+            double high = ground.getY() + 1 + BubbleRiding.BURST_HEIGHT - 2;
+            bubble.push(new Vec3d(0, 0.01, 0));
+            bubble.refreshPositionAndAngles(bubble.getX(), high, bubble.getZ(), 0, 0);
+            context.waitAndRun(BubbleRiding.ALTITUDE_CHECK_TICKS + 1, () -> {
+                context.assertFalse(bubble.isRemoved(), BubbleRiding.BURST_HEIGHT - 2 + " blocks up: intact");
+                bubble.refreshPositionAndAngles(bubble.getX(), high + 4, bubble.getZ(), 0, 0);
+                context.waitAndRun(BubbleRiding.ALTITUDE_CHECK_TICKS + 1, () -> {
+                    context.assertTrue(bubble.isRemoved(), BubbleRiding.BURST_HEIGHT + 2 + " blocks up: burst");
+                    context.assertFalse(pig.hasVehicle(), "its rider out");
+                    context.assertFalse(pig.hasStatusEffect(StatusEffects.SLOW_FALLING), "falling for real: no Slow Falling");
+                    pig.discard();
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_burst_column", tickLimit = 40)
+    public void aBubblersBubbleHoversAtItsHeightWithoutBursting(TestContext context) {
+        PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(3, 1, 3));
+        pig.setAiDisabled(true);
+        // sent 30 blocks up: over the 24 a bubble may go, but the height it was sent to (and a little more) is fine
+        BubbleEntity bubble = BubbleEntity.enclose(context.getWorld(), pig, context.getAbsolutePos(new BlockPos(3, 1, 3)), BubbleRiding.MAX_HEIGHT);
+        context.assertTrue(bubble != null, "the pig in a bubble");
+        BlockPos abs = context.getAbsolutePos(new BlockPos(3, 1, 3));
+        bubble.refreshPositionAndAngles(bubble.getX() + 3, abs.getY() + BubbleRiding.MAX_HEIGHT + BubbleRiding.BURST_HEADROOM / 2.0, bubble.getZ(), 0, 0);
+        context.assertFalse(bubble.tooHigh(context.getWorld()), "a little over the height it was sent to: fine");
+        bubble.refreshPositionAndAngles(bubble.getX(), abs.getY() + BubbleRiding.MAX_HEIGHT + BubbleRiding.BURST_HEADROOM + 4, bubble.getZ(), 0, 0);
+        context.assertTrue(bubble.tooHigh(context.getWorld()), "well over it: too high");
+        pig.discard();
+        bubble.discard();
+        context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_travel", tickLimit = 80)
@@ -514,7 +568,7 @@ public class BubblerGameTests implements SteveGameTest {
     /** Out of its column, an animal it touches is taken in and carried along; another mob (a zombie) pops it. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubble_cow", tickLimit = 140)
     public void aCowItTouchesIsCarriedAZombiePopsIt(TestContext context) {
-        clear(context, 0, 1, 0, 14, 7, 6);
+        clear(context, 0, 1, 0, 14, 12, 6);
         ServerPlayerEntity rider = TestPlayers.mock(context, GameMode.SURVIVAL);
         BubbleEntity bubble = riding(context, rider, new BlockPos(3, 1, 3), 2);
         context.waitAndRun(30, () -> outOfColumn(context, bubble));
@@ -877,8 +931,8 @@ public class BubblerGameTests implements SteveGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "bubbled_idle", tickLimit = 100)
-    public void anEndlessEffectBubbleLeftStillPopsAndEndsTheEffect(TestContext context) {
-        clear(context, 1, 1, 1, 5, 12, 5);
+    public void anEndlessEffectBubbleRisesBurstsHighAndEndsTheEffect(TestContext context) {
+        clear(context, 1, 1, 1, 5, 14, 5);
         PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(3, 1, 3));
         pig.setAiDisabled(true);
         pig.addStatusEffect(new StatusEffectInstance(ModEffects.BUBBLED, StatusEffectInstance.INFINITE, 0));
@@ -886,14 +940,13 @@ public class BubblerGameTests implements SteveGameTest {
             context.assertTrue(pig.getVehicle() instanceof BubbleEntity bubble && bubble.isFromEffect(), "in a bubble");
             BubbleEntity bubble = (BubbleEntity) pig.getVehicle();
             context.assertTrue(bubble.weakness() == 0, "endless: not weakening");
-            context.assertTrue(bubble.getStillTicks() > 0, "hovering, bobbing: still (" + bubble.getStillTicks() + ")");
-            bubble.setStillTicks(BubbleRiding.IDLE_TICKS - 3);
-            context.waitAndRun(1, () -> context.assertTrue(bubble.weakness() > 0, "its last seconds: weakening"));
-            context.waitAndRun(5, () -> {
-                context.assertTrue(bubble.isRemoved(), "left still: popped");
-                context.assertFalse(pig.hasStatusEffect(ModEffects.BUBBLED), "its pop ends the effect");
+            context.assertTrue(bubble.isRising() && !bubble.isHovering(), "its rider idle: rising by itself");
+            BlockPos ground = context.getAbsolutePos(new BlockPos(3, 0, 3));
+            bubble.refreshPositionAndAngles(bubble.getX(), ground.getY() + 1 + BubbleRiding.BURST_HEIGHT + 2, bubble.getZ(), 0, 0);
+            context.waitAndRun(BubbleRiding.ALTITUDE_CHECK_TICKS + 1, () -> {
+                context.assertTrue(bubble.isRemoved(), "too high: burst");
+                context.assertFalse(pig.hasStatusEffect(ModEffects.BUBBLED), "its burst ends the effect");
                 context.assertFalse(pig.hasVehicle(), "and it stays out");
-                context.assertTrue(pig.hasStatusEffect(StatusEffects.SLOW_FALLING), "it falls slowly");
                 pig.discard();
                 context.complete();
             });

@@ -357,9 +357,9 @@
   "book.steveparty.guide.gadgets.bubbler.name": "Bulleur",
   "book.steveparty.guide.gadgets.bubbler.page0.text": "Monte dessus : une [#](1C4E80)**bulle de savon**[#]() t'emporte à 30 blocs.",
   "book.steveparty.guide.gadgets.bubbler.page0.title": "Bulleur",
-  "book.steveparty.guide.gadgets.bubbler.page1.text": "Maintiens [#](9A6A00)saut[#]() puis relâche : la bulle file où tu regardes.\\\n\\\n[#](C0392B)**Trop de souffles**[#]() : elle se tend et peut éclater.",
+  "book.steveparty.guide.gadgets.bubbler.page1.text": "Maintiens [#](9A6A00)saut[#]() puis relâche : la bulle file où tu regardes.\\\n\\\n[#](C0392B)**Trop de souffles**[#]() : elle se tend et peut éclater.\\\n\\\nSans rien faire, elle monte doucement.",
   "book.steveparty.guide.gadgets.bubbler.page1.title": "Piloter",
-  "book.steveparty.guide.gadgets.bubbler.page2.text": "[#](9A6A00)Accroupi[#]() : tu sors. Puis chute lente.\\\n\\\nElle éclate :\n- contre un bloc, une créature, un joueur\n- après 15 s immobile\n- sous une flèche",
+  "book.steveparty.guide.gadgets.bubbler.page2.text": "[#](9A6A00)Accroupi[#]() : tu sors. Puis chute lente.\\\n\\\nElle éclate :\n- contre un bloc, une créature, un joueur\n- sous une flèche\n- [#](C0392B)**trop haut**[#]() : tu tombes, emporte un parachute !",
   "book.steveparty.guide.gadgets.bubbler.page2.title": "Éclater",
   "book.steveparty.guide.gadgets.bubbler.page3.text": "Deux bulles qui se touchent [#](2E7D32)**fusionnent**[#]() (8 passagers).\\\n\\\nTirer de l'intérieur : la cible est enfermée dans une bulle.",
   "book.steveparty.guide.gadgets.bubbler.page3.title": "Fusion",
@@ -707,5 +707,14 @@
   "book.steveparty.guide.cartridges.minigame.page0.title": "Mini-jeu",
   "book.steveparty.guide.cartridges.minigame.page0.text": "Un pion qui s'y arrête lance un [#](F08A24)**mini-jeu**[#]() juste après son tour, tiré du catalogue, ou toujours la page posée dans son menu.",
   "book.steveparty.guide.cartridges.minigame.page1.title": "Formats",
-  "book.steveparty.guide.cartridges.minigame.page1.text": "- [#](F08A24)**1 vs 1**[#]() : contre un joueur qu'il choisit, ou au hasard\n- **1 vs tous**, **Chacun**, **Équipes**\n- Plusieurs allumés : son joueur choisit dans le chat"
+  "book.steveparty.guide.cartridges.minigame.page1.text": "- [#](F08A24)**1 vs 1**[#]() : contre un joueur qu'il choisit, ou au hasard\n- **1 vs tous**, **Chacun**, **Équipes**\n- Plusieurs allumés : son joueur choisit dans le chat",
+  "book.steveparty.guide.gadgets.parachute.description": "Descendre en douceur",
+  "book.steveparty.guide.gadgets.parachute.name": "Parachute",
+  "book.steveparty.guide.gadgets.parachute.page0.text": "Tiens-le en tombant : il [#](1C4E80)**s'ouvre**[#]() tout seul. Tu descends doucement, tu te diriges avec tes touches, sans dégâts de chute.",
+  "book.steveparty.guide.gadgets.parachute.page0.title": "Parachute",
+  "book.steveparty.guide.gadgets.parachute.page1.text": "[#](9A6A00)Utilise[#]()-le en l'air : il s'ouvre ou se replie.\\\n\\\nIl se replie à l'atterrissage, dans l'eau ou en élytres.",
+  "book.steveparty.guide.gadgets.parachute.page1.title": "En l'air",
+  "book.steveparty.guide.gadgets.parachute.page2.text": "[#](9A6A00)Utilise[#]()-le sur une créature : il s'ouvre quand elle tombe et se détache à l'atterrissage.\\\n\\\n[#](9A6A00)Accroupi[#](), main vide, sur elle : tu le récupères.",
+  "book.steveparty.guide.gadgets.parachute.page2.title": "Sur une créature",
+  "book.steveparty.guide.gadgets.parachute.page3.text": "Teins-le : ses bandes prennent la couleur. Répare-le avec de la laine ou de la ficelle."
 }

@@ -1550,9 +1550,11 @@ q("bubbler", 0, 0, I("bubbler"), deps=["welcome.pellets"], rewards=[XP(25), IT("
 q("steer", 2, -1, C(), deps=["bubbler"], rewards=T2(), icon="minecraft:feather",
   title=("Bubble pilot", "Pilote de bulle"),
   desc=(["Hold Jump to charge a puff, release: the bubble blows where you look. WASD drifts it.",
-         "Puffs too close together stretch it until it pops. Attack or sneak to get out: you fall slowly."],
+         "Puffs too close together stretch it until it pops. Attack or sneak to get out: you fall slowly.",
+         "Left idle, it slowly rises... and bursts once too high: you fall for real."],
         ["Maintiens Saut pour charger un souffle, relâche : la bulle file là où tu regardes. ZQSD la font dériver.",
-         "Des souffles trop rapprochés la tendent jusqu'à l'éclatement. Frappe ou accroupis-toi pour sortir : tu tombes en douceur."]))
+         "Des souffles trop rapprochés la tendent jusqu'à l'éclatement. Frappe ou accroupis-toi pour sortir : tu tombes en douceur.",
+         "Laissée sans rien faire, elle monte doucement... et éclate une fois trop haut : là, tu tombes pour de bon."]))
 
 q("merge", 4, -1, C(), deps=["steer"], rewards=T1(), optional=True, icon="minecraft:slime_ball",
   title=("Two in a bubble", "À deux dans la bulle"),
@@ -1561,15 +1563,27 @@ q("merge", 4, -1, C(), deps=["steer"], rewards=T1(), optional=True, icon="minecr
 
 q("cannon", 2, 1, C(), deps=["bubbler"], rewards=T1(), optional=True, icon="minecraft:snowball",
   title=("Bubble cannon", "Canon à bulles"),
-  desc=(["Outside the Bubbler's column, a bubble pops on a block, a mob, an arrow, or after 15 s still.",
+  desc=(["Outside the Bubbler's column, a bubble pops on a block, a mob, an arrow, or too high.",
          "A snowball pushes it: a dispenser of snowballs is a bubble cannon. Silk Touch pushes it without popping it."],
-        ["Hors de la colonne du Bulleur, une bulle éclate contre un bloc, une créature, une flèche, ou après 15 s immobile.",
+        ["Hors de la colonne du Bulleur, une bulle éclate contre un bloc, une créature, une flèche, ou trop haut.",
          "Une boule de neige la pousse : un distributeur de boules de neige fait un canon à bulles. Toucher de soie la pousse sans l'éclater."]))
 
 q("bubbled", 4.5, 1.5, C(), deps=["steer"], rewards=T1(), optional=True, icon="minecraft:arrow",
   title=("Bubbled!", "Bullé !"),
   desc=(["Shoot or throw from inside a bubble (arrow, snowball, potion...): a sparkly trail, and the creature hit gets a bubble of its own."],
         ["Tire ou lance depuis une bulle (flèche, boule de neige, potion...) : une traînée irisée, et la créature touchée a sa propre bulle."]))
+
+q("parachute", 2.5, 2.5, I("parachute"), deps=["bubbler"], rewards=T1(),
+  desc=(["Wool on top, string under it. Held while falling, it opens by itself: you float down, steering with your keys, no fall damage.",
+         "Use it in the air to open or fold it. Use it on a mob: it opens when the mob falls."],
+        ["De la laine dessus, de la ficelle dessous. Tenu en tombant, il s'ouvre tout seul : tu descends doucement, tu te diriges avec tes touches, sans dégâts de chute.",
+         "Utilise-le en l'air pour l'ouvrir ou le replier. Sur une créature : il s'ouvre quand elle tombe."]))
+
+q("soft_landing", 4.5, 3, A("workshop/bubbles/soft_landing"), deps=["parachute"], rewards=T1(), optional=True,
+  icon="steveparty:parachute",
+  title=("Soft landing", "Tout en douceur"),
+  desc=(["Land under your parachute."],
+        ["Atterris sous ton parachute."]))
 
 q("spawn_bubble", 0, 2.5, I("spawn_marker"), deps=["bubbler", "board.link"], rewards=T2(),
   desc=(["A glass block over a Bubbler.",

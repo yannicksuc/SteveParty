@@ -33,6 +33,7 @@ import fr.lordfinn.steveparty.client.entity.MistigriRenderer;
 import fr.lordfinn.steveparty.client.entity.MulaFoodTooltip;
 import fr.lordfinn.steveparty.client.entity.MulaStarRenderer;
 import fr.lordfinn.steveparty.client.entity.costume.BoxCostumeClient;
+import fr.lordfinn.steveparty.client.entity.parachute.ParachuteClient;
 import fr.lordfinn.steveparty.client.flip.GoalPoleCameraRoll;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.StencilGunHud;
@@ -290,6 +291,7 @@ public class StevepartyClient implements ClientModInitializer {
         SwitchableClient.initialize();
         TokenBaseRenderer.initialize();
         BoxCostumeClient.initialize();
+        ParachuteClient.initialize();
 
         initScreens();
         initParticles();

@@ -124,6 +124,10 @@
 	]
 	quest.02559E197888FCA2.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.02559E197888FCA2.title: "Fragment d'étoile blanc"
+	quest.02E3D80EBC49D590.quest_desc: [
+		"Atterris sous ton parachute."
+	]
+	quest.02E3D80EBC49D590.title: "Tout en douceur"
 	quest.030135F1CA2F65E1.quest_desc: [
 		"Clic droit : choisis un moment (début de partie, de manche, de tour, dé lancé, fin de mini-jeu...). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...)."
 		"Mode attente (Clé à molette) : la partie se fige jusqu'à ce qu'elle reçoive un signal."
@@ -291,6 +295,7 @@
 	quest.0FA4F07B394DBDE0.quest_desc: [
 		"Maintiens Saut pour charger un souffle, relâche : la bulle file là où tu regardes. ZQSD la font dériver."
 		"Des souffles trop rapprochés la tendent jusqu'à l'éclatement. Frappe ou accroupis-toi pour sortir : tu tombes en douceur."
+		"Laissée sans rien faire, elle monte doucement... et éclate une fois trop haut : là, tu tombes pour de bon."
 	]
 	quest.0FA4F07B394DBDE0.title: "Pilote de bulle"
 	quest.0FC0569B81622F76.quest_desc: [
@@ -399,7 +404,7 @@
 	quest.174373BB4245951D.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.174373BB4245951D.title: "Escalier en briques de terre cuite polie orange"
 	quest.186792E8E005709E.quest_desc: [
-		"Hors de la colonne du Bulleur, une bulle éclate contre un bloc, une créature, une flèche, ou après 15 s immobile."
+		"Hors de la colonne du Bulleur, une bulle éclate contre un bloc, une créature, une flèche, ou trop haut."
 		"Une boule de neige la pousse : un distributeur de boules de neige fait un canon à bulles. Toucher de soie la pousse sans l'éclater."
 	]
 	quest.186792E8E005709E.title: "Canon à bulles"
@@ -551,6 +556,12 @@
 	]
 	quest.263C5F0A947E29AD.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.263C5F0A947E29AD.title: "Cartouche Trichaudron"
+	quest.2640EB687D4B6C51.quest_desc: [
+		"De la laine dessus, de la ficelle dessous. Tenu en tombant, il s'ouvre tout seul : tu descends doucement, tu te diriges avec tes touches, sans dégâts de chute."
+		"Utilise-le en l'air pour l'ouvrir ou le replier. Sur une créature : il s'ouvre quand elle tombe."
+	]
+	quest.2640EB687D4B6C51.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
+	quest.2640EB687D4B6C51.title: "Parachute"
 	quest.267711A12D93A0B2.quest_desc: [
 		"2 dalles de plastique jaune, une plaque de pression légère, un coffre piégé et 2 cartouches."
 		"Elle contient 16 cartouches : la puissance redstone choisit l'active (0 = emplacement 1, 1 = emplacement 2...)."

@@ -64,6 +64,9 @@ import java.util.function.Function;
  *     the air slowly stopping it, never falling.</li>
  *     <li><b>Steering</b>: its players' movement keys make it drift, their charged jump puffs it where they look
  *     ({@link BubbleRiding}); every rider's keys count.</li>
+ *     <li><b>Rising by itself</b>: its riders idle a moment ({@link BubbleRiding#IDLE_RISE_TICKS}: no key, no puff, no
+ *     lead), out of its Bubbler's column, it rises slowly ({@link #isRising}) until they steer it again... or until it
+ *     is too high ({@link #tooHigh}): it bursts there and they fall, without Slow Falling ({@link #burst}).</li>
  *     <li><b>Merging</b>: two bubbles with riders touching become one bigger bubble with all of them
  *     ({@link #absorb}), the one with more riders (else the older) taking the other in: a Bubbler's, the Bubbled
  *     effect's (a bubbled snowball, arrow...), any of them.</li>
@@ -81,8 +84,9 @@ import java.util.function.Function;
  *     shoot from inside flies out through it, {@link #letsOut}), a splash or lingering potion bursting on or near it
  *     ({@link #splashedBy}: its riders take the splash), a hit by luck ({@link BubbleRiding#HIT_POP_CHANCE}; never with a Silk Touch
  *     tool, a hit only pushes it then), anything else that hurts, left still too long ({@link #getStillTicks}: 15 s
- *     without moving, never while it travels), crossing the border of a mini-game zone, or nothing left in it. Its
- *     riders fall slowly then ({@link #fallSlowly}); its item drops.</li>
+ *     without moving, never while it travels: an item's, one with idle riders rises instead), crossing the border of a
+ *     mini-game zone, or nothing left in it. Its riders fall slowly then ({@link #fallSlowly}), but out of a bubble burst
+ *     too high; its item drops.</li>
  * </ul>
  * The server moves it; a client moves it the same way between the server's updates, its own rider's keys at once,
  * and eases it toward the server's position ({@link #clientTick}).
@@ -102,6 +106,8 @@ public class BubbleEntity extends Entity implements Leashable {
      */
     private static final TrackedData<Float> STRAIN = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private static final TrackedData<Integer> STRAINED_PUFFS = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** Rising by itself, its riders idle (see {@link #isRising}). */
+    private static final TrackedData<Boolean> RISING = DataTracker.registerData(BubbleEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** How long it trembles after a puff that left it badly strained (ticks), and from what strain. */
     private static final int TREMBLE_TICKS = 12;
     private static final float TREMBLE_FROM = 0.6f;
@@ -142,6 +148,9 @@ public class BubbleEntity extends Entity implements Leashable {
     private int trembling;
     /** Server: its riders going over to a bigger bubble (they don't pop it), it popping, one of its riders gone. */
     private boolean transferring, popping, popPending;
+    /** Server: the ticks its riders have been idle (no key, no puff, no lead); it bursting too high (they fall). */
+    private int idleTicks;
+    private boolean bursting;
     /** Server: riders who just left it, still inside its film (their touch never pops it until they are out). */
     private final List<Entity> leavers = new ArrayList<>();
     /** Its lead, if any (see {@link Leashable}). */
@@ -245,6 +254,7 @@ public class BubbleEntity extends Entity implements Leashable {
         builder.add(FADING, -1);
         builder.add(STRAIN, 0f);
         builder.add(STRAINED_PUFFS, 0);
+        builder.add(RISING, false);
     }
 
     @Override
@@ -278,6 +288,23 @@ public class BubbleEntity extends Entity implements Leashable {
 
     public void setHoverY(double y) {
         dataTracker.set(HOVER_Y, (float) y);
+    }
+
+    /**
+     * Whether it rises by itself: its riders idle for {@link BubbleRiding#IDLE_RISE_TICKS} ticks (no movement key, no
+     * puff, no lead), out of its Bubbler's column (where it waits for them).
+     */
+    public boolean isRising() {
+        return dataTracker.get(RISING);
+    }
+
+    /** The ticks its riders have been idle (server). */
+    public int getIdleTicks() {
+        return idleTicks;
+    }
+
+    public void setIdleTicks(int ticks) {
+        idleTicks = ticks;
     }
 
     /** It floats freely from now on (pushed, puffed). */
@@ -391,10 +418,12 @@ public class BubbleEntity extends Entity implements Leashable {
         for (Entity rider : getPassengerList()) rider.fallDistance = 0; // floating, never falling: no fall to pay once out
         leavers.removeIf(left -> left.isRemoved() || !left.getBoundingBox().intersects(getBoundingBox()));
         Vec3d drift = BubbleRiding.drift(getPassengerList()).add(followLeash());
-        if (drift.lengthSquared() > 1.0E-8 || isLeashed()) stir();
+        boolean steered = drift.lengthSquared() > 1.0E-8 || isLeashed();
+        if (steered) stir();
         strain = Math.max(0, strain - BubbleRiding.STRAIN_DECAY);
         Vec3d puffed = puffs(world);
         if (isRemoved()) return; // a puff too many
+        riseIfIdle(steered || !charges.isEmpty() || puffed != Vec3d.ZERO);
         Vec3d speed = getVelocity().add(drift).add(puffed);
         setVelocity(floatAlong(speed));
         boolean bumped = moveAndBounce();
@@ -402,8 +431,45 @@ public class BubbleEntity extends Entity implements Leashable {
             pop();
             return;
         }
+        if (life % BubbleRiding.ALTITUDE_CHECK_TICKS == 0 && tooHigh(world)) {
+            burst();
+            return;
+        }
         trackStillness();
         weaken(world);
+    }
+
+    /**
+     * Its riders idle one tick more, or steering it ({@code steered}: a key, a puff charging or released, a lead): it
+     * rises by itself once they have been idle long enough, out of its Bubbler's column, and floats freely then.
+     */
+    private void riseIfIdle(boolean steered) {
+        idleTicks = steered ? 0 : idleTicks + 1;
+        boolean rising = hasPassengers() && !inColumn() && idleTicks >= BubbleRiding.IDLE_RISE_TICKS;
+        if (rising) release();
+        if (rising != isRising()) dataTracker.set(RISING, rising);
+    }
+
+    /**
+     * Whether it is too high (server): within {@link BubbleRiding#BURST_UNDER_LIMIT} blocks of the build limit, or more
+     * than {@link BubbleRiding#BURST_HEIGHT} blocks over the ground under it (a Bubbler's: also over the height it was
+     * sent to and {@link BubbleRiding#BURST_HEADROOM} more). Over the void, any height is too high.
+     */
+    public boolean tooHigh(ServerWorld world) {
+        if (getY() + getSide() >= world.getTopY() - BubbleRiding.BURST_UNDER_LIMIT) return true;
+        if (column != null && getY() <= columnTop + BubbleRiding.BURST_HEADROOM) return false;
+        BlockPos.Mutable pos = getBlockPos().mutableCopy();
+        int lowest = Math.max(world.getBottomY(), MathHelper.floor(getY() - BubbleRiding.BURST_HEIGHT) - 1);
+        for (; pos.getY() >= lowest; pos.move(0, -1, 0)) {
+            if (!world.getBlockState(pos).isAir()) return false;
+        }
+        return true;
+    }
+
+    /** Too high, it bursts: its riders fall, no Slow Falling (a parachute helps). */
+    public void burst() {
+        bursting = true;
+        pop();
     }
 
     /** The ticks its riders' Bubbled effect has left (the longest one's; endless from a projectile), an effect bubble's lifetime. */
@@ -516,13 +582,14 @@ public class BubbleEntity extends Entity implements Leashable {
         sinceUpdate = 0;
     }
 
-    /** Its speed this tick: hovering toward its height (bobbing) or floating freely, the air slowing it. */
+    /** Its speed this tick: hovering toward its height (bobbing) or floating freely (rising, its riders idle), the air slowing it. */
     private Vec3d floatAlong(Vec3d speed) {
         double vy;
         if (isHovering()) {
             vy = BubbleRiding.hover(getY(), getHoverY() + BubbleRiding.bob(age), speed.y);
         } else {
-            vy = speed.y * BubbleRiding.DRAG + (BubbleRiding.bob(age + 1) - BubbleRiding.bob(age)) * 0.2;
+            double lift = isRising() ? BubbleRiding.IDLE_RISE_ACCEL : (BubbleRiding.bob(age + 1) - BubbleRiding.bob(age)) * 0.2;
+            vy = speed.y * BubbleRiding.DRAG + lift;
         }
         return new Vec3d(speed.x * BubbleRiding.DRAG, vy, speed.z * BubbleRiding.DRAG);
     }
@@ -769,7 +836,8 @@ public class BubbleEntity extends Entity implements Leashable {
         // out of a bubble, whichever (a Bubbled one may have merged into a Bubbler's): no longer Bubbled, or the effect
         // would blow it a new one at once
         if (passenger instanceof LivingEntity living) living.removeStatusEffect(ModEffects.BUBBLED);
-        fallSlowly(passenger);
+        if (bursting) passenger.fallDistance = 0; // falling from here, for real
+        else fallSlowly(passenger);
         if (popping) return;
         if (getPassengerList().isEmpty()) {
             popPending = true;
