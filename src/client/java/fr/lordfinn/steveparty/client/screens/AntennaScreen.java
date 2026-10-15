@@ -203,7 +203,7 @@ public class AntennaScreen extends Screen {
 
     private void drawHeard(DrawContext context, PartyBellBlockEntity antenna, PartyMoment current) {
         if (!antenna.isPartyLinked()) NotLinkedMark.screen(context, heardEndX(), top + HEARD_Y);
-        if (antenna.isHolding()) {
+        else if (antenna.isHolding()) {
             int x = left + W - 8 - 16;
             AntennaIcons.cell(context, AntennaIcons.WAIT, x, top + HEARD_Y);
         }

@@ -83,8 +83,8 @@ public final class NotLinkedPanelClient {
         float half = size / 2f;
         WorldDraw.plate(matrices, consumers, WorldDraw.Plate.GOLD, -half, -half, half, half);
         consumers.draw();
-        // The icon spans one text line (as on the Piggy Bank's panel: y - 1 to y + 8)
-        NotLinkedMark.world(matrices, consumers, client.world, -half + PAD, -half + PAD - 1, ICON, 0.5f);
+        // A square plate holding one icon: centred, its padding even
+        NotLinkedMark.world(matrices, consumers, client.world, -half + PAD, -half + PAD, ICON, 0.5f);
         consumers.draw();
         matrices.pop();
     }
@@ -99,7 +99,7 @@ public final class NotLinkedPanelClient {
         int size = ICON + 2 * FloatingInfo.PAD;
         FloatingInfo.card(context, key, size, size, ToolHud.Plate.GOLD, 1f, 0, card -> {
             card.getMatrices().push();
-            card.getMatrices().translate(FloatingInfo.PAD, FloatingInfo.PAD - 1, 0);
+            card.getMatrices().translate(FloatingInfo.PAD, FloatingInfo.PAD, 0);
             card.getMatrices().scale(ICON / 16f, ICON / 16f, 1);
             HudDepth.item(card, () -> card.drawItem(NotLinkedMark.BRUSH, 0, 0));
             HudDepth.onTop(card, () -> NotLinkedMark.crossOnIcon(card, 0, 0));
