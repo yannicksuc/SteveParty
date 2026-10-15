@@ -1,8 +1,6 @@
 package fr.lordfinn.steveparty.client.gui;
 
 import fr.lordfinn.steveparty.client.gui.cartridge.ButtonGlyphs;
-import fr.lordfinn.steveparty.client.gui.paint.Ramp;
-import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -17,24 +15,29 @@ import org.jetbrains.annotations.Nullable;
  * centred with its icon. Hovered, it brightens and gets a white outline; held, its bevels swap.
  */
 public class ConsoleButton extends PressableWidget {
+    /**
+     * Its colours, on the mod's button ({@link PartyGui#button}: a 1 px outline with its corners cut, a 1 px light bevel
+     * on the top and left, a 1 px dark one on the bottom and right, swapped when pressed): outline, light, body, dark.
+     */
     public enum Kind {
-        NEUTRAL(Ramp.of(0x000000, 0xffffff, 0xe2e2e2, 0x8a8a8a)),
-        GOLD(Ramp.of(0x8a4a00, 0xffe36a, 0xffc600, 0xffaa00)),
-        GREEN(Ramp.of(0x08270a, 0xa6ef8a, 0x46ae2e, 0x1f6a14)),
-        RED(Ramp.of(0x33030a, 0xff8f8f, 0xd9283b, 0x8e1022)),
-        OFF(Ramp.of(0x3a3a3a, 0xd0d0d0, 0xa8a8a8, 0x808080)),
+        NEUTRAL(PartyGui.BUTTON),
+        GOLD(new PartyGui.Theme(0xFF8A4A00, 0xFFFFE36A, 0xFFFFC600, 0xFFC98600)),
+        GREEN(PartyGui.BUTTON_PRIMARY),
+        RED(PartyGui.FLAG_RED),
+        /** Out of use: the mod's disabled button, flat. */
+        OFF(PartyGui.BUTTON_DISABLED),
         /** On a dark screen: the screen's colours, a light label. */
-        SCREEN(Ramp.of(0x0d0a18, 0x3d3a66, 0x262350, 0x0d0a18)),
-        /** On the mini-game page's paper: plain, green (the main action), teal, greyed. */
-        PAPER(Ramp.of(0x7e9192, 0xffffff, 0xd6ebec, 0xc7dbdc)),
-        PAPER_GREEN(Ramp.of(0x005a40, 0x8ff5d0, 0x00c792, 0x00ac82)),
-        PAPER_TEAL(Ramp.of(0x004a50, 0x8ff0f6, 0x00b3bd, 0x008c95)),
-        PAPER_OFF(Ramp.of(0x8aa3a6, 0xf0f6f6, 0xdde9ea, 0xc9d7d8));
+        SCREEN(new PartyGui.Theme(0xFF0D0A18, 0xFF3D3A66, 0xFF262350, 0xFF1D1A46)),
+        /** On the mini-game page's paper: plain, green (the main action), teal, greyed (flat). */
+        PAPER(new PartyGui.Theme(0xFF7E9192, 0xFFFFFFFF, 0xFFD6EBEC, 0xFFA9BFC0)),
+        PAPER_GREEN(new PartyGui.Theme(0xFF005A40, 0xFF8FF5D0, 0xFF00C792, 0xFF008A66)),
+        PAPER_TEAL(new PartyGui.Theme(0xFF004A50, 0xFF8FF0F6, 0xFF00B3BD, 0xFF008C95)),
+        PAPER_OFF(new PartyGui.Theme(0xFF8AA3A6, 0xFFDDE9EA, 0xFFDDE9EA, 0xFFDDE9EA));
 
-        final Ramp ramp;
+        final PartyGui.Theme theme;
 
-        Kind(Ramp ramp) {
-            this.ramp = ramp;
+        Kind(PartyGui.Theme theme) {
+            this.theme = theme;
         }
 
         boolean paper() {
@@ -63,22 +66,22 @@ public class ConsoleButton extends PressableWidget {
         return this;
     }
 
-    /** The icons before the label: 7 rows, as the mock-ups' font draws them. */
+    /** The icon before the label, from the mod's button icons. */
     public enum Icon {
-        PLAY("#...", "##..", "###.", "####", "###.", "##..", "#..."),
-        STOP(".....", "#####", "#####", "#####", "#####", "#####", "....."),
-        CHECK(".....", "....#", "...#.", "#..#.", ".##..", "..#..", ".....");
+        PLAY(ButtonIcons.Icon.PLAY), STOP(ButtonIcons.Icon.STOP), CHECK(ButtonIcons.Icon.CHECK);
 
-        final String[] rows;
+        final ButtonIcons.Icon icon;
 
-        Icon(String... rows) {
-            this.rows = rows;
-        }
-
-        int width() {
-            return rows[0].length();
+        Icon(ButtonIcons.Icon icon) {
+            this.icon = icon;
         }
     }
+
+    /**
+     * An icon's box (a symbol's) and the room from it to the label: its 8 px ink (rows 1-8 of the box) 4 px from the
+     * label's first letter, resting on the label's baseline.
+     */
+    private static final int ICON_BOX = 10, ICON_GAP = 3;
 
     private final Runnable onPress;
     private Kind kind;
@@ -102,67 +105,42 @@ public class ConsoleButton extends PressableWidget {
         Kind shown = active || kind == Kind.SCREEN ? kind : kind.paper() ? Kind.PAPER_OFF : Kind.OFF;
         boolean highlighted = active && (isHovered() || isFocused());
         boolean held = highlighted && isHovered() && MinecraftClient.getInstance().mouse.wasLeftButtonClicked();
-        Ramp ramp = shown.ramp;
-        if (held) ramp = new Ramp(ramp.outline(), ramp.shadow(), ramp.body(), ramp.hi());
-        ConsolePaint.box(context, getX(), getY(), width, height, ramp, 1, 1);
-        // The highlight follows the button's cut corners
-        if (highlighted) ConsolePaint.highlight(context, getX(), getY(), width, height, 1, shown.paper() ? 0xFF008C95 : 0xFFFFFFFF,
-                held ? 0 : shown.paper() ? 0x30FFFFFF : 0x22FFFFFF);
+        // As PartyButton: hovered brighter in a white frame (teal on paper), held pushed in; what is on it never moves
+        PartyGui.button(context, getX(), getY(), width, height, highlighted ? shown.theme.brighter() : shown.theme, held);
+        if (highlighted) context.drawBorder(getX(), getY(), width, height, shown.paper() ? 0xFF008C95 : 0xFFFFFFFF);
         if (decoration != null) {
             decoration.draw(context, this);
             return;
         }
+        boolean light = shown == Kind.GREEN || shown == Kind.RED || shown == Kind.PAPER_GREEN || shown == Kind.PAPER_TEAL;
+        int ink = shown == Kind.SCREEN ? (active ? 0xFFE0EEF3 : 0xFF5E5C88) : light ? 0xFFFFFFFF
+                : shown == Kind.PAPER ? 0xFF1E3A40 : shown == Kind.PAPER_OFF ? 0xFF8AA3A6 : shown == Kind.OFF ? PartyGui.DISABLED_INK
+                : shown == Kind.NEUTRAL ? 0xFF2E2E2E : shown.theme.outline();
+        // White ink on a coloured face, and the screen's light labels, with the font's shadow
+        boolean shadow = light || shown == Kind.SCREEN;
         if (symbol != null) {
-            boolean lightInk = shown == Kind.GREEN || shown == Kind.RED || shown == Kind.PAPER_GREEN || shown == Kind.PAPER_TEAL;
-            int ink = shown == Kind.SCREEN ? (active ? 0xFFE0EEF3 : 0xFF5E5C88) : lightInk ? 0xFFFFFFFF
-                    : shown == Kind.PAPER ? 0xFF1E3A40 : shown == Kind.PAPER_OFF ? 0xFF8AA3A6 : shown == Kind.OFF ? 0xFF5E5E5E : ramp.outline();
             // A button under 18 px: its − / + from the small set (ButtonGlyphs), the full icons need room around them
             if (Math.min(width, height) < 18 && symbol == ButtonIcons.Icon.MINUS)
                 ButtonGlyphs.minus(context, getX(), getY(), width, height, ink);
             else if (Math.min(width, height) < 18 && symbol == ButtonIcons.Icon.PLUS)
                 ButtonGlyphs.plus(context, getX(), getY(), width, height, ink);
-            else ButtonIcons.draw(context, symbol, getX(), getY(), width, height, ink, lightInk);
+            else ButtonIcons.draw(context, symbol, getX(), getY(), width, height, ink, light);
             return;
         }
 
         TextRenderer font = MinecraftClient.getInstance().textRenderer;
         Text label = getMessage();
-        int iconWidth = icon == null ? 0 : icon.width() + 5;
+        // The icon's box then the label, as one group centred on its ink
+        int iconWidth = icon == null ? 0 : ICON_BOX + ICON_GAP;
         int tx = getX() + (width - iconWidth - font.getWidth(label) + 1) / 2;
         // Too long for the button: from its left, inside its outline, the label scrolling
-        tx = Math.max(tx, getX() + 1);
-        // Light labels with their dark shadow on the green and red buttons, dark ones with a light shadow on the others
-        boolean light = shown == Kind.GREEN || shown == Kind.RED || shown == Kind.SCREEN || shown == Kind.PAPER_GREEN || shown == Kind.PAPER_TEAL;
-        boolean ink = shown == Kind.PAPER || shown == Kind.PAPER_OFF;
-        int ty = getY() + (ink ? (height - 7) / 2 + (height - 7) % 2 : (height - 8) / 2) + (held ? 1 : 0);
-        if (ink) {
-            // Ink on paper: no shadow
-            UiText.line(context, font, label, tx, ty, getX() + width - 1 - tx, shown == Kind.PAPER_OFF ? 0xFF8AA3A6 : 0xFF1E3A40, false);
-            return;
-        }
-        int colour = shown == Kind.SCREEN ? (active ? 0xFFE0EEF3 : 0xFF5E5C88) : light ? 0xFFFFFFFF : shown == Kind.OFF ? 0xFF5E5E5E : ramp.outline();
-        int shade = light ? Argb.opaque(Argb.darken(colour, 0.75f)) : shown == Kind.OFF ? 0xFFC8C8C8 : shown.ramp.hi();
+        tx = Math.max(tx, getX() + 2);
+        int ty = getY() + (height - 7) / 2;
         if (icon != null) {
-            for (int row = 0; row < icon.rows.length; row++) {
-                for (int col = 0; col < icon.width(); col++) {
-                    if (icon.rows[row].charAt(col) != '#') continue;
-                    PartyGui.pixel(context, tx + col + 1, ty + row + 1, shade);
-                }
-            }
-            for (int row = 0; row < icon.rows.length; row++) {
-                for (int col = 0; col < icon.width(); col++) {
-                    if (icon.rows[row].charAt(col) == '#') PartyGui.pixel(context, tx + col, ty + row, colour);
-                }
-            }
+            ButtonIcons.draw(context, icon.icon, tx, ty - 2, ICON_BOX, ICON_BOX, ink, light);
             tx += iconWidth;
         }
-        int room = getX() + width - 1 - tx;
-        if (light) {
-            UiText.line(context, font, label, tx, ty, room, colour, true);
-        } else {
-            UiText.line(context, font, label, tx + 1, ty + 1, room, shade, false);
-            UiText.line(context, font, label, tx, ty, room, colour, false);
-        }
+        UiText.line(context, font, label, tx, ty, getX() + width - 1 - tx, ink, shadow);
     }
 
     @Override
