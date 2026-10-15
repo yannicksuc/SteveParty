@@ -34,19 +34,23 @@ import java.util.Map;
  * if (FloatingInfo.needsCard(KEY)) FloatingInfo.card(context, KEY, width, height, ToolHud.Plate.TEAL, 1, 0, card -> ...);
  * }</pre>
  * The card says what the panel would, in short (show, don't tell: a title, a few lines with their icons, no
- * coordinates: see {@link #withoutPlaces}), its text smaller than the rest of the HUD ({@link #SCALE}). It stays out of
+ * coordinates: see {@link #withoutPlaces}), one card pixel per HUD pixel ({@link #SCALE}: never a fraction, which
+ * blurs it). It stays out of
  * the way of the crosshair, of a minimap (top left), of the chat, of the standings (right) and of the tool HUD. When
- * several want the slot, they stack down from the newest, centred on the screen's middle, {@link #MAX_CARDS} at most.
+ * several want the slot, they stack down from the newest, centred on the screen's middle, {@link #MAX_CARDS} at most
+ * and no more than fit between the boss bars and the chat ({@link #CLEAR}).
  */
 public final class FloatingInfo {
-    /** A card pixel, in HUD pixels: the card's text is smaller than the HUD's. */
-    public static final float SCALE = 0.75f;
+    /** A card pixel, in HUD pixels: a whole number, every pixel of the card on the screen's pixels. */
+    public static final float SCALE = 1f;
     /** Card pixels: the margin inside the plate, the widest a card gets (a longer line scrolls). */
     public static final int PAD = 5, MAX_WIDTH = 200;
     /** Cards shown at once at most (the newest). */
     public static final int MAX_CARDS = 3;
     /** HUD pixels: from the screen's edge, between two cards. */
     private static final int MARGIN = 6, GAP = 3;
+    /** HUD pixels kept clear above and below the cards: the boss bars on top, the hotbar and the chat below. */
+    private static final int CLEAR = 60;
     /** A panel drawn in the world this recently (nanoseconds) is seen: no card. */
     private static final long SEEN_NANOS = 150_000_000L;
     /** Frames further apart than this (nanoseconds, the HUD hidden...): the cards start over. */
@@ -157,7 +161,15 @@ public final class FloatingInfo {
         CARD_SINCE.keySet().removeIf(key -> last.stream().noneMatch(slot -> slot.key.equals(key)));
         List<Slot> sorted = new ArrayList<>(last);
         sorted.sort(Comparator.comparingLong((Slot slot) -> CARD_SINCE.getOrDefault(slot.key, now)).reversed());
-        laidOut = List.copyOf(sorted.subList(0, Math.min(MAX_CARDS, sorted.size())));
+        // The newest first, as many as fit (the newest always shows)
+        int room = context.getScaledWindowHeight() - 2 * CLEAR, used = -GAP;
+        List<Slot> shown = new ArrayList<>();
+        for (Slot slot : sorted) {
+            if (shown.size() == MAX_CARDS || (!shown.isEmpty() && used + GAP + slot.height > room)) break;
+            shown.add(slot);
+            used += GAP + slot.height;
+        }
+        laidOut = List.copyOf(shown);
         asked = new ArrayList<>();
     }
 
