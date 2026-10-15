@@ -1250,6 +1250,11 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         else PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), moment, value);
     }
 
+    /** The coins, Party Stars and leader looked at now rather than at the next look (see PartyStandingsWatch). */
+    public void watchStandingsNow(ServerWorld world) {
+        standingsWatch.look(world);
+    }
+
     /** Free play: a token that is not in a running party finished its movement. */
     public static void onFreeTokenArrived(ServerWorld world, Entity token) {
         if (getRunningPartyOf(token.getUuid()).isEmpty())

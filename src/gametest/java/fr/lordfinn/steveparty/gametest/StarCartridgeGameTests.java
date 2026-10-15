@@ -45,6 +45,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
@@ -250,6 +251,7 @@ public class StarCartridgeGameTests implements SteveGameTest {
             context.setBlockState(antennaPos, ModBlocks.PARTY_BELL.getDefaultState()
                     .with(PartyBellBlock.MOMENT, PartyMoment.STAR_MOVES));
             PartyBellBlockEntity antenna = context.getBlockEntity(antennaPos);
+            antenna.setLink(GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(CONTROLLER)));
             context.assertTrue(antenna.getHeardAt() < 0, "silent before");
             BlockPos moved = PartyStars.place(board.party(), context.getWorld(), context.getAbsolutePos(STAR));
             context.assertTrue(moved != null && !moved.equals(context.getAbsolutePos(STAR)), "the star moved, got " + moved);

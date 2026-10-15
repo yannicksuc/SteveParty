@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.board.CartridgeLinks;
-import fr.lordfinn.steveparty.board.StepControllerLinks;
+import fr.lordfinn.steveparty.board.PartyLinks;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -161,11 +161,11 @@ public final class WorldDraw {
 
     /**
      * The link from a Step Controller to the party element it drives: dotted like a Spawn Bubble's, from pale yellow to
-     * gold ({@link StepControllerLinks#gradient}), the dots drifting toward the element.
+     * gold ({@link PartyLinks#gradient}), the dots drifting toward the element.
      */
     static void stepLink(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d stepController, Vec3d element,
                          float alpha, double seconds) {
-        dotted(matrices, consumers, camera, stepController, element, alpha, seconds * BUBBLE_DRIFT, StepControllerLinks::gradient);
+        dotted(matrices, consumers, camera, stepController, element, alpha, seconds * BUBBLE_DRIFT, PartyLinks::gradient);
     }
 
     // ---------------------------------------------------------------- teleport arcs

@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.payloads.custom.OpenAntennaScreenPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -45,6 +46,7 @@ import org.jetbrains.annotations.Nullable;
  *     <li>Right-click with the Wrench: its screen (moment, pulse or waiting mode, filter, test). During a party, only
  *     for who placed it, creative players and operators.</li>
  *     <li>Right-click with an empty hand: nothing changes, it says it is set with the Wrench.</li>
+ *     <li>The Tile Linker Brush links it to the party element it listens to (see PartyLinks).</li>
  *     <li>Output: a pulse of power 15 on every side; comparator: value of the last moment heard.</li>
  * </ul>
  */
@@ -132,13 +134,17 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
             }
             return ItemActionResult.SUCCESS;
         }
-        // Empty hand: onUse (says it is set with the Wrench); any other item keeps its own use (redstone next to it...)
-        return stack.isEmpty() ? ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION : ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        // Empty hand: onUse (says it is set with the Wrench); the Tile Linker Brush paints its link (see PartyLinks); any
+        // other item keeps its own use (redstone next to it...)
+        return stack.isEmpty() || TileLinkerBrush.isBrush(stack) ? ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION
+                : ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 
     /** Empty hand: nothing changes (reading it never sets it); it says it is set with the Wrench, and blinks once. */
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        // The Tile Linker Brush paints its link (see PartyLinks): the use goes on to the brush
+        if (TileLinkerBrush.isBrush(player.getMainHandStack())) return ActionResult.PASS;
         if (!world.isClient) {
             player.sendMessage(Text.translatable("message.steveparty.wrench_required").withColor(0xFFD24A), true);
             world.addSyncedBlockEvent(pos, state.getBlock(), BLINK_EVENT, 0);

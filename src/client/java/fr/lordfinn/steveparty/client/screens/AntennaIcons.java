@@ -5,7 +5,16 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.utils.Argb;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.DiffuseLighting;
+import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.TexturedRenderLayers;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -21,11 +30,12 @@ import java.util.Map;
  */
 public final class AntennaIcons {
     public static final Identifier SHEET = Steveparty.id("textures/gui/antenna_icons.png");
-    public static final int BADGE_PLUS = 0, BADGE_MINUS = 1, BADGE_STOP = 2, BADGE_CHECK = 3;
+    public static final int BADGE_PLUS = 0, BADGE_MINUS = 1, BADGE_CHECK = 3;
     public static final int PULSE = 32, WAIT = 33, FILTER_ANY = 34, FILTER_EQUAL = 35, FILTER_AT_LEAST = 36, FILTER_AT_MOST = 37,
-            MINUS = 38, PLUS = 39, TEST = 40, LINKED = 41, UNLINKED = 42;
+            MINUS = 38, PLUS = 39, TEST = 40;
 
-    private record Icon(ItemConvertible item, int badge) {
+    /** Its item, its badge (-1: none), and a size for an item drawn small in its own icon (the die). */
+    private record Icon(ItemConvertible item, int badge, float scale) {
     }
 
     private static final Map<PartyMoment, Icon> ICONS = new EnumMap<>(PartyMoment.class);
@@ -37,11 +47,11 @@ public final class AntennaIcons {
         put(PartyMoment.REWIND, ModBlocks.STEP_CONTROLLER, -1);
         put(PartyMoment.ROUND_START, ModItems.PARTY_CARD_TURNS, -1);
         put(PartyMoment.TURN_START, ModItems.FLAG, -1);
-        put(PartyMoment.DICE_ROLLED, ModItems.DEFAULT_DICE, -1);
+        ICONS.put(PartyMoment.DICE_ROLLED, new Icon(ModItems.DEFAULT_DICE, -1, 1.5f));
         put(PartyMoment.CROSSROADS, ModBlocks.BOARD_SPACE_REDSTONE_ROUTER, -1);
         put(PartyMoment.PATH_CHOSEN, Items.ARROW, -1);
         put(PartyMoment.TOKEN_LANDS, ModBlocks.TILE, -1);
-        put(PartyMoment.TURN_END, ModItems.FLAG, BADGE_STOP);
+        put(PartyMoment.TURN_END, ModItems.FLAG, BADGE_CHECK);
         put(PartyMoment.COINS_WON, ModItems.COIN, BADGE_PLUS);
         put(PartyMoment.COINS_LOST, ModItems.COIN, BADGE_MINUS);
         put(PartyMoment.STAR_WON, ModItems.PARTY_STAR, BADGE_PLUS);
@@ -56,10 +66,15 @@ public final class AntennaIcons {
     }
 
     private static void put(PartyMoment moment, ItemConvertible item, int badge) {
-        ICONS.put(moment, new Icon(item, badge));
+        ICONS.put(moment, new Icon(item, badge, 1));
     }
 
     private AntennaIcons() {
+    }
+
+    /** How much bigger than its item its icon is drawn (1: as it is). */
+    public static float scale(PartyMoment moment) {
+        return ICONS.get(moment).scale();
     }
 
     public static ItemStack item(PartyMoment moment) {
@@ -73,13 +88,36 @@ public final class AntennaIcons {
 
     /** The moment's item at ({@code x}, {@code y}), and its badge above it. */
     public static void drawMoment(DrawContext context, PartyMoment moment, int x, int y) {
-        context.drawItem(item(moment), x, y);
+        drawSolid(context, item(moment), x, y, ICONS.get(moment).scale());
         int badge = ICONS.get(moment).badge();
         if (badge < 0) return;
         context.getMatrices().push();
         context.getMatrices().translate(0, 0, 200);
         cell(context, badge, x, y);
         context.getMatrices().pop();
+    }
+
+    /**
+     * An item as {@link DrawContext#drawItem} draws it, {@code scale} times its size, but solid: every layer of its
+     * model drawn cutout (the Party Star's translucent layer came out washed out on a coloured button).
+     */
+    private static void drawSolid(DrawContext context, ItemStack stack, int x, int y, float scale) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        BakedModel model = client.getItemRenderer().getModel(stack, client.world, client.player, 0);
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(x + 8, y + 8, 150);
+        matrices.scale(16 * scale, -16 * scale, 16 * scale);
+        context.draw();
+        boolean flat = !model.isSideLit();
+        if (flat) DiffuseLighting.disableGuiDepthLighting();
+        VertexConsumerProvider consumers = context.getVertexConsumers();
+        client.getItemRenderer().renderItem(stack, ModelTransformationMode.GUI, false, matrices,
+                layer -> consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), LightmapTextureManager.MAX_LIGHT_COORDINATE,
+                OverlayTexture.DEFAULT_UV, model);
+        context.draw();
+        if (flat) DiffuseLighting.enableGuiDepthLighting();
+        matrices.pop();
     }
 
     /** A 16 x 16 cell of the sheet at ({@code x}, {@code y}). */

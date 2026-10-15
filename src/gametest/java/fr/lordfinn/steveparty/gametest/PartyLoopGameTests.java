@@ -24,6 +24,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 
 import java.util.*;
 
@@ -40,9 +41,11 @@ public class PartyLoopGameTests implements SteveGameTest {
         context.setBlockState(pos.down(), Blocks.STONE);
         context.setBlockState(pos, ModBlocks.PARTY_BELL.getDefaultState()
                 .with(PartyBellBlock.MOMENT, moment).with(PartyBellBlock.WAITING, waiting));
-        // A bell left behind would listen to the parties of the tests after it (the closest within 64 blocks)
+        PartyBellBlockEntity antenna = context.getBlockEntity(pos);
+        // Linked with the brush to the controller: an antenna hears only the party of what it is linked to
+        antenna.setLink(GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(new BlockPos(2, 1, 2))));
         TestCleanup.atEnd(context, () -> TestCleanup.removeIf(context, pos, ModBlocks.PARTY_BELL));
-        return context.getBlockEntity(pos);
+        return antenna;
     }
 
     private static int comparator(TestContext context, BlockPos pos) {

@@ -30,7 +30,11 @@ final class PartyStandingsWatch {
     }
 
     void tick(ServerWorld world) {
-        if (world.getTime() % INTERVAL_TICKS != 0) return;
+        if (world.getTime() % INTERVAL_TICKS == 0) look(world);
+    }
+
+    /** Compares the coins and stars with the last look, and rings what changed. */
+    void look(ServerWorld world) {
         PartyData data = controller.getPartyData();
         if (!data.isStarted() || !PartyBellBlockEntity.isListened(controller, MOMENTS)) {
             last.clear();

@@ -2,8 +2,10 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
+import fr.lordfinn.steveparty.board.LinkedParty;
+import fr.lordfinn.steveparty.board.PartyLink;
+import fr.lordfinn.steveparty.board.PartyLinked;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllers;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
@@ -27,11 +29,9 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,16 +40,15 @@ import java.util.UUID;
  * {@link PartyMoment}), and remembers the value of that moment for comparators. In waiting mode, the party pauses at
  * that moment until the antenna receives a redstone signal.
  * <p>
- * An antenna listens to the closest party controller within {@link #RANGE} blocks (running party, or party standing
- * on its end). Without a party controller around, it hears the free play moments (dice rolled, token arrived) of the
- * tokens within {@link #RANGE} blocks.
+ * An antenna is linked with the Tile Linker Brush to an element of a party ({@link #getLink}: the Party Controller, any
+ * block of a board, a Mini-game Controller..., see {@link LinkedParty}) and listens to that party (running, or standing
+ * on its end); unlinked, it hears nothing. Linked to a board no party runs on, it hears the free play moments (dice
+ * rolled, token arrived...) of the tokens within {@link #RANGE} blocks.
  * <p>
- * Its head turns toward the Party Controller it listens to, else the closest one within {@link #RANGE} blocks
- * (checked every second, synced: {@link #getFaced}); with none, it slowly scans around its
- * {@link PartyBellBlock#FACING}. The turn and the lit receiver live on the client only ({@link #yaw},
- * {@link #ringTicks}).
+ * Its head turns toward what it is linked to; unlinked, it slowly scans around its {@link PartyBellBlock#FACING}. The
+ * turn and the lit receiver live on the client only ({@link #yaw}, {@link #ringTicks}).
  */
-public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockEntity, TickableBlockEntity {
+public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockEntity, TickableBlockEntity, PartyLinked {
     public static final int RANGE = 64;
     /** Loaded server-side antennas, keyed by dimension + position. */
     private static final Map<GlobalPos, PartyBellBlockEntity> BELLS = ServerMemory.forgetOnStop(new LinkedHashMap<>());
@@ -117,8 +116,8 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
     private @Nullable UUID placer;
     /** Last redstone input, to act on rising edges only. */
     private boolean inputPowered = false;
-    /** The Party Controller its head turns to, null for none. */
-    private @Nullable BlockPos faced;
+    /** The party element it is linked to with the brush (unlinked, it hears nothing). */
+    private final PartyLink link = new PartyLink(this, this::syncToClients);
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     /** Client: the head's turn (yaw about Y, 0 = receiver north; pitch), this tick and the last one. */
@@ -132,15 +131,30 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
         super(ModBlockEntities.PARTY_BELL_ENTITY, pos, state);
     }
 
-    /** The Party Controller its head turns to, null for none. */
+    /** What its head turns to: what it is linked to, in its world; null for none. */
     public @Nullable BlockPos getFaced() {
-        return faced;
+        return link.inWorld();
+    }
+
+    /** The party element it is linked to (see {@link LinkedParty}), null for none. */
+    public @Nullable GlobalPos getLink() {
+        return link.get();
+    }
+
+    /** Links it to a party element (null: none), told to the clients (its head turns to it, the brush draws it). */
+    public void setLink(@Nullable GlobalPos link) {
+        this.link.set(link);
+    }
+
+    @Override
+    public PartyLink partyLink() {
+        return link;
     }
 
     @Override
     public void tick() {
         if (this.world instanceof ServerWorld serverWorld) {
-            if ((serverWorld.getTime() + this.pos.hashCode()) % FACE_CHECK_TICKS == 0) checkFaced(serverWorld);
+            if ((serverWorld.getTime() + this.pos.hashCode()) % FACE_CHECK_TICKS == 0) check(serverWorld);
         } else if (this.world != null) {
             if (ringTicks > 0) ringTicks--;
             if (blinkTicks > 0) blinkTicks--;
@@ -153,18 +167,13 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
         return listening;
     }
 
-    private void checkFaced(ServerWorld world) {
+    /** Every second: whether the party it listens to runs (its screen), and whether it still holds it. */
+    private void check(ServerWorld world) {
         boolean nowListening = getListenedController(world).isPresent();
         if (nowListening != listening) {
             listening = nowListening;
             syncToClients();
         }
-        BlockPos now = getListenedController(world)
-                .or(() -> PartyControllers.all().stream()
-                        .filter(controller -> !controller.isRemoved() && controller.getWorld() == world)
-                        .filter(controller -> controller.getPos().getSquaredDistance(this.pos) < (double) RANGE * RANGE)
-                        .min(Comparator.comparingDouble(controller -> controller.getPos().getSquaredDistance(this.pos))))
-                .map(PartyControllerEntity::getPos).orElse(null);
         // The party went on without its signal (hourglass, Party Rewinder, its mode changed): it holds nothing any more
         if (holding && getListenedController(world).map(controller -> controller.getPartyData().getCurrentStep())
                 .map(step -> !step.isWaitingForBell()).orElse(true)) {
@@ -172,15 +181,12 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
             markDirty();
             syncToClients();
         }
-        if (Objects.equals(now, faced)) return;
-        faced = now;
-        markDirty();
-        syncToClients();
     }
 
     /** Client: one tick of the head's turn toward its target, eased, at most {@link #TURN_SPEED}. */
     private void turnHead() {
         float targetYaw, targetPitch = 0;
+        BlockPos faced = getFaced();
         if (faced != null) {
             double dx = faced.getX() - this.pos.getX(), dz = faced.getZ() - this.pos.getZ();
             double dy = faced.getY() + 0.75 - (this.pos.getY() + HEAD_HEIGHT);
@@ -355,7 +361,7 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
     }
 
     /**
-     * Its settings as the Wrench copies them onto other antennas: its moment and filter. Never the waiting mode:
+     * Its settings as the Wrench copies them onto other antennas: its moment, filter and link. Never the waiting mode:
      * ten antennas holding the party without showing it would be the worst trap.
      */
     public NbtCompound copySettings() {
@@ -363,6 +369,7 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
         settings.putString("Moment", getMoment().asString());
         settings.putString("Filter", filter.asString());
         settings.putInt("FilterValue", filterValue);
+        link.write(settings);
         return settings;
     }
 
@@ -371,6 +378,11 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
         if (this.world == null) return;
         PartyMoment moment = PartyMoment.byName(settings.getString("Moment"), getMoment());
         setFilter(Filter.byId(settings.getString("Filter")), settings.getInt("FilterValue"));
+        if (settings.contains("LinkPos")) {
+            PartyLink copied = new PartyLink(this, () -> { });
+            copied.read(settings);
+            setLink(copied.get());
+        }
         BlockState state = getCachedState().with(PartyBellBlock.MOMENT, moment);
         if (!moment.canWait()) state = state.with(PartyBellBlock.WAITING, false);
         if (state != getCachedState()) this.world.setBlockState(this.pos, state, Block.NOTIFY_ALL);
@@ -404,13 +416,13 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
         this.inputPowered = powered;
     }
 
+    /** The party of its link, running or standing on its end; empty when unlinked. */
     private Optional<PartyControllerEntity> getListenedController(ServerWorld world) {
-        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, this.pos, RANGE, true);
+        return Optional.ofNullable(link.runningParty(world, true));
     }
 
     private boolean listensTo(PartyControllerEntity controller) {
-        if (this.isRemoved() || this.world != controller.getWorld()) return false;
-        if (this.pos.getSquaredDistance(controller.getPos()) >= (double) RANGE * RANGE) return false;
+        if (this.isRemoved()) return false;
         return this.world instanceof ServerWorld serverWorld
                 && getListenedController(serverWorld).map(listened -> listened == controller).orElse(false);
     }
@@ -497,7 +509,7 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
     public static void ringFreePlay(ServerWorld world, BlockPos pos, PartyMoment moment, int value) {
         for (PartyBellBlockEntity bell : bells()) {
             if (bell.isRemoved() || bell.world != world || bell.getMoment() != moment) continue;
-            if (bell.pos.getSquaredDistance(pos) >= (double) RANGE * RANGE) continue;
+            if (bell.link.get() == null || bell.pos.getSquaredDistance(pos) >= (double) RANGE * RANGE) continue;
             if (bell.getListenedController(world).isPresent()) continue;
             bell.hear(value);
         }
@@ -508,7 +520,7 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
         super.writeNbt(nbt, registries);
         nbt.putInt("Value", value);
         nbt.putBoolean("InputPowered", inputPowered);
-        if (faced != null) nbt.put("Faced", NbtHelper.fromBlockPos(faced));
+        link.write(nbt);
         nbt.putString("Filter", filter.asString());
         nbt.putInt("FilterValue", filterValue);
         nbt.putLong("HeardAt", heardAt);
@@ -524,7 +536,7 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
         super.readNbt(nbt, registries);
         value = Math.clamp(nbt.getInt("Value"), 0, 15);
         inputPowered = nbt.getBoolean("InputPowered");
-        faced = NbtHelper.toBlockPos(nbt, "Faced").orElse(null);
+        link.read(nbt);
         filter = Filter.byId(nbt.getString("Filter"));
         filterValue = nbt.contains("FilterValue") ? Math.clamp(nbt.getInt("FilterValue"), 0, 15) : 1;
         heardAt = nbt.contains("HeardAt") ? nbt.getLong("HeardAt") : -1;

@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlock;
+import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -31,6 +32,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
@@ -99,6 +101,8 @@ public class PiggyBankGameTests implements SteveGameTest {
     private static void placeBell(TestContext context, BlockPos pos, BlockState bell) {
         context.setBlockState(pos.down(), Blocks.STONE);
         context.setBlockState(pos, bell);
+        // Linked with the brush to the controller: an antenna hears only the party of what it is linked to
+        ((PartyBellBlockEntity) context.getBlockEntity(pos)).setLink(GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(CONTROLLER)));
         TestCleanup.atEnd(context, () -> TestCleanup.removeIf(context, pos, ModBlocks.PARTY_BELL));
     }
 

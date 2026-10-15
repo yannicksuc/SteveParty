@@ -33,6 +33,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.GameMode;
 
 import java.util.ArrayList;
@@ -54,7 +55,10 @@ public class AntennaMomentsGameTests implements SteveGameTest {
         context.setBlockState(pos, ModBlocks.PARTY_BELL.getDefaultState()
                 .with(PartyBellBlock.MOMENT, moment).with(PartyBellBlock.WAITING, waiting));
         TestCleanup.atEnd(context, () -> TestCleanup.removeIf(context, pos, ModBlocks.PARTY_BELL));
-        return context.getBlockEntity(pos);
+        PartyBellBlockEntity antenna = context.getBlockEntity(pos);
+        // Linked with the brush to the controller: an antenna hears only the party of what it is linked to
+        antenna.setLink(GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(CONTROLLER)));
+        return antenna;
     }
 
     private static PartyControllerEntity controller(TestContext context, PartyData data) {
@@ -142,47 +146,46 @@ public class AntennaMomentsGameTests implements SteveGameTest {
 
     // ---------------------------------------------------------------- coins and stars
 
-    /** Coins won, then lost: how many each time; nothing at the first look. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80, batchId = "antenna_coins")
+    /**
+     * Coins won, then lost: how many each time; nothing at the first look. Looked at right away (not at the controller's
+     * next look): the running party of this test is over within the tick, and does not take the place of an idle
+     * controller in the tests running beside it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "antenna_coins")
     public void coinsWonAndLost(TestContext context) {
         Scene scene = scene(context);
         PartyBellBlockEntity won = antenna(context, new BlockPos(7, 1, 1), PartyMoment.COINS_WON, false);
         PartyBellBlockEntity lost = antenna(context, new BlockPos(7, 1, 3), PartyMoment.COINS_LOST, false);
-        context.waitAndRun(8, () -> {
-            context.assertTrue(won.getHeardAt() < 0 && lost.getHeardAt() < 0, "nothing at the first look");
-            scene.a().getInventory().insertStack(scene.coin().copyWithCount(3));
-            when(context, () -> won.getHeardAt() >= 0, 30, "coins won heard", () -> {
-                assertHeard(context, won, 3, "coins won");
-                InventoryUtils.take(scene.a().getInventory(), scene.coin(), 2);
-                when(context, () -> lost.getHeardAt() >= 0, 30, "coins lost heard", () -> {
-                    assertHeard(context, lost, 2, "coins lost");
-                    context.complete();
-                });
-            });
-        });
+        scene.party().watchStandingsNow(context.getWorld());
+        context.assertTrue(won.getHeardAt() < 0 && lost.getHeardAt() < 0, "nothing at the first look");
+        scene.a().getInventory().insertStack(scene.coin().copyWithCount(3));
+        scene.party().watchStandingsNow(context.getWorld());
+        assertHeard(context, won, 3, "coins won");
+        InventoryUtils.take(scene.a().getInventory(), scene.coin(), 2);
+        scene.party().watchStandingsNow(context.getWorld());
+        assertHeard(context, lost, 2, "coins lost");
+        context.complete();
     }
 
     /** A Party Star won: the player's stars after; and he leads now: his rank in the order. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80, batchId = "antenna_star_leader")
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "antenna_star_leader")
     public void starWonMakesANewLeader(TestContext context) {
         Scene scene = scene(context);
         PartyBellBlockEntity star = antenna(context, new BlockPos(7, 1, 1), PartyMoment.STAR_WON, false);
         PartyBellBlockEntity leader = antenna(context, new BlockPos(7, 1, 3), PartyMoment.NEW_LEADER, false);
-        context.waitAndRun(8, () -> {
-            scene.b().getInventory().insertStack(scene.party().getCurrency(PartyCurrency.STAR).copyWithCount(1));
-            when(context, () -> star.getHeardAt() >= 0 && leader.getHeardAt() >= 0, 30, "star and leader heard", () -> {
-                assertHeard(context, star, 1, "star won");
-                assertHeard(context, leader, 2, "b leads (second in the order)");
-                context.complete();
-            });
-        });
+        scene.party().watchStandingsNow(context.getWorld());
+        scene.b().getInventory().insertStack(scene.party().getCurrency(PartyCurrency.STAR).copyWithCount(1));
+        scene.party().watchStandingsNow(context.getWorld());
+        assertHeard(context, star, 1, "star won");
+        assertHeard(context, leader, 2, "b leads (second in the order)");
+        context.complete();
     }
 
     // ---------------------------------------------------------------- the board
 
     /**
      * A fork: « crossroads » with its 2 paths; the path chosen south (3); then the token lands on a plain space (its
-     * role as a router says it: 15).
+     * role as a router says it: 15). The antennas are linked to a tile of the board: they hear its party.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "antenna_board")
     public void forkPathAndLanding(TestContext context) {
@@ -205,6 +208,9 @@ public class AntennaMomentsGameTests implements SteveGameTest {
         PartyBellBlockEntity crossroads = antenna(context, new BlockPos(7, 1, 1), PartyMoment.CROSSROADS, false);
         PartyBellBlockEntity path = antenna(context, new BlockPos(7, 1, 3), PartyMoment.PATH_CHOSEN, false);
         PartyBellBlockEntity lands = antenna(context, new BlockPos(7, 1, 5), PartyMoment.TOKEN_LANDS, false);
+        // Linked to a tile of the board, not to the controller: they hear the party of that board
+        GlobalPos tile = GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(start));
+        for (PartyBellBlockEntity antenna : List.of(crossroads, path, lands)) antenna.setLink(tile);
         PartyControllerEntity controller = controller(context, data);
         controller.nextStep();
         controller.nextStep();
@@ -313,6 +319,24 @@ public class AntennaMomentsGameTests implements SteveGameTest {
                 });
             });
         });
+    }
+
+    /** An antenna linked to nothing hears nothing, even next to a running party. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "antenna_unlinked")
+    public void anUnlinkedAntennaHearsNothing(TestContext context) {
+        UUID a = UUID.randomUUID();
+        PartyData data = new PartyData();
+        data.addToken(a);
+        data.addStep(new PartyStep());
+        data.addStep(new TokenTurnPartyStep(a, null));
+        data.addStep(new EndPartyStep(new ArrayList<>(List.of(a))));
+        PartyBellBlockEntity antenna = antenna(context, new BlockPos(5, 1, 1), PartyMoment.TURN_START, false);
+        antenna.setLink(null);
+        PartyControllerEntity controller = controller(context, data);
+        controller.nextStep();
+        controller.nextStep();
+        context.assertTrue(antenna.getHeardAt() < 0 && !context.getBlockState(new BlockPos(5, 1, 1)).get(PartyBellBlock.POWERED), "heard nothing");
+        context.complete();
     }
 
     /** Copied settings: the moment and the filter, never the waiting mode. */

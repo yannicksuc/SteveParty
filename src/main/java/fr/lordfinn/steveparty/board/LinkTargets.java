@@ -31,8 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *     {@link Podiums#linkable});</li>
  *     <li>a trading stall, a cash register, for a Shopkeeper Key ({@link ShopkeeperKeyItem#linkable});</li>
  *     <li>a Party Controller, a Mini-game Controller, for a Remote ({@link MiniGameRemoteItem#linkable});</li>
- *     <li>any element of a party, for a Step Controller (the Party Controller, a block of a board holding a
- *     cartridge, a Mini-game Controller, a podium, a pipe: {@link StepControllerLinks#drivable}).</li>
+ *     <li>any element of a party, for a Party Rewinder, a Piggy Bank or a Party Antenna (the Party Controller, a block of a board holding a
+ *     cartridge, a Mini-game Controller, a podium, a pipe: {@link PartyLinks#drivable}).</li>
  * </ul>
  * The blocks a Hop Switch switches are left out: they are tagged « [Switchable] » already.
  */
@@ -59,7 +59,7 @@ public final class LinkTargets {
                 || MiniGamePipes.linkable(state) || Podiums.linkable(state)
                 || ShopkeeperKeyItem.linkable(blockEntity)
                 || MiniGameRemoteItem.linkable(blockEntity)
-                || StepControllerLinks.drivable(state, blockEntity);
+                || PartyLinks.drivable(state, blockEntity);
     }
 
     /**

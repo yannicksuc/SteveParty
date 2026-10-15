@@ -15,7 +15,7 @@ import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.BrushLinkable;
 import fr.lordfinn.steveparty.board.BrushLinks;
-import fr.lordfinn.steveparty.board.StepControllerLinks;
+import fr.lordfinn.steveparty.board.PartyLinks;
 import fr.lordfinn.steveparty.board.ControllerStartLinks;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
@@ -126,7 +126,7 @@ final class BrushOverlay {
             for (BlockPos target : targets) (gone(world, kind, target) ? gone : to).add(anchor(world, target));
             Vec3d from = anchor(world, kind.holder());
             Style style = kind instanceof CartridgeLinks.SpawnPoint ? Style.BUBBLE
-                    : kind instanceof StepControllerLinks.Element ? Style.STEP : Style.ARROWS;
+                    : kind instanceof PartyLinks.Element ? Style.STEP : Style.ARROWS;
             if (kind instanceof ControllerStartLinks.Starts) {
                 // From the Party Controller's side facing each start tile, not from its top (where its chest stands)
                 for (Vec3d end : to) found.add(new HolderLinks(sideOf(kind.holder(), from.y, end), List.of(end), kind.color(), style));

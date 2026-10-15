@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyBellBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.payloads.custom.AntennaSettingsPayload;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -54,10 +55,9 @@ public class AntennaScreen extends Screen {
             new Control("wait", 30, CONTROLS_Y, BUTTON, BUTTON),
             new Control("filter", 56, CONTROLS_Y, BUTTON, BUTTON),
             new Control("minus", 78, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("value", 100, CONTROLS_Y, 24, BUTTON),
-            new Control("plus", 126, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("test", 148, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("link", 152, 3, 16, 12));
+            new Control("value", 100, CONTROLS_Y, BUTTON, BUTTON),
+            new Control("plus", 122, CONTROLS_Y, BUTTON, BUTTON),
+            new Control("test", 148, CONTROLS_Y, BUTTON, BUTTON));
 
     public AntennaScreen(BlockPos pos) {
         super(ModBlocks.PARTY_BELL.getName());
@@ -141,7 +141,6 @@ public class AntennaScreen extends Screen {
 
         PartyGui.panel(context, left, top, W, H, PartyGui.PANEL);
         PartyGui.titlePlate(context, textRenderer, left + W / 2, top - 11, 0, title, PartyGui.STEEL);
-        AntennaIcons.cell(context, antenna.getFaced() != null ? AntennaIcons.LINKED : AntennaIcons.UNLINKED, left + 152, top + 1);
 
         // The palette: one row per family
         PartyMoment hovered = momentAt(mouseX, mouseY);
@@ -185,10 +184,11 @@ public class AntennaScreen extends Screen {
         button(context, control("plus"), AntennaIcons.PLUS, false, valued && antenna.getFilterValue() < 15, hoveredControl);
         button(context, control("test"), AntennaIcons.TEST, false, testable, hoveredControl);
         Control value = control("value");
-        PartyGui.inset(context, left + value.x(), top + value.y(), value.w(), value.h(), valued ? 0xFF3A3A3A : 0xFF6A6A6A, false, false);
-        String number = valued ? Integer.toString(antenna.getFilterValue()) : "-";
-        context.drawText(textRenderer, number, left + value.x() + (value.w() - textRenderer.getWidth(number)) / 2 + 1,
-                top + value.y() + 6, valued ? 0xFFFFFFFF : 0xFFB0B0B0, true);
+        face(context, left + value.x(), top + value.y(), value.w(), value.h(), valued ? 0xFF3A3A3A : 0xFF6A6A6A, false, false, !valued);
+        if (valued) {
+            UiText.centered(context, textRenderer, Text.literal(Integer.toString(antenna.getFilterValue())), left + value.x() + 1,
+                    top + value.y() + 6, value.w(), 0xFFFFFFFF, true);
+        }
 
         drawTooltip(context, antenna, current, hovered, hoveredControl, mouseX, mouseY, canWait, testable);
     }
@@ -198,20 +198,21 @@ public class AntennaScreen extends Screen {
             int x = left + W - 8 - 16;
             AntennaIcons.cell(context, AntennaIcons.WAIT, x, top + HEARD_Y);
         }
-        if (antenna.getHeardAt() < 0 || client == null || client.world == null) return;
         int x = left + 8, y = top + HEARD_Y;
-        AntennaIcons.drawMoment(context, current, x, y);
-        String value = Integer.toString(antenna.getHeardValue());
-        int valueX = x + 22, textY = y + 4;
-        if (antenna.heardPassed()) {
-            context.drawText(textRenderer, Text.literal(value).formatted(Formatting.BOLD), valueX, textY, 0xFFFFFFFF, true);
-        } else {
-            context.drawText(textRenderer, value, valueX, textY, 0xFF8A8A8A, false);
-            context.fill(valueX - 1, textY + 3, valueX + textRenderer.getWidth(value) + 1, textY + 4, 0xFF5A5A5A);
+        if (antenna.getHeardAt() < 0 || client == null || client.world == null) {
+            PartyGui.slot(context, x, y, 0xFF7A7A7A, 0xFF3A4048);
+            return;
         }
+        AntennaIcons.drawMoment(context, current, x, y);
+        Text value = antenna.heardPassed() ? Text.literal(Integer.toString(antenna.getHeardValue())).formatted(Formatting.BOLD)
+                : Text.literal(Integer.toString(antenna.getHeardValue()));
+        int valueX = x + 22, textY = y + 4, valueW = textRenderer.getWidth(value);
+        UiText.line(context, textRenderer, value, valueX, textY, valueW, antenna.heardPassed() ? 0xFFFFFFFF : 0xFF8A8A8A, antenna.heardPassed());
+        if (!antenna.heardPassed()) context.fill(valueX - 1, textY + 3, valueX + valueW + 1, textY + 4, 0xFF5A5A5A);
         long seconds = Math.max(0, (client.world.getTime() - antenna.getHeardAt()) / 20);
-        context.drawText(textRenderer, Text.translatable("gui.steveparty.antenna.heard", seconds),
-                valueX + textRenderer.getWidth(value) + 8, textY, PartyGui.TEXT_SOFT, false);
+        int agoX = valueX + valueW + 8;
+        UiText.line(context, textRenderer, Text.translatable("gui.steveparty.antenna.heard", seconds), agoX, textY,
+                left + W - 8 - 18 - agoX, PartyGui.TEXT_SOFT, false);
     }
 
     private void drawTooltip(DrawContext context, PartyBellBlockEntity antenna, PartyMoment current, @Nullable PartyMoment hovered,
@@ -237,13 +238,14 @@ public class AntennaScreen extends Screen {
                 case "minus" -> lines.add(Text.translatable("gui.steveparty.antenna.minus"));
                 case "plus" -> lines.add(Text.translatable("gui.steveparty.antenna.plus"));
                 case "test" -> lines.add(Text.translatable(testable ? "gui.steveparty.antenna.test" : "gui.steveparty.antenna.test.party"));
-                case "link" -> lines.add(antenna.getFaced() == null ? Text.translatable("gui.steveparty.antenna.unlinked")
-                        : Text.translatable("gui.steveparty.antenna.linked", Math.round(Math.sqrt(antenna.getFaced().getSquaredDistance(pos)))));
                 default -> {
                 }
             }
         } else if (antenna.isHolding() && mouseX >= left + W - 24 && mouseX < left + W - 8 && mouseY >= top + HEARD_Y && mouseY < top + HEARD_Y + 16) {
             lines.add(Text.translatable("gui.steveparty.antenna.holding"));
+        } else if (antenna.getHeardAt() < 0 && mouseX >= left + 8 && mouseX < left + 24
+                && mouseY >= top + HEARD_Y && mouseY < top + HEARD_Y + 16) {
+            lines.add(Text.translatable("gui.steveparty.antenna.heard.none"));
         } else if (antenna.getHeardAt() >= 0 && !antenna.heardPassed() && mouseX >= left + 8 && mouseX < left + 60
                 && mouseY >= top + HEARD_Y && mouseY < top + HEARD_Y + 16) {
             lines.add(Text.translatable("gui.steveparty.antenna.heard.filtered"));
@@ -277,15 +279,20 @@ public class AntennaScreen extends Screen {
      */
     private static void face(DrawContext context, int x, int y, int w, int h, int body, boolean pressed, boolean hovered, boolean disabled) {
         int colour = pressed ? Argb.darken(body, 0.14f) : hovered ? Argb.lighten(body, 0.35f) : body;
-        PartyGui.Theme theme = new PartyGui.Theme(disabled ? 0xFF555555 : 0xFF000000, Argb.lighten(colour, 0.45f), colour,
-                Argb.darken(colour, 0.38f));
+        PartyGui.Theme theme = new PartyGui.Theme(0xFF000000, Argb.lighten(colour, disabled ? 0.2f : 0.45f), colour,
+                Argb.darken(colour, disabled ? 0.2f : 0.38f));
         PartyGui.button(context, x, y, w, h, theme, pressed);
     }
 
-    /** The chosen one: a black outline and a 1 px white ring inside it, in the button's own pixels. */
+    /**
+     * The chosen one: a 1 px white ring just inside its black outline, in the button's own pixels, stopping before the
+     * cut corners as the outline does.
+     */
     private static void selected(DrawContext context, int x, int y, int w, int h) {
-        context.drawBorder(x, y, w, h, 0xFF000000);
-        context.drawBorder(x + 1, y + 1, w - 2, h - 2, 0xFFFFFFFF);
+        context.fill(x + 2, y + 1, x + w - 2, y + 2, 0xFFFFFFFF);
+        context.fill(x + 2, y + h - 2, x + w - 2, y + h - 1, 0xFFFFFFFF);
+        context.fill(x + 1, y + 2, x + 2, y + h - 2, 0xFFFFFFFF);
+        context.fill(x + w - 2, y + 2, x + w - 1, y + h - 2, 0xFFFFFFFF);
     }
 
     private static int mix(int a, int b, float t) {

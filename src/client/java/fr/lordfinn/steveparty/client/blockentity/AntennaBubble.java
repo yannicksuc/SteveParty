@@ -7,6 +7,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.TexturedRenderLayers;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
@@ -52,11 +53,13 @@ final class AntennaBubble {
         quad(plate, matrix, -HALF - 1, -HALF - 1, HALF + 1, HALF + 1, EDGE_Z, family);
         quad(plate, matrix, -HALF, -HALF, HALF, HALF, PLATE_Z, PLATE);
 
-        // The item, flattened onto the plate as in an inventory
+        // The item, flattened onto the plate as in an inventory, solid (every layer cutout) and lit from above whichever
+        // way the bubble turns: as bright as in the screen
         matrices.push();
-        matrices.scale(ITEM, -ITEM, 0.01f);
+        float size = ITEM * AntennaIcons.scale(moment);
+        matrices.scale(size, -size, 0.01f);
         MinecraftClient.getInstance().getItemRenderer().renderItem(AntennaIcons.item(moment), ModelTransformationMode.GUI,
-                LIGHT, OverlayTexture.DEFAULT_UV, matrices, consumers, antenna.getWorld(), 0);
+                LIGHT, OverlayTexture.DEFAULT_UV, matrices, layer -> new LitFromAbove(consumers.getBuffer(TexturedRenderLayers.getEntityCutout())), antenna.getWorld(), 0);
         matrices.pop();
         int badge = AntennaIcons.badge(moment);
         if (badge >= 0) icon(consumers, matrix, badge, -HALF + 2, -HALF + 2, 16, 0.2f);
@@ -66,8 +69,10 @@ final class AntennaBubble {
         if (filtered || waits) {
             String value = Integer.toString(antenna.getFilterValue());
             float width = (filtered ? 5 + value.length() * 4 - 1 : 0) + (filtered && waits ? 2 : 0) + (waits ? 10 : 0);
-            float x = -width / 2f, y = HALF + 3;
+            float x = Math.round(-width / 2f), y = HALF + 3;
+            // Edged as the plate above it, joined to it
             VertexConsumer strip = consumers.getBuffer(RenderLayer.getTextBackground());
+            quad(strip, matrix, x - 3, y - 3, x + width + 3, y + 13, EDGE_Z, family);
             quad(strip, matrix, x - 2, y - 2, x + width + 2, y + 12, PLATE_Z, PLATE);
             if (filtered) {
                 int[] sign = switch (antenna.getFilter()) {
@@ -103,6 +108,45 @@ final class AntennaBubble {
                 if ((rows[row] >> (width - 1 - col) & 1) == 0) continue;
                 quad(buffer, matrix, x + col * px, y + row * px, x + (col + 1) * px, y + (row + 1) * px, 0, 0xFFFFFFFF);
             }
+        }
+    }
+
+    /** A buffer whose normals all point up: the item gets the world's full light, never its shaded side. */
+    private record LitFromAbove(VertexConsumer delegate) implements VertexConsumer {
+        @Override
+        public VertexConsumer vertex(float x, float y, float z) {
+            delegate.vertex(x, y, z);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer color(int red, int green, int blue, int alpha) {
+            delegate.color(red, green, blue, alpha);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer texture(float u, float v) {
+            delegate.texture(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer overlay(int u, int v) {
+            delegate.overlay(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer light(int u, int v) {
+            delegate.light(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer normal(float x, float y, float z) {
+            delegate.normal(0, 1, 0);
+            return this;
         }
     }
 
