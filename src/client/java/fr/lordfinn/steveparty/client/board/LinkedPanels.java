@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.board.PartyLinked;
+import fr.lordfinn.steveparty.client.gui.ComparisonGlyphs;
 import fr.lordfinn.steveparty.client.gui.FloatingInfo;
 import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.IconBounds;
@@ -47,6 +48,8 @@ import java.util.List;
  * {@link #TEXEL} panel pixels (the frame's 4 texture pixels are {@link #BORDER} wide). Every icon sits in a
  * {@link #ROW} square, {@link #MARGIN} from the plate's face on all four sides; a 3D icon is moved by whole icon pixels
  * so that its visible pixels are centred ({@link IconBounds}). A divider spans the face from its top to its bottom.
+ * The layout keeps every part on its grid by itself ({@link #layout}): an icon at an odd place, a text, a sign and a
+ * divider's line at even ones, a pixel of room added where a gap would put them off it.
  * <p>
  * Rendering (minecraft-rendering): a world panel in {@code AFTER_ENTITIES}, main target, everything opaque or cutout
  * writing depth: the plate first (drawn at once), then on it, each a step toward the camera, the icons (solid layers,
@@ -73,6 +76,8 @@ public final class LinkedPanels {
     public static final int ICON_TEXT = 3, ITEM_GAP = 7, TEXT_SLASH = 4, SLASH_ICON = 3;
     /** The text's top in the row: its 7 pixels high glyphs ({@link #TEXEL} each) centred in it. */
     private static final int TEXT_Y = (ROW - 7 * TEXEL) / 2;
+    /** The clear pixels a sheet icon (a sign, the hourglass) is drawn without, around its cell. */
+    private static final int SHEET_TRIM = 1;
     /** Block per panel pixel at 7 blocks or closer; farther, it grows up to {@link #MAX_GROW} times. */
     private static final float UNIT = 1f / 96f, MAX_GROW = 2.5f;
     /**
@@ -125,6 +130,14 @@ public final class LinkedPanels {
         public int width(TextRenderer font) {
             // The font's width ends with one pixel of spacing: not part of the text
             return (font.getWidth(text) - 1) * TEXEL;
+        }
+    }
+
+    /** A comparison sign ({@link ComparisonGlyphs}), in the font's style, like a {@link Label}. */
+    public record Glyph(ComparisonGlyphs.Sign sign, int colour) implements Part {
+        @Override
+        public int width(TextRenderer font) {
+            return ComparisonGlyphs.WIDTH * TEXEL;
         }
     }
 
@@ -208,19 +221,38 @@ public final class LinkedPanels {
     }
 
     /**
+     * Each part's left edge (panel pixels from the plate's left edge), then where the row ends: an icon at an odd place,
+     * a text or a sign at an even one, a divider's line at an even one; a pixel of room is added before a part a gap
+     * would put off its grid.
+     */
+    public static int[] layout(TextRenderer font, List<Part> parts) {
+        int[] xs = new int[parts.size() + 1];
+        int x = BORDER + MARGIN;
+        for (int i = 0; i < parts.size(); i++) {
+            Part part = parts.get(i);
+            int parity = switch (part) {
+                case Icon icon -> 1;
+                case SheetIcon sheet -> 1;
+                case Label label -> 0;
+                case Glyph glyph -> 0;
+                case Divider divider -> DIVIDER_GAP % 2;
+                case Space space -> -1;
+            };
+            if (parity >= 0 && Math.floorMod(x, 2) != parity) x++;
+            xs[i] = x;
+            x += part.width(font);
+        }
+        xs[parts.size()] = x;
+        return xs;
+    }
+
+    /**
      * The plate's width (panel pixels): the row and its margins, one more after a row ending with text (its margin as
      * above and under it), so that the plate ends on its frame's grid.
      */
-    public static int plateWidth(TextRenderer font, List<Part> parts) {
-        int width = rowWidth(font, parts) + 2 * (BORDER + MARGIN);
+    public static int plateWidth(int[] layout) {
+        int width = layout[layout.length - 1] + MARGIN + BORDER;
         return width % TEXEL == 0 ? width : width + 1;
-    }
-
-    /** The row's width (panel pixels). */
-    public static int rowWidth(TextRenderer font, List<Part> parts) {
-        int width = 0;
-        for (Part part : parts) width += part.width(font);
-        return width;
     }
 
     // ---------------------------------------------------------------- in the world
@@ -240,7 +272,9 @@ public final class LinkedPanels {
         double distance = Math.sqrt(anchor.squaredDistanceTo(camera.getPos()));
         float scale = UNIT * (float) Math.clamp(distance / 7.0, 1.0, MAX_GROW);
         int inset = BORDER + MARGIN;
-        int width = plateWidth(font, aimed.panel().parts()), height = ROW + 2 * inset;
+        List<Part> parts = aimed.panel().parts();
+        int[] layout = layout(font, parts);
+        int width = plateWidth(layout), height = ROW + 2 * inset;
         Vec3d middle = anchor.add(0, height * scale / 2, 0);
         if (!FloatingInfo.inSight(camera, middle, PANEL_DISTANCE)) return;
         FloatingInfo.drawnInWorld(new CardKey(pos));
@@ -255,11 +289,7 @@ public final class LinkedPanels {
         matrices.scale(TEXEL, TEXEL, 1);
         WorldDraw.plate(matrices, consumers, WorldDraw.Plate.GOLD, 0, 0, width / (float) TEXEL, height / (float) TEXEL, PLATE_Z);
         matrices.pop();
-        int x = inset;
-        for (Part part : aimed.panel().parts()) {
-            drawInWorld(client, font, matrices, consumers, part, x, inset, height);
-            x += part.width(font);
-        }
+        for (int i = 0; i < parts.size(); i++) drawInWorld(client, font, matrices, consumers, parts.get(i), layout[i], inset, height);
         consumers.draw();
         matrices.pop();
     }
@@ -277,10 +307,10 @@ public final class LinkedPanels {
                         layer -> new LitFromAbove(consumers.getBuffer(AntennaIcons.solid(layer))), client.world, 0);
                 matrices.pop();
                 consumers.draw();
-                if (icon.badge() >= 0) sheet(consumers, matrices.peek().getPositionMatrix(), icon.badge(), x, y, MARK_Z);
+                if (icon.badge() >= 0) sheet(consumers, matrices.peek().getPositionMatrix(), icon.badge(), x, y, MARK_Z, 0);
                 if (icon.crossed()) NotLinkedMark.worldCross(matrices, consumers, x + ROW, y + ROW, 1, MARK_Z);
             }
-            case SheetIcon sheet -> sheet(consumers, matrices.peek().getPositionMatrix(), sheet.cell(), x, y, ICON_Z);
+            case SheetIcon sheet -> sheet(consumers, matrices.peek().getPositionMatrix(), sheet.cell(), x, y, ICON_Z, SHEET_TRIM);
             case Label label -> {
                 matrices.push();
                 matrices.translate(x, y + TEXT_Y, 0);
@@ -289,6 +319,7 @@ public final class LinkedPanels {
                         TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
                 matrices.pop();
             }
+            case Glyph glyph -> ComparisonGlyphs.world(matrices, consumers, glyph.sign(), x, y + TEXT_Y, TEXEL, ICON_Z, glyph.colour());
             case Divider divider -> WorldDraw.fill(matrices, consumers, x + DIVIDER_GAP, BORDER, x + DIVIDER_GAP + DIVIDER, height - BORDER,
                     DIVIDER_Z, SOFT);
             case Space space -> {
@@ -296,14 +327,19 @@ public final class LinkedPanels {
         }
     }
 
-    /** A 16 x 16 cell of the antenna's sheet, its top-left corner at (x, y). */
-    private static void sheet(VertexConsumerProvider consumers, Matrix4f matrix, int cell, float x, float y, float z) {
+    /**
+     * A 16 x 16 cell of the antenna's sheet, its top-left corner at (x, y), without its outer {@code trim} pixels: a
+     * scaled cell drawn whole picks up its neighbour's edge (a dark pixel by the hourglass on the screen card).
+     */
+    private static void sheet(VertexConsumerProvider consumers, Matrix4f matrix, int cell, float x, float y, float z, int trim) {
         VertexConsumer buffer = consumers.getBuffer(RenderLayer.getText(AntennaIcons.SHEET));
-        float u0 = (cell % 16) * 16 / 256f, v0 = (cell / 16) * 16 / 64f, u1 = u0 + 16 / 256f, v1 = v0 + 16 / 64f;
-        buffer.vertex(matrix, x, y, z).color(0xFFFFFFFF).texture(u0, v0).light(LIGHT);
-        buffer.vertex(matrix, x, y + ROW, z).color(0xFFFFFFFF).texture(u0, v1).light(LIGHT);
-        buffer.vertex(matrix, x + ROW, y + ROW, z).color(0xFFFFFFFF).texture(u1, v1).light(LIGHT);
-        buffer.vertex(matrix, x + ROW, y, z).color(0xFFFFFFFF).texture(u1, v0).light(LIGHT);
+        float u0 = ((cell % 16) * 16 + trim) / 256f, v0 = ((cell / 16) * 16 + trim) / 64f;
+        float u1 = u0 + (16 - 2 * trim) / 256f, v1 = v0 + (16 - 2 * trim) / 64f;
+        float x0 = x + trim, y0 = y + trim, x1 = x + ROW - trim, y1 = y + ROW - trim;
+        buffer.vertex(matrix, x0, y0, z).color(0xFFFFFFFF).texture(u0, v0).light(LIGHT);
+        buffer.vertex(matrix, x0, y1, z).color(0xFFFFFFFF).texture(u0, v1).light(LIGHT);
+        buffer.vertex(matrix, x1, y1, z).color(0xFFFFFFFF).texture(u1, v1).light(LIGHT);
+        buffer.vertex(matrix, x1, y0, z).color(0xFFFFFFFF).texture(u1, v0).light(LIGHT);
     }
 
     /** A buffer whose normals all point up: an icon gets the world's full light, never its shaded side. */
@@ -347,7 +383,13 @@ public final class LinkedPanels {
 
     // ---------------------------------------------------------------- on the screen
 
-    /** Its panel out of sight (too far...): its card on the screen, the same row at half its size (card pixels). */
+    /** On the card, from the row to the frame's inner edge (the card's plate has a 4 pixel frame): a divider spans it. */
+    private static final int CARD_FACE = FloatingInfo.PAD - 4;
+
+    /**
+     * Its panel out of sight (too far...): its card on the screen ({@link FloatingInfo}, as a board space's), the same
+     * row, one card pixel per panel pixel.
+     */
     private static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.options.hudHidden || client.currentScreen != null) return;
@@ -357,18 +399,16 @@ public final class LinkedPanels {
         if (!FloatingInfo.needsCard(key)) return;
         TextRenderer font = client.textRenderer;
         List<Part> parts = aimed.panel().parts();
-        int width = Math.min(rowWidth(font, parts) / 2 + 2 * FloatingInfo.PAD, FloatingInfo.MAX_WIDTH);
-        int height = ROW / 2 + 2 * FloatingInfo.PAD;
+        int[] layout = layout(font, parts);
+        int inset = BORDER + MARGIN;
+        // One card pixel per panel pixel: its icons at their full 16 pixels, its text twice the font, as on the panel
+        int width = Math.min(layout[parts.size()] - inset + 2 * FloatingInfo.PAD, FloatingInfo.MAX_WIDTH);
+        int height = ROW + 2 * FloatingInfo.PAD;
         FloatingInfo.card(context, key, width, height, ToolHud.Plate.GOLD, 1f, 0, card -> {
             MatrixStack matrices = card.getMatrices();
             matrices.push();
             matrices.translate(FloatingInfo.PAD, FloatingInfo.PAD, 0);
-            matrices.scale(0.5f, 0.5f, 1);
-            int x = 0;
-            for (Part part : parts) {
-                drawOnCard(card, font, part, x);
-                x += part.width(font);
-            }
+            for (int i = 0; i < parts.size(); i++) drawOnCard(card, font, parts.get(i), layout[i] - inset);
             matrices.pop();
         });
     }
@@ -386,7 +426,8 @@ public final class LinkedPanels {
                 if (icon.badge() >= 0) HudDepth.onTop(card, () -> AntennaIcons.cell(card, icon.badge(), x, 0));
                 if (icon.crossed()) HudDepth.onTop(card, () -> NotLinkedMark.crossOnIcon(card, x, 0));
             }
-            case SheetIcon sheet -> HudDepth.onTop(card, () -> AntennaIcons.cell(card, sheet.cell(), x, 0));
+            case SheetIcon sheet -> HudDepth.onTop(card, () -> card.drawTexture(AntennaIcons.SHEET, x + SHEET_TRIM, SHEET_TRIM,
+                    (sheet.cell() % 16) * 16 + SHEET_TRIM, (sheet.cell() / 16) * 16 + SHEET_TRIM, ROW - 2 * SHEET_TRIM, ROW - 2 * SHEET_TRIM, 256, 64));
             case Label label -> {
                 matrices.push();
                 matrices.translate(x, TEXT_Y, 0);
@@ -394,7 +435,8 @@ public final class LinkedPanels {
                 HudDepth.onTop(card, () -> UiText.line(card, font, label.text(), 0, 0, font.getWidth(label.text()), label.colour(), false));
                 matrices.pop();
             }
-            case Divider divider -> HudDepth.onTop(card, () -> card.fill(x + DIVIDER_GAP, -MARGIN, x + DIVIDER_GAP + DIVIDER, ROW + MARGIN, SOFT));
+            case Glyph glyph -> HudDepth.onTop(card, () -> ComparisonGlyphs.draw(card, glyph.sign(), x, TEXT_Y, glyph.colour(), false, TEXEL));
+            case Divider divider -> HudDepth.onTop(card, () -> card.fill(x + DIVIDER_GAP, -CARD_FACE, x + DIVIDER_GAP + DIVIDER, ROW + CARD_FACE, SOFT));
             case Space space -> {
             }
         }

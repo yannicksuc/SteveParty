@@ -3,12 +3,14 @@ package fr.lordfinn.steveparty.client.board;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.client.board.LinkedPanels.Divider;
+import fr.lordfinn.steveparty.client.board.LinkedPanels.Glyph;
 import fr.lordfinn.steveparty.client.board.LinkedPanels.Icon;
 import fr.lordfinn.steveparty.client.board.LinkedPanels.Label;
 import fr.lordfinn.steveparty.client.board.LinkedPanels.Panel;
 import fr.lordfinn.steveparty.client.board.LinkedPanels.Part;
 import fr.lordfinn.steveparty.client.board.LinkedPanels.SheetIcon;
 import fr.lordfinn.steveparty.client.board.LinkedPanels.Space;
+import fr.lordfinn.steveparty.client.gui.ComparisonGlyphs;
 import fr.lordfinn.steveparty.client.screens.AntennaIcons;
 
 import java.util.ArrayList;
@@ -21,7 +23,9 @@ import java.util.List;
  */
 public final class AntennaPanel {
     /** Above its head, clear of the dish whichever way it turns (blocks). */
-    private static final double ABOVE = 1.55;
+    private static final double ABOVE = 1.35;
+    /** The clear pixels on each side of the hourglass in the antenna's sheet. */
+    private static final int SHEET_INSET = 3;
 
     private AntennaPanel() {
     }
@@ -38,14 +42,16 @@ public final class AntennaPanel {
         boolean filtered = antenna.getFilter() != PartyBellBlockEntity.Filter.ANY, waits = antenna.isWaiting();
         if (filtered || waits) parts.add(new Divider());
         if (filtered) {
-            parts.add(new SheetIcon(switch (antenna.getFilter()) {
-                case EQUAL -> AntennaIcons.FILTER_EQUAL;
-                case AT_LEAST -> AntennaIcons.FILTER_AT_LEAST;
-                default -> AntennaIcons.FILTER_AT_MOST;
-            }));
-            parts.add(new Space(LinkedPanels.ICON_TEXT));
+            // « ≥ 5 »: the sign in the font's style, the font's space, the value
+            parts.add(new Glyph(switch (antenna.getFilter()) {
+                case EQUAL -> ComparisonGlyphs.Sign.EQUAL;
+                case AT_LEAST -> ComparisonGlyphs.Sign.GREATER_OR_EQUAL;
+                default -> ComparisonGlyphs.Sign.LESS_OR_EQUAL;
+            }, WorldDraw.PLATE_TEXT));
+            parts.add(new Space(ComparisonGlyphs.SPACE * LinkedPanels.TEXEL));
             parts.add(new Label(Integer.toString(antenna.getFilterValue()), WorldDraw.PLATE_TEXT));
-            if (waits) parts.add(new Space(LinkedPanels.ITEM_GAP));
+            // The hourglass leaves 3 clear pixels on each side of its cell
+            if (waits) parts.add(new Space(LinkedPanels.ITEM_GAP - SHEET_INSET));
         }
         if (waits) parts.add(new SheetIcon(AntennaIcons.WAIT));
         return new Panel(parts, ABOVE);
