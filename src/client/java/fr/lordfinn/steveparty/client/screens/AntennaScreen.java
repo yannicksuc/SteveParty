@@ -1,9 +1,11 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
+import fr.lordfinn.steveparty.client.gui.ComparisonGlyphs;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.payloads.custom.AntennaSettingsPayload;
@@ -16,6 +18,7 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import fr.lordfinn.steveparty.client.gui.NotLinkedMark;
 import org.jetbrains.annotations.Nullable;
@@ -25,11 +28,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The Party Antenna's screen (right-click with the Wrench): every moment at once, one row per family (its colour on
- * the left and in its buttons, the moment's item in each), one click chooses. Under them: the last moment heard, then
- * the mode (pulse / wait), the value filter and a test pulse. No help text: one tooltip per control. Linked to no party
- * (it hears nothing then): the Tile Linker Brush crossed out in red at the end of the last-heard row, where its
- * hourglass shows when it holds a party ({@link NotLinkedMark}), what it means on hover.
+ * The Party Antenna's screen (right-click with the Wrench), seen as the antenna's dish: the parachute's white and ice
+ * gores radiating from the title ({@code antenna_screen.png}) in its blue rim, the title between the antenna's yellow
+ * ball joints on its anthracite plate. Every moment at once, one row per family (its colour on the left and in its
+ * buttons, the moment's item in each), one click chooses; the chosen one is the receiver: pressed in, in a red frame
+ * lit around it and a dark outline (it reads without the red too). Out of a party, the moments heard only in one are
+ * greyed (still chosen as any). Under them: the last moment heard, the receiver's red LED lit as a moment is heard;
+ * then the hold toggle (the antenna always pulses, it may also hold the party), the value filter and a test pulse,
+ * on the palette's columns. No help text: one tooltip per control. Linked to no party (it hears nothing then): the
+ * Tile Linker Brush crossed out in red at the end of the last-heard row, where its hourglass shows when it holds a
+ * party ({@link NotLinkedMark}), what it means on hover.
  * <p>
  * It reads the antenna the client already has (moment in the block state, the rest in the synced block entity) and
  * sends every change at once ({@link AntennaSettingsPayload}). Buttons are pressed in while held: the face darkens and
@@ -38,8 +46,24 @@ import java.util.List;
 public class AntennaScreen extends Screen {
     private static final int W = 176, H = 186;
     private static final int CELL = 22, BUTTON = 20, GRID_X = 16, GRID_Y = 18;
+    /** The value field: wide enough for « ≥ 15 ». */
+    private static final int VALUE_W = 32;
     private static final int CONTROLS_Y = 158, HEARD_Y = 136, SEPARATOR_Y = 130;
-    private static final int SLOT = 0xFF8D8D8D;
+    private static final Identifier TEXTURE = Steveparty.id("textures/gui/antenna_screen.png");
+    /** On the title plate: from its face to a joint, from a joint to the title. */
+    private static final int TITLE_GAP = 4;
+    private static final int JOINT = 0xFFFFAE00, JOINT_LIGHT = 0xFFFFE68C, JOINT_DARK = 0xFFD98A00;
+    /** A moment heard only in a party, while none runs: its face goes grey, its item veiled. */
+    private static final int PARTY_ONLY = 0xFFD5DADF, PARTY_ONLY_VEIL = 0x70E9F2F8;
+    /** The block's anthracite (title plate, value box). */
+    private static final PartyGui.Theme ANTHRACITE = new PartyGui.Theme(0xFF151519, 0xFF54545C, 0xFF2C2C31, 0xFF212125);
+    /** The filter's sign on its light key: the anthracite of the plates. */
+    private static final int SIGN = 0xFF2C2C31, SIGN_DISABLED = 0xFF8C939A;
+    private static final int OUTLINE = 0xFF151519, CONTROL = 0xFFEEF3F6, DISABLED = 0xFFC8CED4;
+    private static final int RECEIVER = 0xFFFF2B1A, RECEIVER_GLOW = 0xFFFF9C88, RECEIVER_DARK = 0xFF2A0604;
+    private static final int TEXT_VALUE = 0xFF1E5E91, TEXT_SOFT = 0xFF4A6882;
+    /** How long the receiver's LED stays lit after a moment is heard, in ticks. */
+    private static final int LED_TICKS = 40;
 
     private final BlockPos pos;
     private int left, top;
@@ -54,13 +78,12 @@ public class AntennaScreen extends Screen {
     }
 
     private static final List<Control> CONTROLS = List.of(
-            new Control("pulse", 8, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("wait", 30, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("filter", 56, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("minus", 78, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("value", 100, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("plus", 122, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("test", 148, CONTROLS_Y, BUTTON, BUTTON));
+            new Control("hold", GRID_X, CONTROLS_Y, BUTTON, BUTTON),
+            new Control("filter", 43, CONTROLS_Y, BUTTON, BUTTON),
+            new Control("minus", 65, CONTROLS_Y, BUTTON, BUTTON),
+            new Control("value", 87, CONTROLS_Y, VALUE_W, BUTTON),
+            new Control("plus", 121, CONTROLS_Y, BUTTON, BUTTON),
+            new Control("test", GRID_X + CELL * 6, CONTROLS_Y, BUTTON, BUTTON));
 
     public AntennaScreen(BlockPos pos) {
         super(ModBlocks.PARTY_BELL.getName());
@@ -120,7 +143,7 @@ public class AntennaScreen extends Screen {
         PartyMoment.Family[] families = PartyMoment.Family.values();
         for (int r = 0; r < families.length; r++) {
             int y = momentY(r);
-            if (mx >= left + 8 && mx < left + 12 && my >= y && my < y + BUTTON) return families[r];
+            if (mx >= left + 8 && mx < left + 14 && my >= y && my < y + BUTTON) return families[r];
         }
         return null;
     }
@@ -139,105 +162,166 @@ public class AntennaScreen extends Screen {
         if (antenna == null) return;
         BlockState state = antenna.getCachedState();
         PartyMoment current = state.get(PartyBellBlock.MOMENT);
-        boolean waiting = state.get(PartyBellBlock.WAITING) && current.canWait();
+        boolean inParty = antenna.inPartyOnClient();
+        // Out of a party, a moment heard out of one never waits: the hourglass does not apply
+        boolean waitApplies = current.canWait() && (inParty || !current.outOfParty());
+        boolean waiting = state.get(PartyBellBlock.WAITING) && waitApplies;
         PartyBellBlockEntity.Filter filter = antenna.getFilter();
 
-        PartyGui.panel(context, left, top, W, H, PartyGui.PANEL);
-        PartyGui.titlePlate(context, textRenderer, left + W / 2, top - 11, 0, title, PartyGui.STEEL);
+        context.drawTexture(TEXTURE, left, top, 0, 0, W, H, 256, 256);
+        drawTitle(context);
 
         // The palette: one row per family
         PartyMoment hovered = momentAt(mouseX, mouseY);
         PartyMoment.Family[] families = PartyMoment.Family.values();
         for (int r = 0; r < families.length; r++) {
             int y = momentY(r), colour = AntennaIcons.colour(families[r]);
-            context.fill(left + 8, y, left + 12, y + BUTTON, colour);
-            context.fill(left + 8, y, left + 12, y + 1, Argb.lighten(colour, 0.4f));
-            context.fill(left + 8, y + BUTTON - 1, left + 12, y + BUTTON, Argb.darken(colour, 0.35f));
+            PartyGui.button(context, left + 8, y, 6, BUTTON, new PartyGui.Theme(Argb.darken(colour, 0.6f),
+                    Argb.lighten(colour, 0.4f), colour, Argb.darken(colour, 0.35f)), false);
             List<PartyMoment> moments = row(families[r]);
             for (int c = 0; c < moments.size(); c++) {
                 PartyMoment moment = moments.get(c);
                 int x = momentX(c);
-                int body = mix(SLOT, colour, 0.28f);
-                boolean pressed = moment.name().equals(held);
-                face(context, x, y, BUTTON, BUTTON, body, pressed, moment == hovered, false);
+                boolean partyOnly = !inParty && !moment.outOfParty();
+                int body = partyOnly ? PARTY_ONLY : mix(0xFFFFFFFF, colour, 0.45f);
+                boolean chosen = moment == current;
+                face(context, x, y, BUTTON, BUTTON, body, chosen || moment.name().equals(held), moment == hovered, false);
+                if (chosen) selected(context, x, y, BUTTON, BUTTON);
+                // Its item stays in its square: a model reaching out of it (the router's lever) is cut at its edge
+                context.enableScissor(x + 1, y + 1, x + BUTTON - 1, y + BUTTON - 1);
                 AntennaIcons.drawMoment(context, moment, x + 2, y + 2);
-                if (moment == current) selected(context, x, y, BUTTON, BUTTON);
+                context.disableScissor();
+                if (partyOnly) PartyGui.veil(context, x + 2, y + 2, PARTY_ONLY_VEIL);
             }
         }
 
-        // The separator, then the last moment heard
-        context.fill(left + 8, top + SEPARATOR_Y, left + W - 8, top + SEPARATOR_Y + 1, 0xFF8D8D8D);
-        context.fill(left + 8, top + SEPARATOR_Y + 1, left + W - 8, top + SEPARATOR_Y + 2, 0xFFFFFFFF);
+        // The last moment heard (the separator is in the texture)
         drawHeard(context, antenna, current);
 
         // The mode, the filter, the test
         Control hoveredControl = controlAt(mouseX, mouseY);
         boolean canWait = current.canWait();
-        boolean testable = !antenna.inPartyOnClient();
-        button(context, control("pulse"), AntennaIcons.PULSE, !waiting, true, hoveredControl);
-        button(context, control("wait"), AntennaIcons.WAIT, waiting, canWait, hoveredControl);
-        button(context, control("filter"), switch (filter) {
-            case ANY -> AntennaIcons.FILTER_ANY;
-            case EQUAL -> AntennaIcons.FILTER_EQUAL;
-            case AT_LEAST -> AntennaIcons.FILTER_AT_LEAST;
-            case AT_MOST -> AntennaIcons.FILTER_AT_MOST;
-        }, false, true, hoveredControl);
+        boolean testable = !inParty;
+        holdButton(context, waiting, waitApplies, hoveredControl);
+        // The filter key: the shared comparison glyph, twice the font as the keys' icons; the field writes it as text
+        Control filterControl = control("filter");
+        button(context, filterControl, -1, false, true, hoveredControl);
+        ComparisonGlyphs.Sign sign = switch (filter) {
+            case ANY -> ComparisonGlyphs.Sign.ANY;
+            case EQUAL -> ComparisonGlyphs.Sign.EQUAL;
+            case AT_LEAST -> ComparisonGlyphs.Sign.GREATER_OR_EQUAL;
+            case AT_MOST -> ComparisonGlyphs.Sign.LESS_OR_EQUAL;
+        };
+        ComparisonGlyphs.drawCentred(context, sign, left + filterControl.x() + filterControl.w() / 2, top + filterControl.y() + filterControl.h() / 2, SIGN, 2);
         boolean valued = filter != PartyBellBlockEntity.Filter.ANY;
         button(context, control("minus"), AntennaIcons.MINUS, false, valued && antenna.getFilterValue() > 0, hoveredControl);
         button(context, control("plus"), AntennaIcons.PLUS, false, valued && antenna.getFilterValue() < 15, hoveredControl);
         button(context, control("test"), AntennaIcons.TEST, false, testable, hoveredControl);
         Control value = control("value");
-        face(context, left + value.x(), top + value.y(), value.w(), value.h(), valued ? 0xFF3A3A3A : 0xFF6A6A6A, false, false, !valued);
-        if (valued) {
-            UiText.centered(context, textRenderer, Text.literal(Integer.toString(antenna.getFilterValue())), left + value.x() + 1,
-                    top + value.y() + 6, value.w(), 0xFFFFFFFF, true);
-        }
+        if (valued) PartyGui.button(context, left + value.x(), top + value.y(), value.w(), value.h(), ANTHRACITE, true);
+        else face(context, left + value.x(), top + value.y(), value.w(), value.h(), DISABLED, false, false, true);
+        // « ≥ 5 » as one label: the sign, the font's space, the value, centred on the field (its digits' row)
+        String digits = valued ? Integer.toString(antenna.getFilterValue()) : "";
+        int labelW = ComparisonGlyphs.WIDTH + (valued ? ComparisonGlyphs.SPACE + textRenderer.getWidth(digits) - 1 : 0);
+        int labelX = left + value.x() + (value.w() - labelW + 1) / 2, labelY = top + value.y() + 6;
+        ComparisonGlyphs.draw(context, sign, labelX, labelY, valued ? 0xFFFFFFFF : SIGN_DISABLED, valued, 1);
+        if (valued) UiText.line(context, textRenderer, Text.literal(digits), labelX + ComparisonGlyphs.WIDTH + ComparisonGlyphs.SPACE, labelY,
+                textRenderer.getWidth(digits), 0xFFFFFFFF, true);
 
-        drawTooltip(context, antenna, current, hovered, hoveredControl, mouseX, mouseY, canWait, testable);
+        drawTooltip(context, antenna, current, hovered, hoveredControl, mouseX, mouseY, canWait, testable, inParty, waiting);
+    }
+
+    /**
+     * The title plate (the block's anthracite), the title between the antenna's two yellow ball joints (3 x 3, on the
+     * capitals' middle row): the same gap ({@link #TITLE_GAP}) from the plate's face to a joint and from a joint to the
+     * title (its ink and shadow, as wide as the font's width of it), on both sides.
+     */
+    private void drawTitle(DrawContext context) {
+        int textW = textRenderer.getWidth(title), edge = 3, w = 2 * (edge + TITLE_GAP + 3 + TITLE_GAP) + textW;
+        int x = left + W / 2 - w / 2, y = top - 11;
+        PartyGui.panel(context, x, y, w, 22, ANTHRACITE);
+        int jointX = x + edge + TITLE_GAP, textX = jointX + 3 + TITLE_GAP;
+        UiText.line(context, textRenderer, title, textX, y + 7, textW, 0xFFFFFFFF, true);
+        joint(context, jointX, y + 9);
+        joint(context, textX + textW + TITLE_GAP, y + 9);
+    }
+
+    private static void joint(DrawContext context, int x, int y) {
+        context.fill(x, y, x + 3, y + 3, JOINT);
+        context.fill(x, y, x + 1, y + 1, JOINT_LIGHT);
+        context.fill(x + 1, y + 2, x + 3, y + 3, JOINT_DARK);
+        context.fill(x + 2, y + 1, x + 3, y + 2, JOINT_DARK);
     }
 
     /** The corner of the last-heard row's right end: its hourglass while it holds a party, its crossed brush unlinked. */
     private int heardEndX() {
-        return left + W - 8 - 16;
+        return left + GRID_X + CELL * 6 + 2;
+    }
+
+    /** The last-heard row's slot: over the first column's item. */
+    private int heardX() {
+        return left + GRID_X + 2;
     }
 
     private void drawHeard(DrawContext context, PartyBellBlockEntity antenna, PartyMoment current) {
         if (!antenna.isPartyLinked()) NotLinkedMark.screen(context, heardEndX(), top + HEARD_Y);
         else if (antenna.isHolding()) {
-            int x = left + W - 8 - 16;
-            AntennaIcons.cell(context, AntennaIcons.WAIT, x, top + HEARD_Y);
+            AntennaIcons.cell(context, AntennaIcons.WAIT, heardEndX(), top + HEARD_Y);
         }
-        int x = left + 8, y = top + HEARD_Y;
+        int x = heardX(), y = top + HEARD_Y;
         if (antenna.getHeardAt() < 0 || client == null || client.world == null) {
-            PartyGui.slot(context, x, y, 0xFF7A7A7A, 0xFF3A4048);
+            PartyGui.slot(context, x, y, 0xFFB0CCDE, 0xFF3F76A3);
             return;
         }
+        led(context, client.world.getTime() - antenna.getHeardAt() < LED_TICKS);
+        PartyGui.slot(context, x, y, 0xFFB0CCDE, 0xFF3F76A3);
         AntennaIcons.drawMoment(context, current, x, y);
         Text value = antenna.heardPassed() ? Text.literal(Integer.toString(antenna.getHeardValue())).formatted(Formatting.BOLD)
                 : Text.literal(Integer.toString(antenna.getHeardValue()));
         int valueX = x + 22, textY = y + 4, valueW = textRenderer.getWidth(value);
-        UiText.line(context, textRenderer, value, valueX, textY, valueW, antenna.heardPassed() ? 0xFFFFFFFF : 0xFF8A8A8A, antenna.heardPassed());
-        if (!antenna.heardPassed()) context.fill(valueX - 1, textY + 3, valueX + valueW + 1, textY + 4, 0xFF5A5A5A);
+        UiText.line(context, textRenderer, value, valueX, textY, valueW, antenna.heardPassed() ? TEXT_VALUE : TEXT_SOFT, false);
+        if (!antenna.heardPassed()) context.fill(valueX - 2, textY + 3, valueX + valueW + 1, textY + 4, OUTLINE);
         long seconds = Math.max(0, (client.world.getTime() - antenna.getHeardAt()) / 20);
         int agoX = valueX + valueW + 8;
         UiText.line(context, textRenderer, Text.translatable("gui.steveparty.antenna.heard", seconds), agoX, textY,
-                left + W - 8 - 18 - agoX, PartyGui.TEXT_SOFT, false);
+                ledX() - 4 - agoX, TEXT_SOFT, false);
+    }
+
+    /** The receiver's LED, left of the last-heard row's end: lit (with its glow) just after a moment is heard. */
+    private int ledX() {
+        return heardEndX() - 10;
+    }
+
+    /**
+     * The receiver's LED: 6 x 6, round as a vanilla cube is (cut corners), a darker rim and a 1 px highlight; lit,
+     * bright red in a faint glow, else dark red. Centred on the row's 16 px.
+     */
+    private void led(DrawContext context, boolean lit) {
+        int x = ledX(), y = top + HEARD_Y + 5;
+        if (lit) ring(context, x - 1, y - 1, 8, 8, 0x40FF2B1A);
+        context.fill(x + 1, y, x + 5, y + 6, lit ? 0xFFB3150B : 0xFF3A0A08);
+        context.fill(x, y + 1, x + 6, y + 5, lit ? 0xFFB3150B : 0xFF3A0A08);
+        context.fill(x + 1, y + 1, x + 5, y + 5, lit ? RECEIVER : 0xFF6A1A14);
+        PartyGui.pixel(context, x + 1, y + 1, lit ? 0xFFFFD0C0 : 0xFF9A4A40);
     }
 
     private void drawTooltip(DrawContext context, PartyBellBlockEntity antenna, PartyMoment current, @Nullable PartyMoment hovered,
-                             @Nullable Control control, int mouseX, int mouseY, boolean canWait, boolean testable) {
+                             @Nullable Control control, int mouseX, int mouseY, boolean canWait, boolean testable, boolean inParty,
+                             boolean waiting) {
         List<Text> lines = new ArrayList<>();
         if (hovered != null) {
             lines.add(hovered.getText().copy().withColor(AntennaIcons.textColour(hovered.family())));
             lines.add(Text.translatable("gui.steveparty.antenna.comparator", Text.translatable(hovered.valueDescriptionKey()))
                     .formatted(Formatting.GRAY));
+            if (!inParty && !hovered.outOfParty()) lines.add(Text.translatable("gui.steveparty.antenna.party_only").formatted(Formatting.GRAY));
         } else if (familyAt(mouseX, mouseY) instanceof PartyMoment.Family family) {
             lines.add(family.getText().copy().withColor(AntennaIcons.textColour(family)));
         } else if (control != null) {
             int filterValue = antenna.getFilterValue();
             switch (control.id()) {
-                case "pulse" -> lines.add(Text.translatable("gui.steveparty.antenna.pulse"));
-                case "wait" -> lines.add(Text.translatable(canWait ? "gui.steveparty.antenna.wait" : "gui.steveparty.antenna.wait.never"));
+                case "hold" -> lines.add(Text.translatable(!canWait ? "gui.steveparty.antenna.wait.never"
+                        : !inParty && current.outOfParty() ? "gui.steveparty.antenna.wait.out_of_party"
+                        : waiting ? "gui.steveparty.antenna.hold.on" : "gui.steveparty.antenna.hold.off"));
                 case "filter", "value" -> lines.add(switch (antenna.getFilter()) {
                     case ANY -> Text.translatable("gui.steveparty.antenna.filter.any");
                     case EQUAL -> Text.translatable("gui.steveparty.antenna.filter.equal", filterValue);
@@ -252,19 +336,19 @@ public class AntennaScreen extends Screen {
             }
         } else if (!antenna.isPartyLinked() && NotLinkedMark.hovered(mouseX, mouseY, heardEndX(), top + HEARD_Y)) {
             lines.add(NotLinkedMark.tooltip(antenna));
-        } else if (antenna.isHolding() && mouseX >= left + W - 24 && mouseX < left + W - 8 && mouseY >= top + HEARD_Y && mouseY < top + HEARD_Y + 16) {
+        } else if (antenna.isHolding() && mouseX >= heardEndX() && mouseX < heardEndX() + 16 && mouseY >= top + HEARD_Y && mouseY < top + HEARD_Y + 16) {
             lines.add(Text.translatable("gui.steveparty.antenna.holding"));
-        } else if (antenna.getHeardAt() < 0 && mouseX >= left + 8 && mouseX < left + 24
+        } else if (antenna.getHeardAt() < 0 && mouseX >= heardX() && mouseX < heardX() + 16
                 && mouseY >= top + HEARD_Y && mouseY < top + HEARD_Y + 16) {
             lines.add(Text.translatable("gui.steveparty.antenna.heard.none"));
-        } else if (antenna.getHeardAt() >= 0 && !antenna.heardPassed() && mouseX >= left + 8 && mouseX < left + 60
+        } else if (antenna.getHeardAt() >= 0 && !antenna.heardPassed() && mouseX >= heardX() && mouseX < heardX() + 52
                 && mouseY >= top + HEARD_Y && mouseY < top + HEARD_Y + 16) {
             lines.add(Text.translatable("gui.steveparty.antenna.heard.filtered"));
         }
         if (lines.isEmpty()) return;
-        // Two lines at most: a long one is wrapped
+        // A long line is wrapped
         List<net.minecraft.text.OrderedText> wrapped = new ArrayList<>();
-        for (Text line : lines) wrapped.addAll(textRenderer.wrapLines(line, 200));
+        for (Text line : lines) wrapped.addAll(textRenderer.wrapLines(line, 240));
         context.drawOrderedTooltip(textRenderer, wrapped, mouseX, mouseY);
     }
 
@@ -273,37 +357,70 @@ public class AntennaScreen extends Screen {
         throw new IllegalArgumentException(id);
     }
 
-    /** A control button: its glyph, pressed in while held or when it is the chosen toggle; dimmed when it can't be used. */
-    private void button(DrawContext context, Control control, int glyph, boolean chosen, boolean enabled, @Nullable Control hovered) {
+    /**
+     * The hold toggle (the antenna always pulses; it may also hold the party): on, pressed in with its hourglass lit;
+     * off, up with its hourglass out (grey sand); greyed when the moment can't hold the party, or out of a party for a moment heard there.
+     */
+    private void holdButton(DrawContext context, boolean on, boolean enabled, @Nullable Control hovered) {
+        Control control = control("hold");
         int x = left + control.x(), y = top + control.y();
-        boolean pressed = enabled && control.id().equals(held);
-        face(context, x, y, control.w(), control.h(), enabled ? 0xFFD6D6D6 : 0xFFA3A3A3, pressed || chosen,
-                enabled && hovered == control, !enabled);
-        AntennaIcons.cell(context, glyph, x + (control.w() - 16) / 2, y + 2);
-        if (!enabled) context.fill(x + 2, y + 2, x + control.w() - 2, y + control.h() - 2, 0x80A3A3A3);
-        if (chosen) selected(context, x, y, control.w(), control.h());
+        boolean pressed = enabled && (on || control.id().equals(held));
+        face(context, x, y, control.w(), control.h(), enabled ? CONTROL : DISABLED, pressed, enabled && hovered == control, !enabled);
+        // Off: its hourglass out (grey sand), opaque: the see-through look is for what can't be used
+        AntennaIcons.cell(context, enabled && !on ? AntennaIcons.WAIT_OFF : AntennaIcons.WAIT, x + 2, y + 2);
+        if (!enabled) context.fill(x + 2, y + 2, x + control.w() - 2, y + control.h() - 2, 0x99C8CED4);
     }
 
     /**
-     * A button's face in the mod's style (1 px rounded outline, bevels). Pressed in: darker and its bevels swapped;
-     * what is drawn on it stays where it is. Hovered: brighter.
+     * A control button: its glyph (-1: none, drawn by the caller), pressed in while held or when it is the chosen
+     * toggle; dimmed when it can't be used.
+     */
+    private void button(DrawContext context, Control control, int glyph, boolean chosen, boolean enabled, @Nullable Control hovered) {
+        int x = left + control.x(), y = top + control.y();
+        boolean pressed = enabled && control.id().equals(held);
+        face(context, x, y, control.w(), control.h(), enabled ? CONTROL : DISABLED, pressed || chosen,
+                enabled && hovered == control, !enabled);
+        if (chosen) selected(context, x, y, control.w(), control.h());
+        if (glyph >= 0) AntennaIcons.cell(context, glyph, x + (control.w() - 16) / 2, y + 2);
+        if (!enabled) context.fill(x + 2, y + 2, x + control.w() - 2, y + control.h() - 2, 0x99C8CED4);
+    }
+
+    /**
+     * A button's face in the mod's style (1 px rounded anthracite outline, bevels). Pressed in: darker and its bevels
+     * swapped; what is drawn on it stays where it is. Hovered: brighter. Disabled: flat.
      */
     private static void face(DrawContext context, int x, int y, int w, int h, int body, boolean pressed, boolean hovered, boolean disabled) {
-        int colour = pressed ? Argb.darken(body, 0.14f) : hovered ? Argb.lighten(body, 0.35f) : body;
-        PartyGui.Theme theme = new PartyGui.Theme(0xFF000000, Argb.lighten(colour, disabled ? 0.2f : 0.45f), colour,
-                Argb.darken(colour, disabled ? 0.2f : 0.38f));
+        int colour = pressed ? Argb.darken(body, 0.12f) : hovered ? Argb.lighten(body, 0.3f) : body;
+        // Disabled: flat (no bevels), so that it never reads as up or pressed in
+        PartyGui.Theme theme = disabled ? new PartyGui.Theme(OUTLINE, colour, colour, colour)
+                : new PartyGui.Theme(OUTLINE, Argb.lighten(colour, 0.5f), colour, Argb.darken(colour, 0.35f));
         PartyGui.button(context, x, y, w, h, theme, pressed);
     }
 
     /**
-     * The chosen one: a 1 px white ring just inside its black outline, in the button's own pixels, stopping before the
-     * cut corners as the outline does.
+     * The chosen one, the receiver (drawn over its pressed-in face, under its icon): its outline turns red, a lit
+     * red ring around it in the 2 px gap to its neighbours, and a dark outline around that, so that it stands out
+     * without the red (colour-blind players, a red item). Every ring has its corners cut, as the outline does.
      */
     private static void selected(DrawContext context, int x, int y, int w, int h) {
-        context.fill(x + 2, y + 1, x + w - 2, y + 2, 0xFFFFFFFF);
-        context.fill(x + 2, y + h - 2, x + w - 2, y + h - 1, 0xFFFFFFFF);
-        context.fill(x + 1, y + 2, x + 2, y + h - 2, 0xFFFFFFFF);
-        context.fill(x + w - 2, y + 2, x + w - 1, y + h - 2, 0xFFFFFFFF);
+        ring(context, x - 2, y - 2, w + 4, h + 4, RECEIVER_DARK);
+        ring(context, x - 1, y - 1, w + 2, h + 2, RECEIVER_GLOW);
+        ring(context, x, y, w, h, RECEIVER);
+    }
+
+    /**
+     * A 1 px rounded rectangle outline, its corner pixels left out and the pixel diagonally inside each corner filled:
+     * rings drawn one inside the other make one rounded frame, nothing under them showing at the corners.
+     */
+    private static void ring(DrawContext context, int x, int y, int w, int h, int colour) {
+        context.fill(x + 1, y, x + w - 1, y + 1, colour);
+        context.fill(x + 1, y + h - 1, x + w - 1, y + h, colour);
+        context.fill(x, y + 1, x + 1, y + h - 1, colour);
+        context.fill(x + w - 1, y + 1, x + w, y + h - 1, colour);
+        PartyGui.pixel(context, x + 1, y + 1, colour);
+        PartyGui.pixel(context, x + w - 2, y + 1, colour);
+        PartyGui.pixel(context, x + 1, y + h - 2, colour);
+        PartyGui.pixel(context, x + w - 2, y + h - 2, colour);
     }
 
     private static int mix(int a, int b, float t) {
@@ -333,13 +450,9 @@ public class AntennaScreen extends Screen {
         int step = hasShiftDown() ? 5 : 1;
         boolean valued = filter != PartyBellBlockEntity.Filter.ANY;
         boolean done = switch (control.id()) {
-            case "pulse" -> {
-                send(current, false, filter, value, false);
-                yield true;
-            }
-            case "wait" -> {
-                if (!current.canWait()) yield false;
-                send(current, true, filter, value, false);
+            case "hold" -> {
+                if (!current.canWait() || !antenna.inPartyOnClient() && current.outOfParty()) yield false;
+                send(current, !waiting, filter, value, false);
                 yield true;
             }
             case "filter" -> {
