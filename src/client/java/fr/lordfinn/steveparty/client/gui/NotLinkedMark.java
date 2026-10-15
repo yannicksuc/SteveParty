@@ -2,14 +2,11 @@ package fr.lordfinn.steveparty.client.gui;
 
 import fr.lordfinn.steveparty.board.PartyLinked;
 import fr.lordfinn.steveparty.items.ModItems;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
@@ -26,9 +23,9 @@ import org.joml.Matrix4f;
  * <ul>
  *     <li>in a screen: {@link #screen} (a 16 px item slot), {@link #hovered} and {@link #tooltip};</li>
  *     <li>on a HUD card whose icons are scaled: {@link #crossOnIcon} in the icon's own 16 px space;</li>
- *     <li>on a world plate (label space, +z toward the camera): {@link #world} (the brush and its cross) or
- *     {@link #worldCross} (the cross alone over an icon already drawn). Opaque pixels written in one batch drawn at
- *     once, a small step toward the camera over the icon (minecraft-rendering: a detail on a plate is opaque).</li>
+ *     <li>on a world plate (label space, +z toward the camera): {@link #worldCross}, the cross over an icon already
+ *     drawn. Opaque pixels written in one batch drawn at once, a small step toward the camera over the icon
+ *     (minecraft-rendering: a detail on a plate is opaque).</li>
  * </ul>
  */
 public final class NotLinkedMark {
@@ -73,22 +70,6 @@ public final class NotLinkedMark {
     }
 
     // ---------------------------------------------------------------- world plates
-
-    /**
-     * The crossed brush on a world plate, its icon {@code size} plate units wide with its top-left corner at (x, y),
-     * at depth {@code z} (the cross one step nearer). Flushes what it drew (its own order, minecraft-rendering).
-     */
-    public static void world(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, @Nullable World world,
-                             float x, float y, float size, float z) {
-        matrices.push();
-        matrices.translate(x + size / 2f, y + size / 2f, z);
-        matrices.scale(size, -size, 0.01f);
-        MinecraftClient.getInstance().getItemRenderer().renderItem(BRUSH, ModelTransformationMode.GUI, LIGHT, OverlayTexture.DEFAULT_UV,
-                matrices, consumers, world, 0);
-        matrices.pop();
-        consumers.draw();
-        worldCross(matrices, consumers, x + size, y + size, size / 16f, z + 0.7f);
-    }
 
     /**
      * The red cross whose bottom-right corner is (right, bottom) on a world plate, {@code pixel} plate units per icon

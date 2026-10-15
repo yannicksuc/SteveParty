@@ -61,16 +61,6 @@ public class PartyAntennaRenderer extends GeoBlockRenderer<PartyBellBlockEntity>
         age = entity.ringTicks > 0 ? PartyBellBlockEntity.RING_TICKS - entity.ringTicks + partialTick : Float.MAX_VALUE;
         receiver(entity, packedLight);
         super.render(entity, partialTick, matrices, bufferSource, packedLight, packedOverlay);
-        if (entity.getWorld() != null && WorldLabels.holdingWrench()
-                && dispatcher().camera.getPos().squaredDistanceTo(entity.getPos().toCenterPos()) <= BUBBLE_RANGE * BUBBLE_RANGE)
-            AntennaBubble.draw(entity, matrices, bufferSource, dispatcher());
-    }
-
-    /** Players with the Wrench in hand see what each antenna listens to, this far (blocks). */
-    private static final int BUBBLE_RANGE = 16;
-
-    private static net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher dispatcher() {
-        return MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
     }
 
     /**
