@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.board;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -16,14 +17,23 @@ import java.util.List;
 
 /**
  * The Tile Linker Brush's links from an Aiguilleur (router) to the board spaces it drives, kept by the router itself
- * (no cartridge): painted from the router to a space; painted again, removed. Drawn in redstone red by the brush overlay.
+ * (no cartridge): painted from the router to a space; painted again, removed. Drawn by the brush overlay in redstone
+ * red dots, like the party links (they control, nobody walks them: chevrons are the pawns' paths).
  */
 public final class RouterLinks {
+    /** The colours of the dots, from the router to its board space. */
+    public static final int NEAR = 0xFF5A48, FAR = CartridgeLinks.ROUTER_COLOR;
+
     static final BrushLinks.Provider PROVIDER = (world, holder, held, out) -> {
         if (holder instanceof BoardSpaceRedstoneRouterBlockEntity router && held.slot() == 0) out.add(new Tiles(router));
     };
 
     private RouterLinks() {
+    }
+
+    /** The colour (rgb) of the dot {@code t} of the way from the router (0) to its board space (1). */
+    public static int gradient(double t) {
+        return Argb.lerp(NEAR, FAR, (float) Math.clamp(t, 0, 1)) & 0xFFFFFF;
     }
 
     /** A router's board spaces. */
@@ -63,7 +73,7 @@ public final class RouterLinks {
             set(player, tiles);
             WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.linked", BoardText.pos(holder()), BoardText.pos(tile)), WrenchActions.linkWord(true));
             world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.45f, 1.2f);
-            BoardLinks.trail(world, holder(), tile, CartridgeLinks.ROUTER_COLOR);
+            BoardLinks.trail(world, holder(), tile, RouterLinks::gradient);
             return true;
         }
 
