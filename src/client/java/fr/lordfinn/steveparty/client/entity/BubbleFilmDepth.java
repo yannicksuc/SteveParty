@@ -40,6 +40,10 @@ public final class BubbleFilmDepth {
         WorldRenderEvents.START.register(context -> saved = false);
         WorldRenderEvents.BEFORE_DEBUG_RENDER.register(context -> {
             if (!BubbleEntityRenderer.hasFilms() || MinecraftClient.isFabulousGraphicsOrBetter()) return;
+            // The entities still waiting in their buffers drawn first: a rider's skin (a player's is translucent) left
+            // there is drawn after this copy, missing from the depth the film is tested against, and the film's far
+            // faces were painted over him (he looked behind the bubble, washed out)
+            MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers().draw();
             Framebuffer main = MinecraftClient.getInstance().getFramebuffer();
             before = sized(before, main);
             before.copyDepthFrom(main);
