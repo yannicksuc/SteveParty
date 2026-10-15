@@ -72,8 +72,8 @@ public final class PiggyBankInfoClient {
     }
 
     private static final ItemStack BRUSH = new ItemStack(ModItems.TILE_LINKER_BRUSH);
-    /** A pixel of the red cross on a panel's icon, and the whole cross (text pixels: an icon is {@link #ICON}). */
-    private static final float CROSS_PIXEL = 0.7f, CROSS = CROSS_PIXEL * 7;
+    /** A pixel of the red cross on a panel's icon (an icon pixel), and the whole cross (text pixels). */
+    private static final float CROSS_PIXEL = ICON / 16f, CROSS = CROSS_PIXEL * 8;
 
     private record CardKey(BlockPos pos) {
     }
@@ -172,7 +172,7 @@ public final class PiggyBankInfoClient {
                     consumers, client.world, 0);
             matrices.pop();
             // On the icon's bottom-right corner (the icon spans y - 1 to y + 8)
-            if (cell.crossed()) cross(matrices, consumers, x + ICON + 1 - CROSS, y + 9 - CROSS);
+            if (cell.crossed()) cross(matrices, consumers, x + ICON - CROSS, y + 8 - CROSS);
             if (!cell.text().isEmpty()) {
                 font.draw(cell.text(), x + ICON + ICON_GAP, y, cell.color(), false, matrices.peek().getPositionMatrix(),
                         consumers, TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
@@ -242,7 +242,7 @@ public final class PiggyBankInfoClient {
                 card.getMatrices().translate(ix, y - 1, 0);
                 card.getMatrices().scale(ICON / 16f, ICON / 16f, 1);
                 HudDepth.item(card, () -> card.drawItem(cell.icon(), 0, 0));
-                if (cell.crossed()) HudDepth.onTop(card, () -> ConsolePaint.notLinked(card, 16 - ConsolePaint.NOT_LINKED.length + 1, 16 - ConsolePaint.NOT_LINKED.length + 1));
+                if (cell.crossed()) HudDepth.onTop(card, () -> ConsolePaint.notLinked(card, 16 - ConsolePaint.NOT_LINKED.length, 16 - ConsolePaint.NOT_LINKED.length));
                 card.getMatrices().pop();
                 if (!cell.text().isEmpty()) {
                     HudDepth.onTop(card, () -> UiText.line(card, font, cell.text(), ix + ICON + ICON_GAP, y, font.getWidth(cell.text()),

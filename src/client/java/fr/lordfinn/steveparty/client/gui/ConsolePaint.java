@@ -95,10 +95,10 @@ public final class ConsolePaint {
 
     /**
      * The red cross laid on the bottom-right corner of the Tile Linker Brush's icon: « linked to nothing » (a Piggy
-     * Bank linked to no party), 7 px, outlined dark to read on any background.
+     * Bank linked to no party), 8 px, its strokes 2 px wide, outlined dark to read on any background.
      */
-    public static final String[] NOT_LINKED = {"##...##", "#x#.#x#", ".#x#x#.", "..#x#..", ".#x#x#.", "#x#.#x#", "##...##"};
-    public static final Map<Character, Integer> NOT_LINKED_COLOURS = Map.of('#', 0xFF3A0A0A, 'x', 0xFFE8413C);
+    public static final String[] NOT_LINKED = {"##....##", "#xx##xx#", ".#xxxx#.", "..#xx#..", "..#xx#..", ".#xxxx#.", "#xx##xx#", "##....##"};
+    public static final Map<Character, Integer> NOT_LINKED_COLOURS = Map.of('#', 0xFF3A0A0A, 'x', 0xFFFF4A40);
 
     /** {@link #NOT_LINKED} with its top-left corner at (x, y). */
     public static void notLinked(DrawContext context, int x, int y) {

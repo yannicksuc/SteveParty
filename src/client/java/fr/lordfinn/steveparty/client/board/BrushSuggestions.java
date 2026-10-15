@@ -80,11 +80,11 @@ final class BrushSuggestions {
 
     /** A ghost link from a block to another, and the ghost blocks drawn at their end. */
     private record Suggestion(List<Vec3d[]> links, @Nullable BlockPos chest, Direction chestFacing, @Nullable Vec3d bubble, @Nullable Vec3d bubbleFrom,
-                              @Nullable BlockPos nest, Direction nestFacing) {
-        static final Suggestion NONE = new Suggestion(List.of(), null, Direction.SOUTH, null, null, null, Direction.NORTH);
+                              @Nullable BlockPos nest, Direction nestFacing, @Nullable Vec3d nestFrom) {
+        static final Suggestion NONE = new Suggestion(List.of(), null, Direction.SOUTH, null, null, null, Direction.NORTH, null);
 
         Suggestion(List<Vec3d[]> links, @Nullable BlockPos chest, Direction chestFacing, @Nullable Vec3d bubble, @Nullable Vec3d bubbleFrom) {
-            this(links, chest, chestFacing, bubble, bubbleFrom, null, Direction.NORTH);
+            this(links, chest, chestFacing, bubble, bubbleFrom, null, Direction.NORTH, null);
         }
     }
 
@@ -134,13 +134,14 @@ final class BrushSuggestions {
             BlockPos tile = nearestFreeTile(world, space.getPos());
             if (tile != null) links.add(new Vec3d[]{from, BrushOverlay.anchor(world, tile)});
         }
-        // The ghost nest faces its space, linked to it as the real one would be
+        // The ghost nest faces its space, linked to it from the tile's edge as the real one would be
         Direction nestFacing = Direction.NORTH;
+        Vec3d nestFrom = null;
         if (nest != null) {
-            links.add(new Vec3d[]{from, Vec3d.ofCenter(nest)});
             nestFacing = Direction.getFacing(space.getPos().getX() - nest.getX(), 0, space.getPos().getZ() - nest.getZ());
+            nestFrom = BrushOverlay.sideOf(space.getPos(), from.y, Vec3d.ofCenter(nest));
         }
-        return new Suggestion(links, null, Direction.SOUTH, bubble, bubble == null ? null : from, nest, nestFacing);
+        return new Suggestion(links, null, Direction.SOUTH, bubble, bubble == null ? null : from, nest, nestFacing, nestFrom);
     }
 
     /**
@@ -286,6 +287,9 @@ final class BrushSuggestions {
         if (suggestion.bubble() != null) {
             WorldDraw.dotted(matrices, consumers, camera, suggestion.bubbleFrom(), suggestion.bubble().add(0, 0.45, 0), 0.6f * pulse, t -> GREY);
         }
+        if (suggestion.nest() != null) {
+            WorldDraw.dotted(matrices, consumers, camera, suggestion.nestFrom(), Vec3d.ofCenter(suggestion.nest()).add(0, -0.2, 0), 0.6f * pulse, t -> GREY);
+        }
     }
 
     /**
@@ -297,7 +301,8 @@ final class BrushSuggestions {
         if (suggestion == Suggestion.NONE || ToolWheel.isOpen()) return;
         float pulse = 0.75f + 0.25f * (float) Math.sin((world.getTime() + tickDelta) / 6.0);
         if (suggestion.chest() != null) ghostChest(suggestion.chest(), suggestion.chestFacing(), GHOST_ALPHA * pulse);
-        if (suggestion.nest() != null) ghostNest(suggestion.nest(), suggestion.nestFacing(), GHOST_ALPHA * pulse);
+        // Its real model, brown on the ground: more opaque than the chest's hologram to read as well
+        if (suggestion.nest() != null) ghostNest(suggestion.nest(), suggestion.nestFacing(), Math.max(NEST_MIN_ALPHA, GHOST_ALPHA * pulse * 1.4f));
         if (suggestion.bubble() != null) {
             // A Spawn Bubble's ghost: the real one at rest, see-through, facing the camera (as one placed)
             Vec3d at = suggestion.bubble(), cam = camera.getPos();
@@ -307,7 +312,7 @@ final class BrushSuggestions {
     }
 
     /** How see-through the ghost chest and the ghost bubble are (their models in their own colours, before the pulse). */
-    private static final float GHOST_ALPHA = 0.5f;
+    private static final float GHOST_ALPHA = 0.5f, NEST_MIN_ALPHA = 0.7f;
 
     /** A ghost Magpie Nest: its block model at {@code pos}, see-through (nearest faces only), facing {@code facing}. */
     private static void ghostNest(BlockPos pos, Direction facing, float alpha) {

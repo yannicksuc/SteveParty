@@ -506,7 +506,7 @@
   "book.steveparty.guide.party.piggy_bank.page0.text": "On each pulse: its [#](B95D05)**Inventory Cartridge**[#]() [#](2E7D32)**gives**[#]() or [#](C0392B)**takes**[#]().",
   "book.steveparty.guide.party.piggy_bank.page0.title": "Piggy Bank",
   "book.steveparty.guide.party.piggy_bank.page1.text": "[#](9A6A00)Right-click[#](): its menu.\n- the player whose turn it is\n- the last winners\n- everyone\n- the nearest",
-  "book.steveparty.guide.party.piggy_bank.page2.text": "Linked with the [#](1C4E80)**Tile Linker Brush**[#]() to an element of a party (Party Controller, a space...): that party, even far away.\\\n\\\nNot linked: it does nothing, the brush crossed out in red over it.",
+  "book.steveparty.guide.party.piggy_bank.page2.text": "Linked with the [#](1C4E80)**Tile Linker Brush**[#]() to an element of a party (Party Controller, a space...): that party, even far away.\\\n\\\nNot linked: it does nothing; its panel and its menu show the brush crossed out in red.",
   "book.steveparty.guide.party.piggy_bank.page2.title": "Which party",
   "book.steveparty.guide.party.piggy_bank.page1.title": "Who",
   "book.steveparty.guide.party.powerups.description": "A boost for your turn",
