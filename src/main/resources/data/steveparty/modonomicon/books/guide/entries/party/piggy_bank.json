@@ -38,6 +38,11 @@
       "text": "book.steveparty.guide.party.piggy_bank.page1.text"
     },
     {
+      "type": "modonomicon:text",
+      "title": "book.steveparty.guide.party.piggy_bank.page2.title",
+      "text": "book.steveparty.guide.party.piggy_bank.page2.text"
+    },
+    {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:piggy_bank"
     }

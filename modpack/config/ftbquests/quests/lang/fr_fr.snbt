@@ -131,6 +131,7 @@
 	quest.030135F1CA2F65E1.quest_desc: [
 		"Clic droit avec la Clé à molette : tous les moments qu'elle peut écouter, par famille (partie, tours, pièces et étoiles, évènements, mini-jeux). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...)."
 		"Mode attente : la partie se fige jusqu'à ce qu'elle reçoive un signal."
+		"Lie-la au Pinceau lieur à un élément d'une partie (le Contrôleur de Party, une case...) : elle écoute cette partie ; pas liée, elle n'entend rien."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.030135F1CA2F65E1.title: "Antenne de Party"
@@ -596,6 +597,7 @@
 	quest.280705EA919A80DA.quest_desc: [
 		"Un cochon en céramique avec une Cartouche Bonus / Malus. Chaque impulsion donne (ou prend) ses objets : joueur du tour, gagnants du mini-jeu, tout le monde ou le plus proche."
 		"Mode tout ou rien : de quoi vendre une Party Star contre des Pièces."
+		"Lie-la au Pinceau lieur à un élément d'une partie ; sinon elle sert la partie la plus proche (64 blocs)."
 	]
 	quest.280705EA919A80DA.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.280705EA919A80DA.title: "Tirelire"

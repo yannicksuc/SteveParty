@@ -131,6 +131,7 @@
 	quest.030135F1CA2F65E1.quest_desc: [
 		"Right-click it with the Wrench: every moment it can listen to, by family (party, turns, coins and stars, events, mini-games). It pulses then, and a comparator reads a value (die result, rank...)."
 		"Wait mode: the party freezes until the antenna gets a signal."
+		"Link it with the Tile Linker Brush to any part of the game (the Party Controller, a space...): it listens to that party; not linked, it hears nothing."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.030135F1CA2F65E1.title: "Party Antenna"
@@ -596,6 +597,7 @@
 	quest.280705EA919A80DA.quest_desc: [
 		"A ceramic pig with an Inventory Cartridge. Each pulse gives (or takes) its items: player of the turn, mini-game winners, everyone or the nearest."
 		"All-or-nothing mode: sell a Party Star for Coins."
+		"Link it to any part of a game with the Tile Linker Brush; otherwise it serves the nearest party (64 blocks)."
 	]
 	quest.280705EA919A80DA.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.280705EA919A80DA.title: "Piggy Bank"

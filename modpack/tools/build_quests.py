@@ -653,15 +653,19 @@ q("step", 4, -1.5, I("step_controller"), deps=["controller"], rewards=T2(),
 
 q("bell", 4, -4, I("party_bell"), deps=["controller"], rewards=T2(),
   desc=(["Right-click it with the Wrench: every moment it can listen to, by family (party, turns, coins and stars, events, mini-games). It pulses then, and a comparator reads a value (die result, rank...).",
-         "Wait mode: the party freezes until the antenna gets a signal."],
+         "Wait mode: the party freezes until the antenna gets a signal.",
+         "Link it with the Tile Linker Brush to any part of the game (the Party Controller, a space...): it listens to that party; not linked, it hears nothing."],
         ["Clic droit avec la Clé à molette : tous les moments qu'elle peut écouter, par famille (partie, tours, pièces et étoiles, évènements, mini-jeux). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...).",
-         "Mode attente : la partie se fige jusqu'à ce qu'elle reçoive un signal."]))
+         "Mode attente : la partie se fige jusqu'à ce qu'elle reçoive un signal.",
+         "Lie-la au Pinceau lieur à un élément d'une partie (le Contrôleur de Party, une case...) : elle écoute cette partie ; pas liée, elle n'entend rien."]))
 
 q("piggy", 4, -2.75, I("piggy_bank"), deps=["controller", "board.inventory"], rewards=T2(),
   desc=(["A ceramic pig with an Inventory Cartridge. Each pulse gives (or takes) its items: player of the turn, mini-game winners, everyone or the nearest.",
-         "All-or-nothing mode: sell a Party Star for Coins."],
+         "All-or-nothing mode: sell a Party Star for Coins.",
+         "Link it to any part of a game with the Tile Linker Brush; otherwise it serves the nearest party (64 blocks)."],
         ["Un cochon en céramique avec une Cartouche Bonus / Malus. Chaque impulsion donne (ou prend) ses objets : joueur du tour, gagnants du mini-jeu, tout le monde ou le plus proche.",
-         "Mode tout ou rien : de quoi vendre une Party Star contre des Pièces."]))
+         "Mode tout ou rien : de quoi vendre une Party Star contre des Pièces.",
+         "Lie-la au Pinceau lieur à un élément d'une partie ; sinon elle sert la partie la plus proche (64 blocs)."]))
 
 CARDS = [
     ("turns", "blue", ["Every pawn plays once."], ["Chaque pion joue une fois."]),
