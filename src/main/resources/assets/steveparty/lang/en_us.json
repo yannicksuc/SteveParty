@@ -1654,7 +1654,7 @@
   "gui.steveparty.antenna.linked": "Party Controller %s blocks away",
   "gui.steveparty.antenna.unlinked": "No Party Controller in range",
   "gui.steveparty.antenna.pulse": "Pulse",
-  "gui.steveparty.antenna.wait": "Wait: the party waits for a redstone signal (or a Party Rewinder's Next)",
+  "gui.steveparty.antenna.wait": "Wait: the party waits for a redstone signal",
   "gui.steveparty.antenna.wait.never": "This moment never waits",
   "gui.steveparty.antenna.filter.any": "Every value",
   "gui.steveparty.antenna.filter.equal": "Only %s",

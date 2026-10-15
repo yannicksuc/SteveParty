@@ -66,6 +66,11 @@ public final class AntennaIcons {
         return new ItemStack(ICONS.get(moment).item());
     }
 
+    /** Its badge's cell in the sheet, -1 for none. */
+    public static int badge(PartyMoment moment) {
+        return ICONS.get(moment).badge();
+    }
+
     /** The moment's item at ({@code x}, {@code y}), and its badge above it. */
     public static void drawMoment(DrawContext context, PartyMoment moment, int x, int y) {
         context.drawItem(item(moment), x, y);

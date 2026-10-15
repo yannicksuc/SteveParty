@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.client.screens.AntennaIcons;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -13,7 +12,6 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.Text;
 import org.joml.Matrix4f;
 
 /**
@@ -31,8 +29,10 @@ final class AntennaBubble {
     /** The plate's half size and the item on it (bubble pixels). */
     private static final float HALF = 10, ITEM = 14;
     private static final int PLATE = 0xFF26262B;
-    /** Steps toward the camera (bubble pixels: +z goes away from it in this space). */
-    private static final float EDGE_Z = 0.6f, PLATE_Z = 0.3f;
+    /** The bubble's centre above the block: clear of the dish, whichever way it turns. */
+    private static final double BUBBLE_Y = 1.8;
+    /** Depths of the edge and the plate behind what is on them (bubble pixels: +z comes toward the camera in this space). */
+    private static final float EDGE_Z = -0.6f, PLATE_Z = -0.3f;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
 
     private AntennaBubble() {
@@ -43,7 +43,7 @@ final class AntennaBubble {
         PartyMoment moment = antenna.getMoment();
         int family = AntennaIcons.colour(moment.family());
         matrices.push();
-        matrices.translate(0.5, 1.55, 0.5);
+        matrices.translate(0.5, BUBBLE_Y, 0.5);
         matrices.multiply(dispatcher.camera.getRotation());
         matrices.scale(SCALE, -SCALE, SCALE);
         Matrix4f matrix = matrices.peek().getPositionMatrix();
@@ -58,26 +58,52 @@ final class AntennaBubble {
         MinecraftClient.getInstance().getItemRenderer().renderItem(AntennaIcons.item(moment), ModelTransformationMode.GUI,
                 LIGHT, OverlayTexture.DEFAULT_UV, matrices, consumers, antenna.getWorld(), 0);
         matrices.pop();
+        int badge = AntennaIcons.badge(moment);
+        if (badge >= 0) icon(consumers, matrix, badge, -HALF + 2, -HALF + 2, 16, 0.2f);
 
-        // Under the plate: its filter, its hourglass
-        TextRenderer font = MinecraftClient.getInstance().textRenderer;
-        String filter = switch (antenna.getFilter()) {
-            case ANY -> "";
-            case EQUAL -> "=" + antenna.getFilterValue();
-            case AT_LEAST -> "≥" + antenna.getFilterValue();
-            case AT_MOST -> "≤" + antenna.getFilterValue();
-        };
-        boolean waits = antenna.isWaiting();
-        int width = font.getWidth(filter) + (waits ? 12 : 0);
-        if (width > 0) {
+        // Under the plate, on a dark strip: its filter (its sign and value, in pixels) and its hourglass
+        boolean filtered = antenna.getFilter() != PartyBellBlockEntity.Filter.ANY, waits = antenna.isWaiting();
+        if (filtered || waits) {
+            String value = Integer.toString(antenna.getFilterValue());
+            float width = (filtered ? 5 + value.length() * 4 - 1 : 0) + (filtered && waits ? 2 : 0) + (waits ? 10 : 0);
             float x = -width / 2f, y = HALF + 3;
-            if (!filter.isEmpty()) {
-                font.draw(Text.literal(filter), x, y, 0xFFFFFFFF, false, matrix, consumers, TextRenderer.TextLayerType.NORMAL, 0xC0000000, LIGHT);
-                x += font.getWidth(filter) + 2;
+            VertexConsumer strip = consumers.getBuffer(RenderLayer.getTextBackground());
+            quad(strip, matrix, x - 2, y - 2, x + width + 2, y + 12, PLATE_Z, PLATE);
+            if (filtered) {
+                int[] sign = switch (antenna.getFilter()) {
+                    case EQUAL -> EQUAL;
+                    case AT_LEAST -> AT_LEAST;
+                    default -> AT_MOST;
+                };
+                pixels(consumers, matrix, sign, 3, x, y + 2);
+                x += 5;
+                for (char digit : value.toCharArray()) {
+                    pixels(consumers, matrix, DIGITS[digit - '0'], 3, x, y + 2);
+                    x += 4;
+                }
+                x += 1;
             }
-            if (waits) icon(consumers, matrix, AntennaIcons.WAIT, x, y - 1, 10);
+            if (waits) icon(consumers, matrix, AntennaIcons.WAIT, x, y, 10, 0);
         }
         matrices.pop();
+    }
+
+    /** The digits 0-9 and the filter's signs in 3 x 5 pixels (rows from the top, bits from the left). */
+    private static final int[][] DIGITS = {
+            {7, 5, 5, 5, 7}, {2, 6, 2, 2, 7}, {7, 1, 7, 4, 7}, {7, 1, 3, 1, 7}, {5, 5, 7, 1, 1},
+            {7, 4, 7, 1, 7}, {7, 4, 7, 5, 7}, {7, 1, 1, 2, 2}, {7, 5, 7, 5, 7}, {7, 5, 7, 1, 7}};
+    private static final int[] EQUAL = {0, 7, 0, 7, 0}, AT_LEAST = {4, 2, 4, 0, 7}, AT_MOST = {1, 2, 1, 0, 7};
+
+    /** A 3 x 5 bitmap in white pixels, 1.2 bubble pixels each. */
+    private static void pixels(VertexConsumerProvider consumers, Matrix4f matrix, int[] rows, int width, float x, float y) {
+        VertexConsumer buffer = consumers.getBuffer(RenderLayer.getTextBackground());
+        float px = 1.2f;
+        for (int row = 0; row < rows.length; row++) {
+            for (int col = 0; col < width; col++) {
+                if ((rows[row] >> (width - 1 - col) & 1) == 0) continue;
+                quad(buffer, matrix, x + col * px, y + row * px, x + (col + 1) * px, y + (row + 1) * px, 0, 0xFFFFFFFF);
+            }
+        }
     }
 
     private static void quad(VertexConsumer buffer, Matrix4f matrix, float x0, float y0, float x1, float y1, float z, int argb) {
@@ -88,12 +114,12 @@ final class AntennaBubble {
     }
 
     /** A cell of the antenna's sheet, {@code size} bubble pixels wide. */
-    private static void icon(VertexConsumerProvider consumers, Matrix4f matrix, int cell, float x, float y, float size) {
+    private static void icon(VertexConsumerProvider consumers, Matrix4f matrix, int cell, float x, float y, float size, float z) {
         VertexConsumer buffer = consumers.getBuffer(RenderLayer.getText(AntennaIcons.SHEET));
         float u0 = (cell % 16) * 16 / 256f, v0 = (cell / 16) * 16 / 64f, u1 = u0 + 16 / 256f, v1 = v0 + 16 / 64f;
-        buffer.vertex(matrix, x, y, 0).color(0xFFFFFFFF).texture(u0, v0).light(LIGHT);
-        buffer.vertex(matrix, x, y + size, 0).color(0xFFFFFFFF).texture(u0, v1).light(LIGHT);
-        buffer.vertex(matrix, x + size, y + size, 0).color(0xFFFFFFFF).texture(u1, v1).light(LIGHT);
-        buffer.vertex(matrix, x + size, y, 0).color(0xFFFFFFFF).texture(u1, v0).light(LIGHT);
+        buffer.vertex(matrix, x, y, z).color(0xFFFFFFFF).texture(u0, v0).light(LIGHT);
+        buffer.vertex(matrix, x, y + size, z).color(0xFFFFFFFF).texture(u0, v1).light(LIGHT);
+        buffer.vertex(matrix, x + size, y + size, z).color(0xFFFFFFFF).texture(u1, v1).light(LIGHT);
+        buffer.vertex(matrix, x + size, y, z).color(0xFFFFFFFF).texture(u1, v0).light(LIGHT);
     }
 }

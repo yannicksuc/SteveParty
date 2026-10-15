@@ -1654,7 +1654,7 @@
   "gui.steveparty.antenna.linked": "Contrôleur de Party à %s blocs",
   "gui.steveparty.antenna.unlinked": "Aucun Contrôleur de Party à portée",
   "gui.steveparty.antenna.pulse": "Impulsion",
-  "gui.steveparty.antenna.wait": "Attente : la partie attend un signal redstone (ou le Suivant d'un Magnéto de Party)",
+  "gui.steveparty.antenna.wait": "Attente : la partie attend un signal redstone",
   "gui.steveparty.antenna.wait.never": "Ce moment n'attend jamais",
   "gui.steveparty.antenna.filter.any": "Toutes les valeurs",
   "gui.steveparty.antenna.filter.equal": "Seulement %s",
